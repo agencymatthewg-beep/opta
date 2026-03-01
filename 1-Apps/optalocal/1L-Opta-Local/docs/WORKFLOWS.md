@@ -2,7 +2,7 @@
 
 > How to build, test, deploy, and delegate work on this project.
 
-Current focus: Web delivery and stabilization. iOS work is temporarily deferred.
+Current focus: Web delivery and stabilization. iOS app was removed on 2026-02-28 by request.
 
 ---
 
@@ -20,14 +20,6 @@ pnpm --filter @opta/local-web typecheck
 pnpm --filter @opta/local-web check
 ```
 
-### iOS
-
-```bash
-cd 1-Apps/optalocal/1L-Opta-Local/ios
-open OptaLocal.xcodeproj        # Open in Xcode
-# Build: Cmd+B
-# Run: Cmd+R (requires iOS 17+ simulator or device)
-```
 
 ## Test
 
@@ -55,12 +47,6 @@ pnpm --filter @opta/local-web dev
 curl -I http://localhost:3004 | rg -i "content-security-policy|x-frame-options|x-content-type-options|referrer-policy|permissions-policy"
 ```
 
-### iOS
-
-```bash
-# In Xcode: Cmd+U to run all tests
-# Or: xcodebuild test -scheme OptaLocal -destination 'platform=iOS Simulator,name=iPhone 16'
-```
 
 **What must pass before merge:**
 - `pnpm --filter @opta/local-web typecheck` (Web)
@@ -68,7 +54,6 @@ curl -I http://localhost:3004 | rg -i "content-security-policy|x-frame-options|x
 - `pnpm --filter @opta/local-web test:unit` (Web)
 - `pnpm --filter @opta/local-web test:integration` (Web)
 - `pnpm --filter @opta/local-web build` (Web)
-- `swift build` (iOS, only when iOS track resumes)
 - No guardrail violations
 
 ## Deploy
@@ -78,11 +63,6 @@ curl -I http://localhost:3004 | rg -i "content-security-policy|x-frame-options|x
 - **Branch:** `main` (auto-deploy)
 - **Preview:** PR branches get preview URLs
 - **Environment:** No server-side env vars needed (static export)
-
-### iOS
-- **Beta:** TestFlight (manual upload from Xcode)
-- **Release:** App Store (future)
-- **Signing:** Automatic signing with personal team
 
 ---
 
@@ -103,14 +83,6 @@ curl -I http://localhost:3004 | rg -i "content-security-policy|x-frame-options|x
 3. `web/CLAUDE.md` — Web coding rules
 4. `web/ARCHITECTURE.md` — Web system design
 5. `web/docs/GUARDRAILS.md` — Web hard rules
-6. The specific task
-
-**iOS work:**
-1. `APP.md` — Project identity
-2. `SHARED.md` — API contracts and design language
-3. `ios/CLAUDE.md` — iOS coding rules
-4. `ios/ARCHITECTURE.md` — iOS system design
-5. `ios/docs/GUARDRAILS.md` — iOS hard rules
 6. The specific task
 
 ### Prompt Template
@@ -174,14 +146,6 @@ Lead (Opus) — Architecture + coordination
 └── Worker 3 (Sonnet) — Connection manager + settings
 ```
 
-### iOS Implementation Team
-```
-Lead (Opus) — Architecture + coordination
-├── Worker 1 (Sonnet) — Bonjour discovery + connection
-├── Worker 2 (Sonnet) — Chat UI + streaming
-└── Worker 3 (Sonnet) — Dashboard views
-```
-
 ---
 
 ## Overnight Automation
@@ -197,7 +161,6 @@ Lead (Opus) — Architecture + coordination
 - Architecture decisions
 - New API endpoint design
 - Security-related changes
-- App Store submission
 - Cloudflare Tunnel configuration
 
 ### Quality Gates

@@ -18,6 +18,7 @@ export interface MenuInfoPanelProps {
   pendingCommand: string | null;
   selectedCommandResult: OptaMenuResultEntry | null;
   selectedResultPreview: string[];
+  hasMoreOutput?: boolean;
   latestMenuResults: OptaMenuResultEntry[];
 }
 
@@ -29,6 +30,7 @@ export function MenuInfoPanel({
   pendingCommand,
   selectedCommandResult,
   selectedResultPreview,
+  hasMoreOutput,
   latestMenuResults,
 }: MenuInfoPanelProps) {
   return (
@@ -63,6 +65,13 @@ export function MenuInfoPanel({
               {selectedResultPreview.map((line, idx) => (
                 <Text key={`selected-preview-${idx}`} dimColor>{line}</Text>
               ))}
+              {hasMoreOutput && (
+                <Box marginTop={1}>
+                  <Text dimColor>... </Text>
+                  <Text color="#22d3ee">Press Shift+Up/Down (or W/S) to scroll output</Text>
+                  <Text dimColor> ...</Text>
+                </Box>
+              )}
             </Box>
           ) : null}
           {latestMenuResults.length > 0 ? (

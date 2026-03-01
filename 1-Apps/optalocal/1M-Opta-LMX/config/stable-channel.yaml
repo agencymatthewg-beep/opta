@@ -1,0 +1,30 @@
+# Opta-LMX stable channel profile
+server:
+  host: "0.0.0.0"
+  port: 1234
+  workers: 1
+  timeout_sec: 600
+
+models:
+  # Keep stable on a known-good model only.
+  default_model: "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"
+  auto_load: ["inferencerlabs/MiniMax-M2.5-MLX-6.5bit"]
+  max_concurrent_requests: 2
+  inference_timeout_sec: 600
+  warmup_on_load: true
+  adaptive_concurrency_enabled: true
+
+memory:
+  max_memory_percent: 85
+  auto_evict_lru: true
+  load_shedding_percent: 95
+
+logging:
+  level: "INFO"
+  format: "structured"
+  file: "~/.opta-lmx/logs/opta-lmx-stable.log"
+
+security:
+  profile: "lan"
+  admin_key: "replace-with-stable-admin-key"
+  inference_api_key: "replace-with-stable-inference-key"

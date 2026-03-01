@@ -19,7 +19,7 @@ interface ModelPickerProps {
  *
  * Shows loaded models with metadata: quantization badge, context length,
  * and VRAM usage. Tooltip on each option shows the full model path/ID.
- * Empty state links to dashboard. Loading state shows skeleton.
+ * Empty state shows guidance while no runtime models are loaded.
  */
 export function ModelPicker({
   models,

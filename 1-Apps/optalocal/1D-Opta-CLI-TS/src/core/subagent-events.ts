@@ -94,4 +94,4 @@ export const PHASE_EMOJI: Record<SubAgentPhase, string> = {
   cancelled: '🚫',
 };
 
-export const THINKING_FRAMES = ['🧠', '💭', '🤔', '💡'];
+export const THINKING_FRAMES = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];

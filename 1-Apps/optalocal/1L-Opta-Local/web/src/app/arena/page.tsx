@@ -399,7 +399,7 @@ function ModelSelector({
     return (
       <div className="glass-subtle rounded-xl p-4 text-center">
         <p className="text-sm text-text-secondary">
-          No models loaded. Load at least 2 models from the dashboard to use
+          No models loaded. Load at least 2 models from the Models page to use
           Arena mode.
         </p>
       </div>
@@ -474,7 +474,7 @@ function EmptyState({
       </h2>
       <p className="text-text-secondary max-w-md mb-4">
         {!hasEnoughModels
-          ? 'Load at least 2 models to start comparing. Head to the dashboard to load models.'
+          ? 'Load at least 2 models to start comparing. Head to Models to load runtime models.'
           : !hasSelectedModels
             ? 'Select at least 2 models above, then enter a prompt to see them compete.'
             : 'Enter a prompt below to send it to all selected models simultaneously.'}

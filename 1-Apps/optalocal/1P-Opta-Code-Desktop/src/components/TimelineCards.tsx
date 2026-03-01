@@ -9,6 +9,12 @@ import {
   Zap,
 } from "lucide-react";
 import { MarkdownMessage } from "./MarkdownMessage";
+import {
+  deriveBrowserVisualState,
+  isBrowserToolName,
+  type BrowserConnectionState,
+  type BrowserVisualSummary,
+} from "../lib/browserVisualState";
 import type { PermissionRequest, TimelineItem, TurnStats } from "../types";
 
 interface TimelineCardsProps {
@@ -17,6 +23,8 @@ interface TimelineCardsProps {
   items: TimelineItem[];
   isStreaming?: boolean;
   pendingPermissions?: PermissionRequest[];
+  connectionState?: BrowserConnectionState;
+  browserVisualState?: BrowserVisualSummary;
   onResolvePermission?: (requestId: string, decision: "allow" | "deny") => void;
 }
 
@@ -26,10 +34,23 @@ export function TimelineCards({
   items,
   isStreaming = false,
   pendingPermissions = [],
+  connectionState = "connected",
+  browserVisualState,
   onResolvePermission,
 }: TimelineCardsProps) {
   const feedRef = useRef<HTMLDivElement | null>(null);
   const planState = useMemo(() => detectPlanState(items), [items]);
+  const browserActivity = useMemo(
+    () =>
+      browserVisualState ??
+      deriveBrowserVisualState({
+        connectionState,
+        isStreaming,
+        pendingPermissions,
+        timelineItems: items,
+      }),
+    [browserVisualState, connectionState, isStreaming, pendingPermissions, items],
+  );
 
   useEffect(() => {
     const feed = feedRef.current;
@@ -57,6 +78,12 @@ export function TimelineCards({
             {planState === "drift" ? "Plan state: drift risk" : "Plan state: up to date"}
           </p>
         ) : null}
+        <p
+          className={`browser-activity-badge browser-activity-${browserActivity.state}`}
+          aria-label={`Browser activity: ${browserActivity.activityText}`}
+        >
+          Browser activity: {browserActivity.activityText}
+        </p>
       </header>
 
       {pendingPermissions.length > 0 && (
@@ -77,7 +104,9 @@ export function TimelineCards({
         ) : (
           items.map((item) => {
             if (item.kind === "thinking") return <ThinkingCard key={item.id} item={item} />;
-            if (item.kind === "tool") return <ToolCard key={item.id} item={item} />;
+            if (item.kind === "tool") {
+              return <ToolCard key={item.id} item={item} />;
+            }
             if (item.kind === "system") return <SystemCard key={item.id} item={item} />;
             if (item.kind === "assistant") return <AssistantCard key={item.id} item={item} />;
             return <GenericCard key={item.id} item={item} />;
@@ -118,9 +147,12 @@ function ToolCard({ item }: { item: TimelineItem }) {
   const [expanded, setExpanded] = useState(false);
   const hasBody = Boolean(item.body);
   const isResult = item.isToolResult === true;
+  const isBrowserTool = isBrowserToolName(item.title);
 
   return (
-    <article className={`timeline-card kind-tool ${isResult ? "tool-result" : "tool-call"}`}>
+    <article
+      className={`timeline-card kind-tool ${isResult ? "tool-result" : "tool-call"}${isBrowserTool ? " tool-browser" : ""}`}
+    >
       <button
         type="button"
         className={`tool-header${hasBody ? "" : " tool-header--static"}`}
@@ -129,6 +161,9 @@ function ToolCard({ item }: { item: TimelineItem }) {
       >
         <Terminal size={12} aria-hidden="true" className="tool-icon" />
         <span className="tool-name">{item.title}</span>
+        {isBrowserTool && (
+          <span className="tool-badge tool-browser-badge">browser</span>
+        )}
         {isResult && <span className="tool-badge">result</span>}
         <span className="timeline-meta tool-time">
           {item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}

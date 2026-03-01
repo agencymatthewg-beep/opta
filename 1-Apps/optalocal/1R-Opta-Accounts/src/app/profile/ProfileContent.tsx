@@ -8,23 +8,51 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/supabase/auth-actions";
 import { OptaRing } from "@/components/OptaRing";
+import { ActiveDevicesPanel } from "@/components/profile/ActiveDevicesPanel";
 import { SecurityApiHooks } from "@/components/profile/SecurityApiHooks";
 
 interface ProfileContentProps {
   user: User;
 }
 
-const OPTA_APPS = [
+const OPTA_LOCAL_APPS = [
   {
-    name: "Opta Local",
-    url: "https://lmx.optalocal.com",
-    desc: "LMX Dashboard",
+    name: "Opta CLI",
+    url: "https://help.optalocal.com/docs/cli",
+    desc: "Terminal-first control surface",
   },
-  { name: "Opta Init", url: "https://init.optalocal.com", desc: "Setup Guide" },
   {
-    name: "Opta Life",
-    url: "https://life.opta.app",
-    desc: "Life Optimization",
+    name: "Opta Code Desktop",
+    url: "https://help.optalocal.com/docs/code-desktop",
+    desc: "Desktop app (macOS + Windows)",
+  },
+  {
+    name: "Opta LMX + Dashboard",
+    url: "https://lmx.optalocal.com",
+    desc: "Local inference engine + dashboard",
+  },
+];
+
+const OPTA_MANAGEMENT_WEBSITES = [
+  {
+    name: "OptaLocal.com",
+    url: "https://optalocal.com",
+    desc: "Main website and ecosystem home",
+  },
+  {
+    name: "Opta Status",
+    url: "https://status.optalocal.com",
+    desc: "System status and uptime",
+  },
+  {
+    name: "Opta Help",
+    url: "https://help.optalocal.com",
+    desc: "Documentation and support",
+  },
+  {
+    name: "Opta Accounts",
+    url: "https://accounts.optalocal.com",
+    desc: "Identity and session management",
   },
 ];
 
@@ -140,13 +168,13 @@ export function ProfileContent({ user }: ProfileContentProps) {
           />
         </Link>
 
-        {/* Opta Apps */}
+        {/* Opta Local Apps */}
         <div className="glass rounded-2xl p-5 mb-4">
           <h2 className="text-sm font-medium text-opta-text-secondary mb-3">
-            Your Opta Apps
+            Opta Local Apps
           </h2>
           <div className="space-y-2">
-            {OPTA_APPS.map((app) => (
+            {OPTA_LOCAL_APPS.map((app) => (
               <a
                 key={app.name}
                 href={app.url}
@@ -163,13 +191,44 @@ export function ProfileContent({ user }: ProfileContentProps) {
                 </div>
                 <ExternalLink
                   size={14}
-                  className="text-opta-text-muted group-hover:text-opta-primary transition-colors"
+                  className="text-opta-text-muted group-hover:text-opta-primary transition-colors flex-shrink-0 ml-4"
                 />
               </a>
             ))}
           </div>
         </div>
 
+        {/* Opta Management Websites */}
+        <div className="glass rounded-2xl p-5 mb-4">
+          <h2 className="text-sm font-medium text-opta-text-secondary mb-3">
+            Opta Management Websites
+          </h2>
+          <div className="space-y-2">
+            {OPTA_MANAGEMENT_WEBSITES.map((app) => (
+              <a
+                key={app.name}
+                href={app.url}
+                className={cn(
+                  "flex items-center justify-between px-3 py-2.5 rounded-lg",
+                  "hover:bg-white/[0.03] transition-colors group",
+                )}
+              >
+                <div>
+                  <p className="text-sm font-medium text-opta-text-primary">
+                    {app.name}
+                  </p>
+                  <p className="text-xs text-opta-text-muted">{app.desc}</p>
+                </div>
+                <ExternalLink
+                  size={14}
+                  className="text-opta-text-muted group-hover:text-opta-primary transition-colors flex-shrink-0 ml-4"
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+
+        <ActiveDevicesPanel />
         <SecurityApiHooks />
 
         {/* Sign Out */}

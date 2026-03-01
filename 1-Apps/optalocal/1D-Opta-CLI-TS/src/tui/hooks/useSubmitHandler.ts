@@ -218,7 +218,9 @@ export function useSubmitHandler(options: UseSubmitHandlerOptions): UseSubmitHan
 
       try {
         const { execa } = await import('execa');
-        const proc = await execa('sh', ['-c', cmd], {
+        const { shellArgs } = await import('../../platform/index.js');
+        const [shell, shellFlag] = shellArgs();
+        const proc = await execa(shell, [shellFlag, cmd], {
           cwd: process.cwd(),
           timeout: 30000,
           reject: false,

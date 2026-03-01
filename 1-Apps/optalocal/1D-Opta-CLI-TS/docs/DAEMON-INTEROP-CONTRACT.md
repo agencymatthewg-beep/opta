@@ -172,6 +172,95 @@ Resolve a tool permission request.
 
 ---
 
+### `GET /v3/operations`
+
+Lists canonical non-session daemon operations (CLI capability families exposed via typed endpoints).
+
+**Response:**
+```json
+{
+  "operations": [
+    {
+      "id": "doctor",
+      "title": "Doctor",
+      "description": "Run daemon/CLI environment diagnostics.",
+      "safety": "read"
+    }
+  ]
+}
+```
+
+---
+
+### `POST /v3/operations/:id`
+
+Execute a typed daemon operation.
+
+**Request body:**
+```json
+{
+  "input": { },
+  "confirmDangerous": false
+}
+```
+
+- `input`: operation-specific validated payload.
+- `confirmDangerous`: required for operations with `safety: "dangerous"`.
+- If `policy.runtimeEnforcement.enabled=true`, dangerous + high-risk write operations are pre-checked via `policy.runtimeEnforcement.endpoint` (`/api/capabilities/evaluate`) before execution.
+  - Timeout: `policy.runtimeEnforcement.timeoutMs`
+  - Failure mode: `policy.runtimeEnforcement.failOpen` (`true` allow on evaluator failure, `false` deny)
+
+**Success response:**
+```json
+{
+  "ok": true,
+  "id": "env.list",
+  "safety": "read",
+  "result": { "...": "operation output" }
+}
+```
+
+**Error response:**
+```json
+{
+  "ok": false,
+  "id": "benchmark",
+  "safety": "dangerous",
+  "error": {
+    "code": "dangerous_confirmation_required",
+    "message": "Operation \"benchmark\" requires confirmDangerous=true."
+  }
+}
+```
+
+---
+
+### Canonical Operation Taxonomy
+
+| Operation ID | Safety | Purpose |
+|---|---|---|
+| `doctor` | `read` | Run environment diagnostics |
+| `env.list` | `read` | List environment profiles |
+| `env.show` | `read` | Show a named/active environment profile |
+| `env.save` | `write` | Save an environment profile |
+| `env.use` | `write` | Activate an environment profile |
+| `env.delete` | `write` | Delete an environment profile |
+| `mcp.list` | `read` | List MCP server configurations |
+| `mcp.add` | `write` | Add an MCP server |
+| `mcp.add-playwright` | `write` | Add a Playwright MCP server |
+| `mcp.remove` | `write` | Remove an MCP server |
+| `mcp.test` | `dangerous` | Connect to and probe an MCP server |
+| `embed` | `read` | Create embeddings via LMX |
+| `rerank` | `read` | Rerank document set via LMX |
+| `benchmark` | `dangerous` | Generate benchmark suite artifacts |
+| `keychain.status` | `read` | Inspect keychain/key presence |
+| `keychain.set-anthropic` | `write` | Store Anthropic key |
+| `keychain.set-lmx` | `write` | Store LMX key |
+| `keychain.delete-anthropic` | `write` | Delete Anthropic key |
+| `keychain.delete-lmx` | `write` | Delete LMX key |
+
+---
+
 ### LMX Routes (proxied to Opta LMX server)
 
 | Method | Path | Description |

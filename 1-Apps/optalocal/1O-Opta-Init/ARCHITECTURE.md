@@ -18,20 +18,23 @@ Browser renders page (no hydration needed for content)
 Framer Motion mounts spring animations client-side
         |
 User clicks download -> GitHub Releases direct link
-User clicks Open Dashboard -> https://lmx.optalocal.com
+User clicks Open Web Dashboard -> https://lmx.optalocal.com
+User clicks Manage Account -> https://accounts.optalocal.com
 ```
 
 ## Page Structure (Single Page)
 
 ```
 / (page.tsx)
-  ├── <Header />            — Logo, nav anchors (Downloads, Setup, Usage)
-  ├── <Hero />              — Tagline, sub-copy, primary Download CTA
-  ├── <Downloads />         — App cards (CLI, LMX, Local) with platform buttons
-  ├── <SetupGuide />        — Tabbed: CLI tab / LMX tab / Opta Local tab
-  ├── <OptimalUsage />      — Tips, key commands, recommended workflows
-  ├── <DashboardCTA />      — "Open Dashboard" -> lmx.optalocal.com
-  └── <Footer />            — Links, legal, brand
+  ├── Header                — Logo + nav anchors (Features, CLI, Install, Download, Account)
+  ├── Hero                  — Core value prop + "Initialize System" CTA
+  ├── CLI Showcase          — Three productized visual terminal panels
+  ├── Install Section       — Bootstrap command + prerequisites
+  ├── Layered Architecture  — CLI / LMX / Web stack cards
+  ├── Features Grid         — Capability cards
+  ├── Downloads             — CLI available + LMX coming soon state
+  ├── Dashboard CTA         — "Open Web Dashboard" + "Manage Account"
+  └── Footer                — Brand + links
 ```
 
 ## Rendering Strategy
@@ -55,20 +58,27 @@ Framer Motion provides spring physics on the web. Pattern:
 
 ```
 npm run build
-  -> next build (TypeScript compile, Tailwind purge, next/font preload)
-  -> next export -> out/
-  -> Vercel deploys out/ to CDN
+  -> next build --webpack (TypeScript + static export)
+  -> out/
+  -> Vercel deploys output to CDN
   -> init.optalocal.com resolves
 
 Local dev:
   npm run dev -> localhost:3005
 ```
 
-## Dependencies (planned)
+## Caching Behavior
+
+- Static assets (`/_next/static/*`) are immutable (`max-age=31536000, immutable`)
+- HTML routes are revalidated (`max-age=0, must-revalidate`)
+- Rewritten non-asset routes also revalidate (`max-age=0, must-revalidate`)
+- This prevents stale UI variants from persisting behind CDN/browser caches
+
+## Dependencies (current)
 
 | Package | Purpose | Size impact |
 |---------|---------|------------|
-| next 15 | Framework | — |
+| next 16 | Framework | — |
 | framer-motion | Spring animations | ~45KB gzip |
 | clsx | Class merging | ~1KB |
 | tailwind-merge | Tailwind dedup | ~5KB |

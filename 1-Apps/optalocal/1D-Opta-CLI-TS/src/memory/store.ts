@@ -1,7 +1,7 @@
 import { mkdir, readFile, writeFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { nanoid } from 'nanoid';
+import { getSessionsDir } from '../platform/paths.js';
 import { z } from 'zod';
 
 // --- Types ---
@@ -83,7 +83,7 @@ export interface SessionSummary {
 // --- Paths ---
 
 function sessionsDir(): string {
-  return join(homedir(), '.config', 'opta', 'sessions');
+  return getSessionsDir();
 }
 
 function sessionPath(id: string): string {
@@ -95,7 +95,17 @@ function sessionPath(id: string): string {
 const INDEX_FILE = 'index.json';
 
 interface SessionIndex {
-  entries: Record<string, { title: string; model: string; tags: string[]; created: string; messageCount: number }>;
+  entries: Record<
+    string,
+    {
+      title: string;
+      model: string;
+      tags: string[];
+      created: string;
+      messageCount: number;
+      toolCallCount?: number;
+    }
+  >;
   updatedAt: string;
 }
 
@@ -130,14 +140,15 @@ export async function updateSessionIndex(id: string, session: Session): Promise<
     model: session.model,
     tags: session.tags,
     created: session.created,
-    messageCount: session.messages.length,
+    messageCount: session.messages.filter((m) => m.role !== 'system').length,
+    toolCallCount: session.toolCallCount ?? 0,
   };
   await saveIndex(index);
 }
 
 export async function removeFromIndex(id: string): Promise<void> {
   const index = await loadIndex();
-  delete index.entries[id];
+  Reflect.deleteProperty(index.entries, id);
   await saveIndex(index);
 }
 
@@ -187,25 +198,84 @@ export async function listSessions(): Promise<SessionSummary[]> {
     return [];
   }
 
-  const summaries: SessionSummary[] = [];
-  for (const file of files) {
-    if (!file.endsWith('.json') || file === INDEX_FILE) continue;
-    try {
-      const data = await readFile(join(dir, file), 'utf-8');
-      const session = parseSession(data);
-      if (!session) continue; // Skip corrupt/invalid session files
-      summaries.push({
-        id: session.id,
-        title: session.title || '(untitled)',
-        tags: session.tags ?? [],
-        model: session.model,
-        created: session.created,
-        messageCount: session.messages.filter((m) => m.role !== 'system').length,
-        toolCallCount: session.toolCallCount ?? 0,
-      });
-    } catch {
-      // Skip unreadable session files
+  const sessionFiles = files.filter((file) => file.endsWith('.json') && file !== INDEX_FILE);
+  const index = await loadIndex();
+  if (sessionFiles.length === 0) {
+    if (Object.keys(index.entries).length > 0) {
+      index.entries = {};
+      await saveIndex(index);
     }
+    return [];
+  }
+
+  const fileIds = new Set(sessionFiles.map((file) => file.slice(0, -5)));
+  const summaries: SessionSummary[] = [];
+  let indexMutated = false;
+
+  // Remove stale index entries that no longer have a backing session file.
+  for (const id of Object.keys(index.entries)) {
+    if (!fileIds.has(id)) {
+      Reflect.deleteProperty(index.entries, id);
+      indexMutated = true;
+    }
+  }
+
+  const missingIds: string[] = [];
+  for (const id of fileIds) {
+    const entry = index.entries[id];
+    if (entry) {
+      summaries.push({
+        id,
+        title: entry.title || '(untitled)',
+        tags: entry.tags ?? [],
+        model: entry.model,
+        created: entry.created,
+        messageCount: entry.messageCount ?? 0,
+        toolCallCount: entry.toolCallCount ?? 0,
+      });
+      continue;
+    }
+    missingIds.push(id);
+  }
+
+  // Backfill index entries from session files that are missing in index.
+  if (missingIds.length > 0) {
+    await Promise.all(
+      missingIds.map(async (id) => {
+        try {
+          const data = await readFile(sessionPath(id), 'utf-8');
+          const session = parseSession(data);
+          if (!session) return; // Skip corrupt/invalid session files
+
+          const messageCount = session.messages.filter((m) => m.role !== 'system').length;
+          index.entries[id] = {
+            title: session.title,
+            model: session.model,
+            tags: session.tags ?? [],
+            created: session.created,
+            messageCount,
+            toolCallCount: session.toolCallCount ?? 0,
+          };
+
+          summaries.push({
+            id: session.id,
+            title: session.title || '(untitled)',
+            tags: session.tags ?? [],
+            model: session.model,
+            created: session.created,
+            messageCount,
+            toolCallCount: session.toolCallCount ?? 0,
+          });
+          indexMutated = true;
+        } catch {
+          // Skip unreadable session files
+        }
+      })
+    );
+  }
+
+  if (indexMutated) {
+    await saveIndex(index);
   }
 
   return summaries.sort((a, b) => b.created.localeCompare(a.created));
@@ -232,30 +302,21 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
   const all = await listSessions();
   const q = query.toLowerCase();
 
-  // Load full session files in parallel for content search
-  const dir = sessionsDir();
-  let files: string[];
-  try {
-    files = await readdir(dir);
-  } catch {
-    files = [];
-  }
-
   // Build a map of session ID -> full session (for content matching)
   const sessionContentMap = new Map<string, Session>();
   await Promise.all(
-    files.filter(f => f.endsWith('.json') && f !== INDEX_FILE).map(async (file) => {
-      try {
-        const data = await readFile(join(dir, file), 'utf-8');
-        const session = parseSession(data);
-        if (session) sessionContentMap.set(session.id, session);
-      } catch {
-        // Skip unreadable files
-      }
-    })
+    all.map(async (summary) => {
+        try {
+          const data = await readFile(sessionPath(summary.id), 'utf-8');
+          const session = parseSession(data);
+          if (session) sessionContentMap.set(session.id, session);
+        } catch {
+          // Skip unreadable files
+        }
+      })
   );
 
-  const scored = all.map(summary => {
+  const scored = all.map((summary) => {
     let score = 0;
 
     // Exact ID prefix match (highest priority)
@@ -276,7 +337,7 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     }
 
     // Tag match
-    const tagMatch = summary.tags?.some(t => t.toLowerCase().includes(q));
+    const tagMatch = summary.tags?.some((t) => t.toLowerCase().includes(q));
     if (tagMatch) score += 60;
 
     // Model match
@@ -288,7 +349,7 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     const queryWords = q.split(/\s+/);
     const tagStr = (summary.tags ?? []).join(' ');
     const haystack = `${summary.id} ${summary.title} ${summary.model} ${tagStr}`.toLowerCase();
-    const allWordsMatch = queryWords.every(w => haystack.includes(w));
+    const allWordsMatch = queryWords.every((w) => haystack.includes(w));
     if (allWordsMatch && queryWords.length > 1) {
       score += 30;
     }
@@ -310,9 +371,9 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
   });
 
   return scored
-    .filter(s => s.score > 0)
+    .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
-    .map(s => s.session);
+    .map((s) => s.session);
 }
 
 // --- Tag & Rename ---
@@ -325,7 +386,7 @@ export async function tagSession(id: string, tags: string[]): Promise<void> {
 
 export async function untagSession(id: string, tags: string[]): Promise<void> {
   const session = await loadSession(id);
-  session.tags = session.tags.filter(t => !tags.includes(t));
+  session.tags = session.tags.filter((t) => !tags.includes(t));
   await saveSession(session);
 }
 

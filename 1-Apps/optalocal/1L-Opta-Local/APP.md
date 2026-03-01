@@ -1,9 +1,9 @@
 ---
 app: opta-local
-type: web-app+ios-app
-platforms: [web, ios]
-language: typescript, swift
-status: active-development-web-first
+type: web-app
+platforms: [web]
+language: typescript
+status: active-development
 version: 0.2
 depends_on: [opta-lmx, opta-cli-ts]
 depended_on_by: []
@@ -13,7 +13,7 @@ opis_mode: greenfield
 ---
 
 <!-- AI-SUMMARY (50 words max)
-Opta Local: Web & iOS thin-client apps for remote access to Opta LMX inference servers. LAN auto-discovery via Bonjour, WAN access via Cloudflare Tunnel. Live dashboard (VRAM, models, throughput), streaming chat with local models, session sync across devices. Premium glass UI. -->
+Opta Local: Web thin-client app for remote access to Opta LMX inference servers. WAN access via Cloudflare Tunnel, live dashboard (VRAM, models, throughput), streaming chat with local models, and session continuity from CLI to browser. Premium glass UI. -->
 
 # Opta Local — APP.md
 
@@ -24,10 +24,10 @@ Opta Local: Web & iOS thin-client apps for remote access to Opta LMX inference s
 | Field | Value |
 |-------|-------|
 | Name | Opta Local |
-| Type | Web App + iOS App |
-| Platforms | Web (Next.js 16), iOS (SwiftUI) |
-| Languages | TypeScript, Swift |
-| Status | Active Development (Web First) |
+| Type | Web App |
+| Platforms | Web (Next.js 16) |
+| Languages | TypeScript |
+| Status | Active Development |
 | Owner | Matthew Byrden / Opta Operations |
 | Domain | optamize.biz |
 
@@ -35,11 +35,11 @@ Opta Local: Web & iOS thin-client apps for remote access to Opta LMX inference s
 
 ### What It Does
 
-Web and iOS thin-client apps that connect to Opta LMX inference servers, providing:
+Web thin-client app that connects to Opta LMX inference servers, providing:
 - Real-time server monitoring (VRAM, models, throughput, temperature)
 - Streaming chat with local models from any network
 - Model management (load/unload/benchmark)
-- Session sync between CLI, Web, and iOS
+- Session sync between CLI and Web
 
 ### Problem It Solves
 
@@ -50,7 +50,7 @@ Managing local LLM inference requires SSH terminals, curl commands, and fragment
 - **Not a generic chat wrapper** — deeply integrated with Opta LMX's 40+ API endpoints
 - **Premium native experience** — Opta glass UI, spring physics, design system compliance
 - **Agent-capable** — not just chat, future CLI agent loop exposed to mobile
-- **Zero-config LAN** — Bonjour auto-discovery, QR code WAN pairing
+- **Fast setup** — manual LAN target + Cloudflare WAN endpoint
 - **Session continuity** — start on CLI, continue on phone, finish on web
 
 ### Does NOT Do
@@ -72,7 +72,7 @@ Matthew Byrden (primary) — owner of Mac Studio M3 Ultra running Opta LMX. Powe
 1. **Morning coffee check** — iPhone, see server status, continue yesterday's session
 2. **On the train** — Chat with local AI over Cloudflare Tunnel, zero cloud costs
 3. **Model hot-swap** — Switch DeepSeek to Qwen via web dashboard in 15 seconds
-4. **First-time setup** — Bonjour finds Mac Studio on LAN in <1 second
+4. **First-time setup** — connect to your Mac Studio LAN target or tunnel URL
 5. **CLI handoff** — Exit terminal session, resume on phone while walking
 
 ### Experience
@@ -83,7 +83,7 @@ Premium, glass-panel aesthetic. Feels like a cockpit for your AI server — not 
 
 | # | Capability | Acceptance Criteria |
 |---|-----------|-------------------|
-| 1 | **LAN Auto-Discovery** | Bonjour/mDNS finds LMX servers on same network within 2 seconds |
+| 1 | **LAN Connection** | Manual LAN endpoint setup with encrypted local persistence |
 | 2 | **Streaming Chat** | OpenAI-compatible `/v1/chat/completions` with streaming token display |
 | 3 | **Live Dashboard** | Real-time VRAM usage, loaded models, throughput via SSE |
 | 4 | **Model Management** | Load/unload models with one tap, VRAM estimation before load |
@@ -94,20 +94,20 @@ Premium, glass-panel aesthetic. Feels like a cockpit for your AI server — not 
 ### Philosophy
 
 - **Thin client** — all intelligence lives on the Mac Studio (LMX), clients just render
-- **Web first** — web app is the active delivery track; iOS is temporarily deferred
+- **Web-only** — this project is now web-only (iOS removed 2026-02-28)
 - **Premium UX** — Opta glass design system, never generic
 - **Zero-config** — LAN should just work, WAN should be wizard-guided
 
 ### Performance
 
 - Web: First Contentful Paint <1.5s, streaming latency <100ms on LAN
-- iOS: App launch to dashboard <2s, Bonjour discovery <1s
+- Web: Dashboard interactive load <2s on broadband
 - SSE connection established within 500ms of app open
 
 ### Quality
 
 - TypeScript strict mode, ESLint, Prettier
-- SwiftUI with strict concurrency
+- Next.js 16 + React 19 + TypeScript strict mode
 - All UI built using `/frontend-design` skill for consistency
 
 ## 6. Architecture Overview
@@ -125,7 +125,7 @@ iPhone / Browser (Anywhere)
 │        │             │       │
 │  ┌─────┴─────────────┴─────┐ │
 │  │  Connection Manager      │ │
-│  │  LAN: Bonjour / Manual   │ │
+│  │  LAN: Manual endpoint     │ │
 │  │  WAN: Cloudflare Tunnel  │ │
 │  └─────────────┬───────────┘ │
 └────────────────┼─────────────┘
@@ -143,7 +143,7 @@ iPhone / Browser (Anywhere)
 
 ### Data Flow
 
-1. Client discovers server (Bonjour LAN or Cloudflare Tunnel WAN)
+1. Client connects to server (LAN endpoint or Cloudflare Tunnel WAN)
 2. Client authenticates with admin key (stored in Keychain / localStorage)
 3. Dashboard subscribes to `/admin/events` SSE stream
 4. Chat sends to `/v1/chat/completions` with `stream: true`
@@ -171,7 +171,7 @@ iPhone / Browser (Anywhere)
 ### Coding
 
 - Web: Next.js 16 + React 19 + TypeScript strict + Tailwind CSS
-- iOS: SwiftUI + async/await + Observation framework
+- Web: Next.js 16 + React 19 + TypeScript
 - All UI work MUST use `/frontend-design` skill
 - Follow Opta design system: glass panels, violet accents, Sora font
 
@@ -184,21 +184,21 @@ iPhone / Browser (Anywhere)
 ### Testing
 
 - Web: Vitest for unit, Playwright for E2E
-- iOS: XCTest for unit, XCUITest for critical flows
+- Web: Vitest + Playwright for validation
 - Integration tests against LMX API (mock server for CI)
 
 ### Deployment
 
 - Web: Vercel (same as other Opta web apps)
-- iOS: TestFlight for beta, App Store for release
+- Web: Vercel deployment with preview + production channels
 
 ## 9. Current Phase
 
-**Web Stabilization (Active)** — Web app is being hardened for daily use and deployment (lint/typecheck/build, connection reliability, docs sync). iOS work is temporarily deferred until web quality gates are fully stable.
+**Web Stabilization (Active)** — Web app is being hardened for daily use and deployment (lint/typecheck/build, connection reliability, docs sync).
 
 ## 10. Open Questions
 
-- [ ] Should the web app work as a PWA for mobile Safari users who don't want the native iOS app?
+- [ ] Should the web app ship as installable PWA for mobile users?
 - [ ] Should session storage move from filesystem to LMX SQLite for API access?
 - [ ] What authentication model for WAN access beyond admin key? (JWT, TOTP, etc.)
 - [ ] Should Opta Local support multiple user accounts or remain single-user?

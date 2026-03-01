@@ -15,6 +15,10 @@ describe('/browser approvals slash path', () => {
   let testDir = '';
   let logs: string[] = [];
   const DAY_MS = 24 * 60 * 60 * 1000;
+  let getBrowserLiveHostStatusMock: ReturnType<typeof vi.fn>;
+  let startBrowserLiveHostMock: ReturnType<typeof vi.fn>;
+  let stopBrowserLiveHostMock: ReturnType<typeof vi.fn>;
+  let isPeekabooAvailableMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
@@ -28,6 +32,66 @@ describe('/browser approvals slash path', () => {
       logs.push(args.map(String).join(' '));
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    getBrowserLiveHostStatusMock = vi.fn().mockResolvedValue({
+      running: false,
+      host: '127.0.0.1',
+      safePorts: [],
+      scannedCandidateCount: 0,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      includePeekabooScreen: false,
+      screenActionsEnabled: false,
+      openSessionCount: 0,
+      slots: [],
+    });
+    startBrowserLiveHostMock = vi.fn().mockResolvedValue({
+      running: true,
+      host: '127.0.0.1',
+      controlPort: 46000,
+      safePorts: [46000, 46001, 46002, 46003, 46004, 46005],
+      scannedCandidateCount: 20,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      includePeekabooScreen: true,
+      screenActionsEnabled: true,
+      openSessionCount: 1,
+      slots: [
+        { slotIndex: 0, port: 46001, sessionId: 'sess-001', currentUrl: 'https://example.com' },
+        { slotIndex: 1, port: 46002 },
+        { slotIndex: 2, port: 46003 },
+        { slotIndex: 3, port: 46004 },
+        { slotIndex: 4, port: 46005 },
+      ],
+    });
+    stopBrowserLiveHostMock = vi.fn().mockResolvedValue({
+      running: false,
+      host: '127.0.0.1',
+      safePorts: [46000, 46001, 46002, 46003, 46004, 46005],
+      scannedCandidateCount: 20,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      includePeekabooScreen: false,
+      screenActionsEnabled: false,
+      openSessionCount: 0,
+      slots: [
+        { slotIndex: 0, port: 46001 },
+        { slotIndex: 1, port: 46002 },
+        { slotIndex: 2, port: 46003 },
+        { slotIndex: 3, port: 46004 },
+        { slotIndex: 4, port: 46005 },
+      ],
+    });
+    isPeekabooAvailableMock = vi.fn().mockResolvedValue(true);
+
+    vi.doMock('../../src/browser/live-host.js', () => ({
+      getBrowserLiveHostStatus: getBrowserLiveHostStatusMock,
+      startBrowserLiveHost: startBrowserLiveHostMock,
+      stopBrowserLiveHost: stopBrowserLiveHostMock,
+    }));
+    vi.doMock('../../src/browser/peekaboo.js', () => ({
+      isPeekabooAvailable: isPeekabooAvailableMock,
+    }));
 
     ({ dispatchSlashCommand } = await import('../../src/commands/slash/index.js'));
   });
@@ -496,5 +560,88 @@ describe('/browser approvals slash path', () => {
     const output = logs.join('\n');
     expect(output).toContain('Usage: /browser');
     expect(output).toContain('/browser trends 24 10');
+  });
+
+  it('prints host stopped status for /browser host status', async () => {
+    const result = await dispatchSlashCommand('/browser host status', makeCtx());
+    expect(result).toBe('handled');
+    expect(getBrowserLiveHostStatusMock).toHaveBeenCalledTimes(1);
+
+    const output = logs.join('\n');
+    expect(output).toContain('Browser live host is stopped.');
+  });
+
+  it('starts host with normalized range and peekaboo screen when requested', async () => {
+    const ctx = makeCtx();
+    ctx.config.computerControl.background.maxHostedBrowserSessions = 4;
+    const result = await dispatchSlashCommand(
+      '/browser host start --range 47000-46000 --screen peekaboo',
+      ctx,
+    );
+    expect(result).toBe('handled');
+    expect(isPeekabooAvailableMock).toHaveBeenCalledTimes(1);
+    expect(startBrowserLiveHostMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        maxSessionSlots: 4,
+        requiredPortCount: 6,
+        includePeekabooScreen: true,
+        portRangeStart: 46000,
+        portRangeEnd: 47000,
+      }),
+    );
+
+    const output = logs.join('\n');
+    expect(output).toContain('Browser live host running.');
+    expect(output).toContain('screen=http://127.0.0.1:46000/screen');
+  });
+
+  it('prints usage for invalid host flags and does not start host', async () => {
+    const invalidRange = await dispatchSlashCommand('/browser host start --range nope', makeCtx());
+    expect(invalidRange).toBe('handled');
+    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain('Usage: /browser');
+
+    logs = [];
+    const invalidScreen = await dispatchSlashCommand('/browser host start --screen=', makeCtx());
+    expect(invalidScreen).toBe('handled');
+    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain('Usage: /browser');
+  });
+
+  it('stops host via /browser host stop', async () => {
+    const result = await dispatchSlashCommand('/browser host stop', makeCtx());
+    expect(result).toBe('handled');
+    expect(stopBrowserLiveHostMock).toHaveBeenCalledTimes(1);
+    expect(logs.join('\n')).toContain('Browser live host is stopped.');
+  });
+
+  it('blocks peekaboo screen start when peekaboo is unavailable', async () => {
+    isPeekabooAvailableMock.mockResolvedValueOnce(false);
+    const result = await dispatchSlashCommand('/browser host start --screen peekaboo', makeCtx());
+    expect(result).toBe('handled');
+    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
+    const output = logs.join('\n');
+    expect(output).toContain('Peekaboo is required for screen mode.');
+  });
+
+  it('blocks host start when background hosting is disabled', async () => {
+    const ctx = makeCtx();
+    ctx.config.computerControl.background.enabled = false;
+
+    const result = await dispatchSlashCommand('/browser host start', ctx);
+    expect(result).toBe('handled');
+    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain('Background computer control is disabled.');
+  });
+
+  it('blocks screen mode when background screen streaming is disabled', async () => {
+    const ctx = makeCtx();
+    ctx.config.computerControl.background.allowScreenStreaming = false;
+
+    const result = await dispatchSlashCommand('/browser host start --screen peekaboo', ctx);
+    expect(result).toBe('handled');
+    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
+    expect(isPeekabooAvailableMock).not.toHaveBeenCalled();
+    expect(logs.join('\n')).toContain('Background screen streaming is disabled.');
   });
 });

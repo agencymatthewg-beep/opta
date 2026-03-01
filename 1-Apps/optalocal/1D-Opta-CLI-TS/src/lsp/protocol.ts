@@ -119,10 +119,7 @@ export function formatLocation(loc: Location, cwd: string): string {
   return `${rel}:${line}:${char}`;
 }
 
-export function formatLocations(
-  locs: Location[] | null | undefined,
-  cwd: string
-): string {
+export function formatLocations(locs: Location[] | null | undefined, cwd: string): string {
   if (!locs || locs.length === 0) return 'No results found.';
   return locs.map((loc) => formatLocation(loc, cwd)).join('\n');
 }
@@ -146,35 +143,46 @@ export function formatHoverContent(hover: unknown): string {
   ) {
     const c = contents as Record<string, unknown>;
     // MarkedString with language: { language, value }
+    const unknownToStr = (v: unknown): string =>
+      typeof v === 'string'
+        ? v
+        : typeof v === 'object' && v !== null
+          ? JSON.stringify(v)
+          : String(v as number | boolean | bigint | null | undefined);
     if ('language' in c && typeof c['language'] === 'string') {
-      return `\`\`\`${c['language']}\n${c['value']}\n\`\`\``;
+      return `\`\`\`${c['language']}\n${unknownToStr(c['value'])}\n\`\`\``;
     }
-    return String(c['value']);
+    return unknownToStr(c['value']);
   }
+
+  const unknownToStr = (v: unknown): string =>
+    typeof v === 'string'
+      ? v
+      : typeof v === 'object' && v !== null
+        ? JSON.stringify(v)
+        : String(v as number | boolean | bigint | null | undefined);
 
   // Array of MarkedStrings
   if (Array.isArray(contents)) {
     return contents
-      .map((item) => {
+      .map((item: unknown) => {
         if (typeof item === 'string') return item;
         if (typeof item === 'object' && item && 'language' in item) {
-          return `\`\`\`${item.language}\n${item.value}\n\`\`\``;
+          const i = item as Record<string, unknown>;
+          return `\`\`\`${unknownToStr(i['language'])}\n${unknownToStr(i['value'])}\n\`\`\``;
         }
         if (typeof item === 'object' && item && 'value' in item) {
-          return String(item.value);
+          return unknownToStr((item as Record<string, unknown>)['value']);
         }
-        return String(item);
+        return unknownToStr(item);
       })
       .join('\n\n');
   }
 
-  return String(contents);
+  return unknownToStr(contents);
 }
 
-export function formatSymbolInformation(
-  symbols: SymbolInformation[],
-  cwd: string
-): string {
+export function formatSymbolInformation(symbols: SymbolInformation[], cwd: string): string {
   if (!symbols || symbols.length === 0) return 'No symbols found.';
 
   return symbols
@@ -188,10 +196,7 @@ export function formatSymbolInformation(
     .join('\n');
 }
 
-export function formatDocumentSymbols(
-  symbols: DocumentSymbol[],
-  indent: number = 0
-): string {
+export function formatDocumentSymbols(symbols: DocumentSymbol[], indent: number = 0): string {
   if (!symbols || symbols.length === 0) {
     return indent === 0 ? 'No symbols found.' : '';
   }
@@ -212,10 +217,7 @@ export function formatDocumentSymbols(
   return lines.join('\n');
 }
 
-export function formatWorkspaceEdit(
-  edit: WorkspaceEdit | null | undefined,
-  cwd: string
-): string {
+export function formatWorkspaceEdit(edit: WorkspaceEdit | null | undefined, cwd: string): string {
   if (!edit || !edit.changes) return 'No changes.';
 
   const entries = Object.entries(edit.changes);

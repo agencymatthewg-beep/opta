@@ -7,12 +7,12 @@ const MOTION_FRAME_MS = 140;
 
 const BROWSER_STATE_FRAMES = {
   offline: ['◌', '○', '◌', '○'],
-  paused: ['▮', '▮', '▯', '▮'],
+  paused: ['▯', '▮', '▯', '▮'],
   blocked: ['◆', '◇', '◆', '◇'],
-  active: ['⠋', '⠙', '⠹', '⠸', '⠴', '⠦', '⠧', '⠇', '⠏'],
-  busy: ['⠋', '⠙', '⠹', '⠸', '⠴', '⠦', '⠧', '⠇', '⠏'],
-  healthy: ['◍', '◉', '◎', '◉'],
-  degraded: ['◔', '◑', '◕', '◑'],
+  active: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
+  busy: ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'],
+  healthy: ['◎', '◉', '●', '◉'],
+  degraded: ['◐', '◓', '◑', '◒'],
 } as const;
 
 export type BrowserVisualStateKind = keyof typeof BROWSER_STATE_FRAMES;

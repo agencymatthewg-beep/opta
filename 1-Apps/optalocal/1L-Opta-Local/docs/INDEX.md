@@ -4,7 +4,7 @@
 
 ---
 
-## Read Order (Multi-Platform)
+## Read Order (Web Only)
 
 ### Working on Web:
 ```
@@ -18,17 +18,7 @@
 8. docs/DECISIONS.md   ← Don't re-open settled decisions
 ```
 
-### Working on iOS:
-```
-1. APP.md              ← Understand what Opta Local is
-2. SHARED.md           ← Backend contracts, design language, parity matrix
-3. ios/PLATFORM.md     ← iOS feature manifest and UX philosophy
-4. ios/CLAUDE.md       ← iOS-specific coding rules (MUST READ)
-5. ios/ARCHITECTURE.md ← iOS system design
-6. docs/GUARDRAILS.md  ← Global guardrails + ios/docs/GUARDRAILS.md
-7. docs/KNOWLEDGE.md   ← Available resources before building
-8. docs/DECISIONS.md   ← Don't re-open settled decisions
-```
+> iOS app removed on 2026-02-28 by request. This project is now web-only.
 
 ### Working on shared code/backend:
 ```
@@ -53,13 +43,6 @@
 | `web/docs/ROADMAP.md` | Web development phases | Weekly |
 | `web/docs/GUARDRAILS.md` | Web-specific hard rules | Rarely |
 | `web/docs/FEATURES.md` | Web feature list with status | Per feature change |
-| **iOS Platform** | | |
-| `ios/PLATFORM.md` | iOS feature manifest, UX philosophy | Per phase |
-| `ios/CLAUDE.md` | iOS coding rules, patterns, don'ts | Occasionally |
-| `ios/ARCHITECTURE.md` | iOS system design, components, data flow | Per major redesign |
-| `ios/docs/ROADMAP.md` | iOS development phases | Weekly |
-| `ios/docs/GUARDRAILS.md` | iOS-specific hard rules | Rarely |
-| `ios/docs/FEATURES.md` | iOS feature list with status | Per feature change |
 | **Shared Docs** | | |
 | `docs/INDEX.md` | This file — documentation map | When files added/removed |
 | `docs/DECISIONS.md` | Resolved decisions with reasoning (append-only) | Per decision |
@@ -80,12 +63,6 @@
 | web/docs/ROADMAP.md | 2026-02-20 | Matthew/Codex |
 | web/docs/GUARDRAILS.md | 2026-02-18 | OPIS v2.0 |
 | web/docs/FEATURES.md | 2026-02-20 | Matthew/Codex |
-| ios/PLATFORM.md | 2026-02-18 | OPIS v2.0 |
-| ios/CLAUDE.md | 2026-02-18 | OPIS v2.0 |
-| ios/ARCHITECTURE.md | 2026-02-18 | OPIS v2.0 |
-| ios/docs/ROADMAP.md | 2026-02-20 | Matthew/Codex |
-| ios/docs/GUARDRAILS.md | 2026-02-18 | OPIS v2.0 |
-| ios/docs/FEATURES.md | 2026-02-18 | OPIS v2.0 |
 | docs/INDEX.md | 2026-02-18 | OPIS v2.0 |
 | docs/DECISIONS.md | 2026-02-20 | Matthew/Codex |
 | docs/ECOSYSTEM.md | 2026-02-18 | OPIS v2.0 |

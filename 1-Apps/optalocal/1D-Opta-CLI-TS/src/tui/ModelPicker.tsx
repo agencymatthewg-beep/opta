@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { errorMessage } from '../utils/errors.js';
+import { TUI_COLORS } from './palette.js';
 
 const MODEL_INVENTORY_TIMEOUT_MS = 60_000;
 const MODEL_CATALOG_TIMEOUT_MS = 20_000;
@@ -280,31 +281,31 @@ export function ModelPicker({
   return (
     <Box
       flexDirection="column"
-      borderStyle="round"
-      borderColor="magenta"
+      borderStyle="single"
+      borderColor={TUI_COLORS.borderSoft}
       paddingX={2}
       paddingY={1}
       width="100%"
     >
       <Box marginBottom={1}>
-        <Text bold color="magenta">Model Picker</Text>
-        <Text dimColor>  (Enter to switch, Esc/←/Backspace to close)</Text>
+        <Text bold color={TUI_COLORS.accentSoft}>Model Picker</Text>
+        <Text color={TUI_COLORS.dim}>  (Enter to switch, Esc/←/Backspace to close)</Text>
       </Box>
       <Box marginBottom={1}>
-        <Text dimColor>Loaded first, then on-disk. Selecting an on-disk model will auto-load it.</Text>
+        <Text color={TUI_COLORS.dim}>Loaded first, then on-disk. Selecting an on-disk model will auto-load it.</Text>
       </Box>
 
-      {loading && <Text dimColor>Loading model inventory...</Text>}
-      {switching && <Text color="cyan">Switching model…</Text>}
-      {error && <Text color="red">Failed to load models: {error}</Text>}
+      {loading && <Text color={TUI_COLORS.dim}>Loading model inventory...</Text>}
+      {switching && <Text color={TUI_COLORS.info}>Switching model…</Text>}
+      {error && <Text color={TUI_COLORS.danger}>Failed to load models: {error}</Text>}
 
       {!loading && !error && models.length === 0 && (
-        <Text dimColor>No models available</Text>
+        <Text color={TUI_COLORS.dim}>No models available</Text>
       )}
 
       {!loading && !error && visibleRange.start > 0 && (
         <Box marginBottom={1}>
-          <Text dimColor>  … {visibleRange.start} above …</Text>
+          <Text color={TUI_COLORS.dim}>  … {visibleRange.start} above …</Text>
         </Box>
       )}
 
@@ -313,11 +314,11 @@ export function ModelPicker({
         const focused = idx === selectedIdx;
         const marker = focused ? '▶ ' : '  ';
         const stateDot = model.loaded ? '●' : '○';
-        const stateColor: 'green' | 'cyan' | 'gray' = model.loaded
-          ? 'green'
+        const stateColor = model.loaded
+          ? TUI_COLORS.success
           : model.source === 'disk'
-            ? 'cyan'
-            : 'gray';
+            ? TUI_COLORS.info
+            : TUI_COLORS.dim;
         const stateText = model.loaded
           ? 'loaded'
           : model.source === 'disk'
@@ -326,19 +327,19 @@ export function ModelPicker({
 
         return (
           <Box key={`${model.source}:${model.id}`}>
-            <Text color={focused ? 'magenta' : undefined}>{marker}</Text>
+            <Text color={focused ? TUI_COLORS.prompt : undefined}>{marker}</Text>
             <Text color={stateColor}>{stateDot}</Text>
             <Text> </Text>
-            <Text color={focused ? 'cyan' : undefined}>{model.id}</Text>
-            <Text dimColor>  {stateText}</Text>
-            {model.active && <Text color="green">  (current)</Text>}
+            <Text color={focused ? TUI_COLORS.prompt : undefined}>{model.id}</Text>
+            <Text color={TUI_COLORS.dim}>  {stateText}</Text>
+            {model.active && <Text color={TUI_COLORS.success}>  (current)</Text>}
           </Box>
         );
       })}
 
       {!loading && !error && visibleRange.end < models.length && (
         <Box marginTop={1}>
-          <Text dimColor>  … {models.length - visibleRange.end} below …</Text>
+          <Text color={TUI_COLORS.dim}>  … {models.length - visibleRange.end} below …</Text>
         </Box>
       )}
     </Box>

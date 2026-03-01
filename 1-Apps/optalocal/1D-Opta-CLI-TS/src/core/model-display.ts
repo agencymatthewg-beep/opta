@@ -40,7 +40,7 @@ const ORG_ABBREVS: Record<string, string> = {
 };
 
 function getOrgAbbrev(org: string): string {
-  if (ORG_ABBREVS[org]) return ORG_ABBREVS[org]!;
+  if (ORG_ABBREVS[org]) return ORG_ABBREVS[org];
   // Fallback: first 3 uppercase chars of org
   return org.replace(/[^a-zA-Z]/g, '').slice(0, 3).toUpperCase() || 'UNK';
 }

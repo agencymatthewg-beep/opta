@@ -21,10 +21,7 @@ import {
 
 // ── Predictor ───────────────────────────────────────────────────────
 
-export async function showPredictorStats(
-  client: LmxClient,
-  opts?: ModelsOptions,
-): Promise<void> {
+export async function showPredictorStats(client: LmxClient, opts?: ModelsOptions): Promise<void> {
   const spinner = opts?.json ? null : await (await import('../../ui/spinner.js')).createSpinner();
   spinner?.start('Fetching predictor stats...');
 
@@ -39,7 +36,9 @@ export async function showPredictorStats(
 
     const predictedNext = (stats['predicted_next'] ?? stats['predictedNext']) as string | undefined;
     console.log(chalk.bold('Predictor Stats\n'));
-    console.log(`  Predicted next: ${predictedNext ? chalk.cyan(predictedNext) : chalk.dim('(none)')}`);
+    console.log(
+      `  Predicted next: ${predictedNext ? chalk.cyan(predictedNext) : chalk.dim('(none)')}`
+    );
     for (const [key, value] of Object.entries(stats)) {
       if (key === 'predicted_next' || key === 'predictedNext') continue;
       if (typeof value === 'number' || typeof value === 'string' || typeof value === 'boolean') {
@@ -54,10 +53,7 @@ export async function showPredictorStats(
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
-export async function showHelpersHealth(
-  client: LmxClient,
-  opts?: ModelsOptions,
-): Promise<void> {
+export async function showHelpersHealth(client: LmxClient, opts?: ModelsOptions): Promise<void> {
   const spinner = opts?.json ? null : await (await import('../../ui/spinner.js')).createSpinner();
   spinner?.start('Checking helper-node health...');
 
@@ -85,13 +81,15 @@ export async function showHelpersHealth(
     for (const [name, stats] of Object.entries(helpers)) {
       const healthy = Boolean(stats.healthy);
       const live = liveChecks[name];
-      const avgLatencyMs = typeof stats.avg_latency_ms === 'number'
-        ? `${stats.avg_latency_ms.toFixed(0)}ms`
-        : null;
-      const successRate = typeof stats.success_rate === 'number'
-        ? `${(stats.success_rate * 100).toFixed(1)}%`
-        : null;
-      const meta = [avgLatencyMs, successRate, typeof live === 'boolean' ? `live:${live ? 'pass' : 'fail'}` : null]
+      const avgLatencyMs =
+        typeof stats.avg_latency_ms === 'number' ? `${stats.avg_latency_ms.toFixed(0)}ms` : null;
+      const successRate =
+        typeof stats.success_rate === 'number' ? `${(stats.success_rate * 100).toFixed(1)}%` : null;
+      const meta = [
+        avgLatencyMs,
+        successRate,
+        typeof live === 'boolean' ? `live:${live ? 'pass' : 'fail'}` : null,
+      ]
         .filter(Boolean)
         .join(' · ');
       const badge = healthy ? chalk.green('healthy') : chalk.red('unhealthy');
@@ -108,7 +106,7 @@ export async function showHelpersHealth(
 export async function runQuantizeCommand(
   args: string | undefined,
   client: LmxClient,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<void> {
   const tokens = parseShellLikeArgs(args ?? '');
   const action = (tokens[0] ?? 'list').toLowerCase();
@@ -126,12 +124,9 @@ export async function runQuantizeCommand(
     }
     for (const job of result.jobs.slice(0, 30)) {
       const id = job.job_id ?? 'unknown';
-      const status = String(job.status ?? 'unknown');
-      const statusColor = status === 'completed'
-        ? chalk.green
-        : status === 'failed'
-          ? chalk.red
-          : chalk.yellow;
+      const status = job.status ?? 'unknown';
+      const statusColor =
+        status === 'completed' ? chalk.green : status === 'failed' ? chalk.red : chalk.yellow;
       console.log(`  ${id}  ${statusColor(status)}  ${chalk.dim(job.source_model ?? '')}`);
     }
     return;
@@ -140,7 +135,11 @@ export async function runQuantizeCommand(
   if (action === 'status') {
     const jobId = tokens[1];
     if (!jobId) {
-      console.error(chalk.red('✗') + ' Missing job id\n\n' + chalk.dim('Usage: opta models quantize status <job-id>'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing job id\n\n' +
+          chalk.dim('Usage: opta models quantize status <job-id>')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     const status = await client.quantizeStatus(jobId, FAST_DISCOVERY_REQUEST_OPTS);
@@ -156,7 +155,8 @@ export async function runQuantizeCommand(
     if (typeof status.group_size === 'number') console.log(`  Group:    ${status.group_size}`);
     if (status.mode) console.log(`  Mode:     ${status.mode}`);
     if (status.output_path) console.log(`  Output:   ${status.output_path}`);
-    if (typeof status.duration_sec === 'number') console.log(`  Duration: ${status.duration_sec.toFixed(1)}s`);
+    if (typeof status.duration_sec === 'number')
+      console.log(`  Duration: ${status.duration_sec.toFixed(1)}s`);
     if (status.error) console.log(chalk.red(`  Error:    ${status.error}`));
     return;
   }
@@ -165,8 +165,11 @@ export async function runQuantizeCommand(
     const sourceModel = tokens[1];
     if (!sourceModel) {
       console.error(
-        chalk.red('✗') + ' Missing source model\n\n' +
-        chalk.dim('Usage: opta models quantize start <model-id> [--bits 4|8] [--group-size <n>] [--mode affine|symmetric] [--output <path>]'),
+        chalk.red('✗') +
+          ' Missing source model\n\n' +
+          chalk.dim(
+            'Usage: opta models quantize start <model-id> [--bits 4|8] [--group-size <n>] [--mode affine|symmetric] [--output <path>]'
+          )
       );
       throw new ExitError(EXIT.MISUSE);
     }
@@ -245,7 +248,9 @@ export async function runQuantizeCommand(
       if (opts?.json) {
         console.log(JSON.stringify(started, null, 2));
       } else {
-        console.log(chalk.dim(`  Track with ${chalk.reset(`opta models quantize status ${started.job_id}`)}`));
+        console.log(
+          chalk.dim(`  Track with ${chalk.reset(`opta models quantize status ${started.job_id}`)}`)
+        );
       }
       return;
     } catch (err) {
@@ -255,8 +260,11 @@ export async function runQuantizeCommand(
   }
 
   console.error(
-    chalk.red('✗') + ` Unknown quantize action: ${action}\n\n` +
-    chalk.dim('Usage: opta models quantize [list|status <job-id>|start <model-id> [--bits 4|8] [--group-size <n>] [--mode affine|symmetric] [--output <path>]]'),
+    chalk.red('✗') +
+      ` Unknown quantize action: ${action}\n\n` +
+      chalk.dim(
+        'Usage: opta models quantize [list|status <job-id>|start <model-id> [--bits 4|8] [--group-size <n>] [--mode affine|symmetric] [--output <path>]]'
+      )
   );
   throw new ExitError(EXIT.MISUSE);
 }
@@ -272,7 +280,7 @@ export async function runAgentsCommand(
     fallbackHosts?: string[];
     port: number;
     adminKey?: string;
-  },
+  }
 ): Promise<void> {
   const tokens = parseShellLikeArgs(args ?? '');
   const action = (tokens[0] ?? 'list').toLowerCase();
@@ -334,16 +342,20 @@ export async function runAgentsCommand(
       return;
     }
     for (const run of runs.slice(0, 30)) {
-      const statusText = String(run.status ?? 'unknown');
-      const color = statusText === 'completed'
-        ? chalk.green
-        : statusText === 'failed' || statusText === 'cancelled'
-          ? chalk.red
-          : chalk.yellow;
+      const statusText = run.status ?? 'unknown';
+      const color =
+        statusText === 'completed'
+          ? chalk.green
+          : statusText === 'failed' || statusText === 'cancelled'
+            ? chalk.red
+            : chalk.yellow;
       const request = (run.request ?? {}) as Record<string, unknown>;
       const strategy = typeof request.strategy === 'string' ? request.strategy : 'unknown';
-      const prompt = typeof request.prompt === 'string' ? request.prompt.replace(/\s+/g, ' ').trim() : '';
-      console.log(`  ${run.id}  ${color(statusText)}  ${chalk.dim(strategy)}  ${prompt.slice(0, 72)}`);
+      const prompt =
+        typeof request.prompt === 'string' ? request.prompt.replace(/\s+/g, ' ').trim() : '';
+      console.log(
+        `  ${run.id}  ${color(statusText)}  ${chalk.dim(strategy)}  ${prompt.slice(0, 72)}`
+      );
     }
     return;
   }
@@ -461,8 +473,11 @@ export async function runAgentsCommand(
 
     if (!prompt || !prompt.trim()) {
       console.error(
-        chalk.red('✗') + ' Missing prompt\n\n' +
-        chalk.dim('Usage: opta models agents start --prompt "<text>" [--roles <a,b>] [--strategy <parallel_map|router|handoff>] [--model <id>] [--timeout <sec>] [--priority <interactive|normal|batch>] [--metadata <json|@file>] [--approve] [--idempotency-key <key>]'),
+        chalk.red('✗') +
+          ' Missing prompt\n\n' +
+          chalk.dim(
+            'Usage: opta models agents start --prompt "<text>" [--roles <a,b>] [--strategy <parallel_map|router|handoff>] [--model <id>] [--timeout <sec>] [--priority <interactive|normal|batch>] [--metadata <json|@file>] [--approve] [--idempotency-key <key>]'
+          )
       );
       throw new ExitError(EXIT.MISUSE);
     }
@@ -484,7 +499,7 @@ export async function runAgentsCommand(
         timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000),
         maxRetries: 0,
         idempotencyKey,
-      },
+      }
     );
 
     if (opts?.json) {
@@ -498,7 +513,9 @@ export async function runAgentsCommand(
       : roles;
     console.log(chalk.green('✓') + ` Agent run created: ${created.id}`);
     console.log(`  Status:   ${created.status}`);
-    console.log(`  Strategy: ${String(request.strategy ?? strategy)}`);
+    console.log(
+      `  Strategy: ${typeof request.strategy === 'string' ? request.strategy : strategy}`
+    );
     console.log(`  Roles:    ${requestRoles.join(', ')}`);
     if (created.error) console.log(chalk.red(`  Error:    ${created.error}`));
     console.log(chalk.dim(`  Watch:    opta models agents events ${created.id}`));
@@ -508,7 +525,11 @@ export async function runAgentsCommand(
   if (action === 'status') {
     const runId = tokens[1];
     if (!runId) {
-      console.error(chalk.red('✗') + ' Missing run id\n\n' + chalk.dim('Usage: opta models agents status <run-id>'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing run id\n\n' +
+          chalk.dim('Usage: opta models agents status <run-id>')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     const run = await client.agentRun(runId, FAST_DISCOVERY_REQUEST_OPTS);
@@ -524,7 +545,9 @@ export async function runAgentsCommand(
     console.log(chalk.bold('Agent Run\n'));
     console.log(`  Run:      ${run.id}`);
     console.log(`  Status:   ${run.status}`);
-    console.log(`  Strategy: ${typeof request.strategy === 'string' ? request.strategy : 'unknown'}`);
+    console.log(
+      `  Strategy: ${typeof request.strategy === 'string' ? request.strategy : 'unknown'}`
+    );
     console.log(`  Roles:    ${roles.length > 0 ? roles.join(', ') : '(none)'}`);
     if (run.error) console.log(chalk.red(`  Error:    ${run.error}`));
     if (steps.length > 0) {
@@ -541,7 +564,11 @@ export async function runAgentsCommand(
   if (action === 'events' || action === 'watch') {
     const runId = tokens[1];
     if (!runId) {
-      console.error(chalk.red('✗') + ' Missing run id\n\n' + chalk.dim('Usage: opta models agents events <run-id> [--timeout <sec>] [--limit <n>]'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing run id\n\n' +
+          chalk.dim('Usage: opta models agents events <run-id> [--timeout <sec>] [--limit <n>]')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     let timeoutSec = 30;
@@ -585,12 +612,18 @@ export async function runAgentsCommand(
     const events = streamed.events.slice(0, limit);
 
     if (opts?.json) {
-      console.log(JSON.stringify({
-        run_id: runId,
-        host,
-        timed_out: streamed.timedOut,
-        events,
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            run_id: runId,
+            host,
+            timed_out: streamed.timedOut,
+            events,
+          },
+          null,
+          2
+        )
+      );
       return;
     }
 
@@ -615,7 +648,7 @@ export async function runAgentsCommand(
           const runIdFromEvent = run && typeof run.id === 'string' ? run.id : runId;
           rendered = `${type} · ${runIdFromEvent} · ${status}`;
         } else if (type === 'run.error') {
-          rendered = `${type} · ${String(parsed.error ?? 'unknown error')}`;
+          rendered = `${type} · ${typeof parsed.error === 'string' ? parsed.error : 'unknown error'}`;
         } else {
           rendered = `${type} · ${entry.data.slice(0, 160)}`;
         }
@@ -625,7 +658,9 @@ export async function runAgentsCommand(
       console.log(`  ${rendered}`);
     }
     if (streamed.timedOut) {
-      console.log(chalk.dim(`\n  Stream timed out after ${timeoutSec}s. Re-run to continue following events.`));
+      console.log(
+        chalk.dim(`\n  Stream timed out after ${timeoutSec}s. Re-run to continue following events.`)
+      );
     }
     return;
   }
@@ -633,7 +668,11 @@ export async function runAgentsCommand(
   if (action === 'cancel') {
     const runId = tokens[1];
     if (!runId) {
-      console.error(chalk.red('✗') + ' Missing run id\n\n' + chalk.dim('Usage: opta models agents cancel <run-id>'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing run id\n\n' +
+          chalk.dim('Usage: opta models agents cancel <run-id>')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     const cancelled = await client.cancelAgentRun(runId, FAST_DISCOVERY_REQUEST_OPTS);
@@ -649,8 +688,11 @@ export async function runAgentsCommand(
   }
 
   console.error(
-    chalk.red('✗') + ` Unknown agents action: ${action}\n\n` +
-    chalk.dim('Usage: opta models agents [list|start|status <run-id>|events <run-id>|cancel <run-id>] [--limit <n>] [--offset <n>] [--status <state>]'),
+    chalk.red('✗') +
+      ` Unknown agents action: ${action}\n\n` +
+      chalk.dim(
+        'Usage: opta models agents [list|start|status <run-id>|events <run-id>|cancel <run-id>] [--limit <n>] [--offset <n>] [--status <state>]'
+      )
   );
   throw new ExitError(EXIT.MISUSE);
 }
@@ -660,7 +702,7 @@ export async function runAgentsCommand(
 export async function runSkillsCommand(
   args: string | undefined,
   client: LmxClient,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<void> {
   const tokens = parseShellLikeArgs(args ?? '');
   const action = (tokens[0] ?? 'list').toLowerCase();
@@ -701,7 +743,11 @@ export async function runSkillsCommand(
   if (action === 'show' || action === 'get') {
     const skillName = tokens[1];
     if (!skillName) {
-      console.error(chalk.red('✗') + ' Missing skill name\n\n' + chalk.dim('Usage: opta models skills show <skill-name>'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing skill name\n\n' +
+          chalk.dim('Usage: opta models skills show <skill-name>')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     const payload = await client.skillDetail(skillName, FAST_DISCOVERY_REQUEST_OPTS);
@@ -742,7 +788,13 @@ export async function runSkillsCommand(
   if (action === 'run' || action === 'execute') {
     const skillName = tokens[1];
     if (!skillName) {
-      console.error(chalk.red('✗') + ' Missing skill name\n\n' + chalk.dim('Usage: opta models skills run <skill-name> [--args <json|@file>] [--approve] [--timeout <sec>]'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing skill name\n\n' +
+          chalk.dim(
+            'Usage: opta models skills run <skill-name> [--args <json|@file>] [--approve] [--timeout <sec>]'
+          )
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     let approved = false;
@@ -786,7 +838,10 @@ export async function runSkillsCommand(
         approved,
         timeoutSec,
       },
-      { timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000), maxRetries: 0 },
+      {
+        timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000),
+        maxRetries: 0,
+      }
     );
 
     if (opts?.json) {
@@ -795,14 +850,18 @@ export async function runSkillsCommand(
     }
 
     const ok = payload.ok === true;
-    console.log((ok ? chalk.green('✓') : chalk.red('✗')) + ` Skill ${skillName} ${ok ? 'completed' : 'failed'}`);
+    console.log(
+      (ok ? chalk.green('✓') : chalk.red('✗')) +
+        ` Skill ${skillName} ${ok ? 'completed' : 'failed'}`
+    );
     if (payload.error) {
       console.log(chalk.red(`  Error: ${payload.error}`));
     }
     if (payload.output !== undefined) {
-      const rendered = typeof payload.output === 'string'
-        ? payload.output
-        : JSON.stringify(payload.output, null, 2);
+      const rendered =
+        typeof payload.output === 'string'
+          ? payload.output
+          : JSON.stringify(payload.output, null, 2);
       console.log(chalk.dim(`  Output: ${rendered.slice(0, 320)}`));
     }
     return;
@@ -811,7 +870,13 @@ export async function runSkillsCommand(
   if (action === 'mcp-call' || action === 'mcp' || action === 'call') {
     const toolName = tokens[1];
     if (!toolName) {
-      console.error(chalk.red('✗') + ' Missing tool name\n\n' + chalk.dim('Usage: opta models skills mcp-call <tool-name> [--args <json|@file>] [--approve]'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing tool name\n\n' +
+          chalk.dim(
+            'Usage: opta models skills mcp-call <tool-name> [--args <json|@file>] [--approve]'
+          )
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     let approved = false;
@@ -838,7 +903,7 @@ export async function runSkillsCommand(
 
     const payload = await client.skillMcpCall(
       { name: toolName, arguments: argumentsPayload, approved },
-      { timeoutMs: 30_000, maxRetries: 0 },
+      { timeoutMs: 30_000, maxRetries: 0 }
     );
 
     if (opts?.json) {
@@ -846,7 +911,10 @@ export async function runSkillsCommand(
       return;
     }
     const ok = payload.ok === true;
-    console.log((ok ? chalk.green('✓') : chalk.red('✗')) + ` MCP tool ${toolName} ${ok ? 'completed' : 'failed'}`);
+    console.log(
+      (ok ? chalk.green('✓') : chalk.red('✗')) +
+        ` MCP tool ${toolName} ${ok ? 'completed' : 'failed'}`
+    );
     if (payload.error) console.log(chalk.red(`  Error: ${payload.error}`));
     return;
   }
@@ -854,7 +922,13 @@ export async function runSkillsCommand(
   if (action === 'openclaw' || action === 'invoke') {
     const toolName = tokens[1];
     if (!toolName) {
-      console.error(chalk.red('✗') + ' Missing tool name\n\n' + chalk.dim('Usage: opta models skills openclaw <tool-name> [--args <json|@file>] [--approve] [--timeout <sec>]'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing tool name\n\n' +
+          chalk.dim(
+            'Usage: opta models skills openclaw <tool-name> [--args <json|@file>] [--approve] [--timeout <sec>]'
+          )
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     let approved = false;
@@ -898,7 +972,10 @@ export async function runSkillsCommand(
         approved,
         timeoutSec,
       },
-      { timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000), maxRetries: 0 },
+      {
+        timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000),
+        maxRetries: 0,
+      }
     );
 
     if (opts?.json) {
@@ -906,14 +983,20 @@ export async function runSkillsCommand(
       return;
     }
     const ok = payload.ok === true;
-    console.log((ok ? chalk.green('✓') : chalk.red('✗')) + ` OpenClaw invoke ${toolName} ${ok ? 'completed' : 'failed'}`);
+    console.log(
+      (ok ? chalk.green('✓') : chalk.red('✗')) +
+        ` OpenClaw invoke ${toolName} ${ok ? 'completed' : 'failed'}`
+    );
     if (payload.error) console.log(chalk.red(`  Error: ${payload.error}`));
     return;
   }
 
   console.error(
-    chalk.red('✗') + ` Unknown skills action: ${action}\n\n` +
-    chalk.dim('Usage: opta models skills [list|show <skill-name>|tools|run <skill-name>|mcp-call <tool-name>|openclaw <tool-name>] [--all]'),
+    chalk.red('✗') +
+      ` Unknown skills action: ${action}\n\n` +
+      chalk.dim(
+        'Usage: opta models skills [list|show <skill-name>|tools|run <skill-name>|mcp-call <tool-name>|openclaw <tool-name>] [--all]'
+      )
   );
   throw new ExitError(EXIT.MISUSE);
 }
@@ -923,7 +1006,7 @@ export async function runSkillsCommand(
 export async function runRagCommand(
   args: string | undefined,
   client: LmxClient,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<void> {
   const tokens = parseShellLikeArgs(args ?? '');
   const action = (tokens[0] ?? 'collections').toLowerCase();
@@ -943,7 +1026,7 @@ export async function runRagCommand(
     }
     for (const collection of payload.collections) {
       console.log(
-        `  ${chalk.cyan(collection.name)}  ${chalk.dim(`${collection.document_count} docs · ${collection.embedding_dimensions} dims`)}`,
+        `  ${chalk.cyan(collection.name)}  ${chalk.dim(`${collection.document_count} docs · ${collection.embedding_dimensions} dims`)}`
       );
     }
     return;
@@ -952,7 +1035,11 @@ export async function runRagCommand(
   if (action === 'delete') {
     const collection = tokens[1];
     if (!collection) {
-      console.error(chalk.red('✗') + ' Missing collection name\n\n' + chalk.dim('Usage: opta models rag delete <collection>'));
+      console.error(
+        chalk.red('✗') +
+          ' Missing collection name\n\n' +
+          chalk.dim('Usage: opta models rag delete <collection>')
+      );
       throw new ExitError(EXIT.MISUSE);
     }
     await client.ragDeleteCollection(collection, FAST_DISCOVERY_REQUEST_OPTS);
@@ -969,8 +1056,11 @@ export async function runRagCommand(
     const query = tokens[2];
     if (!collection || !query) {
       console.error(
-        chalk.red('✗') + ' Missing query arguments\n\n' +
-        chalk.dim('Usage: opta models rag query <collection> "<query>" [--top-k <n>] [--min-score <n>] [--mode vector|keyword|hybrid] [--rerank]'),
+        chalk.red('✗') +
+          ' Missing query arguments\n\n' +
+          chalk.dim(
+            'Usage: opta models rag query <collection> "<query>" [--top-k <n>] [--min-score <n>] [--mode vector|keyword|hybrid] [--rerank]'
+          )
       );
       throw new ExitError(EXIT.MISUSE);
     }
@@ -1028,7 +1118,7 @@ export async function runRagCommand(
         searchMode,
         rerank,
       },
-      { timeoutMs: 30_000, maxRetries: 0 },
+      { timeoutMs: 30_000, maxRetries: 0 }
     );
     if (opts?.json) {
       console.log(JSON.stringify(payload, null, 2));
@@ -1055,8 +1145,11 @@ export async function runRagCommand(
     const collection = tokens[1];
     if (!collection) {
       console.error(
-        chalk.red('✗') + ' Missing collection name\n\n' +
-        chalk.dim('Usage: opta models rag ingest <collection> (--file <path> | --text "<content>" | --stdin) [--metadata <json|@file>] [--chunking <auto|text|code|markdown_headers|none>] [--chunk-size <n>] [--chunk-overlap <n>] [--model <id>]'),
+        chalk.red('✗') +
+          ' Missing collection name\n\n' +
+          chalk.dim(
+            'Usage: opta models rag ingest <collection> (--file <path> | --text "<content>" | --stdin) [--metadata <json|@file>] [--chunking <auto|text|code|markdown_headers|none>] [--chunk-size <n>] [--chunk-overlap <n>] [--model <id>]'
+          )
       );
       throw new ExitError(EXIT.MISUSE);
     }
@@ -1109,7 +1202,9 @@ export async function runRagCommand(
       if (token === '--chunking') {
         const value = tokens[i + 1];
         if (!value || !['auto', 'text', 'code', 'markdown_headers', 'none'].includes(value)) {
-          console.error(chalk.red('✗') + ' --chunking must be auto, text, code, markdown_headers, or none');
+          console.error(
+            chalk.red('✗') + ' --chunking must be auto, text, code, markdown_headers, or none'
+          );
           throw new ExitError(EXIT.MISUSE);
         }
         chunking = value as 'auto' | 'text' | 'code' | 'markdown_headers' | 'none';
@@ -1174,7 +1269,10 @@ export async function runRagCommand(
     let metadata: Array<Record<string, unknown>> | undefined;
     if (metadataRaw !== undefined) {
       if (Array.isArray(metadataRaw)) {
-        const rows = metadataRaw.filter((value): value is Record<string, unknown> => Boolean(value) && typeof value === 'object' && !Array.isArray(value));
+        const rows = metadataRaw.filter(
+          (value): value is Record<string, unknown> =>
+            Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+        );
         if (rows.length === 0) {
           console.error(chalk.red('✗') + ' --metadata array must contain at least one object');
           throw new ExitError(EXIT.MISUSE);
@@ -1198,7 +1296,7 @@ export async function runRagCommand(
         chunkOverlap,
         model,
       },
-      { timeoutMs: 60_000, maxRetries: 0 },
+      { timeoutMs: 60_000, maxRetries: 0 }
     );
 
     if (opts?.json) {
@@ -1219,8 +1317,11 @@ export async function runRagCommand(
     const query = tokens[1];
     if (!query) {
       console.error(
-        chalk.red('✗') + ' Missing query text\n\n' +
-        chalk.dim('Usage: opta models rag context "<query>" --collections <c1,c2> [--top-k-per-collection <n>] [--min-score <n>] [--max-context-tokens <n>] [--model <id>] [--rerank]'),
+        chalk.red('✗') +
+          ' Missing query text\n\n' +
+          chalk.dim(
+            'Usage: opta models rag context "<query>" --collections <c1,c2> [--top-k-per-collection <n>] [--min-score <n>] [--max-context-tokens <n>] [--model <id>] [--rerank]'
+          )
       );
       throw new ExitError(EXIT.MISUSE);
     }
@@ -1309,7 +1410,7 @@ export async function runRagCommand(
         model,
         rerank,
       },
-      { timeoutMs: 60_000, maxRetries: 0 },
+      { timeoutMs: 60_000, maxRetries: 0 }
     );
 
     if (opts?.json) {
@@ -1337,8 +1438,11 @@ export async function runRagCommand(
   }
 
   console.error(
-    chalk.red('✗') + ` Unknown rag action: ${action}\n\n` +
-    chalk.dim('Usage: opta models rag [collections|delete <collection>|query <collection> "<query>" [--top-k <n>] [--min-score <n>] [--mode vector|keyword|hybrid] [--rerank]|ingest <collection> (--file <path>|--text "<content>"|--stdin)|context "<query>" --collections <c1,c2>]'),
+    chalk.red('✗') +
+      ` Unknown rag action: ${action}\n\n` +
+      chalk.dim(
+        'Usage: opta models rag [collections|delete <collection>|query <collection> "<query>" [--top-k <n>] [--min-score <n>] [--mode vector|keyword|hybrid] [--rerank]|ingest <collection> (--file <path>|--text "<content>"|--stdin)|context "<query>" --collections <c1,c2>]'
+      )
   );
   throw new ExitError(EXIT.MISUSE);
 }
@@ -1354,7 +1458,7 @@ export async function runHealthCommand(
     fallbackHosts?: string[];
     port: number;
     adminKey?: string;
-  },
+  }
 ): Promise<void> {
   const tokens = parseShellLikeArgs(args ?? '');
   let includeReady = false;
@@ -1388,7 +1492,7 @@ export async function runHealthCommand(
   const fetchJsonProbe = async (
     path: string,
     acceptedStatuses: number[],
-    authRequired: boolean,
+    authRequired: boolean
   ): Promise<{ status: number; body: unknown }> => {
     const response = await fetch(`http://${host}:${port}${path}`, {
       method: 'GET',
@@ -1415,44 +1519,57 @@ export async function runHealthCommand(
   const admin = includeAdmin ? await fetchJsonProbe('/admin/health', [200], true) : undefined;
 
   if (opts?.json) {
-    console.log(JSON.stringify({
-      host,
-      port,
-      liveness,
-      ready,
-      admin,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          host,
+          port,
+          liveness,
+          ready,
+          admin,
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
   const readyStatus = ready?.status === 200 ? chalk.green('ready') : chalk.yellow('not-ready');
-  const adminStatusRaw = (admin?.body && typeof admin.body === 'object' && !Array.isArray(admin.body))
-    ? (admin.body as Record<string, unknown>).status
-    : undefined;
-  const adminStatus = typeof adminStatusRaw === 'string' && adminStatusRaw === 'ok'
-    ? chalk.green(adminStatusRaw)
-    : typeof adminStatusRaw === 'string'
-      ? chalk.yellow(adminStatusRaw)
-      : chalk.dim('(n/a)');
+  const adminStatusRaw =
+    admin?.body && typeof admin.body === 'object' && !Array.isArray(admin.body)
+      ? (admin.body as Record<string, unknown>).status
+      : undefined;
+  const adminStatus =
+    typeof adminStatusRaw === 'string' && adminStatusRaw === 'ok'
+      ? chalk.green(adminStatusRaw)
+      : typeof adminStatusRaw === 'string'
+        ? chalk.yellow(adminStatusRaw)
+        : chalk.dim('(n/a)');
 
   console.log(chalk.bold('Model Health\n'));
   console.log(`  Endpoint:   ${host}:${port}`);
   console.log(`  Liveness:   ${chalk.green(liveness.status)}`);
   if (ready) {
-    const reason = ready.body && typeof ready.body === 'object' && !Array.isArray(ready.body)
-      ? ((ready.body as Record<string, unknown>).reason as string | undefined)
-      : undefined;
+    const reason =
+      ready.body && typeof ready.body === 'object' && !Array.isArray(ready.body)
+        ? ((ready.body as Record<string, unknown>).reason as string | undefined)
+        : undefined;
     console.log(`  Readiness:  ${readyStatus}${reason ? chalk.dim(` (${reason})`) : ''}`);
   }
   if (admin) {
-    const bodyObj = admin.body && typeof admin.body === 'object' && !Array.isArray(admin.body)
-      ? admin.body as Record<string, unknown>
-      : {};
-    const modelsLoaded = typeof bodyObj.models_loaded === 'number' ? bodyObj.models_loaded : undefined;
-    const inFlight = typeof bodyObj.in_flight_requests === 'number' ? bodyObj.in_flight_requests : undefined;
-    const memoryUsage = typeof bodyObj.memory_usage_percent === 'number'
-      ? `${bodyObj.memory_usage_percent.toFixed(1)}%`
-      : undefined;
+    const bodyObj =
+      admin.body && typeof admin.body === 'object' && !Array.isArray(admin.body)
+        ? (admin.body as Record<string, unknown>)
+        : {};
+    const modelsLoaded =
+      typeof bodyObj.models_loaded === 'number' ? bodyObj.models_loaded : undefined;
+    const inFlight =
+      typeof bodyObj.in_flight_requests === 'number' ? bodyObj.in_flight_requests : undefined;
+    const memoryUsage =
+      typeof bodyObj.memory_usage_percent === 'number'
+        ? `${bodyObj.memory_usage_percent.toFixed(1)}%`
+        : undefined;
     console.log(`  Admin:      ${adminStatus}`);
     if (modelsLoaded !== undefined) console.log(`  Models:     ${modelsLoaded}`);
     if (inFlight !== undefined) console.log(`  In flight:  ${inFlight}`);

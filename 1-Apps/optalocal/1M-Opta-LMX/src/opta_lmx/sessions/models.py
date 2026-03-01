@@ -2,7 +2,7 @@
 
 These models mirror the Opta CLI session schema stored at
 ``~/.config/opta/sessions/<id>.json``. The canonical TypeScript
-definitions live in ``1-Apps/1D-Opta-CLI-TS/src/memory/store.ts``.
+definitions live in ``1-Apps/optalocal/1D-Opta-CLI-TS/src/memory/store.ts``.
 """
 
 from __future__ import annotations

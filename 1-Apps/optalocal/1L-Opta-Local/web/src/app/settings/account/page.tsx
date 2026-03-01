@@ -26,6 +26,7 @@ import {
 import { Button, cn } from '@opta/ui';
 import { OptaSurface } from '@/components/shared/OptaPrimitives';
 import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { buildAccountSignInHref } from '@/lib/auth-utils';
 import { signOut } from '@/lib/supabase/auth-actions';
 
 // ---------------------------------------------------------------------------
@@ -107,7 +108,7 @@ export default function AccountSettingsPage() {
             device registry, and remote access.
           </p>
           <Link
-            href="/sign-in?next=%2Fsettings%2Faccount"
+            href={buildAccountSignInHref('/settings/account')}
             className={cn(
               'inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium',
               'bg-primary/20 text-primary border border-primary/40',

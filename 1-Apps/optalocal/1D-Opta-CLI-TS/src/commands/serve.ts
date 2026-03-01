@@ -9,6 +9,7 @@ import { colorizeOptaWord } from '../ui/brand.js';
 import { LmxClient } from '../lmx/client.js';
 import { errorMessage } from '../utils/errors.js';
 import { sleep } from '../utils/common.js';
+import { homedir, requiresPosixPlatform } from '../platform/index.js';
 
 interface ServeOptions {
   json?: boolean;
@@ -19,10 +20,8 @@ const STARTUP_WAIT_MS = 90_000;
 const DEFAULT_SSH_CONNECT_TIMEOUT_SECONDS = 25;
 const FAST_HEALTH_REQUEST_OPTS = { timeoutMs: 2_000, maxRetries: 0 } as const;
 
-export async function serve(
-  action?: string,
-  opts?: ServeOptions,
-): Promise<void> {
+export async function serve(action?: string, opts?: ServeOptions): Promise<void> {
+  requiresPosixPlatform('opta serve');
   switch (action) {
     case 'start':
       await serveStart(opts);
@@ -47,14 +46,18 @@ function isRemoteHost(host: string): boolean {
 }
 
 function expandHome(path: string): string {
-  return path.replace('~', process.env.HOME ?? '');
+  if (!path.startsWith('~')) return path;
+  return homedir() + path.slice(1);
 }
 
 function quoteSh(value: string): string {
   return `'${value.replace(/'/g, `'\"'\"'`)}'`;
 }
 
-function resolveHostCandidates(primaryHost: string, fallbackHosts: readonly string[] = []): string[] {
+function resolveHostCandidates(
+  primaryHost: string,
+  fallbackHosts: readonly string[] = []
+): string[] {
   const seen = new Set<string>();
   const candidates: string[] = [];
   for (const host of [primaryHost, ...fallbackHosts]) {
@@ -70,7 +73,7 @@ function resolveHostCandidates(primaryHost: string, fallbackHosts: readonly stri
 
 async function expandSshHostCandidates(
   primaryHost: string,
-  fallbackHosts: readonly string[] = [],
+  fallbackHosts: readonly string[] = []
 ): Promise<string[]> {
   const base = resolveHostCandidates(primaryHost, fallbackHosts);
   const seen = new Set<string>();
@@ -90,7 +93,7 @@ async function expandSshHostCandidates(
       if (isIP(host) !== 0) return [] as string[];
       const addresses = await lookup(host, { all: true, verbatim: false });
       return addresses.map((entry) => entry.address);
-    }),
+    })
   );
 
   for (let i = 0; i < base.length; i++) {
@@ -107,37 +110,24 @@ async function expandSshHostCandidates(
 }
 
 function resolveSshConnectTimeoutSeconds(configuredSeconds: number | undefined): number {
-  return Math.max(
-    3,
-    Math.floor(configuredSeconds || DEFAULT_SSH_CONNECT_TIMEOUT_SECONDS),
-  );
+  return Math.max(3, Math.floor(configuredSeconds || DEFAULT_SSH_CONNECT_TIMEOUT_SECONDS));
 }
 
 function extractExecOutput(err: unknown): string | null {
   if (!err || typeof err !== 'object') return null;
   const stdout = (err as { stdout?: unknown }).stdout;
   const stderr = (err as { stderr?: unknown }).stderr;
-  const outText = typeof stdout === 'string'
-    ? stdout
-    : Buffer.isBuffer(stdout)
-      ? stdout.toString('utf8')
-      : '';
-  const errText = typeof stderr === 'string'
-    ? stderr
-    : Buffer.isBuffer(stderr)
-      ? stderr.toString('utf8')
-      : '';
+  const outText =
+    typeof stdout === 'string' ? stdout : Buffer.isBuffer(stdout) ? stdout.toString('utf8') : '';
+  const errText =
+    typeof stderr === 'string' ? stderr : Buffer.isBuffer(stderr) ? stderr.toString('utf8') : '';
   const merged = [errText.trim(), outText.trim()].filter(Boolean).join('\n');
   return merged || null;
 }
 
 function canImportModule(python: string, moduleName: string): boolean {
   try {
-    execFileSync(
-      python,
-      ['-c', `import ${moduleName}`],
-      { stdio: 'ignore', timeout: 4_000 },
-    );
+    execFileSync(python, ['-c', `import ${moduleName}`], { stdio: 'ignore', timeout: 4_000 });
     return true;
   } catch {
     return false;
@@ -146,11 +136,7 @@ function canImportModule(python: string, moduleName: string): boolean {
 
 function canRunModule(python: string, moduleName: string): boolean {
   try {
-    execFileSync(
-      python,
-      ['-m', moduleName, '--help'],
-      { stdio: 'ignore', timeout: 6_000 },
-    );
+    execFileSync(python, ['-m', moduleName, '--help'], { stdio: 'ignore', timeout: 6_000 });
     return true;
   } catch {
     return false;
@@ -161,8 +147,8 @@ function resolveLocalInvocation(): { python: string; module: string } {
   const candidates = [
     process.env['OPTA_PYTHON'],
     '.venv/bin/python',
-    `${process.env['HOME'] ?? '~'}/opta-lmx/.venv/bin/python`,
-    `${process.env['HOME'] ?? '~'}/.opta-lmx/.venv/bin/python`,
+    `${homedir()}/opta-lmx/.venv/bin/python`,
+    `${homedir()}/.opta-lmx/.venv/bin/python`,
     'python3',
     'python',
   ]
@@ -181,7 +167,7 @@ function resolveLocalInvocation(): { python: string; module: string } {
   }
 
   throw new Error(
-    'No usable Python runtime found for Opta LMX. Tried .venv/bin/python, ~/opta-lmx/.venv/bin/python, python3, python',
+    'No usable Python runtime found for Opta LMX. Tried .venv/bin/python, ~/opta-lmx/.venv/bin/python, python3, python'
   );
 }
 
@@ -196,7 +182,7 @@ function buildRemoteStartScript(lmxPath: string, configuredPython: string, port:
 
   return [
     'set -e',
-    `if launchctl print gui/$(id -u)/${REMOTE_LAUNCHD_LABEL} >/dev/null 2>&1; then`,
+    `if command -v launchctl >/dev/null 2>&1 && launchctl print gui/$(id -u)/${REMOTE_LAUNCHD_LABEL} >/dev/null 2>&1; then`,
     `  launchctl kickstart -k gui/$(id -u)/${REMOTE_LAUNCHD_LABEL}`,
     '  exit 0',
     'fi',
@@ -220,7 +206,7 @@ function buildRemoteStartScript(lmxPath: string, configuredPython: string, port:
     '  exit 42',
     'fi',
     `CFG=""`,
-    `for _candidate in ${configCandidates.map(c => quoteSh(c)).join(' ')}; do [ -f "$_candidate" ] && CFG="$_candidate" && break; done`,
+    `for _candidate in ${configCandidates.map((c) => quoteSh(c)).join(' ')}; do [ -f "$_candidate" ] && CFG="$_candidate" && break; done`,
     `if [ -n "$CFG" ] && [ "$ENTRY" = "opta_lmx.main" ]; then`,
     `  nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m "$ENTRY" --config "$CFG" --host 0.0.0.0 --port ${port} >/tmp/opta-lmx.log 2>&1 &`,
     'else',
@@ -251,14 +237,17 @@ async function serveStatus(opts?: ServeOptions): Promise<void> {
 
     console.log(chalk.green('●') + ` ${colorizeOptaWord(`Opta LMX running at ${host}:${port}`)}`);
     if (status.version) console.log(chalk.dim(`  Version: ${status.version}`));
-    if (status.uptime_seconds != null) console.log(chalk.dim(`  Uptime:  ${formatDuration(status.uptime_seconds)}`));
+    if (status.uptime_seconds != null)
+      console.log(chalk.dim(`  Uptime:  ${formatDuration(status.uptime_seconds)}`));
     console.log(chalk.dim(`  Models:  ${status.models.length} loaded`));
   } catch {
     if (opts?.json) {
       console.log(JSON.stringify({ running: false, host, port }, null, 2));
       return;
     }
-    console.log(chalk.red('●') + ` ${colorizeOptaWord(`Opta LMX is not reachable at ${host}:${port}`)}`);
+    console.log(
+      chalk.red('●') + ` ${colorizeOptaWord(`Opta LMX is not reachable at ${host}:${port}`)}`
+    );
     console.log(chalk.dim(`  Start it: opta serve start`));
   }
 }
@@ -278,7 +267,10 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
   try {
     await client.health(FAST_HEALTH_REQUEST_OPTS);
     const activeHost = client.getActiveHost();
-    console.log(chalk.yellow('!') + ` ${colorizeOptaWord(`Opta LMX is already running at ${activeHost}:${port}`)}`);
+    console.log(
+      chalk.yellow('!') +
+        ` ${colorizeOptaWord(`Opta LMX is already running at ${activeHost}:${port}`)}`
+    );
     return;
   } catch {
     // Not running — proceed with start
@@ -326,17 +318,14 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
         throw new OptaError(
           `Failed to start Opta LMX on ${host}`,
           EXIT.NO_CONNECTION,
-          [
-            'SSH launch failed on all configured hosts.',
-            ...failures.slice(0, 4),
-          ],
+          ['SSH launch failed on all configured hosts.', ...failures.slice(0, 4)],
           [
             `Check SSH access: ssh -i ${config.connection.ssh.identityFile} ${config.connection.ssh.user}@${host}`,
             config.connection.fallbackHosts.length > 0
               ? `Try fallback hosts: ${config.connection.fallbackHosts.join(', ')}`
               : 'Configure fallback hosts: opta config set connection.fallbackHosts hostA,hostB',
             'Check logs: opta serve logs',
-          ],
+          ]
         );
       }
     } else {
@@ -344,7 +333,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
       const child = spawn(
         invocation.python,
         ['-m', invocation.module, '--host', '0.0.0.0', '--port', String(port)],
-        { detached: true, stdio: 'ignore' },
+        { detached: true, stdio: 'ignore' }
       );
       child.unref();
     }
@@ -355,7 +344,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
     const deadline = Date.now() + maxWait;
 
     while (Date.now() < deadline) {
-        await sleep(interval);
+      await sleep(interval);
       try {
         await client.health(FAST_HEALTH_REQUEST_OPTS);
         const activeHost = client.getActiveHost();
@@ -374,9 +363,10 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
       const { ssh } = config.connection;
       const identityFile = expandHome(ssh.identityFile);
       const sshConnectTimeoutSec = resolveSshConnectTimeoutSeconds(ssh.connectTimeoutSec);
-      const verifyCandidates = remoteHostCandidates.length > 0
-        ? remoteHostCandidates
-        : await expandSshHostCandidates(host, config.connection.fallbackHosts);
+      const verifyCandidates =
+        remoteHostCandidates.length > 0
+          ? remoteHostCandidates
+          : await expandSshHostCandidates(host, config.connection.fallbackHosts);
 
       let remotelyHealthy = false;
       for (const candidate of verifyCandidates) {
@@ -386,7 +376,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
           execFileSync(
             'ssh',
             ['-o', `ConnectTimeout=${sshConnectTimeoutSec}`, '-i', identityFile, sshTarget, probe],
-            { timeout: 20_000, stdio: 'pipe' },
+            { timeout: 20_000, stdio: 'pipe' }
           );
           remotelyHealthy = true;
           break;
@@ -409,7 +399,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
             `Confirm bind host in remote config includes 0.0.0.0`,
             `Temporary workaround: ssh -N -L ${port}:127.0.0.1:${port} ${ssh.user}@${host}`,
             'Then retry: opta status',
-          ],
+          ]
         );
       }
     }
@@ -428,12 +418,14 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
       EXIT.ERROR,
       [detail ?? errorMessage(err)],
       [
-        isRemote ? `Check SSH access: ssh -i ${config.connection.ssh.identityFile} ${config.connection.ssh.user}@${host}` : 'Check Python environment',
+        isRemote
+          ? `Check SSH access: ssh -i ${config.connection.ssh.identityFile} ${config.connection.ssh.user}@${host}`
+          : 'Check Python environment',
         isRemote ? `SSH config: opta config set connection.ssh.user <user>` : '',
         isRemote ? `Verify remote runtime: opta config get connection.ssh.pythonPath` : '',
         `Verify install: pip show opta-lmx`,
         `Check logs: opta serve logs`,
-      ].filter(Boolean),
+      ].filter(Boolean)
     );
   }
 }
@@ -454,7 +446,7 @@ async function serveStop(_opts?: ServeOptions): Promise<void> {
         const sshConnectTimeoutSec = resolveSshConnectTimeoutSeconds(ssh.connectTimeoutSec);
         const hostCandidates = await expandSshHostCandidates(host, config.connection.fallbackHosts);
         const stopScript = [
-          `launchctl kill SIGTERM gui/$(id -u)/${REMOTE_LAUNCHD_LABEL} >/dev/null 2>&1 || true`,
+          `if command -v launchctl >/dev/null 2>&1; then launchctl kill SIGTERM gui/$(id -u)/${REMOTE_LAUNCHD_LABEL} >/dev/null 2>&1 || true; fi`,
           'pkill -f "python -m opta_lmx.main" >/dev/null 2>&1 || true',
           'pkill -f "python -m opta_lmx" >/dev/null 2>&1 || true',
         ].join('; ');
@@ -463,8 +455,15 @@ async function serveStop(_opts?: ServeOptions): Promise<void> {
           try {
             execFileSync(
               'ssh',
-              ['-o', `ConnectTimeout=${sshConnectTimeoutSec}`, '-i', identityFile, sshTarget, stopScript],
-              { timeout: 20_000 },
+              [
+                '-o',
+                `ConnectTimeout=${sshConnectTimeoutSec}`,
+                '-i',
+                identityFile,
+                sshTarget,
+                stopScript,
+              ],
+              { timeout: 20_000 }
             );
             break;
           } catch {
@@ -498,9 +497,7 @@ async function serveStop(_opts?: ServeOptions): Promise<void> {
       `Failed to stop Opta LMX on ${host}`,
       EXIT.ERROR,
       [errorMessage(err)],
-      [
-        isRemote ? `SSH manually: ssh ${host}` : 'Check running processes',
-      ],
+      [isRemote ? `SSH manually: ssh ${host}` : 'Check running processes']
     );
   }
 }
@@ -548,7 +545,7 @@ async function serveLogs(): Promise<void> {
             {
               timeout: 30_000,
               encoding: 'utf8',
-            },
+            }
           );
           break;
         } catch (err) {
@@ -556,12 +553,9 @@ async function serveLogs(): Promise<void> {
         }
       }
       if (logsOutput === null) {
-        throw new OptaError(
-          'Failed to read Opta LMX logs',
-          EXIT.ERROR,
-          failures.slice(0, 4),
-          [`SSH manually: ssh ${host}`],
-        );
+        throw new OptaError('Failed to read Opta LMX logs', EXIT.ERROR, failures.slice(0, 4), [
+          `SSH manually: ssh ${host}`,
+        ]);
       }
       output = logsOutput;
     } else {
@@ -592,7 +586,7 @@ async function serveLogs(): Promise<void> {
       'Failed to read Opta LMX logs',
       EXIT.ERROR,
       [errorMessage(err)],
-      [isRemote ? `SSH manually: ssh ${host}` : 'Check /tmp/opta-lmx.log'],
+      [isRemote ? `SSH manually: ssh ${host}` : 'Check /tmp/opta-lmx.log']
     );
   }
 }

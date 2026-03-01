@@ -1,28 +1,33 @@
 "use client";
 
 /**
- * Models Page — LMX management hub.
+ * Models Page — focused model lifecycle hub.
  *
- * Tabbed interface for all LMX management panels:
- * Models | Available | Diagnostics | Metrics | Presets | Stack |
- * Benchmark | Quantize | Helpers | Logs
+ * Keeps model-first actions in one place:
+ * - Loaded models (load/unload)
+ * - Available catalog (discover + load)
+ * - Diagnostics (model runtime checks)
+ *
+ * Cross-domain features are routed to dedicated workflow pages.
  */
 
 import { useState, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowLeft,
   AlertCircle,
   Layers,
   HardDrive,
   Activity,
-  BarChart3,
   Settings2,
+  Wrench,
+  TerminalSquare,
+  BarChart3,
   Network,
   FlaskConical,
   Package,
-  Server,
-  FileText,
+  ArrowUpRight,
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@opta/ui";
@@ -33,30 +38,9 @@ import { ModelList } from "@/components/dashboard/ModelList";
 import { ModelLoadDialog } from "@/components/dashboard/ModelLoadDialog";
 import { AvailableModelsPanel } from "@/components/dashboard/AvailableModelsPanel";
 import { DiagnosticsPanel } from "@/components/dashboard/DiagnosticsPanel";
-import { MetricsPanel } from "@/components/dashboard/MetricsPanel";
-import { PresetsPanel } from "@/components/dashboard/PresetsPanel";
-import { StackView } from "@/components/dashboard/StackView";
-import { BenchmarkPanel } from "@/components/dashboard/BenchmarkPanel";
-import { QuantizePanel } from "@/components/dashboard/QuantizePanel";
-import { HelpersPanel } from "@/components/dashboard/HelpersPanel";
-import { LogsBrowser } from "@/components/dashboard/LogsBrowser";
 import type { ModelLoadRequest } from "@/types/lmx";
 
-// ---------------------------------------------------------------------------
-// Tab definitions
-// ---------------------------------------------------------------------------
-
-type TabId =
-  | "models"
-  | "available"
-  | "diagnostics"
-  | "metrics"
-  | "presets"
-  | "stack"
-  | "benchmark"
-  | "quantize"
-  | "helpers"
-  | "logs";
+type TabId = "loaded" | "catalog" | "diagnostics";
 
 interface Tab {
   id: TabId;
@@ -65,53 +49,85 @@ interface Tab {
 }
 
 const TABS: Tab[] = [
-  { id: "models", label: "Models", icon: <Layers className="w-3.5 h-3.5" /> },
+  { id: "loaded", label: "Loaded", icon: <Layers className="h-3.5 w-3.5" /> },
   {
-    id: "available",
-    label: "Available",
-    icon: <HardDrive className="w-3.5 h-3.5" />,
+    id: "catalog",
+    label: "Catalog",
+    icon: <HardDrive className="h-3.5 w-3.5" />,
   },
   {
     id: "diagnostics",
     label: "Diagnostics",
-    icon: <Activity className="w-3.5 h-3.5" />,
+    icon: <Activity className="h-3.5 w-3.5" />,
   },
-  {
-    id: "metrics",
-    label: "Metrics",
-    icon: <BarChart3 className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "presets",
-    label: "Presets",
-    icon: <Settings2 className="w-3.5 h-3.5" />,
-  },
-  { id: "stack", label: "Stack", icon: <Network className="w-3.5 h-3.5" /> },
-  {
-    id: "benchmark",
-    label: "Benchmark",
-    icon: <FlaskConical className="w-3.5 h-3.5" />,
-  },
-  {
-    id: "quantize",
-    label: "Quantize",
-    icon: <Package className="w-3.5 h-3.5" />,
-  },
-  { id: "helpers", label: "Helpers", icon: <Server className="w-3.5 h-3.5" /> },
-  { id: "logs", label: "Logs", icon: <FileText className="w-3.5 h-3.5" /> },
 ];
 
-// ---------------------------------------------------------------------------
-// Page
-// ---------------------------------------------------------------------------
+interface WorkflowLink {
+  label: string;
+  href: string;
+  description: string;
+  icon: LucideIcon;
+  accentClass: string;
+}
+
+const WORKFLOW_LINKS: WorkflowLink[] = [
+  {
+    label: "Presets",
+    href: "/presets",
+    description: "Tune model behavior profiles",
+    icon: Settings2,
+    accentClass: "text-neon-indigo",
+  },
+  {
+    label: "Skills",
+    href: "/skills",
+    description: "Bind tools and execution skills",
+    icon: Wrench,
+    accentClass: "text-neon-cyan",
+  },
+  {
+    label: "Operations",
+    href: "/operations",
+    description: "Run controlled daemon actions",
+    icon: TerminalSquare,
+    accentClass: "text-neon-amber",
+  },
+  {
+    label: "Metrics",
+    href: "/metrics",
+    description: "Observe throughput and latency",
+    icon: BarChart3,
+    accentClass: "text-neon-green",
+  },
+  {
+    label: "Stack",
+    href: "/stack",
+    description: "Review runtime topology",
+    icon: Network,
+    accentClass: "text-neon-cyan",
+  },
+  {
+    label: "Benchmark",
+    href: "/benchmark",
+    description: "Measure model performance",
+    icon: FlaskConical,
+    accentClass: "text-neon-amber",
+  },
+  {
+    label: "Quantize",
+    href: "/quantize",
+    description: "Compress and package artifacts",
+    icon: Package,
+    accentClass: "text-neon-pink",
+  },
+];
 
 export default function ModelsPage() {
   const connection = useConnectionContextSafe();
   const client = connection?.client ?? null;
-
   const { models, isLoading, refresh } = useModels(client);
 
-  const [activeTab, setActiveTab] = useState<TabId>("models");
+  const [activeTab, setActiveTab] = useState<TabId>("loaded");
   const [isLoadDialogOpen, setIsLoadDialogOpen] = useState(false);
   const [isLoadingModel, setIsLoadingModel] = useState(false);
   const [unloadingId, setUnloadingId] = useState<string | null>(null);
@@ -155,41 +171,41 @@ export default function ModelsPage() {
     [client, refresh],
   );
 
-  /** Called by AvailableModelsPanel — switch to Models tab + pre-fill path */
   const handleLoadModelFromAvailable = useCallback((modelPath: string) => {
     setPrefillPath(modelPath);
-    setActiveTab("models");
+    setActiveTab("loaded");
     setIsLoadDialogOpen(true);
   }, []);
 
-  const loadedModelIds = models.map((m) => m.id);
-
   return (
-    <main className="flex flex-col h-screen">
-      {/* ── Header ── */}
-      <header className="glass border-b border-opta-border px-6 py-3 flex items-center gap-4 flex-shrink-0">
+    <main className="flex h-screen flex-col">
+      <header className="glass flex shrink-0 items-center gap-4 border-b border-opta-border px-6 py-3">
         <Link
           href="/"
           className={cn(
-            "p-1.5 rounded-lg transition-colors",
-            "text-text-secondary hover:text-text-primary hover:bg-primary/10",
+            "rounded-lg p-1.5 text-text-secondary transition-colors",
+            "hover:bg-primary/10 hover:text-text-primary",
           )}
           aria-label="Back to dashboard"
         >
-          <ArrowLeft className="w-5 h-5" />
+          <ArrowLeft className="h-5 w-5" />
         </Link>
-        <h1 className="text-lg font-semibold text-text-primary">Models</h1>
+        <div>
+          <h1 className="text-lg font-semibold text-text-primary">Models</h1>
+          <p className="text-xs text-text-muted">
+            Load, inspect, and prepare models for the rest of your workflow.
+          </p>
+        </div>
       </header>
 
-      {/* ── Tab bar ── */}
-      <div className="glass-subtle border-b border-opta-border flex-shrink-0 overflow-x-auto">
-        <div className="flex items-end px-4 min-w-max">
+      <div className="glass-subtle shrink-0 overflow-x-auto border-b border-opta-border">
+        <div className="flex min-w-max items-end px-4">
           {TABS.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               className={cn(
-                "relative flex items-center gap-1.5 px-3.5 py-3 text-xs font-medium whitespace-nowrap transition-colors",
+                "relative flex items-center gap-1.5 px-3.5 py-3 text-xs font-medium transition-colors",
                 activeTab === tab.id
                   ? "text-text-primary"
                   : "text-text-muted hover:text-text-secondary",
@@ -199,10 +215,10 @@ export default function ModelsPage() {
               {tab.label}
               {activeTab === tab.id && (
                 <motion.div
-                  layoutId="active-tab"
+                  layoutId="active-model-tab"
                   className="absolute bottom-0 left-0 right-0 h-0.5 rounded-full"
                   style={{ background: "var(--opta-primary)" }}
-                  transition={{ type: "spring", stiffness: 400, damping: 35 }}
+                  transition={{ type: "spring", stiffness: 420, damping: 35 }}
                 />
               )}
             </button>
@@ -210,105 +226,115 @@ export default function ModelsPage() {
         </div>
       </div>
 
-      {/* ── Content ── */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
-        {/* Error banner */}
-        <AnimatePresence>
-          {actionError && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="flex items-center gap-2 rounded-lg bg-neon-red/10 border border-neon-red/20 px-3 py-2"
-            >
-              <AlertCircle className="h-3.5 w-3.5 shrink-0 text-neon-red" />
-              <p className="text-xs text-neon-red">{actionError}</p>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Offline state */}
+      <div className="flex-1 overflow-y-auto p-6">
         {!client ? (
-          <p className="text-sm text-text-muted text-center pt-12">
+          <p className="pt-12 text-center text-sm text-text-muted">
             Not connected — check Settings to configure your server.
           </p>
         ) : (
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -6 }}
-              transition={{ type: "spring", stiffness: 320, damping: 30 }}
-            >
-              {/* Models tab */}
-              {activeTab === "models" && (
-                <>
-                  <ModelLoadDialog
-                    isOpen={isLoadDialogOpen}
-                    isLoading={isLoadingModel}
-                    onLoad={handleLoad}
-                    onClose={() => {
-                      setIsLoadDialogOpen(false);
-                      setPrefillPath("");
-                    }}
-                    client={client}
-                    prefillPath={prefillPath}
-                  />
-                  <ModelList
-                    models={models}
-                    onUnload={handleUnload}
-                    isUnloading={unloadingId}
-                    onLoad={() => setIsLoadDialogOpen(true)}
-                  />
-                  {isLoading && models.length === 0 && (
-                    <p className="text-sm text-text-muted text-center pt-4">
-                      Loading models…
-                    </p>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_19rem]">
+            <section className="space-y-4">
+              <AnimatePresence>
+                {actionError && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="flex items-center gap-2 rounded-lg border border-neon-red/20 bg-neon-red/10 px-3 py-2"
+                  >
+                    <AlertCircle className="h-3.5 w-3.5 shrink-0 text-neon-red" />
+                    <p className="text-xs text-neon-red">{actionError}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -6 }}
+                  transition={{ type: "spring", stiffness: 320, damping: 30 }}
+                  className="space-y-4"
+                >
+                  {activeTab === "loaded" && (
+                    <>
+                      <ModelLoadDialog
+                        isOpen={isLoadDialogOpen}
+                        isLoading={isLoadingModel}
+                        onLoad={handleLoad}
+                        onClose={() => {
+                          setIsLoadDialogOpen(false);
+                          setPrefillPath("");
+                        }}
+                        client={client}
+                        prefillPath={prefillPath}
+                      />
+                      <ModelList
+                        models={models}
+                        onUnload={handleUnload}
+                        isUnloading={unloadingId}
+                        onLoad={() => setIsLoadDialogOpen(true)}
+                      />
+                      {isLoading && models.length === 0 && (
+                        <p className="pt-2 text-center text-sm text-text-muted">
+                          Loading models…
+                        </p>
+                      )}
+                    </>
                   )}
-                </>
-              )}
 
-              {/* Available tab */}
-              {activeTab === "available" && (
-                <AvailableModelsPanel
-                  client={client}
-                  onLoadModel={handleLoadModelFromAvailable}
-                />
-              )}
+                  {activeTab === "catalog" && (
+                    <AvailableModelsPanel
+                      client={client}
+                      onLoadModel={handleLoadModelFromAvailable}
+                    />
+                  )}
 
-              {/* Diagnostics tab */}
-              {activeTab === "diagnostics" && (
-                <DiagnosticsPanel client={client} />
-              )}
+                  {activeTab === "diagnostics" && (
+                    <DiagnosticsPanel client={client} />
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </section>
 
-              {/* Metrics tab */}
-              {activeTab === "metrics" && <MetricsPanel client={client} />}
-
-              {/* Presets tab */}
-              {activeTab === "presets" && <PresetsPanel client={client} />}
-
-              {/* Stack tab */}
-              {activeTab === "stack" && <StackView client={client} />}
-
-              {/* Benchmark tab */}
-              {activeTab === "benchmark" && (
-                <BenchmarkPanel
-                  client={client}
-                  loadedModelIds={loadedModelIds}
-                />
-              )}
-
-              {/* Quantize tab */}
-              {activeTab === "quantize" && <QuantizePanel client={client} />}
-
-              {/* Helpers tab */}
-              {activeTab === "helpers" && <HelpersPanel client={client} />}
-
-              {/* Logs tab */}
-              {activeTab === "logs" && <LogsBrowser client={client} />}
-            </motion.div>
-          </AnimatePresence>
+            <aside className="glass-subtle h-fit rounded-2xl border border-opta-border/70 p-3">
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-text-muted">
+                  Next Steps
+                </h2>
+                <span className="text-[10px] text-text-muted">
+                  {models.length} loaded
+                </span>
+              </div>
+              <div className="space-y-1.5">
+                {WORKFLOW_LINKS.map((item) => {
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "group flex items-start gap-2 rounded-xl border border-opta-border/50 px-2.5 py-2 transition-colors",
+                        "hover:bg-primary/10 hover:border-primary/30",
+                      )}
+                    >
+                      <Icon className={cn("mt-0.5 h-3.5 w-3.5 shrink-0", item.accentClass)} />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs font-medium text-text-primary">
+                          {item.label}
+                        </p>
+                        <p className="line-clamp-2 text-[11px] text-text-muted">
+                          {item.description}
+                        </p>
+                      </div>
+                      <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-text-muted opacity-0 transition-opacity group-hover:opacity-80" />
+                    </Link>
+                  );
+                })}
+              </div>
+            </aside>
+          </div>
         )}
       </div>
     </main>

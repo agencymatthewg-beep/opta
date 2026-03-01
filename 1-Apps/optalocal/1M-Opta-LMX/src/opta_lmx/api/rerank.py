@@ -11,13 +11,14 @@ Compatible with Cohere/Jina reranking API format.
 from __future__ import annotations
 
 import logging
+from typing import Any
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import RemoteReranking, verify_inference_key
+from opta_lmx.api.deps import RemoteReranking, RerankerDep, verify_inference_key
 from opta_lmx.api.errors import openai_error
 from opta_lmx.helpers.client import HelperNodeError
 
@@ -63,8 +64,41 @@ class RerankResponse(BaseModel):
     usage: RerankUsage
 
 
+def _estimate_tokens(query: str, documents: list[str]) -> int:
+    """Estimate token usage (roughly 4 chars per token)."""
+    total_chars = len(query) + sum(len(d) for d in documents)
+    return max(1, total_chars // 4)
+
+
+def _build_rerank_response(
+    *,
+    results: list[dict[str, Any]],
+    documents: list[str],
+    model: str,
+    score_key: str,
+    est_tokens: int,
+) -> JSONResponse:
+    """Build Cohere/Jina-compatible rerank response payload."""
+    return JSONResponse(content=RerankResponse(
+        results=[
+            RerankResult(
+                index=int(r["index"]),
+                relevance_score=float(r[score_key]),
+                document=RerankDocument(text=documents[int(r["index"])]),
+            )
+            for r in results
+        ],
+        model=model,
+        usage=RerankUsage(total_tokens=est_tokens),
+    ).model_dump())
+
+
 @router.post("/v1/rerank", response_model=None)
-async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) -> Response:
+async def rerank_documents(
+    body: RerankRequest,
+    remote_client: RemoteReranking,
+    reranker: RerankerDep,
+) -> Response:
     """Rerank documents by relevance to a query.
 
     Compatible with Cohere/Jina reranking API format.
@@ -94,6 +128,8 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
     if top_n is not None and top_n > len(body.documents):
         top_n = len(body.documents)
 
+    est_tokens = _estimate_tokens(body.query, body.documents)
+
     # Try helper node if configured
     if remote_client is not None:
         try:
@@ -102,23 +138,13 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
                 documents=body.documents,
                 top_n=top_n,
             )
-
-            # Estimate tokens (query + all docs, ~4 chars per token)
-            total_chars = len(body.query) + sum(len(d) for d in body.documents)
-            est_tokens = max(1, total_chars // 4)
-
-            return JSONResponse(content=RerankResponse(
-                results=[
-                    RerankResult(
-                        index=r["index"],
-                        relevance_score=r["relevance_score"],
-                        document=RerankDocument(text=body.documents[r["index"]]),
-                    )
-                    for r in results
-                ],
+            return _build_rerank_response(
+                results=results,
+                documents=body.documents,
                 model=remote_client.model,
-                usage=RerankUsage(total_tokens=est_tokens),
-            ).model_dump())
+                score_key="relevance_score",
+                est_tokens=est_tokens,
+            )
         except HelperNodeError as e:
             if e.fallback == "skip":
                 return openai_error(
@@ -127,19 +153,49 @@ async def rerank_documents(body: RerankRequest, remote_client: RemoteReranking) 
                     error_type="server_error",
                     code="helper_node_unavailable",
                 )
-            # fallback == "local" — fall through to local (not yet implemented)
+            # fallback == "local" — fall through to local engine
             logger.info("helper_node_rerank_fallback_to_local", extra={
                 "remote_url": remote_client.url,
                 "reason": str(e),
             })
 
-    # No local reranking engine available yet
-    return openai_error(
-        status_code=503,
-        message=(
-            "Reranking engine not available. "
-            "Configure helper_nodes.reranking in config.yaml."
-        ),
-        error_type="server_error",
-        code="reranking_unavailable",
+    # Local reranking engine fallback / primary path
+    if reranker is None:
+        return openai_error(
+            status_code=503,
+            message=(
+                "Reranking engine not available. Configure helper_nodes.reranking "
+                "or set rag.reranker_model in config.yaml."
+            ),
+            error_type="server_error",
+            code="reranking_unavailable",
+        )
+
+    rerank_fn = getattr(reranker, "rerank", None)
+    if not callable(rerank_fn):
+        return openai_error(
+            status_code=503,
+            message="Reranking engine unavailable or misconfigured.",
+            error_type="server_error",
+            code="reranking_unavailable",
+        )
+
+    try:
+        local_results = rerank_fn(body.query, body.documents, top_n=top_n)
+    except Exception as e:
+        logger.warning("local_rerank_failed", extra={"error": str(e)})
+        return openai_error(
+            status_code=503,
+            message=f"Local reranking unavailable: {e}",
+            error_type="server_error",
+            code="reranking_unavailable",
+        )
+
+    local_model = getattr(reranker, "model_id", None) or body.model
+    return _build_rerank_response(
+        results=local_results,
+        documents=body.documents,
+        model=local_model,
+        score_key="score",
+        est_tokens=est_tokens,
     )

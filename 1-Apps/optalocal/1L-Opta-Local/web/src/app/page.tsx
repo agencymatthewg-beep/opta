@@ -23,11 +23,9 @@ import {
   RefreshCw,
   Plus,
   AlertCircle,
-  WifiOff,
   AlertTriangle,
   Cloud,
   Cpu,
-  Zap,
   Activity,
   Database,
   Network,
@@ -43,6 +41,9 @@ import {
   FlaskConical,
   Package,
   Settings,
+  Settings2,
+  TerminalSquare,
+  Wrench,
   ArrowRight,
 } from "lucide-react";
 import { Button, cn } from "@opta/ui";
@@ -55,6 +56,9 @@ import { useAuthSafe } from "@/components/shared/AuthProvider";
 import type { ServerStatus } from "@/types/lmx";
 import { CircularBuffer } from "@/lib/circular-buffer";
 import type { ThroughputPoint } from "@/lib/circular-buffer";
+
+// Opta Doctor Component
+import { RescueScreen } from "@/components/shared/RescueScreen";
 
 import { VRAMGauge } from "@/components/dashboard/VRAMGauge";
 import { ModelList } from "@/components/dashboard/ModelList";
@@ -71,12 +75,30 @@ interface SSEEvent {
   data: ServerStatus | ThroughputPoint;
 }
 
+type RuntimeConnectionState = "online" | "probing" | "offline";
+type RuntimeActivityState = "busy" | "idle";
+type RuntimeLatencyState = "nominal" | "degraded" | "unknown";
+type RuntimePressureState = "normal" | "high";
+type RuntimeStreamState = "open" | "connecting" | "closed" | "error";
+
+interface RuntimeVisualState {
+  connection: RuntimeConnectionState;
+  stream: RuntimeStreamState;
+  activity: RuntimeActivityState;
+  latency: RuntimeLatencyState;
+  pressure: RuntimePressureState;
+  label: string;
+  summary: string;
+}
+
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
 const THROUGHPUT_BUFFER_CAPACITY = 300;
 const CHART_FLUSH_INTERVAL_MS = 1000;
+const DEGRADED_LATENCY_MS = 80;
+const HIGH_VRAM_PERCENT = 85;
 
 // ---------------------------------------------------------------------------
 // Framer Motion variants — gentle float-up stagger
@@ -228,23 +250,110 @@ function StatusDot({ online }: { online: boolean }) {
   );
 }
 
+function RuntimeStateChip({
+  state,
+  compact = false,
+  className,
+}: {
+  state: RuntimeVisualState;
+  compact?: boolean;
+  className?: string;
+}) {
+  const hardFault =
+    state.connection === "offline" ||
+    state.stream === "error" ||
+    state.stream === "closed";
+  const warning =
+    state.connection === "probing" ||
+    state.latency === "degraded" ||
+    state.pressure === "high";
+  const busy = state.activity === "busy";
+
+  const dotClass = hardFault
+    ? "bg-neon-red"
+    : warning
+      ? "bg-neon-amber"
+      : busy
+        ? "bg-neon-cyan"
+        : "bg-neon-green";
+
+  const chipClass = hardFault
+    ? "text-neon-red border-neon-red/30 bg-neon-red/10"
+    : warning
+      ? "text-neon-amber border-neon-amber/30 bg-neon-amber/10"
+      : busy
+        ? "text-neon-cyan border-neon-cyan/30 bg-neon-cyan/10"
+        : "text-neon-green border-neon-green/30 bg-neon-green/10";
+
+  return (
+    <div
+      className={cn(
+        "runtime-state-chip opta-state-border opta-state-surface opta-state-scan inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-medium tracking-wide",
+        chipClass,
+        busy && "runtime-state-chip--busy",
+        compact && "px-2 py-0.5",
+        className,
+      )}
+      data-runtime-connection={state.connection}
+      data-runtime-stream={state.stream}
+      data-runtime-activity={state.activity}
+      data-runtime-latency={state.latency}
+      data-runtime-pressure={state.pressure}
+      title={`${state.label} · ${state.summary}`}
+    >
+      <span className="relative flex h-1.5 w-1.5">
+        {(state.connection === "probing" || busy) && (
+          <span className={cn("absolute inline-flex h-full w-full rounded-full opacity-70 animate-ping", dotClass)} />
+        )}
+        <span className={cn("relative inline-flex h-1.5 w-1.5 rounded-full", dotClass)} />
+      </span>
+      {compact ? (
+        <span className="text-[9px] text-[var(--color-text-muted)]">{state.summary}</span>
+      ) : (
+        <>
+          <span className="font-semibold uppercase tracking-[0.12em]">{state.label}</span>
+          <span className="text-[9px] text-[var(--color-text-muted)]">{state.summary}</span>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Feature discovery grid
+// Feature discovery grid — grouped by function
 // ---------------------------------------------------------------------------
 
-const FEATURE_CARDS = [
-  { label: "Chat",      href: "/chat",      icon: MessageSquare, desc: "Stream AI responses",    accent: "--opta-neon-purple" },
-  { label: "Arena",     href: "/arena",     icon: Swords,        desc: "Side-by-side comparison",accent: "--opta-neon-blue"   },
-  { label: "RAG Studio",href: "/rag",       icon: BookOpen,      desc: "Document Q&A",           accent: "--opta-neon-cyan"   },
-  { label: "Agents",    href: "/agents",    icon: Bot,           desc: "Automate workflows",      accent: "--opta-neon-green"  },
-  { label: "Models",    href: "/models",    icon: Layers,        desc: "Browse & load models",    accent: "--opta-primary"     },
-  { label: "Sessions",  href: "/sessions",  icon: History,       desc: "Chat history",            accent: "--opta-neon-amber"  },
-  { label: "Devices",   href: "/devices",   icon: Monitor,       desc: "Device registry",         accent: "--opta-neon-indigo" },
-  { label: "Metrics",   href: "/metrics",   icon: BarChart2,     desc: "Live telemetry",          accent: "--opta-neon-green"  },
-  { label: "Benchmark", href: "/benchmark", icon: FlaskConical,  desc: "Model evaluations",       accent: "--opta-neon-orange" },
-  { label: "Quantize",  href: "/quantize",  icon: Package,       desc: "Compress models",         accent: "--opta-neon-pink"   },
-  { label: "Stack",     href: "/stack",     icon: Network,       desc: "Stack overview",          accent: "--opta-neon-cyan"   },
-  { label: "Settings",  href: "/settings",  icon: Settings,      desc: "Configuration",           accent: "--opta-text-muted"  },
+const FEATURE_GROUPS = [
+  {
+    label: "Inference",
+    cards: [
+      { label: "Chat", href: "/chat", icon: MessageSquare, desc: "Stream AI responses", accent: "--opta-neon-purple" },
+      { label: "Arena", href: "/arena", icon: Swords, desc: "Side-by-side comparison", accent: "--opta-neon-blue" },
+      { label: "RAG Studio", href: "/rag", icon: BookOpen, desc: "Document ingestion & search", accent: "--opta-neon-cyan" },
+      { label: "Agents", href: "/agents", icon: Bot, desc: "Multi-step workflows", accent: "--opta-neon-green" },
+    ],
+  },
+  {
+    label: "Management",
+    cards: [
+      { label: "Models", href: "/models", icon: Layers, desc: "Load and manage runtime models", accent: "--opta-primary" },
+      { label: "Presets", href: "/presets", icon: Settings2, desc: "Model behavior profiles", accent: "--opta-neon-indigo" },
+      { label: "Skills", href: "/skills", icon: Wrench, desc: "Tool integrations", accent: "--opta-neon-cyan" },
+      { label: "Operations", href: "/operations", icon: TerminalSquare, desc: "Safe daemon actions", accent: "--opta-neon-orange" },
+      { label: "Sessions", href: "/sessions", icon: History, desc: "Search and resume chats", accent: "--opta-neon-amber" },
+    ],
+  },
+  {
+    label: "System",
+    cards: [
+      { label: "Metrics", href: "/metrics", icon: BarChart2, desc: "Live telemetry and health", accent: "--opta-neon-green" },
+      { label: "Benchmark", href: "/benchmark", icon: FlaskConical, desc: "Throughput and latency tests", accent: "--opta-neon-orange" },
+      { label: "Quantize", href: "/quantize", icon: Package, desc: "Compress model artifacts", accent: "--opta-neon-pink" },
+      { label: "Devices", href: "/devices", icon: Monitor, desc: "Device and cloud sync", accent: "--opta-neon-indigo" },
+      { label: "Stack", href: "/stack", icon: Network, desc: "Infrastructure topology", accent: "--opta-neon-cyan" },
+      { label: "Settings", href: "/settings", icon: Settings, desc: "Connection and config", accent: "--opta-text-muted" },
+    ],
+  },
 ] as const;
 
 function FeatureCard({
@@ -449,10 +558,73 @@ export default function DashboardPage() {
     status?.tokens_per_second != null
       ? status.tokens_per_second.toFixed(1)
       : "0.0";
+  const runtimeVisualState = useMemo<RuntimeVisualState>(() => {
+    const connection: RuntimeConnectionState = isConnected
+      ? "online"
+      : connectionType === "probing"
+        ? "probing"
+        : "offline";
+    const stream: RuntimeStreamState = connectionState;
+    const activity: RuntimeActivityState =
+      (status?.active_requests ?? 0) > 0 ? "busy" : "idle";
+    const latency: RuntimeLatencyState =
+      lastPingMs == null
+        ? "unknown"
+        : lastPingMs >= DEGRADED_LATENCY_MS
+          ? "degraded"
+          : "nominal";
+    const pressure: RuntimePressureState =
+      memPct >= HIGH_VRAM_PERCENT ? "high" : "normal";
+
+    const connectionLabel =
+      connection === "online"
+        ? "Online"
+        : connection === "probing"
+          ? "Probing"
+          : "Offline";
+    const streamLabel =
+      stream === "open"
+        ? "Stream"
+        : stream === "connecting"
+          ? "Syncing"
+          : "Stream off";
+    const activityLabel = activity === "busy" ? "Busy" : "Idle";
+
+    let label = "Nominal";
+    if (connection === "offline") label = "Offline";
+    else if (connection === "probing") label = "Probing";
+    else if (stream === "error" || stream === "closed") label = "Stream off";
+    else if (activity === "busy") label = "Busy";
+    else if (latency === "degraded") label = "Degraded";
+    else if (pressure === "high") label = "Pressure";
+
+    return {
+      connection,
+      stream,
+      activity,
+      latency,
+      pressure,
+      label,
+      summary: `${connectionLabel} · ${streamLabel} · ${activityLabel}`,
+    };
+  }, [
+    isConnected,
+    connectionType,
+    connectionState,
+    status?.active_requests,
+    lastPingMs,
+    memPct,
+  ]);
 
   // ---- Ambient glow intensity from TPS ----
   const glowOpacity =
     averageTps != null && averageTps > 0 ? Math.min(averageTps / 40, 0.55) : 0;
+
+  // ---------------------------------------------------------------------------
+  // Callbacks
+  // ---------------------------------------------------------------------------
+
+  const onLoadModelTrigger = useCallback(() => setIsLoadOpen(true), []);
 
   // ---------------------------------------------------------------------------
   // Render
@@ -533,595 +705,607 @@ export default function DashboardPage() {
         {/* ══════════════════════════════════════════════════════════════
             MAIN BODY — left sidebar + right content
         ══════════════════════════════════════════════════════════════ */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="relative z-10 flex flex-1 gap-4 overflow-hidden p-5"
-        >
-          {/* ── LEFT COLUMN ── */}
-          <section className="flex w-72 shrink-0 flex-col gap-3">
-            {/* Identity header */}
-            <motion.div
-              variants={floatUp}
-              className="flex items-center gap-3 px-1 pb-1"
-            >
-              {/* Gemini-style icon — iridescent ring */}
-              <div
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(88,28,135,0.6), rgba(6,182,212,0.3))",
-                  border: "1px solid rgba(139,92,246,0.4)",
-                  boxShadow: "0 0 16px rgba(139,92,246,0.25)",
-                }}
-              >
-                <Sparkles
-                  className="h-4 w-4"
-                  style={{ color: "var(--color-neon-purple)" }}
-                />
-              </div>
-              <div>
-                <h1
-                  className="text-[15px] font-semibold leading-none tracking-tight"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, #fafafa 0%, #a5b4fc 60%, #c084fc 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                  }}
-                >
-                  Opta LMX
-                </h1>
-                <span className="text-[10px] tracking-widest text-[var(--color-text-muted)]">
-                  Local inference
-                </span>
-              </div>
-              {auth?.user && (
-                <Cloud className="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)] opacity-50" />
-              )}
-            </motion.div>
-
-            {/* Connection */}
-            <GeminiCard>
-              <SectionLabel icon={Activity}>Connection</SectionLabel>
-              <div className="flex flex-col gap-1.5">
-                <TelemetryRow
-                  label="State"
-                  value={
-                    isOnline
-                      ? "Online"
-                      : connectionType === "probing"
-                        ? "Probing"
-                        : "Offline"
-                  }
-                  accent={
-                    isOnline
-                      ? "var(--color-neon-green)"
-                      : connectionType === "probing"
-                        ? "var(--color-neon-amber)"
-                        : "var(--color-neon-red)"
-                  }
-                />
-                <TelemetryRow
-                  label="Mode"
-                  value={connection?.connectionType ?? "—"}
-                />
-                <TelemetryRow
-                  label="Latency"
-                  value={lastPingMs !== null ? `${lastPingMs}ms` : "—"}
-                  accent={
-                    lastPingMs !== null && lastPingMs < 10
-                      ? "var(--color-neon-green)"
-                      : lastPingMs !== null && lastPingMs > 50
-                        ? "var(--color-neon-amber)"
-                        : undefined
-                  }
-                />
-                <TelemetryRow
-                  label="Stream"
-                  value={connectionState}
-                  accent={
-                    connectionState === "open"
-                      ? "var(--color-neon-green)"
-                      : connectionState === "error"
-                        ? "var(--color-neon-red)"
-                        : "var(--color-neon-amber)"
-                  }
-                />
-              </div>
-              <div className="gemini-divider mt-4 mb-3" />
-              <div className="flex items-center gap-2">
-                <StatusDot online={isOnline} />
-                <span className="text-[10px] text-[var(--color-text-muted)]">
-                  {isOnline ? "Nominal" : "Unreachable"}
-                </span>
-                {isConnected && (
-                  <div className="ml-auto">
-                    <HeartbeatIndicator
-                      isHealthy={isHealthy}
-                      consecutiveFailures={consecutiveFailures}
-                      lastPingMs={lastPingMs}
-                    />
-                  </div>
-                )}
-              </div>
-            </GeminiCard>
-
-            {/* Active model */}
-            <GeminiCard>
-              <SectionLabel icon={Database}>Active model</SectionLabel>
-              {activeModel ? (
-                <div
-                  className="rounded-xl p-3"
-                  style={{
-                    background:
-                      "linear-gradient(135deg, rgba(88,28,135,0.2), rgba(59,130,246,0.1))",
-                    border: "1px solid rgba(139,92,246,0.2)",
-                  }}
-                >
-                  <p
-                    className="truncate text-[12px] font-medium leading-snug"
-                    style={{ color: "var(--color-neon-purple)" }}
-                    title={activeModel.id}
-                  >
-                    {activeModel.name ?? activeModel.id}
-                  </p>
-                  <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
-                    {activeModel.vram_gb != null
-                      ? `${activeModel.vram_gb.toFixed(1)} GB VRAM`
-                      : ""}
-                    {activeModel.quantization
-                      ? ` · ${activeModel.quantization}`
-                      : ""}
-                  </p>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <span
-                      className="h-1.5 w-1.5 animate-pulse rounded-full"
-                      style={{
-                        background: "var(--color-neon-green)",
-                        boxShadow: "0 0 6px var(--color-neon-green)",
-                      }}
-                    />
-                    <span className="text-[10px] text-[var(--color-neon-green)]">
-                      Ready
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className="rounded-xl p-3"
-                  style={{
-                    background: "rgba(255,255,255,0.02)",
-                    border: "1px solid rgba(255,255,255,0.05)",
-                  }}
-                >
-                  <p className="text-[11px] text-[var(--color-text-muted)]">
-                    No model loaded
-                  </p>
-                  <p className="mt-0.5 text-[10px] text-[var(--color-text-muted)] opacity-60">
-                    Use + Load Model to begin
-                  </p>
-                </div>
-              )}
-            </GeminiCard>
-
-            {/* Memory pressure */}
-            <GeminiCard>
-              <SectionLabel icon={Cpu}>Unified memory</SectionLabel>
-              <div className="mb-3">
-                <div className="mb-2 flex items-end justify-between">
-                  <span
-                    className="text-2xl font-light tabular-nums leading-none"
-                    style={{ color: "var(--color-text-primary)" }}
-                  >
-                    {memPct.toFixed(0)}
-                    <span className="ml-0.5 text-xs text-[var(--color-text-muted)]">
-                      %
-                    </span>
-                  </span>
-                  <span className="text-[10px] text-[var(--color-text-muted)]">
-                    {status
-                      ? `${status.vram_used_gb.toFixed(1)} / ${status.vram_total_gb.toFixed(0)} GB`
-                      : "— / —"}
-                  </span>
-                </div>
-                <div className="gemini-track">
-                  <motion.div
-                    className="gemini-track-fill"
-                    style={{
-                      background:
-                        memPct >= 80
-                          ? "linear-gradient(90deg, var(--color-neon-amber), var(--color-neon-red))"
-                          : memPct >= 60
-                            ? "linear-gradient(90deg, var(--color-neon-purple), var(--color-neon-amber))"
-                            : "linear-gradient(90deg, var(--opta-neon-blue), var(--color-neon-purple), var(--opta-neon-cyan))",
-                    }}
-                    animate={{ width: `${memPct}%` }}
-                    transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-                  />
-                </div>
-              </div>
-
-              <div className="gemini-divider mb-3" />
-
-              {/* Active requests */}
-              <div>
-                <div className="mb-1.5 flex items-center justify-between">
-                  <span className="text-[10px] text-[var(--color-text-muted)]">
-                    Active requests
-                  </span>
-                  <span
-                    className="text-[11px] font-medium tabular-nums"
-                    style={{
-                      color:
-                        (status?.active_requests ?? 0) > 0
-                          ? "var(--opta-neon-cyan)"
-                          : "var(--color-text-muted)",
-                    }}
-                  >
-                    {status?.active_requests ?? 0}
-                  </span>
-                </div>
-                <div className="gemini-track">
-                  <motion.div
-                    className="gemini-track-fill"
-                    style={{
-                      background:
-                        "linear-gradient(90deg, var(--opta-neon-cyan), var(--opta-neon-blue))",
-                      boxShadow:
-                        (status?.active_requests ?? 0) > 0
-                          ? "0 0 8px var(--opta-neon-cyan)"
-                          : "none",
-                    }}
-                    animate={{
-                      width: (status?.active_requests ?? 0) > 0 ? "100%" : "0%",
-                    }}
-                    transition={{ duration: 0.5, ease: "easeOut" }}
-                  />
-                </div>
-              </div>
-            </GeminiCard>
-
-            {/* TPS readout — fills remaining space */}
-            <GeminiCard
-              glow
-              className="relative flex flex-1 flex-col items-center justify-center overflow-hidden"
-            >
-              {/* Background icon watermark */}
-              <Zap
-                className="absolute right-2 bottom-3 h-20 w-20 opacity-[0.03]"
-                style={{ color: "var(--color-neon-purple)" }}
-              />
-
-              <p className="mb-2 text-[10px] tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
-                Tokens / sec
-              </p>
-              <motion.div
-                key={tpsDisplay}
-                initial={{ opacity: 0.5, scale: 0.94 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.35 }}
-                className="gemini-tps-number text-6xl font-extralight leading-none tracking-tighter tabular-nums"
-              >
-                {tpsDisplay}
-              </motion.div>
-
-              {averageTps != null && averageTps > 0 && (
-                <p className="mt-2 text-[10px] text-[var(--color-text-muted)]">
-                  avg {averageTps.toFixed(1)} t/s
-                </p>
-              )}
-            </GeminiCard>
-          </section>
-
-          {/* ── RIGHT PANEL ── */}
-          <div className="flex flex-1 flex-col gap-4 overflow-y-auto no-scrollbar">
-            {/* Action bar */}
-            <motion.div
-              variants={floatUp}
-              className="flex shrink-0 items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                {connectionType !== "offline" &&
-                  connectionState === "error" && (
-                    <span
-                      className="inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wider"
-                      style={{
-                        background: "rgba(239,68,68,0.12)",
-                        border: "1px solid rgba(239,68,68,0.3)",
-                        color: "var(--color-neon-red)",
-                      }}
-                    >
-                      Stream off
-                    </span>
-                  )}
-                {auth?.user && (
-                  <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
-                    <Cloud className="h-3 w-3 opacity-50" />
-                    <span className="text-[var(--color-text-secondary)] opacity-70">
-                      {auth.user.user_metadata?.full_name ??
-                        auth.user.email ??
-                        ""}
-                    </span>
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="glass"
-                  size="sm"
-                  onClick={() => setIsLoadOpen((p) => !p)}
-                  aria-label="Load a model"
-                >
-                  <Plus className="mr-1.5 h-4 w-4" />
-                  Load model
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={reconnect}
-                  aria-label="Reconnect stream"
-                >
-                  <RefreshCw className="h-4 w-4" />
-                </Button>
-              </div>
-            </motion.div>
-
-            {/* ── Banners ── */}
-            {connectionType === "offline" && (
+        {connectionType === "offline" || connection?.diagnostic === "UNAUTHORIZED" ? (
+          <div className="relative z-10 flex flex-1 overflow-hidden">
+            <RescueScreen
+              diagnostic={connection?.diagnostic ?? "UNKNOWN"}
+              errorMsg={connection?.error ?? null}
+              onRetry={() => {
+                reconnect();
+                recheckConnection?.();
+              }}
+            />
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="relative z-10 flex flex-1 gap-4 overflow-hidden p-5"
+          >
+            {/* ── LEFT COLUMN ── */}
+            <section className="flex w-72 shrink-0 flex-col gap-3">
+              {/* Identity header */}
               <motion.div
                 variants={floatUp}
-                className="glass-subtle shrink-0 rounded-2xl p-8 text-center"
+                className="flex items-center gap-3 px-1 pb-1"
               >
-                <WifiOff
-                  className="mx-auto mb-3 h-8 w-8 opacity-60"
-                  style={{ color: "var(--color-neon-red)" }}
-                />
-                <p className="mb-1 text-sm font-medium text-[var(--color-text-primary)]">
-                  Server unreachable
-                </p>
-                <p className="mb-4 text-xs text-[var(--color-text-muted)]">
-                  {connection?.error ?? "Could not connect via LAN or WAN"}
-                </p>
-                <Button variant="glass" size="sm" onClick={recheckConnection}>
-                  <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
-                  Retry
-                </Button>
-              </motion.div>
-            )}
-
-            <AnimatePresence>
-              {!isHealthy && connectionType !== "offline" && (
-                <motion.div
-                  initial={{ opacity: 0, y: -8, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: "auto" }}
-                  exit={{ opacity: 0, y: -8, height: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-3"
+                {/* Gemini-style icon — iridescent ring */}
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
                   style={{
-                    background: "rgba(245,158,11,0.08)",
-                    border: "1px solid rgba(245,158,11,0.25)",
+                    background:
+                      "linear-gradient(135deg, rgba(88,28,135,0.6), rgba(6,182,212,0.3))",
+                    border: "1px solid rgba(139,92,246,0.4)",
+                    boxShadow: "0 0 16px rgba(139,92,246,0.25)",
                   }}
                 >
-                  <AlertTriangle
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: "var(--color-neon-amber)" }}
+                  <Sparkles
+                    className="h-4 w-4"
+                    style={{ color: "var(--color-neon-purple)" }}
                   />
-                  <p
-                    className="flex-1 text-sm"
-                    style={{ color: "var(--color-neon-amber)" }}
+                </div>
+                <div>
+                  <h1
+                    className="text-[15px] font-semibold leading-none tracking-tight"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, #fafafa 0%, #a5b4fc 60%, #c084fc 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
                   >
-                    Connection unstable — reconnecting...
+                    Opta LMX
+                  </h1>
+                  <span className="text-[10px] tracking-widest text-[var(--color-text-muted)]">
+                    Local inference
+                  </span>
+                </div>
+                {auth?.user && (
+                  <Cloud className="ml-auto h-3.5 w-3.5 shrink-0 text-[var(--color-text-muted)] opacity-50" />
+                )}
+              </motion.div>
+
+              {/* Connection */}
+              <GeminiCard>
+                <div className="mb-3 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Activity className="h-3.5 w-3.5 text-[var(--color-text-muted)] opacity-70" />
+                    <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                      Connection
+                    </span>
+                  </div>
+                  <RuntimeStateChip state={runtimeVisualState} compact />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <TelemetryRow
+                    label="State"
+                    value={
+                      isOnline
+                        ? "Online"
+                        : connectionType === "probing"
+                          ? "Probing"
+                          : "Offline"
+                    }
+                    accent={
+                      isOnline
+                        ? "var(--color-neon-green)"
+                        : connectionType === "probing"
+                          ? "var(--color-neon-amber)"
+                          : "var(--color-neon-red)"
+                    }
+                  />
+                  <TelemetryRow
+                    label="Mode"
+                    value={connection?.connectionType ?? "—"}
+                  />
+                  <TelemetryRow
+                    label="Latency"
+                    value={lastPingMs !== null ? `${lastPingMs}ms` : "—"}
+                    accent={
+                      lastPingMs !== null && lastPingMs < 10
+                        ? "var(--color-neon-green)"
+                        : lastPingMs !== null && lastPingMs > 50
+                          ? "var(--color-neon-amber)"
+                          : undefined
+                    }
+                  />
+                  <TelemetryRow
+                    label="Stream"
+                    value={connectionState}
+                    accent={
+                      connectionState === "open"
+                        ? "var(--color-neon-green)"
+                        : connectionState === "error"
+                          ? "var(--color-neon-red)"
+                          : "var(--color-neon-amber)"
+                    }
+                  />
+                </div>
+                <div className="gemini-divider mt-4 mb-3" />
+                <div className="flex items-center gap-2">
+                  <StatusDot online={isOnline} />
+                  <span
+                    className="text-[10px]"
+                    style={{
+                      color:
+                        runtimeVisualState.label === "Offline" ||
+                          runtimeVisualState.label === "Stream off"
+                          ? "var(--color-neon-red)"
+                          : runtimeVisualState.label === "Probing" ||
+                            runtimeVisualState.label === "Degraded" ||
+                            runtimeVisualState.label === "Pressure"
+                            ? "var(--color-neon-amber)"
+                            : runtimeVisualState.label === "Busy"
+                              ? "var(--opta-neon-cyan)"
+                              : "var(--color-text-muted)",
+                    }}
+                  >
+                    {runtimeVisualState.label}
+                  </span>
+                  {isConnected && (
+                    <div className="ml-auto">
+                      <HeartbeatIndicator
+                        isHealthy={isHealthy}
+                        consecutiveFailures={consecutiveFailures}
+                        lastPingMs={lastPingMs}
+                      />
+                    </div>
+                  )}
+                </div>
+              </GeminiCard>
+
+              {/* Active model */}
+              <GeminiCard>
+                <SectionLabel icon={Database}>Active model</SectionLabel>
+                {activeModel ? (
+                  <div
+                    className="rounded-xl p-3"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(88,28,135,0.2), rgba(59,130,246,0.1))",
+                      border: "1px solid rgba(139,92,246,0.2)",
+                    }}
+                  >
+                    <p
+                      className="truncate text-[12px] font-medium leading-snug"
+                      style={{ color: "var(--color-neon-purple)" }}
+                      title={activeModel.id}
+                    >
+                      {activeModel.name ?? activeModel.id}
+                    </p>
+                    <p className="mt-1 text-[10px] text-[var(--color-text-muted)]">
+                      {activeModel.vram_gb != null
+                        ? `${activeModel.vram_gb.toFixed(1)} GB VRAM`
+                        : ""}
+                      {activeModel.quantization
+                        ? ` · ${activeModel.quantization}`
+                        : ""}
+                    </p>
+                    <div className="mt-2 flex items-center gap-1.5">
+                      <span
+                        className="h-1.5 w-1.5 animate-pulse rounded-full"
+                        style={{
+                          background: "var(--color-neon-green)",
+                          boxShadow: "0 0 6px var(--color-neon-green)",
+                        }}
+                      />
+                      <span className="text-[10px] text-[var(--color-neon-green)]">
+                        Ready
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div
+                    className="rounded-xl p-3 flex flex-col items-start gap-2"
+                    style={{
+                      background: "rgba(255,255,255,0.02)",
+                      border: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <p className="text-[11px] text-[var(--color-text-muted)]">
+                      No active model
+                    </p>
+                    <Button variant="secondary" size="sm" className="h-6 text-[10px] px-2" onClick={() => setIsLoadOpen(true)}>
+                      <Plus className="h-3 w-3 mr-1" />
+                      Load Model
+                    </Button>
+                  </div>
+                )}
+              </GeminiCard>
+
+              {/* Memory pressure */}
+              <GeminiCard>
+                <SectionLabel icon={Cpu}>Unified memory</SectionLabel>
+                <div className="mb-3">
+                  <div className="mb-2 flex items-end justify-between">
+                    <span
+                      className="text-2xl font-light tabular-nums leading-none"
+                      style={{ color: "var(--color-text-primary)" }}
+                    >
+                      {memPct.toFixed(0)}
+                      <span className="ml-0.5 text-xs text-[var(--color-text-muted)]">
+                        %
+                      </span>
+                    </span>
+                    <span className="text-[10px] text-[var(--color-text-muted)]">
+                      {status
+                        ? `${status.vram_used_gb.toFixed(1)} / ${status.vram_total_gb.toFixed(0)} GB`
+                        : "— / —"}
+                    </span>
+                  </div>
+                  <div className="gemini-track">
+                    <motion.div
+                      className="gemini-track-fill"
+                      style={{
+                        background:
+                          memPct >= 80
+                            ? "linear-gradient(90deg, var(--color-neon-amber), var(--color-neon-red))"
+                            : memPct >= 60
+                              ? "linear-gradient(90deg, var(--color-neon-purple), var(--color-neon-amber))"
+                              : "linear-gradient(90deg, var(--opta-neon-blue), var(--color-neon-purple), var(--opta-neon-cyan))",
+                      }}
+                      animate={{ width: `${memPct}%` }}
+                      transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                    />
+                  </div>
+                </div>
+
+                <div className="gemini-divider mb-3" />
+
+                {/* Active requests */}
+                <div>
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <span className="text-[10px] text-[var(--color-text-muted)]">
+                      Active requests
+                    </span>
+                    <span
+                      className="text-[11px] font-medium tabular-nums"
+                      style={{
+                        color:
+                          (status?.active_requests ?? 0) > 0
+                            ? "var(--opta-neon-cyan)"
+                            : "var(--color-text-muted)",
+                      }}
+                    >
+                      {status?.active_requests ?? 0}
+                    </span>
+                  </div>
+                  <div className="gemini-track">
+                    <motion.div
+                      className="gemini-track-fill"
+                      style={{
+                        background:
+                          "linear-gradient(90deg, var(--opta-neon-cyan), var(--opta-neon-blue))",
+                        boxShadow:
+                          (status?.active_requests ?? 0) > 0
+                            ? "0 0 8px var(--opta-neon-cyan)"
+                            : "none",
+                      }}
+                      animate={{
+                        width: (status?.active_requests ?? 0) > 0 ? "100%" : "0%",
+                      }}
+                      transition={{ duration: 0.5, ease: "easeOut" }}
+                    />
+                  </div>
+                </div>
+              </GeminiCard>
+
+              {/* TPS readout — fills remaining space */}
+              <GeminiCard
+                glow
+                className="relative flex flex-1 flex-col items-center justify-center overflow-hidden"
+              >
+                {/* Background icon watermark */}
+                <Activity
+                  className="absolute right-2 bottom-3 h-20 w-20 opacity-[0.03]"
+                  style={{ color: "var(--color-neon-purple)" }}
+                />
+
+                <p className="mb-2 text-[10px] tracking-[0.16em] text-[var(--color-text-muted)] uppercase">
+                  Tokens / sec
+                </p>
+                <motion.div
+                  key={tpsDisplay}
+                  initial={{ opacity: 0.5, scale: 0.94 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.35 }}
+                  className="gemini-tps-number text-6xl font-extralight leading-none tracking-tighter tabular-nums"
+                >
+                  {tpsDisplay}
+                </motion.div>
+
+                {averageTps != null && averageTps > 0 && (
+                  <p className="mt-2 text-[10px] text-[var(--color-text-muted)]">
+                    avg {averageTps.toFixed(1)} t/s
                   </p>
+                )}
+              </GeminiCard>
+            </section>
+
+            {/* ── RIGHT PANEL ── */}
+            <div className="flex flex-1 flex-col gap-4 overflow-y-auto no-scrollbar">
+              {/* Action bar */}
+              <motion.div
+                variants={floatUp}
+                className="flex shrink-0 items-center justify-between"
+              >
+                <div className="flex items-center gap-3">
+                  <RuntimeStateChip state={runtimeVisualState} compact />
+                  {auth?.user && (
+                    <p className="flex items-center gap-1.5 text-xs text-[var(--color-text-muted)]">
+                      <Cloud className="h-3 w-3 opacity-50" />
+                      <span className="text-[var(--color-text-secondary)] opacity-70">
+                        {auth.user.user_metadata?.full_name ??
+                          auth.user.email ??
+                          ""}
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="glass"
+                    size="sm"
+                    disabled={!isOnline && connectionType !== "probing"}
+                    onClick={() => setIsLoadOpen((p) => !p)}
+                    aria-label="Load a model"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Load model
+                  </Button>
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => {
-                      reconnect();
-                      recheckConnection?.();
-                    }}
-                    className="text-xs"
-                    style={{ color: "var(--color-neon-amber)" }}
+                    onClick={reconnect}
+                    aria-label="Reconnect stream"
                   >
-                    <RefreshCw className="mr-1 h-3 w-3" />
-                    Retry
+                    <RefreshCw className="h-4 w-4" />
                   </Button>
-                </motion.div>
-              )}
-            </AnimatePresence>
+                </div>
+              </motion.div>
 
-            <AnimatePresence>
-              {actionError && (
+              <AnimatePresence>
+                {!isHealthy && connectionType !== "probing" && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="flex shrink-0 items-center gap-3 rounded-xl px-4 py-2"
+                    style={{
+                      background: "rgba(245,158,11,0.08)",
+                      border: "1px solid rgba(245,158,11,0.25)",
+                    }}
+                  >
+                    <AlertTriangle
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: "var(--color-neon-amber)" }}
+                    />
+                    <p
+                      className="flex-1 text-sm"
+                      style={{ color: "var(--color-neon-amber)" }}
+                    >
+                      Connection unstable — reconnecting...
+                    </p>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => {
+                        reconnect();
+                        recheckConnection?.();
+                      }}
+                      className="text-xs h-7"
+                      style={{ color: "var(--color-neon-amber)" }}
+                    >
+                      <RefreshCw className="mr-1.5 h-3 w-3" />
+                      Retry
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <AnimatePresence>
+                {actionError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8, height: 0 }}
+                    animate={{ opacity: 1, y: 0, height: "auto" }}
+                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-3"
+                    style={{
+                      background: "rgba(239,68,68,0.08)",
+                      border: "1px solid rgba(239,68,68,0.2)",
+                    }}
+                  >
+                    <AlertCircle
+                      className="h-4 w-4 shrink-0"
+                      style={{ color: "var(--color-neon-red)" }}
+                    />
+                    <p
+                      className="flex-1 text-sm"
+                      style={{ color: "var(--color-neon-red)" }}
+                    >
+                      {actionError}
+                    </p>
+                    <button
+                      onClick={() => setActionError(null)}
+                      className="text-xs opacity-50 hover:opacity-80 transition-opacity"
+                      style={{ color: "var(--color-neon-red)" }}
+                      aria-label="Dismiss error"
+                    >
+                      Dismiss
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Model load dialog */}
+              <div className="shrink-0">
+                <ModelLoadDialog
+                  onLoad={handleLoadModel}
+                  isLoading={isLoadingModel}
+                  isOpen={isLoadOpen}
+                  onClose={() => setIsLoadOpen(false)}
+                />
+              </div>
+
+              {/* ── Data grid ── */}
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
                 <motion.div
-                  initial={{ opacity: 0, y: -8, height: 0 }}
-                  animate={{ opacity: 1, y: 0, height: "auto" }}
-                  exit={{ opacity: 0, y: -8, height: 0 }}
-                  transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                  className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-3"
-                  style={{
-                    background: "rgba(239,68,68,0.08)",
-                    border: "1px solid rgba(239,68,68,0.2)",
-                  }}
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={0}
                 >
-                  <AlertCircle
-                    className="h-4 w-4 shrink-0"
-                    style={{ color: "var(--color-neon-red)" }}
+                  <VRAMGauge
+                    usedGB={status?.vram_used_gb ?? 0}
+                    totalGB={status?.vram_total_gb ?? 0}
                   />
-                  <p
-                    className="flex-1 text-sm"
-                    style={{ color: "var(--color-neon-red)" }}
-                  >
-                    {actionError}
-                  </p>
-                  <button
-                    onClick={() => setActionError(null)}
-                    className="text-xs opacity-50 hover:opacity-80 transition-opacity"
-                    style={{ color: "var(--color-neon-red)" }}
-                    aria-label="Dismiss error"
-                  >
-                    Dismiss
-                  </button>
                 </motion.div>
-              )}
-            </AnimatePresence>
 
-            {/* Model load dialog */}
-            <div className="shrink-0">
-              <ModelLoadDialog
-                onLoad={handleLoadModel}
-                isLoading={isLoadingModel}
-                isOpen={isLoadOpen}
-                onClose={() => setIsLoadOpen(false)}
-              />
-            </div>
-
-            {/* ── Data grid ── */}
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
-              <motion.div
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                custom={0}
-              >
-                <VRAMGauge
-                  usedGB={status?.vram_used_gb ?? 0}
-                  totalGB={status?.vram_total_gb ?? 0}
-                />
-              </motion.div>
-
-              <motion.div
-                className="md:col-span-1 xl:col-span-2"
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                custom={1}
-              >
-                <ModelList
-                  models={status?.loaded_models ?? []}
-                  onUnload={handleUnload}
-                  isUnloading={unloadingId}
-                  onLoad={() => setIsLoadOpen(true)}
-                />
-              </motion.div>
-
-              <motion.div
-                className="col-span-full"
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                custom={2}
-              >
-                <ThroughputChart data={chartData} averageTps={averageTps} />
-              </motion.div>
-
-              {/* Server stats */}
-              <motion.div
-                className="col-span-full"
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                custom={3}
-              >
-                <div
-                  className="rounded-2xl p-5"
-                  style={{
-                    background:
-                      "linear-gradient(145deg, rgba(15,10,30,0.75), rgba(10,8,22,0.7))",
-                    border: "1px solid rgba(139,92,246,0.1)",
-                    backdropFilter: "blur(16px)",
-                  }}
+                <motion.div
+                  className="md:col-span-1 xl:col-span-2"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={1}
                 >
-                  <div className="mb-4 flex items-center gap-3">
-                    <Network
-                      className="h-3.5 w-3.5 opacity-40"
-                      style={{ color: "var(--color-text-muted)" }}
-                    />
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                      Server
-                    </span>
-                    <div className="gemini-divider flex-1" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
-                    <StatItem
-                      label="Requests"
-                      value={status?.active_requests ?? 0}
-                      accent={
-                        (status?.active_requests ?? 0) > 0
-                          ? "var(--opta-neon-cyan)"
-                          : undefined
-                      }
-                    />
-                    <StatItem label="Tokens/sec" value={tpsDisplay} />
-                    <StatItem
-                      label="Temperature"
-                      value={
-                        status?.temperature_celsius != null
-                          ? `${status.temperature_celsius.toFixed(0)}\u00B0C`
-                          : "\u2014"
-                      }
-                      accent={getTempAccent(
-                        status?.temperature_celsius ?? null,
-                      )}
-                    />
-                    <StatItem
-                      label="Uptime"
-                      value={formatUptime(status?.uptime_seconds ?? 0)}
-                    />
-                    <StatItem
-                      label="Ping"
-                      value={lastPingMs !== null ? `${lastPingMs}ms` : "\u2014"}
-                      accent={getPingAccent(lastPingMs)}
-                    />
-                  </div>
-                </div>
-              </motion.div>
+                  <ModelList
+                    models={status?.loaded_models ?? []}
+                    onUnload={handleUnload}
+                    isUnloading={unloadingId}
+                    onLoad={onLoadModelTrigger}
+                  />
+                </motion.div>
 
-              {/* Quick access — feature discovery grid */}
-              <motion.div
-                className="col-span-full"
-                variants={cardVariants}
-                initial="hidden"
-                animate="visible"
-                custom={4}
-              >
-                <div
-                  className="rounded-2xl p-5"
-                  style={{
-                    background: "linear-gradient(145deg, rgba(15,10,30,0.6), rgba(10,8,22,0.55))",
-                    border: "1px solid rgba(139,92,246,0.08)",
-                    backdropFilter: "blur(16px)",
-                  }}
+                <motion.div
+                  className="col-span-full"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={2}
                 >
-                  <div className="mb-4 flex items-center gap-3">
-                    <Sparkles
-                      className="h-3.5 w-3.5 opacity-40"
-                      style={{ color: "var(--color-text-muted)" }}
-                    />
-                    <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
-                      Quick Access
-                    </span>
-                    <div className="gemini-divider flex-1" />
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                    {FEATURE_CARDS.map((card, i) => (
-                      <FeatureCard
-                        key={card.href}
-                        label={card.label}
-                        href={card.href}
-                        icon={card.icon}
-                        desc={card.desc}
-                        accent={card.accent}
-                        delay={Math.min(0.36 + i * 0.04, 0.6)}
+                  <ThroughputChart data={chartData} averageTps={averageTps} />
+                </motion.div>
+
+                {/* Server stats */}
+                <motion.div
+                  className="col-span-full"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={3}
+                >
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{
+                      background:
+                        "linear-gradient(145deg, rgba(15,10,30,0.75), rgba(10,8,22,0.7))",
+                      border: "1px solid rgba(139,92,246,0.1)",
+                      backdropFilter: "blur(16px)",
+                    }}
+                  >
+                    <div className="mb-4 flex items-center gap-3">
+                      <Network
+                        className="h-3.5 w-3.5 opacity-40"
+                        style={{ color: "var(--color-text-muted)" }}
                       />
-                    ))}
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                        Server
+                      </span>
+                      <div className="gemini-divider flex-1" />
+                    </div>
+                    <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
+                      <StatItem
+                        label="Requests"
+                        value={status?.active_requests ?? 0}
+                        accent={
+                          (status?.active_requests ?? 0) > 0
+                            ? "var(--opta-neon-cyan)"
+                            : undefined
+                        }
+                      />
+                      <StatItem label="Tokens/sec" value={tpsDisplay} />
+                      <StatItem
+                        label="Temperature"
+                        value={
+                          status?.temperature_celsius != null
+                            ? `${status.temperature_celsius.toFixed(0)}\u00B0C`
+                            : "\u2014"
+                        }
+                        accent={getTempAccent(
+                          status?.temperature_celsius ?? null,
+                        )}
+                      />
+                      <StatItem
+                        label="Uptime"
+                        value={formatUptime(status?.uptime_seconds ?? 0)}
+                      />
+                      <StatItem
+                        label="Ping"
+                        value={lastPingMs !== null ? `${lastPingMs}ms` : "\u2014"}
+                        accent={getPingAccent(lastPingMs)}
+                      />
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
+
+                {/* Quick access — feature discovery grid */}
+                <motion.div
+                  className="col-span-full"
+                  variants={cardVariants}
+                  initial="hidden"
+                  animate="visible"
+                  custom={4}
+                >
+                  <div
+                    className="rounded-2xl p-5"
+                    style={{
+                      background: "linear-gradient(145deg, rgba(15,10,30,0.6), rgba(10,8,22,0.55))",
+                      border: "1px solid rgba(139,92,246,0.08)",
+                      backdropFilter: "blur(16px)",
+                    }}
+                  >
+                    <div className="mb-4 flex items-center gap-3">
+                      <Sparkles
+                        className="h-3.5 w-3.5 opacity-40"
+                        style={{ color: "var(--color-text-muted)" }}
+                      />
+                      <span className="text-[10px] uppercase tracking-[0.18em] text-[var(--color-text-muted)]">
+                        Operations Hub
+                      </span>
+                      <div className="gemini-divider flex-1" />
+                    </div>
+                    <div className="space-y-5">
+                      {FEATURE_GROUPS.map((group) => (
+                        <div key={group.label}>
+                          <p className="mb-2.5 text-[9px] font-medium uppercase tracking-[0.22em] text-[var(--color-text-muted)] opacity-40">
+                            {group.label}
+                          </p>
+                          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+                            {group.cards.map((card, i) => (
+                              <FeatureCard
+                                key={card.href}
+                                label={card.label}
+                                href={card.href}
+                                icon={card.icon}
+                                desc={card.desc}
+                                accent={card.accent}
+                                delay={Math.min(0.36 + i * 0.04, 0.6)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* ══════════════════════════════════════════════════════════════
             FOOTER — slim Gemini-style status bar
@@ -1224,8 +1408,12 @@ function StatItem({
         {label}
       </p>
       <p
-        className="text-2xl font-light leading-none tabular-nums"
-        style={{ color: accent ?? "var(--color-text-primary)" }}
+        className="text-xl font-semibold leading-none tabular-nums"
+        style={{
+          color: accent ?? "var(--color-text-primary)",
+          fontFamily: "'JetBrains Mono', 'Courier New', monospace",
+          letterSpacing: "-0.02em",
+        }}
       >
         {value}
       </p>

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Terminal, WifiOff, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { usePlatform } from "../hooks/usePlatform.js";
 
 interface Props {
   host: string;
@@ -15,6 +16,8 @@ const DAEMON_BG_CMD = "opta daemon start --background";
 export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
   const [copied, setCopied] = useState<string | null>(null);
   const [showRemote, setShowRemote] = useState(false);
+  const platform = usePlatform();
+  const terminalName = platform === "windows" ? "PowerShell" : "Terminal";
 
   const copy = async (text: string, key: string) => {
     try {
@@ -72,7 +75,7 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
             <span className="step-number">2</span>
             <div className="step-body">
               <strong>Start the daemon</strong>
-              <p>Run this in your terminal, then come back here:</p>
+              <p>Run this in {terminalName}, then come back here:</p>
               <div className="onboarding-command">
                 <code>{DAEMON_CMD}</code>
                 <button
@@ -84,7 +87,7 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
                 </button>
               </div>
               <p className="step-note">
-                Keep the terminal open, or run{" "}
+                Keep {terminalName} open, or run{" "}
                 <code>{DAEMON_BG_CMD}</code> to detach it.
                 Listens on port <code>{port}</code> by default.
               </p>
@@ -121,8 +124,10 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
             <p className="onboarding-remote-body">
               Close this screen and use the <strong>connection form</strong> in
               the header to set a custom host and port. The daemon can run on
-              any machine reachable from this device — including your Mac Studio
-              on the local network.
+              any machine reachable from this device —{" "}
+              {platform === "macos"
+                ? "including your Mac Studio on the local network."
+                : "including a remote server on your local network."}
             </p>
           )}
         </div>

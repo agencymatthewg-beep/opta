@@ -11,6 +11,7 @@ import Link from "next/link";
 import {
   Suspense,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type FormEvent,
@@ -25,7 +26,11 @@ import {
   signInWithPasswordIdentifier,
   signUpWithPasswordIdentifier,
 } from "@/lib/supabase/auth-actions";
-import { POST_SIGN_IN_NEXT_KEY, sanitizeNextPath } from "@/lib/auth-utils";
+import {
+  POST_SIGN_IN_NEXT_KEY,
+  buildAccountSignInHref,
+  sanitizeNextPath,
+} from "@/lib/auth-utils";
 import { OptaLogo } from "@/components/shared/OptaLogo";
 
 type Provider = "google" | "apple";
@@ -191,6 +196,19 @@ function SignInForm() {
     () => sanitizeNextPath(searchParams.get("next")) ?? "/",
     [searchParams],
   );
+  const centralSignInHref = useMemo(
+    () => buildAccountSignInHref(nextPath),
+    [nextPath],
+  );
+  const shouldRedirectToAccounts = useMemo(() => {
+    if (!centralSignInHref.startsWith("http")) return false;
+    if (typeof window === "undefined") return true;
+    try {
+      return new URL(centralSignInHref).origin !== window.location.origin;
+    } catch {
+      return false;
+    }
+  }, [centralSignInHref]);
 
   const isAuthActionPending = pendingProvider !== null || pendingPasswordAuth;
 
@@ -251,17 +269,17 @@ function SignInForm() {
           authMode === "signIn"
             ? await signInWithPasswordIdentifier(identifier, password)
             : await signUpWithPasswordIdentifier(
-                identifier,
-                password,
-                name || undefined,
-              );
+              identifier,
+              password,
+              name || undefined,
+            );
 
         if (!result.ok) {
           setActionError(
             result.error ??
-              (authMode === "signIn"
-                ? "Unable to sign in right now. Please try again."
-                : "Unable to sign up right now. Please try again."),
+            (authMode === "signIn"
+              ? "Unable to sign in right now. Please try again."
+              : "Unable to sign up right now. Please try again."),
           );
           return;
         }
@@ -288,6 +306,27 @@ function SignInForm() {
     window.sessionStorage.removeItem(POST_SIGN_IN_NEXT_KEY);
   }, []);
 
+  useEffect(() => {
+    if (!shouldRedirectToAccounts) return;
+    window.location.replace(centralSignInHref);
+  }, [centralSignInHref, shouldRedirectToAccounts]);
+
+  if (shouldRedirectToAccounts) {
+    return (
+      <div className="glass-strong w-full max-w-sm rounded-2xl px-8 pb-8 pt-10 shadow-2xl text-center">
+        <p className="text-sm text-text-secondary">
+          Redirecting to Opta Accounts sign-in...
+        </p>
+        <a
+          className="mt-4 inline-flex text-xs text-primary hover:text-primary/80 transition-colors"
+          href={centralSignInHref}
+        >
+          Continue manually
+        </a>
+      </div>
+    );
+  }
+
   return (
     <motion.div
       variants={
@@ -306,13 +345,8 @@ function SignInForm() {
         }
         className="mb-8 text-center"
       >
-        <div className="mb-6 flex justify-center">
-          <OptaLogo
-            size={80}
-            layout="vertical"
-            suffix="LOCAL"
-            paused={Boolean(shouldReduceMotion)}
-          />
+        <div className="mb-6 mt-4 flex justify-center">
+          <OptaLogo scale={1.2} />
         </div>
 
         <span className="opta-badge mt-2">CLOUD SYNC</span>

@@ -7,14 +7,17 @@ import { errorMessage, NO_MODELS_LOADED } from '../utils/errors.js';
 
 interface StatusOptions {
   json?: boolean;
+  full?: boolean;
 }
 
 const FAST_STATUS_REQUEST_OPTS = { timeoutMs: 5_000, maxRetries: 0 } as const;
+const FULL_STATUS_REQUEST_OPTS = { timeoutMs: 15_000, maxRetries: 1 } as const;
 
 export async function status(opts: StatusOptions): Promise<void> {
   const config = await loadConfig();
   const { host, port } = config.connection;
   const adminKey = config.connection.adminKey;
+  const reqOpts = opts.full ? FULL_STATUS_REQUEST_OPTS : FAST_STATUS_REQUEST_OPTS;
 
   const client = new LmxClient({
     host,
@@ -24,12 +27,17 @@ export async function status(opts: StatusOptions): Promise<void> {
   });
   const spinner = opts.json ? null : await createSpinner();
 
-  spinner?.start(`Checking Opta LMX at ${host}:${port}...`);
+  spinner?.start(
+    opts.full ? `Running full diagnostic on Opta LMX at ${host}:${port}...` : `Checking Opta LMX at ${host}:${port}...`
+  );
 
   try {
-    const health = await client.health(FAST_STATUS_REQUEST_OPTS);
-    const lmxStatus = await client.status(FAST_STATUS_REQUEST_OPTS);
+    const health = await client.health(reqOpts);
+    const lmxStatus = await client.status(reqOpts);
     const activeHost = client.getActiveHost();
+    const deviceIdentity = await client.device(reqOpts).catch(() => null);
+    const available = opts.full ? await client.available(reqOpts).catch(() => null) : null;
+    const memory = opts.full ? await client.memory(reqOpts).catch(() => null) : null;
 
     spinner?.succeed(`Opta LMX is ${health.status} at ${activeHost}:${port}`);
 
@@ -42,6 +50,9 @@ export async function status(opts: StatusOptions): Promise<void> {
           activeHost,
           fallbackUsed: activeHost.toLowerCase() !== host.toLowerCase(),
         },
+        deviceIdentity,
+        availableModelsCount: available?.length,
+        memoryDetails: memory,
       }, null, 2));
       return;
     }
@@ -51,6 +62,22 @@ export async function status(opts: StatusOptions): Promise<void> {
         chalk.yellow('!') +
         ` Primary host ${host}:${port} unreachable; using fallback ${activeHost}:${port}`,
       );
+    }
+
+    // Device identity
+    if (deviceIdentity?.hardware?.chip_name) {
+      const hw = deviceIdentity.hardware;
+      const chipShort = hw.chip_name?.replace(/^Apple /, '') ?? '';
+      const memStr = hw.memory_gb ? ` · ${hw.memory_gb}GB` : '';
+      const nameStr = deviceIdentity.identity.name ? ` (${deviceIdentity.identity.name})` : '';
+      console.log(chalk.dim('  Device:  ') + chalk.bold(`${chipShort}${memStr}${nameStr}`));
+      if (hw.chip_name) {
+        const archStr = hw.architecture ? ` (${hw.architecture})` : '';
+        console.log(chalk.dim('  Chip:    ') + chalk.bold(`${hw.chip_name}${archStr}`));
+      }
+      if (hw.cpu_cores) {
+        console.log(chalk.dim('  Cores:   ') + chalk.bold(`${hw.cpu_cores} CPU`));
+      }
     }
 
     // Version & uptime
@@ -67,6 +94,17 @@ export async function status(opts: StatusOptions): Promise<void> {
       const totalGB = (lmxStatus.memory.total_bytes / 1e9).toFixed(1);
       const pct = ((lmxStatus.memory.used_bytes / lmxStatus.memory.total_bytes) * 100).toFixed(0);
       console.log(chalk.dim(`  Memory:  ${usedGB}/${totalGB} GB (${pct}%)`));
+    }
+    
+    if (opts.full && memory) {
+      const umUsed = (memory.used_gb).toFixed(1);
+      const umTotal = (memory.total_unified_memory_gb).toFixed(1);
+      const umPct = Math.round((memory.used_gb / memory.total_unified_memory_gb) * 100);
+      console.log(chalk.dim(`  VRAM:    ${umUsed}/${umTotal} GB (${umPct}%) [Threshold: ${memory.threshold_percent}%]`));
+    }
+    
+    if (opts.full && available != null) {
+      console.log(chalk.dim(`  On Disk: ${available.length} models downloaded`));
     }
 
     // Loaded models
@@ -86,7 +124,7 @@ export async function status(opts: StatusOptions): Promise<void> {
     }
 
     console.log(
-      '\n' + chalk.dim('Run ') + chalk.cyan('opta chat') + chalk.dim(' to start coding.')
+      '\n' + chalk.dim('Run ') + chalk.cyan('opta') + chalk.dim(' to start coding.')
     );
   } catch (err) {
     spinner?.stop();
@@ -122,7 +160,7 @@ export async function status(opts: StatusOptions): Promise<void> {
         ]
       : [
           `Check connectivity: ping ${host}`,
-          'Start Opta LMX: cd 1-Apps/1M-Opta-LMX && python -m opta_lmx.main',
+          'Start Opta LMX: cd 1-Apps/optalocal/1M-Opta-LMX && python -m opta_lmx.main',
           `Verify port: curl http://${host}:${port}/healthz`,
           fallbackHosts.length > 0
             ? `Try fallback hosts: ${fallbackHosts.join(', ')}`

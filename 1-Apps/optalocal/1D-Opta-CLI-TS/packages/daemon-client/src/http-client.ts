@@ -15,6 +15,7 @@ import type {
   DaemonLmxModelDetail,
   DaemonLmxStatusResponse,
   DaemonListOperationsResponse,
+  DaemonOperationRequestPayload,
   DaemonOperationPayload,
   DaemonRunOperationResponse,
   DaemonBackgroundOutputOptions,
@@ -40,7 +41,9 @@ function baseUrl(connection: DaemonConnectionOptions): string {
 export class DaemonHttpClient implements DaemonHttpApi {
   constructor(
     private readonly connection: DaemonConnectionOptions,
-    private readonly fetchImpl: typeof fetch = fetch
+    // Call through globalThis each time to avoid "Illegal invocation" from detached window.fetch.
+    private readonly fetchImpl: typeof fetch = (input, init) =>
+      globalThis.fetch(input, init)
   ) {}
 
   private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
@@ -124,7 +127,7 @@ export class DaemonHttpClient implements DaemonHttpApi {
 
   runOperation<TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
     id: string,
-    payload?: TPayload
+    payload?: DaemonOperationRequestPayload<TPayload>
   ): Promise<DaemonRunOperationResponse<TResult>> {
     return this.request(`/v3/operations/${encodeURIComponent(id)}`, {
       method: 'POST',

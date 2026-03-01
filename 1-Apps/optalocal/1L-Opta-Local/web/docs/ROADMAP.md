@@ -4,7 +4,7 @@ status: review
 
 # Opta Local Web — Roadmap
 
-> Web platform delivery plan. iOS is currently deferred while web is stabilized.
+> Web platform delivery plan. this is the primary and only active platform.
 
 ---
 

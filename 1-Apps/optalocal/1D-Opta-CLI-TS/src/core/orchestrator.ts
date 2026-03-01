@@ -119,7 +119,7 @@ export async function executeDelegation(
       }
 
       const agentTask: SubAgentTask = {
-        id: `${nanoid(8)}`,
+        id: nanoid(8),
         description,
         scope: subtask.scope,
         onProgress: delegationOptions?.onAgentProgress

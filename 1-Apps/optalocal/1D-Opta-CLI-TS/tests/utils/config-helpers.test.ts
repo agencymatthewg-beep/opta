@@ -11,6 +11,22 @@ describe('buildConfigOverrides', () => {
     expect(result).toEqual({ model: { default: 'qwen2.5-72b' } });
   });
 
+  it('sets provider override', () => {
+    const result = buildConfigOverrides({ provider: 'anthropic' });
+    expect(result).toEqual({ provider: { active: 'anthropic' } });
+  });
+
+  it('normalizes provider override', () => {
+    const result = buildConfigOverrides({ provider: ' LMX ' });
+    expect(result).toEqual({ provider: { active: 'lmx' } });
+  });
+
+  it('throws for invalid provider override', () => {
+    expect(() => buildConfigOverrides({ provider: 'openai' })).toThrow(
+      'Invalid provider "openai". Expected one of: lmx, anthropic.'
+    );
+  });
+
   it('sets git.autoCommit to false', () => {
     const result = buildConfigOverrides({ commit: false });
     expect(result).toEqual({ git: { autoCommit: false } });

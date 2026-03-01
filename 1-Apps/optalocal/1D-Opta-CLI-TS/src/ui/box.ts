@@ -27,23 +27,24 @@ export function box(title: string, lines: string[], { width: fixedWidth }: { wid
   const out: string[] = [];
   // Top border with title (uses theme primary for title accent)
   const theme = getTheme();
+  const borderColor = chalk.hex(theme.colors.border);
   const titlePart = title ? ` ${title} ` : '';
   const topFill = inner - visibleTextWidth(titlePart);
   out.push(
-    chalk.dim(BOX.tl) +
+    borderColor(BOX.tl) +
     theme.primary.bold(titlePart) +
-    chalk.dim(padToWidth('', Math.max(topFill, 0), BOX.h) + BOX.tr),
+    borderColor(padToWidth('', Math.max(topFill, 0), BOX.h) + BOX.tr),
   );
 
   // Content lines
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]!;
     const fitted = padToWidth(line, Math.max(inner - 1, 0));
-    out.push(chalk.dim(BOX.v) + ' ' + fitted + chalk.dim(BOX.v));
+    out.push(borderColor(BOX.v) + ' ' + fitted + borderColor(BOX.v));
   }
 
   // Bottom border
-  out.push(chalk.dim(BOX.bl + padToWidth('', inner, BOX.h) + BOX.br));
+  out.push(borderColor(BOX.bl + padToWidth('', inner, BOX.h) + BOX.br));
 
   return out.join('\n');
 }
@@ -52,9 +53,10 @@ export function box(title: string, lines: string[], { width: fixedWidth }: { wid
  * Render a horizontal divider with optional label.
  */
 export function divider(label?: string, width = 40): string {
-  if (!label) return chalk.dim(padToWidth('', width, BOX.h));
+  const borderColor = chalk.hex(getTheme().colors.border);
+  if (!label) return borderColor(padToWidth('', width, BOX.h));
   const fill = width - visibleTextWidth(label) - 2;
-  return chalk.dim(BOX.ml + BOX.h) + chalk.dim(` ${label} `) + chalk.dim(padToWidth('', Math.max(fill - 3, 0), BOX.h) + BOX.mr);
+  return borderColor(BOX.ml + BOX.h) + chalk.dim(` ${label} `) + borderColor(padToWidth('', Math.max(fill - 3, 0), BOX.h) + BOX.mr);
 }
 
 // --- Progress Bar ---
@@ -70,7 +72,7 @@ export function progressBar(ratio: number, width = 20): string {
   const pct = Math.round(clamped * 100);
 
   const theme = getTheme();
-  const bar = theme.info('█'.repeat(filled)) + chalk.dim('░'.repeat(empty));
+  const bar = theme.info('█'.repeat(filled)) + chalk.hex(theme.colors.border)('░'.repeat(empty));
   const color = pct > 85 ? theme.error : pct > 70 ? theme.warning : chalk.dim;
   return `${bar} ${color(`${pct}%`)}`;
 }

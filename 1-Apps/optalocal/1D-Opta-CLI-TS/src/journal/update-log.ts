@@ -79,7 +79,7 @@ function zonedDateTimeParts(date: Date, timezone?: string): DateTimeParts {
       formatter
         .formatToParts(date)
         .filter((part) => part.type !== 'literal')
-        .map((part) => [part.type, part.value]),
+        .map((part) => [part.type, part.value])
     ) as Record<string, string>;
 
     const year = mapped['year'];
@@ -154,7 +154,7 @@ function parseExistingUpdateIds(files: string[]): number[] {
 export async function allocateNextUpdateId(
   dir: string,
   rangeStart = 1,
-  rangeEnd = 999,
+  rangeEnd = 999
 ): Promise<number> {
   await mkdir(dir, { recursive: true });
 
@@ -204,7 +204,7 @@ function stringifyCommandInputs(commandInputs: Record<string, unknown>): string 
       const value = commandInputs[key];
       if (value === undefined) return `- \`${key}\`: (unset)`;
       if (typeof value === 'object') return `- \`${key}\`: \`${JSON.stringify(value)}\``;
-      return `- \`${key}\`: \`${String(value)}\``;
+      return `- \`${key}\`: \`${String(value as string | number | boolean | symbol | bigint)}\``;
     })
     .join('\n');
 }
@@ -236,7 +236,9 @@ function renderStepTable(steps: UpdateStep[]): string {
   ];
 
   for (const step of steps) {
-    lines.push(`| ${escapeCell(step.target)} | ${escapeCell(step.component)} | ${escapeCell(step.step)} | ${escapeCell(step.status)} | ${escapeCell(step.message)} |`);
+    lines.push(
+      `| ${escapeCell(step.target)} | ${escapeCell(step.component)} | ${escapeCell(step.step)} | ${escapeCell(step.status)} | ${escapeCell(step.message)} |`
+    );
   }
 
   return lines.join('\n');
@@ -310,9 +312,9 @@ export async function writeUpdateLog(input: UpdateLogInput): Promise<UpdateLogRe
 
   await mkdir(logsDir, { recursive: true });
 
-  const versionBefore = input.versionBefore ?? await resolveVersion(repoRoot);
-  const versionAfter = input.versionAfter ?? await resolveVersion(repoRoot);
-  const commit = input.commit ?? await resolveCommit(repoRoot);
+  const versionBefore = input.versionBefore ?? (await resolveVersion(repoRoot));
+  const versionAfter = input.versionAfter ?? (await resolveVersion(repoRoot));
+  const commit = input.commit ?? (await resolveCommit(repoRoot));
 
   for (let attempt = 0; attempt < 60; attempt++) {
     const id = await allocateNextUpdateId(logsDir, rangeStart, rangeEnd);

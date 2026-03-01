@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta-LMX Master Plan
 
 **Created:** 2026-02-15

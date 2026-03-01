@@ -6,6 +6,11 @@ Updated: 2026-02-27
 **Service port:** 1234
 **Base URL:** `http://192.168.188.11:1234`
 
+### Opta48 policy (critical)
+- Do not run `python -m opta_lmx` on Opta48 (MacBook).
+- Do not store models on Opta48.
+- Opta48 is client/orchestrator only; Mono512 is the inference host.
+
 ---
 
 ## Table of Contents
@@ -67,10 +72,10 @@ launchctl unload /Library/LaunchDaemons/com.opta.lmx.plist
 launchctl list | grep opta.lmx
 ```
 
-#### Via CLI entry point (development/debugging)
+#### Via CLI entry point (development/debugging on Mono512 host)
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
+cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
 
 # Default: binds to 127.0.0.1:1234
 python -m opta_lmx
@@ -82,10 +87,10 @@ python -m opta_lmx --host 0.0.0.0 --port 1234 --log-level DEBUG
 python -m opta_lmx --config /path/to/custom-config.yaml
 ```
 
-#### Via uvicorn directly (maximum control)
+#### Via uvicorn directly (maximum control on Mono512 host)
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1M-Opta-LMX
+cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
 
 # Standard
 uvicorn src.opta_lmx.main:app --host 0.0.0.0 --port 1234
@@ -151,6 +156,12 @@ curl http://192.168.188.11:1234/readyz
 curl http://192.168.188.11:1234/admin/health \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Returns: status (ok/degraded), memory_usage_percent, metal info, helper node health
+
+# Discovery contract (unauthenticated): preferred base URL + auth requirements
+curl http://192.168.188.11:1234/v1/discovery
+
+# Well-known discovery alias for auto-pairing clients
+curl http://192.168.188.11:1234/.well-known/opta-lmx
 ```
 
 ---

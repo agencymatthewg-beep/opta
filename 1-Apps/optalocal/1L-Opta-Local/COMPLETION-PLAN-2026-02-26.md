@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # OptaLocal.com Completion Plan — 2026-02-26
 
 ## Current State Audit

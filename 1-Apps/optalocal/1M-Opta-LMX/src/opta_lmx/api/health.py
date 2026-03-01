@@ -9,6 +9,7 @@ from fastapi.responses import JSONResponse
 
 from opta_lmx import __version__
 from opta_lmx.api.deps import AdminAuth, Engine, Memory, RemoteEmbedding, RemoteReranking
+from opta_lmx.discovery import build_discovery_document
 
 router = APIRouter()
 
@@ -111,3 +112,22 @@ async def health_check(
         "models_loaded": len(loaded_models),
         "in_flight_requests": engine.in_flight_count,
     }
+
+
+@router.get("/v1/discovery")
+async def discovery(request: Request, engine: Engine) -> dict[str, Any]:
+    """Return pairing metadata for zero-config Opta-LMX client discovery."""
+    config = request.app.state.config
+    loaded_models = [model.model_id for model in engine.get_loaded_models()]
+    return build_discovery_document(
+        config=config,
+        version=__version__,
+        loaded_models=loaded_models,
+        in_flight_requests=engine.in_flight_count,
+    )
+
+
+@router.get("/.well-known/opta-lmx")
+async def discovery_well_known(request: Request, engine: Engine) -> dict[str, Any]:
+    """Well-known alias for discovery consumers."""
+    return await discovery(request=request, engine=engine)

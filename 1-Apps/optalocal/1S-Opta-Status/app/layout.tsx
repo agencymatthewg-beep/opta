@@ -1,6 +1,7 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { OptaRing } from '@/components/OptaRing'
 
 export const metadata: Metadata = {
   title: 'Opta Status — optalocal.com service health',
@@ -45,10 +46,7 @@ function NavBar() {
           </Link>
           {/* Live pulse indicator */}
           <div className="flex items-center gap-1.5" title="Auto-refreshes every 30s">
-            <div className="relative flex items-center justify-center w-2.5 h-2.5">
-              <div className="w-2 h-2 rounded-full bg-neon-green" />
-              <div className="absolute w-2 h-2 rounded-full bg-neon-green animate-ping opacity-50" />
-            </div>
+            <OptaRing size={48} className="scale-[0.5] origin-center -mr-2" />
             <span className="text-xs text-text-muted font-mono hidden sm:block">live</span>
           </div>
         </div>

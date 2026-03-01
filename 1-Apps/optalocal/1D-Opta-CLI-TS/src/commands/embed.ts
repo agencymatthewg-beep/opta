@@ -16,7 +16,7 @@ function usage(): void {
 }
 
 export async function embed(input: string | string[], opts: EmbedOptions = {}): Promise<void> {
-  const text = Array.isArray(input) ? input.join(' ').trim() : String(input ?? '').trim();
+  const text = Array.isArray(input) ? input.join(' ').trim() : (input ?? '').trim();
   if (!text) {
     console.error(chalk.red('✗') + ' Text input is required.\n');
     usage();
@@ -24,7 +24,11 @@ export async function embed(input: string | string[], opts: EmbedOptions = {}): 
   }
 
   const config = await loadConfig();
-  const resolvedModel = (opts.model?.trim() || config.model.default || 'text-embedding-3-small').trim();
+  const resolvedModel = (
+    opts.model?.trim() ||
+    config.model.default ||
+    'text-embedding-3-small'
+  ).trim();
   const client = new LmxClient({
     host: config.connection.host,
     fallbackHosts: config.connection.fallbackHosts,
@@ -38,7 +42,7 @@ export async function embed(input: string | string[], opts: EmbedOptions = {}): 
         input: text,
         model: resolvedModel,
       },
-      EMBED_REQUEST_OPTS,
+      EMBED_REQUEST_OPTS
     );
 
     if (opts.json) {
@@ -67,8 +71,8 @@ export async function embed(input: string | string[], opts: EmbedOptions = {}): 
   } catch (err) {
     if (err instanceof LmxApiError && err.code === 'connection_error') {
       console.error(
-        chalk.red('✗')
-        + ` Unable to reach Opta LMX at ${config.connection.host}:${config.connection.port}`,
+        chalk.red('✗') +
+          ` Unable to reach Opta LMX at ${config.connection.host}:${config.connection.port}`
       );
       console.error(chalk.dim(`  ${err.message}`));
       throw new ExitError(EXIT.NO_CONNECTION);

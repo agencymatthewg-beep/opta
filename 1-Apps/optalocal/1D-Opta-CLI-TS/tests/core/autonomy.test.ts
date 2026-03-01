@@ -100,6 +100,30 @@ describe('autonomy', () => {
     expect(report.steps.some((step) => step.step === 'status' && step.status === 'ok')).toBe(true);
   });
 
+  it('captures compact completion error details in CEO report payload', () => {
+    const verboseError = ' '.repeat(4) + 'Connection refused: daemon unavailable.\nRetry exhausted after 3 attempts.';
+    const report = buildCeoAutonomyReport({
+      objective: 'Reply with exactly OPTA_OK',
+      completionStatus: 'error',
+      completionMessage: verboseError,
+      turnCount: 1,
+      cycle: 1,
+      phase: 1,
+      stage: 'research',
+      toolCallCount: 0,
+      toolCallTurns: 0,
+      objectiveReassessmentEnabled: true,
+      forcedFinalReassessment: false,
+    });
+
+    expect(report.commandInputs['completionMessage']).toBe(
+      'Connection refused: daemon unavailable. Retry exhausted after 3 attempts.'
+    );
+    const completionStep = report.steps.find((step) => step.step === 'status');
+    expect(completionStep?.message).toContain('run status: error (');
+    expect(completionStep?.message).toContain('Connection refused: daemon unavailable.');
+  });
+
   it('builds CEO profile with live-data requirement and moderated parallelism', () => {
     const execution = buildAutonomyProfile(4, 'execution');
     const ceo = buildAutonomyProfile(4, 'ceo');

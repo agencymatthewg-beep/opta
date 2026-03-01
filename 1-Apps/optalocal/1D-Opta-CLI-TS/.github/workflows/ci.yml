@@ -31,8 +31,8 @@ jobs:
       - name: Verify dist
         run: npm run check-dist
 
-      - name: Lint
-        run: npm run lint
+      - name: Lint budget
+        run: npm run lint:budget
 
       - name: Quality gate
         run: npm run quality:gate

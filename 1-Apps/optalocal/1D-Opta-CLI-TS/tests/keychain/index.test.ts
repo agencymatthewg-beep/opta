@@ -147,23 +147,25 @@ describe('keychain — macOS', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Non-darwin (Windows) tests
+// Windows tests (DPAPI fallback store)
 // ---------------------------------------------------------------------------
 
-describe('keychain — Windows (unsupported)', () => {
+describe('keychain — Windows', () => {
   beforeEach(() => {
     setPlatform('win32');
+    process.env['OPTA_WINDOWS_KEYCHAIN_FILE'] = `/tmp/opta-keychain-${Date.now()}-${Math.random()}.json`;
     vi.resetModules();
     mockExecImpl.mockReset();
   });
 
   afterEach(() => {
+    delete process.env['OPTA_WINDOWS_KEYCHAIN_FILE'];
     vi.resetModules();
   });
 
-  it('isKeychainAvailable returns false on Windows', async () => {
+  it('isKeychainAvailable returns true on Windows', async () => {
     const { isKeychainAvailable } = await import('../../src/keychain/index.js');
-    expect(isKeychainAvailable()).toBe(false);
+    expect(isKeychainAvailable()).toBe(true);
   });
 
   it('getSecret returns null without spawning any process', async () => {
@@ -174,13 +176,29 @@ describe('keychain — Windows (unsupported)', () => {
     expect(mockExecImpl).not.toHaveBeenCalled();
   });
 
-  it('setSecret is a no-op (no process spawned)', async () => {
+  it('setSecret encrypts via PowerShell and persists fallback entry', async () => {
+    mockExecImpl.mockResolvedValueOnce({ stdout: 'encrypted-value\n', stderr: '' });
+
     const { setSecret } = await import('../../src/keychain/index.js');
     await expect(setSecret('opta-cli', 'lmx-api-key', 'some-key')).resolves.toBeUndefined();
-    expect(mockExecImpl).not.toHaveBeenCalled();
+
+    expect(mockExecImpl).toHaveBeenCalledTimes(1);
+    expect(mockExecImpl).toHaveBeenCalledWith(
+      'powershell',
+      [
+        '-NoProfile',
+        '-NonInteractive',
+        '-Command',
+        expect.stringContaining('ConvertFrom-SecureString'),
+      ],
+      expect.objectContaining({
+        windowsHide: true,
+        env: expect.objectContaining({ OPTA_KEYCHAIN_VALUE: 'some-key' }),
+      })
+    );
   });
 
-  it('deleteSecret is a no-op (no process spawned)', async () => {
+  it('deleteSecret removes fallback entry without spawning encryption process', async () => {
     const { deleteSecret } = await import('../../src/keychain/index.js');
     await expect(deleteSecret('opta-cli', 'anthropic-api-key')).resolves.toBeUndefined();
     expect(mockExecImpl).not.toHaveBeenCalled();

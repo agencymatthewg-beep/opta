@@ -182,6 +182,7 @@ h6 {
   color: var(--text-soft);
   font-size: 0.75rem;
   border-radius: 4px;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .settings-trigger-btn:hover {
@@ -444,22 +445,31 @@ button.active,
   align-items: center;
 }
 
-.top-actions button.minimal-emoji-btn {
+.top-actions button.minimal-emoji-btn,
+.minimal-tools-group button.minimal-emoji-btn {
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
-  font-size: 1.15rem;
-  padding: 0.25rem 0.4rem;
-  opacity: 0.4;
-  transition: opacity var(--opta-duration-fast) var(--opta-ease-smooth), transform var(--opta-duration-fast) var(--opta-ease-smooth);
-  cursor: pointer;
-  height: auto;
+  font-size: 1.125rem;
+  padding: 0.25rem 0.5rem;
+  opacity: 0.6;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  transform-origin: center;
 }
 
 .top-actions button.minimal-emoji-btn:hover,
-.top-actions button.minimal-emoji-btn.active {
+.minimal-tools-group button.minimal-emoji-btn:hover {
+  background: transparent !important;
   opacity: 1;
-  transform: scale(1.15);
+  transform: translateY(-2px) scale(1.15);
+  text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3);
+}
+
+.top-actions button.minimal-emoji-btn.active,
+.minimal-tools-group button.minimal-emoji-btn.active {
+  opacity: 1;
+  text-shadow: 0 0 16px rgba(168, 85, 247, 0.8);
+  transform: scale(1.1);
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;
@@ -467,14 +477,10 @@ button.active,
 
 /* Premium Accounts Button (Cybernetic Brackets) */
 .accounts-btn {
-  position: absolute;
-  top: 3.5rem;
-  right: 1.5rem;
   font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 1px;
-  z-index: 10;
   text-decoration: none;
   cursor: pointer;
   background: transparent !important;
@@ -709,6 +715,14 @@ button.active,
   background: var(--bg-1);
   position: relative;
   overflow: hidden;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.timeline-card:hover {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(162, 136, 255, 0.2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px);
 }
 
 .timeline-card h3 {
@@ -811,11 +825,16 @@ button.active,
   -webkit-backdrop-filter: var(--opta-blur-md);
   backdrop-filter: var(--opta-blur-md);
   position: relative;
-  transition: all 0.3s ease;
+  border-radius: 8px;
+  /* Standardize corners */
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .composer-shell:focus-within {
-  border-color: var(--accent);
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(255, 255, 255, 0.02);
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.15), 0 0 0 1px rgba(168, 85, 247, 0.2);
+  transform: translateY(-1px);
 }
 
 .composer-input {
@@ -2104,18 +2123,19 @@ button.active,
   display: flex;
   align-items: stretch;
   border-radius: 8px;
-  transition: all var(--opta-duration-fast) cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
   background: rgba(15, 15, 20, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-left: 2px solid transparent;
   margin-bottom: 0.25rem;
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .session-row:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
   border-left-color: var(--primary-glow);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+  transform: translateY(-1px);
 }
 
 .session-row.active {
@@ -4152,4 +4172,200 @@ button.active,
 
 .error-boundary__reset:hover {
   opacity: 0.85;
+}
+
+/* ── Live Browser View ─────────────────────────────────────────────────── */
+
+.live-browser-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--opta-glass-bg);
+  border: 1px solid var(--opta-border-strong);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.4s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease;
+}
+
+.live-browser-view:hover {
+  box-shadow: 0 12px 48px rgba(162, 136, 255, 0.15), 0 0 0 1px rgba(162, 136, 255, 0.2);
+  border-color: rgba(162, 136, 255, 0.4);
+}
+
+.browser-header {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 1rem;
+  background: var(--opta-glass-bg-subtle);
+  border-bottom: 1px solid var(--opta-border);
+  gap: 1rem;
+  transition: background-color 0.4s ease;
+}
+
+.live-browser-view:hover .browser-header {
+  background: rgba(162, 136, 255, 0.08);
+}
+
+.browser-traffic-lights {
+  display: flex;
+  gap: 6px;
+}
+
+.browser-traffic-lights .light {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.light-close {
+  background-color: #ff5f56;
+}
+
+.light-min {
+  background-color: #ffbd2e;
+}
+
+.light-max {
+  background-color: #27c93f;
+}
+
+.browser-url-bar {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 6px;
+  padding: 0.25rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.825rem;
+  color: var(--opta-text-secondary);
+  border: 1px solid var(--opta-border-subtle);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+
+.browser-url-bar .truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+}
+
+.browser-viewport {
+  flex: 1;
+  background: #000;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.browser-frame-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+}
+
+.browser-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--opta-primary-glow);
+}
+
+/* ── Browser Layout Modes (Expansions) ─────────────────────────────────── */
+
+.browser-layout-row {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.timeline-module {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: flex 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease-out, margin-right 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.browser-module {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  transition: all 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Mode: default (1/4 tile, assuming 50% of the main content column which is split) */
+.browser-mode-default .timeline-module {
+  flex: 1;
+  opacity: 1;
+}
+
+.browser-mode-default .browser-module {
+  flex: 1;
+  margin-left: 1rem;
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Mode: expanded (Takes up entire space, hides timeline) */
+.browser-mode-expanded .timeline-module {
+  flex: 0 0 0px;
+  opacity: 0;
+  overflow: hidden;
+  margin-right: 0;
+}
+
+.browser-mode-expanded .browser-module {
+  flex: 1;
+  margin-left: 0;
+  opacity: 1;
+  transform: scale(1);
+}
+
+.bottom-mode-expanded {
+  grid-template-rows: 0fr !important;
+  opacity: 0;
+  margin-top: 0 !important;
+}
+
+/* Mode: minimized (Hides browser entirely) */
+.browser-mode-minimized .timeline-module {
+  flex: 1;
+  opacity: 1;
+}
+
+.browser-mode-minimized .browser-module {
+  flex: 0 0 0px;
+  margin-left: 0;
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  pointer-events: none;
+}
+
+.bottom-modules {
+  display: grid;
+  grid-template-rows: 1fr;
+  transition: grid-template-rows 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.4s ease-out, margin-top 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin-top: var(--opta-space-md);
+}
+
+.bottom-modules-inner {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.bottom-mode-default,
+.bottom-mode-minimized {
+  grid-template-rows: 1fr;
+  opacity: 1;
 }

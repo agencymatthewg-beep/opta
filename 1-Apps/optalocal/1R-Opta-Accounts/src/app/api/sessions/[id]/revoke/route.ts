@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { writeAuditEvent } from '@/lib/api/audit';
 import { isUuid } from '@/lib/api/policy';
 import { requireScopeOrPrivilegedRole } from '@/lib/api/authz';
 
@@ -38,6 +39,15 @@ export async function POST(_request: Request, context: RouteContext) {
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'session_not_found_or_revoked' }, { status: 404 });
+
+  await writeAuditEvent(supabase, {
+    userId: user.id,
+    eventType: 'session.revoke',
+    riskLevel: 'medium',
+    decision: 'allow',
+    deviceId: data.device_id ?? null,
+    context: { sessionId: id, sessionType: data.session_type },
+  });
 
   return NextResponse.json({ ok: true, session: data });
 }

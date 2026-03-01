@@ -55,6 +55,7 @@ OpenAI-compatible endpoints. Any client using the OpenAI SDK will work without m
 | `top_p` | number | ❌ | 1.0 | Nucleus sampling (0-1) |
 | `max_tokens` | integer | ❌ | null | Max output tokens |
 | `stream` | boolean | ❌ | false | Stream response as SSE |
+| `n` | integer | ❌ | 1 | Number of choices to generate (1-16). Supported in both non-stream and streaming paths. |
 | `stop` | string\|array | ❌ | null | Stop sequences (max 4) |
 | `tools` | array | ❌ | null | Function definitions for tool calling |
 | `tool_choice` | string\|object | ❌ | "auto" | "auto", "none", "required", or {"type": "function", ...} |
@@ -102,6 +103,8 @@ data: {"id":"chatcmpl-abc123","object":"chat.completion.chunk","created":1707912
 
 data: [DONE]
 ```
+
+For `n > 1`, chunks are multiplexed by `choices[].index`. Clients should aggregate deltas per index.
 
 #### Tool Calling Example
 
@@ -202,10 +205,12 @@ print(response.choices[0].message.content)
 stream = client.chat.completions.create(
     model="llama-3.2-8b",
     messages=[{"role": "user", "content": "Tell me a story"}],
-    stream=True
+    stream=True,
+    n=2
 )
 for chunk in stream:
-    print(chunk.choices[0].delta.content or "", end="")
+    for choice in chunk.choices:
+        print(choice.delta.content or "", end="")
 ```
 
 ---

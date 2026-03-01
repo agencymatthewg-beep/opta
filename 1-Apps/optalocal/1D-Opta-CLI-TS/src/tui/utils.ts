@@ -13,25 +13,35 @@ export interface ConnectionIndicator {
   label: string;
 }
 
-export function connectionDot(state?: ConnectionState, legacyStatus?: boolean): ConnectionIndicator {
+export function connectionDot(
+  state?: ConnectionState,
+  legacyStatus?: boolean
+): ConnectionIndicator {
   if (state) {
     switch (state) {
-      case 'checking': return { char: '◌', color: 'yellow', label: 'Checking...' };
-      case 'connected': return { char: '●', color: 'green', label: 'Connected' };
-      case 'disconnected': return { char: '○', color: 'red', label: 'Disconnected' };
-      case 'error': return { char: '✗', color: 'red', label: 'Error' };
-      case 'reconnecting': return { char: '◌', color: 'yellow', label: 'Reconnecting...' };
+      case 'checking':
+        return { char: '◌', color: 'yellow', label: 'Checking...' };
+      case 'connected':
+        return { char: '●', color: 'green', label: 'Connected' };
+      case 'disconnected':
+        return { char: '○', color: 'red', label: 'Disconnected' };
+      case 'error':
+        return { char: '✗', color: 'red', label: 'Error' };
+      case 'reconnecting':
+        return { char: '◌', color: 'yellow', label: 'Reconnecting...' };
     }
   }
-  return { char: legacyStatus ? '●' : '○', color: legacyStatus ? 'green' : 'red', label: legacyStatus ? 'Connected' : 'Disconnected' };
+  return {
+    char: legacyStatus ? '●' : '○',
+    color: legacyStatus ? 'green' : 'red',
+    label: legacyStatus ? 'Connected' : 'Disconnected',
+  };
 }
 
 // ─── Model Name Formatting ──────────────────────────────────────────────────
 
 export function shortModelName(model: string): string {
-  return model
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
+  return model.replace(/^mlx-community\//, '').replace(/^huggingface\//, '');
 }
 
 // ─── Context Bar ────────────────────────────────────────────────────────────
@@ -53,7 +63,12 @@ export function contextBarColor(used: number, total: number): string {
 // ─── Path Formatting ────────────────────────────────────────────────────────
 
 export function formatPath(path: unknown): string {
-  const p = String(path ?? '');
+  const p =
+    typeof path === 'string'
+      ? path
+      : typeof path === 'object' && path !== null
+        ? JSON.stringify(path)
+        : String(path as number | boolean | bigint | null | undefined);
   const parts = p.split('/');
   if (parts.length > 3) {
     return '.../' + parts.slice(-3).join('/');

@@ -22,6 +22,7 @@ import type { Spinner } from '../../ui/spinner.js';
 
 export interface ModelsOptions {
   json?: boolean;
+  full?: boolean;
 }
 
 export interface ModelPickerOption {
@@ -134,7 +135,7 @@ export const LIFECYCLE_PROGRESS_HEARTBEAT_MS = 3_000;
 // ── Pure utility functions ──────────────────────────────────────────
 
 export function isInteractiveTerminal(): boolean {
-  return Boolean(process.stdout.isTTY && process.stdin.isTTY && !process.env['CI']);
+  return Boolean(process.stdout.isTTY) && Boolean(process.stdin.isTTY) && !process.env['CI'];
 }
 
 /**
@@ -167,7 +168,8 @@ export function splitQueryTokens(text: string): string[] {
 
 export function parseShellLikeArgs(raw: string): string[] {
   const tokens: string[] = [];
-  const pattern = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
+  const pattern =
+    /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(raw)) !== null) {
@@ -214,7 +216,10 @@ export async function parseJsonValueOption(raw: string, flagName: string): Promi
   }
 }
 
-export async function parseJsonObjectOption(raw: string, flagName: string): Promise<Record<string, unknown>> {
+export async function parseJsonObjectOption(
+  raw: string,
+  flagName: string
+): Promise<Record<string, unknown>> {
   const parsed = await parseJsonValueOption(raw, flagName);
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new Error(`${flagName} must resolve to a JSON object`);
@@ -259,10 +264,14 @@ export function warnModelInventoryFallback(scope: string, err: unknown): void {
 /** Colored format tag for a model's format type. */
 export function fmtTag(format: ModelFormat): string {
   switch (format) {
-    case 'MLX': return chalk.hex('#a855f7')(formatTagLabel(format));
-    case 'GGUF': return chalk.yellow(formatTagLabel(format));
-    case 'CLOUD': return chalk.blue(formatTagLabel(format));
-    default: return chalk.dim(formatTagLabel(format));
+    case 'MLX':
+      return chalk.hex('#a855f7')(formatTagLabel(format));
+    case 'GGUF':
+      return chalk.yellow(formatTagLabel(format));
+    case 'CLOUD':
+      return chalk.blue(formatTagLabel(format));
+    default:
+      return chalk.dim(formatTagLabel(format));
   }
 }
 
@@ -282,7 +291,7 @@ export function scoreModelMatch(
   rawQuery: string,
   normalizedQuery: string,
   queryTokens: string[],
-  extraAliases: string[] = [],
+  extraAliases: string[] = []
 ): number | null {
   const aliases = [...modelAliases(modelId), ...extraAliases.map((alias) => alias.toLowerCase())];
   const normalizedAliases = [...new Set(aliases.map(normalizeModelKey).filter(Boolean))];
@@ -290,14 +299,22 @@ export function scoreModelMatch(
   if (aliases.some((a) => a === rawQuery || a === normalizedQuery)) return 0;
   if (aliases.some((a) => a.startsWith(rawQuery) || a.startsWith(normalizedQuery))) return 1;
   if (aliases.some((a) => a.includes(rawQuery) || a.includes(normalizedQuery))) return 2;
-  if (queryTokens.length > 1 && normalizedAliases.some((alias) => matchesTokenSequence(alias, queryTokens))) return 3;
+  if (
+    queryTokens.length > 1 &&
+    normalizedAliases.some((alias) => matchesTokenSequence(alias, queryTokens))
+  )
+    return 3;
   return null;
 }
 
 /**
  * Rank model IDs by fuzzy relevance for non-exact name input.
  */
-export function rankModelIds(ids: string[], query: string, aliasMap: ModelAliasMap = {}): RankedModelMatch[] {
+export function rankModelIds(
+  ids: string[],
+  query: string,
+  aliasMap: ModelAliasMap = {}
+): RankedModelMatch[] {
   const raw = query.trim().toLowerCase();
   const normalized = normalizeModelKey(raw);
   const queryTokens = splitQueryTokens(raw);
@@ -346,25 +363,29 @@ export function progressText(action: string, percent: number, detail: string): s
 export function computeLifecycleStagePercent(
   startPercent: number,
   progress: ModelLoadProgress,
-  previousPercent?: number,
+  previousPercent?: number
 ): number {
   const clampedStart = Math.max(0, Math.min(99, Math.round(startPercent)));
   if (progress.status === 'ready') return 100;
 
   const span = Math.max(1, 99 - clampedStart);
-  const effectiveTimeoutMs = progress.timeoutMs > 0
-    ? Math.max(
-        LIFECYCLE_PROGRESS_MIN_HORIZON_MS,
-        Math.min(progress.timeoutMs, LIFECYCLE_PROGRESS_MAX_HORIZON_MS),
-      )
-    : LIFECYCLE_PROGRESS_MAX_HORIZON_MS;
+  const effectiveTimeoutMs =
+    progress.timeoutMs > 0
+      ? Math.max(
+          LIFECYCLE_PROGRESS_MIN_HORIZON_MS,
+          Math.min(progress.timeoutMs, LIFECYCLE_PROGRESS_MAX_HORIZON_MS)
+        )
+      : LIFECYCLE_PROGRESS_MAX_HORIZON_MS;
   const ratio = Math.max(0, Math.min(1, progress.elapsedMs / effectiveTimeoutMs));
   const easedByTime = clampedStart + Math.floor(Math.sqrt(ratio) * span);
-  const heartbeat = clampedStart + Math.min(span - 1, Math.floor(progress.elapsedMs / LIFECYCLE_PROGRESS_HEARTBEAT_MS));
-  const attemptBump = clampedStart
-    + Math.min(span - 1, Math.floor(Math.log2(Math.max(2, progress.attempt + 1))));
+  const heartbeat =
+    clampedStart +
+    Math.min(span - 1, Math.floor(progress.elapsedMs / LIFECYCLE_PROGRESS_HEARTBEAT_MS));
+  const attemptBump =
+    clampedStart + Math.min(span - 1, Math.floor(Math.log2(Math.max(2, progress.attempt + 1))));
   const target = Math.max(clampedStart + 1, easedByTime, heartbeat, attemptBump);
-  const floorPercent = previousPercent == null ? clampedStart : Math.max(clampedStart, previousPercent);
+  const floorPercent =
+    previousPercent == null ? clampedStart : Math.max(clampedStart, previousPercent);
   return Math.min(99, Math.max(floorPercent, target));
 }
 
@@ -373,7 +394,7 @@ export function createLifecycleProgressUpdater(
   action: string,
   verb: string,
   modelId: string,
-  startPercent: number,
+  startPercent: number
 ): (progress: ModelLoadProgress) => void {
   const clampedStart = Math.max(0, Math.min(99, Math.round(startPercent)));
   let lastSecond = -1;
@@ -384,22 +405,16 @@ export function createLifecycleProgressUpdater(
     const elapsedSeconds = Math.floor(progress.elapsedMs / 1000);
     const nextPercent = computeLifecycleStagePercent(clampedStart, progress, lastRenderedPercent);
     if (
-      elapsedSeconds === lastSecond
-      && nextPercent === lastRenderedPercent
-      && progress.elapsedMs > 0
+      elapsedSeconds === lastSecond &&
+      nextPercent === lastRenderedPercent &&
+      progress.elapsedMs > 0
     ) {
       return;
     }
     lastSecond = elapsedSeconds;
     lastRenderedPercent = nextPercent;
 
-    spinner.start(
-      progressText(
-        action,
-        nextPercent,
-        `${verb} ${modelId} · ${elapsedSeconds}s`,
-      ),
-    );
+    spinner.start(progressText(action, nextPercent, `${verb} ${modelId} · ${elapsedSeconds}s`));
   };
 }
 
@@ -407,7 +422,7 @@ export function createLoadProgressUpdater(
   spinner: Spinner,
   action: string,
   modelId: string,
-  startPercent: number,
+  startPercent: number
 ): (progress: ModelLoadProgress) => void {
   return createLifecycleProgressUpdater(spinner, action, 'loading', modelId, startPercent);
 }
@@ -416,7 +431,7 @@ export function createUnloadProgressUpdater(
   spinner: Spinner,
   action: string,
   modelId: string,
-  startPercent: number,
+  startPercent: number
 ): (progress: ModelLoadProgress) => void {
   return createLifecycleProgressUpdater(spinner, action, 'unloading', modelId, startPercent);
 }
@@ -467,17 +482,17 @@ export function formatCatalogEntryLabel(entry: LibraryModelEntry, defaultModel: 
         ? chalk.yellow('◌')
         : chalk.dim('·');
   const defaultStar = entry.id === defaultModel ? chalk.green(' ★') : '';
-  const sourceTag =
-    entry.loaded
-      ? 'loaded'
-      : entry.downloaded
-        ? 'on disk'
-        : entry.source === 'history'
-          ? 'history'
-          : 'library';
+  const sourceTag = entry.loaded
+    ? 'loaded'
+    : entry.downloaded
+      ? 'on disk'
+      : entry.source === 'history'
+        ? 'history'
+        : 'library';
   const metadata: string[] = [sourceTag, fmtCtx(entry.contextLength)];
   if (entry.sizeBytes && entry.sizeBytes > 0) metadata.push(`${fmtGB(entry.sizeBytes)} disk`);
-  if (typeof entry.downloads === 'number') metadata.push(`${formatCompactCount(entry.downloads)} dl`);
+  if (typeof entry.downloads === 'number')
+    metadata.push(`${formatCompactCount(entry.downloads)} dl`);
   if (typeof entry.likes === 'number') metadata.push(`${formatCompactCount(entry.likes)} likes`);
   if (entry.pipelineTag) metadata.push(entry.pipelineTag);
   return `${dot} ${entry.id}  ${chalk.dim(metadata.join(' · '))}${defaultStar}`;
@@ -486,7 +501,7 @@ export function formatCatalogEntryLabel(entry: LibraryModelEntry, defaultModel: 
 export async function streamSseEvents(
   url: string,
   headers: Record<string, string>,
-  timeoutMs: number,
+  timeoutMs: number
 ): Promise<{ events: ParsedSseEvent[]; timedOut: boolean }> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -509,7 +524,9 @@ export async function streamSseEvents(
     });
     if (!response.ok) {
       const body = await response.text().catch(() => '');
-      throw new Error(`HTTP ${response.status} ${response.statusText}${body ? `: ${body.trim()}` : ''}`);
+      throw new Error(
+        `HTTP ${response.status} ${response.statusText}${body ? `: ${body.trim()}` : ''}`
+      );
     }
 
     if (!response.body) {
@@ -533,7 +550,9 @@ export async function streamSseEvents(
       let newlineIdx = buffer.search(/\r?\n/);
       while (newlineIdx !== -1) {
         const line = buffer.slice(0, newlineIdx).replace(/\r$/, '');
-        buffer = buffer.slice(newlineIdx + (buffer[newlineIdx] === '\r' && buffer[newlineIdx + 1] === '\n' ? 2 : 1));
+        buffer = buffer.slice(
+          newlineIdx + (buffer[newlineIdx] === '\r' && buffer[newlineIdx + 1] === '\n' ? 2 : 1)
+        );
         if (!line) {
           pushEvent(currentEvent, dataLines);
           currentEvent = 'message';

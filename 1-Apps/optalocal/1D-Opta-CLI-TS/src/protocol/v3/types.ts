@@ -22,6 +22,7 @@ export const V3EventSchema = z.enum([
   'session.cancelled',
   'background.output',
   'background.status',
+  'browser.action',
 ]);
 export type V3Event = z.infer<typeof V3EventSchema>;
 
@@ -41,6 +42,7 @@ export const ClientSubmitTurnSchema = z.object({
   content: z.string().min(1),
   mode: SessionModeSchema,
   metadata: z.record(z.string(), z.unknown()).optional(),
+  lastSeenSeq: z.number().int().min(0).optional(),
 });
 export type ClientSubmitTurn = z.infer<typeof ClientSubmitTurnSchema>;
 
@@ -87,12 +89,23 @@ export interface TurnDonePayload {
   };
 }
 
+/** Payload for `browser.action` events — emitted after each successfully executed browser tool call. */
+export interface BrowserActionEventPayload {
+  toolName: string;
+  sessionId: string;
+  /** Risk tier as classified by the browser policy engine. */
+  risk: string;
+  /** Whether the action was allowed outright (`allow`) or required gate approval (`gate`). */
+  disposition: 'allow' | 'gate';
+}
+
 export const TurnErrorCodeSchema = z.enum([
   'no-model-loaded',
   'lmx-ws-closed',
   'lmx-timeout',
   'lmx-connection-refused',
   'storage-full',
+  'state-conflict',
 ]);
 export type TurnErrorCode = z.infer<typeof TurnErrorCodeSchema>;
 

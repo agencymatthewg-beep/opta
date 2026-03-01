@@ -1,9 +1,9 @@
 import { appendFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
+import { getDaemonDir } from '../platform/paths.js';
 
 function daemonLogDir(): string {
-  return join(homedir(), '.config', 'opta', 'daemon');
+  return getDaemonDir();
 }
 
 function daemonLogPath(): string {

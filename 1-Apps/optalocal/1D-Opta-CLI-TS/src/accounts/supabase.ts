@@ -1,3 +1,5 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import type { AccountIdentifier, SupabaseSession, SupabaseUser } from './types.js';
 
 export interface SupabaseAuthConfig {
@@ -52,9 +54,80 @@ function normalizeSupabaseUrl(raw: string): string {
   return `${parsed.protocol}//${parsed.host}`;
 }
 
-export function resolveSupabaseAuthConfig(env: NodeJS.ProcessEnv = process.env): SupabaseAuthConfig | null {
-  const rawUrl = env['OPTA_SUPABASE_URL'] ?? env['NEXT_PUBLIC_SUPABASE_URL'];
-  const rawAnonKey = env['OPTA_SUPABASE_ANON_KEY'] ?? env['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+interface ResolveSupabaseAuthConfigOptions {
+  cwd?: string;
+}
+
+function parseDotenv(raw: string): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const line of raw.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    if (trimmed.length === 0 || trimmed.startsWith('#')) continue;
+    const separator = trimmed.indexOf('=');
+    if (separator <= 0) continue;
+    const key = trimmed.slice(0, separator).trim();
+    if (!key) continue;
+    let value = trimmed.slice(separator + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    out[key] = value;
+  }
+  return out;
+}
+
+function discoverSupabaseAuthConfig(
+  env: NodeJS.ProcessEnv,
+  cwd: string,
+): { rawUrl: string; rawAnonKey: string } | null {
+  if (env['VITEST'] === 'true' || env['NODE_ENV'] === 'test') {
+    return null;
+  }
+
+  const roots: string[] = [];
+  let cursor = cwd;
+  for (let depth = 0; depth < 5; depth += 1) {
+    roots.push(cursor);
+    const parent = dirname(cursor);
+    if (parent === cursor) break;
+    cursor = parent;
+  }
+
+  const candidates: string[] = [];
+  for (const root of roots) {
+    candidates.push(
+      join(root, '1R-Opta-Accounts', '.env.local'),
+      join(root, '1L-Opta-Local', 'web', '.env.local'),
+    );
+  }
+
+  for (const path of candidates) {
+    if (!existsSync(path)) continue;
+    try {
+      const parsed = parseDotenv(readFileSync(path, 'utf-8'));
+      const rawUrl = parsed['OPTA_SUPABASE_URL'] ?? parsed['NEXT_PUBLIC_SUPABASE_URL'];
+      const rawAnonKey = parsed['OPTA_SUPABASE_ANON_KEY'] ?? parsed['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+      if (typeof rawUrl === 'string' && typeof rawAnonKey === 'string' && rawUrl.trim() && rawAnonKey.trim()) {
+        return { rawUrl, rawAnonKey };
+      }
+    } catch {
+      // Ignore malformed or unreadable .env files and keep searching.
+    }
+  }
+
+  return null;
+}
+
+export function resolveSupabaseAuthConfig(
+  env: NodeJS.ProcessEnv = process.env,
+  options: ResolveSupabaseAuthConfigOptions = {},
+): SupabaseAuthConfig | null {
+  const discovered = discoverSupabaseAuthConfig(env, options.cwd ?? process.cwd());
+  const rawUrl = env['OPTA_SUPABASE_URL'] ?? env['NEXT_PUBLIC_SUPABASE_URL'] ?? discovered?.rawUrl;
+  const rawAnonKey = env['OPTA_SUPABASE_ANON_KEY'] ?? env['NEXT_PUBLIC_SUPABASE_ANON_KEY'] ?? discovered?.rawAnonKey;
 
   if (!rawUrl || !rawAnonKey) return null;
 
@@ -251,4 +324,61 @@ export async function refreshSession(
       : null;
 
   return { session, user: user ?? session?.user ?? null };
+}
+
+export async function exchangeAuthCodeForSession(
+  config: SupabaseAuthConfig,
+  authCode: string,
+  codeVerifier: string,
+): Promise<SupabaseAuthResult> {
+  const payload = await requestSupabase(config, '/auth/v1/token?grant_type=pkce', {
+    method: 'POST',
+    headers: authHeaders(config),
+    body: JSON.stringify({
+      auth_code: authCode,
+      code_verifier: codeVerifier,
+    }),
+  });
+
+  const parsed = isRecord(payload) ? payload : {};
+  const user = parseUser(parsed['user']);
+
+  const parsedSession = parseSession(parsed['session']);
+  if (parsedSession) {
+    return { session: parsedSession, user: user ?? parsedSession.user ?? null };
+  }
+
+  const accessToken = parsed['access_token'];
+  const refreshToken = parsed['refresh_token'];
+  const tokenType = parsed['token_type'];
+  const expiresIn = parsed['expires_in'];
+  const expiresAt = parsed['expires_at'];
+
+  const session: SupabaseSession | null =
+    typeof accessToken === 'string' &&
+    typeof refreshToken === 'string' &&
+    typeof tokenType === 'string' &&
+    typeof expiresIn === 'number'
+      ? {
+          access_token: accessToken,
+          refresh_token: refreshToken,
+          token_type: tokenType,
+          expires_in: expiresIn,
+          ...(typeof expiresAt === 'number' ? { expires_at: expiresAt } : {}),
+          ...(user ? { user } : {}),
+        }
+      : null;
+
+  return { session, user: user ?? session?.user ?? null };
+}
+
+export async function fetchUserWithAccessToken(
+  config: SupabaseAuthConfig,
+  accessToken: string,
+): Promise<SupabaseUser | null> {
+  const payload = await requestSupabase(config, '/auth/v1/user', {
+    method: 'GET',
+    headers: authHeaders(config, accessToken),
+  });
+  return parseUser(payload);
 }

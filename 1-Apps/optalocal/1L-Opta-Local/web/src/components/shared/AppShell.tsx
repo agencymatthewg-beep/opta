@@ -33,7 +33,7 @@ import {
   Network,
 } from 'lucide-react';
 import { cn } from '@opta/ui';
-import { OptaRing } from '@/components/shared/OptaRing';
+import { OptaLogo } from '@/components/shared/OptaLogo';
 
 import {
   ConnectionProvider,
@@ -300,20 +300,9 @@ export function AppShell({ children }: { children: ReactNode }) {
 
               <Link
                 href="/"
-                className="group flex min-w-0 items-center gap-2"
-                onClick={closeMobileMenu}
-                aria-label="Opta Local home"
+                className="flex items-center rounded-xl px-2 py-1.5 transition-colors hover:bg-opta-surface/50"
               >
-                <OptaRing size={24} className="shrink-0 pointer-events-none" />
-
-                <span className="flex min-w-0 flex-col leading-none">
-                  <span className="opta-gradient-text text-sm font-bold tracking-[0.1em]">
-                    OPTA LOCAL
-                  </span>
-                  <span className="hidden text-[10px] uppercase tracking-[0.16em] text-text-muted md:block">
-                    Command Surface
-                  </span>
-                </span>
+                <OptaLogo scale={0.4} />
               </Link>
             </div>
 

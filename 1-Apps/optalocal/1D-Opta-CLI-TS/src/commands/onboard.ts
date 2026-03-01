@@ -1,16 +1,16 @@
 import readline from 'node:readline/promises';
 import { stdin as input, stdout as output } from 'node:process';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { access, writeFile, mkdir } from 'node:fs/promises';
 import chalk from 'chalk';
 import { saveConfig, loadConfig } from '../core/config.js';
 import { isKeychainAvailable } from '../keychain/index.js';
 import { storeAnthropicKey } from '../keychain/api-keys.js';
+import { getConfigDir } from '../platform/paths.js';
 
 // ── Onboard marker (first-run detection) ────────────────────────────────────
 
-const ONBOARD_MARKER = join(homedir(), '.config', 'opta', '.onboarded');
+const ONBOARD_MARKER = join(getConfigDir(), '.onboarded');
 
 export async function isFirstRun(): Promise<boolean> {
   try {
@@ -22,7 +22,7 @@ export async function isFirstRun(): Promise<boolean> {
 }
 
 export async function markOnboarded(): Promise<void> {
-  const dir = join(homedir(), '.config', 'opta');
+  const dir = getConfigDir();
   await mkdir(dir, { recursive: true });
   await writeFile(ONBOARD_MARKER, new Date().toISOString(), 'utf-8');
 }
@@ -306,8 +306,7 @@ export async function runOnboarding(): Promise<void> {
     console.log(chalk.bold("  You're ready to use Opta!"));
     console.log('');
     console.log(chalk.dim('  Quick start:'));
-    console.log(chalk.cyan('    opta chat') + chalk.dim('     — Interactive session'));
-    console.log(chalk.cyan('    opta tui') + chalk.dim('      — Full-screen mode'));
+    console.log(chalk.cyan('    opta') + chalk.dim('          — Interactive session'));
     console.log(chalk.cyan('    opta do "..."') + chalk.dim(' — One-shot agent task'));
     console.log(chalk.cyan('    opta status') + chalk.dim('   — Check connection'));
     console.log('');

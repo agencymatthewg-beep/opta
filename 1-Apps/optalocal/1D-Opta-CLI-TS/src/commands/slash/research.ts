@@ -12,33 +12,30 @@ import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 function captureResearchActivation(args: string, ctx: SlashContext): void {
   void import('../../learning/hooks.js')
     .then(({ captureLearningEvent }) =>
-      captureLearningEvent(
-        ctx.config,
-        {
-          kind: 'research',
-          topic: args ? `Research mode: ${args}` : 'Research mode activated',
-          content: args
-            ? `Research mode entered with topic: ${args}`
-            : 'Research mode entered for exploratory investigation.',
-          tags: ['research', 'mode'],
-          evidence: [{ label: 'session', uri: `session://${ctx.session.id}` }],
-          metadata: {
-            sessionId: ctx.session.id,
-            command: '/research',
-          },
-          verified: true,
+      captureLearningEvent(ctx.config, {
+        kind: 'research',
+        topic: args ? `Research mode: ${args}` : 'Research mode activated',
+        content: args
+          ? `Research mode entered with topic: ${args}`
+          : 'Research mode entered for exploratory investigation.',
+        tags: ['research', 'mode'],
+        evidence: [{ label: 'session', uri: `session://${ctx.session.id}` }],
+        metadata: {
+          sessionId: ctx.session.id,
+          command: '/research',
         },
-      ),
+        verified: true,
+      })
     )
     .catch(() => {});
 }
 
-const researchHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+const researchHandler = (args: string, ctx: SlashContext): Promise<SlashResult> => {
   // Toggle off if already in research mode and no args
   if (!args && ctx.chatState.currentMode === 'research') {
     ctx.chatState.currentMode = 'normal';
     console.log(chalk.green('\u2713') + ' Exited research mode');
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   // Enter research mode
@@ -57,7 +54,7 @@ const researchHandler = async (args: string, ctx: SlashContext): Promise<SlashRe
   captureResearchActivation(args, ctx);
 
   console.log(chalk.dim('  Type /research to exit'));
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 export const researchCommands: SlashCommandDef[] = [

@@ -1,5 +1,5 @@
 /**
- * LMX model and server lifecycle handlers: scan, load, unload, serve, lmx command router, reconnect.
+ * LMX model and server lifecycle handlers: scan, load, unload, delete, downloads, serve, lmx command router, reconnect.
  */
 
 import chalk from 'chalk';
@@ -13,10 +13,16 @@ import {
   fmtTag,
   parseSlashArgs,
   parseBooleanLiteral,
+  renderJson,
+  asObject,
+  readString,
 } from './types.js';
 import { lmxStatusHandler } from './status.js';
 
-export const scanHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+export const scanHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const isFull = tokens.includes('--full');
+  
   const { lookupContextLimit } = await import('../../../lmx/client.js');
   const {
     scanModels,
@@ -28,9 +34,9 @@ export const scanHandler = async (_args: string, ctx: SlashContext): Promise<Sla
   } = await import('../../../providers/model-scan.js');
   // (shortId kept for presets display)
 
-  console.log(chalk.dim(`  Scanning ${ctx.config.connection.host}:${ctx.config.connection.port}...`));
+  console.log(chalk.dim(`  Scanning ${ctx.config.connection.host}:${ctx.config.connection.port}${isFull ? ' (full)' : ''}...`));
 
-  const scan = await scanModels(ctx.config);
+  const scan = await scanModels(ctx.config, isFull);
 
   if (!scan.lmxReachable && scan.cloud.length === 0) {
     console.log(chalk.yellow('  LMX unreachable, no cloud providers configured'));
@@ -529,6 +535,92 @@ export const lmxReconnectHandler = async (_args: string, ctx: SlashContext): Pro
     console.log(chalk.dim(`  ${errorMessage(err)}`));
     return 'handled';
   }
+};
+
+export const deleteModelHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const modelId = args.trim();
+  if (!modelId) {
+    console.log(chalk.dim('  Usage: /delete <model-id>'));
+    return 'handled';
+  }
+
+  console.log(chalk.yellow(`  Warning: this will permanently delete ${modelId} from disk.`));
+
+  const { LmxClient } = await import('../../../lmx/client.js');
+  const lmx = new LmxClient({
+    host: ctx.config.connection.host,
+    fallbackHosts: ctx.config.connection.fallbackHosts,
+    port: ctx.config.connection.port,
+    adminKey: ctx.config.connection.adminKey,
+  });
+
+  try {
+    const result = await lmx.deleteModel(modelId);
+    console.log(chalk.green('\u2713') + ` Deleted ${result.modelId}`);
+    if (result.freedBytes > 0) {
+      console.log(chalk.dim(`  Freed: ${(result.freedBytes / 1e9).toFixed(1)} GB`));
+    }
+  } catch (err) {
+    console.error(chalk.red('\u2717') + ` Delete failed: ${errorMessage(err)}`);
+  }
+  return 'handled';
+};
+
+export const downloadsHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const json = tokens.includes('--json');
+  const unknown = tokens.filter((token) => token.startsWith('--') && token !== '--json');
+  if (unknown.length > 0) {
+    console.log(chalk.yellow(`  Unknown options: ${unknown.join(', ')}`));
+    console.log(chalk.dim('  Usage: /downloads [--json]'));
+    return 'handled';
+  }
+
+  const { LmxClient } = await import('../../../lmx/client.js');
+  const lmx = new LmxClient({
+    host: ctx.config.connection.host,
+    fallbackHosts: ctx.config.connection.fallbackHosts,
+    port: ctx.config.connection.port,
+    adminKey: ctx.config.connection.adminKey,
+  });
+
+  try {
+    const available = await lmx.available(FAST_SLASH_REQUEST_OPTS);
+    // The typed LmxAvailableModel may be extended at runtime with status/backend fields
+    const pending = available.filter((m) => {
+      const rec = asObject(m as unknown);
+      const status = readString(rec, 'status');
+      return status === 'download_required' || status === 'downloading';
+    });
+
+    if (json) {
+      console.log(renderJson(pending));
+      return 'handled';
+    }
+
+    if (pending.length === 0) {
+      console.log(chalk.dim('  No models pending download'));
+      return 'handled';
+    }
+
+    const lines: string[] = [];
+    for (const m of pending) {
+      const rec = asObject(m as unknown);
+      const status = readString(rec, 'status') ?? 'unknown';
+      const backend = readString(rec, 'backend', 'backend_type') ?? chalk.dim('(unknown)');
+      const sizeStr = m.size_bytes > 0
+        ? `${(m.size_bytes / 1e9).toFixed(1)} GB`
+        : chalk.dim('(size unknown)');
+      const statusColored = status === 'downloading' ? chalk.cyan(status) : chalk.yellow(status);
+      lines.push(`  ${chalk.bold(m.repo_id)}`);
+      lines.push(`    ${kv('Status', statusColored)}  ${kv('Size', sizeStr)}  ${kv('Backend', backend)}`);
+    }
+
+    console.log('\n' + box('Downloads', lines));
+  } catch (err) {
+    console.error(chalk.red('\u2717') + ` Downloads query failed: ${errorMessage(err)}`);
+  }
+  return 'handled';
 };
 
 export const lmxCommandHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {

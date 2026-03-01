@@ -56,6 +56,7 @@ describe('opta CLI', () => {
     expect(result.stdout).toContain('--resume');
     expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
+    expect(result.stdout).toContain('--provider');
     expect(result.stdout).toContain('--device');
     expect(result.stdout).toContain('--format');
     expect(result.exitCode).toBe(0);
@@ -73,9 +74,24 @@ describe('opta CLI', () => {
   it('do command accepts --format flag', async () => {
     const result = await run(['do', '--help']);
     expect(result.stdout).toContain('--format');
+    expect(result.stdout).toContain('--provider');
     expect(result.stdout).toContain('--device');
     expect(result.stdout).toContain('json');
     expect(result.exitCode).toBe(0);
+  });
+
+  it('fails clearly for invalid chat provider', async () => {
+    const result = await run(['chat', '--provider', 'invalid']);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain('Invalid provider');
+    expect(result.stderr).toContain('lmx, anthropic');
+  });
+
+  it('fails clearly for invalid do provider', async () => {
+    const result = await run(['do', 'echo ok', '--provider', 'invalid']);
+    expect(result.exitCode).not.toBe(0);
+    expect(result.stderr).toContain('Invalid provider');
+    expect(result.stderr).toContain('lmx, anthropic');
   });
 
   it('chat command accepts --auto flag', async () => {

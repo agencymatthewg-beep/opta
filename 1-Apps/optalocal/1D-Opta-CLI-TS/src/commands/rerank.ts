@@ -16,13 +16,18 @@ const RERANK_REQUEST_OPTS = { timeoutMs: 30_000, maxRetries: 0 } as const;
 
 function usage(): void {
   console.log(
-    chalk.dim('Usage: opta rerank <query> --documents <doc1|doc2|...> [--model <id>] [--top-k <n>] [--json]'),
+    chalk.dim(
+      'Usage: opta rerank <query> --documents <doc1|doc2|...> [--model <id>] [--top-k <n>] [--json]'
+    )
   );
 }
 
 function parseDocuments(raw: string | undefined): string[] {
   if (!raw) return [];
-  return raw.split('|').map((entry) => entry.trim()).filter(Boolean);
+  return raw
+    .split('|')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
 }
 
 function parseTopK(raw: string | undefined): number | undefined {
@@ -34,15 +39,21 @@ function parseTopK(raw: string | undefined): number | undefined {
   return parsed;
 }
 
-function formatDocumentPreview(result: LmxRerankDocumentResult, fallbackDocuments: string[]): string {
+function formatDocumentPreview(
+  result: LmxRerankDocumentResult,
+  fallbackDocuments: string[]
+): string {
   const text = result.document?.text ?? fallbackDocuments[result.index] ?? '';
   const normalized = text.replace(/\s+/g, ' ').trim();
   if (normalized.length <= 96) return normalized;
   return `${normalized.slice(0, 93)}...`;
 }
 
-export async function rerank(queryInput: string | string[], opts: RerankOptions = {}): Promise<void> {
-  const query = Array.isArray(queryInput) ? queryInput.join(' ').trim() : String(queryInput ?? '').trim();
+export async function rerank(
+  queryInput: string | string[],
+  opts: RerankOptions = {}
+): Promise<void> {
+  const query = Array.isArray(queryInput) ? queryInput.join(' ').trim() : (queryInput ?? '').trim();
   if (!query) {
     console.error(chalk.red('✗') + ' Query is required.\n');
     usage();
@@ -51,7 +62,9 @@ export async function rerank(queryInput: string | string[], opts: RerankOptions 
 
   const documents = parseDocuments(opts.documents);
   if (documents.length === 0) {
-    console.error(chalk.red('✗') + ' --documents is required and must include at least one document.\n');
+    console.error(
+      chalk.red('✗') + ' --documents is required and must include at least one document.\n'
+    );
     usage();
     throw new ExitError(EXIT.MISUSE);
   }
@@ -82,7 +95,7 @@ export async function rerank(queryInput: string | string[], opts: RerankOptions 
         documents,
         topN: topK,
       },
-      RERANK_REQUEST_OPTS,
+      RERANK_REQUEST_OPTS
     );
 
     if (opts.json) {
@@ -91,7 +104,10 @@ export async function rerank(queryInput: string | string[], opts: RerankOptions 
     }
 
     const usageTokens = response.usage?.total_tokens;
-    console.log(chalk.green('✓') + ` Reranked ${documents.length} document${documents.length === 1 ? '' : 's'} with ${response.model}`);
+    console.log(
+      chalk.green('✓') +
+        ` Reranked ${documents.length} document${documents.length === 1 ? '' : 's'} with ${response.model}`
+    );
     console.log(chalk.dim(`  query: ${query}`));
     if (typeof usageTokens === 'number') {
       console.log(chalk.dim(`  tokens: ${usageTokens}`));
@@ -103,15 +119,17 @@ export async function rerank(queryInput: string | string[], opts: RerankOptions 
     }
 
     for (const [rank, result] of response.results.entries()) {
-      const score = Number.isFinite(result.relevance_score) ? result.relevance_score.toFixed(4) : 'n/a';
+      const score = Number.isFinite(result.relevance_score)
+        ? result.relevance_score.toFixed(4)
+        : 'n/a';
       const preview = formatDocumentPreview(result, documents);
       console.log(`  ${rank + 1}. [${score}] doc#${result.index + 1} ${preview}`);
     }
   } catch (err) {
     if (err instanceof LmxApiError && err.code === 'connection_error') {
       console.error(
-        chalk.red('✗')
-        + ` Unable to reach Opta LMX at ${config.connection.host}:${config.connection.port}`,
+        chalk.red('✗') +
+          ` Unable to reach Opta LMX at ${config.connection.host}:${config.connection.port}`
       );
       console.error(chalk.dim(`  ${err.message}`));
       throw new ExitError(EXIT.NO_CONNECTION);

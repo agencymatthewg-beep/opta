@@ -17,11 +17,14 @@ import { getSecure, setSecure, removeSecure } from '@/lib/storage';
 /** Connection transport type: LAN (direct), WAN (tunnel), or offline */
 export type ConnectionType = 'lan' | 'wan' | 'offline';
 
+export type DiagnosticCategory = 'OK' | 'NODE_DOWN' | 'UNAUTHORIZED' | 'TIMEOUT' | 'UNKNOWN';
+
 /** Result of an optimal URL probe */
 export interface ConnectionProbeResult {
   url: string;
   type: ConnectionType;
   latencyMs: number;
+  diagnostic: DiagnosticCategory;
 }
 
 export interface ConnectionSettings {
@@ -135,13 +138,13 @@ export async function checkLanHealth(lanUrl: string): Promise<boolean> {
 
 /**
  * Check whether the LMX server is reachable at a given URL within a timeout.
- * Returns latency in milliseconds if reachable, or null if not.
+ * Returns latency in milliseconds and a diagnostic category if reachable, or detailed failure category if not.
  */
 async function probeUrl(
   url: string,
   timeoutMs: number,
   adminKey?: string,
-): Promise<number | null> {
+): Promise<{ latencyMs: number | null; diagnostic: DiagnosticCategory }> {
   try {
     const headers: Record<string, string> = {};
     if (adminKey) {
@@ -152,12 +155,26 @@ async function probeUrl(
       signal: AbortSignal.timeout(timeoutMs),
       headers,
     });
-    if (response.ok) {
-      return Math.round(performance.now() - start);
+
+    // Auth failures
+    if (response.status === 401 || response.status === 403) {
+      return { latencyMs: null, diagnostic: 'UNAUTHORIZED' };
     }
-    return null;
-  } catch {
-    return null;
+
+    if (response.ok) {
+      return { latencyMs: Math.round(performance.now() - start), diagnostic: 'OK' };
+    }
+
+    return { latencyMs: null, diagnostic: 'UNKNOWN' };
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === 'TimeoutError') {
+      return { latencyMs: null, diagnostic: 'TIMEOUT' };
+    }
+    // Network errors like ECONNREFUSED surface as TypeError in fetch
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      return { latencyMs: null, diagnostic: 'NODE_DOWN' };
+    }
+    return { latencyMs: null, diagnostic: 'NODE_DOWN' };
   }
 }
 
@@ -177,32 +194,43 @@ export function isLanAvailable(): boolean {
 /**
  * Probe LAN first (fast timeout), then tunnel if configured.
  * Returns the best reachable URL with its connection type and latency,
- * or null if nothing is reachable.
+ * or multiple probe attempts ending in null if nothing is reachable.
  */
 export async function getOptimalBaseUrl(
   settings: ConnectionSettings,
 ): Promise<ConnectionProbeResult | null> {
   const lanUrl = `http://${settings.host}:${settings.port}`;
+  let finalDiagnostic: DiagnosticCategory = 'UNKNOWN';
 
   // Try LAN first (only if protocol allows it — HTTPS blocks HTTP fetches)
   if (isLanAvailable()) {
-    const lanLatency = await probeUrl(lanUrl, LAN_TIMEOUT_MS, settings.adminKey);
-    if (lanLatency !== null) {
-      return { url: lanUrl, type: 'lan', latencyMs: lanLatency };
+    const lanResult = await probeUrl(lanUrl, LAN_TIMEOUT_MS, settings.adminKey);
+    finalDiagnostic = lanResult.diagnostic;
+
+    // Even if it's unauthorized, the node is TECHNICALLY up, so we know where it is,
+    // but we let the hook handle the error state. If we need to strictly return null on failure:
+    // We return the payload anyway so the hook can read the diagnostic.
+    if (lanResult.latencyMs !== null || lanResult.diagnostic === 'UNAUTHORIZED') {
+      return { url: lanUrl, type: 'lan', latencyMs: lanResult.latencyMs ?? 0, diagnostic: lanResult.diagnostic };
     }
   }
 
   // Try WAN (tunnel) if configured
   if (settings.useTunnel && settings.tunnelUrl) {
     const tunnelUrl = settings.tunnelUrl.replace(/\/+$/, '');
-    const wanLatency = await probeUrl(tunnelUrl, WAN_TIMEOUT_MS, settings.adminKey);
-    if (wanLatency !== null) {
-      return { url: tunnelUrl, type: 'wan', latencyMs: wanLatency };
+    const wanResult = await probeUrl(tunnelUrl, WAN_TIMEOUT_MS, settings.adminKey);
+
+    if (wanResult.diagnostic !== 'UNKNOWN') {
+      finalDiagnostic = wanResult.diagnostic;
+    }
+
+    if (wanResult.latencyMs !== null || wanResult.diagnostic === 'UNAUTHORIZED') {
+      return { url: tunnelUrl, type: 'wan', latencyMs: wanResult.latencyMs ?? 0, diagnostic: wanResult.diagnostic };
     }
   }
 
-  // Nothing reachable
-  return null;
+  // Nothing reachable, we can return a failure payload
+  return { url: lanUrl, type: 'offline', latencyMs: 0, diagnostic: finalDiagnostic };
 }
 
 // ---------------------------------------------------------------------------

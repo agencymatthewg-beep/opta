@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # 2026-02-23 — YJS-Style Session + Update Log System (Opta LMX)
 
 ## Scope

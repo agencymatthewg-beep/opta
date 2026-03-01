@@ -28,6 +28,28 @@ const AutonomyModeSchema = z.enum(['execution', 'ceo']);
 const WorkflowModeSchema = z.enum(['normal', 'plan', 'research', 'review']);
 const ResponseIntentToneSchema = z.enum(['concise', 'technical', 'product']);
 
+const AtpoConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  apiKey: z.string().default(''),
+  model: z.string().default(''),
+  provider: z.enum(['auto', 'anthropic', 'gemini', 'openai', 'opencode_zen']).default('auto'),
+  paymentMethod: z.enum(['subscription', 'pay-as-you-go']).default('pay-as-you-go'),
+  autonomyLevel: z.number().int().min(0).max(4).default(2),
+  thresholds: z.object({
+    errorCount: z.number().int().min(1).default(3),
+    complexitySize: z.number().int().min(0).default(0),
+    milestoneFrequency: z.enum(['sub-task', 'validation-only', 'n-tools']).default('sub-task'),
+    nToolsCount: z.number().int().min(1).default(5),
+  }).default({}),
+  limits: z.object({
+    maxCostPerSession: z.number().min(0).default(0),
+    autoPauseThreshold: z.number().min(0).default(5.00),
+    providerFailover: z.boolean().default(false),
+    failoverModel: z.string().default(''),
+  }).default({}),
+  compactionAggressiveness: z.number().min(0).max(1).default(0.5),
+});
+
 const DEFAULT_TUI_TRIGGER_MODES: Array<{
   word: string;
   modeHint?: 'normal' | 'plan' | 'research' | 'review';
@@ -544,6 +566,7 @@ export const OptaConfigSchema = z.object({
         .default({}),
     })
     .default({}),
+  atpo: AtpoConfigSchema.default({}),
 });
 
 export type OptaConfig = z.infer<typeof OptaConfigSchema>;

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { WebSocketServer } from 'ws';
 import { createServer, type AddressInfo, type Socket } from 'node:net';
-import { isAbortError, probeLmxConnection, streamLmxChatWebSocket } from '../../src/lmx/connection.js';
+import {
+  isAbortError,
+  probeLmxConnection,
+  streamLmxChatWebSocket,
+} from '../../src/lmx/connection.js';
 
 const originalFetch = globalThis.fetch;
 
@@ -17,7 +21,8 @@ async function drainStream(stream: AsyncIterable<unknown>): Promise<void> {
 
 describe('probeLmxConnection', () => {
   it('returns connected when /healthz and /readyz succeed', async () => {
-    globalThis.fetch = vi.fn()
+    globalThis.fetch = vi
+      .fn()
       .mockResolvedValueOnce({
         ok: true,
       })
@@ -32,7 +37,8 @@ describe('probeLmxConnection', () => {
   });
 
   it('returns degraded when /readyz reports 503 (no models loaded)', async () => {
-    globalThis.fetch = vi.fn()
+    globalThis.fetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true })
       .mockResolvedValueOnce({ ok: false, status: 503 }) as unknown as typeof fetch;
 
@@ -43,7 +49,8 @@ describe('probeLmxConnection', () => {
   });
 
   it('falls back to /v1/models when /readyz is unavailable', async () => {
-    globalThis.fetch = vi.fn()
+    globalThis.fetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true })
       .mockRejectedValueOnce(new Error('readyz missing'))
       .mockResolvedValueOnce({
@@ -57,7 +64,9 @@ describe('probeLmxConnection', () => {
   });
 
   it('returns disconnected when /healthz fails', async () => {
-    globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
+    globalThis.fetch = vi
+      .fn()
+      .mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
 
     const result = await probeLmxConnection('localhost', 1234, { timeoutMs: 1000 });
     expect(result.state).toBe('disconnected');
@@ -75,7 +84,8 @@ describe('probeLmxConnection', () => {
   });
 
   it('marks fallback as degraded when /v1/models is empty', async () => {
-    globalThis.fetch = vi.fn()
+    globalThis.fetch = vi
+      .fn()
       .mockResolvedValueOnce({ ok: true })
       .mockRejectedValueOnce(new Error('readyz missing'))
       .mockResolvedValueOnce({
@@ -88,6 +98,64 @@ describe('probeLmxConnection', () => {
     expect(result.modelsLoaded).toBe(0);
   });
 
+  it('populates discovery when /.well-known/opta-lmx succeeds', async () => {
+    const discoveryDoc = {
+      service: 'opta-lmx',
+      version: '0.9.0',
+      security_profile: 'open',
+      ready: true,
+      loaded_models: ['mlx-community/Llama-3.2-3B-Instruct-4bit'],
+      auth: {
+        admin_key_required: false,
+        inference_key_required: false,
+        supabase_jwt_enabled: false,
+      },
+      endpoints: {
+        preferred_base_url: 'http://192.168.188.11:1234',
+        base_urls: ['http://192.168.188.11:1234'],
+        openai_base_url: 'http://192.168.188.11:1234/v1',
+        admin_base_url: 'http://192.168.188.11:1234/admin',
+        websocket_url: 'ws://192.168.188.11:1234/v1/chat/stream',
+      },
+      client_probe_order: ['/.well-known/opta-lmx', '/readyz', '/healthz'],
+    };
+
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true }) // healthz
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ models_loaded: 1 }),
+      }) // readyz
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(discoveryDoc),
+      }) as unknown as typeof fetch; // discovery
+
+    const result = await probeLmxConnection('localhost', 1234, { timeoutMs: 1000 });
+    expect(result.state).toBe('connected');
+    expect(result.discovery).toBeDefined();
+    expect(result.discovery?.endpoints.websocket_url).toBe(
+      'ws://192.168.188.11:1234/v1/chat/stream'
+    );
+    expect(result.discovery?.loaded_models).toHaveLength(1);
+  });
+
+  it('does not degrade connection state when discovery fetch fails', async () => {
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true }) // healthz
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ models_loaded: 2 }),
+      }) // readyz
+      .mockRejectedValueOnce(new Error('network error')) as unknown as typeof fetch; // discovery
+
+    const result = await probeLmxConnection('localhost', 1234, { timeoutMs: 1000 });
+    expect(result.state).toBe('connected');
+    expect(result.discovery).toBeUndefined();
+  });
+
   it('detects abort-style errors', () => {
     const err = new Error('request aborted by user');
     err.name = 'AbortError';
@@ -98,18 +166,25 @@ describe('probeLmxConnection', () => {
   it('fails fast if websocket stream starts with an aborted signal', async () => {
     const controller = new AbortController();
     controller.abort();
-    await expect(streamLmxChatWebSocket('localhost', 1234, {
-      model: 'test-model',
-      messages: [],
-    }, {
-      signal: controller.signal,
-    })).rejects.toMatchObject({ name: 'AbortError' });
+    await expect(async () => {
+      await streamLmxChatWebSocket(
+        'localhost',
+        1234,
+        {
+          model: 'test-model',
+          messages: [],
+        },
+        {
+          signal: controller.signal,
+        }
+      );
+    }).rejects.toMatchObject({ name: 'AbortError' });
   });
 });
 
 describe('streamLmxChatWebSocket close handling', () => {
   async function startWsServer(
-    handler: (socket: import('ws').WebSocket) => void,
+    handler: (socket: import('ws').WebSocket) => void
   ): Promise<{ host: string; port: number; close: () => Promise<void> }> {
     const server = new WebSocketServer({ host: '127.0.0.1', port: 0 });
     await new Promise<void>((resolve) => server.once('listening', () => resolve()));
@@ -122,9 +197,13 @@ describe('streamLmxChatWebSocket close handling', () => {
     };
   }
 
-  type StreamChunk = { choices: Array<{ finish_reason: string | null; delta?: { tool_calls?: unknown[] } }> };
+  type StreamChunk = {
+    choices: Array<{ finish_reason: string | null; delta?: { tool_calls?: unknown[] } }>;
+  };
 
-  async function collect(stream: AsyncIterable<StreamChunk>): Promise<Array<{ finishReason: string | null; toolCallChunk: boolean }>> {
+  async function collect(
+    stream: AsyncIterable<StreamChunk>
+  ): Promise<Array<{ finishReason: string | null; toolCallChunk: boolean }>> {
     const events: Array<{ finishReason: string | null; toolCallChunk: boolean }> = [];
     for await (const chunk of stream) {
       events.push({
@@ -145,13 +224,18 @@ describe('streamLmxChatWebSocket close handling', () => {
     const address = deadServer.address() as AddressInfo;
 
     try {
-      const stream = await streamLmxChatWebSocket('127.0.0.1', address.port, {
-        model: 'test-model',
-        messages: [],
-      }, {
-        handshakeTimeoutMs: 40,
-        idleTimeoutMs: 500,
-      });
+      const stream = await streamLmxChatWebSocket(
+        '127.0.0.1',
+        address.port,
+        {
+          model: 'test-model',
+          messages: [],
+        },
+        {
+          handshakeTimeoutMs: 40,
+          idleTimeoutMs: 500,
+        }
+      );
       await expect(drainStream(stream)).rejects.toThrow('LMX websocket handshake timed out');
     } finally {
       for (const socket of sockets) {
@@ -169,13 +253,18 @@ describe('streamLmxChatWebSocket close handling', () => {
     });
 
     try {
-      const stream = await streamLmxChatWebSocket(ws.host, ws.port, {
-        model: 'test-model',
-        messages: [],
-      }, {
-        handshakeTimeoutMs: 500,
-        idleTimeoutMs: 40,
-      });
+      const stream = await streamLmxChatWebSocket(
+        ws.host,
+        ws.port,
+        {
+          model: 'test-model',
+          messages: [],
+        },
+        {
+          handshakeTimeoutMs: 500,
+          idleTimeoutMs: 40,
+        }
+      );
       await expect(drainStream(stream)).rejects.toThrow('LMX websocket idle timeout');
     } finally {
       await ws.close();
@@ -185,17 +274,19 @@ describe('streamLmxChatWebSocket close handling', () => {
   it('treats clean close after tool-call chunk as implicit done', async () => {
     const ws = await startWsServer((socket) => {
       socket.once('message', () => {
-        socket.send(JSON.stringify({
-          type: 'chat.tool_call',
-          request_id: 'req-1',
-          model: 'test-model',
-          tool_call: {
-            index: 0,
-            id: 'call-1',
-            name: 'read_file',
-            arguments: '{"path":"README.md"}',
-          },
-        }));
+        socket.send(
+          JSON.stringify({
+            type: 'chat.tool_call',
+            request_id: 'req-1',
+            model: 'test-model',
+            tool_call: {
+              index: 0,
+              id: 'call-1',
+              name: 'read_file',
+              arguments: '{"path":"README.md"}',
+            },
+          })
+        );
         socket.close(1000, 'normal-close-no-done');
       });
     });
@@ -229,6 +320,44 @@ describe('streamLmxChatWebSocket close handling', () => {
       await expect(drainStream(stream)).rejects.toThrow('LMX websocket stream closed unexpectedly');
     } finally {
       await ws.close();
+    }
+  });
+
+  it('routes WebSocket connection to wsUrl instead of host:port when provided', async () => {
+    // goodWs sends a valid chat.done — stream should complete cleanly.
+    const goodWs = await startWsServer((socket) => {
+      socket.once('message', () => {
+        socket.send(
+          JSON.stringify({
+            type: 'chat.done',
+            request_id: 'req-ws-url',
+            model: 'test-model',
+            finish_reason: 'stop',
+          })
+        );
+      });
+    });
+    // errorWs closes immediately — if used, drain will throw.
+    const errorWs = await startWsServer((socket) => {
+      socket.close(1011, 'wrong-server');
+    });
+
+    try {
+      const stream = streamLmxChatWebSocket(
+        '127.0.0.1',
+        errorWs.port, // wrong server — used if wsUrl is ignored
+        { model: 'test-model', messages: [] },
+        {
+          wsUrl: `ws://${goodWs.host}:${goodWs.port}/v1/chat/stream`,
+          handshakeTimeoutMs: 500,
+          idleTimeoutMs: 500,
+        }
+      );
+      const events = await collect(stream);
+      expect(events[events.length - 1]?.finishReason).toBe('stop');
+    } finally {
+      await goodWs.close();
+      await errorWs.close();
     }
   });
 });

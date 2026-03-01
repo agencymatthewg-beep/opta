@@ -36,7 +36,10 @@ export function defaultKeybindings(): KeybindingConfig {
     exit: { key: 'ctrl+c', description: 'Exit Opta' },
     toggleSidebar: { key: 'ctrl+b', description: 'Toggle sidebar' },
     scrollUp: { key: 'shift+up', description: 'Scroll message list up (plain ↑ = history nav)' },
-    scrollDown: { key: 'shift+down', description: 'Scroll message list down (plain ↓ = history nav)' },
+    scrollDown: {
+      key: 'shift+down',
+      description: 'Scroll message list down (plain ↓ = history nav)',
+    },
     help: { key: 'ctrl+/', description: 'Show help' },
     clear: { key: 'ctrl+l', description: 'Clear screen' },
     slashMenu: { key: 'ctrl+k', description: 'Open command palette' },
@@ -82,8 +85,8 @@ export function getKeybinding(
 export async function loadKeybindings(): Promise<KeybindingOverrides> {
   try {
     const { readFile } = await import('node:fs/promises');
-    const { join } = await import('node:path');
-    const configPath = join(process.cwd(), '.opta', 'keybindings.json');
+    const nodePath = await import('node:path');
+    const configPath = nodePath.join(process.cwd(), '.opta', 'keybindings.json');
     const content = await readFile(configPath, 'utf-8');
     const parsed = JSON.parse(content) as Partial<Record<string, KeyBinding>>;
     const defaults = defaultKeybindings();

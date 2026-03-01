@@ -4,47 +4,41 @@
 
 import chalk from 'chalk';
 import { errorMessage } from '../../utils/errors.js';
-import { box, kv, statusDot, fmtTokens, progressBar } from '../../ui/box.js';
+import { box, kv, statusDot, progressBar } from '../../ui/box.js';
+import { formatTokens } from '../../utils/tokens.js';
 import { runMenuPrompt } from '../../ui/prompt-nav.js';
 import { estimateMessageTokens } from '../../utils/tokens.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
-function capturePlanActivation(
-  ctx: SlashContext,
-  args: string,
-  hasResearchContext: boolean,
-): void {
+function capturePlanActivation(ctx: SlashContext, args: string, hasResearchContext: boolean): void {
   void import('../../learning/hooks.js')
     .then(({ captureLearningEvent }) =>
-      captureLearningEvent(
-        ctx.config,
-        {
-          kind: 'plan',
-          topic: 'Plan mode activated',
-          content: hasResearchContext
-            ? 'Plan mode entered with prior research context in this session.'
-            : args === '--skip'
-              ? 'Plan mode entered with --skip (no prior research context).'
-              : 'Plan mode entered.',
-          tags: ['plan', 'mode', hasResearchContext ? 'researched' : 'unresearched'],
-          evidence: [{ label: 'session', uri: `session://${ctx.session.id}` }],
-          metadata: {
-            sessionId: ctx.session.id,
-            commandArgs: args,
-            hasResearchContext,
-          },
-          verified: true,
+      captureLearningEvent(ctx.config, {
+        kind: 'plan',
+        topic: 'Plan mode activated',
+        content: hasResearchContext
+          ? 'Plan mode entered with prior research context in this session.'
+          : args === '--skip'
+            ? 'Plan mode entered with --skip (no prior research context).'
+            : 'Plan mode entered.',
+        tags: ['plan', 'mode', hasResearchContext ? 'researched' : 'unresearched'],
+        evidence: [{ label: 'session', uri: `session://${ctx.session.id}` }],
+        metadata: {
+          sessionId: ctx.session.id,
+          commandArgs: args,
+          hasResearchContext,
         },
-      ),
+        verified: true,
+      })
     )
     .catch(() => {});
 }
 
-const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+const planHandler = (args: string, ctx: SlashContext): Promise<SlashResult> => {
   if (args === 'off' || (ctx.chatState.currentMode === 'plan' && !args)) {
     ctx.chatState.currentMode = 'normal';
     console.log(chalk.green('\u2713') + ' Exited plan mode');
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   // --skip flag skips research check
@@ -54,12 +48,12 @@ const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
     console.log(chalk.dim('  Tools: read, search, list, find, ask, web_search, web_fetch'));
     console.log(chalk.dim('  Type /plan off to exit'));
     capturePlanActivation(ctx, args, false);
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   // Check if research has been done in this session
-  const hasResearch = ctx.session.messages.some(m =>
-    typeof m.content === 'string' && m.content.includes('[System: Research mode activated')
+  const hasResearch = ctx.session.messages.some(
+    (m) => typeof m.content === 'string' && m.content.includes('[System: Research mode activated')
   );
 
   if (!hasResearch && !args) {
@@ -68,7 +62,7 @@ const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
     console.log(`  ${chalk.cyan('/research')}      Start deep research first`);
     console.log(`  ${chalk.cyan('/plan --skip')}   Skip research, plan from existing context`);
     console.log();
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   ctx.chatState.currentMode = 'plan';
@@ -79,7 +73,7 @@ const planHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
   console.log(chalk.dim('  Tools: read, search, list, find, ask, web_search, web_fetch'));
   console.log(chalk.dim('  Type /plan off to exit'));
   capturePlanActivation(ctx, args, hasResearch);
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 const diffHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult> => {
@@ -96,12 +90,15 @@ const diffHandler = async (args: string, _ctx: SlashContext): Promise<SlashResul
     // Show stat summary in a box
     const statLines = stat.trim().split('\n');
     const summary = statLines[statLines.length - 1] ?? '';
-    const fileLines = statLines.slice(0, -1).map(l => ' ' + l.trim());
+    const fileLines = statLines.slice(0, -1).map((l) => ' ' + l.trim());
     console.log('\n' + box('Changes', [...fileLines, '', chalk.dim(summary.trim())]));
 
     // If user passed a file, show full diff for that file
     if (args) {
-      const fullDiff = execFileSync('git', ['diff', '--', args], { encoding: 'utf-8', cwd: process.cwd() });
+      const fullDiff = execFileSync('git', ['diff', '--', args], {
+        encoding: 'utf-8',
+        cwd: process.cwd(),
+      });
       if (fullDiff.trim()) {
         console.log('\n' + formatUnifiedDiff(fullDiff));
       }
@@ -122,7 +119,8 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       return 'handled';
     }
 
-    const { listCheckpoints, readPatchContent, patchStat, undoCheckpoint, undoAllCheckpoints } = await import('../../git/checkpoints.js');
+    const { listCheckpoints, readPatchContent, patchStat, undoCheckpoint, undoAllCheckpoints } =
+      await import('../../git/checkpoints.js');
     const { formatTruncatedDiff, formatPatchStat } = await import('../../ui/diff.js');
 
     // --- /undo list (or /checkpoint alias) ---
@@ -135,9 +133,12 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
           checkpoints.map(async (cp) => {
             const patch = await readPatchContent(process.cwd(), ctx.session.id, cp.n);
             const stat = patchStat(patch);
-            const ts = new Date(cp.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const ts = new Date(cp.timestamp).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            });
             return `  ${chalk.bold(`#${cp.n}`)}  ${chalk.cyan(cp.tool.padEnd(12))} ${cp.path}  ${formatPatchStat(stat.additions, stat.deletions)}  ${chalk.dim(ts)}`;
-          }),
+          })
         );
         console.log('\n' + box('Checkpoints', lines));
         console.log(chalk.dim('  Tip: /undo N to revert a specific checkpoint\n'));
@@ -164,7 +165,9 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
       }
 
       const undone = await undoAllCheckpoints(process.cwd(), ctx.session.id);
-      console.log(chalk.green('\u2713') + ` Undone: ${undone} checkpoint${undone === 1 ? '' : 's'}`);
+      console.log(
+        chalk.green('\u2713') + ` Undone: ${undone} checkpoint${undone === 1 ? '' : 's'}`
+      );
       ctx.session.messages.push({
         role: 'user',
         content: `[System: User reversed all ${undone} checkpoints \u2014 all changes have been reverted. Adjust your approach accordingly.]`,
@@ -194,15 +197,19 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
 
     // Single checkpoint: show preview + confirm (original behavior)
     if (checkpoints.length === 1) {
-      const last = checkpoints[0]!;
+      const last = checkpoints[0];
+      if (!last) {
+        console.log(chalk.dim('  No checkpoints in this session'));
+        return 'handled';
+      }
       const patch = await readPatchContent(process.cwd(), ctx.session.id, last.n);
       const stat = patchStat(patch);
 
       console.log();
       console.log(
         chalk.bold(`  Checkpoint #${last.n}`) +
-        chalk.dim(` \u2014 ${last.tool} \u2014 `) +
-        formatPatchStat(stat.additions, stat.deletions)
+          chalk.dim(` \u2014 ${last.tool} \u2014 `) +
+          formatPatchStat(stat.additions, stat.deletions)
       );
       console.log();
       if (patch) {
@@ -248,11 +255,17 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
 
     choices.push({ name: chalk.dim('\u2500\u2500 Cancel \u2500\u2500'), value: -1 });
 
-    const selectedN = await runMenuPrompt((context) =>
-      select({
-        message: chalk.dim('Select checkpoint to undo:'),
-        choices,
-      }, context), 'select');
+    const selectedN = await runMenuPrompt(
+      (context) =>
+        select(
+          {
+            message: chalk.dim('Select checkpoint to undo:'),
+            choices,
+          },
+          context
+        ),
+      'select'
+    );
 
     if (selectedN === null || selectedN === -1) {
       console.log(chalk.dim('  Cancelled'));
@@ -260,7 +273,11 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
     }
 
     // Show diff preview for selected checkpoint
-    const selectedCp = checkpoints.find(cp => cp.n === selectedN)!;
+    const selectedCp = checkpoints.find((cp) => cp.n === selectedN);
+    if (!selectedCp) {
+      console.log(chalk.dim('  Selected checkpoint no longer exists.'));
+      return 'handled';
+    }
     const selectedPatch = await readPatchContent(process.cwd(), ctx.session.id, selectedN);
     if (selectedPatch) {
       console.log();
@@ -294,19 +311,23 @@ const undoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
   return 'handled';
 };
 
-const compactHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+const compactHandler = (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
   console.log(chalk.dim('  Context compaction will happen automatically on next turn'));
   // Force compaction by setting messages to trigger threshold
   // The agent loop handles this automatically
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   try {
-    const res = await fetch(`http://${ctx.config.connection.host}:${ctx.config.connection.port}/admin/status`);
-    const data = await res.json() as Record<string, unknown>;
+    const res = await fetch(
+      `http://${ctx.config.connection.host}:${ctx.config.connection.port}/admin/status`
+    );
+    const data = (await res.json()) as Record<string, unknown>;
     const model = (data.models as string[] | undefined)?.[0];
-    const memory = data.memory as { used_gb?: number; total_gb?: number; usage_percent?: number } | undefined;
+    const memory = data.memory as
+      | { used_gb?: number; total_gb?: number; usage_percent?: number }
+      | undefined;
     const tokens = estimateMessageTokens(ctx.session.messages);
     const uptimeSec = data.uptime_seconds as number | undefined;
 
@@ -316,10 +337,14 @@ const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
     if (model) lines.push(kv('Model', model));
     if (memory) {
       const memBar = progressBar((memory.usage_percent ?? 0) / 100, 16);
-      lines.push(kv('Memory', `${memory.used_gb?.toFixed(0)}/${memory.total_gb?.toFixed(0)} GB ${memBar}`));
+      lines.push(
+        kv('Memory', `${memory.used_gb?.toFixed(0)}/${memory.total_gb?.toFixed(0)} GB ${memBar}`)
+      );
     }
-    lines.push(kv('Session', `${ctx.session.id.slice(0, 8)} (${ctx.session.messages.length} messages)`));
-    lines.push(kv('Tokens', `~${fmtTokens(tokens)}`));
+    lines.push(
+      kv('Session', `${ctx.session.id.slice(0, 8)} (${ctx.session.messages.length} messages)`)
+    );
+    lines.push(kv('Tokens', `~${formatTokens(tokens)}`));
     if (uptimeSec !== undefined) lines.push(kv('Uptime', `${Math.floor(uptimeSec / 60)}m`));
 
     // Checkpoint count
@@ -327,7 +352,9 @@ const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
       const { listCheckpoints } = await import('../../git/checkpoints.js');
       const checkpoints = await listCheckpoints(process.cwd(), ctx.session.id);
       if (checkpoints.length > 0) {
-        lines.push(kv('Checkpoints', `${checkpoints.length} (session ${ctx.session.id.slice(0, 8)})`));
+        lines.push(
+          kv('Checkpoints', `${checkpoints.length} (session ${ctx.session.id.slice(0, 8)})`)
+        );
       }
     } catch {
       // Ignore — checkpoints are optional
@@ -335,7 +362,10 @@ const statusHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
 
     console.log('\n' + box('Status', lines));
   } catch {
-    console.log(chalk.red('\n  \u25cf LMX unreachable') + chalk.dim(` \u2014 ${ctx.config.connection.host}:${ctx.config.connection.port}`));
+    console.log(
+      chalk.red('\n  \u25cf LMX unreachable') +
+        chalk.dim(` \u2014 ${ctx.config.connection.host}:${ctx.config.connection.port}`)
+    );
   }
   return 'handled';
 };
@@ -345,37 +375,53 @@ const checkpointHandler = async (_args: string, ctx: SlashContext): Promise<Slas
   return undoHandler('list', ctx);
 };
 
-const autoHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
-  const state = ctx.chatState as unknown as Record<string, unknown>;
-  const current = (state.autoAccept as boolean) || false;
+const autoHandler = (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const state = ctx.chatState;
+  const current = state.autoAccept ?? false;
 
   if (!args) {
     const status = current ? chalk.green('ON') : chalk.dim('OFF');
     console.log(`  Auto-accept: ${status}`);
     console.log(chalk.dim('  Usage: /auto on|off'));
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   if (args === 'on' || args === 'true') {
     state.autoAccept = true;
     console.log(chalk.green('\u2713') + ' Auto-accept: ' + chalk.green('ON'));
     console.log(chalk.yellow('  \u26a0 All tool calls will be approved automatically'));
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   if (args === 'off' || args === 'false') {
     state.autoAccept = false;
     console.log(chalk.green('\u2713') + ' Auto-accept: ' + chalk.dim('OFF'));
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   console.log(chalk.dim('  Usage: /auto on|off'));
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 function printAutonomyUsage(): void {
-  console.log(chalk.dim('  Usage: /autonomy [status|up|down|<1-5>|set <1-5>|mode execution|mode ceo]'));
-  console.log(chalk.dim('  Examples: /autonomy 4, /autonomy up, /autonomy mode ceo'));
+  console.log(
+    chalk.dim('  Usage: /autonomy [status|up|down|<1-5>|set <1-5>|mode execution|mode ceo|ceo-max]')
+  );
+  console.log(
+    chalk.dim('  Examples: /autonomy 4, /autonomy up, /autonomy mode ceo, /autonomy ceo-max')
+  );
+}
+
+function parseAutonomyLevelToken(raw: string | undefined): 1 | 2 | 3 | 4 | 5 | null {
+  if (!raw) return null;
+  if (!/^[1-5]$/.test(raw)) return null;
+  return Number.parseInt(raw, 10) as 1 | 2 | 3 | 4 | 5;
+}
+
+function parseAutonomyModeToken(raw: string | undefined): 'execution' | 'ceo' | null {
+  if (!raw) return null;
+  if (raw === 'execution' || raw === 'ceo') return raw;
+  return null;
 }
 
 const autonomyHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
@@ -392,12 +438,18 @@ const autonomyHandler = async (args: string, ctx: SlashContext): Promise<SlashRe
   const tokens = args.trim().split(/\s+/).filter(Boolean);
   const currentLevel = resolveAutonomyLevel(ctx.config.autonomy.level);
   const currentMode = resolveAutonomyMode(ctx.config.autonomy.mode);
+  const state = ctx.chatState;
+  const dangerousEnabled = ctx.config.defaultMode === 'dangerous' || state.autoAccept === true;
 
   const printStatus = (): void => {
     const profile = buildAutonomyProfile(currentLevel, currentMode);
     const slider = formatAutonomySlider(currentLevel);
     console.log(chalk.cyan(`  Autonomy ${slider} L${currentLevel}/5 (${currentMode})`));
-    console.log(chalk.dim(`  Runtime budget: ${autonomyDurationMinutes(profile)} min · hard stop ${profile.hardStopAt} tool calls`));
+    console.log(
+      chalk.dim(
+        `  Runtime budget: ${autonomyDurationMinutes(profile)} min · hard stop ${profile.hardStopAt} tool calls`
+      )
+    );
   };
 
   if (tokens.length === 0 || tokens[0] === 'status') {
@@ -408,43 +460,166 @@ const autonomyHandler = async (args: string, ctx: SlashContext): Promise<SlashRe
 
   let nextLevel = currentLevel;
   let nextMode = currentMode;
-  const first = tokens[0]!.toLowerCase();
+  const first = (tokens[0] ?? '').toLowerCase();
+
+  if (first === 'ceo-max' || first === 'max') {
+    const foregroundControl = ctx.config.computerControl.foreground;
+    const backgroundControl = ctx.config.computerControl.background;
+
+    if (!foregroundControl.enabled) {
+      console.log(
+        chalk.red('\u2717') + ' Foreground computer control is disabled for /autonomy ceo-max.'
+      );
+      console.log(chalk.dim('  Enable: computerControl.foreground.enabled'));
+      return 'handled';
+    }
+    if (!foregroundControl.allowScreenActions) {
+      console.log(chalk.red('\u2717') + ' Screen actions are disabled for /autonomy ceo-max.');
+      console.log(chalk.dim('  Enable: computerControl.foreground.allowScreenActions'));
+      return 'handled';
+    }
+    if (foregroundControl.requireDangerousMode && !dangerousEnabled) {
+      console.log(
+        chalk.yellow('  CEO max autonomy requires dangerous mode and/or auto-accept enabled.')
+      );
+      console.log(chalk.dim('  Enable one of: /auto on OR opta config set defaultMode dangerous'));
+      return 'handled';
+    }
+    if (!backgroundControl.enabled) {
+      console.log(
+        chalk.red('\u2717') + ' Background computer control is disabled for /autonomy ceo-max.'
+      );
+      console.log(chalk.dim('  Enable: computerControl.background.enabled'));
+      return 'handled';
+    }
+    if (!backgroundControl.allowBrowserSessionHosting) {
+      console.log(
+        chalk.red('\u2717') + ' Browser session hosting is disabled for /autonomy ceo-max.'
+      );
+      console.log(chalk.dim('  Enable: computerControl.background.allowBrowserSessionHosting'));
+      return 'handled';
+    }
+    if (!backgroundControl.allowScreenStreaming) {
+      console.log(chalk.red('\u2717') + ' Screen streaming is disabled for /autonomy ceo-max.');
+      console.log(chalk.dim('  Enable: computerControl.background.allowScreenStreaming'));
+      return 'handled';
+    }
+
+    const { isPeekabooAvailable } = await import('../../browser/peekaboo.js');
+    const hasPeekaboo = await isPeekabooAvailable();
+    if (!hasPeekaboo) {
+      console.log(chalk.red('\u2717') + ' Peekaboo is required for /autonomy ceo-max.');
+      console.log(chalk.dim('  Install: brew install peekaboo'));
+      return 'handled';
+    }
+
+    const ceoUpdates = {
+      ...computeAutonomyConfigUpdates(5, 'ceo'),
+      'autonomy.headlessContinue': true,
+      'browser.enabled': true,
+      'browser.runtime.enabled': true,
+      'browser.runtime.maxSessions': Math.max(
+        ctx.config.browser.runtime.maxSessions,
+        backgroundControl.maxHostedBrowserSessions
+      ),
+    };
+    const rollbackUpdates = {
+      'autonomy.level': currentLevel,
+      'autonomy.mode': currentMode,
+      'autonomy.headlessContinue': ctx.config.autonomy.headlessContinue,
+      'browser.enabled': ctx.config.browser.enabled,
+      'browser.runtime.enabled': ctx.config.browser.runtime.enabled,
+      'browser.runtime.maxSessions': ctx.config.browser.runtime.maxSessions,
+    };
+
+    let liveHost: {
+      host: string;
+      controlPort?: number;
+      slots: Array<{ port: number }>;
+    };
+    try {
+      await saveConfig(ceoUpdates);
+      Object.assign(ctx.config, await loadConfig());
+
+      const { startBrowserLiveHost } = await import('../../browser/live-host.js');
+      liveHost = await startBrowserLiveHost({
+        config: ctx.config,
+        maxSessionSlots: backgroundControl.maxHostedBrowserSessions,
+        requiredPortCount: 6,
+        includePeekabooScreen: true,
+      });
+    } catch (error) {
+      await saveConfig(rollbackUpdates);
+      Object.assign(ctx.config, await loadConfig());
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(chalk.red('\u2717') + ` Unable to enable CEO max autonomy: ${message}`);
+      return 'handled';
+    }
+
+    const profile = buildAutonomyProfile(5, 'ceo');
+    const slider = formatAutonomySlider(5);
+    const controlUrl = liveHost.controlPort
+      ? `http://${liveHost.host}:${liveHost.controlPort}`
+      : '(unknown)';
+
+    console.log(chalk.green('\u2713') + ` CEO max autonomy set to ${slider} L5/5 (ceo)`);
+    console.log(
+      chalk.dim(
+        `  Runtime budget: ${autonomyDurationMinutes(profile)} min · hard stop ${profile.hardStopAt} tool calls`
+      )
+    );
+    console.log(chalk.dim(`  Live host: ${controlUrl}`));
+    console.log(chalk.dim(`  Session slots: ${liveHost.slots.map((slot) => slot.port).join(',')}`));
+    console.log(chalk.dim(`  Peekaboo screen: ${controlUrl}/screen`));
+    return 'handled';
+  }
 
   if (first === 'up' || first === '+') {
     nextLevel = resolveAutonomyLevel(currentLevel + 1);
   } else if (first === 'down' || first === '-') {
     nextLevel = resolveAutonomyLevel(currentLevel - 1);
   } else if (first === 'set') {
-    if (!tokens[1]) {
+    const parsedLevel = parseAutonomyLevelToken(tokens[1]);
+    if (parsedLevel === null) {
       printAutonomyUsage();
       return 'handled';
     }
-    nextLevel = resolveAutonomyLevel(tokens[1]);
+    nextLevel = parsedLevel;
   } else if (first === 'mode') {
-    if (!tokens[1]) {
+    const parsedMode = parseAutonomyModeToken(tokens[1]);
+    if (parsedMode === null) {
       printAutonomyUsage();
       return 'handled';
     }
-    nextMode = resolveAutonomyMode(tokens[1]);
+    nextMode = parsedMode;
   } else if (first === 'ceo') {
     nextMode = 'ceo';
   } else if (first === 'execution') {
     nextMode = 'execution';
-  } else if (/^[1-5]$/.test(first)) {
-    nextLevel = resolveAutonomyLevel(first);
+  } else if (parseAutonomyLevelToken(first) !== null) {
+    nextLevel = parseAutonomyLevelToken(first) ?? nextLevel;
   } else {
     printAutonomyUsage();
     return 'handled';
   }
 
-  const updates = computeAutonomyConfigUpdates(nextLevel, nextMode);
+  const updates: Record<string, unknown> = {
+    ...computeAutonomyConfigUpdates(nextLevel, nextMode),
+  };
+  if (nextLevel !== 5 || nextMode !== 'ceo') {
+    updates['autonomy.headlessContinue'] = false;
+  }
   await saveConfig(updates);
   Object.assign(ctx.config, await loadConfig());
 
   const profile = buildAutonomyProfile(nextLevel, nextMode);
   const slider = formatAutonomySlider(nextLevel);
   console.log(chalk.green('\u2713') + ` Autonomy set to ${slider} L${nextLevel}/5 (${nextMode})`);
-  console.log(chalk.dim(`  Runtime budget: ${autonomyDurationMinutes(profile)} min · hard stop ${profile.hardStopAt} tool calls`));
+  console.log(
+    chalk.dim(
+      `  Runtime budget: ${autonomyDurationMinutes(profile)} min · hard stop ${profile.hardStopAt} tool calls`
+    )
+  );
   return 'handled';
 };
 
@@ -513,7 +688,13 @@ export const workflowCommands: SlashCommandDef[] = [
     description: 'Set autonomous execution profile (1-5 + CEO mode)',
     handler: autonomyHandler,
     category: 'session',
-    usage: '/autonomy [status|up|down|<1-5>|set <1-5>|mode execution|mode ceo]',
-    examples: ['/autonomy', '/autonomy 5', '/autonomy up', '/autonomy mode ceo'],
+    usage: '/autonomy [status|up|down|<1-5>|set <1-5>|mode execution|mode ceo|ceo-max]',
+    examples: [
+      '/autonomy',
+      '/autonomy 5',
+      '/autonomy up',
+      '/autonomy mode ceo',
+      '/autonomy ceo-max',
+    ],
   },
 ];

@@ -15,6 +15,7 @@ import type {
   WorkspaceEdit,
 } from './protocol.js';
 import { uriToFilePath } from './protocol.js';
+import { assertSafeExecutableCommand } from '../utils/command-safety.js';
 
 export interface LspClientOptions {
   command: string;
@@ -43,6 +44,8 @@ export class LspClient {
 
   async initialize(options?: { timeout?: number }): Promise<void> {
     const timeout = options?.timeout ?? 10000;
+
+    assertSafeExecutableCommand(this.opts.command, 'LSP server');
 
     this.process = spawn(this.opts.command, this.opts.args, {
       stdio: ['pipe', 'pipe', 'pipe'],
@@ -127,7 +130,7 @@ export class LspClient {
 
   // --- Document Sync ---
 
-  async openDocument(uri: string, text: string): Promise<void> {
+  openDocument(uri: string, text: string): void {
     if (this.openDocs.has(uri)) return;
 
     this.docVersions.set(uri, 1);
@@ -226,11 +229,7 @@ export class LspClient {
     return (result as DocumentSymbol[]) ?? [];
   }
 
-  async rename(
-    uri: string,
-    position: Position,
-    newName: string
-  ): Promise<WorkspaceEdit> {
+  async rename(uri: string, position: Position, newName: string): Promise<WorkspaceEdit> {
     this.assertInitialized();
     await this.ensureDocumentOpen(uri);
 
@@ -244,11 +243,7 @@ export class LspClient {
 
   // --- Internal JSON-RPC ---
 
-  private sendRequest(
-    method: string,
-    params: unknown,
-    timeout = 10000
-  ): Promise<unknown> {
+  private sendRequest(method: string, params: unknown, timeout = 10000): Promise<unknown> {
     return new Promise((resolve, reject) => {
       if (!this.process?.stdin) {
         reject(new Error('LSP server not running'));
@@ -356,7 +351,18 @@ export class LspClient {
         this.pending.delete(message['id']);
         if ('error' in message && message['error']) {
           const err = message['error'] as Record<string, unknown>;
-          pending.reject(new Error(String(err['message'] ?? 'LSP error')));
+          const errMsg = err['message'];
+          pending.reject(
+            new Error(
+              typeof errMsg === 'string'
+                ? errMsg
+                : typeof errMsg === 'object'
+                  ? JSON.stringify(errMsg)
+                  : errMsg == null
+                    ? 'LSP error'
+                    : String(errMsg as number | boolean | bigint)
+            )
+          );
         } else {
           pending.resolve(message['result']);
         }
@@ -388,14 +394,14 @@ export class LspClient {
       // Open an empty virtual document so symbol/definition calls still route
       // through the LSP manager without crashing.
     }
-    await this.openDocument(uri, text);
+    this.openDocument(uri, text);
   }
 
   private normalizeLocations(result: unknown): Location[] {
     if (!result) return [];
     if (Array.isArray(result)) return result as Location[];
     // Single location result
-    if (typeof result === 'object' && 'uri' in (result as any)) {
+    if (typeof result === 'object' && 'uri' in (result as Record<string, unknown>)) {
       return [result as Location];
     }
     return [];

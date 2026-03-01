@@ -7,6 +7,8 @@ import asyncio
 import contextlib
 import ipaddress
 import logging
+import os
+import socket
 import time
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
@@ -82,6 +84,21 @@ def _resolve_path(path: Path | str | None, fallback: Path) -> Path:
     return Path(path or fallback).expanduser()
 
 
+
+
+def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
+    """Block local LMX hosting on Opta48 unless explicitly overridden."""
+    host = socket.gethostname().lower()
+    if host != 'opta48':
+        return
+    if os.environ.get('OPTA48_ALLOW_LOCAL_MODELS') == '1':
+        logger.warning('opta48_local_model_policy_override_enabled')
+        return
+    raise RuntimeError(
+        'Opta48 policy violation: local LMX hosting is disabled on this machine. '
+        'Use Mono512 as inference host. To override intentionally, set OPTA48_ALLOW_LOCAL_MODELS=1.'
+    )
+
 def _build_supabase_jwt_verifier(config: LMXConfig) -> SupabaseJWTVerifier | None:
     """Build a Supabase JWT verifier instance from config, if enabled."""
     if not config.security.supabase_jwt_enabled:
@@ -114,6 +131,8 @@ def _parse_trusted_proxy_networks(
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application lifespan: initialize engine, auto-load models, cleanup."""
     config: LMXConfig = app.state.config
+
+    _enforce_opta48_no_local_models(config)
 
     # Crash loop detection — record startup and check for rapid restarts
     runtime_state = RuntimeState()

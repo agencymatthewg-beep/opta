@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Benchmark Suite Design
 
 **Date:** 2026-02-26

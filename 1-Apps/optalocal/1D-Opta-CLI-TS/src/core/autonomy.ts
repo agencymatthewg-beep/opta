@@ -45,6 +45,7 @@ interface CeoAutonomyReportStep {
 export interface CeoAutonomyReportInput {
   objective: string;
   completionStatus: AutonomyRunCompletionStatus;
+  completionMessage?: string;
   turnCount: number;
   cycle: number;
   phase: number;
@@ -175,13 +176,13 @@ const BASE_LEVELS: Record<AutonomyLevel, BaseAutonomyProfile> = {
 };
 
 const AUTONOMY_STAGE_GUIDANCE: Record<AutonomyCycleStage, string> = {
-  'research': 'Gather current facts, constraints, and missing context before acting.',
-  'analysis': 'Analyze evidence, tradeoffs, and root causes with explicit assumptions.',
-  'planning': 'Define a concrete implementation plan with clear checkpoints.',
+  research: 'Gather current facts, constraints, and missing context before acting.',
+  analysis: 'Analyze evidence, tradeoffs, and root causes with explicit assumptions.',
+  planning: 'Define a concrete implementation plan with clear checkpoints.',
   'sub-planning': 'Break the active plan into the next actionable sub-steps.',
-  'execution': 'Execute changes, run tools/tests, and capture concrete outputs.',
-  'review': 'Review results for correctness, regressions, and requirement coverage.',
-  'reassessment': 'Reassess objective completion, risks, and whether another cycle is required.',
+  execution: 'Execute changes, run tools/tests, and capture concrete outputs.',
+  review: 'Review results for correctness, regressions, and requirement coverage.',
+  reassessment: 'Reassess objective completion, risks, and whether another cycle is required.',
 };
 
 function completionStatusLabel(status: AutonomyRunCompletionStatus): string {
@@ -215,6 +216,14 @@ function completionStatusToStepStatus(status: AutonomyRunCompletionStatus): 'ok'
       return unreachable;
     }
   }
+}
+
+function compactCompletionMessage(message: string | undefined, limit = 160): string | undefined {
+  if (!message) return undefined;
+  const normalized = message.replace(/\s+/g, ' ').trim();
+  if (normalized.length === 0) return undefined;
+  if (normalized.length <= limit) return normalized;
+  return `${normalized.slice(0, Math.max(0, limit - 1))}…`;
 }
 
 function normalizeTurnIndex(turnIndex: number): number {
@@ -251,7 +260,7 @@ export function buildAutonomyCycleCheckpoint(turnIndex: number): AutonomyCycleCh
 
 export function buildAutonomyStageCheckpointGuidance(
   checkpoint: AutonomyCycleCheckpoint,
-  options?: AutonomyCheckpointOptions,
+  options?: AutonomyCheckpointOptions
 ): string {
   const finalReassessment = options?.finalReassessment === true;
   const enforcedStage: AutonomyCycleStage = finalReassessment ? 'reassessment' : checkpoint.stage;
@@ -266,7 +275,7 @@ export function buildAutonomyStageCheckpointGuidance(
   if (finalReassessment) {
     lines.push(
       '- final pass: run a final review/reassessment now before ending this task.',
-      '- confirm objective status, unresolved risks, and recommended next action.',
+      '- confirm objective status, unresolved risks, and recommended next action.'
     );
   } else {
     lines.push(`- next stage: ${enforcedNextStage}`);
@@ -276,11 +285,10 @@ export function buildAutonomyStageCheckpointGuidance(
 }
 
 export function buildCeoAutonomyReport(input: CeoAutonomyReportInput): CeoAutonomyReportPayload {
-  const objectiveCompact = (input.objective || '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 140) || '(no objective provided)';
+  const objectiveCompact =
+    (input.objective || '').replace(/\s+/g, ' ').trim().slice(0, 140) || '(no objective provided)';
   const completionLabel = completionStatusLabel(input.completionStatus);
+  const completionMessage = compactCompletionMessage(input.completionMessage);
   const summary = [
     `CEO autonomy run ${completionLabel}.`,
     `cycle=${input.cycle} phase=${input.phase} stage=${input.stage}.`,
@@ -288,20 +296,25 @@ export function buildCeoAutonomyReport(input: CeoAutonomyReportInput): CeoAutono
     `objective: ${objectiveCompact}`,
   ].join(' ');
 
+  const commandInputs: Record<string, unknown> = {
+    turnCount: input.turnCount,
+    cycle: input.cycle,
+    phase: input.phase,
+    stage: input.stage,
+    toolCallCount: input.toolCallCount,
+    toolCallTurns: input.toolCallTurns,
+    completionStatus: input.completionStatus,
+    objectiveReassessmentEnabled: input.objectiveReassessmentEnabled,
+    forcedFinalReassessment: input.forcedFinalReassessment,
+  };
+  if (completionMessage) {
+    commandInputs['completionMessage'] = completionMessage;
+  }
+
   return {
     summary,
     slug: `ceo-autonomy-${input.completionStatus}`,
-    commandInputs: {
-      turnCount: input.turnCount,
-      cycle: input.cycle,
-      phase: input.phase,
-      stage: input.stage,
-      toolCallCount: input.toolCallCount,
-      toolCallTurns: input.toolCallTurns,
-      completionStatus: input.completionStatus,
-      objectiveReassessmentEnabled: input.objectiveReassessmentEnabled,
-      forcedFinalReassessment: input.forcedFinalReassessment,
-    },
+    commandInputs,
     steps: [
       {
         target: 'autonomy',
@@ -323,9 +336,9 @@ export function buildCeoAutonomyReport(input: CeoAutonomyReportInput): CeoAutono
         step: 'objective-reassessment',
         status: input.objectiveReassessmentEnabled ? 'ok' : 'skip',
         message: input.objectiveReassessmentEnabled
-          ? (input.forcedFinalReassessment
-              ? 'Final reassessment pass enforced before completion.'
-              : 'Objective reassessment enabled; standard completion path used.')
+          ? input.forcedFinalReassessment
+            ? 'Final reassessment pass enforced before completion.'
+            : 'Objective reassessment enabled; standard completion path used.'
           : 'Objective reassessment disabled.',
       },
       {
@@ -333,23 +346,41 @@ export function buildCeoAutonomyReport(input: CeoAutonomyReportInput): CeoAutono
         component: 'completion',
         step: 'status',
         status: completionStatusToStepStatus(input.completionStatus),
-        message: `run status: ${completionLabel}`,
+        message: completionMessage
+          ? `run status: ${completionLabel} (${completionMessage})`
+          : `run status: ${completionLabel}`,
       },
     ],
   };
 }
 
 export function resolveAutonomyLevel(value: unknown): AutonomyLevel {
-  const numeric = typeof value === 'number'
-    ? value
-    : Number.parseInt(String(value ?? ''), 10);
+  const numeric =
+    typeof value === 'number'
+      ? value
+      : Number.parseInt(
+          typeof value === 'string'
+            ? value
+            : typeof value === 'object'
+              ? JSON.stringify(value)
+              : String(value as number | boolean | bigint | null | undefined),
+          10
+        );
   if (!Number.isFinite(numeric)) return 2;
   const clamped = Math.min(5, Math.max(1, Math.floor(numeric)));
   return clamped as AutonomyLevel;
 }
 
 export function resolveAutonomyMode(value: unknown): AutonomyMode {
-  const normalized = String(value ?? '').trim().toLowerCase();
+  const normalized = (
+    typeof value === 'string'
+      ? value
+      : typeof value === 'object' && value !== null
+        ? JSON.stringify(value)
+        : String(value as number | boolean | bigint | null | undefined)
+  )
+    .trim()
+    .toLowerCase();
   return normalized === 'ceo' ? 'ceo' : 'execution';
 }
 
@@ -362,7 +393,7 @@ export function formatAutonomySlider(levelInput: unknown): string {
 
 export function buildAutonomyProfile(
   levelInput: unknown,
-  modeInput: unknown,
+  modeInput: unknown
 ): ResolvedAutonomyProfile {
   const level = resolveAutonomyLevel(levelInput);
   const mode = resolveAutonomyMode(modeInput);
@@ -394,7 +425,7 @@ export function autonomyDurationMinutes(profile: ResolvedAutonomyProfile): numbe
 
 export function computeAutonomyConfigUpdates(
   levelInput: unknown,
-  modeInput: unknown,
+  modeInput: unknown
 ): Record<string, unknown> {
   const profile = buildAutonomyProfile(levelInput, modeInput);
   const ceoMode = profile.mode === 'ceo';
@@ -435,7 +466,7 @@ export function computeAutonomyConfigUpdates(
 
 function withOptionalOverrides(
   source: Record<string, unknown>,
-  target: Record<string, unknown>,
+  target: Record<string, unknown>
 ): void {
   for (const [key, value] of Object.entries(source)) {
     if (value !== undefined) target[key] = value;
@@ -449,9 +480,15 @@ export function applyAutonomyRuntimeProfile(config: OptaConfig): OptaConfig {
   const ceoMode = profile.mode === 'ceo';
 
   const permissions = { ...config.permissions };
-  permissions['run_command'] = profile.allowRunCommand ? 'allow' : (permissions['run_command'] ?? 'ask');
-  permissions['spawn_agent'] = profile.allowDelegation ? 'allow' : (permissions['spawn_agent'] ?? 'ask');
-  permissions['delegate_task'] = profile.allowDelegation ? 'allow' : (permissions['delegate_task'] ?? 'ask');
+  permissions['run_command'] = profile.allowRunCommand
+    ? 'allow'
+    : (permissions['run_command'] ?? 'ask');
+  permissions['spawn_agent'] = profile.allowDelegation
+    ? 'allow'
+    : (permissions['spawn_agent'] ?? 'ask');
+  permissions['delegate_task'] = profile.allowDelegation
+    ? 'allow'
+    : (permissions['delegate_task'] ?? 'ask');
   permissions['web_search'] = 'allow';
   permissions['web_fetch'] = 'allow';
 
@@ -531,7 +568,7 @@ export function buildAutonomyPromptBlock(config: OptaConfig): string {
 
   if (profile.level >= 5) {
     lines.push(
-      '- level 5 directive: sustain autonomous cycles for 30-60+ minutes when needed, using staged checkpoints and self-review before final output.',
+      '- level 5 directive: sustain autonomous cycles for 30-60+ minutes when needed, using staged checkpoints and self-review before final output.'
     );
   }
 
@@ -542,7 +579,7 @@ export function buildAutonomyPromptBlock(config: OptaConfig): string {
       '  - verify time-sensitive claims with live data using web_search/web_fetch.',
       '  - keep a work log of changes, decisions, and results.',
       '  - propose long-term, permanent solutions and organization improvements.',
-      '  - finish with an executive summary + implementation report.',
+      '  - finish with an executive summary + implementation report.'
     );
   }
 

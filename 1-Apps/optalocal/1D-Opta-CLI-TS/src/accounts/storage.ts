@@ -1,9 +1,9 @@
 import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { getConfigDir } from '../platform/paths.js';
 import type { AccountState, SupabaseSession, SupabaseUser } from './types.js';
 
-const ACCOUNT_DIR = join(homedir(), '.config', 'opta');
+const ACCOUNT_DIR = getConfigDir();
 const ACCOUNT_FILE = join(ACCOUNT_DIR, 'account.json');
 const DIR_MODE = 0o700;
 const FILE_MODE = 0o600;
@@ -35,6 +35,7 @@ function parseAccountState(value: unknown): AccountState | null {
   if (typeof updatedAt !== 'string' || updatedAt.trim().length === 0) return null;
 
   const parsedSession = value['session'] === null ? null : asSession(value['session']);
+  const deviceId = typeof value['deviceId'] === 'string' ? value['deviceId'] : null;
   const parsedUser = value['user'] === null ? null : asUser(value['user']);
   if (value['session'] !== null && parsedSession === null) return null;
   if (value['user'] !== null && parsedUser === null) return null;
@@ -44,6 +45,7 @@ function parseAccountState(value: unknown): AccountState | null {
     session: parsedSession,
     user: parsedUser,
     updatedAt,
+    deviceId,
   };
 }
 

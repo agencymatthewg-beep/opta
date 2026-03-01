@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Phase 8 Implementation Plan: Model Stack & Distributed Inference
 
 **Date:** 2026-02-19

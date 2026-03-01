@@ -9,7 +9,6 @@ import { createSpinner } from '../../ui/spinner.js';
 import { renderPercentBar } from '../../ui/progress.js';
 import { errorMessage, NO_MODELS_LOADED } from '../../utils/errors.js';
 import { LmxClient, LmxApiError, lookupContextLimit } from '../../lmx/client.js';
-import type { LmxModelDetail } from '../../lmx/client.js';
 import {
   ensureModelLoaded,
   findMatchingModelId,
@@ -19,7 +18,7 @@ import {
   waitForModelUnloaded,
 } from '../../lmx/model-lifecycle.js';
 import { getDisplayProfile } from '../../core/model-display.js';
-import { fmtGB, fmtCtx } from '../../providers/model-scan.js';
+import { fmtGB } from '../../providers/model-scan.js';
 import {
   FAST_DISCOVERY_REQUEST_OPTS,
   STABLE_MODEL_LOAD_TIMEOUT_MS,
@@ -40,7 +39,7 @@ export async function useModel(
   name: string | undefined,
   client: LmxClient,
   defaultModel: string,
-  aliasMap: ModelAliasMap = {},
+  aliasMap: ModelAliasMap = {}
 ): Promise<string> {
   const spinner = await createSpinner();
   spinner.start(progressText('Set default', 15, 'fetching model catalog'));
@@ -56,7 +55,7 @@ export async function useModel(
       options,
       defaultModel,
       'Select default model',
-      aliasMap,
+      aliasMap
     );
 
     const selectedLoaded = loaded.find((m) => modelIdsEqual(m.id, selectedId));
@@ -69,7 +68,11 @@ export async function useModel(
     spinner.succeed(progressText('Set default', 100, `default set to ${selectedId}`));
 
     if (!selectedLoaded) {
-      console.log(chalk.dim(`  ${selectedId} is on disk; run ${chalk.reset(`opta models load ${selectedId}`)} to load it now`));
+      console.log(
+        chalk.dim(
+          `  ${selectedId} is on disk; run ${chalk.reset(`opta models load ${selectedId}`)} to load it now`
+        )
+      );
     }
     return selectedId;
   } catch (err) {
@@ -85,8 +88,7 @@ export async function infoModel(
 ): Promise<void> {
   if (!name) {
     console.error(
-      chalk.red('✗') + ' Missing model name\n\n' +
-      chalk.dim('Usage: opta models info <name>')
+      chalk.red('✗') + ' Missing model name\n\n' + chalk.dim('Usage: opta models info <name>')
     );
     throw new ExitError(EXIT.MISUSE);
   }
@@ -116,7 +118,9 @@ export async function infoModel(
     const dp = getDisplayProfile(name);
     const ctx = model?.context_length ?? perfResult?.contextLength ?? lookupContextLimit(name);
 
-    console.log('\n' + chalk.bold(dp.displayName) + ' ' + fmtTag(dp.format) + ' ' + chalk.dim(dp.orgAbbrev));
+    console.log(
+      '\n' + chalk.bold(dp.displayName) + ' ' + fmtTag(dp.format) + ' ' + chalk.dim(dp.orgAbbrev)
+    );
     console.log(chalk.dim(`  ${name}`));
     console.log('');
 
@@ -161,7 +165,9 @@ export async function infoModel(
     }
 
     console.log('');
-    console.log(chalk.dim(`  Run ${chalk.reset(`opta models benchmark ${name}`)} to measure tok/s`));
+    console.log(
+      chalk.dim(`  Run ${chalk.reset(`opta models benchmark ${name}`)} to measure tok/s`)
+    );
   } catch (err) {
     spinner.stop();
     throwModelCommandError(err);
@@ -172,7 +178,7 @@ export async function loadModel(
   name: string | undefined,
   client: LmxClient,
   aliasMap: ModelAliasMap = {},
-  defaultModel = '',
+  defaultModel = ''
 ): Promise<void> {
   const spinner = await createSpinner();
   spinner.start(progressText('Load model', 15, 'fetching downloadable models'));
@@ -186,13 +192,18 @@ export async function loadModel(
       if (loaded.length > 0) {
         console.log(chalk.dim('  No additional models on disk to load.'));
       } else {
-        console.log(chalk.dim('  No downloaded models found. Use `opta models download <repo>` first.'));
+        console.log(
+          chalk.dim('  No downloaded models found. Use `opta models download <repo>` first.')
+        );
       }
       return;
     }
 
     if (name) {
-      const matchingLoaded = findMatchingModelId(name, loaded.map((m) => m.id));
+      const matchingLoaded = findMatchingModelId(
+        name,
+        loaded.map((m) => m.id)
+      );
       if (matchingLoaded) {
         console.log(chalk.dim(`  ${matchingLoaded} is already loaded`));
         return;
@@ -204,7 +215,7 @@ export async function loadModel(
       onDisk,
       defaultModel,
       'Select model to load',
-      aliasMap,
+      aliasMap
     );
 
     spinner.start(progressText('Load model', 75, `loading ${selectedId}`));
@@ -216,10 +227,12 @@ export async function loadModel(
     spinner.succeed(progressText('Load model', 100, `loaded ${loadedId}`));
     await recordModelHistory([loadedId], 'loaded');
 
-    const loadedSnapshot = await client.models(FAST_DISCOVERY_REQUEST_OPTS).catch((err: unknown) => {
-      warnModelInventoryFallback('loaded models', err);
-      return { models: [] };
-    });
+    const loadedSnapshot = await client
+      .models(FAST_DISCOVERY_REQUEST_OPTS)
+      .catch((err: unknown) => {
+        warnModelInventoryFallback('loaded models', err);
+        return { models: [] };
+      });
     const details = loadedSnapshot.models.find((model) => modelIdsEqual(model.model_id, loadedId));
     if (details?.memory_bytes) {
       console.log(chalk.dim(`  Memory: ${(details.memory_bytes / 1e9).toFixed(1)} GB`));
@@ -233,7 +246,7 @@ export async function loadModel(
 export async function unloadModel(
   name: string | undefined,
   client: LmxClient,
-  aliasMap: ModelAliasMap = {},
+  aliasMap: ModelAliasMap = {}
 ): Promise<void> {
   const spinner = await createSpinner();
   spinner.start(progressText('Unload model', 15, 'fetching loaded models'));
@@ -254,10 +267,14 @@ export async function unloadModel(
       loaded,
       config.model.default,
       'Select model to unload',
-      aliasMap,
+      aliasMap
     );
 
-    const loadedId = findMatchingModelId(selectedId, loaded.map((model) => model.id)) ?? selectedId;
+    const loadedId =
+      findMatchingModelId(
+        selectedId,
+        loaded.map((model) => model.id)
+      ) ?? selectedId;
     spinner.start(progressText('Unload model', 75, `unloading ${loadedId}`));
     const onProgress = createUnloadProgressUpdater(spinner, 'Unload model', loadedId, 75);
     const result = await client.unloadModel(loadedId);
@@ -276,14 +293,12 @@ export async function unloadModel(
   }
 }
 
-export async function downloadModel(
-  name: string | undefined,
-  client: LmxClient
-): Promise<void> {
+export async function downloadModel(name: string | undefined, client: LmxClient): Promise<void> {
   if (!name) {
     console.error(
-      chalk.red('✗') + ' Missing repo ID\n\n' +
-      chalk.dim('Usage: opta models download <org/model-name>')
+      chalk.red('✗') +
+        ' Missing repo ID\n\n' +
+        chalk.dim('Usage: opta models download <org/model-name>')
     );
     throw new ExitError(EXIT.MISUSE);
   }
@@ -322,18 +337,22 @@ export async function downloadModel(
       if (progress.progressPercent !== lastPct) {
         lastPct = progress.progressPercent;
         const bar = renderPercentBar(progress.progressPercent, 20);
-        const dlStr = progress.totalBytes > 0
-          ? `${fmtGB(progress.downloadedBytes)} / ${fmtGB(progress.totalBytes)}`
-          : fmtGB(progress.downloadedBytes);
+        const dlStr =
+          progress.totalBytes > 0
+            ? `${fmtGB(progress.downloadedBytes)} / ${fmtGB(progress.totalBytes)}`
+            : fmtGB(progress.downloadedBytes);
         console.log(
           `  ${bar}  ${chalk.dim(dlStr)}  ` +
-          chalk.dim(`${progress.filesCompleted}/${progress.filesTotal} files`)
+            chalk.dim(`${progress.filesCompleted}/${progress.filesTotal} files`)
         );
       }
 
       if (progress.status === 'completed') {
         console.log(`  ${renderPercentBar(100, 20)}  ${chalk.dim('complete')}`);
-        console.log(chalk.green('✓') + ` Download complete — run ${chalk.bold(`opta models load ${name}`)} to use`);
+        console.log(
+          chalk.green('✓') +
+            ` Download complete — run ${chalk.bold(`opta models load ${name}`)} to use`
+        );
         return true;
       }
       if (progress.status === 'failed') {
@@ -355,14 +374,12 @@ export async function downloadModel(
   await recordModelHistory([name], 'downloaded');
 }
 
-export async function deleteModel(
-  name: string | undefined,
-  client: LmxClient
-): Promise<void> {
+export async function deleteModel(name: string | undefined, client: LmxClient): Promise<void> {
   if (!name) {
     console.error(
-      chalk.red('✗') + ' Missing model name\n\n' +
-      chalk.dim('Usage: opta models delete <model-name>')
+      chalk.red('✗') +
+        ' Missing model name\n\n' +
+        chalk.dim('Usage: opta models delete <model-name>')
     );
     throw new ExitError(EXIT.MISUSE);
   }
@@ -374,7 +391,7 @@ export async function deleteModel(
     const result = await client.deleteModel(name);
     spinner.succeed(
       `Deleted ${result.modelId}` +
-      (result.freedBytes > 0 ? chalk.dim(` · freed ${fmtGB(result.freedBytes)}`) : '')
+        (result.freedBytes > 0 ? chalk.dim(` · freed ${fmtGB(result.freedBytes)}`) : '')
     );
     await recordModelHistory([result.modelId], 'deleted');
   } catch (err) {
@@ -394,14 +411,12 @@ export async function deleteModel(
   }
 }
 
-export async function benchmarkModel(
-  name: string | undefined,
-  client: LmxClient
-): Promise<void> {
+export async function benchmarkModel(name: string | undefined, client: LmxClient): Promise<void> {
   if (!name) {
     console.error(
-      chalk.red('✗') + ' Missing model name\n\n' +
-      chalk.dim('Usage: opta models benchmark <model-name>')
+      chalk.red('✗') +
+        ' Missing model name\n\n' +
+        chalk.dim('Usage: opta models benchmark <model-name>')
     );
     throw new ExitError(EXIT.MISUSE);
   }
@@ -418,13 +433,16 @@ export async function benchmarkModel(
     console.log(`  ${chalk.bold(dp.displayName)} ${fmtTag(dp.format)} ${chalk.dim(dp.orgAbbrev)}`);
     console.log('');
 
-    const tpsColor = result.avgTokensPerSecond >= 30
-      ? chalk.green
-      : result.avgTokensPerSecond >= 10
-      ? chalk.yellow
-      : chalk.red;
+    const tpsColor =
+      result.avgTokensPerSecond >= 30
+        ? chalk.green
+        : result.avgTokensPerSecond >= 10
+          ? chalk.yellow
+          : chalk.red;
 
-    console.log(`  ${chalk.bold('Avg tok/s')}    ${tpsColor(result.avgTokensPerSecond.toFixed(1))} tok/s`);
+    console.log(
+      `  ${chalk.bold('Avg tok/s')}    ${tpsColor(result.avgTokensPerSecond.toFixed(1))} tok/s`
+    );
     console.log(`  ${chalk.bold('Avg TTFT')}     ${result.avgTimeToFirstTokenMs.toFixed(0)} ms`);
     console.log(`  ${chalk.bold('Avg total')}    ${result.avgTotalTimeMs.toFixed(0)} ms`);
     console.log(`  ${chalk.bold('Backend')}      ${chalk.cyan(result.backendType)}`);
@@ -436,9 +454,9 @@ export async function benchmarkModel(
         const bar = '▪'.repeat(Math.min(20, Math.round(r.tokensPerSecond / 3)));
         console.log(
           chalk.dim(`  Run ${r.run}  `) +
-          chalk.dim(`${bar.padEnd(20)}`) +
-          `  ${r.tokensPerSecond.toFixed(1)} tok/s` +
-          chalk.dim(`  TTFT ${r.timeToFirstTokenMs.toFixed(0)}ms`)
+            chalk.dim(bar.padEnd(20)) +
+            `  ${r.tokensPerSecond.toFixed(1)} tok/s` +
+            chalk.dim(`  TTFT ${r.timeToFirstTokenMs.toFixed(0)}ms`)
         );
       }
     }
@@ -476,7 +494,9 @@ export async function stopAllModels(client: LmxClient): Promise<void> {
     for (let i = 0; i < total; i++) {
       const model = result.models[i]!;
       const pct = 20 + Math.round(((i + 1) / total) * 70);
-      spinner.start(progressText('Stop models', pct, `unloading ${model.model_id} (${i + 1}/${total})`));
+      spinner.start(
+        progressText('Stop models', pct, `unloading ${model.model_id} (${i + 1}/${total})`)
+      );
       const unloadResult = await client.unloadModel(model.model_id).catch(() => null);
       if (unloadResult) {
         successCount += 1;
@@ -488,8 +508,8 @@ export async function stopAllModels(client: LmxClient): Promise<void> {
       progressText(
         'Stop models',
         100,
-        `unloaded ${successCount}/${total} model${total > 1 ? 's' : ''}${totalFreed > 0 ? ` · freed ${fmtGB(totalFreed)}` : ''}`,
-      ),
+        `unloaded ${successCount}/${total} model${total > 1 ? 's' : ''}${totalFreed > 0 ? ` · freed ${fmtGB(totalFreed)}` : ''}`
+      )
     );
   } catch (err) {
     spinner.stop();
@@ -501,14 +521,16 @@ export async function swapModel(
   fromName: string | undefined,
   toName: string | undefined,
   client: LmxClient,
-  aliasMap: ModelAliasMap = {},
+  aliasMap: ModelAliasMap = {}
 ): Promise<void> {
   const spinner = await createSpinner();
   try {
     const config = await loadConfig();
     const defaultModel = normalizeConfiguredModelId(config.model.default);
     if (!defaultModel && isPlaceholderModelId(config.model.default)) {
-      await saveConfig({ 'model.default': '', 'model.contextLimit': lookupContextLimit('') }).catch(() => {});
+      await saveConfig({ 'model.default': '', 'model.contextLimit': lookupContextLimit('') }).catch(
+        () => {}
+      );
     }
     spinner.start(progressText('Swap model', 12, 'fetching model catalog'));
     const { loaded, onDisk } = await getModelOptions(client);
@@ -525,13 +547,15 @@ export async function swapModel(
       loaded,
       defaultModel,
       'Select running model to swap out',
-      aliasMap,
+      aliasMap
     );
 
     const targetOptions = [...onDisk, ...loaded.filter((m) => !modelIdsEqual(m.id, fromId))];
     if (targetOptions.length === 0) {
       console.error(chalk.red('✗') + ' No replacement model available on disk');
-      console.log(chalk.dim(`  Download one with ${chalk.reset('opta models download <org/model>')}`));
+      console.log(
+        chalk.dim(`  Download one with ${chalk.reset('opta models download <org/model>')}`)
+      );
       throw new ExitError(EXIT.NOT_FOUND);
     }
 
@@ -540,7 +564,7 @@ export async function swapModel(
       targetOptions,
       defaultModel,
       'Select replacement model',
-      aliasMap,
+      aliasMap
     );
 
     if (modelIdsEqual(fromId, toId)) {
@@ -550,10 +574,14 @@ export async function swapModel(
 
     const targetAlreadyLoaded = findMatchingModelId(
       toId,
-      loaded.filter((m) => !modelIdsEqual(m.id, fromId)).map((m) => m.id),
+      loaded.filter((m) => !modelIdsEqual(m.id, fromId)).map((m) => m.id)
     );
 
-    const fromLoadedId = findMatchingModelId(fromId, loaded.map((m) => m.id)) ?? fromId;
+    const fromLoadedId =
+      findMatchingModelId(
+        fromId,
+        loaded.map((m) => m.id)
+      ) ?? fromId;
     spinner.start(progressText('Swap model', 65, `unloading ${fromLoadedId}`));
     let unloaded: { model_id: string; freed_bytes?: number; status?: string };
     try {
@@ -572,11 +600,21 @@ export async function swapModel(
       });
     } catch (err) {
       spinner.stop();
-      console.error(chalk.red('✗') + ` Failed to confirm ${fromLoadedId} was unloaded: ${errorMessage(err)}`);
+      console.error(
+        chalk.red('✗') + ` Failed to confirm ${fromLoadedId} was unloaded: ${errorMessage(err)}`
+      );
       throw err;
     }
-    const freedStr = unloaded.freed_bytes ? chalk.dim(` · freed ${fmtGB(unloaded.freed_bytes)}`) : '';
-    spinner.succeed(progressText('Swap model', targetAlreadyLoaded ? 100 : 82, `unloaded ${fromLoadedId}${freedStr}`));
+    const freedStr = unloaded.freed_bytes
+      ? chalk.dim(` · freed ${fmtGB(unloaded.freed_bytes)}`)
+      : '';
+    spinner.succeed(
+      progressText(
+        'Swap model',
+        targetAlreadyLoaded ? 100 : 82,
+        `unloaded ${fromLoadedId}${freedStr}`
+      )
+    );
 
     if (targetAlreadyLoaded) {
       console.log(chalk.green('✓') + ` ${targetAlreadyLoaded} was already loaded`);
@@ -599,7 +637,9 @@ export async function swapModel(
       spinner.succeed(progressText('Swap model', 100, `loaded ${loadedId}${memStr}`));
     } catch (loadErr) {
       spinner.stop();
-      console.error(chalk.yellow('!') + ` Swap load failed for ${toId}; attempting rollback to ${fromLoadedId}`);
+      console.error(
+        chalk.yellow('!') + ` Swap load failed for ${toId}; attempting rollback to ${fromLoadedId}`
+      );
       try {
         const rollbackId = await ensureModelLoaded(client, fromLoadedId, {
           timeoutMs: STABLE_MODEL_LOAD_TIMEOUT_MS,

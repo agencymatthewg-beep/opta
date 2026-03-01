@@ -12,13 +12,26 @@ interface ConfigOptions {
 
 function isSensitiveConfigKey(key: string): boolean {
   const k = key.toLowerCase();
-  return k.includes('apikey') || k.includes('api_key') ||
-    k.includes('token') || k.includes('secret') || k.includes('password') ||
-    k.endsWith('.key') || k.includes('adminkey');
+  return (
+    k.includes('apikey') ||
+    k.includes('api_key') ||
+    k.includes('token') ||
+    k.includes('secret') ||
+    k.includes('password') ||
+    k.endsWith('.key') ||
+    k.includes('adminkey')
+  );
+}
+
+function unknownToStr(v: unknown, fallback = ''): string {
+  if (v === null || v === undefined) return fallback;
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') return JSON.stringify(v);
+  return String(v as number | boolean | bigint);
 }
 
 function maskSensitiveConfigValue(value: unknown): string {
-  const raw = String(value ?? '');
+  const raw = unknownToStr(value);
   if (!raw || raw === 'undefined') return chalk.dim('(none)');
   if (raw.length <= 6) return '******';
   return `${'*'.repeat(Math.max(0, raw.length - 4))}${raw.slice(-4)}`;
@@ -56,7 +69,7 @@ export async function config(
 
     case 'settings':
       console.log('To open settings:');
-      console.log('  1. Run: opta chat --tui');
+      console.log('  1. Run: opta');
       console.log('  2. Press Ctrl+S to open Opta Menu');
       console.log('  3. Select Settings from the Operations page');
       console.log('');
@@ -83,9 +96,7 @@ async function listConfig(opts?: ConfigOptions): Promise<void> {
   const flat = flattenObject(cfg);
 
   for (const [key, val] of Object.entries(flat)) {
-    const display = isSensitiveConfigKey(key)
-      ? maskSensitiveConfigValue(val)
-      : String(val);
+    const display = isSensitiveConfigKey(key) ? maskSensitiveConfigValue(val) : String(val);
     console.log(`  ${chalk.cyan(key.padEnd(30))} ${display}`);
   }
 }
@@ -113,7 +124,7 @@ async function getConfig(key?: string): Promise<void> {
     throw new ExitError(EXIT.NOT_FOUND);
   }
 
-  console.log(String(val));
+  console.log(unknownToStr(val));
 }
 
 // --- Set ---
@@ -130,7 +141,7 @@ async function setConfig(key?: string, value?: string): Promise<void> {
 
   // Capture old value for display
   const oldRaw = store.get(key);
-  const oldValue = oldRaw !== undefined ? String(oldRaw) : chalk.dim('(default)');
+  const oldValue = oldRaw !== undefined ? unknownToStr(oldRaw) : chalk.dim('(default)');
 
   // Parse value type
   let parsed: unknown = value;
@@ -142,7 +153,7 @@ async function setConfig(key?: string, value?: string): Promise<void> {
       } catch {
         throw new OptaError(
           `Invalid value for "${key}": expected a JSON array or comma-separated host list`,
-          EXIT.MISUSE,
+          EXIT.MISUSE
         );
       }
     } else if (trimmed.length === 0) {
@@ -167,15 +178,10 @@ async function setConfig(key?: string, value?: string): Promise<void> {
   } catch (e) {
     // Revert the change — the value is invalid
     store.delete(key);
-    throw new OptaError(
-      `Invalid value for "${key}": ${errorMessage(e)}`,
-      EXIT.MISUSE,
-    );
+    throw new OptaError(`Invalid value for "${key}": ${errorMessage(e)}`, EXIT.MISUSE);
   }
 
-  console.log(
-    chalk.green('✓') + ` ${chalk.cyan(key)}: ${chalk.dim(oldValue)} → ${String(parsed)}`
-  );
+  console.log(chalk.green('✓') + ` ${chalk.cyan(key)}: ${chalk.dim(oldValue)} → ${String(parsed)}`);
 }
 
 // --- Reset ---
@@ -219,31 +225,43 @@ async function configMenu(): Promise<void> {
     const selectedKey = selection.itemId;
     const current = flat[selectedKey];
 
-    console.log('\n' + box(`Config ${chalk.cyan(selectedKey)}`, [
-      kv('Key', selectedKey, 16),
-      kv(
-        'Value',
-        isSensitiveConfigKey(selectedKey)
-          ? maskSensitiveConfigValue(current)
-          : String(current ?? chalk.dim('(unset)')),
-        16
-      ),
-      '',
-      chalk.dim(`Set with: opta config set ${selectedKey} <value>`),
-    ]) + '\n');
+    console.log(
+      '\n' +
+        box(`Config ${chalk.cyan(selectedKey)}`, [
+          kv('Key', selectedKey, 16),
+          kv(
+            'Value',
+            isSensitiveConfigKey(selectedKey)
+              ? maskSensitiveConfigValue(current)
+              : current !== undefined && current !== null
+                ? unknownToStr(current)
+                : chalk.dim('(unset)'),
+            16
+          ),
+          '',
+          chalk.dim(`Set with: opta config set ${selectedKey} <value>`),
+        ]) +
+        '\n'
+    );
 
     let action: 'back' | 'set' | 'reset' | 'exit';
     try {
-      const picked = await runMenuPrompt((context) =>
-        select<'back' | 'set' | 'reset' | 'exit'>({
-          message: chalk.dim('Next'),
-          choices: [
-            { name: 'Back to config menu', value: 'back' },
-            { name: `Set ${selectedKey}`, value: 'set' },
-            { name: `Reset ${selectedKey} to default`, value: 'reset' },
-            { name: 'Exit config menu', value: 'exit' },
-          ],
-        }, context), 'select');
+      const picked = await runMenuPrompt(
+        (context) =>
+          select<'back' | 'set' | 'reset' | 'exit'>(
+            {
+              message: chalk.dim('Next'),
+              choices: [
+                { name: 'Back to config menu', value: 'back' },
+                { name: `Set ${selectedKey}`, value: 'set' },
+                { name: `Reset ${selectedKey} to default`, value: 'reset' },
+                { name: 'Exit config menu', value: 'exit' },
+              ],
+            },
+            context
+          ),
+        'select'
+      );
       if (!picked) continue;
       action = picked;
     } catch {
@@ -258,7 +276,11 @@ async function configMenu(): Promise<void> {
       try {
         nextValue = await input({
           message: chalk.dim(`Set ${selectedKey}`),
-          default: isSensitiveConfigKey(selectedKey) ? '' : (current === undefined ? '' : String(current)),
+          default: isSensitiveConfigKey(selectedKey)
+            ? ''
+            : current === undefined
+              ? ''
+              : unknownToStr(current),
         });
       } catch {
         continue;
@@ -279,10 +301,7 @@ async function configMenu(): Promise<void> {
 
 // --- Helpers ---
 
-function flattenObject(
-  obj: Record<string, unknown>,
-  prefix = ''
-): Record<string, unknown> {
+function flattenObject(obj: Record<string, unknown>, prefix = ''): Record<string, unknown> {
   const result: Record<string, unknown> = {};
 
   for (const [key, val] of Object.entries(obj)) {

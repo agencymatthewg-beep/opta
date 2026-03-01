@@ -38,7 +38,9 @@ export interface AppendActionEvent {
 export interface UseOverlayManagerOptions {
   appendAction: (event: AppendActionEvent) => void;
   scrollRef: React.RefObject<ScrollViewHandle | null>;
-  permissionPending: (PermissionRequest & { resolve: (decision: PermissionDecision) => void }) | null;
+  permissionPending:
+    | (PermissionRequest & { resolve: (decision: PermissionDecision) => void })
+    | null;
   setMessages: React.Dispatch<React.SetStateAction<import('../App.js').TuiMessage[]>>;
   bypassPermissions: boolean;
   setBypassPermissions: React.Dispatch<React.SetStateAction<boolean>>;
@@ -104,7 +106,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
     setMessages,
     bypassPermissions,
     setBypassPermissions,
-    workflowMode,
+    workflowMode: _workflowMode,
     setWorkflowMode,
     onModeChange,
     setResponseIntentTone,
@@ -119,8 +121,11 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   const [followMode, setFollowMode] = useState(true);
 
   // --- Opta menu animation state ---
-  const [optaMenuAnimationPhase, setOptaMenuAnimationPhase] = useState<'opening' | 'open' | 'closing'>('open');
-  const [optaMenuAnimationFrame, setOptaMenuAnimationFrame] = useState<number>(OPTA_MENU_ANIMATION_STEPS);
+  const [optaMenuAnimationPhase, setOptaMenuAnimationPhase] = useState<
+    'opening' | 'open' | 'closing'
+  >('open');
+  const [optaMenuAnimationFrame, setOptaMenuAnimationFrame] =
+    useState<number>(OPTA_MENU_ANIMATION_STEPS);
   const [optaMenuResults, setOptaMenuResults] = useState<OptaMenuResultEntry[]>([]);
 
   const overlayActive = activeOverlay !== 'none';
@@ -128,7 +133,10 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   // --- Opta menu animation controller (open/close frames) ---
   useEffect(() => {
     if (activeOverlay !== 'opta-menu') {
-      if (optaMenuAnimationPhase !== 'open' || optaMenuAnimationFrame !== OPTA_MENU_ANIMATION_STEPS) {
+      if (
+        optaMenuAnimationPhase !== 'open' ||
+        optaMenuAnimationFrame !== OPTA_MENU_ANIMATION_STEPS
+      ) {
         setOptaMenuAnimationPhase('open');
         setOptaMenuAnimationFrame(OPTA_MENU_ANIMATION_STEPS);
       }
@@ -139,7 +147,10 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
       return;
     }
 
-    if (optaMenuAnimationPhase === 'opening' && optaMenuAnimationFrame >= OPTA_MENU_ANIMATION_STEPS) {
+    if (
+      optaMenuAnimationPhase === 'opening' &&
+      optaMenuAnimationFrame >= OPTA_MENU_ANIMATION_STEPS
+    ) {
       setOptaMenuAnimationPhase('open');
       return;
     }
@@ -168,7 +179,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   const handleClear = useCallback(() => setMessages([]), [setMessages]);
 
   const handleToggleSidebar = useCallback(() => {
-    setSidebarVisible(prev => !prev);
+    setSidebarVisible((prev) => !prev);
     appendAction({
       kind: 'info',
       status: 'info',
@@ -180,7 +191,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
 
   const handleScrollUp = useCallback(() => scrollRef.current?.scrollBy(-3), [scrollRef]);
   const handleScrollDown = useCallback(() => scrollRef.current?.scrollBy(3), [scrollRef]);
-  const handleExpandThinking = useCallback(() => setThinkingExpanded(prev => !prev), []);
+  const handleExpandThinking = useCallback(() => setThinkingExpanded((prev) => !prev), []);
 
   // --- Menu callbacks ---
   const openOptaMenu = useCallback(() => {
@@ -225,7 +236,14 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
       icon: '🟣',
       label: opening ? 'Opened Opta Menu' : 'Closed Opta Menu',
     });
-  }, [permissionPending, activeOverlay, optaMenuAnimationPhase, openOptaMenu, closeOptaMenu, appendAction]);
+  }, [
+    permissionPending,
+    activeOverlay,
+    optaMenuAnimationPhase,
+    openOptaMenu,
+    closeOptaMenu,
+    appendAction,
+  ]);
 
   const handleOpenBrowserControl = useCallback(() => {
     if (permissionPending) return;
@@ -255,7 +273,12 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
     if (permissionPending) return;
     const opening = activeOverlay !== 'onboarding';
     toggleOverlay('onboarding');
-    appendAction({ kind: 'info', status: 'info', icon: '🚀', label: opening ? 'Opened Setup Wizard' : 'Closed Setup Wizard' });
+    appendAction({
+      kind: 'info',
+      status: 'info',
+      icon: '🚀',
+      label: opening ? 'Opened Setup Wizard' : 'Closed Setup Wizard',
+    });
   }, [activeOverlay, permissionPending, toggleOverlay, appendAction]);
 
   const handleOpenSettings = useCallback(() => {
@@ -290,15 +313,24 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   }, [activeOverlay, permissionPending, toggleOverlay, appendAction]);
 
   // --- Settings/mode handlers ---
-  const handleSettingsSave = useCallback((changes: Record<string, unknown>) => {
-    const toneValue = changes['tui.responseIntentTone'];
-    if (isResponseIntentTone(toneValue)) {
-      setResponseIntentTone(toneValue);
-    }
-    import('../../core/config.js').then(({ saveConfig }) => {
-      saveConfig(changes).catch(() => { /* non-fatal */ });
-    }).catch(() => { /* ignore */ });
-  }, [setResponseIntentTone]);
+  const handleSettingsSave = useCallback(
+    (changes: Record<string, unknown>) => {
+      const toneValue = changes['tui.responseIntentTone'];
+      if (isResponseIntentTone(toneValue)) {
+        setResponseIntentTone(toneValue);
+      }
+      import('../../core/config.js')
+        .then(({ saveConfig }) => {
+          saveConfig(changes).catch(() => {
+            /* non-fatal */
+          });
+        })
+        .catch(() => {
+          /* ignore */
+        });
+    },
+    [setResponseIntentTone]
+  );
 
   const handleToggleSafeMode = useCallback(() => {
     setSafeModeOverride((prev) => !prev);
@@ -312,7 +344,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   }, [appendAction, safeModeOverride]);
 
   const handleCycleMode = useCallback(() => {
-    setWorkflowMode(prev => {
+    setWorkflowMode((prev) => {
       const idx = WORKFLOW_MODES.indexOf(prev);
       const next = WORKFLOW_MODES[(idx + 1) % WORKFLOW_MODES.length]!;
       onModeChange?.(next);
@@ -321,7 +353,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   }, [onModeChange, setWorkflowMode]);
 
   const handleToggleBypass = useCallback(() => {
-    setBypassPermissions(prev => !prev);
+    setBypassPermissions((prev) => !prev);
     appendAction({
       kind: 'permission',
       status: 'info',
@@ -332,7 +364,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
   }, [appendAction, bypassPermissions, setBypassPermissions]);
 
   const handleToggleFollow = useCallback(() => {
-    setFollowMode(prev => !prev);
+    setFollowMode((prev) => !prev);
     appendAction({
       kind: 'info',
       status: 'info',

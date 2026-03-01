@@ -11,7 +11,7 @@ optalocal.com (platform root)
 └── [future subdomains]
 ```
 
-## Apps This Site Serves (Downloads + Guides)
+## Apps This Site Serves (Downloads + Onboarding)
 
 | App | Path | Role |
 |-----|------|------|
@@ -23,6 +23,12 @@ optalocal.com (platform root)
 | App | URL | Role |
 |-----|-----|------|
 | Opta Local (web) | lmx.optalocal.com | LMX dashboard + chat |
+
+## App This Site Links To (Account CTA)
+
+| App | URL | Role |
+|-----|-----|------|
+| Opta Accounts | accounts.optalocal.com | Account and identity management |
 
 ## Data Contracts
 

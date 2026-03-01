@@ -32,6 +32,7 @@ function createConnectionResult(settings: ConnectionSettings): UseConnectionRetu
     isConnected: true,
     latencyMs: 12,
     error: null,
+    diagnostic: 'OK',
     recheckNow: vi.fn(),
     client: {} as UseConnectionReturn['client'],
     adminKey: settings.adminKey,

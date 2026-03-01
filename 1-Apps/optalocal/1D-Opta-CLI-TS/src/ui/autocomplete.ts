@@ -40,7 +40,7 @@ export function getSlashCompletions(partial: string): string[] {
   // getAllCommands is synchronous so we can use a cached reference.
   if (!_slashCommandsCache) {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
+       
       // Dynamic import is async, so we populate the cache on first call
       // and return empty on the very first invocation (edge case).
       _populateSlashCache();

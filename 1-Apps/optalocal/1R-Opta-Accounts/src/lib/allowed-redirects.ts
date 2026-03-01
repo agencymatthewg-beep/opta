@@ -13,6 +13,8 @@ const ALLOWED_PATTERNS: RegExp[] = [
   /^https:\/\/life\.opta\.app(\/.*)?$/,
   // CLI localhost callback (127.0.0.1 only, never 0.0.0.0)
   /^http:\/\/127\.0\.0\.1:\d+(\/.*)?$/,
+  // Local development callback support
+  /^http:\/\/localhost:\d+(\/.*)?$/,
   // iOS deep link
   /^opta-life:\/\/auth\/callback$/,
 ];

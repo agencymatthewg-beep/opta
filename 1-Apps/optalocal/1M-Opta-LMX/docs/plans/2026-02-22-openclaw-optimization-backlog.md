@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta LMX OpenClaw Optimization Backlog
 
 Date: 2026-02-22

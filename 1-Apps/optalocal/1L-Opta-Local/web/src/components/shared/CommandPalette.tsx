@@ -24,6 +24,12 @@ import {
   Workflow,
   Monitor,
   TerminalSquare,
+  Activity,
+  Settings2,
+  Wrench,
+  FlaskConical,
+  Package,
+  Network,
 } from 'lucide-react';
 
 // ---------------------------------------------------------------------------
@@ -55,6 +61,12 @@ const paletteItems: PaletteItem[] = [
   { id: 'rag', label: 'RAG', href: '/rag', icon: Database, category: 'Navigate' },
   { id: 'agents', label: 'Agents', href: '/agents', icon: Workflow, category: 'Navigate' },
   { id: 'operations', label: 'Operations', href: '/operations', icon: TerminalSquare, category: 'Navigate' },
+  { id: 'metrics', label: 'Metrics', href: '/metrics', icon: Activity, category: 'Navigate' },
+  { id: 'presets', label: 'Presets', href: '/presets', icon: Settings2, category: 'Navigate' },
+  { id: 'skills', label: 'Skills', href: '/skills', icon: Wrench, category: 'Navigate' },
+  { id: 'benchmark', label: 'Benchmark', href: '/benchmark', icon: FlaskConical, category: 'Navigate' },
+  { id: 'quantize', label: 'Quantize', href: '/quantize', icon: Package, category: 'Navigate' },
+  { id: 'stack', label: 'Stack', href: '/stack', icon: Network, category: 'Navigate' },
   { id: 'devices', label: 'Devices', href: '/devices', icon: Monitor, category: 'Navigate' },
   { id: 'sessions', label: 'Sessions', href: '/sessions', icon: History, category: 'Navigate' },
   { id: 'settings', label: 'Settings', href: '/settings', icon: Settings, category: 'Navigate' },

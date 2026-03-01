@@ -112,14 +112,59 @@ describe('interactive menu back navigation', () => {
     await flush();
     expect(lastFrame()).toContain('Operations');
 
-    // Operations item order places Settings at index 4 (0-based) in this menu.
-    for (let i = 0; i < 4; i += 1) {
+    // Operations item order places Settings at index 6 (0-based) in this menu.
+    for (let i = 0; i < 6; i += 1) {
       stdin.write('j');
       await flush();
     }
     stdin.write('\r');
     await flush();
     expect(onOpenSettings).toHaveBeenCalled();
+    unmount();
+  });
+
+  it('OptaMenuOverlay runs Account Sign In from Simple Settings page', async () => {
+    const onRunCommand = vi.fn();
+    const { stdin, lastFrame, unmount } = render(
+      <OptaMenuOverlay
+        workflowMode="normal"
+        currentModel="test-model"
+        connectionHost="127.0.0.1"
+        connectionPort={1234}
+        sidebarVisible={false}
+        safeMode={false}
+        bypassPermissions={false}
+        followMode={true}
+        studioConnectivity="reachable"
+        onClose={() => {}}
+        onOpenModelPicker={() => {}}
+        onOpenCommandBrowser={() => {}}
+        onOpenHelpBrowser={() => {}}
+        onOpenBrowserControl={() => {}}
+        onOpenActionHistory={() => {}}
+        onOpenSettings={() => {}}
+        onOpenOnboarding={() => {}}
+        onRunCommand={onRunCommand}
+        onToggleSidebar={() => {}}
+        onToggleSafeMode={() => {}}
+        onToggleBypass={() => {}}
+        onToggleFollow={() => {}}
+      />,
+    );
+    await flush();
+
+    stdin.write('7');
+    await flush();
+    expect(lastFrame()).toContain('Simple Settings');
+    expect(lastFrame()).toContain('Account Sign In');
+
+    // Second item is Account Sign In.
+    stdin.write('j');
+    await flush();
+    stdin.write('\r');
+    await flush();
+
+    expect(onRunCommand).toHaveBeenCalledWith('!opta account login --oauth-opta-browser --timeout 300');
     unmount();
   });
 

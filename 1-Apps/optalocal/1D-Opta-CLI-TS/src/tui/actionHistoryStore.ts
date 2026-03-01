@@ -1,6 +1,6 @@
 import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
-import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
+import { getConfigDir } from '../platform/paths.js';
 import { z } from 'zod';
 import type { ActionEvent } from './activity.js';
 import { MAX_ACTION_HISTORY } from './activity.js';
@@ -17,7 +17,7 @@ const ActionEventSchema = z.object({
   detail: z.string().optional(),
 });
 
-export const DEFAULT_ACTION_HISTORY_PATH = join(homedir(), '.config', 'opta', 'tui-action-history.jsonl');
+export const DEFAULT_ACTION_HISTORY_PATH = join(getConfigDir(), 'tui-action-history.jsonl');
 
 export interface ActionHistoryStoreOptions {
   filePath?: string;

@@ -7,6 +7,13 @@ export const OPERATION_IDS = [
   'env.save',
   'env.use',
   'env.delete',
+  'account.status',
+  'account.logout',
+  'sessions.list',
+  'sessions.search',
+  'sessions.export',
+  'sessions.delete',
+  'diff',
   'mcp.list',
   'mcp.add',
   'mcp.add-playwright',
@@ -67,6 +74,36 @@ export const OperationInputSchemaById = {
   'env.delete': z
     .object({
       name: z.string().min(1),
+    })
+    .strict(),
+  'account.status': EmptyInputSchema,
+  'account.logout': EmptyInputSchema,
+  'sessions.list': z
+    .object({
+      model: z.string().min(1).optional(),
+      since: z.string().min(1).optional(),
+      tag: z.string().min(1).optional(),
+      limit: z.union([z.string().min(1), z.number().int().min(1)]).optional(),
+    })
+    .strict(),
+  'sessions.search': z
+    .object({
+      query: z.string().min(1),
+    })
+    .strict(),
+  'sessions.export': z
+    .object({
+      id: z.string().min(1),
+    })
+    .strict(),
+  'sessions.delete': z
+    .object({
+      id: z.string().min(1),
+    })
+    .strict(),
+  diff: z
+    .object({
+      session: z.string().min(1).optional(),
     })
     .strict(),
   'mcp.list': EmptyInputSchema,
@@ -143,6 +180,87 @@ export type OperationInputById = {
   [K in OperationId]: z.infer<(typeof OperationInputSchemaById)[K]>;
 };
 
+const TextCommandOutputSchema = z
+  .object({
+    stdout: z.string(),
+    stderr: z.string(),
+  })
+  .strict();
+
+const SessionSummarySchema = z
+  .object({
+    id: z.string().min(1),
+    title: z.string().min(1),
+    tags: z.array(z.string()),
+    model: z.string().min(1),
+    created: z.string().min(1),
+    messageCount: z.number().int().min(0),
+    toolCallCount: z.number().int().min(0),
+  })
+  .strict();
+
+export const OperationOutputSchemaById = {
+  doctor: z.unknown(),
+  'env.list': z.unknown(),
+  'env.show': z.unknown(),
+  'env.save': z.unknown(),
+  'env.use': z.unknown(),
+  'env.delete': z.unknown(),
+  'account.status': z
+    .object({
+      ok: z.literal(true),
+      authenticated: z.boolean(),
+      project: z.string().nullable(),
+      user: z
+        .object({
+          id: z.string().nullable(),
+          email: z.string().nullable(),
+          phone: z.string().nullable(),
+          name: z.string().nullable(),
+        })
+        .strict(),
+      session: z
+        .object({
+          tokenType: z.string().nullable(),
+          expiresAt: z.string().nullable(),
+        })
+        .nullable(),
+      updatedAt: z.string().nullable(),
+    })
+    .strict(),
+  'account.logout': z
+    .object({
+      ok: z.literal(true),
+      action: z.literal('logout'),
+      cleared: z.boolean(),
+      remoteRevoked: z.boolean(),
+      warning: z.string().nullable(),
+    })
+    .strict(),
+  'sessions.list': z.array(SessionSummarySchema),
+  'sessions.search': z.array(SessionSummarySchema),
+  'sessions.export': z.unknown(),
+  'sessions.delete': TextCommandOutputSchema,
+  diff: TextCommandOutputSchema,
+  'mcp.list': z.unknown(),
+  'mcp.add': TextCommandOutputSchema,
+  'mcp.add-playwright': TextCommandOutputSchema,
+  'mcp.remove': TextCommandOutputSchema,
+  'mcp.test': TextCommandOutputSchema,
+  embed: z.unknown(),
+  rerank: z.unknown(),
+  benchmark: z.unknown(),
+  'keychain.status': z.unknown(),
+  'keychain.set-anthropic': z.unknown(),
+  'keychain.set-lmx': z.unknown(),
+  'keychain.delete-anthropic': z.unknown(),
+  'keychain.delete-lmx': z.unknown(),
+} as const satisfies Record<OperationId, z.ZodTypeAny>;
+
+export type OperationOutputById = {
+  [K in OperationId]: z.infer<(typeof OperationOutputSchemaById)[K]>;
+};
+
 function makeExecuteRequestVariant<TId extends OperationId>(id: TId) {
   return z
     .object({
@@ -160,6 +278,13 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('env.save'),
   makeExecuteRequestVariant('env.use'),
   makeExecuteRequestVariant('env.delete'),
+  makeExecuteRequestVariant('account.status'),
+  makeExecuteRequestVariant('account.logout'),
+  makeExecuteRequestVariant('sessions.list'),
+  makeExecuteRequestVariant('sessions.search'),
+  makeExecuteRequestVariant('sessions.export'),
+  makeExecuteRequestVariant('sessions.delete'),
+  makeExecuteRequestVariant('diff'),
   makeExecuteRequestVariant('mcp.list'),
   makeExecuteRequestVariant('mcp.add'),
   makeExecuteRequestVariant('mcp.add-playwright'),
@@ -271,6 +396,48 @@ export const OPERATION_TAXONOMY = [
     safety: 'write',
   },
   {
+    id: 'account.status',
+    title: 'Account Status',
+    description: 'Inspect local Supabase account session status.',
+    safety: 'read',
+  },
+  {
+    id: 'account.logout',
+    title: 'Account Logout',
+    description: 'Clear local account session and revoke remote auth token when available.',
+    safety: 'write',
+  },
+  {
+    id: 'sessions.list',
+    title: 'Sessions List',
+    description: 'List local chat sessions with optional filters.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.search',
+    title: 'Sessions Search',
+    description: 'Search local chat sessions by query.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.export',
+    title: 'Sessions Export',
+    description: 'Export a local chat session as JSON.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.delete',
+    title: 'Sessions Delete',
+    description: 'Delete a local chat session.',
+    safety: 'write',
+  },
+  {
+    id: 'diff',
+    title: 'Git Diff',
+    description: 'Show current git diff output or checkpoints for a session.',
+    safety: 'read',
+  },
+  {
     id: 'mcp.list',
     title: 'MCP Servers List',
     description: 'List configured MCP servers.',
@@ -356,4 +523,3 @@ export const OPERATION_TAXONOMY_BY_ID = Object.freeze(
     OperationDescriptor
   >
 );
-

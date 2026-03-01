@@ -10,6 +10,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import type { SlashCommandDef } from '../commands/slash/index.js';
 import { fitTextToWidth } from '../utils/terminal-layout.js';
+import { TUI_COLORS } from './palette.js';
 
 export interface CommandBrowserProps {
   commands: SlashCommandDef[];
@@ -167,8 +168,8 @@ export function CommandBrowser({ commands, maxWidth, maxHeight, onSelect, onClos
   return (
     <Box
       flexDirection="column"
-      borderStyle="round"
-      borderColor="magenta"
+      borderStyle="single"
+      borderColor={TUI_COLORS.borderSoft}
       paddingX={2}
       paddingY={1}
       width={overlayWidth}
@@ -176,23 +177,23 @@ export function CommandBrowser({ commands, maxWidth, maxHeight, onSelect, onClos
     >
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="magenta">Slash Commands</Text>
-        <Text dimColor>  ({flatCommands.length} commands)</Text>
+        <Text bold color="#ffffff">—— Slash Commands ——</Text>
+        <Text color={TUI_COLORS.dim}>  ({flatCommands.length} commands)</Text>
       </Box>
 
-      <Box marginBottom={1}>
-        <Text dimColor>Filter: </Text>
-        <Text color="cyan">{query || '(type to search)'}</Text>
+      <Box marginBottom={1} flexDirection="row">
+        <Text color={TUI_COLORS.dim}>Filter: </Text>
+        <Text color="#ffffff" backgroundColor={TUI_COLORS.borderSoft}> {query || '(search)'} </Text>
       </Box>
 
       {/* Navigation hints */}
       <Box marginBottom={1}>
-        <Text dimColor>{'↑↓'} navigate  Enter select  Esc close  Backspace clear</Text>
+        <Text color={TUI_COLORS.dim}>{'↑↓'} navigate  Enter select  Esc close  Backspace clear</Text>
       </Box>
 
       {visibleRange.start > 0 && (
         <Box marginBottom={1}>
-          <Text dimColor>  … {visibleRange.start} above …</Text>
+          <Text color={TUI_COLORS.dim}>  … {visibleRange.start} above …</Text>
         </Box>
       )}
 
@@ -206,20 +207,25 @@ export function CommandBrowser({ commands, maxWidth, maxHeight, onSelect, onClos
 
         return (
           <Box key={group.label} flexDirection="column" marginBottom={1}>
-            <Text dimColor bold>  {group.label}</Text>
+            <Text color="#ffffff" backgroundColor={TUI_COLORS.borderSoft} bold>  {group.label}  </Text>
             {visibleItems.map(({ def, flatIdx }) => {
               const isSelected = flatIdx === selectedIndex;
               return (
                 <Box key={def.command}>
-                  <Text>
-                    {isSelected ? ' ▶ ' : '   '}
-                  </Text>
-                  <Text color={isSelected ? 'magenta' : 'cyan'} bold={isSelected}>
-                    {'/' + fitTextToWidth(def.command, commandColWidth, { pad: true })}
-                  </Text>
-                  <Text dimColor={!isSelected} wrap="truncate-end">
-                    {fitTextToWidth(def.description, descWidth)}
-                  </Text>
+                  <Box width={3}>
+                    <Text color={isSelected ? '#ffffff' : TUI_COLORS.dim}>{isSelected ? ' ▶ ' : '   '}</Text>
+                  </Box>
+                  <Box width={commandColWidth + 2}>
+                    <Text color={isSelected ? '#ffffff' : TUI_COLORS.dim} bold={isSelected}>
+                      {'/' + fitTextToWidth(def.command, commandColWidth, { pad: true })}
+                    </Text>
+                  </Box>
+                  <Box flexGrow={1}>
+                    <Text color={isSelected ? '#d1d5db' : TUI_COLORS.borderSoft}>│ </Text>
+                    <Text color={isSelected ? '#e5e7eb' : TUI_COLORS.dim} wrap="truncate-end">
+                      {fitTextToWidth(def.description, descWidth)}
+                    </Text>
+                  </Box>
                 </Box>
               );
             })}
@@ -229,7 +235,7 @@ export function CommandBrowser({ commands, maxWidth, maxHeight, onSelect, onClos
 
       {visibleRange.end < flatCommands.length && (
         <Box>
-          <Text dimColor>  … {flatCommands.length - visibleRange.end} below …</Text>
+          <Text color={TUI_COLORS.dim}>  … {flatCommands.length - visibleRange.end} below …</Text>
         </Box>
       )}
     </Box>

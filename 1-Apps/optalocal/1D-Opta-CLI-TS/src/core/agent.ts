@@ -72,6 +72,8 @@ export interface OnStreamCallbacks {
   onInsight?: (insight: import('./insights.js').Insight) => void;
   /** Called when the API returns token usage data (from final streaming chunk). */
   onUsage?: (usage: { promptTokens: number; completionTokens: number }) => void;
+  /** Called when Atpo supervisor state changes */
+  onAtpoState?: (state: import('./atpo.js').AtpoState) => void;
 }
 
 export interface AgentLoopOptions {
@@ -270,6 +272,7 @@ export async function agentLoop(
   let autonomyTurnCount = 0;
   let lastAutonomyCheckpoint = buildAutonomyCycleCheckpoint(0);
   let completionStatus: AutonomyRunCompletionStatus = 'stopped';
+  let completionMessage: string | undefined;
   // Sub-agents are always silent
   const silent = isSubAgent || (options?.silent ?? false);
   const noopSpinner: Spinner = {
@@ -468,10 +471,26 @@ export async function agentLoop(
     signal: options?.signal,
   };
 
+  const { AtpoSupervisor } = await import('./atpo.js');
+  const atpo = new AtpoSupervisor({
+    config: effectiveConfig,
+    emitState: options?.onStream?.onAtpoState,
+    emitLog: options?.silent ? undefined : (msg) => debug(msg),
+  });
+
   try {
     while (true) {
       if (options?.signal?.aborted) {
         throw makeAbortError();
+      }
+
+      // --- ATPO SUPERVISOR CHECK ---
+      if (atpo.isEnabled && await atpo.checkThresholds(messages)) {
+        const intervention = await atpo.intervene(messages);
+        if (intervention) {
+          messages.push(intervention);
+          continue; // Restart loop with the Atpo correction in context
+        }
       }
 
       const maxDurationMs = effectiveConfig.safety.circuitBreaker.maxDuration;
@@ -782,6 +801,7 @@ export async function agentLoop(
         sessionCtx,
       });
 
+      const msgsLenBefore = messages.length;
       const execResult = await executeToolCalls(
         decisions,
         messages,
@@ -801,6 +821,22 @@ export async function agentLoop(
         toolCallCount,
         checkpointCount
       );
+
+      // Inspect tool results for Atpo
+      if (atpo.isEnabled) {
+        const addedMsgs = messages.slice(msgsLenBefore);
+        for (const m of addedMsgs) {
+          if (m.role === 'tool') {
+            atpo.onToolStart();
+            const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content);
+            if (content.toLowerCase().startsWith('error:') || content.includes('Failed to')) {
+              atpo.onToolError();
+            } else {
+              atpo.onToolSuccess();
+            }
+          }
+        }
+      }
 
       toolCallCount += execResult.toolCallsDelta;
       checkpointCount = execResult.checkpointCount;
@@ -865,6 +901,7 @@ export async function agentLoop(
     // Fire the error hook so lifecycle hooks can observe failures
     completionStatus = err instanceof Error && err.name === 'AbortError' ? 'aborted' : 'error';
     const errMsg = errorMessage(err);
+    completionMessage = errMsg;
     queueLearningCapture(effectiveConfig, {
       kind: 'problem',
       topic: 'Agent loop error',
@@ -894,6 +931,7 @@ export async function agentLoop(
         const report = buildCeoAutonomyReport({
           objective: task,
           completionStatus,
+          completionMessage,
           turnCount: autonomyTurnCount,
           cycle: reportCheckpoint.cycle,
           phase: reportCheckpoint.phase,

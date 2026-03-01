@@ -371,5 +371,5 @@ export async function init(options: InitOptions = {}): Promise<void> {
   );
   console.log('');
   console.log(chalk.dim('Edit these files to give Opta context about your project.'));
-  console.log(chalk.dim('Run `opta chat` to start a session with OPIS context loaded.'));
+  console.log(chalk.dim('Run `opta` to start a session with OPIS context loaded.'));
 }

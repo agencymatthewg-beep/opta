@@ -805,6 +805,7 @@ describe('Full lifecycle integration', () => {
       content: vi.fn(async () => '<html><body><h1>Integration Test</h1></body></html>'),
       screenshot: vi.fn(async () => Buffer.from([0x89, 0x50, 0x4e, 0x47])),
       url: vi.fn(() => 'https://example.com/integration'),
+      evaluate: vi.fn(async () => undefined),
     };
 
     const context = {
@@ -865,6 +866,7 @@ describe('Full lifecycle integration', () => {
       content: vi.fn(async () => '<html><body><form><input id="q"/></form></body></html>'),
       screenshot: vi.fn(async () => Buffer.from([0x89, 0x50, 0x4e, 0x47])),
       url: vi.fn(() => 'https://example.com/search'),
+      evaluate: vi.fn(async () => undefined),
     };
 
     const context = {

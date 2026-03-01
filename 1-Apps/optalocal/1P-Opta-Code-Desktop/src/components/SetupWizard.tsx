@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { usePlatform, type Platform } from "../hooks/usePlatform.js";
 
 // ---------------------------------------------------------------------------
 // Tauri invoke bridge — same pattern used by secureConnectionStore.ts
@@ -333,7 +334,12 @@ function TextInput({
 // ---------------------------------------------------------------------------
 // Step 1 — Welcome
 // ---------------------------------------------------------------------------
-function StepWelcome() {
+function StepWelcome({ platform }: { platform: Platform | null }) {
+  const desc =
+    platform === "windows"
+      ? "Routes prompts to your Opta LMX inference server or Anthropic cloud — fully private when running locally. Takes about 90 seconds to configure."
+      : "Routes prompts through your own Mac Studio inference server — zero cloud latency, fully private. Takes about 90 seconds to configure.";
+
   return (
     <div>
       <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 28 }}>
@@ -388,8 +394,7 @@ function StepWelcome() {
           maxWidth: 370,
         }}
       >
-        Routes prompts through your own Mac Studio inference server — zero cloud
-        latency, fully private. Takes about 90 seconds to configure.
+        {desc}
       </p>
 
       <ul
@@ -774,9 +779,11 @@ function StepConnection({
 function StepPreferences({
   form,
   setForm,
+  platform,
 }: {
   form: WizardFormData;
   setForm: React.Dispatch<React.SetStateAction<WizardFormData>>;
+  platform: Platform | null;
 }) {
   const configDirRowRef = useRef<HTMLDivElement>(null);
 
@@ -871,6 +878,16 @@ function StepPreferences({
             value={form.shell}
             onChange={(v) => setForm((f) => ({ ...f, shell: v }))}
           />
+          {platform === "macos" && form.shell === "zsh" && (
+            <p style={{ margin: "6px 0 0", fontSize: 11, color: T.text3 }}>
+              Default shell since macOS Catalina
+            </p>
+          )}
+          {platform === "windows" && form.shell === "powershell" && (
+            <p style={{ margin: "6px 0 0", fontSize: 11, color: T.text3 }}>
+              Recommended for Windows
+            </p>
+          )}
         </>,
       )}
 
@@ -1102,7 +1119,7 @@ function StepReady({
           }
         </button>
         <a
-          href="https://docs.optalocal.com/cli"
+          href="https://help.optalocal.com/docs/cli"
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -1143,6 +1160,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [form, setForm] = useState<WizardFormData>(DEFAULT_FORM);
   const [slideDir, setSlideDir] = useState<"right" | "left">("right");
   const [animKey, setAnimKey] = useState(0);
+  const platform = usePlatform();
 
   // Inject keyframes on first render
   const injectedRef = useRef(false);
@@ -1161,6 +1179,20 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       .catch(() => { /* non-Tauri env or first boot — keep default */ });
   }, []);
 
+  // Set platform-appropriate shell default once platform resolves.
+  useEffect(() => {
+    if (!platform) return;
+    setForm((f) => ({
+      ...f,
+      shell:
+        platform === "windows"
+          ? "powershell"
+          : platform === "macos"
+            ? "zsh"
+            : "auto",
+    }));
+  }, [platform]);
+
   function goTo(target: number, dir: "right" | "left") {
     setSlideDir(dir);
     setAnimKey((k) => k + 1);
@@ -1176,9 +1208,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
   }
 
   const stepContent = [
-    <StepWelcome key="welcome" />,
+    <StepWelcome key="welcome" platform={platform} />,
     <StepConnection key="connection" form={form} setForm={setForm} />,
-    <StepPreferences key="preferences" form={form} setForm={setForm} />,
+    <StepPreferences key="preferences" form={form} setForm={setForm} platform={platform} />,
     <StepReady key="ready" form={form} onComplete={onComplete} />,
   ];
 

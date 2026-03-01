@@ -5,8 +5,7 @@
 import chalk from 'chalk';
 import { spawn } from 'node:child_process';
 import { dirname } from 'node:path';
-import { ExitError, EXIT } from '../../core/errors.js';
-import { LmxClient, lookupContextLimit } from '../../lmx/client.js';
+import { LmxClient } from '../../lmx/client.js';
 import {
   ensureModelLoaded,
   findMatchingModelId,
@@ -25,7 +24,6 @@ import {
   formatCatalogEntryLabel,
   warnModelInventoryFallback,
   fmtTag,
-  type ModelsOptions,
   type ModelBrowserAction,
   type ModelManagerAction,
   type LibraryModelEntry,
@@ -77,16 +75,22 @@ function printCatalogModelInfo(entry: LibraryModelEntry, catalog: LibraryModelEn
   const tag = fmtTag(profile.format);
   console.log('\n' + chalk.bold(profile.displayName) + ` ${tag} ${chalk.dim(profile.orgAbbrev)}`);
   console.log(chalk.dim(`  ${entry.id}\n`));
-  console.log(`  Status:    ${entry.loaded ? chalk.green('loaded') : entry.downloaded ? chalk.cyan('on disk') : chalk.dim('not downloaded')}`);
+  console.log(
+    `  Status:    ${entry.loaded ? chalk.green('loaded') : entry.downloaded ? chalk.cyan('on disk') : chalk.dim('not downloaded')}`
+  );
   console.log(`  Context:   ${fmtCtx(entry.contextLength)}`);
   if (entry.sizeBytes) console.log(`  Size:      ${fmtGB(entry.sizeBytes)}`);
-  if (typeof entry.downloads === 'number') console.log(`  Downloads: ${formatCompactCount(entry.downloads)}`);
-  if (typeof entry.likes === 'number') console.log(`  Likes:     ${formatCompactCount(entry.likes)}`);
+  if (typeof entry.downloads === 'number')
+    console.log(`  Downloads: ${formatCompactCount(entry.downloads)}`);
+  if (typeof entry.likes === 'number')
+    console.log(`  Likes:     ${formatCompactCount(entry.likes)}`);
   if (entry.pipelineTag) console.log(`  Type:      ${entry.pipelineTag}`);
   if (entry.lastModified) {
     const updated = new Date(entry.lastModified);
     if (!Number.isNaN(updated.getTime())) {
-      console.log(`  Updated:   ${chalk.dim(`${updated.toLocaleDateString()} (${formatRelativeTime(updated.getTime())})`)}`);
+      console.log(
+        `  Updated:   ${chalk.dim(`${updated.toLocaleDateString()} (${formatRelativeTime(updated.getTime())})`)}`
+      );
     }
   }
   if (entry.downloadedAt) {
@@ -109,7 +113,7 @@ function printCatalogModelInfo(entry: LibraryModelEntry, catalog: LibraryModelEn
 
 async function promptBrowserAction(
   entry: LibraryModelEntry,
-  downloadRoot?: string,
+  downloadRoot?: string
 ): Promise<ModelBrowserAction | null> {
   const { select } = await import('@inquirer/prompts');
   const choices: Array<{ value: ModelBrowserAction; name: string }> = [
@@ -157,45 +161,62 @@ async function promptBrowserAction(
   choices.push({ value: 'back', name: chalk.dim('Back') });
 
   try {
-    return await runMenuPrompt((context) =>
-      select<ModelBrowserAction>({
-        message: chalk.dim(`Model actions · ${entry.id}`),
-        choices,
-      }, context), 'select');
+    return await runMenuPrompt(
+      (context) =>
+        select<ModelBrowserAction>(
+          {
+            message: chalk.dim(`Model actions · ${entry.id}`),
+            choices,
+          },
+          context
+        ),
+      'select'
+    );
   } catch {
     return null;
   }
 }
 
 async function promptLoadedModelConflict(
-  modelId: string,
+  modelId: string
 ): Promise<'replace' | 'parallel' | 'cancel'> {
   const { select } = await import('@inquirer/prompts');
   try {
-    return await runMenuPrompt((context) =>
-      select<'replace' | 'parallel' | 'cancel'>({
-        message: chalk.dim(`Another model is running. How should ${modelId} launch?`),
-        choices: [
-          {
-            value: 'replace',
-            name: `${chalk.red('Kill other model(s)')} ${chalk.dim('unload current + load selected')}`,
-          },
-          {
-            value: 'parallel',
-            name: `${chalk.green('Run both simultaneously')} ${chalk.dim('keep current + load selected')}`,
-          },
-          {
-            value: 'cancel',
-            name: chalk.dim('Stop launching'),
-          },
-        ],
-      }, context), 'select') ?? 'cancel';
+    return (
+      (await runMenuPrompt(
+        (context) =>
+          select<'replace' | 'parallel' | 'cancel'>(
+            {
+              message: chalk.dim(`Another model is running. How should ${modelId} launch?`),
+              choices: [
+                {
+                  value: 'replace',
+                  name: `${chalk.red('Kill other model(s)')} ${chalk.dim('unload current + load selected')}`,
+                },
+                {
+                  value: 'parallel',
+                  name: `${chalk.green('Run both simultaneously')} ${chalk.dim('keep current + load selected')}`,
+                },
+                {
+                  value: 'cancel',
+                  name: chalk.dim('Stop launching'),
+                },
+              ],
+            },
+            context
+          ),
+        'select'
+      )) ?? 'cancel'
+    );
   } catch {
     return 'cancel';
   }
 }
 
-async function ensureModelIsDownloaded(entry: LibraryModelEntry, client: LmxClient): Promise<boolean> {
+async function ensureModelIsDownloaded(
+  entry: LibraryModelEntry,
+  client: LmxClient
+): Promise<boolean> {
   if (entry.downloaded || entry.loaded) return true;
   const { confirm } = await import('@inquirer/prompts');
   const ok = await confirm({
@@ -224,7 +245,7 @@ async function launchChatWithModel(modelId: string, initialPrompt?: string): Pro
 async function useModelWithChat(
   entry: LibraryModelEntry,
   client: LmxClient,
-  initialPrompt?: string,
+  initialPrompt?: string
 ): Promise<void> {
   const ready = await ensureModelIsDownloaded(entry, client);
   if (!ready) return;
@@ -249,7 +270,9 @@ async function useModelWithChat(
         await client.unloadModel(modelId).catch(() => null);
       }
     }
-    activeModelId = await ensureModelLoaded(client, entry.id, { timeoutMs: STABLE_MODEL_LOAD_TIMEOUT_MS });
+    activeModelId = await ensureModelLoaded(client, entry.id, {
+      timeoutMs: STABLE_MODEL_LOAD_TIMEOUT_MS,
+    });
     await recordModelHistory([activeModelId], 'loaded');
   }
 
@@ -263,7 +286,7 @@ async function runCatalogActionLoop(
   entry: LibraryModelEntry,
   client: LmxClient,
   catalog: LibraryModelEntry[],
-  downloadRoot?: string,
+  downloadRoot?: string
 ): Promise<void> {
   const BENCHMARK_PROMPT = [
     'Run a concise benchmark-style response.',
@@ -343,42 +366,57 @@ export async function browseLocalModels(client: LmxClient, defaultModel: string)
 
 async function promptFullLibrarySelection(
   snapshot: LocalModelSnapshot,
-  defaultModel: string,
+  defaultModel: string
 ): Promise<{ entry: LibraryModelEntry; catalog: LibraryModelEntry[] } | null> {
-  const seed = await fetchHuggingFaceModels(undefined, HF_CATALOG_LIMIT).catch(() => [] as HfModelApiItem[]);
+  const seed = await fetchHuggingFaceModels(undefined, HF_CATALOG_LIMIT).catch(
+    () => [] as HfModelApiItem[]
+  );
   const fallback = sortCatalogEntries(mergeCatalogEntries(snapshot, seed));
   const cache = new Map<string, LibraryModelEntry[]>();
   cache.set('', fallback);
-  const byId = new Map<string, LibraryModelEntry>(fallback.map((entry) => [entry.id, entry] as const));
+  const byId = new Map<string, LibraryModelEntry>(
+    fallback.map((entry) => [entry.id, entry] as const)
+  );
   let lastCatalog = fallback;
   const { search } = await import('@inquirer/prompts');
 
   try {
-    const selected = await runMenuPrompt((context) =>
-      search<string>({
-        message: chalk.dim('Browse Full LLM Library (type to search Hugging Face globally)'),
-        source: async (input?: string) => {
-          const query = (input ?? '').trim();
-          const cacheKey = query.toLowerCase();
-          let entries = cache.get(cacheKey);
-          if (!entries) {
-            let remote: HfModelApiItem[] = seed;
-            if (query.length >= 2) {
-              remote = await fetchHuggingFaceModels(query, HF_QUERY_LIMIT).catch(() => [] as HfModelApiItem[]);
-            }
-            entries = rankCatalogEntries(mergeCatalogEntries(snapshot, remote), query).slice(0, 160);
-            cache.set(cacheKey, entries);
-          }
-          lastCatalog = entries;
-          for (const entry of entries) {
-            byId.set(entry.id, entry);
-          }
-          return entries.map((entry) => ({
-            value: entry.id,
-            name: formatCatalogEntryLabel(entry, defaultModel),
-          }));
-        },
-      }, context), 'search');
+    const selected = await runMenuPrompt(
+      (context) =>
+        search<string>(
+          {
+            message: chalk.dim('Browse Full LLM Library (type to search Hugging Face globally)'),
+            source: async (input?: string) => {
+              const query = (input ?? '').trim();
+              const cacheKey = query.toLowerCase();
+              let entries = cache.get(cacheKey);
+              if (!entries) {
+                let remote: HfModelApiItem[] = seed;
+                if (query.length >= 2) {
+                  remote = await fetchHuggingFaceModels(query, HF_QUERY_LIMIT).catch(
+                    () => [] as HfModelApiItem[]
+                  );
+                }
+                entries = rankCatalogEntries(mergeCatalogEntries(snapshot, remote), query).slice(
+                  0,
+                  160
+                );
+                cache.set(cacheKey, entries);
+              }
+              lastCatalog = entries;
+              for (const entry of entries) {
+                byId.set(entry.id, entry);
+              }
+              return entries.map((entry) => ({
+                value: entry.id,
+                name: formatCatalogEntryLabel(entry, defaultModel),
+              }));
+            },
+          },
+          context
+        ),
+      'search'
+    );
     if (!selected) return null;
     const entry = byId.get(selected);
     return entry ? { entry, catalog: lastCatalog } : null;
@@ -389,7 +427,11 @@ async function promptFullLibrarySelection(
 
 export async function browseFullLibrary(client: LmxClient, defaultModel: string): Promise<void> {
   console.log(chalk.bold('\nBrowse Full LLM Library'));
-  console.log(chalk.dim('  Type to search globally. Blank query shows a top downloadable catalog plus your local models.\n'));
+  console.log(
+    chalk.dim(
+      '  Type to search globally. Blank query shows a top downloadable catalog plus your local models.\n'
+    )
+  );
   while (true) {
     const snapshot = await loadLocalModelSnapshot(client);
     const selected = await promptFullLibrarySelection(snapshot, defaultModel);
@@ -401,60 +443,66 @@ export async function browseFullLibrary(client: LmxClient, defaultModel: string)
 export async function promptManagerAction(
   loadedCount: number,
   onDiskCount: number,
-  defaultModel: string,
+  defaultModel: string
 ): Promise<ModelManagerAction | null> {
   const { select } = await import('@inquirer/prompts');
   try {
-    return await runMenuPrompt((context) =>
-      select<ModelManagerAction>({
-        message: chalk.dim(`Model manager · default ${defaultModel}`),
-        choices: [
+    return await runMenuPrompt(
+      (context) =>
+        select<ModelManagerAction>(
           {
-            value: 'use',
-            name: `${chalk.cyan('Set default')} ${chalk.dim('pick by typing or arrows')}`,
+            message: chalk.dim(`Model manager · default ${defaultModel}`),
+            choices: [
+              {
+                value: 'use',
+                name: `${chalk.cyan('Set default')} ${chalk.dim('pick by typing or arrows')}`,
+              },
+              {
+                value: 'load',
+                name: `${chalk.green('Load model')} ${chalk.dim(`(${onDiskCount} on disk)`)}`,
+              },
+              {
+                value: 'unload',
+                name: `${chalk.yellow('Unload model')} ${chalk.dim(`(${loadedCount} loaded)`)}`,
+              },
+              {
+                value: 'swap',
+                name: `${chalk.magenta('Swap model')} ${chalk.dim('unload one, load another')}`,
+              },
+              {
+                value: 'stop',
+                name: `${chalk.red('Stop all models')} ${chalk.dim('unload everything')}`,
+              },
+              {
+                value: 'scan',
+                name: `${chalk.blue('Run scan')} ${chalk.dim('show full model inventory')}`,
+              },
+              {
+                value: 'dashboard',
+                name: `${chalk.blue('Dashboard')} ${chalk.dim('at-a-glance model health and aliases')}`,
+              },
+              {
+                value: 'browse-local',
+                name: `${chalk.cyan('Browse Local Models')} ${chalk.dim('downloaded now + model history')}`,
+              },
+              {
+                value: 'browse-library',
+                name: `${chalk.magenta('Browse Full LLM Library')} ${chalk.dim('search all downloadable models')}`,
+              },
+              {
+                value: 'refresh',
+                name: chalk.dim('Refresh list'),
+              },
+              {
+                value: 'exit',
+                name: chalk.dim('Exit'),
+              },
+            ],
           },
-          {
-            value: 'load',
-            name: `${chalk.green('Load model')} ${chalk.dim(`(${onDiskCount} on disk)`)}`,
-          },
-          {
-            value: 'unload',
-            name: `${chalk.yellow('Unload model')} ${chalk.dim(`(${loadedCount} loaded)`)}`,
-          },
-          {
-            value: 'swap',
-            name: `${chalk.magenta('Swap model')} ${chalk.dim('unload one, load another')}`,
-          },
-          {
-            value: 'stop',
-            name: `${chalk.red('Stop all models')} ${chalk.dim('unload everything')}`,
-          },
-          {
-            value: 'scan',
-            name: `${chalk.blue('Run scan')} ${chalk.dim('show full model inventory')}`,
-          },
-          {
-            value: 'dashboard',
-            name: `${chalk.blue('Dashboard')} ${chalk.dim('at-a-glance model health and aliases')}`,
-          },
-          {
-            value: 'browse-local',
-            name: `${chalk.cyan('Browse Local Models')} ${chalk.dim('downloaded now + model history')}`,
-          },
-          {
-            value: 'browse-library',
-            name: `${chalk.magenta('Browse Full LLM Library')} ${chalk.dim('search all downloadable models')}`,
-          },
-          {
-            value: 'refresh',
-            name: `${chalk.dim('Refresh list')}`,
-          },
-          {
-            value: 'exit',
-            name: `${chalk.dim('Exit')}`,
-          },
-        ],
-      }, context), 'select');
+          context
+        ),
+      'select'
+    );
   } catch {
     return null;
   }

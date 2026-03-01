@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # vLLM-MLX Upgrade Plan for Opta-LMX
 
 **Date:** 2026-02-18

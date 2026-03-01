@@ -26,7 +26,7 @@ describe('sanitizeTerminalText', () => {
 
   it('normalizes space-only lines and runaway blank lines', () => {
     const input = 'line 1\n' + ' '.repeat(200) + '\n\n\n\n\n\nline 2';
-    expect(sanitizeTerminalText(input)).toBe('line 1\n\n\n\nline 2');
+    expect(sanitizeTerminalText(input)).toBe('line 1\n\n\nline 2');
   });
 
   it('trims trailing line whitespace without removing indentation', () => {

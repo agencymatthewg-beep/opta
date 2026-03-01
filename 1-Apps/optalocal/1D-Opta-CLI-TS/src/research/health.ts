@@ -1,11 +1,6 @@
 import { createResearchRegistry } from './registry.js';
 import { makeProviderError, toErrorMessage } from './providers/shared.js';
-import type {
-  ResearchConfigInput,
-  ResearchProvider,
-  ResearchProviderHealth,
-  ResearchProviderId,
-} from './types.js';
+import type { ResearchConfigInput, ResearchProvider, ResearchProviderHealth } from './types.js';
 
 export interface ResearchHealthCheckOptions {
   config?: ResearchConfigInput | Record<string, unknown> | null;
@@ -18,7 +13,7 @@ export interface ResearchHealthSummary {
 }
 
 export async function checkResearchProviderHealth(
-  options: ResearchHealthCheckOptions = {},
+  options: ResearchHealthCheckOptions = {}
 ): Promise<ResearchHealthSummary> {
   const providers = options.providers ?? createResearchRegistry(options.config);
 
@@ -33,13 +28,13 @@ export async function checkResearchProviderHealth(
           latencyMs: 0,
           checkedAt: new Date().toISOString(),
           error: makeProviderError(
-            provider.id as ResearchProviderId,
+            provider.id,
             'UNKNOWN_ERROR',
-            `Health check failed unexpectedly: ${toErrorMessage(error, 'unknown error')}`,
+            `Health check failed unexpectedly: ${toErrorMessage(error, 'unknown error')}`
           ),
         };
       }
-    }),
+    })
   );
 
   return {

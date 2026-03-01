@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Phase 6: Advanced Features — Design Document
 
 **Created:** 2026-02-15

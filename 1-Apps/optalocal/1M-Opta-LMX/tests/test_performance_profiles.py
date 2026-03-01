@@ -597,9 +597,15 @@ def _load_time_patches(mock_simple: Any) -> Any:
     def _combined():
         with (
             _patch_simple(mock_simple),
-            patch("opta_lmx.inference.engine_lifecycle.backend_candidates", return_value=["vllm-mlx"]),
+            patch(
+                "opta_lmx.inference.engine_lifecycle.backend_candidates",
+                return_value=["vllm-mlx"],
+            ),
             patch("opta_lmx.inference.engine_lifecycle._detect_format", return_value="mlx"),
-            patch("opta_lmx.inference.engine_lifecycle._detect_runtime_incompatibility", return_value=None),
+            patch(
+                "opta_lmx.inference.engine_lifecycle._detect_runtime_incompatibility",
+                return_value=None,
+            ),
             patch("opta_lmx.inference.engine_lifecycle._resolve_context_length", return_value=None),
             patch("opta_lmx.inference.engine_lifecycle.backend_version", return_value="0.0.0"),
         ):
@@ -624,8 +630,11 @@ class TestAutotuneLoadTimePrecedence:
         )
         # Isolate the autotune registry to tmp_path so tests don't share state.
         engine._autotune = AutotuneRegistry(path=tmp_path / "autotune-registry.json")
+        engine._lifecycle._autotune = engine._autotune  # type: ignore[assignment]
         # Patch autotune_backend_version so saved profile version matches.
         engine.autotune_backend_version = MagicMock(return_value="0.0.0")  # type: ignore[assignment]
+        # Lifecycle stores callback refs at init-time; keep it in sync for this test harness.
+        engine._lifecycle._autotune_backend_version = engine.autotune_backend_version  # type: ignore[assignment]
         # Canary runs real inference — bypass it (both engine wrapper and lifecycle).
         engine._run_load_canary = AsyncMock()  # type: ignore[assignment]
         engine._lifecycle._run_load_canary = AsyncMock()  # type: ignore[assignment]

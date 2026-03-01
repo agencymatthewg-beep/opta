@@ -24,7 +24,7 @@ from opta_lmx.agents.models import (
     RunPriority,
     RunStatus,
 )
-from opta_lmx.api.deps import AgentRuntimeDep
+from opta_lmx.api.deps import AgentRuntimeDep, AgentsPolicyGuard
 
 router = APIRouter(tags=["agents"])
 _TRACEPARENT_PATTERN = re.compile(r"^[0-9a-f]{2}-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$")
@@ -312,6 +312,7 @@ async def _run_events_stream(
 async def create_agent_run(
     body: AgentRunCreateRequest,
     request: Request,
+    _policy_guard: AgentsPolicyGuard,
     runtime: AgentRuntimeDep,
     traceparent: Annotated[str | None, Header()] = None,
     tracestate: Annotated[str | None, Header()] = None,
@@ -408,7 +409,11 @@ async def get_agent_run(run_id: str, runtime: AgentRuntimeDep) -> AgentRunRespon
 
 
 @router.post("/v1/agents/runs/{run_id}/cancel", response_model=AgentRunResponse)
-async def cancel_agent_run(run_id: str, runtime: AgentRuntimeDep) -> AgentRunResponse:
+async def cancel_agent_run(
+    run_id: str,
+    runtime: AgentRuntimeDep,
+    _policy_guard: AgentsPolicyGuard,
+) -> AgentRunResponse:
     """Cancel a queued or running run."""
     run = runtime.get(run_id)
     if run is None:

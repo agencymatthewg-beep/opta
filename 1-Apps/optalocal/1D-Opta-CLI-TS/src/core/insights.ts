@@ -102,7 +102,10 @@ export class InsightEngine {
       else if (speed > 15) qualifier = 'steady';
       else qualifier = 'deliberate';
 
-      this.emit('perf', `${speed.toFixed(1)} tok/s ${this.model ? `on ${this.model}` : ''} — ${qualifier} generation`);
+      this.emit(
+        'perf',
+        `${speed.toFixed(1)} tok/s ${this.model ? `on ${this.model}` : ''} — ${qualifier} generation`
+      );
     }
   }
 
@@ -113,16 +116,25 @@ export class InsightEngine {
     const pct = Math.round((usedTokens / this.contextLimit) * 100);
 
     if (pct >= 80) {
-      this.emit('context', `Context pressure: ${pct}% used (${fmtK(usedTokens)}/${fmtK(this.contextLimit)}) — compaction imminent`);
+      this.emit(
+        'context',
+        `Context pressure: ${pct}% used (${fmtK(usedTokens)}/${fmtK(this.contextLimit)}) — compaction imminent`
+      );
     } else if (pct >= 60) {
-      this.emit('context', `Context: ${pct}% used (${fmtK(usedTokens)}/${fmtK(this.contextLimit)})`);
+      this.emit(
+        'context',
+        `Context: ${pct}% used (${fmtK(usedTokens)}/${fmtK(this.contextLimit)})`
+      );
     }
   }
 
   compaction(oldMessages: number, recoveredTokens: number): void {
     if (!this.turn) return;
     this.turn.compacted = true;
-    this.emit('context', `Compacted ${oldMessages} messages — recovered ~${fmtK(recoveredTokens)} tokens`);
+    this.emit(
+      'context',
+      `Compacted ${oldMessages} messages — recovered ~${fmtK(recoveredTokens)} tokens`
+    );
   }
 
   // --- Tool Selection ---
@@ -150,7 +162,10 @@ export class InsightEngine {
       this.turn.reconnectAttempts = attempt ?? this.turn.reconnectAttempts + 1;
       this.emit('connection', `Reconnecting to LMX (attempt ${this.turn.reconnectAttempts})`);
     } else if (status === 'connected' && this.turn.reconnectAttempts > 0) {
-      this.emit('connection', `Reconnected after ${this.turn.reconnectAttempts} attempt${this.turn.reconnectAttempts > 1 ? 's' : ''}`);
+      this.emit(
+        'connection',
+        `Reconnected after ${this.turn.reconnectAttempts} attempt${this.turn.reconnectAttempts > 1 ? 's' : ''}`
+      );
     } else if (status === 'disconnected') {
       this.emit('connection', 'LMX connection lost');
     }
@@ -188,9 +203,7 @@ export class InsightEngine {
 // --- Helpers ---
 
 function shortName(model: string): string {
-  return model
-    .replace(/^mlx-community\//, '')
-    .replace(/^huggingface\//, '');
+  return model.replace(/^mlx-community\//, '').replace(/^huggingface\//, '');
 }
 
 function fmtK(n: number): string {
@@ -201,24 +214,31 @@ function fmtK(n: number): string {
 function toolBrief(name: string, argsJson: string): string {
   try {
     const args = JSON.parse(argsJson) as Record<string, unknown>;
+    const strArg = (key: string, fallback = ''): string => {
+      const v = args[key];
+      if (v === undefined || v === null) return fallback;
+      if (typeof v === 'string') return v;
+      if (typeof v === 'object') return JSON.stringify(v);
+      return String(v as number | boolean | bigint);
+    };
     switch (name) {
       case 'read_file':
       case 'write_file':
       case 'edit_file':
       case 'delete_file':
-        return shortPath(String(args['path'] ?? ''));
+        return shortPath(strArg('path'));
       case 'search_files':
-        return `"${String(args['pattern'] ?? '').slice(0, 30)}"`;
+        return `"${strArg('pattern').slice(0, 30)}"`;
       case 'find_files':
-        return `"${String(args['pattern'] ?? '').slice(0, 30)}"`;
+        return `"${strArg('pattern').slice(0, 30)}"`;
       case 'run_command':
-        return `$ ${String(args['command'] ?? '').slice(0, 40)}`;
+        return `$ ${strArg('command').slice(0, 40)}`;
       case 'list_dir':
-        return shortPath(String(args['path'] ?? '.'));
+        return shortPath(strArg('path', '.'));
       case 'web_fetch':
-        return String(args['url'] ?? '').slice(0, 50);
+        return strArg('url').slice(0, 50);
       case 'web_search':
-        return `"${String(args['query'] ?? '').slice(0, 40)}"`;
+        return `"${strArg('query').slice(0, 40)}"`;
       default:
         return '';
     }

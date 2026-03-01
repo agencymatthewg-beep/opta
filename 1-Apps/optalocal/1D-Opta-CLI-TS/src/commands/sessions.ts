@@ -101,7 +101,11 @@ async function listSessionsFormatted(opts?: SessionsOptions): Promise<void> {
   items = items.slice(0, limit);
 
   if (items.length === 0) {
-    console.log(chalk.dim('No sessions found. Start one with ') + chalk.cyan('opta chat'));
+    if (opts?.json) {
+      console.log(JSON.stringify([], null, 2));
+      return;
+    }
+    console.log(chalk.dim('No sessions found. Start one with ') + chalk.cyan('opta'));
     return;
   }
 
@@ -131,6 +135,10 @@ async function searchSessionsFormatted(query: string, json?: boolean): Promise<v
   const matches = await searchSessions(query);
 
   if (matches.length === 0) {
+    if (json) {
+      console.log(JSON.stringify([], null, 2));
+      return;
+    }
     console.log(chalk.dim(`No sessions matching "${query}"`));
     return;
   }

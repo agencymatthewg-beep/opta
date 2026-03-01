@@ -3,7 +3,7 @@
 ## Local Development
 
 ```bash
-cd ~/Synced/Opta/1-Apps/1O-Opta-Init
+cd ~/Synced/Opta/1-Apps/optalocal/1O-Opta-Init
 npm install
 npm run dev           # localhost:3005
 ```
@@ -12,15 +12,17 @@ npm run dev           # localhost:3005
 
 ```bash
 npm run build         # next build + export
+npm run start         # serve static export from out/ on localhost:3005
 # Output in out/
 # Deploy out/ to Vercel
 ```
 
 ## Deploy to Vercel
 
-1. `vercel` (first time: link project)
+1. `npx vercel` (first time: link project)
 2. Set domain: `init.optalocal.com`
-3. Vercel auto-deploys on push to main
+3. Use `npx vercel deploy --prod --yes` for explicit production deploys
+4. Vercel auto-deploys on push to main if Git integration is enabled
 
 ## Cloudflare DNS
 
@@ -43,7 +45,7 @@ For this project:
 
 ## Updating Download URLs
 
-Edit `src/lib/constants.ts` when new releases ship:
+Edit `lib/constants.ts` when new releases ship:
 ```ts
 export const DOWNLOADS = {
   cli: { macos: '...', windows: '...' },

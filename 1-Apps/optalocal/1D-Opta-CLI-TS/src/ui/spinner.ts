@@ -1,8 +1,9 @@
+import chalk from 'chalk';
 import { isTTY } from './output.js';
 import { colorizeOptaWord } from './brand.js';
 
 /** Shared Opta-themed orbit animation used across CLI + TUI status elements. */
-export const OPTA_ORBIT_FRAMES = ['◌', '◔', '◑', '◕', '●', '◕', '◑', '◔'] as const;
+export const OPTA_ORBIT_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'] as const;
 
 export interface Spinner {
   start(text: string): void;
@@ -17,16 +18,15 @@ export async function createSpinner(): Promise<Spinner> {
       start(text: string) { console.log(`[working] ${colorizeOptaWord(text)}`); },
       succeed(text: string) { console.log(`[done] ${colorizeOptaWord(text)}`); },
       fail(text: string) { console.error(`[error] ${colorizeOptaWord(text)}`); },
-      stop() {},
+      stop() { },
     };
   }
 
   const { default: ora } = await import('ora');
   const spinner = ora({
-    color: 'magenta',
     spinner: {
-      interval: 90,
-      frames: [...OPTA_ORBIT_FRAMES],
+      interval: 80,
+      frames: OPTA_ORBIT_FRAMES.map(frame => chalk.hex('#a855f7')(frame)),
     },
   });
 

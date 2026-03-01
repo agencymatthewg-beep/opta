@@ -27,6 +27,7 @@ import { useAuthSafe } from "@/components/shared/AuthProvider";
 import { useCloudSync } from "@/hooks/useCloudSync";
 import { DeviceCard } from "@/components/devices/DeviceCard";
 import { OptaRing } from "@/components/shared/OptaRing";
+import { buildAccountSignInHref } from "@/lib/auth-utils";
 
 // ---------------------------------------------------------------------------
 // Devices page
@@ -102,7 +103,7 @@ export default function DevicesPage() {
             across machines, and manage your inference network.
           </p>
           <Link
-            href="/sign-in?next=%2Fdevices"
+            href={buildAccountSignInHref("/devices")}
             className={cn(
               "inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-medium",
               "bg-primary/20 text-primary border border-primary/40",

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { writeAuditEvent } from '@/lib/api/audit';
 import { asObject, parseTrustState, isUuid } from '@/lib/api/policy';
 import { requireScopeOrPrivilegedRole } from '@/lib/api/authz';
 
@@ -42,6 +43,15 @@ export async function POST(request: Request, context: RouteContext) {
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'device_not_found' }, { status: 404 });
+
+  await writeAuditEvent(supabase, {
+    userId: user.id,
+    eventType: 'device.trust_change',
+    riskLevel: 'medium',
+    decision: 'allow',
+    deviceId: data.id,
+    context: { trustState: data.trust_state },
+  });
 
   return NextResponse.json({ ok: true, device: data });
 }

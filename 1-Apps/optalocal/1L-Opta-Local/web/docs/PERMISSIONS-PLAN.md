@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # LLM Permissions System — Implementation Plan
 
 > **Status:** Draft  

@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta LMX WebUI Dashboard — Future Plan
 
 **Status:** Idea captured, not yet designed or implemented

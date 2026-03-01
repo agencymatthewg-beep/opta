@@ -1,3 +1,7 @@
+---
+status: active
+---
+
 # Opta CLI - Optimization & Debugging Plan
 
 **Generated:** 2026-02-19

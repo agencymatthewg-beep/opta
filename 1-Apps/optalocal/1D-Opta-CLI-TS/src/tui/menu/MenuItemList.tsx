@@ -43,17 +43,22 @@ export function MenuItemList({
         const recommended = item.recommended === true;
         return (
           <Box key={`${selectedPage}:${absolute}:${item.action}:${item.command ?? item.label}`}>
-            <Text color={active ? TUI_COLORS.accentSoft : undefined}>{active ? '▶ ' : '  '}</Text>
-            <Text color={active ? (item.color ?? TUI_COLORS.accentSoft) : undefined} bold={active}>
-              {item.label}
-            </Text>
-            {recommended ? <Text color="#f59e0b"> (recommended)</Text> : null}
-            {pendingCommand && item.command === pendingCommand ? (
-              <Text color="#22d3ee"> (running)</Text>
-            ) : null}
-            <Text color={active ? '#38bdf8' : '#0ea5e9'}> [i]</Text>
-            {item.learnMoreCommand ? <Text color={active ? '#f59e0b' : '#d97706'}> [I]</Text> : null}
-            <Text dimColor>  {item.description}</Text>
+            <Box width={3}>
+              <Text color={active ? '#ffffff' : TUI_COLORS.dim}>{active ? ' ▶ ' : '   '}</Text>
+            </Box>
+            <Box width={26}>
+              <Text color={active ? '#ffffff' : TUI_COLORS.dim} bold={active}>
+                {item.label}
+              </Text>
+            </Box>
+            <Box flexGrow={1}>
+              <Text color={active ? '#d1d5db' : TUI_COLORS.borderSoft}>│ </Text>
+              <Text color={active ? '#e5e7eb' : TUI_COLORS.dim}>{item.description}</Text>
+              {recommended ? <Text color={active ? '#f59e0b' : '#d97706'}> (recommended)</Text> : null}
+              {pendingCommand && item.command === pendingCommand ? (
+                <Text color="#22d3ee"> (running)</Text>
+              ) : null}
+            </Box>
           </Box>
         );
       })}

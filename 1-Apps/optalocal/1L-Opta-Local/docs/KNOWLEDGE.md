@@ -52,7 +52,7 @@
 
 | Skill | When to Use | Priority |
 |-------|-------------|----------|
-| `/frontend-design` | **EVERY** UI component creation — Web and iOS | MANDATORY |
+| `/frontend-design` | **EVERY** web UI component creation | MANDATORY |
 | `/brainstorming` | Before major architectural decisions | Recommended |
 | `/debugging` | When stuck on bugs | When needed |
 

@@ -34,3 +34,11 @@ Desktop must not bypass daemon for privileged actions.
 - Keep runtime logic in CLI daemon, not in desktop app.
 - Expose new features through daemon API first, then desktop UI.
 - Treat desktop as a client of CLI, never a parallel runtime.
+
+## Import Contract (Desktop → Daemon Client)
+- Desktop consumes daemon APIs via `@opta/daemon-client` package exports and explicit subpath imports.
+- Use:
+  - `@opta/daemon-client/http-client`
+  - `@opta/daemon-client/types`
+- Do **not** derive subpaths from `@opta/daemon-client` root alias (this can produce invalid resolutions like `index.ts/http-client`).
+- Vite aliases and TypeScript paths must map daemon-client subpaths directly to files under `1D-Opta-CLI-TS/packages/daemon-client/src/*`.

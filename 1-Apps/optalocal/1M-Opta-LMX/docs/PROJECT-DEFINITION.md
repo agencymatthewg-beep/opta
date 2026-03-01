@@ -3,7 +3,7 @@
 **Created:** 2026-02-15
 **Author:** Matthew Byrden + Opta Max (Claude Opus 4.6)
 **Status:** Pre-Development — Research & Planning Phase
-**Location:** `~/Synced/Opta/1-Apps/1M-Opta-LMX/`
+**Location:** `~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/`
 
 ---
 

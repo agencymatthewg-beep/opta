@@ -3,6 +3,7 @@ import { render } from 'ink-testing-library';
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { SettingsOverlay } from '../../src/tui/SettingsOverlay.js';
+import { OPTA_BRAND_GLYPH } from '../../src/ui/brand.js';
 
 const flush = (ms = 20) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const SHIFT_TAB = '\u001B[Z';
@@ -22,6 +23,7 @@ describe('SettingsOverlay', () => {
   it('renders Connection page by default', () => {
     const { lastFrame } = render(<SettingsOverlay {...baseProps} />);
     expect(lastFrame()).toContain('Settings');
+    expect(lastFrame()).toContain(OPTA_BRAND_GLYPH);
     expect(lastFrame()).toContain('Connection');
   });
 

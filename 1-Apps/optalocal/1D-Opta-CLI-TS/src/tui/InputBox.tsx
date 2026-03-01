@@ -13,6 +13,7 @@ import {
   collectTriggerHighlightMatches,
   normalizeTriggerWords,
 } from './input-highlighting.js';
+import { TUI_COLORS } from './palette.js';
 
 interface InputBoxProps {
   onSubmit: (text: string) => void;
@@ -463,13 +464,13 @@ export function InputBox({
     const wfMode = workflowMode ?? 'normal';
     switch (wfMode) {
       case 'plan':
-        return <><Text color="magenta" bold>[Plan] </Text>{bypassIndicator}</>;
+        return <><Text color={TUI_COLORS.accent} bold>[Plan] </Text>{bypassIndicator}</>;
       case 'research':
-        return <><Text color="yellow" bold>[Research] </Text>{bypassIndicator}</>;
+        return <><Text color={TUI_COLORS.warning} bold>[Research] </Text>{bypassIndicator}</>;
       case 'review':
-        return <><Text color="blue" bold>[Review] </Text>{bypassIndicator}</>;
+        return <><Text color={TUI_COLORS.prompt} bold>[Review] </Text>{bypassIndicator}</>;
       default: // normal/code
-        return bypassIndicator ? <><Text color="cyan" bold>[Code] </Text>{bypassIndicator}</> : null;
+        return bypassIndicator ? <><Text color={TUI_COLORS.info} bold>[Code] </Text>{bypassIndicator}</> : null;
     }
   })();
 
@@ -477,12 +478,12 @@ export function InputBox({
     const loadingContent = (
       <Box paddingX={1}>
         {modeDisplay}
-        <Text color="cyan">⠋</Text>
-        <Text dimColor> {loadingLabel || 'thinking'}...</Text>
+        <Text color={TUI_COLORS.prompt}>⠋</Text>
+        <Text color={TUI_COLORS.dim}> {loadingLabel || 'thinking'}...</Text>
       </Box>
     );
     return bypassPermissions && !safeMode ? (
-      <Box borderStyle="single" borderColor="red">{loadingContent}</Box>
+      <Box borderStyle="single" borderColor={TUI_COLORS.danger}>{loadingContent}</Box>
     ) : loadingContent;
   }
 
@@ -502,7 +503,7 @@ export function InputBox({
         {chunks.map((chunk, index) => (
           <Text
             key={`chunk-${startIndex}-${index}`}
-            color={chunk.highlighted ? 'cyan' : undefined}
+            color={chunk.highlighted ? TUI_COLORS.prompt : undefined}
             bold={chunk.highlighted}
           >
             {chunk.text}
@@ -528,19 +529,19 @@ export function InputBox({
         {beforeChunks.map((chunk, index) => (
           <Text
             key={`before-${col}-${index}`}
-            color={chunk.highlighted ? 'cyan' : undefined}
+            color={chunk.highlighted ? TUI_COLORS.prompt : undefined}
             bold={chunk.highlighted}
           >
             {chunk.text}
           </Text>
         ))}
-        <Text color={cursorHighlighted ? 'cyan' : undefined} bold={cursorHighlighted} inverse>
+        <Text color={cursorHighlighted ? TUI_COLORS.prompt : undefined} bold={cursorHighlighted} inverse>
           {cursorChar}
         </Text>
         {afterChunks.map((chunk, index) => (
           <Text
             key={`after-${col}-${index}`}
-            color={chunk.highlighted ? 'cyan' : undefined}
+            color={chunk.highlighted ? TUI_COLORS.prompt : undefined}
             bold={chunk.highlighted}
           >
             {chunk.text}
@@ -554,7 +555,7 @@ export function InputBox({
     <Box flexDirection="column" paddingX={1}>
       <Box>
         {modeDisplay && <>{modeDisplay}</>}
-        <Text color="cyan">&gt;</Text>
+        <Text color={TUI_COLORS.prompt}>◆</Text>
         <Text> </Text>
         {displayLines.length === 1 ? (
           // Single line: render inline with cursor using sibling Texts
@@ -566,7 +567,7 @@ export function InputBox({
             : renderHighlightedText(displayLines[0]!, 0)
         )}
         {lineCount > 1 && (
-          <Text dimColor> [{lineCount} lines]</Text>
+          <Text color={TUI_COLORS.dim}> [{lineCount} lines]</Text>
         )}
       </Box>
 
@@ -576,7 +577,7 @@ export function InputBox({
         const isCurrentLine = lineIdx === cursorLine;
         return (
           <Box key={lineIdx} paddingLeft={modeDisplay ? 4 : 2}>
-            <Text dimColor>{'  '}</Text>
+            <Text color={TUI_COLORS.dim}>{'  '}</Text>
             {isCurrentLine ? renderLineWithCursor(line, cursorCol) : renderHighlightedText(line, 0)}
           </Box>
         );
@@ -588,12 +589,12 @@ export function InputBox({
           {slashSuggestions.map((cmd, i) => {
             const isSelected = i === selectedSlash;
             return (
-              <Text key={cmd.command} dimColor={!isSelected} color={isSelected ? 'cyan' : undefined} bold={isSelected}>
+              <Text key={cmd.command} color={isSelected ? TUI_COLORS.prompt : TUI_COLORS.dim} bold={isSelected}>
                 {isSelected ? '▸ ' : '  '}/{cmd.command.padEnd(14)} {cmd.description}
               </Text>
             );
           })}
-          <Text dimColor>  ↑↓ navigate  Tab accept  Esc dismiss</Text>
+          <Text color={TUI_COLORS.dim}>  ↑↓ navigate  Tab accept  Esc dismiss</Text>
         </Box>
       )}
 
@@ -603,18 +604,20 @@ export function InputBox({
           {suggestions.map((s, i) => {
             const isSelected = i === selectedSuggestion;
             return (
-              <Text key={s} dimColor={!isSelected} color={isSelected ? 'cyan' : undefined} bold={isSelected}>
+              <Text key={s} color={isSelected ? TUI_COLORS.prompt : TUI_COLORS.dim} bold={isSelected}>
                 {isSelected ? '▸ ' : '  '}{s}{isImagePath(s) ? ' [image]' : ''}
               </Text>
             );
           })}
-          <Text dimColor>  ↑↓ navigate  Tab accept  Esc dismiss</Text>
+          <Text color={TUI_COLORS.dim}>  ↑↓ navigate  Tab accept  Esc dismiss</Text>
         </Box>
       )}
     </Box>
   );
 
   return bypassPermissions && !safeMode ? (
-    <Box borderStyle="single" borderColor="red">{inputContent}</Box>
-  ) : inputContent;
+    <Box borderStyle="single" borderColor={TUI_COLORS.danger}>{inputContent}</Box>
+  ) : (
+    <Box borderStyle="single" borderColor={TUI_COLORS.borderSoft} paddingBottom={0}>{inputContent}</Box>
+  );
 }

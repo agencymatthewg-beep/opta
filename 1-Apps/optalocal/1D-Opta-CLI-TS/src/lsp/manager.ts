@@ -5,12 +5,12 @@
  * Handles language detection, lazy server initialization, and tool execution routing.
  */
 
-import { execFile } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import { resolve, extname } from 'node:path';
 import { LspClient } from './client.js';
 import { BUILTIN_SERVERS, detectLanguage } from './servers.js';
 import { errorMessage } from '../utils/errors.js';
+import { getUnsafeExecutableReason } from '../utils/command-safety.js';
 import {
   filePathToUri,
   toPosition,
@@ -21,6 +21,7 @@ import {
   formatWorkspaceEdit,
 } from './protocol.js';
 import type { LspServerConfig } from './servers.js';
+import { isBinaryAvailable } from '../platform/index.js';
 
 export interface LspConfig {
   enabled: boolean;
@@ -50,10 +51,7 @@ export class LspManager {
 
   // --- Tool Execution ---
 
-  async execute(
-    toolName: string,
-    args: Record<string, unknown>
-  ): Promise<string> {
+  async execute(toolName: string, args: Record<string, unknown>): Promise<string> {
     if (!this.config.enabled) {
       return 'LSP is disabled in config. Enable it with: opta config set lsp.enabled true';
     }
@@ -63,7 +61,13 @@ export class LspManager {
       return this.executeSymbols(args);
     }
 
-    const path = String(args['path'] ?? '');
+    const pathVal = args['path'];
+    const path =
+      typeof pathVal === 'string'
+        ? pathVal
+        : typeof pathVal === 'object'
+          ? JSON.stringify(pathVal)
+          : String(pathVal as number | boolean | bigint | null | undefined);
 
     if (toolName === 'lsp_document_symbols') {
       return this.executeDocumentSymbols(path);
@@ -77,21 +81,19 @@ export class LspManager {
       case 'lsp_definition':
         return this.executeDefinition(path, line, character);
       case 'lsp_references':
-        return this.executeReferences(
-          path,
-          line,
-          character,
-          args['include_declaration'] !== false
-        );
+        return this.executeReferences(path, line, character, args['include_declaration'] !== false);
       case 'lsp_hover':
         return this.executeHover(path, line, character);
-      case 'lsp_rename':
-        return this.executeRename(
-          path,
-          line,
-          character,
-          String(args['new_name'] ?? '')
-        );
+      case 'lsp_rename': {
+        const newNameVal = args['new_name'];
+        const newName =
+          typeof newNameVal === 'string'
+            ? newNameVal
+            : typeof newNameVal === 'object'
+              ? JSON.stringify(newNameVal)
+              : String(newNameVal as number | boolean | bigint | null | undefined);
+        return this.executeRename(path, line, character, newName);
+      }
       default:
         return `Unknown LSP tool: ${toolName}`;
     }
@@ -115,7 +117,7 @@ export class LspManager {
       } else {
         // Close and re-open to refresh
         client.closeDocument(uri);
-        await client.openDocument(uri, text);
+        client.openDocument(uri, text);
       }
     } catch {
       // File may have been deleted, ignore
@@ -135,11 +137,7 @@ export class LspManager {
 
   // --- Private: Tool Executors ---
 
-  private async executeDefinition(
-    path: string,
-    line: number,
-    character: number
-  ): Promise<string> {
+  private async executeDefinition(path: string, line: number, character: number): Promise<string> {
     const client = await this.getClientForFile(path);
     if (typeof client === 'string') return client; // fallback message
 
@@ -164,11 +162,7 @@ export class LspManager {
     return formatLocations(result, this.cwd);
   }
 
-  private async executeHover(
-    path: string,
-    line: number,
-    character: number
-  ): Promise<string> {
+  private async executeHover(path: string, line: number, character: number): Promise<string> {
     const client = await this.getClientForFile(path);
     if (typeof client === 'string') return client;
 
@@ -178,10 +172,14 @@ export class LspManager {
     return formatHoverContent(result);
   }
 
-  private async executeSymbols(
-    args: Record<string, unknown>
-  ): Promise<string> {
-    const query = String(args['query'] ?? '');
+  private async executeSymbols(args: Record<string, unknown>): Promise<string> {
+    const queryVal = args['query'];
+    const query =
+      typeof queryVal === 'string'
+        ? queryVal
+        : typeof queryVal === 'object'
+          ? JSON.stringify(queryVal)
+          : String(queryVal as number | boolean | bigint | null | undefined);
 
     // For workspace symbols, we need at least one client running.
     // Try to use any existing client, or check if we can start one.
@@ -230,9 +228,7 @@ export class LspManager {
 
   // --- Private: Client Management ---
 
-  private async getClientForFile(
-    path: string
-  ): Promise<LspClient | string> {
+  private async getClientForFile(path: string): Promise<LspClient | string> {
     const language = detectLanguage(path);
     if (!language) {
       const ext = extname(path) || '(no extension)';
@@ -253,6 +249,15 @@ export class LspManager {
     if (!serverConfig) {
       this.serverAvailable.set(language, false);
       return this.fallbackMessage(language);
+    }
+
+    const unsafeCommandReason = getUnsafeExecutableReason(serverConfig.command);
+    if (unsafeCommandReason) {
+      this.serverAvailable.set(language, false);
+      return (
+        `LSP server command rejected for ${language}: ${unsafeCommandReason}\n\n` +
+        'Use search_files as a fallback.'
+      );
     }
 
     // Check if binary is on PATH
@@ -303,11 +308,7 @@ export class LspManager {
   }
 
   private async checkBinary(command: string): Promise<boolean> {
-    return new Promise((resolve) => {
-      execFile('which', [command], (error) => {
-        resolve(!error);
-      });
-    });
+    return isBinaryAvailable(command);
   }
 
   private resolveUri(path: string): string {

@@ -90,7 +90,7 @@ None — Opta Local is a pure consumer/client.
 │  ┌──────────┐    ┌──────────┐    ┌────────────┐ │
 │  │ Optamize │    │  Opta    │    │  Opta      │ │
 │  │  MacOS   │    │   CLI    │    │  Local     │ │
-│  │ (Desktop │    │ (Term)   │    │ (Web+iOS)  │ │
+│  │ (Desktop │    │ (Term)   │    │ (Web)  │ │
 │  │  Power)  │    │          │    │            │ │
 │  └────┬─────┘    └────┬─────┘    └─────┬──────┘ │
 │       │               │               │         │

@@ -13,7 +13,6 @@ import { LmxClient, lookupContextLimit } from '../../lmx/client.js';
 import type { LmxAvailableModel, LmxModelDetail, LmxMemoryResponse } from '../../lmx/client.js';
 import {
   normalizeConfiguredModelId,
-  isPlaceholderModelId,
   modelIdsEqual,
   normalizeModelIdKey,
 } from '../../lmx/model-lifecycle.js';
@@ -30,16 +29,13 @@ import { runMenuPrompt } from '../../ui/prompt-nav.js';
 import {
   FAST_DISCOVERY_REQUEST_OPTS,
   HF_CATALOG_LIMIT,
-  HF_QUERY_LIMIT,
   normalizeModelKey,
   scoreModelMatch,
   splitQueryTokens,
   rankModelIds,
   formatCompactCount,
-  formatRelativeTime,
   formatModelOptionLabel,
   formatCatalogEntryLabel,
-  formatModelInventoryWarning,
   warnModelInventoryFallback,
   isInteractiveTerminal,
   printModelMatches,
@@ -59,7 +55,10 @@ import { readModelAliasMap } from './aliases.js';
 
 // ── Hugging Face catalog ────────────────────────────────────────────
 
-export async function fetchHuggingFaceModels(searchTerm?: string, limit = HF_CATALOG_LIMIT): Promise<HfModelApiItem[]> {
+export async function fetchHuggingFaceModels(
+  searchTerm?: string,
+  limit = HF_CATALOG_LIMIT
+): Promise<HfModelApiItem[]> {
   const params = new URLSearchParams();
   params.set('limit', String(limit));
   params.set('sort', 'downloads');
@@ -78,7 +77,7 @@ export async function fetchHuggingFaceModels(searchTerm?: string, limit = HF_CAT
     throw new Error(`Hugging Face catalog request failed (${res.status})`);
   }
 
-  const raw = await res.json() as unknown;
+  const raw = await res.json();
   if (!Array.isArray(raw)) return [];
 
   const parsed: HfModelApiItem[] = [];
@@ -93,11 +92,14 @@ export async function fetchHuggingFaceModels(searchTerm?: string, limit = HF_CAT
     const tags = (item as { tags?: unknown }).tags;
     parsed.push({
       id: id.trim(),
-      downloads: typeof downloads === 'number' && Number.isFinite(downloads) ? downloads : undefined,
+      downloads:
+        typeof downloads === 'number' && Number.isFinite(downloads) ? downloads : undefined,
       likes: typeof likes === 'number' && Number.isFinite(likes) ? likes : undefined,
       lastModified: typeof lastModified === 'string' ? lastModified : undefined,
       pipeline_tag: typeof pipelineTag === 'string' ? pipelineTag : undefined,
-      tags: Array.isArray(tags) ? tags.filter((t): t is string => typeof t === 'string') : undefined,
+      tags: Array.isArray(tags)
+        ? tags.filter((t): t is string => typeof t === 'string')
+        : undefined,
     });
   }
 
@@ -125,7 +127,10 @@ export async function loadLocalModelSnapshot(client: LmxClient): Promise<LocalMo
     availableById.set(model.repo_id, model);
   }
   if (availableRes.length > 0) {
-    await recordModelHistory(availableRes.map((m) => m.repo_id), 'detected');
+    await recordModelHistory(
+      availableRes.map((m) => m.repo_id),
+      'detected'
+    );
   }
 
   const historyById = new Map<string, ModelHistoryEntry>();
@@ -133,7 +138,9 @@ export async function loadLocalModelSnapshot(client: LmxClient): Promise<LocalMo
     historyById.set(entry.id, entry);
   }
 
-  const firstPath = availableRes.find((m) => typeof m.local_path === 'string' && m.local_path.trim().length > 0)?.local_path;
+  const firstPath = availableRes.find(
+    (m) => typeof m.local_path === 'string' && m.local_path.trim().length > 0
+  )?.local_path;
   const downloadRoot = firstPath ? dirname(firstPath) : undefined;
 
   return { loadedIds, availableById, historyById, downloadRoot };
@@ -143,7 +150,7 @@ export async function loadLocalModelSnapshot(client: LmxClient): Promise<LocalMo
 
 export function mergeCatalogEntries(
   snapshot: LocalModelSnapshot,
-  hfEntries: HfModelApiItem[],
+  hfEntries: HfModelApiItem[]
 ): LibraryModelEntry[] {
   const byId = new Map<string, LibraryModelEntry>();
 
@@ -178,7 +185,8 @@ export function mergeCatalogEntries(
       downloaded: true,
       localPath: local.local_path,
       sizeBytes: local.size_bytes > 0 ? local.size_bytes : undefined,
-      downloadedAt: typeof local.downloaded_at === 'number' ? local.downloaded_at * 1000 : undefined,
+      downloadedAt:
+        typeof local.downloaded_at === 'number' ? local.downloaded_at * 1000 : undefined,
       contextLength: lookupContextLimit(id),
     });
   }
@@ -223,7 +231,10 @@ export function sortCatalogEntries(entries: LibraryModelEntry[]): LibraryModelEn
   });
 }
 
-export function rankCatalogEntries(entries: LibraryModelEntry[], query: string): LibraryModelEntry[] {
+export function rankCatalogEntries(
+  entries: LibraryModelEntry[],
+  query: string
+): LibraryModelEntry[] {
   const q = query.trim();
   if (!q) return sortCatalogEntries(entries);
 
@@ -242,7 +253,10 @@ export function rankCatalogEntries(entries: LibraryModelEntry[], query: string):
         metaPenalty: metaMatch && idScore === null ? 1 : 0,
       };
     })
-    .filter((item): item is { entry: LibraryModelEntry; score: number; metaPenalty: number } => item !== null)
+    .filter(
+      (item): item is { entry: LibraryModelEntry; score: number; metaPenalty: number } =>
+        item !== null
+    )
     .sort((a, b) => {
       if (a.score !== b.score) return a.score - b.score;
       if (a.metaPenalty !== b.metaPenalty) return a.metaPenalty - b.metaPenalty;
@@ -261,7 +275,7 @@ export async function promptModelSearch(
   message: string,
   options: ModelPickerOption[],
   defaultModel: string,
-  aliasMap: ModelAliasMap = {},
+  aliasMap: ModelAliasMap = {}
 ): Promise<string | null> {
   if (options.length === 0) return null;
 
@@ -270,30 +284,36 @@ export async function promptModelSearch(
   const byId = new Map(options.map((o) => [o.id, o] as const));
 
   try {
-    return await runMenuPrompt((context) =>
-      search<string>({
-        message: chalk.dim(message),
-        source: async (input?: string) => {
-          const q = (input ?? '').trim();
-          const ordered = q
-            ? rankModelIds(ids, q, aliasMap).map((m) => m.id)
-            : options
-              .slice()
-              .sort((a, b) => {
-                if (a.source !== b.source) return a.source === 'loaded' ? -1 : 1;
-                return a.id.localeCompare(b.id);
-              })
-              .map((o) => o.id);
+    return await runMenuPrompt(
+      (context) =>
+        search<string>(
+          {
+            message: chalk.dim(message),
+            source: (input?: string) => {
+              const q = (input ?? '').trim();
+              const ordered = q
+                ? rankModelIds(ids, q, aliasMap).map((m) => m.id)
+                : options
+                    .slice()
+                    .sort((a, b) => {
+                      if (a.source !== b.source) return a.source === 'loaded' ? -1 : 1;
+                      return a.id.localeCompare(b.id);
+                    })
+                    .map((o) => o.id);
 
-          return ordered.map((id) => {
-            const item = byId.get(id)!;
-            return {
-              value: id,
-              name: formatModelOptionLabel(item, defaultModel),
-            };
-          });
-        },
-      }, context), 'search');
+              return ordered.map((id) => {
+                const item = byId.get(id)!;
+                return {
+                  value: id,
+                  name: formatModelOptionLabel(item, defaultModel),
+                };
+              });
+            },
+          },
+          context
+        ),
+      'search'
+    );
   } catch {
     return null;
   }
@@ -304,7 +324,7 @@ export async function resolveModelIdFromOptions(
   options: ModelPickerOption[],
   defaultModel: string,
   promptMessage: string,
-  aliasMap: ModelAliasMap = {},
+  aliasMap: ModelAliasMap = {}
 ): Promise<string> {
   if (options.length === 0) {
     throw new ExitError(EXIT.NOT_FOUND);
@@ -350,13 +370,15 @@ export async function resolveModelIdFromOptions(
     `Multiple matches for "${query}" — choose model`,
     ambiguousOptions,
     defaultModel,
-    aliasMap,
+    aliasMap
   );
   if (!selected) throw new ExitError(EXIT.SIGINT);
   return selected;
 }
 
-export async function getModelOptions(client: LmxClient): Promise<{ loaded: ModelPickerOption[]; onDisk: ModelPickerOption[] }> {
+export async function getModelOptions(
+  client: LmxClient
+): Promise<{ loaded: ModelPickerOption[]; onDisk: ModelPickerOption[] }> {
   const [loadedRes, availableRes] = await Promise.all([
     client.models(FAST_DISCOVERY_REQUEST_OPTS),
     client.available(FAST_DISCOVERY_REQUEST_OPTS).catch((err: unknown) => {
@@ -389,7 +411,7 @@ export async function getModelOptions(client: LmxClient): Promise<{ loaded: Mode
 export async function resolveEffectiveDefaultModel(
   client: LmxClient,
   configuredDefault: string,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<string> {
   const normalized = normalizeConfiguredModelId(configuredDefault);
   if (normalized) {
@@ -402,7 +424,9 @@ export async function resolveEffectiveDefaultModel(
     return normalized;
   }
 
-  const loaded = await client.models(FAST_DISCOVERY_REQUEST_OPTS).catch(() => ({ models: [] as LmxModelDetail[] }));
+  const loaded = await client
+    .models(FAST_DISCOVERY_REQUEST_OPTS)
+    .catch(() => ({ models: [] as LmxModelDetail[] }));
   const fallbackLoaded = loaded.models[0]?.model_id;
   if (fallbackLoaded) {
     await saveConfig({
@@ -410,12 +434,16 @@ export async function resolveEffectiveDefaultModel(
       'model.contextLimit': lookupContextLimit(fallbackLoaded),
     }).catch(() => {});
     if (!opts?.json) {
-      console.log(chalk.yellow('!') + ` Default model was unset; using loaded model ${fallbackLoaded}`);
+      console.log(
+        chalk.yellow('!') + ` Default model was unset; using loaded model ${fallbackLoaded}`
+      );
     }
     return fallbackLoaded;
   }
 
-  const available = await client.available(FAST_DISCOVERY_REQUEST_OPTS).catch(() => [] as LmxAvailableModel[]);
+  const available = await client
+    .available(FAST_DISCOVERY_REQUEST_OPTS)
+    .catch(() => [] as LmxAvailableModel[]);
   const fallbackOnDisk = available[0]?.repo_id;
   if (fallbackOnDisk) {
     await saveConfig({
@@ -423,7 +451,9 @@ export async function resolveEffectiveDefaultModel(
       'model.contextLimit': lookupContextLimit(fallbackOnDisk),
     }).catch(() => {});
     if (!opts?.json) {
-      console.log(chalk.yellow('!') + ` Default model was unset; using on-disk model ${fallbackOnDisk}`);
+      console.log(
+        chalk.yellow('!') + ` Default model was unset; using on-disk model ${fallbackOnDisk}`
+      );
     }
     return fallbackOnDisk;
   }
@@ -462,9 +492,7 @@ export async function listModels(
     for (const model of result.models) {
       const ctx = model.context_length ?? lookupContextLimit(model.model_id);
       const ctxStr = chalk.dim(` ${(ctx / 1000).toFixed(0)}K context`);
-      const def = (model.model_id === defaultModel || model.is_default)
-        ? chalk.green(' ★')
-        : '';
+      const def = model.model_id === defaultModel || model.is_default ? chalk.green(' ★') : '';
       const mem = model.memory_bytes
         ? chalk.dim(` ${(model.memory_bytes / 1e9).toFixed(1)}GB`)
         : '';
@@ -475,12 +503,8 @@ export async function listModels(
       console.log(chalk.dim('  ' + NO_MODELS_LOADED));
     }
 
-    console.log(
-      '\n' + chalk.dim(`Use ${chalk.reset('opta models use <name>')} to switch default`)
-    );
-    console.log(
-      chalk.dim(`Use ${chalk.reset('opta models load <name>')} to load a model`)
-    );
+    console.log('\n' + chalk.dim(`Use ${chalk.reset('opta models use <name>')} to switch default`));
+    console.log(chalk.dim(`Use ${chalk.reset('opta models load <name>')} to load a model`));
   } catch (err) {
     spinner?.stop();
     throwModelCommandError(err);
@@ -490,7 +514,7 @@ export async function listModels(
 export async function showModelDashboard(
   client: LmxClient,
   defaultModel: string,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<void> {
   const [snapshot, loadedRes, memory, aliases] = await Promise.all([
     loadLocalModelSnapshot(client),
@@ -509,50 +533,73 @@ export async function showModelDashboard(
   const loaded = loadedRes.models;
   const loadedIds = new Set(loaded.map((model) => normalizeModelIdKey(model.model_id)));
   const onDiskCount = catalog.filter((entry) => entry.downloaded).length;
-  const historyOnlyCount = catalog.filter((entry) => entry.source === 'history' && !entry.downloaded).length;
+  const historyOnlyCount = catalog.filter(
+    (entry) => entry.source === 'history' && !entry.downloaded
+  ).length;
   const defaultLoaded = loaded.some((model) => modelIdsEqual(model.model_id, defaultModel));
-  const aliasEntries = Object.entries(aliases).sort((a, b) => a[0].localeCompare(b[0])) as Array<[string, string]>;
+  const aliasEntries = Object.entries(aliases).sort((a, b) => a[0].localeCompare(b[0]));
 
   if (opts?.json) {
-    console.log(JSON.stringify({
-      defaultModel,
-      defaultLoaded,
-      counts: {
-        loaded: loaded.length,
-        onDisk: onDiskCount,
-        historyOnly: historyOnlyCount,
-        aliases: aliasEntries.length,
-      },
-      memory: memory ? {
-        usedGb: memory.used_gb,
-        totalGb: memory.total_unified_memory_gb,
-        percent: memory.total_unified_memory_gb > 0
-          ? Math.round((memory.used_gb / memory.total_unified_memory_gb) * 100)
-          : null,
-      } : null,
-      loaded: loaded.map((model) => ({
-        id: model.model_id,
-        contextLength: model.context_length ?? lookupContextLimit(model.model_id),
-        memoryBytes: model.memory_bytes,
-        requestCount: model.request_count,
-        isDefault: modelIdsEqual(model.model_id, defaultModel),
-      })),
-      aliases: Object.fromEntries(aliasEntries),
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          defaultModel,
+          defaultLoaded,
+          counts: {
+            loaded: loaded.length,
+            onDisk: onDiskCount,
+            historyOnly: historyOnlyCount,
+            aliases: aliasEntries.length,
+          },
+          memory: memory
+            ? {
+                usedGb: memory.used_gb,
+                totalGb: memory.total_unified_memory_gb,
+                percent:
+                  memory.total_unified_memory_gb > 0
+                    ? Math.round((memory.used_gb / memory.total_unified_memory_gb) * 100)
+                    : null,
+              }
+            : null,
+          loaded: loaded.map((model) => ({
+            id: model.model_id,
+            contextLength: model.context_length ?? lookupContextLimit(model.model_id),
+            memoryBytes: model.memory_bytes,
+            requestCount: model.request_count,
+            isDefault: modelIdsEqual(model.model_id, defaultModel),
+          })),
+          aliases: Object.fromEntries(aliasEntries),
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
   console.log(chalk.bold('\nModel Dashboard'));
-  console.log(chalk.dim(`  default ${defaultModel}${defaultLoaded ? chalk.green(' (loaded)') : chalk.dim(' (not loaded)')}`));
+  console.log(
+    chalk.dim(
+      `  default ${defaultModel}${defaultLoaded ? chalk.green(' (loaded)') : chalk.dim(' (not loaded)')}`
+    )
+  );
 
   if (memory) {
     const totalGb = memory.total_unified_memory_gb;
     const usedPct = totalGb > 0 ? Math.round((memory.used_gb / totalGb) * 100) : 0;
     const bar = renderPercentBar(usedPct, 14);
-    console.log(chalk.dim(`  Memory ${bar} ${usedPct}% · ${memory.used_gb.toFixed(1)}/${totalGb.toFixed(1)} GB`));
+    console.log(
+      chalk.dim(
+        `  Memory ${bar} ${usedPct}% · ${memory.used_gb.toFixed(1)}/${totalGb.toFixed(1)} GB`
+      )
+    );
   }
 
-  console.log(chalk.dim(`  Loaded ${loaded.length} · On disk ${onDiskCount} · History only ${historyOnlyCount} · Aliases ${aliasEntries.length}\n`));
+  console.log(
+    chalk.dim(
+      `  Loaded ${loaded.length} · On disk ${onDiskCount} · History only ${historyOnlyCount} · Aliases ${aliasEntries.length}\n`
+    )
+  );
 
   if (loaded.length === 0) {
     console.log(chalk.dim('  ' + NO_MODELS_LOADED));
@@ -565,19 +612,24 @@ export async function showModelDashboard(
       const mem = model.memory_bytes ? fmtGB(model.memory_bytes) : '';
       const reqs = model.request_count ? `${model.request_count} reqs` : '';
       const meta = [ctx, mem, reqs].filter(Boolean).join(' · ');
-      console.log(`  ${bullet} ${model.model_id}${meta ? `  ${chalk.dim(meta)}` : ''}${isDefault ? chalk.green(' ★') : ''}`);
+      console.log(
+        `  ${bullet} ${model.model_id}${meta ? `  ${chalk.dim(meta)}` : ''}${isDefault ? chalk.green(' ★') : ''}`
+      );
     }
     if (loaded.length > 8) {
       console.log(chalk.dim(`  … ${loaded.length - 8} more loaded`));
     }
   }
 
-  const onDiskTop = catalog.filter((entry) => entry.downloaded && !loadedIds.has(normalizeModelIdKey(entry.id))).slice(0, 6);
+  const onDiskTop = catalog
+    .filter((entry) => entry.downloaded && !loadedIds.has(normalizeModelIdKey(entry.id)))
+    .slice(0, 6);
   if (onDiskTop.length > 0) {
     console.log(chalk.bold('\nOn Disk (Top)'));
     for (const entry of onDiskTop) {
       const size = entry.sizeBytes ? `${fmtGB(entry.sizeBytes)} disk` : '';
-      const dls = typeof entry.downloads === 'number' ? `${formatCompactCount(entry.downloads)} dl` : '';
+      const dls =
+        typeof entry.downloads === 'number' ? `${formatCompactCount(entry.downloads)} dl` : '';
       const meta = [fmtCtx(entry.contextLength), size, dls].filter(Boolean).join(' · ');
       console.log(`  ${chalk.dim('○')} ${entry.id}${meta ? `  ${chalk.dim(meta)}` : ''}`);
     }
@@ -586,14 +638,22 @@ export async function showModelDashboard(
   if (aliasEntries.length > 0) {
     console.log(chalk.bold('\nAliases'));
     for (const [alias, target] of aliasEntries.slice(0, 8)) {
-      const exists = catalog.some((entry) => modelIdsEqual(entry.id, target)) || loaded.some((model) => modelIdsEqual(model.model_id, target));
-      console.log(`  ${chalk.cyan(alias)} ${chalk.dim('→')} ${target}${exists ? '' : chalk.yellow(' (target not detected locally)')}`);
+      const exists =
+        catalog.some((entry) => modelIdsEqual(entry.id, target)) ||
+        loaded.some((model) => modelIdsEqual(model.model_id, target));
+      console.log(
+        `  ${chalk.cyan(alias)} ${chalk.dim('→')} ${target}${exists ? '' : chalk.yellow(' (target not detected locally)')}`
+      );
     }
     if (aliasEntries.length > 8) {
       console.log(chalk.dim(`  … ${aliasEntries.length - 8} more aliases`));
     }
   } else {
-    console.log(chalk.dim('\n  No custom aliases yet. Add one with: opta models alias mini inferencelabs/GLM-5-MLX-4.8bit'));
+    console.log(
+      chalk.dim(
+        '\n  No custom aliases yet. Add one with: opta models alias mini inferencelabs/GLM-5-MLX-4.8bit'
+      )
+    );
   }
 }
 
@@ -604,10 +664,11 @@ export async function scanModelsCommand(
 ): Promise<void> {
   const spinner = opts?.json ? null : await createSpinner();
   const { host, port } = config.connection;
-  spinner?.start(progressText('Scan models', 15, `scanning LMX (${host}:${port}) + providers`));
+  const isFull = opts?.full === true;
+  spinner?.start(progressText('Scan models', 15, `scanning LMX (${host}:${port}) + providers${isFull ? ' (full)' : ''}`));
 
   try {
-    const scan = await gatherScanData(config);
+    const scan = await gatherScanData(config, isFull);
     spinner?.succeed(progressText('Scan models', 100, 'scan complete'));
 
     // --- JSON output ---
@@ -629,7 +690,9 @@ export async function scanModelsCommand(
     } else {
       console.log(
         chalk.bold('\n  Loaded') +
-          chalk.dim(` \u2500\u2500 LMX ${host}:${port} \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500`)
+          chalk.dim(
+            ` \u2500\u2500 LMX ${host}:${port} \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500`
+          )
       );
       if (scan.loaded.length === 0) {
         console.log(chalk.dim('  ' + NO_MODELS_LOADED));
@@ -655,7 +718,9 @@ export async function scanModelsCommand(
       if (unloaded.length > 0) {
         console.log(
           chalk.bold('\n  On Disk') +
-            chalk.dim(' \u2500\u2500 downloaded, not loaded \u2500\u2500\u2500\u2500\u2500\u2500\u2500')
+            chalk.dim(
+              ' \u2500\u2500 downloaded, not loaded \u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+            )
         );
         for (const a of unloaded) {
           const ctx = lookupContextLimit(a.repo_id);
@@ -663,7 +728,9 @@ export async function scanModelsCommand(
           if (a.size_bytes > 0) parts.push(`${fmtGB(a.size_bytes)} on disk`);
           const dp = getDisplayProfile(a.repo_id);
           const tag = fmtTag(dp.format);
-          console.log(`  ${chalk.dim('\u25cb')} ${dp.displayName} ${tag} ${chalk.dim(dp.orgAbbrev)}  ${chalk.dim(parts.join(' \u00b7 '))}`);
+          console.log(
+            `  ${chalk.dim('\u25cb')} ${dp.displayName} ${tag} ${chalk.dim(dp.orgAbbrev)}  ${chalk.dim(parts.join(' \u00b7 '))}`
+          );
         }
       }
     }
@@ -672,7 +739,9 @@ export async function scanModelsCommand(
     if (scan.presets.length > 0) {
       console.log(
         chalk.bold('\n  Presets') +
-          chalk.dim(' \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500')
+          chalk.dim(
+            ' \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+          )
       );
       for (const p of scan.presets) {
         const modelStr = shortId(p.model);
@@ -680,14 +749,8 @@ export async function scanModelsCommand(
         const dot = isLoaded ? chalk.green('\u25cf') : chalk.dim('\u25cb');
         const aliasStr = p.routing_alias ? chalk.cyan(`alias:"${p.routing_alias}"`) : '';
         const autoStr = p.auto_load ? chalk.dim('auto-load') : '';
-        const parts = [
-          `\u2192 ${modelStr}`,
-          aliasStr,
-          autoStr,
-        ].filter(Boolean);
-        console.log(
-          `  ${dot} ${chalk.bold(p.name.padEnd(20))} ${chalk.dim(parts.join('  '))}`
-        );
+        const parts = [`\u2192 ${modelStr}`, aliasStr, autoStr].filter(Boolean);
+        console.log(`  ${dot} ${chalk.bold(p.name.padEnd(20))} ${chalk.dim(parts.join('  '))}`);
       }
     }
 
@@ -698,13 +761,17 @@ export async function scanModelsCommand(
         : chalk.yellow('not configured');
       console.log(
         chalk.bold('\n  Cloud') +
-          chalk.dim(` \u2500\u2500 Anthropic \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 `) +
+          chalk.dim(
+            ` \u2500\u2500 Anthropic \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500 `
+          ) +
           statusStr
       );
       for (const m of scan.cloud) {
         const ctx = m.contextLength ? fmtCtx(m.contextLength) : '';
         const name = m.name ?? m.id;
-        console.log(`  ${chalk.blue('\u2601')} ${m.id}  ${chalk.dim(name !== m.id ? `${name}  ` : '')}${chalk.dim(ctx)}`);
+        console.log(
+          `  ${chalk.blue('\u2601')} ${m.id}  ${chalk.dim(name !== m.id ? `${name}  ` : '')}${chalk.dim(ctx)}`
+        );
       }
     }
 
@@ -714,7 +781,9 @@ export async function scanModelsCommand(
       const pctColor = pct > 80 ? chalk.red : pct > 60 ? chalk.yellow : chalk.green;
       console.log(
         chalk.bold('\n  Memory') +
-          chalk.dim(' \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500')
+          chalk.dim(
+            ' \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500'
+          )
       );
       console.log(
         `  ${scan.memory.used_gb.toFixed(1)} / ${scan.memory.total_unified_memory_gb.toFixed(1)} GB used ` +
@@ -742,7 +811,10 @@ export async function scanModelsCommand(
   }
 }
 
-export function formatModelComparison(entry: LibraryModelEntry, catalog: LibraryModelEntry[]): string {
+export function formatModelComparison(
+  entry: LibraryModelEntry,
+  catalog: LibraryModelEntry[]
+): string {
   const withDownloads = catalog
     .map((item) => item.downloads)
     .filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
@@ -758,29 +830,35 @@ export function formatModelComparison(entry: LibraryModelEntry, catalog: Library
 export async function promptCatalogSelection(
   message: string,
   entries: LibraryModelEntry[],
-  defaultModel: string,
+  defaultModel: string
 ): Promise<LibraryModelEntry | null> {
   if (entries.length === 0) return null;
   const { search } = await import('@inquirer/prompts');
   const byId = new Map(entries.map((entry) => [entry.id, entry] as const));
 
   try {
-    const selected = await runMenuPrompt((context) =>
-      search<string>({
-        message: chalk.dim(message),
-        source: async (input?: string) => {
-          const query = (input ?? '').trim();
-          const ranked = rankCatalogEntries(entries, query).slice(0, 140);
-          for (const entry of ranked) {
-            byId.set(entry.id, entry);
-          }
-          return ranked.map((entry) => ({
-            value: entry.id,
-            name: formatCatalogEntryLabel(entry, defaultModel),
-          }));
-        },
-      }, context), 'search');
-    return selected ? byId.get(selected) ?? null : null;
+    const selected = await runMenuPrompt(
+      (context) =>
+        search<string>(
+          {
+            message: chalk.dim(message),
+            source: (input?: string) => {
+              const query = (input ?? '').trim();
+              const ranked = rankCatalogEntries(entries, query).slice(0, 140);
+              for (const entry of ranked) {
+                byId.set(entry.id, entry);
+              }
+              return ranked.map((entry) => ({
+                value: entry.id,
+                name: formatCatalogEntryLabel(entry, defaultModel),
+              }));
+            },
+          },
+          context
+        ),
+      'search'
+    );
+    return selected ? (byId.get(selected) ?? null) : null;
   } catch {
     return null;
   }

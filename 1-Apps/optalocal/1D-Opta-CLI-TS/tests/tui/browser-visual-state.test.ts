@@ -125,6 +125,6 @@ describe('browser-visual-state', () => {
     expect(browserVisualMotionEnabled({ VITEST: 'true', NODE_ENV: 'test' })).toBe(false);
     expect(browserVisualGlyph('busy', 0)).toBe('⠋');
     expect(browserVisualGlyph('busy', 1)).not.toBe(browserVisualGlyph('busy', 0));
-    expect(browserVisualGlyph('busy', 9)).toBe('⠋');
+    expect(browserVisualGlyph('busy', 10)).toBe('⠋');
   });
 });

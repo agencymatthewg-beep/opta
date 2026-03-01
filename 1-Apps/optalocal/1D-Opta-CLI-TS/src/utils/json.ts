@@ -8,7 +8,7 @@
  * Avoids the need for a try/catch wrapper at every call site.
  */
 export function safeParseJson<T = unknown>(input: string, fallback: T): T;
-export function safeParseJson(input: string): unknown | undefined;
+export function safeParseJson(input: string): unknown;
 export function safeParseJson<T = unknown>(input: string, fallback?: T): T | undefined {
   try {
     return JSON.parse(input) as T;

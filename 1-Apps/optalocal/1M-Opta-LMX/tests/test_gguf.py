@@ -56,14 +56,14 @@ def test_detect_runtime_incompatibility_for_glm_signature() -> None:
     """glm_moe_dsa signatures are flagged as runtime-incompatible."""
     with (
         patch(
-            "opta_lmx.inference.engine._load_model_config",
+            "opta_lmx.inference.engine_lifecycle._load_model_config",
             return_value={
                 "model_type": "glm_moe_dsa",
                 "architectures": ["GlmMoeDsaForCausalLM"],
             },
         ),
         patch(
-            "opta_lmx.inference.engine._runtime_backend_versions",
+            "opta_lmx.inference.engine_lifecycle._runtime_backend_versions",
             return_value={"vllm-mlx": "0.2.6", "mlx-lm": "0.30.7"},
         ),
     ):
@@ -81,16 +81,24 @@ async def test_engine_blocks_incompatible_model_by_default() -> None:
     engine = InferenceEngine(memory_monitor=monitor, use_batching=False, warmup_on_load=False)
     create_engine = AsyncMock(return_value=MagicMock())
     engine._create_engine = create_engine  # type: ignore[assignment]
+    engine._lifecycle._create_engine = create_engine  # type: ignore[assignment]
 
-    with patch(
-        "opta_lmx.inference.engine._detect_runtime_incompatibility",
-        return_value={
-            "matched_signature": "glm_moe_dsa",
-            "model_type": "glm_moe_dsa",
-            "architectures": ["GlmMoeDsaForCausalLM"],
-            "runtime_versions": {"vllm-mlx": "0.2.6", "mlx-lm": "0.30.7"},
-        },
-    ), pytest.raises(ModelRuntimeCompatibilityError):
+    with (
+        patch(
+            "opta_lmx.inference.engine_lifecycle.backend_candidates",
+            return_value=["vllm-mlx"],
+        ),
+        patch(
+            "opta_lmx.inference.engine_lifecycle._detect_runtime_incompatibility",
+            return_value={
+                "matched_signature": "glm_moe_dsa",
+                "model_type": "glm_moe_dsa",
+                "architectures": ["GlmMoeDsaForCausalLM"],
+                "runtime_versions": {"vllm-mlx": "0.2.6", "mlx-lm": "0.30.7"},
+            },
+        ),
+        pytest.raises(ModelRuntimeCompatibilityError),
+    ):
         await engine.load_model("inferencerlabs/GLM-5-MLX-4.8bit")
 
     create_engine.assert_not_awaited()
@@ -105,15 +113,22 @@ async def test_engine_allows_incompatible_model_with_override() -> None:
     fake_engine.chat = AsyncMock(return_value="OK")
     create_engine = AsyncMock(return_value=(fake_engine, {"requested": False, "active": False}))
     engine._create_engine = create_engine  # type: ignore[assignment]
+    engine._lifecycle._create_engine = create_engine  # type: ignore[assignment]
 
-    with patch(
-        "opta_lmx.inference.engine._detect_runtime_incompatibility",
-        return_value={
-            "matched_signature": "glm_moe_dsa",
-            "model_type": "glm_moe_dsa",
-            "architectures": ["GlmMoeDsaForCausalLM"],
-            "runtime_versions": {"vllm-mlx": "0.2.6", "mlx-lm": "0.30.7"},
-        },
+    with (
+        patch(
+            "opta_lmx.inference.engine_lifecycle.backend_candidates",
+            return_value=["vllm-mlx"],
+        ),
+        patch(
+            "opta_lmx.inference.engine_lifecycle._detect_runtime_incompatibility",
+            return_value={
+                "matched_signature": "glm_moe_dsa",
+                "model_type": "glm_moe_dsa",
+                "architectures": ["GlmMoeDsaForCausalLM"],
+                "runtime_versions": {"vllm-mlx": "0.2.6", "mlx-lm": "0.30.7"},
+            },
+        ),
     ):
         info = await engine.load_model(
             "inferencerlabs/GLM-5-MLX-4.8bit",

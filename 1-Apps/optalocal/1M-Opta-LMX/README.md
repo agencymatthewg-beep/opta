@@ -26,14 +26,23 @@ mkdir -p ~/.opta-lmx
 # 2. Start the server
 opta-lmx
 
-# 3. Load a model (in another terminal or via Opta CLI)
-opta-lmx load mlx-community/Llama-3.2-3B-Instruct-4bit
+# 3. Discover the server contract (for zero-config client pairing)
+curl http://localhost:1234/v1/discovery
 
-# 4. Chat (OpenAI-compatible API at localhost:1234)
+# 4. Load a model via admin API
+curl -X POST http://localhost:1234/admin/models/load \
+  -H "Content-Type: application/json" \
+  -d '{"model_id":"mlx-community/Llama-3.2-3B-Instruct-4bit","auto_download":true}'
+
+# 5. Chat (OpenAI-compatible API at localhost:1234)
 curl http://localhost:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{"model":"mlx-community/Llama-3.2-3B-Instruct-4bit","messages":[{"role":"user","content":"Hello"}]}'
 ```
+
+Discovery aliases:
+- `GET /.well-known/opta-lmx`
+- `GET /v1/discovery`
 
 ## Configuration
 

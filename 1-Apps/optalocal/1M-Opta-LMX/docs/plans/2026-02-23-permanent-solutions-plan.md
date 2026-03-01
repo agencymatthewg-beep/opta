@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta-LMX Permanent Solutions Plan
 Date: 2026-02-23
 Owner: Opta Max

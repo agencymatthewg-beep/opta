@@ -1,79 +1,71 @@
 "use client";
 
 import { cn } from "@opta/ui";
-import { OptaRing } from '@/components/shared/OptaRing';
 
 interface OptaLogoProps {
-  /** Size of the ring element. Controls the overall scale. */
-  size?: 48 | 64 | 80 | 120;
+  /** Icon size in px. Default 20. Controls the orbit ring icon. */
+  size?: number;
+  /** Show "OPTA LOCAL" wordmark next to the icon. Default true. */
+  showText?: boolean;
   /** Custom class name for the wrapper */
   className?: string;
-  /** Direction of the lockup */
-  layout?: 'horizontal' | 'vertical';
-  /** Show the OPTA text */
-  showText?: boolean;
-  /** Add a subtitle/suffix (e.g. "LOCAL", "ACCOUNTS") */
-  suffix?: string;
-  /** Pause the ring animations */
-  paused?: boolean;
+  /** Legacy scale prop — mapped to size (size = scale * 50) */
+  scale?: number;
 }
 
 /**
- * Opta Logo Lockup
- * Combines the Calm Singularity Opta Ring with the official Opta Typography.
+ * Opta Local — brand logo lockup.
+ * Orbit ring SVG icon + "OPTA LOCAL" wordmark.
  */
-export function OptaLogo({ 
-  size = 80, 
-  className, 
-  layout = 'horizontal',
-  showText = true, 
-  suffix,
-  paused = false 
+export function OptaLogo({
+  size,
+  showText = true,
+  className,
+  scale,
 }: OptaLogoProps) {
-  // Map ring size to text size so the lockup remains proportional
-  const textSizeClass = {
-    48: 'text-2xl',
-    64: 'text-3xl',
-    80: 'text-4xl',
-    120: 'text-6xl',
-  }[size];
-
-  const gapClass = {
-    48: 'gap-3',
-    64: 'gap-4',
-    80: 'gap-5',
-    120: 'gap-8',
-  }[size];
+  const resolvedSize = size ?? (scale != null ? Math.round(scale * 50) : 20);
+  const px = Math.max(14, resolvedSize);
 
   return (
-    <div className={cn(
-      "flex", 
-      layout === 'horizontal' ? 'flex-row items-center' : 'flex-col items-center justify-center',
-      gapClass,
-      className
-    )}>
-      <OptaRing size={size} paused={paused} />
-      
+    <div className={cn("flex items-center gap-2 select-none", className)}>
+      <svg
+        width={px}
+        height={px}
+        viewBox="0 0 32 32"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+        className="flex-shrink-0"
+      >
+        <defs>
+          <linearGradient id="olg-a" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#8b5cf6" />
+            <stop offset="100%" stopColor="#a855f7" />
+          </linearGradient>
+          <linearGradient id="olg-b" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.5" />
+            <stop offset="100%" stopColor="#a855f7" stopOpacity="0.5" />
+          </linearGradient>
+        </defs>
+        <circle cx="16" cy="16" r="10.5" stroke="url(#olg-a)" strokeWidth="2" />
+        <ellipse
+          cx="16" cy="16"
+          rx="10.5" ry="3.5"
+          stroke="url(#olg-b)"
+          strokeWidth="1.5"
+          transform="rotate(-25 16 16)"
+        />
+        <circle cx="16" cy="16" r="2.5" fill="url(#olg-a)" />
+      </svg>
+
       {showText && (
-        <div className={cn("flex", layout === 'horizontal' ? 'flex-row gap-2' : 'flex-col items-center gap-1')}>
-          <h1 className={cn(
-            "m-0 p-0 font-sans font-bold uppercase tracking-[0.12em] leading-none",
-            "bg-gradient-to-b from-[#fafafa] via-[#a855f7] to-[#6366f1] bg-clip-text text-transparent",
-            "drop-shadow-[0_0_24px_rgba(139,92,246,0.35)]",
-            textSizeClass
-          )}>
-            OPTA
-          </h1>
-          {suffix && (
-            <span className={cn(
-              "font-sans font-bold uppercase tracking-[0.12em] leading-none",
-              "text-text-primary",
-              textSizeClass
-            )}>
-              {suffix}
-            </span>
-          )}
-        </div>
+        <span
+          className="font-sans font-semibold tracking-[0.08em] leading-none"
+          style={{ fontSize: Math.max(11, Math.round(px * 0.7)) }}
+        >
+          <span className="text-white">OPTA</span>
+          <span style={{ color: "#a855f7" }}> LOCAL</span>
+        </span>
       )}
     </div>
   );

@@ -15,6 +15,7 @@ export {
   eventsHandler,
   predictorHandler,
   helpersHandler,
+  stackHandler,
 } from './status.js';
 
 export {
@@ -24,6 +25,8 @@ export {
   serveHandler,
   lmxReconnectHandler,
   lmxCommandHandler,
+  deleteModelHandler,
+  downloadsHandler,
 } from './lifecycle.js';
 
 export {
@@ -34,6 +37,7 @@ export {
   agentsHandler,
   skillsHandler,
   ragHandler,
+  modelPerfHandler,
 } from './models.js';
 
 export {
@@ -72,6 +76,7 @@ import {
   eventsHandler,
   predictorHandler,
   helpersHandler,
+  stackHandler,
 } from './status.js';
 
 import {
@@ -80,6 +85,8 @@ import {
   unloadHandler,
   serveHandler,
   lmxCommandHandler,
+  deleteModelHandler,
+  downloadsHandler,
 } from './lifecycle.js';
 
 import {
@@ -90,6 +97,7 @@ import {
   agentsHandler,
   skillsHandler,
   ragHandler,
+  modelPerfHandler,
 } from './models.js';
 
 import {
@@ -329,5 +337,39 @@ export const lmxCommands: SlashCommandDef[] = [
     category: 'server',
     usage: '/autotune-status <model-id> [--backend <name>] [--backend-version <version>]',
     examples: ['/autotune-status inferencelabs/GLM-5-MLX-4.8bit', '/tuned model --backend mlx-lm'],
+  },
+  {
+    command: 'delete',
+    description: 'Delete a model from disk permanently',
+    handler: deleteModelHandler,
+    category: 'server',
+    usage: '/delete <model-id>',
+    examples: ['/delete mlx-community/Llama-3-8B-Instruct-4bit'],
+  },
+  {
+    command: 'stack',
+    description: 'Show LMX component versions and system stack',
+    handler: stackHandler,
+    category: 'server',
+    usage: '/stack [--json]',
+    examples: ['/stack', '/stack --json'],
+  },
+  {
+    command: 'model-perf',
+    aliases: ['perf'],
+    description: 'Per-model performance benchmarks and stats',
+    handler: modelPerfHandler,
+    category: 'server',
+    usage: '/model-perf <model-id> [--json]',
+    examples: ['/model-perf mlx-community/Kimi-K2.5-3bit'],
+  },
+  {
+    command: 'downloads',
+    aliases: ['dl'],
+    description: 'Browse downloadable models and active download jobs',
+    handler: downloadsHandler,
+    category: 'server',
+    usage: '/downloads [--json]',
+    examples: ['/downloads'],
   },
 ];

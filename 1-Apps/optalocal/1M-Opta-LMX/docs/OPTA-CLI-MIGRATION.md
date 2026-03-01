@@ -7,7 +7,7 @@
 
 ## 1. Current Opta CLI State
 
-**Location:** `~/Synced/Opta/1-Apps/1D-Opta-CLI-TS/`
+**Location:** `~/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/`
 **Codebase:** 1,692 lines across 19 TypeScript files
 **Status:** Beta — agent loop complete, chat/sessions/memory/skills are stubs
 

@@ -19,9 +19,12 @@ export function getConnectionStatusDetail(): string {
 
 export function getConnectionDot(): string {
   switch (connectionStatus) {
-    case 'connected': return chalk.green('\u25cf');
-    case 'degraded': return chalk.yellow('\u25cf');
-    case 'disconnected': return chalk.red('\u25cf');
+    case 'connected':
+      return chalk.green('\u25cf');
+    case 'degraded':
+      return chalk.yellow('\u25cf');
+    case 'disconnected':
+      return chalk.red('\u25cf');
   }
 }
 
@@ -29,25 +32,28 @@ export async function checkConnection(
   host: string,
   port: number,
   fallbackHosts: string[] = [],
-  adminKey?: string,
+  adminKey?: string
 ): Promise<void> {
   try {
-    const endpoint = await resolveLmxEndpoint({
-      host,
-      fallbackHosts,
-      port,
-      adminKey,
-    }, { timeoutMs: 1000 });
+    const endpoint = await resolveLmxEndpoint(
+      {
+        host,
+        fallbackHosts,
+        port,
+        adminKey,
+      },
+      { timeoutMs: 1000 }
+    );
     const result = await probeLmxConnection(endpoint.host, port, { timeoutMs: 2000, adminKey });
     if (result.state === 'connected') {
       connectionStatus = 'connected';
       connectionStatusDetail = '';
     } else if (result.state === 'degraded') {
       connectionStatus = 'degraded';
-      connectionStatusDetail = result.reason ? String(result.reason) : 'LMX reachable but not ready';
+      connectionStatusDetail = result.reason ? result.reason : 'LMX reachable but not ready';
     } else {
       connectionStatus = 'disconnected';
-      connectionStatusDetail = result.reason ? String(result.reason) : 'LMX disconnected';
+      connectionStatusDetail = result.reason ? result.reason : 'LMX disconnected';
     }
   } catch (err) {
     // Connection failed - set status to disconnected
@@ -68,7 +74,7 @@ export function startConnectionMonitor(
   host: string,
   port: number,
   fallbackHosts: string[] = [],
-  adminKey?: string,
+  adminKey?: string
 ): () => void {
   // Run initial check immediately
   checkConnection(host, port, fallbackHosts, adminKey).catch((err: unknown) => {
@@ -130,15 +136,13 @@ export class InputEditor {
 
   deleteBackward(): void {
     if (this.cursor === 0) return;
-    this.buffer =
-      this.buffer.slice(0, this.cursor - 1) + this.buffer.slice(this.cursor);
+    this.buffer = this.buffer.slice(0, this.cursor - 1) + this.buffer.slice(this.cursor);
     this.cursor--;
   }
 
   deleteForward(): void {
     if (this.cursor >= this.buffer.length) return;
-    this.buffer =
-      this.buffer.slice(0, this.cursor) + this.buffer.slice(this.cursor + 1);
+    this.buffer = this.buffer.slice(0, this.cursor) + this.buffer.slice(this.cursor + 1);
   }
 
   moveLeft(): void {
@@ -163,8 +167,7 @@ export class InputEditor {
   }
 
   insertText(text: string): void {
-    this.buffer =
-      this.buffer.slice(0, this.cursor) + text + this.buffer.slice(this.cursor);
+    this.buffer = this.buffer.slice(0, this.cursor) + text + this.buffer.slice(this.cursor);
     this.cursor += text.length;
   }
 
@@ -175,8 +178,7 @@ export class InputEditor {
 
   insertNewline(): void {
     if (!this.options.multiline) return;
-    this.buffer =
-      this.buffer.slice(0, this.cursor) + '\n' + this.buffer.slice(this.cursor);
+    this.buffer = this.buffer.slice(0, this.cursor) + '\n' + this.buffer.slice(this.cursor);
     this.cursor += 1;
   }
 
@@ -222,7 +224,12 @@ export class InputEditor {
 
   private pastedContent: string | null = null;
 
-  handlePaste(text: string): { isPaste: boolean; lineCount: number; abbreviated: string; fullContent: string } {
+  handlePaste(text: string): {
+    isPaste: boolean;
+    lineCount: number;
+    abbreviated: string;
+    fullContent: string;
+  } {
     const lines = text.split('\n');
     const isPaste = lines.length > 1;
 
@@ -256,15 +263,18 @@ export class InputEditor {
   getPromptDisplay(): string {
     const dot = getConnectionDot();
     const detail = getConnectionStatusDetail();
-    const detailSuffix = detail && getConnectionStatus() !== 'connected'
-      ? chalk.dim(` (${detail.slice(0, 40)})`)
-      : '';
+    const detailSuffix =
+      detail && getConnectionStatus() !== 'connected' ? chalk.dim(` (${detail.slice(0, 40)})`) : '';
     const mode = this.getEffectiveMode();
     switch (mode) {
-      case 'shell': return `${dot} ${chalk.yellow('!')}${chalk.dim(' >')}${detailSuffix}`;
-      case 'plan': return `${dot} ${chalk.magenta('plan')}${chalk.dim(' >')}${detailSuffix}`;
-      case 'auto': return `${dot} ${chalk.yellow('auto')}${chalk.dim(' >')}${detailSuffix}`;
-      default: return `${dot} ${chalk.cyan('>')}${detailSuffix}`;
+      case 'shell':
+        return `${dot} ${chalk.yellow('!')}${chalk.dim(' >')}${detailSuffix}`;
+      case 'plan':
+        return `${dot} ${chalk.magenta('plan')}${chalk.dim(' >')}${detailSuffix}`;
+      case 'auto':
+        return `${dot} ${chalk.yellow('auto')}${chalk.dim(' >')}${detailSuffix}`;
+      default:
+        return `${dot} ${chalk.cyan('>')}${detailSuffix}`;
     }
   }
 }

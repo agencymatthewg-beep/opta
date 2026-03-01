@@ -35,7 +35,7 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       macos: {
         repo: "optaops/opta-lmx",
         patterns: ["opta-lmx", "mac", ".pkg", ".dmg"],
-        fallbackUrl: null,
+        fallbackUrl: "https://github.com/downloads/optaops/opta-lmx/opta-lmx-mac.pkg",
       },
       windows: null,
     },
@@ -111,38 +111,38 @@ export async function resolveDownloadAvailability(): Promise<DownloadAvailabilit
 
       const mac = macRelease
         ? {
-            url: macRelease.url,
-            available: true,
-            label: labelFor(macRelease.url, true),
-            source: "release" as const,
-          }
+          url: macRelease.url,
+          available: true,
+          label: labelFor(macRelease.url, true),
+          source: "release" as const,
+        }
         : macTarget?.fallbackUrl
           ? {
-              url: macTarget.fallbackUrl,
-              available: true,
-              label: labelFor(macTarget.fallbackUrl, true),
-              source: "fallback" as const,
-            }
+            url: macTarget.fallbackUrl,
+            available: true,
+            label: labelFor(macTarget.fallbackUrl, true),
+            source: "fallback" as const,
+          }
           : {
-              url: null,
-              available: false,
-              label: labelFor(null, false),
-              source: "none" as const,
-            };
+            url: null,
+            available: false,
+            label: labelFor(null, false),
+            source: "none" as const,
+          };
 
       const windows = winTarget
         ? {
-            url: winTarget.fallbackUrl,
-            available: Boolean(winTarget.fallbackUrl),
-            label: labelFor(winTarget.fallbackUrl, Boolean(winTarget.fallbackUrl)),
-            source: winTarget.fallbackUrl ? ("fallback" as const) : ("none" as const),
-          }
+          url: winTarget.fallbackUrl,
+          available: Boolean(winTarget.fallbackUrl),
+          label: labelFor(winTarget.fallbackUrl, Boolean(winTarget.fallbackUrl)),
+          source: winTarget.fallbackUrl ? ("fallback" as const) : ("none" as const),
+        }
         : {
-            url: null,
-            available: false,
-            label: "Coming Soon",
-            source: "none" as const,
-          };
+          url: null,
+          available: false,
+          label: "Coming Soon",
+          source: "none" as const,
+        };
 
       return [
         key,

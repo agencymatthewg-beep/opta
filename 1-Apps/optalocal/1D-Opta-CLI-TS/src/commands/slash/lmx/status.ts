@@ -1,5 +1,5 @@
 /**
- * LMX status, diagnostics, memory, metrics, events, predictor, and helpers handlers.
+ * LMX status, diagnostics, memory, metrics, events, predictor, stack, and helpers handlers.
  */
 
 import chalk from 'chalk';
@@ -18,7 +18,10 @@ import {
   fetchAdminText,
 } from './types.js';
 
-export const lmxStatusHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+export const lmxStatusHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const isFull = tokens.includes('--full');
+  
   const { LmxClient } = await import('../../../lmx/client.js');
   const { host, port } = ctx.config.connection;
   const lmx = new LmxClient({
@@ -28,9 +31,13 @@ export const lmxStatusHandler = async (_args: string, ctx: SlashContext): Promis
     adminKey: ctx.config.connection.adminKey,
   });
 
-  const [healthResult, statusResult] = await Promise.all([
-    lmx.health(FAST_SLASH_REQUEST_OPTS).catch(() => null),
-    lmx.status(FAST_SLASH_REQUEST_OPTS).catch(() => null),
+  const reqOpts = isFull ? { timeoutMs: 15_000, maxRetries: 1 } : FAST_SLASH_REQUEST_OPTS;
+
+  const [healthResult, statusResult, memory, available] = await Promise.all([
+    lmx.health(reqOpts).catch(() => null),
+    lmx.status(reqOpts).catch(() => null),
+    isFull ? lmx.memory(reqOpts).catch(() => null) : null,
+    isFull ? lmx.available(reqOpts).catch(() => null) : null,
   ]);
 
   const activeHost = lmx.getActiveHost();
@@ -60,6 +67,17 @@ export const lmxStatusHandler = async (_args: string, ctx: SlashContext): Promis
     lines.push(kv('Memory', `${usedGB}/${totalGB} GB ${progressBar(ratio, 12)}`));
   }
 
+  if (isFull && memory) {
+    const umUsed = (memory.used_gb).toFixed(1);
+    const umTotal = (memory.total_unified_memory_gb).toFixed(1);
+    const umPct = Math.round((memory.used_gb / memory.total_unified_memory_gb) * 100);
+    lines.push(kv('VRAM', `${umUsed}/${umTotal} GB (${umPct}%) [Threshold: ${memory.threshold_percent}%]`));
+  }
+
+  if (isFull && available) {
+    lines.push(kv('On Disk', `${available.length} models downloaded`));
+  }
+
   const hostLabel = isFallback
     ? `${activeHost}:${port} ${chalk.cyan('(fallback)')}`
     : `${activeHost}:${port}`;
@@ -78,7 +96,7 @@ export const lmxStatusHandler = async (_args: string, ctx: SlashContext): Promis
     lines.push(kv('Models', chalk.dim('(none loaded)')));
   }
 
-  console.log('\n' + box('LMX Status', lines));
+  console.log('\n' + box(isFull ? 'LMX Status (Full)' : 'LMX Status', lines));
   return 'handled';
 };
 
@@ -534,6 +552,82 @@ export const helpersHandler = async (args: string, ctx: SlashContext): Promise<S
     console.log('\n' + box('Helper Nodes', lines));
   } catch (err) {
     console.error(chalk.red('\u2717') + ` Helper health failed: ${errorMessage(err)}`);
+  }
+  return 'handled';
+};
+
+export const stackHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const json = tokens.includes('--json');
+  const unknown = tokens.filter((token) => token.startsWith('--') && token !== '--json');
+  if (unknown.length > 0) {
+    console.log(chalk.yellow(`  Unknown options: ${unknown.join(', ')}`));
+    console.log(chalk.dim('  Usage: /stack [--json]'));
+    return 'handled';
+  }
+
+  const { LmxClient } = await import('../../../lmx/client.js');
+  const lmx = new LmxClient({
+    host: ctx.config.connection.host,
+    fallbackHosts: ctx.config.connection.fallbackHosts,
+    port: ctx.config.connection.port,
+    adminKey: ctx.config.connection.adminKey,
+  });
+
+  try {
+    const stack = await lmx.stack(FAST_SLASH_REQUEST_OPTS);
+
+    if (json) {
+      console.log(renderJson(stack));
+      return 'handled';
+    }
+
+    const lines: string[] = [];
+
+    if (stack.default_model) {
+      lines.push(kv('Default', stack.default_model));
+    }
+
+    if (stack.loaded_models.length > 0) {
+      lines.push(kv('Loaded', String(stack.loaded_models.length)));
+      for (const id of stack.loaded_models) {
+        lines.push(`  ${chalk.green('\u25cf')} ${id}`);
+      }
+    } else {
+      lines.push(kv('Loaded', chalk.dim('(none)')));
+    }
+
+    const roleEntries = Object.entries(stack.roles);
+    if (roleEntries.length > 0) {
+      lines.push('');
+      lines.push(chalk.dim('Role Routing:'));
+      const nameW = Math.max(8, ...roleEntries.map(([n]) => n.length));
+      const modelW = Math.max(14, ...roleEntries.map(([, r]) => r.resolved_model?.length ?? 0));
+      lines.push(chalk.dim(`  ${'NAME'.padEnd(nameW)}  ${'RESOLVED MODEL'.padEnd(modelW)}  STATUS`));
+      for (const [roleName, role] of roleEntries) {
+        const modelText = role.resolved_model ?? '';
+        const modelColored = role.resolved_model
+          ? modelText.padEnd(modelW)
+          : chalk.dim('(none)'.padEnd(modelW));
+        const statusBadge = role.loaded ? chalk.green('loaded') : chalk.yellow('not loaded');
+        lines.push(`  ${roleName.padEnd(nameW)}  ${modelColored}  ${statusBadge}`);
+      }
+    }
+
+    const helperEntries = Object.entries(stack.helper_nodes);
+    if (helperEntries.length > 0) {
+      lines.push('');
+      lines.push(chalk.dim('Helper Nodes:'));
+      for (const [name, info] of helperEntries) {
+        const rec = asObject(info);
+        const status = readString(rec, 'status', 'health') ?? chalk.dim('(unknown)');
+        lines.push(`  ${name.padEnd(16)}  ${status}`);
+      }
+    }
+
+    console.log('\n' + box('LMX Stack', lines));
+  } catch (err) {
+    console.error(chalk.red('\u2717') + ` Stack query failed: ${errorMessage(err)}`);
   }
   return 'handled';
 };

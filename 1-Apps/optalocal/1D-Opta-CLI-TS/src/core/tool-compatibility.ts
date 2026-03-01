@@ -1,11 +1,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
-export const TOOL_COMPATIBILITY_RELATIVE_PATH = join(
-  '.opta',
-  'browser',
-  'tool-compatibility.json',
-);
+export const TOOL_COMPATIBILITY_RELATIVE_PATH = join('.opta', 'browser', 'tool-compatibility.json');
 
 export type ToolProtocolStatus = 'success' | 'pseudo_failure';
 
@@ -48,8 +44,9 @@ function compatibilityKey(model: string, provider: string): string {
 
 function normalizeTags(tags: string[] | undefined): string[] {
   if (!tags || tags.length === 0) return [];
-  return [...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))]
-    .sort((left, right) => left.localeCompare(right));
+  return [...new Set(tags.map((tag) => tag.trim().toLowerCase()).filter(Boolean))].sort(
+    (left, right) => left.localeCompare(right)
+  );
 }
 
 export function toolCompatibilityPath(cwd = process.cwd()): string {
@@ -73,12 +70,12 @@ async function readStore(cwd = process.cwd()): Promise<ToolCompatibilityStore> {
         if (!entry.model || !entry.provider || !entry.firstSeenAt || !entry.lastSeenAt) continue;
         if (entry.lastStatus !== 'success' && entry.lastStatus !== 'pseudo_failure') continue;
         entries[key] = {
-          model: String(entry.model),
-          provider: String(entry.provider),
-          firstSeenAt: String(entry.firstSeenAt),
-          lastSeenAt: String(entry.lastSeenAt),
-          successCount: Math.max(0, Math.floor(Number(entry.successCount ?? 0))),
-          pseudoFailureCount: Math.max(0, Math.floor(Number(entry.pseudoFailureCount ?? 0))),
+          model: entry.model,
+          provider: entry.provider,
+          firstSeenAt: entry.firstSeenAt,
+          lastSeenAt: entry.lastSeenAt,
+          successCount: Math.max(0, Math.floor(entry.successCount ?? 0)),
+          pseudoFailureCount: Math.max(0, Math.floor(entry.pseudoFailureCount ?? 0)),
           lastStatus: entry.lastStatus,
           lastPseudoTags: normalizeTags(entry.lastPseudoTags),
         };
@@ -115,7 +112,7 @@ async function writeStore(store: ToolCompatibilityStore, cwd = process.cwd()): P
 
 export async function readToolCompatibilityEntry(
   cwd: string,
-  input: { model: string; provider: string },
+  input: { model: string; provider: string }
 ): Promise<ToolCompatibilityEntry | null> {
   const key = compatibilityKey(input.model, input.provider);
   const store = await readStore(cwd);
@@ -124,7 +121,7 @@ export async function readToolCompatibilityEntry(
 
 export async function recordToolCompatibilityEvent(
   cwd: string,
-  event: ToolCompatibilityEventInput,
+  event: ToolCompatibilityEventInput
 ): Promise<ToolCompatibilityEntry> {
   const timestamp = event.timestamp ?? nowIso();
   const store = await readStore(cwd);
@@ -159,22 +156,22 @@ export async function recordToolCompatibilityEvent(
   return next;
 }
 
-export function buildToolCompatibilityInstruction(
-  entry: ToolCompatibilityEntry | null,
-): string {
+export function buildToolCompatibilityInstruction(entry: ToolCompatibilityEntry | null): string {
   if (!entry || entry.pseudoFailureCount <= 0) return '';
 
   const total = entry.successCount + entry.pseudoFailureCount;
   const failureRate = total > 0 ? entry.pseudoFailureCount / total : 1;
-  const tags = entry.lastPseudoTags.length > 0
-    ? `Last pseudo tags: ${entry.lastPseudoTags.join(', ')}.`
-    : 'Last pseudo tags: unknown.';
+  const tags =
+    entry.lastPseudoTags.length > 0
+      ? `Last pseudo tags: ${entry.lastPseudoTags.join(', ')}.`
+      : 'Last pseudo tags: unknown.';
 
-  const severity = entry.successCount === 0 || failureRate >= 0.5
-    ? 'high'
-    : failureRate >= 0.25
-      ? 'medium'
-      : 'low';
+  const severity =
+    entry.successCount === 0 || failureRate >= 0.5
+      ? 'high'
+      : failureRate >= 0.25
+        ? 'medium'
+        : 'low';
 
   return [
     '### Tool-Call Compatibility',

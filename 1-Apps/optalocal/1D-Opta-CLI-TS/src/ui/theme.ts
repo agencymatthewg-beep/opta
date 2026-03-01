@@ -1,7 +1,7 @@
 import chalk, { type ChalkInstance } from 'chalk';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { readdir, readFile } from 'node:fs/promises';
+import { getThemesDir } from '../platform/paths.js';
 
 export interface ThemeColors {
   primary: string;
@@ -46,7 +46,7 @@ const BUILTIN_THEMES: Record<string, ThemeDef> = {
   opta: {
     description: 'Default Opta theme — Electric Violet accent',
     colors: {
-      primary: '#8B5CF6',
+      primary: '#A855F7',
       secondary: '#3B82F6',
       success: '#22C55E',
       error: '#EF4444',
@@ -145,7 +145,7 @@ export function validateThemeDef(value: unknown): ThemeDef | null {
   }
 
   return {
-    description: obj['description'] as string,
+    description: obj['description'],
     colors: colorsObj as unknown as ThemeColors,
   };
 }
@@ -160,7 +160,7 @@ export function validateThemeDef(value: unknown): ThemeDef | null {
  */
 export function getCustomThemeDirs(): string[] {
   return [
-    join(homedir(), '.config', 'opta', 'themes'),
+    getThemesDir(),
     join(process.cwd(), '.opta', 'themes'),
   ];
 }

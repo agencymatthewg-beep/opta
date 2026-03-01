@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Opta Local — Production Readiness Design
 
 **Date:** 2026-02-26

@@ -1,5 +1,6 @@
 import WebSocket, { type RawData } from 'ws';
 import type OpenAI from 'openai';
+import type { LmxDiscoveryDoc } from './types.js';
 
 export type LmxConnectionState = 'connected' | 'degraded' | 'disconnected';
 
@@ -8,6 +9,7 @@ export interface LmxConnectionResult {
   latencyMs: number;
   modelsLoaded?: number;
   reason?: string;
+  discovery?: LmxDiscoveryDoc;
 }
 
 interface ProbeOptions {
@@ -20,6 +22,8 @@ interface LmxWsStreamOptions {
   signal?: AbortSignal;
   handshakeTimeoutMs?: number;
   idleTimeoutMs?: number;
+  /** Override the default ws://{host}:{port}/v1/chat/stream URL. */
+  wsUrl?: string;
 }
 
 export interface LmxChatStreamRequest {
@@ -134,9 +138,9 @@ class AsyncChunkQueue implements AsyncIterable<Chunk> {
           this.waiters.push({ resolve, reject });
         });
       },
-      return: async () => {
+      return: () => {
         this.finish();
-        return { value: undefined as unknown as Chunk, done: true };
+        return Promise.resolve({ value: undefined as unknown as Chunk, done: true as const });
       },
     };
   }
@@ -144,7 +148,13 @@ class AsyncChunkQueue implements AsyncIterable<Chunk> {
 
 function parseWsJson(raw: RawData): LmxWsMessage | null {
   try {
-    return JSON.parse(String(raw)) as LmxWsMessage;
+    return JSON.parse(
+      Buffer.isBuffer(raw)
+        ? raw.toString()
+        : Array.isArray(raw)
+          ? Buffer.concat(raw).toString()
+          : Buffer.from(raw).toString()
+    ) as LmxWsMessage;
   } catch {
     return null;
   }
@@ -235,7 +245,12 @@ function normalizeFinishReason(
   value: unknown
 ): 'length' | 'stop' | 'tool_calls' | 'content_filter' | 'function_call' | null {
   if (value === null) return null;
-  if (value === 'length' || value === 'tool_calls' || value === 'content_filter' || value === 'function_call') {
+  if (
+    value === 'length' ||
+    value === 'tool_calls' ||
+    value === 'content_filter' ||
+    value === 'function_call'
+  ) {
     return value;
   }
   return 'stop';
@@ -246,23 +261,12 @@ function buildSignal(timeoutMs: number, external?: AbortSignal): AbortSignal {
   return AbortSignal.any([external, AbortSignal.timeout(timeoutMs)]);
 }
 
-/**
- * Probe Opta LMX reachability using the lightweight health endpoints first.
- *
- * Order:
- * 1) /healthz (liveness, unauthenticated)
- * 2) /readyz (readiness + loaded model count)
- * 3) /v1/models (fallback for older servers without /readyz)
- */
-export async function probeLmxConnection(
-  host: string,
-  port: number,
-  options?: ProbeOptions
+async function runLmxProbes(
+  base: string,
+  started: number,
+  timeoutMs: number,
+  adminKey?: string
 ): Promise<LmxConnectionResult> {
-  const timeoutMs = options?.timeoutMs ?? 2000;
-  const base = `http://${host}:${port}`;
-  const started = Date.now();
-
   // 1) Liveness
   try {
     const res = await fetch(`${base}/healthz`, {
@@ -312,7 +316,7 @@ export async function probeLmxConnection(
   // 3) Fallback for older LMX versions
   try {
     const headers: Record<string, string> = {};
-    if (options?.adminKey) headers['X-Admin-Key'] = options.adminKey;
+    if (adminKey) headers['X-Admin-Key'] = adminKey;
     const modelsRes = await fetch(`${base}/v1/models`, {
       signal: buildSignal(timeoutMs),
       headers,
@@ -340,30 +344,83 @@ export async function probeLmxConnection(
   }
 }
 
+async function fetchLmxDiscovery(
+  host: string,
+  port: number,
+  timeoutMs: number
+): Promise<LmxDiscoveryDoc | null> {
+  try {
+    const res = await fetch(`http://${host}:${port}/.well-known/opta-lmx`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as LmxDiscoveryDoc;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Probe Opta LMX reachability using the lightweight health endpoints first.
+ *
+ * Order:
+ * 1) /healthz (liveness, unauthenticated)
+ * 2) /readyz (readiness + loaded model count)
+ * 3) /v1/models (fallback for older servers without /readyz)
+ *
+ * If the server is reachable, also fetches /.well-known/opta-lmx for
+ * zero-config discovery metadata (canonical WS URL, auth profile, loaded
+ * models). Failure to fetch the discovery document never degrades the
+ * connection state — it is silently omitted for backward compatibility with
+ * older LMX versions.
+ */
+export async function probeLmxConnection(
+  host: string,
+  port: number,
+  options?: ProbeOptions
+): Promise<LmxConnectionResult> {
+  const timeoutMs = options?.timeoutMs ?? 2000;
+  const base = `http://${host}:${port}`;
+  const started = Date.now();
+
+  const result = await runLmxProbes(base, started, timeoutMs, options?.adminKey);
+
+  if (result.state !== 'disconnected') {
+    const doc = await fetchLmxDiscovery(host, port, Math.min(timeoutMs, 2000));
+    if (doc !== null) {
+      result.discovery = doc;
+    }
+  }
+
+  return result;
+}
+
 /**
  * Preferred low-latency transport for daemon-side LMX streaming.
  *
  * Uses /v1/chat/stream (WebSocket) and emits OpenAI-compatible chunks so the
  * existing stream collector can remain provider-agnostic.
  */
-export async function streamLmxChatWebSocket(
+export function streamLmxChatWebSocket(
   host: string,
   port: number,
   request: LmxChatStreamRequest,
   options?: LmxWsStreamOptions
-): Promise<AsyncIterable<Chunk>> {
+): AsyncIterable<Chunk> {
   if (options?.signal?.aborted) {
     throw makeAbortError('LMX stream aborted before start');
   }
 
   const queue = new AsyncChunkQueue();
-  const protocol = 'ws';
-  const url = `${protocol}://${host}:${port}/v1/chat/stream`;
+  const url = options?.wsUrl ?? `ws://${host}:${port}/v1/chat/stream`;
   const headers: Record<string, string> = {};
   if (options?.adminKey) {
     headers['X-Admin-Key'] = options.adminKey;
   }
-  const handshakeTimeoutMs = Math.max(0, options?.handshakeTimeoutMs ?? DEFAULT_WS_HANDSHAKE_TIMEOUT_MS);
+  const handshakeTimeoutMs = Math.max(
+    0,
+    options?.handshakeTimeoutMs ?? DEFAULT_WS_HANDSHAKE_TIMEOUT_MS
+  );
   const idleTimeoutMs = Math.max(0, options?.idleTimeoutMs ?? DEFAULT_WS_IDLE_TIMEOUT_MS);
 
   const socket = new WebSocket(url, { headers });
@@ -434,10 +491,12 @@ export async function streamLmxChatWebSocket(
   const onAbort = () => {
     const abortErr = makeAbortError('LMX stream aborted');
     if (requestId && socket.readyState === WebSocket.OPEN) {
-      socket.send(JSON.stringify({
-        type: 'chat.cancel',
-        request_id: requestId,
-      }));
+      socket.send(
+        JSON.stringify({
+          type: 'chat.cancel',
+          request_id: requestId,
+        })
+      );
     }
     fail(abortErr);
   };
@@ -449,11 +508,13 @@ export async function streamLmxChatWebSocket(
       onAbort();
       return;
     }
-    socket.send(JSON.stringify({
-      type: 'chat.request',
-      stream: true,
-      ...request,
-    }));
+    socket.send(
+      JSON.stringify({
+        type: 'chat.request',
+        stream: true,
+        ...request,
+      })
+    );
   });
 
   socket.on('message', (raw: RawData) => {
@@ -481,7 +542,12 @@ export async function streamLmxChatWebSocket(
       return;
     }
 
-    if (data.type === 'chat.done' || data.type === 'chat.complete' || data.type === 'chat.completed' || data.type === 'done') {
+    if (
+      data.type === 'chat.done' ||
+      data.type === 'chat.complete' ||
+      data.type === 'chat.completed' ||
+      data.type === 'done'
+    ) {
       completed = true;
       const finishReason = normalizeFinishReason(data.finish_reason);
       queue.push(toDoneChunk(requestId ?? 'chatcmpl-lmx', model, finishReason, data.usage));
@@ -491,7 +557,8 @@ export async function streamLmxChatWebSocket(
 
     if (data.type === 'chat.error') {
       completed = true;
-      const message = typeof data.error === 'string' && data.error ? data.error : 'LMX websocket error';
+      const message =
+        typeof data.error === 'string' && data.error ? data.error : 'LMX websocket error';
       fail(new Error(message));
     }
   });
@@ -512,16 +579,16 @@ export async function streamLmxChatWebSocket(
     // without emitting an explicit chat.done frame.
     if (code === 1000 && (sawContentChunk || sawToolChunk)) {
       completed = true;
-      queue.push(toDoneChunk(
-        requestId ?? 'chatcmpl-lmx',
-        model,
-        sawToolChunk ? 'tool_calls' : 'stop',
-      ));
+      queue.push(
+        toDoneChunk(requestId ?? 'chatcmpl-lmx', model, sawToolChunk ? 'tool_calls' : 'stop')
+      );
       finish();
       return;
     }
 
-    const reason = Buffer.isBuffer(reasonBuf) ? reasonBuf.toString('utf-8') : String(reasonBuf ?? '');
+    const reason = Buffer.isBuffer(reasonBuf)
+      ? reasonBuf.toString('utf-8')
+      : String(reasonBuf ?? '');
     const details = reason ? ` (code ${code}: ${reason})` : ` (code ${code})`;
     fail(new Error(`LMX websocket stream closed unexpectedly${details}`));
   });

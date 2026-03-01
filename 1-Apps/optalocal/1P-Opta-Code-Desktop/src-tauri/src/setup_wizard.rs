@@ -203,6 +203,23 @@ pub fn probe_lmx_server(host: String, port: u16) -> LmxProbeResult {
     }
 }
 
+/// Return the current OS as a lowercase string: "macos", "windows", or "linux".
+#[tauri::command]
+pub fn get_platform() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        "macos"
+    }
+    #[cfg(target_os = "windows")]
+    {
+        "windows"
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        "linux"
+    }
+}
+
 /// Return the platform-appropriate Opta config *directory* for display.
 #[tauri::command]
 pub fn get_config_dir() -> Result<String, String> {

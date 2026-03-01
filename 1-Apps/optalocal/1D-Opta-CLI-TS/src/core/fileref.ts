@@ -45,7 +45,7 @@ export async function resolveFileRefs(message: string): Promise<{ cleanMessage: 
         const content = await readFile(fullPath, 'utf-8');
         const lines = content.split('\n').length;
         return {
-          original: match[0]!,
+          original: match[0],
           path: fullPath,
           content,
           lines,
@@ -134,7 +134,7 @@ export async function resolveImageRefs(message: string): Promise<{ cleanMessage:
         return {
           index: idx,
           image: {
-            original: match[0]!,
+            original: match[0],
             path: fullPath,
             base64,
             mimeType,

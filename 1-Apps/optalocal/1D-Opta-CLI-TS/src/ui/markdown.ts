@@ -13,23 +13,24 @@ function isTableSeparator(line: string): boolean {
 
 function splitTableRow(line: string): string[] {
   const trimmed = line.trim().replace(/^\|/, '').replace(/\|$/, '');
-  return trimmed.split('|').map(c => c.trim());
+  return trimmed.split('|').map((c) => c.trim());
 }
 
 function formatTableBlock(lines: string[], width: number): string[] {
   if (lines.length < 2 || !isTableSeparator(lines[1]!)) return lines;
   const rows = lines.map(splitTableRow);
-  const colCount = Math.max(...rows.map(r => r.length));
-  const normalized = rows.map(r => [...r, ...Array(Math.max(0, colCount - r.length)).fill('')]);
+  const colCount = Math.max(...rows.map((r) => r.length));
+  const normalized = rows.map((r) => [...r, ...Array(Math.max(0, colCount - r.length)).fill('')]);
 
   const maxTotal = Math.max(20, width - 6);
   const baseCol = Math.max(4, Math.floor(maxTotal / colCount) - 3);
   const colWidths = Array.from({ length: colCount }, (_, i) =>
-    Math.min(baseCol, Math.max(4, ...normalized.map(r => visibleTextWidth(String(r[i] ?? '')))))
+    Math.min(baseCol, Math.max(4, ...normalized.map((r) => visibleTextWidth(String(r[i] ?? '')))))
   );
 
-  const render = (cells: string[]) => `| ${cells.map((c, i) => fitTextToWidth(String(c), colWidths[i]!, { pad: true })).join(' | ')} |`;
-  const rule = `|-${colWidths.map(w => '-'.repeat(w)).join('-|-')}-|`;
+  const render = (cells: string[]) =>
+    `| ${cells.map((c, i) => fitTextToWidth(c, colWidths[i]!, { pad: true })).join(' | ')} |`;
+  const rule = `|-${colWidths.map((w) => '-'.repeat(w)).join('-|-')}-|`;
 
   const out: string[] = [];
   out.push(render(normalized[0]!));
@@ -84,31 +85,29 @@ async function getRenderer(): Promise<(md: string) => string> {
     const { markedTerminal } = await import('marked-terminal');
 
     const marked = new Marked(
-      markedTerminal(
-        {
-          code: chalk.hex('#F59E0B'),
-          codespan: chalk.hex('#F59E0B').bold,
-          firstHeading: chalk.hex('#8B5CF6').bold.underline,
-          heading: chalk.hex('#3B82F6').bold,
-          strong: chalk.bold,
-          em: chalk.italic,
-          del: chalk.dim.strikethrough,
-          blockquote: chalk.hex('#71717A').italic,
-          link: chalk.hex('#3B82F6').underline,
-          href: chalk.hex('#3B82F6').underline,
-          listitem: chalk.reset,
-          table: chalk.reset,
-          hr: chalk.dim,
-          paragraph: chalk.reset,
-          html: chalk.dim,
-          width: 100,
-          reflowText: false,
-          showSectionPrefix: true,
-          unescape: true,
-          emoji: true,
-          tab: 2,
-        }
-      )
+      markedTerminal({
+        code: chalk.hex('#F59E0B'),
+        codespan: chalk.hex('#F59E0B').bold,
+        firstHeading: chalk.hex('#8B5CF6').bold.underline,
+        heading: chalk.hex('#3B82F6').bold,
+        strong: chalk.bold,
+        em: chalk.italic,
+        del: chalk.dim.strikethrough,
+        blockquote: chalk.hex('#71717A').italic,
+        link: chalk.hex('#3B82F6').underline,
+        href: chalk.hex('#3B82F6').underline,
+        listitem: chalk.reset,
+        table: chalk.reset,
+        hr: chalk.dim,
+        paragraph: chalk.reset,
+        html: chalk.dim,
+        width: 100,
+        reflowText: false,
+        showSectionPrefix: false,
+        unescape: true,
+        emoji: true,
+        tab: 2,
+      })
     );
 
     renderer = (md: string) => {

@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Never-Crash Load + Multi-Backend Routing + Autotune Implementation Plan
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.

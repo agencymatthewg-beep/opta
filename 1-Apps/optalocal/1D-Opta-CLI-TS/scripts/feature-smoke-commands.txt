@@ -1,0 +1,111 @@
+# Opta CLI feature smoke command list
+# One command tail per line, executed as: node dist/index.js <line>
+--help
+onboard --help
+chat --help
+tui --help
+do --help
+embed --help
+rerank --help
+benchmark --help
+status --help
+models --help
+env --help
+config --help
+sessions --help
+init --help
+diff --help
+serve --help
+update --help
+server --help
+doctor --help
+completions --help
+account --help
+account signup --help
+account login --help
+account status --help
+account logout --help
+key --help
+key create --help
+key show --help
+key copy --help
+mcp --help
+mcp list --help
+mcp add --help
+mcp add-playwright --help
+mcp remove --help
+mcp test --help
+daemon --help
+daemon start --help
+daemon run --help
+daemon stop --help
+daemon status --help
+daemon logs --help
+keychain --help
+keychain status --help
+keychain set-anthropic --help
+keychain set-lmx --help
+keychain delete-anthropic --help
+keychain delete-lmx --help
+models help
+models list --help
+models manage --help
+models interactive --help
+models ui --help
+models dashboard --help
+models aliases --help
+models alias --help
+models unalias --help
+models use --help
+models info --help
+models load --help
+models unload --help
+models stop --help
+models swap --help
+models history --help
+models download --help
+models delete --help
+models remove --help
+models benchmark --help
+models bench --help
+models predictor --help
+models helpers --help
+models quantize --help
+models agents --help
+models skills --help
+models rag --help
+models health --help
+models scan --help
+models browse --help
+models browse-local --help
+models library --help
+models browse-library --help
+models quantize list --help
+models quantize status --help
+models quantize start --help
+models agents list --help
+models agents start --help
+models agents status --help
+models agents events --help
+models agents cancel --help
+models skills list --help
+models skills show --help
+models skills tools --help
+models skills run --help
+models skills mcp-call --help
+models skills openclaw --help
+models rag collections --help
+models rag delete --help
+models rag query --help
+models rag ingest --help
+models rag context --help
+config list
+env list
+sessions list
+mcp list --json
+keychain status
+status --json
+serve status --json
+doctor --json
+models health --json
+models list --json

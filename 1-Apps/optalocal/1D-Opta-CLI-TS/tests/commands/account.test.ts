@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { request as httpRequest } from 'node:http';
 import { EXIT, ExitError } from '../../src/core/errors.js';
 import type { AccountState } from '../../src/accounts/types.js';
 
@@ -26,6 +27,26 @@ function jsonResponse(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
     status,
     headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+async function requestCallback(url: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const parsed = new URL(url);
+    const req = httpRequest(
+      {
+        host: parsed.hostname,
+        port: parsed.port,
+        path: `${parsed.pathname}${parsed.search}`,
+        method: 'GET',
+      },
+      (res) => {
+        res.resume();
+        res.on('end', resolve);
+      },
+    );
+    req.on('error', reject);
+    req.end();
   });
 }
 
@@ -245,5 +266,166 @@ describe('account command', () => {
     expect(payload.ok).toBe(false);
     expect(String(payload.error)).toContain('Supabase Auth is not configured');
     expect(stderr).toHaveLength(0);
+  });
+
+  it('runOAuthLoginFlow exchanges auth code via PKCE callback and persists state', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      access_token: 'pkce-access',
+      refresh_token: 'pkce-refresh',
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: 1_900_000_000,
+      user: {
+        id: 'user_pkce',
+        email: 'pkce@example.com',
+      },
+    }));
+
+    let capturedSignInUrl: string | null = null;
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const resultPromise = runOAuthLoginFlow({
+      onSignInUrl: (url) => {
+        capturedSignInUrl = url;
+      },
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        expect(parsed.searchParams.get('code_challenge')).toBeTruthy();
+        expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
+        expect(parsed.searchParams.get('response_type')).toBe('code');
+        expect(port).toBeTruthy();
+        expect(state).toBeTruthy();
+
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        callbackUrl.searchParams.set('code', 'auth-code-123');
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
+      },
+    });
+
+    const result = await resultPromise;
+    expect(capturedSignInUrl).toContain('/sign-in?');
+    expect(result.user?.email).toBe('pkce@example.com');
+    expect(result.session.access_token).toBe('pkce-access');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://proj-ref.supabase.co/auth/v1/token?grant_type=pkce',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(saveAccountStateMock).toHaveBeenCalledTimes(1);
+    expect(saveAccountStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        project: 'proj-ref',
+        session: expect.objectContaining({ access_token: 'pkce-access' }),
+        user: expect.objectContaining({ id: 'user_pkce' }),
+      }),
+    );
+  });
+
+  it('runOAuthLoginFlow supports opta-session mode with strict handoff token + auth code', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
+      access_token: 'opta-access',
+      refresh_token: 'opta-refresh',
+      token_type: 'bearer',
+      expires_in: 3600,
+      expires_at: 1_900_000_000,
+      user: {
+        id: 'user_opta',
+        email: 'opta@example.com',
+      },
+    }));
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const result = await runOAuthLoginFlow({
+      browserMode: 'opta-session',
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        const handoff = parsed.searchParams.get('handoff');
+        expect(handoff).toBeTruthy();
+        expect(parsed.searchParams.get('response_type')).toBe('code');
+
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        callbackUrl.searchParams.set('handoff', handoff ?? '');
+        callbackUrl.searchParams.set('code', 'auth-code-opta');
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
+      },
+    });
+
+    expect(result.session.access_token).toBe('opta-access');
+    expect(result.user?.email).toBe('opta@example.com');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://proj-ref.supabase.co/auth/v1/token?grant_type=pkce',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('runOAuthLoginFlow rejects legacy token callback in opta-session mode', async () => {
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+
+    await expect(runOAuthLoginFlow({
+      browserMode: 'opta-session',
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        const handoff = parsed.searchParams.get('handoff');
+
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        callbackUrl.searchParams.set('handoff', handoff ?? '');
+        callbackUrl.searchParams.set('access_token', 'legacy-access');
+        callbackUrl.searchParams.set('refresh_token', 'legacy-refresh');
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
+      },
+    })).rejects.toThrowError(/Missing auth code in callback/);
+
+    expect(saveAccountStateMock).toHaveBeenCalledTimes(0);
+  });
+
+  it('runOAuthLoginFlow supports legacy token callback for compatibility', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, {
+        id: 'legacy-user',
+        email: 'legacy@example.com',
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        // second call should not happen in this path; keep stub to avoid accidental network.
+      }));
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const result = await runOAuthLoginFlow({
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        callbackUrl.searchParams.set('access_token', 'legacy-access');
+        callbackUrl.searchParams.set('refresh_token', 'legacy-refresh');
+        callbackUrl.searchParams.set('expires_at', String(1_900_000_000));
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
+      },
+    });
+
+    expect(result.session.access_token).toBe('legacy-access');
+    expect(result.user?.email).toBe('legacy@example.com');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://proj-ref.supabase.co/auth/v1/user',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(saveAccountStateMock).toHaveBeenCalledTimes(1);
   });
 });

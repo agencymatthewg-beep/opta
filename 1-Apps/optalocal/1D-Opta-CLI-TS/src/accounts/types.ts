@@ -22,6 +22,7 @@ export interface AccountState {
   session: SupabaseSession | null;
   user: SupabaseUser | null;
   updatedAt: string;
+  deviceId?: string | null;
 }
 
 export type AccountIdentifier =

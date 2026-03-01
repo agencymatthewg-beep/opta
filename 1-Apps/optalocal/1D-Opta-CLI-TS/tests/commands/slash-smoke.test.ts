@@ -39,6 +39,7 @@ describe('slash command smoke checks', () => {
       'daemon',
       'doctor',
       'completions',
+      'browser',
     ];
 
     for (const command of required) {
@@ -62,5 +63,8 @@ describe('slash command smoke checks', () => {
     expect(logs.join('\n')).toContain('/help');
     expect(logs.join('\n')).toContain('/config');
     expect(logs.join('\n')).toContain('/scan');
+    expect(logs.join('\n')).toContain('ceo-max');
+    expect(logs.join('\n')).toContain('/browser host start');
+    expect(logs.join('\n')).toContain('--screen peekaboo');
   });
 });

@@ -28,7 +28,7 @@ export class FallbackProvider implements ProviderClient {
   }
 
   private hasFallbackKey(): boolean {
-    return !!(this.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']);
+    return !!(this.config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY']);
   }
 
   async getClient(): Promise<import('openai').default> {
@@ -40,7 +40,7 @@ export class FallbackProvider implements ProviderClient {
           console.error('[opta] LMX recovered — switching back from Anthropic fallback');
           this.usingFallback = false;
         }
-        return this.primary.getClient();
+        return await this.primary.getClient();
       }
     } catch {
       // Health check failed — try fallback

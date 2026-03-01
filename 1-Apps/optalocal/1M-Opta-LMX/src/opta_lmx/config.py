@@ -388,6 +388,37 @@ class SkillsConfig(BaseModel):
     remote_mcp_api_key: str = ""
 
 
+class EndpointPolicyHooksConfig(BaseModel):
+    """Optional hook controls for sensitive endpoint authorization checks."""
+
+    enabled: bool = Field(False, description="Enable endpoint policy hook checks")
+    mode: str = Field("audit", pattern="^(audit|enforce)$")
+    admin_sensitive_enabled: bool = Field(
+        False,
+        description="Apply hooks on sensitive /admin routes",
+    )
+    skills_sensitive_enabled: bool = Field(
+        False,
+        description="Apply hooks on sensitive /v1/skills routes",
+    )
+    agents_sensitive_enabled: bool = Field(
+        False,
+        description="Apply hooks on sensitive /v1/agents routes",
+    )
+    require_account: bool = Field(
+        False,
+        description="Require account identity on guarded endpoints",
+    )
+    require_device: bool = Field(
+        False,
+        description="Require device identity on guarded endpoints",
+    )
+    required_capabilities: list[str] = Field(default_factory=list)
+    account_id_header: str = "X-Account-Id"
+    device_id_header: str = "X-Device-Id"
+    capabilities_header: str = "X-Capabilities"
+
+
 class SecurityConfig(BaseModel):
     """Authentication settings.
 
@@ -403,7 +434,11 @@ class SecurityConfig(BaseModel):
     )
     profile: str = Field("lan", description="Security profile: 'lan' or 'cloud'")
     cors_allowed_origins: list[str] = Field(default_factory=list)
-    mtls_mode: str = Field("off", description="mTLS mode: off, optional, required")
+    mtls_mode: str = Field(
+        "off",
+        pattern="^(off|optional|required)$",
+        description="mTLS mode: off, optional, required",
+    )
     mtls_client_subject_header: str = ""
     mtls_allowed_subjects: list[str] = Field(default_factory=list)
     supabase_jwt_enabled: bool = False
@@ -425,9 +460,20 @@ class SecurityConfig(BaseModel):
         description="Rate limiting configuration for inference endpoints",
     )
 
+    endpoint_policy_hooks: EndpointPolicyHooksConfig = Field(
+        default_factory=EndpointPolicyHooksConfig,
+        description="Optional policy hooks for sensitive admin/skills/agents routes",
+    )
+
     @model_validator(mode="after")
     def _validate_cloud_profile_requires_auth(self) -> SecurityConfig:
         """Fail-closed: cloud profile requires at least one auth mechanism."""
+        if self.mtls_mode != "off" and not self.mtls_client_subject_header.strip():
+            raise ValueError(
+                "mtls_client_subject_header must be set when mtls_mode is "
+                "'optional' or 'required'."
+            )
+
         if self.profile == "cloud":
             has_inference_auth = (
                 self.inference_api_key is not None or self.supabase_jwt_enabled
@@ -502,6 +548,20 @@ class WorkersConfig(BaseModel):
     )
 
 
+
+class DeviceConfig(BaseModel):
+    """Self-identity declaration for this LMX server instance."""
+
+    name: str = Field("", description="Human-readable device name (e.g. Mono512)")
+    purpose: str = Field(
+        "", description="Device purpose description (e.g. Heavy compute, overnight automation)"
+    )
+    role: str = Field(
+        "inference_server",
+        description="Device role: inference_server | workstation | edge",
+    )
+
+
 class LMXConfig(BaseSettings):
     """Root configuration for Opta-LMX.
 
@@ -535,6 +595,7 @@ class LMXConfig(BaseSettings):
         default_factory=dict,
         description="Named model stack presets mapping roles to model IDs",
     )
+    device: DeviceConfig = Field(default_factory=DeviceConfig)  # type: ignore[arg-type]
     backends: dict[str, BackendConfig] = Field(
         default_factory=dict,
         description="Named backend compute devices on the LAN",

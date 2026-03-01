@@ -12,7 +12,7 @@ const STREAMING_SMALL_DELTA_CHARS = 16;
 const STREAMING_LARGE_DELTA_CHARS = 128;
 
 /** Maximum cache entries before evicting oldest. */
-const MAX_CACHE_SIZE = 200;
+const MAX_CACHE_SIZE = 800;
 const DEFAULT_RENDER_WIDTH = 100;
 
 // Module-level render cache: key = `${width}:${text}`, value = rendered ANSI string.
@@ -87,7 +87,7 @@ async function initMarkdownRenderer(): Promise<void> {
           html: chalk.dim,
           width,
           reflowText: false,
-          showSectionPrefix: true,
+          showSectionPrefix: false,
           unescape: true,
           emoji: true,
           tab: 2,

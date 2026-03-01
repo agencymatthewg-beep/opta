@@ -573,3 +573,28 @@ export interface RerankResponse {
   results: RerankResult[];
   model?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Device Identity (hardware probe + operator config)
+// ---------------------------------------------------------------------------
+
+export interface HardwareProfile {
+  hostname: string;
+  chip_name: string | null;
+  architecture: string | null;
+  memory_gb: number | null;
+  max_working_set_gb: number | null;
+  cpu_cores: number | null;
+  metal_available: boolean;
+  gpu_family: string | null;
+}
+
+export interface DeviceIdentity {
+  hardware: HardwareProfile;
+  identity: {
+    name: string;
+    purpose: string;
+    role: string;
+  };
+}
+

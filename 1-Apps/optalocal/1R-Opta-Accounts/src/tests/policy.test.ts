@@ -5,7 +5,7 @@ import {
   parseProvider,
   parseTrustState,
   parseString,
-} from "../lib/api/policy.js";
+} from "../lib/api/policy.ts";
 
 test("parseTrustState only allows supported states", () => {
   assert.equal(parseTrustState("trusted"), "trusted");

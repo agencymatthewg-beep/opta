@@ -1,12 +1,13 @@
 import React, { memo } from 'react';
 import { Box, Text } from 'ink';
 import { TOOL_ICONS, formatPath } from './utils.js';
+import { TUI_COLORS } from './palette.js';
 
 /** Status indicators for tool call states. */
 const STATUS = {
-  running: { icon: '*', color: 'yellow' as const, label: 'running...' },
-  done: { icon: '\u2714', color: 'green' as const, label: '' },
-  error: { icon: '\u2718', color: 'red' as const, label: 'error' },
+  running: { icon: '*', color: TUI_COLORS.warning, label: 'running...' },
+  done: { icon: '\u2714', color: TUI_COLORS.success, label: '' },
+  error: { icon: '\u2718', color: TUI_COLORS.danger, label: 'error' },
 };
 
 /** Max lines shown when the tool result is collapsed. */
@@ -33,7 +34,7 @@ export interface ToolCardProps {
 export function CompactToolItem({ name, status, args }: { name: string; status: 'running' | 'done' | 'error'; args?: Record<string, unknown> }) {
   const icon = TOOL_ICONS[name] ?? '';
   const symbol = status === 'running' ? '↻' : status === 'done' ? '✔' : '✗';
-  const color = status === 'running' ? 'cyan' : status === 'done' ? 'green' : 'red';
+  const color = status === 'running' ? TUI_COLORS.info : status === 'done' ? TUI_COLORS.success : TUI_COLORS.danger;
 
   // Get the most important argument
   let argStr = '';
@@ -45,9 +46,9 @@ export function CompactToolItem({ name, status, args }: { name: string; status: 
   return (
     <Box paddingLeft={2} marginBottom={0}>
       <Text color={color}>{symbol} </Text>
-      <Text dimColor>{icon} </Text>
+      <Text color={TUI_COLORS.dim}>{icon} </Text>
       <Text>{name}</Text>
-      {argStr && <Text dimColor> {argStr}</Text>}
+      {argStr && <Text color={TUI_COLORS.dim}> {argStr}</Text>}
     </Box>
   );
 }
@@ -62,9 +63,9 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
     case 'read_file':
       return (
         <Box paddingLeft={2}>
-          <Text color="cyan">{formatPath(args.path)}</Text>
+          <Text color={TUI_COLORS.info}>{formatPath(args.path)}</Text>
           {(args.offset || args.limit) ? (
-            <Text dimColor> lines {String(args.offset ?? 1)}-{Number(args.offset ?? 0) + Number(args.limit ?? 0)}</Text>
+            <Text color={TUI_COLORS.dim}> lines {String(args.offset ?? 1)}-{Number(args.offset ?? 0) + Number(args.limit ?? 0)}</Text>
           ) : null}
         </Box>
       );
@@ -73,8 +74,8 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
       const lines = countLines(args.content);
       return (
         <Box paddingLeft={2}>
-          <Text color="cyan">{formatPath(args.path)}</Text>
-          <Text dimColor> ({lines} line{lines !== 1 ? 's' : ''})</Text>
+          <Text color={TUI_COLORS.info}>{formatPath(args.path)}</Text>
+          <Text color={TUI_COLORS.dim}> ({lines} line{lines !== 1 ? 's' : ''})</Text>
         </Box>
       );
     }
@@ -87,13 +88,13 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
       return (
         <Box flexDirection="column">
           <Box paddingLeft={2}>
-            <Text color="cyan">{formatPath(args.path)}</Text>
+            <Text color={TUI_COLORS.info}>{formatPath(args.path)}</Text>
           </Box>
           {(oldLines > 0 || newLines > 0) ? (
             <Box paddingLeft={2}>
-              <Text color="red">-{oldLines} line{oldLines !== 1 ? 's' : ''}</Text>
-              <Text dimColor> {'\u2192'} </Text>
-              <Text color="green">+{newLines} line{newLines !== 1 ? 's' : ''}</Text>
+              <Text color={TUI_COLORS.danger}>-{oldLines} line{oldLines !== 1 ? 's' : ''}</Text>
+              <Text color={TUI_COLORS.dim}> {'\u2192'} </Text>
+              <Text color={TUI_COLORS.success}>+{newLines} line{newLines !== 1 ? 's' : ''}</Text>
             </Box>
           ) : null}
         </Box>
@@ -103,7 +104,7 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
     case 'run_command':
       return (
         <Box paddingLeft={2}>
-          <Text color="yellow">$ {String(args.command ?? '')}</Text>
+          <Text color={TUI_COLORS.warning}>$ {String(args.command ?? '')}</Text>
         </Box>
       );
 
@@ -111,11 +112,11 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
       return (
         <Box flexDirection="column">
           <Box paddingLeft={2}>
-            <Text color="yellow">/{String(args.pattern ?? '')}/</Text>
+            <Text color={TUI_COLORS.warning}>/{String(args.pattern ?? '')}/</Text>
           </Box>
           {args.path ? (
             <Box paddingLeft={2}>
-              <Text dimColor>in {String(args.path)}</Text>
+              <Text color={TUI_COLORS.dim}>in {String(args.path)}</Text>
             </Box>
           ) : null}
         </Box>
@@ -124,15 +125,15 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
     case 'find_files':
       return (
         <Box paddingLeft={2}>
-          <Text color="yellow">{String(args.pattern ?? args.glob ?? '')}</Text>
-          {args.path ? <Text dimColor> in {String(args.path)}</Text> : null}
+          <Text color={TUI_COLORS.warning}>{String(args.pattern ?? args.glob ?? '')}</Text>
+          {args.path ? <Text color={TUI_COLORS.dim}> in {String(args.path)}</Text> : null}
         </Box>
       );
 
     case 'list_dir':
       return (
         <Box paddingLeft={2}>
-          <Text color="cyan">{formatPath(args.path || '.')}</Text>
+          <Text color={TUI_COLORS.info}>{formatPath(args.path || '.')}</Text>
         </Box>
       );
 
@@ -151,7 +152,7 @@ function ToolArgs({ name, args }: { name: string; args: Record<string, unknown> 
         <Box flexDirection="column">
           {entries.map(([k, v]) => (
             <Box key={k} paddingLeft={2}>
-              <Text dimColor>{k}: </Text>
+              <Text color={TUI_COLORS.dim}>{k}: </Text>
               <Text>{String(v).slice(0, 50)}</Text>
             </Box>
           ))}
@@ -172,12 +173,12 @@ function ToolResult({ result, collapsed }: { result: string; collapsed: boolean 
   return (
     <Box flexDirection="column" paddingLeft={2} marginTop={0}>
       {displayLines.map((line, i) => (
-        <Text key={i} dimColor wrap="truncate">
+        <Text key={i} color={TUI_COLORS.dim} wrap="truncate">
           {line.slice(0, MAX_LINE_WIDTH)}
         </Text>
       ))}
       {truncated ? (
-        <Text dimColor italic>  ... {lines.length - COLLAPSED_LINES} more line{lines.length - COLLAPSED_LINES !== 1 ? 's' : ''}</Text>
+        <Text color={TUI_COLORS.dim} italic>  ... {lines.length - COLLAPSED_LINES} more line{lines.length - COLLAPSED_LINES !== 1 ? 's' : ''}</Text>
       ) : null}
     </Box>
   );

@@ -7,8 +7,18 @@
     "moduleResolution": "Bundler",
     "baseUrl": ".",
     "paths": {
-      "@opta/protocol-shared": ["../../packages/protocol-shared/src/index.ts"],
-      "@opta/protocol-shared/*": ["../../packages/protocol-shared/src/*"]
+      "@opta/protocol-shared": [
+        "../1D-Opta-CLI-TS/packages/protocol-shared/src/index.ts"
+      ],
+      "@opta/protocol-shared/*": [
+        "../1D-Opta-CLI-TS/packages/protocol-shared/src/*"
+      ],
+      "@opta/daemon-client": [
+        "../1D-Opta-CLI-TS/packages/daemon-client/src/index.ts"
+      ],
+      "@opta/daemon-client/*": [
+        "../1D-Opta-CLI-TS/packages/daemon-client/src/*"
+      ]
     },
     "resolveJsonModule": true,
     "isolatedModules": true,

@@ -19,14 +19,13 @@ import type { AgentMessage } from '../core/agent.js';
  */
 export function getSessionSummary(messages: AgentMessage[]): string {
   return messages
-    .filter(
-      (m) =>
-        (m.role === 'user' || m.role === 'assistant') && m.content != null,
-    )
+    .filter((m) => (m.role === 'user' || m.role === 'assistant') && m.content != null)
     .map((m) => {
-      const content = m.content!;
-      const truncated =
-        content.length > 200 ? content.slice(0, 200) + '...' : content;
+      const raw = m.content!;
+      const content = Array.isArray(raw)
+        ? raw.map((p) => (typeof p === 'string' ? p : JSON.stringify(p))).join('')
+        : raw;
+      const truncated = content.length > 200 ? content.slice(0, 200) + '...' : content;
       return `[${m.role}] ${truncated}`;
     })
     .join('\n');
@@ -39,7 +38,7 @@ export function getSessionSummary(messages: AgentMessage[]): string {
 export async function generateCommitMessage(
   messages: AgentMessage[],
   client: import('openai').default,
-  model: string,
+  model: string
 ): Promise<string> {
   const summary = getSessionSummary(messages);
   const fallback = 'feat: apply AI-assisted changes';
@@ -65,7 +64,7 @@ export async function generateCommitMessage(
 
     return message;
   } catch (err) {
-    debug(`Failed to generate commit message: ${err}`);
+    debug(`Failed to generate commit message: ${String(err)}`);
     return fallback;
   }
 }
@@ -79,7 +78,7 @@ export async function generateCommitMessage(
 export async function commitSessionChanges(
   cwd: string,
   files: string[],
-  message: string,
+  message: string
 ): Promise<boolean> {
   if (files.length === 0) {
     debug('commitSessionChanges: no files provided');
@@ -98,11 +97,10 @@ export async function commitSessionChanges(
   }
 
   // Verify there are staged changes
-  const diffResult = await execa(
-    'git',
-    ['diff', '--cached', '--name-only'],
-    { cwd, reject: false },
-  );
+  const diffResult = await execa('git', ['diff', '--cached', '--name-only'], {
+    cwd,
+    reject: false,
+  });
 
   if (diffResult.exitCode !== 0 || !diffResult.stdout.trim()) {
     debug('No staged changes after git add');

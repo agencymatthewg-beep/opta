@@ -4,6 +4,7 @@ import { formatTokens } from '../utils/tokens.js';
 import { fitTextToWidth } from '../utils/terminal-layout.js';
 import { formatAssistantDisplayText, sanitizeTerminalText } from '../utils/text.js';
 import { type ConnectionState, connectionDot, shortModelName, contextBar, contextBarColor } from './utils.js';
+import { TUI_COLORS } from './palette.js';
 
 const THINKING_LINE_WIDTH = 22;
 const THINKING_LINES_COLLAPSED = 2;
@@ -52,10 +53,10 @@ export function Sidebar({
 
   return (
     <Box flexDirection="column">
-      <Text bold color="cyan">Connection</Text>
+      <Text color={TUI_COLORS.accentSoft} bold>{'Connection'}</Text>
       <Box marginTop={1} flexDirection="column">
         <Box>
-          <Text dimColor>{'Status'.padEnd(8)}</Text>
+          <Text color={TUI_COLORS.dim}>{'Status'.padEnd(8)}</Text>
           <Text color={dot.color}>{dot.char}</Text>
           <Text color={dot.color}> {dot.label}</Text>
         </Box>
@@ -63,53 +64,53 @@ export function Sidebar({
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Text bold color="cyan">Session</Text>
+        <Text color={TUI_COLORS.accentSoft} bold>{'Session'}</Text>
         <Box marginTop={1} flexDirection="column">
           <Row label="Session" value={sessionId.slice(0, 8)} />
           {title && <Row label="Title" value={title.slice(0, 20)} />}
-          <Row label="Mode" value={mode} color={mode === 'plan' ? 'magenta' : mode === 'auto' ? 'yellow' : undefined} />
+          <Row label="Mode" value={mode} color={mode === 'plan' ? TUI_COLORS.accent : mode === 'auto' ? TUI_COLORS.warning : undefined} />
         </Box>
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Text bold color="cyan">Tokens</Text>
+        <Text color={TUI_COLORS.accentSoft} bold>{'Tokens'}</Text>
         <Row label="Prompt" value={formatTokens(tokens.prompt)} />
         <Row label="Reply" value={formatTokens(tokens.completion)} />
         <Row label="Total" value={formatTokens(tokens.total)} />
         {hasContext && (
           <Box>
-            <Text dimColor>{'Context'.padEnd(8)}</Text>
+            <Text color={TUI_COLORS.dim}>{'Context'.padEnd(8)}</Text>
             <Text color={contextBarColor(contextUsage!.used, contextUsage!.total)}>
               {contextBar(contextUsage!.used, contextUsage!.total)}
             </Text>
-            <Text dimColor> {ctxPct}%</Text>
+            <Text color={TUI_COLORS.dim}> {ctxPct}%</Text>
           </Box>
         )}
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Text bold color="cyan">Stats</Text>
+        <Text color={TUI_COLORS.accentSoft} bold>{'Stats'}</Text>
         <Row label="Tools" value={String(tools)} />
-        <Row label="Cost" value={cost} color="green" />
+        <Row label="Cost" value={cost} color={TUI_COLORS.success} />
         {elapsed > 0 && <Row label="Time" value={`${elapsed.toFixed(1)}s`} />}
         {speed !== undefined && speed > 0 && <Row label="Speed" value={`${speed.toFixed(0)} t/s`} />}
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Text bold color="cyan">Live Thinking</Text>
+        <Text color={TUI_COLORS.accentSoft} bold>{'Live Thinking'}</Text>
         <Box marginTop={1} flexDirection="column">
-          <Row label="State" value={thinkingState} color={thinkingActive ? 'green' : undefined} />
+          <Row label="State" value={thinkingState} color={thinkingActive ? TUI_COLORS.success : undefined} />
           <Row label="Tokens" value={formatTokens(liveThinkingTokens)} />
           {visibleThinkingLines.length === 0 ? (
-            <Text dimColor>Awaiting model thoughts...</Text>
+            <Text color={TUI_COLORS.dim}>Awaiting model thoughts...</Text>
           ) : (
             visibleThinkingLines.map((line, index) => (
-              <Text key={`${index}-${line.slice(0, 12)}`} dimColor wrap="truncate-end">
+              <Text key={`${index}-${line.slice(0, 12)}`} color={TUI_COLORS.dim} wrap="truncate-end">
                 {fitTextToWidth(line, THINKING_LINE_WIDTH)}
               </Text>
             ))
           )}
-          <Text dimColor>{thinkingExpanded ? 'Ctrl+T collapse' : 'Ctrl+T expand'}</Text>
+          <Text color={TUI_COLORS.dim}>{thinkingExpanded ? 'Ctrl+T collapse' : 'Ctrl+T expand'}</Text>
         </Box>
       </Box>
     </Box>
@@ -119,7 +120,7 @@ export function Sidebar({
 function Row({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <Box>
-      <Text dimColor>{label.padEnd(8)}</Text>
+      <Text color={TUI_COLORS.dim}>{label.padEnd(8)}</Text>
       <Text {...(color ? { color } : {})}>{value}</Text>
     </Box>
   );

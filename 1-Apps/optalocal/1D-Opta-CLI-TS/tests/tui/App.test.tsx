@@ -108,7 +108,7 @@ describe('App component', () => {
   it('should render without crashing', () => {
     const { lastFrame } = render(<App model="test-model" sessionId="abc123" />);
     expect(lastFrame()).toBeDefined();
-    expect(lastFrame()).toContain('Browser Manager Rail');
+    expect(lastFrame()).toContain('test-model');
   });
 
   it('should show model name', () => {

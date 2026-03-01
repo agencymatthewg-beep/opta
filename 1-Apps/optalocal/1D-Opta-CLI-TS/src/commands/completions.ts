@@ -1,7 +1,7 @@
 import chalk from 'chalk';
 import { EXIT, ExitError } from '../core/errors.js';
 
-export async function completions(shell: string): Promise<void> {
+export function completions(shell: string): void {
   switch (shell.toLowerCase()) {
     case 'bash':
       console.log(bashCompletions());
@@ -28,19 +28,11 @@ _opta_completions() {
   COMPREPLY=()
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  commands="chat tui do benchmark init doctor status models env config sessions mcp diff server daemon serve update completions"
+  commands="do benchmark init doctor status models env config sessions mcp diff server daemon serve update completions"
 
   case "\${prev}" in
     opta)
-      COMPREPLY=( $(compgen -W "\${commands} --verbose --debug --version --help" -- "\${cur}") )
-      return 0
-      ;;
-    chat)
-      COMPREPLY=( $(compgen -W "--resume --plan --review --research --model --format --no-commit --no-checkpoints --auto --dangerous --yolo --tui --help" -- "\${cur}") )
-      return 0
-      ;;
-    tui)
-      COMPREPLY=( $(compgen -W "--resume --plan --review --research --model --format --no-commit --no-checkpoints --auto --dangerous --yolo --tui --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "\${commands} --resume --plan --review --research --model --format --no-commit --no-checkpoints --auto --dangerous --yolo --verbose --debug --version --help" -- "\${cur}") )
       return 0
       ;;
     do)
@@ -122,8 +114,6 @@ function zshCompletions(): string {
 _opta() {
   local -a commands
   commands=(
-    'chat:Start an interactive AI chat session'
-    'tui:Start full-screen terminal UI (alias for opta chat --tui)'
     'do:Execute a coding task using the agent loop'
     'benchmark:Generate benchmark suite apps (landing, chess, AI news)'
     'init:Initialize OPIS project intelligence docs'
@@ -147,6 +137,17 @@ _opta() {
     '--debug[debug info including API calls]' \\
     '--version[show version]' \\
     '--help[show help]' \\
+    '--resume[resume a previous session]:session id:' \\
+    '--plan[plan mode — design implementation approach]' \\
+    '--review[code review mode — structured review output]' \\
+    '--research[research mode — explore ideas, gather info]' \\
+    '--model[override default model]:model name:' \\
+    '--format[output format]:format:(text json)' \\
+    '--no-commit[disable auto-commit]' \\
+    '--no-checkpoints[disable checkpoint creation]' \\
+    '--auto[auto-accept file edits]' \\
+    '--dangerous[bypass all permission prompts]' \\
+    '--yolo[alias for --dangerous]' \\
     '1:command:->command' \\
     '*::arg:->args'
 
@@ -156,36 +157,6 @@ _opta() {
       ;;
     args)
       case "\${words[1]}" in
-        chat)
-          _arguments \\
-            '--resume[resume a previous session]:session id:' \\
-            '--plan[plan mode — design implementation approach]' \\
-            '--review[code review mode — structured review output]' \\
-            '--research[research mode — explore ideas, gather info]' \\
-            '--model[override default model]:model name:' \\
-            '--format[output format]:format:(text json)' \\
-            '--no-commit[disable auto-commit]' \\
-            '--no-checkpoints[disable checkpoint creation]' \\
-            '--auto[auto-accept file edits]' \\
-            '--dangerous[bypass all permission prompts]' \\
-            '--yolo[alias for --dangerous]' \\
-            '--tui[use full-screen terminal UI]'
-          ;;
-        tui)
-          _arguments \\
-            '--resume[resume a previous session]:session id:' \\
-            '--plan[plan mode — design implementation approach]' \\
-            '--review[code review mode — structured review output]' \\
-            '--research[research mode — explore ideas, gather info]' \\
-            '--model[override default model]:model name:' \\
-            '--format[output format]:format:(text json)' \\
-            '--no-commit[disable auto-commit]' \\
-            '--no-checkpoints[disable checkpoint creation]' \\
-            '--auto[auto-accept file edits]' \\
-            '--dangerous[bypass all permission prompts]' \\
-            '--yolo[alias for --dangerous]' \\
-            '--tui[use full-screen terminal UI]'
-          ;;
         do)
           _arguments \\
             '--model[use specific model]:model name:' \\
@@ -300,8 +271,6 @@ function fishCompletions(): string {
 complete -c opta -f
 
 # Commands
-complete -c opta -n '__fish_use_subcommand' -a chat -d 'Start an interactive AI chat session'
-complete -c opta -n '__fish_use_subcommand' -a tui -d 'Start full-screen terminal UI (alias for chat --tui)'
 complete -c opta -n '__fish_use_subcommand' -a do -d 'Execute a coding task'
 complete -c opta -n '__fish_use_subcommand' -a benchmark -d 'Generate benchmark suite apps'
 complete -c opta -n '__fish_use_subcommand' -a init -d 'Initialize OPIS project intelligence docs'
@@ -319,25 +288,22 @@ complete -c opta -n '__fish_use_subcommand' -a serve -d 'Manage remote Opta LMX 
 complete -c opta -n '__fish_use_subcommand' -a update -d 'Update Opta components locally/remotely'
 complete -c opta -n '__fish_use_subcommand' -a completions -d 'Generate shell completions'
 
-# Global flags
+# Global flags (including chat TUI options)
 complete -c opta -l verbose -d 'Detailed output'
 complete -c opta -l debug -d 'Debug info including API calls'
 complete -c opta -l version -s V -d 'Show version'
 complete -c opta -l help -s h -d 'Show help'
-
-# chat flags
-complete -c opta -n '__fish_seen_subcommand_from chat' -l resume -s r -d 'Resume session' -x
-complete -c opta -n '__fish_seen_subcommand_from chat' -l plan -d 'Plan mode'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l review -d 'Code review mode'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l research -d 'Research mode'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l model -s m -d 'Override model' -x
-complete -c opta -n '__fish_seen_subcommand_from chat' -l format -s f -d 'Output format' -x -a 'text json'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l no-commit -d 'Disable auto-commit'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l no-checkpoints -d 'Disable checkpoints'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l auto -s a -d 'Auto-accept file edits'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l dangerous -d 'Bypass permission prompts'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l yolo -d 'Alias for --dangerous'
-complete -c opta -n '__fish_seen_subcommand_from chat' -l tui -d 'Full-screen terminal UI'
+complete -c opta -l resume -s r -d 'Resume session' -x
+complete -c opta -l plan -d 'Plan mode'
+complete -c opta -l review -d 'Code review mode'
+complete -c opta -l research -d 'Research mode'
+complete -c opta -l model -s m -d 'Override model' -x
+complete -c opta -l format -s f -d 'Output format' -x -a 'text json'
+complete -c opta -l no-commit -d 'Disable auto-commit'
+complete -c opta -l no-checkpoints -d 'Disable checkpoints'
+complete -c opta -l auto -s a -d 'Auto-accept file edits'
+complete -c opta -l dangerous -d 'Bypass permission prompts'
+complete -c opta -l yolo -d 'Alias for --dangerous'
 
 # do flags
 complete -c opta -n '__fish_seen_subcommand_from do' -l model -s m -d 'Use specific model' -x
@@ -361,20 +327,6 @@ complete -c opta -n '__fish_seen_subcommand_from benchmark' -l host -d 'Host for
 complete -c opta -n '__fish_seen_subcommand_from benchmark' -l port -d 'Port for benchmark server' -x
 complete -c opta -n '__fish_seen_subcommand_from benchmark' -l force -d 'Allow existing output directory'
 complete -c opta -n '__fish_seen_subcommand_from benchmark' -l json -d 'Machine-readable output'
-
-# tui flags
-complete -c opta -n '__fish_seen_subcommand_from tui' -l resume -s r -d 'Resume session' -x
-complete -c opta -n '__fish_seen_subcommand_from tui' -l plan -d 'Plan mode'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l review -d 'Code review mode'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l research -d 'Research mode'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l model -s m -d 'Override model' -x
-complete -c opta -n '__fish_seen_subcommand_from tui' -l format -s f -d 'Output format' -x -a 'text json'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l no-commit -d 'Disable auto-commit'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l no-checkpoints -d 'Disable checkpoints'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l auto -s a -d 'Auto-accept file edits'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l dangerous -d 'Bypass permission prompts'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l yolo -d 'Alias for --dangerous'
-complete -c opta -n '__fish_seen_subcommand_from tui' -l tui -d 'Full-screen terminal UI'
 
 # status flags
 complete -c opta -n '__fish_seen_subcommand_from status' -l json -d 'Machine-readable output'

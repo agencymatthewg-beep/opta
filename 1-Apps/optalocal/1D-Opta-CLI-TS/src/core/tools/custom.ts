@@ -118,7 +118,9 @@ export async function executeCustomTool(
   debug(`Custom tool "${tool.name}": ${tool.command}`);
 
   try {
-    const result = await execa('sh', ['-c', tool.command], {
+    const { shellArgs } = await import('../../platform/index.js');
+    const [shell, shellFlag] = shellArgs();
+    const result = await execa(shell, [shellFlag, tool.command], {
       reject: false,
       timeout: tool.timeout,
       cwd: process.cwd(),

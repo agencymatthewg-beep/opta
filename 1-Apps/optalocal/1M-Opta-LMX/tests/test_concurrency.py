@@ -37,6 +37,7 @@ def engine() -> InferenceEngine:
         max_concurrent_requests=2,
         inference_timeout_sec=5,
         warmup_on_load=False,
+        adaptive_concurrency_enabled=False,
     )
 
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
@@ -45,7 +46,9 @@ def engine() -> InferenceEngine:
         return mock
 
     async def mock_create_tuple(
-        model_id: str, use_batching: bool, **_kw: object,
+        model_id: str,
+        use_batching: bool,
+        **_kw: object,
     ) -> tuple[MagicMock, dict[str, object]]:
         mock = MagicMock()
         mock.chat = AsyncMock(return_value="test response")
@@ -69,7 +72,6 @@ class TestConcurrentRequestLimiting:
         current_concurrent = 0
         lock = asyncio.Lock()
 
-
         async def slow_generate(*args: object, **kwargs: object) -> tuple[str, int, int]:
             nonlocal peak_concurrent, current_concurrent
             async with lock:
@@ -85,10 +87,7 @@ class TestConcurrentRequestLimiting:
         messages = [ChatMessage(role="user", content="Hi")]
 
         # Launch 4 concurrent requests with semaphore limit of 2
-        tasks = [
-            asyncio.create_task(engine.generate("test/model-a", messages))
-            for _ in range(4)
-        ]
+        tasks = [asyncio.create_task(engine.generate("test/model-a", messages)) for _ in range(4)]
         await asyncio.gather(*tasks)
 
         assert peak_concurrent <= 2, f"Peak concurrency {peak_concurrent} exceeded limit 2"
@@ -100,7 +99,6 @@ class TestConcurrentRequestLimiting:
 
         started = asyncio.Event()
         release = asyncio.Event()
-
 
         async def blocking_generate(*args: object, **kwargs: object) -> tuple[str, int, int]:
             started.set()
@@ -128,6 +126,9 @@ class TestSemaphoreTimeout:
         engine._inference_timeout = 5
         engine._concurrency._semaphore_timeout = 0.2  # 200ms timeout
         await engine.load_model("test/model-a")
+        # Make the test deterministic regardless of host memory pressure based adaptation.
+        engine._concurrency._inference_semaphore = asyncio.Semaphore(2)
+        engine._concurrency._current_concurrency_limit = 2
 
         release = asyncio.Event()
 
@@ -140,10 +141,7 @@ class TestSemaphoreTimeout:
         messages = [ChatMessage(role="user", content="Hi")]
 
         # Fill up the semaphore (limit=2)
-        tasks = [
-            asyncio.create_task(engine.generate("test/model-a", messages))
-            for _ in range(2)
-        ]
+        tasks = [asyncio.create_task(engine.generate("test/model-a", messages)) for _ in range(2)]
         await asyncio.sleep(0.05)  # Let them acquire the semaphore
 
         # This 3rd request should timeout waiting for semaphore
@@ -191,7 +189,9 @@ class TestModelWarmup:
         """When warmup_on_load=True, a minimal inference runs after model load."""
         monitor = MemoryMonitor(max_percent=90)
         eng = InferenceEngine(
-            memory_monitor=monitor, use_batching=False, warmup_on_load=True,
+            memory_monitor=monitor,
+            use_batching=False,
+            warmup_on_load=True,
         )
 
         warmup_called = False
@@ -208,7 +208,9 @@ class TestModelWarmup:
             return mock
 
         async def mock_create_tuple(
-            model_id: str, use_batching: bool, **_kw: object,
+            model_id: str,
+            use_batching: bool,
+            **_kw: object,
         ) -> tuple[MagicMock, dict[str, object]]:
             mock = MagicMock()
 
@@ -230,13 +232,17 @@ class TestModelWarmup:
         """When warmup_on_load=False, no warmup inference runs."""
         monitor = MemoryMonitor(max_percent=90)
         eng = InferenceEngine(
-            memory_monitor=monitor, use_batching=False, warmup_on_load=False,
+            memory_monitor=monitor,
+            use_batching=False,
+            warmup_on_load=False,
         )
 
         warmup_called = False
 
         async def mock_create_tuple(
-            model_id: str, use_batching: bool, **_kw: object,
+            model_id: str,
+            use_batching: bool,
+            **_kw: object,
         ) -> tuple[MagicMock, dict[str, object]]:
             mock = MagicMock()
 
@@ -257,11 +263,15 @@ class TestModelWarmup:
         """Warmup failure is logged but doesn't prevent model use."""
         monitor = MemoryMonitor(max_percent=90)
         eng = InferenceEngine(
-            memory_monitor=monitor, use_batching=False, warmup_on_load=True,
+            memory_monitor=monitor,
+            use_batching=False,
+            warmup_on_load=True,
         )
 
         async def mock_create_tuple(
-            model_id: str, use_batching: bool, **_kw: object,
+            model_id: str,
+            use_batching: bool,
+            **_kw: object,
         ) -> tuple[MagicMock, dict[str, object]]:
             mock = MagicMock()
 

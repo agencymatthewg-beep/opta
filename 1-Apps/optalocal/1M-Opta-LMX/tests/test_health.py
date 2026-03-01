@@ -118,3 +118,34 @@ class TestAdminHealth:
             "/admin/health", headers={"x-admin-key": "test-secret-key"},
         )
         assert response.status_code == 200
+
+
+class TestDiscovery:
+    """Tests for unauthenticated discovery metadata endpoints."""
+
+    @pytest.mark.asyncio
+    async def test_discovery_endpoint_returns_pairing_payload(self, client: AsyncClient) -> None:
+        """Discovery endpoint exposes preferred URLs and auth requirements."""
+        response = await client.get("/v1/discovery")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["service"] == "opta-lmx"
+        assert "preferred_base_url" in data["endpoints"]
+        assert "openai_base_url" in data["endpoints"]
+        assert "admin_key_required" in data["auth"]
+        assert "loaded_model_count" in data
+        assert isinstance(data["client_probe_order"], list)
+
+    @pytest.mark.asyncio
+    async def test_discovery_well_known_alias(self, client: AsyncClient) -> None:
+        """Well-known discovery path returns the same discovery contract."""
+        response = await client.get("/.well-known/opta-lmx")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["service"] == "opta-lmx"
+
+    @pytest.mark.asyncio
+    async def test_discovery_no_auth_required(self, client_with_auth: AsyncClient) -> None:
+        """Discovery remains available when admin auth is enabled."""
+        response = await client_with_auth.get("/v1/discovery")
+        assert response.status_code == 200

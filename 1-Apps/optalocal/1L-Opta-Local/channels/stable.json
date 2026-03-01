@@ -1,0 +1,9 @@
+{
+  "channel": "stable",
+  "appId": "1L-Opta-Local",
+  "web": {
+    "siteUrl": "https://local.optalocal.com",
+    "defaultTunnel": "https://lmx.optalocal.com",
+    "storageNamespace": "opta-local:stable"
+  }
+}

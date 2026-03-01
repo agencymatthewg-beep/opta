@@ -13,11 +13,11 @@
         <string>-m</string>
         <string>opta_lmx.main</string>
         <string>--config</string>
-        <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/config/mono512-current.yaml</string>
+        <string>/Users/Shared/312/Opta/1-Apps/optalocal/1M-Opta-LMX/config/mono512-current.yaml</string>
     </array>
 
     <key>WorkingDirectory</key>
-    <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX</string>
+    <string>/Users/Shared/312/Opta/1-Apps/optalocal/1M-Opta-LMX</string>
 
     <key>UserName</key>
     <string>opta</string>
@@ -46,7 +46,7 @@
         <key>PYTHONUNBUFFERED</key>
         <string>1</string>
         <key>PYTHONPATH</key>
-        <string>/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX/src</string>
+        <string>/Users/Shared/312/Opta/1-Apps/optalocal/1M-Opta-LMX/src</string>
     </dict>
 
     <key>SoftResourceLimits</key>

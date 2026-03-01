@@ -7,7 +7,7 @@ import type { OptaConfig } from '../core/config.js';
 import { errorMessage } from '../utils/errors.js';
 import { probeLmxConnection } from '../lmx/connection.js';
 import { resolveLmxEndpoint } from '../lmx/endpoints.js';
-import { resolveLmxApiKey } from '../lmx/api-key.js';
+import * as lmxApiKey from '../lmx/api-key.js';
 
 export class LmxProvider implements ProviderClient {
   readonly name = 'lmx';
@@ -32,13 +32,16 @@ export class LmxProvider implements ProviderClient {
       fallbackHosts: this.config.connection.fallbackHosts,
       port: this.config.connection.port,
       adminKey: this.config.connection.adminKey,
+      autoDiscover: this.config.connection.autoDiscover,
     });
     this.resolvedHost = endpoint.host;
+
+    const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(this.config.connection);
 
     const { default: OpenAI } = await import('openai');
     this.client = new OpenAI({
       baseURL: this.baseURL,
-      apiKey: resolveLmxApiKey(this.config.connection),
+      apiKey,
       timeout: this.config.connection.inferenceTimeout,
     });
     return this.client;
@@ -62,6 +65,7 @@ export class LmxProvider implements ProviderClient {
         fallbackHosts: this.config.connection.fallbackHosts,
         port: this.config.connection.port,
         adminKey: this.config.connection.adminKey,
+        autoDiscover: this.config.connection.autoDiscover,
       }, { timeoutMs: 2_000 });
       const result = await probeLmxConnection(
         endpoint.host,

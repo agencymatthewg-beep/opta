@@ -102,7 +102,7 @@ export function ModelList({
                   size="sm"
                   disabled={isUnloading === model.id}
                   onClick={() => onUnload(model.id)}
-                  aria-label={`Unload ${model.name}`}
+                  aria-label={`Unload ${model.name || model.id}`}
                 >
                   {isUnloading === model.id ? (
                     <span className="text-xs">Unloading...</span>
@@ -117,7 +117,12 @@ export function ModelList({
 
         {models.length === 0 && (
           <div className="flex flex-col items-center gap-4 py-10">
-            <OptaRing size={64} />
+            <motion.div
+              animate={{ scale: [1, 1.05, 1], filter: ['brightness(1)', 'brightness(1.2)', 'brightness(1)'] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <OptaRing size={64} />
+            </motion.div>
             <div className="text-center space-y-1">
               <p className="text-sm text-text-secondary font-medium">
                 No models loaded

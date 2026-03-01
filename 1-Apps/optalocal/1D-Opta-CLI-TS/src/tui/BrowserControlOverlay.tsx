@@ -4,6 +4,11 @@ import { actionStatusColor, type ActionEventStatus } from './activity.js';
 import { clamp } from '../utils/common.js';
 import { riskColor, riskPriority } from './browser-formatters.js';
 import { TUI_COLORS } from './palette.js';
+import {
+  browserVisualGlyph,
+  deriveBrowserVisualState,
+  useBrowserVisualTick,
+} from './browser-visual-state.js';
 import type { BrowserApprovalEvent } from '../browser/approval-log.js';
 import type { BrowserControlAction } from '../browser/control-surface.js';
 import type { BrowserRiskLevel } from '../browser/policy-engine.js';
@@ -293,6 +298,16 @@ export function BrowserControlOverlay({
     }),
     [pendingApprovals],
   );
+  const runtimeVisualState = useMemo(
+    () => deriveBrowserVisualState({
+      browserHealth,
+      pendingApprovals: orderedPendingApprovals,
+      busy: browserBusy,
+    }),
+    [browserBusy, browserHealth, orderedPendingApprovals],
+  );
+  const runtimeVisualTick = useBrowserVisualTick(true);
+  const runtimeVisualGlyph = browserVisualGlyph(runtimeVisualState.kind, runtimeVisualTick);
 
   useInput((input, key) => {
     if (!key.ctrl && !key.meta && !key.shift) {
@@ -430,6 +445,9 @@ export function BrowserControlOverlay({
 
       <Box flexDirection="column" marginBottom={1}>
         <Text color={TUI_COLORS.accentSoft} bold>Browser Runtime</Text>
+        <Text color={runtimeVisualState.color} wrap="truncate-end">
+          {runtimeVisualGlyph} state={runtimeVisualState.label} · {runtimeVisualState.reason}
+        </Text>
         {browserHealth ? (
           <Text dimColor>
             running={String(browserHealth.running)} paused={String(browserHealth.paused)} killed={String(browserHealth.killed)} sessions={browserHealth.sessionCount}/{browserHealth.maxSessions}

@@ -60,6 +60,21 @@ describe('MCP client', () => {
     expect(conn.tools.length).toBe(1);
   });
 
+  it('rejects unsafe stdio command strings before transport creation', async () => {
+    const { StdioClientTransport } = await import('@modelcontextprotocol/sdk/client/stdio.js');
+
+    await expect(
+      connectMcpServer('github', {
+        transport: 'stdio',
+        command: 'npx; touch /tmp/pwned',
+        args: ['-y', '@modelcontextprotocol/server-github'],
+        env: {},
+      })
+    ).rejects.toThrow(/command rejected/i);
+
+    expect(StdioClientTransport).not.toHaveBeenCalled();
+  });
+
   it('calls a tool and returns text result', async () => {
     const conn = await connectMcpServer('github', {
       transport: 'stdio',

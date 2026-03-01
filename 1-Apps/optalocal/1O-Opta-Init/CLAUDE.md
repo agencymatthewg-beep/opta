@@ -8,11 +8,11 @@ Read APP.md first. Then this file. Then docs/ as needed.
 
 ## What This Is
 
-A statically exported Next.js 15 marketing + onboarding site for the Opta Local stack. It lives at init.optalocal.com. It has exactly one job: get users downloaded, set up, and using their local AI stack.
+A statically exported Next.js 16 marketing + onboarding site for the Opta Local stack. It lives at init.optalocal.com. It has exactly one job: get users downloaded, install-ready, and handed off to runtime surfaces.
 
 ## Stack
 
-- Next.js 15 (app router, `output: 'export'`)
+- Next.js 16 (app router, `output: 'export'`)
 - TypeScript strict
 - Tailwind CSS v4
 - Framer Motion (spring physics animations)
@@ -106,29 +106,27 @@ src/
     page.tsx          (home — all sections)
     globals.css       (--opta-* tokens, base styles)
   components/
-    ui/               (Button, Card, Badge, etc.)
-    sections/         (Hero, Downloads, SetupGuide, Usage, DashboardCTA)
-    layout/           (Header, Footer)
+    OptaRing.tsx      (animated singularity logo)
   lib/
-    utils.ts          (cn helper)
-    constants.ts      (download URLs, app versions)
+    constants.ts      (download URLs, platform links, content)
 ```
 
 ## Key Constants (update when releases ship)
 
 ```ts
-// src/lib/constants.ts
+// lib/constants.ts
 export const DOWNLOADS = {
   cli: {
-    macos: 'https://github.com/optaops/opta-cli/releases/latest/download/opta-cli-macos.pkg',
-    windows: 'https://github.com/optaops/opta-cli/releases/latest/download/opta-cli-windows.exe',
+    macos: 'https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-cli-npm.tgz',
+    windows: null,
   },
   lmx: {
-    macos: 'https://github.com/optaops/opta-lmx/releases/latest/download/opta-lmx-macos.pkg',
-    windows: 'https://github.com/optaops/opta-lmx/releases/latest/download/opta-lmx-windows.exe',
+    macos: null,
+    windows: null,
   },
 }
 export const DASHBOARD_URL = 'https://lmx.optalocal.com'
+export const ACCOUNTS_URL = 'https://accounts.optalocal.com'
 ```
 
 ## Deployment

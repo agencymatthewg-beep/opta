@@ -71,6 +71,7 @@ import type {
   LmxSkillSummary,
   LmxStackResponse,
   LmxStatusResponse,
+  LmxDeviceIdentity,
   LmxUnloadResponse,
 } from './types.js';
 
@@ -128,6 +129,7 @@ export class LmxClient {
     fallbackHosts?: string[];
     port: number;
     adminKey?: string;
+    apiKey?: string;
     timeoutMs?: number;
     maxRetries?: number;
     backoffMs?: number;
@@ -156,6 +158,11 @@ export class LmxClient {
     this.backoffMultiplier = Math.max(1, opts.backoffMultiplier ?? DEFAULT_BACKOFF_MULTIPLIER);
     this.hostFailureCooldownMs = DEFAULT_HOST_FAILURE_COOLDOWN_MS;
     this.hostCooldownUntilMs = new Map();
+    const resolvedApiKey = opts.apiKey?.trim() || process.env['OPTA_API_KEY']?.trim();
+    if (resolvedApiKey) {
+      this.headers['Authorization'] = `Bearer ${resolvedApiKey}`;
+      this.headers['X-Api-Key'] = resolvedApiKey;
+    }
     if (opts.adminKey) {
       this.headers['X-Admin-Key'] = opts.adminKey;
     }
@@ -267,12 +274,18 @@ export class LmxClient {
     path: string,
     init?: RequestInit,
     validator?: ZodType<T>,
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<T> {
     const timeoutMs = Math.max(1000, requestOptions?.timeoutMs ?? this.timeoutMs);
     const maxRetries = Math.max(0, requestOptions?.maxRetries ?? this.maxRetries);
     const attempts = maxRetries + 1;
-    const headers = { ...this.headers, ...init?.headers };
+    const initHeaders: Record<string, string> =
+      init?.headers instanceof Headers
+        ? Object.fromEntries(init.headers.entries())
+        : Array.isArray(init?.headers)
+          ? Object.fromEntries(init.headers as string[][])
+          : ((init?.headers as Record<string, string> | undefined) ?? {});
+    const headers = { ...this.headers, ...initHeaders };
     const hostFailures: HostAttemptFailure[] = [];
 
     for (const host of this.hostCandidates()) {
@@ -339,7 +352,7 @@ export class LmxClient {
       throw new LmxApiError(
         0,
         'connection_error',
-        `LMX request failed across ${hostFailures.length} host${hostFailures.length === 1 ? '' : 's'}: ${summary}`,
+        `LMX request failed across ${hostFailures.length} host${hostFailures.length === 1 ? '' : 's'}: ${summary}`
       );
     }
     throw new LmxApiError(0, 'connection_error', 'request failed after retries');
@@ -350,7 +363,12 @@ export class LmxClient {
   }
 
   async status(opts?: LmxRequestOptions): Promise<LmxStatusResponse> {
-    const raw = await this.fetch<RawAdminStatusResponse>('/admin/status', undefined, undefined, opts);
+    const raw = await this.fetch<RawAdminStatusResponse>(
+      '/admin/status',
+      undefined,
+      undefined,
+      opts
+    );
     return {
       status: 'ok',
       version: raw.version,
@@ -370,7 +388,12 @@ export class LmxClient {
   }
 
   async models(opts?: LmxRequestOptions): Promise<LmxModelsResponse> {
-    const raw = await this.fetch<RawAdminModelsResponse>('/admin/models', undefined, undefined, opts);
+    const raw = await this.fetch<RawAdminModelsResponse>(
+      '/admin/models',
+      undefined,
+      undefined,
+      opts
+    );
     return {
       models: raw.loaded.map((m) => ({
         model_id: m.id,
@@ -384,18 +407,13 @@ export class LmxClient {
   }
 
   private normalizeLoadResponse(raw: RawAdminLoadResponse): LmxLoadResponse {
-    const status = raw.status === 'download_required' || raw.status === 'downloading'
-      ? raw.status
-      : 'loaded';
+    const status =
+      raw.status === 'download_required' || raw.status === 'downloading' ? raw.status : 'loaded';
     return {
       model_id: raw.model_id,
       status,
-      memory_bytes: raw.memory_after_load_gb
-        ? raw.memory_after_load_gb * GB_TO_BYTES
-        : undefined,
-      load_time_seconds: raw.time_to_load_ms
-        ? raw.time_to_load_ms / 1000
-        : undefined,
+      memory_bytes: raw.memory_after_load_gb ? raw.memory_after_load_gb * GB_TO_BYTES : undefined,
+      load_time_seconds: raw.time_to_load_ms ? raw.time_to_load_ms / 1000 : undefined,
       estimated_size_bytes: raw.estimated_size_bytes,
       estimated_size_human: raw.estimated_size_human,
       confirmation_token: raw.confirmation_token,
@@ -406,31 +424,30 @@ export class LmxClient {
     };
   }
 
-  async loadModel(
-    modelId: string,
-    opts?: LmxLoadModelOptions,
-  ): Promise<LmxLoadResponse> {
-    const raw = await this.fetch<RawAdminLoadResponse>('/admin/models/load', {
-      method: 'POST',
-      body: JSON.stringify({
-        model_id: modelId,
-        backend: opts?.backend,
-        auto_download: opts?.autoDownload,
-        performance_overrides: opts?.performanceOverrides,
-        keep_alive_sec: opts?.keepAliveSec,
-        allow_unsupported_runtime: opts?.allowUnsupportedRuntime,
-      }),
-    }, undefined, {
-      timeoutMs: opts?.timeoutMs,
-      maxRetries: opts?.maxRetries,
-    });
+  async loadModel(modelId: string, opts?: LmxLoadModelOptions): Promise<LmxLoadResponse> {
+    const raw = await this.fetch<RawAdminLoadResponse>(
+      '/admin/models/load',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          model_id: modelId,
+          backend: opts?.backend,
+          auto_download: opts?.autoDownload,
+          performance_overrides: opts?.performanceOverrides,
+          keep_alive_sec: opts?.keepAliveSec,
+          allow_unsupported_runtime: opts?.allowUnsupportedRuntime,
+        }),
+      },
+      undefined,
+      {
+        timeoutMs: opts?.timeoutMs,
+        maxRetries: opts?.maxRetries,
+      }
+    );
     return this.normalizeLoadResponse(raw);
   }
 
-  async confirmLoad(
-    confirmationToken: string,
-    opts?: LmxRequestOptions,
-  ): Promise<LmxLoadResponse> {
+  async confirmLoad(confirmationToken: string, opts?: LmxRequestOptions): Promise<LmxLoadResponse> {
     const raw = await this.fetch<RawAdminLoadResponse>(
       '/admin/models/load/confirm',
       {
@@ -440,28 +457,31 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
     return this.normalizeLoadResponse(raw);
   }
 
   async unloadModel(
     modelId: string,
-    opts?: { timeoutMs?: number; maxRetries?: number },
+    opts?: { timeoutMs?: number; maxRetries?: number }
   ): Promise<LmxUnloadResponse> {
-    const raw = await this.fetch<RawAdminUnloadResponse>('/admin/models/unload', {
-      method: 'POST',
-      body: JSON.stringify({ model_id: modelId }),
-    }, undefined, {
-      timeoutMs: opts?.timeoutMs,
-      maxRetries: opts?.maxRetries,
-    });
+    const raw = await this.fetch<RawAdminUnloadResponse>(
+      '/admin/models/unload',
+      {
+        method: 'POST',
+        body: JSON.stringify({ model_id: modelId }),
+      },
+      undefined,
+      {
+        timeoutMs: opts?.timeoutMs,
+        maxRetries: opts?.maxRetries,
+      }
+    );
     return {
       model_id: raw.model_id,
       status: 'unloaded',
-      freed_bytes: raw.memory_freed_gb
-        ? raw.memory_freed_gb * GB_TO_BYTES
-        : undefined,
+      freed_bytes: raw.memory_freed_gb ? raw.memory_freed_gb * GB_TO_BYTES : undefined,
     };
   }
 
@@ -473,17 +493,25 @@ export class LmxClient {
     return this.fetch<LmxPresetsResponse>('/admin/presets', undefined, undefined, opts);
   }
 
-  async presetDetail(name: string, requestOptions?: LmxRequestOptions): Promise<LmxPresetDetailResponse> {
+  async presetDetail(
+    name: string,
+    requestOptions?: LmxRequestOptions
+  ): Promise<LmxPresetDetailResponse> {
     return this.fetch<LmxPresetDetailResponse>(
       `/admin/presets/${encodeURIComponent(name)}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async reloadPresets(requestOptions?: LmxRequestOptions): Promise<LmxPresetReloadResult> {
-    return this.fetch<LmxPresetReloadResult>('/admin/presets/reload', { method: 'POST' }, undefined, requestOptions);
+    return this.fetch<LmxPresetReloadResult>(
+      '/admin/presets/reload',
+      { method: 'POST' },
+      undefined,
+      requestOptions
+    );
   }
 
   async stack(opts?: LmxRequestOptions): Promise<LmxStackResponse> {
@@ -496,7 +524,7 @@ export class LmxClient {
 
   async downloadModel(
     repoId: string,
-    opts?: { revision?: string; allowPatterns?: string[]; ignorePatterns?: string[] },
+    opts?: { revision?: string; allowPatterns?: string[]; ignorePatterns?: string[] }
   ): Promise<LmxDownloadResponse> {
     const raw = await this.fetch<RawDownloadResponse>('/admin/models/download', {
       method: 'POST',
@@ -517,7 +545,7 @@ export class LmxClient {
 
   async downloadProgress(downloadId: string): Promise<LmxDownloadProgress> {
     const raw = await this.fetch<RawDownloadProgressResponse>(
-      `/admin/models/download/${encodeURIComponent(downloadId)}/progress`,
+      `/admin/models/download/${encodeURIComponent(downloadId)}/progress`
     );
     return {
       downloadId: raw.download_id,
@@ -535,7 +563,7 @@ export class LmxClient {
   async deleteModel(modelId: string): Promise<LmxDeleteResponse> {
     const raw = await this.fetch<RawDeleteResponse>(
       `/admin/models/${encodeURIComponent(modelId)}`,
-      { method: 'DELETE' },
+      { method: 'DELETE' }
     );
     return {
       modelId: raw.model_id,
@@ -545,7 +573,7 @@ export class LmxClient {
 
   async modelPerformance(modelId: string): Promise<LmxModelPerformance> {
     const raw = await this.fetch<RawModelPerformanceResponse>(
-      `/admin/models/${encodeURIComponent(modelId)}/performance`,
+      `/admin/models/${encodeURIComponent(modelId)}/performance`
     );
     return {
       modelId: raw.model_id,
@@ -561,7 +589,10 @@ export class LmxClient {
     };
   }
 
-  async probeModel(opts: LmxProbeModelOptions, requestOptions?: LmxRequestOptions): Promise<LmxProbeModelResult> {
+  async probeModel(
+    opts: LmxProbeModelOptions,
+    requestOptions?: LmxRequestOptions
+  ): Promise<LmxProbeModelResult> {
     return this.fetch<LmxProbeModelResult>(
       '/admin/models/probe',
       {
@@ -573,13 +604,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async modelCompatibility(
     opts: LmxModelCompatibilityOptions = {},
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxModelCompatibilityResult> {
     return this.fetch<LmxModelCompatibilityResult>(
       `/admin/models/compatibility${buildQueryString({
@@ -592,13 +623,13 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async autotuneModel(
     opts: LmxAutotuneModelOptions,
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxAutotuneModelResult> {
     return this.fetch<LmxAutotuneModelResult>(
       '/admin/models/autotune',
@@ -615,14 +646,14 @@ export class LmxClient {
         }),
       },
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async autotuneRecord(
     modelId: string,
     opts?: LmxAutotuneRecordOptions,
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxAutotuneRecordResult> {
     return this.fetch<LmxAutotuneRecordResult>(
       `/admin/models/${encodeURIComponent(modelId)}/autotune${buildQueryString({
@@ -631,7 +662,7 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
@@ -640,12 +671,17 @@ export class LmxClient {
   }
 
   async reloadConfig(opts?: LmxRequestOptions): Promise<LmxConfigReloadResult> {
-    return this.fetch<LmxConfigReloadResult>('/admin/config/reload', { method: 'POST' }, undefined, opts);
+    return this.fetch<LmxConfigReloadResult>(
+      '/admin/config/reload',
+      { method: 'POST' },
+      undefined,
+      opts
+    );
   }
 
   async quantizeStart(
     request: LmxQuantizeRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxQuantizeStartResult> {
     return this.fetch<LmxQuantizeStartResult>(
       '/admin/quantize',
@@ -660,7 +696,7 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -669,7 +705,7 @@ export class LmxClient {
       `/admin/quantize/${encodeURIComponent(jobId)}`,
       undefined,
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -687,7 +723,7 @@ export class LmxClient {
 
   async listSessions(
     opts: LmxSessionListOptions = {},
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxSessionListResult> {
     return this.fetch<LmxSessionListResult>(
       `/admin/sessions${buildQueryString({
@@ -699,13 +735,13 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async searchSessions(
     opts: LmxSessionSearchOptions,
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxSessionSummary[]> {
     return this.fetch<LmxSessionSummary[]>(
       `/admin/sessions/search${buildQueryString({
@@ -714,7 +750,7 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
@@ -723,22 +759,25 @@ export class LmxClient {
       `/admin/sessions/${encodeURIComponent(sessionId)}`,
       undefined,
       undefined,
-      opts,
+      opts
     );
   }
 
-  async deleteSession(sessionId: string, opts?: LmxRequestOptions): Promise<LmxSessionDeleteResult> {
+  async deleteSession(
+    sessionId: string,
+    opts?: LmxRequestOptions
+  ): Promise<LmxSessionDeleteResult> {
     return this.fetch<LmxSessionDeleteResult>(
       `/admin/sessions/${encodeURIComponent(sessionId)}`,
       { method: 'DELETE' },
       undefined,
-      opts,
+      opts
     );
   }
 
   async createEmbeddings(
     request: LmxEmbeddingsRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxEmbeddingsResponse> {
     return this.fetch<LmxEmbeddingsResponse>(
       '/v1/embeddings',
@@ -751,13 +790,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async rerankDocuments(
     request: LmxRerankRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxRerankResponse> {
     return this.fetch<LmxRerankResponse>(
       '/v1/rerank',
@@ -771,13 +810,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async runBenchmarkAndPersist(
     request: LmxBenchmarkPersistRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxBenchmarkPersistResult> {
     return this.fetch<LmxBenchmarkPersistResult>(
       '/admin/benchmark/run',
@@ -796,13 +835,13 @@ export class LmxClient {
       {
         timeoutMs: opts?.timeoutMs ?? 180_000,
         maxRetries: opts?.maxRetries ?? 0,
-      },
+      }
     );
   }
 
   async listBenchmarkResults(
     opts: LmxBenchmarkResultsOptions = {},
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxBenchmarkPersistResult[]> {
     return this.fetch<LmxBenchmarkPersistResult[]>(
       `/admin/benchmark/results${buildQueryString({
@@ -810,13 +849,13 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async anthropicMessages(
     request: LmxAnthropicMessagesRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxAnthropicMessagesResponse> {
     return this.fetch<LmxAnthropicMessagesResponse>(
       '/v1/messages',
@@ -834,13 +873,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async agentRuns(
     opts: { limit?: number; offset?: number; status?: string } = {},
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxAgentRunListResult> {
     return this.fetch<LmxAgentRunListResult>(
       `/v1/agents/runs${buildQueryString({
@@ -850,13 +889,13 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
   async createAgentRun(
     payload: LmxAgentRunCreatePayload,
-    requestOptions?: LmxRequestOptions & { idempotencyKey?: string },
+    requestOptions?: LmxRequestOptions & { idempotencyKey?: string }
   ): Promise<LmxAgentRunResult> {
     const idempotencyKey = requestOptions?.idempotencyKey?.trim();
     const headers = idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined;
@@ -876,7 +915,7 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -885,7 +924,7 @@ export class LmxClient {
       `/v1/agents/runs/${encodeURIComponent(runId)}`,
       undefined,
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -894,13 +933,13 @@ export class LmxClient {
       `/v1/agents/runs/${encodeURIComponent(runId)}/cancel`,
       { method: 'POST' },
       undefined,
-      opts,
+      opts
     );
   }
 
   async skillsList(
     opts: { latestOnly?: boolean } = {},
-    requestOptions?: LmxRequestOptions,
+    requestOptions?: LmxRequestOptions
   ): Promise<LmxSkillListResult> {
     return this.fetch<LmxSkillListResult>(
       `/v1/skills${buildQueryString({
@@ -908,7 +947,7 @@ export class LmxClient {
       })}`,
       undefined,
       undefined,
-      requestOptions,
+      requestOptions
     );
   }
 
@@ -917,7 +956,7 @@ export class LmxClient {
       `/v1/skills/${encodeURIComponent(skillName)}`,
       undefined,
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -928,7 +967,7 @@ export class LmxClient {
   async skillExecute(
     skillName: string,
     request: LmxSkillExecuteRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxSkillExecuteResponse> {
     return this.fetch<LmxSkillExecuteResponse>(
       `/v1/skills/${encodeURIComponent(skillName)}/execute`,
@@ -941,13 +980,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async skillMcpCall(
     request: LmxSkillMcpCallRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxSkillMcpCallResponse> {
     return this.fetch<LmxSkillMcpCallResponse>(
       '/v1/skills/mcp/call',
@@ -960,13 +999,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async skillOpenClawInvoke(
     request: LmxSkillOpenClawInvokeRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxSkillOpenClawInvokeResponse> {
     return this.fetch<LmxSkillOpenClawInvokeResponse>(
       '/v1/skills/openclaw/invoke',
@@ -984,7 +1023,7 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
@@ -992,18 +1031,21 @@ export class LmxClient {
     return this.fetch<LmxRagCollectionsResult>('/v1/rag/collections', undefined, undefined, opts);
   }
 
-  async ragDeleteCollection(collection: string, opts?: LmxRequestOptions): Promise<Record<string, never>> {
+  async ragDeleteCollection(
+    collection: string,
+    opts?: LmxRequestOptions
+  ): Promise<Record<string, never>> {
     return this.fetch<Record<string, never>>(
       `/v1/rag/collections/${encodeURIComponent(collection)}`,
       { method: 'DELETE' },
       undefined,
-      opts,
+      opts
     );
   }
 
   async ragQuery(
     request: LmxRagQueryRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxRagQueryResult> {
     return this.fetch<LmxRagQueryResult>(
       '/v1/rag/query',
@@ -1022,13 +1064,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async ragIngest(
     request: LmxRagIngestRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxRagIngestResult> {
     return this.fetch<LmxRagIngestResult>(
       '/v1/rag/ingest',
@@ -1045,13 +1087,13 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
   }
 
   async ragContext(
     request: LmxRagContextRequest,
-    opts?: LmxRequestOptions,
+    opts?: LmxRequestOptions
   ): Promise<LmxRagContextResult> {
     return this.fetch<LmxRagContextResult>(
       '/v1/rag/context',
@@ -1068,13 +1110,22 @@ export class LmxClient {
         }),
       },
       undefined,
-      opts,
+      opts
     );
+  }
+
+
+  async device(opts?: LmxRequestOptions): Promise<LmxDeviceIdentity | null> {
+    try {
+      return await this.fetch<LmxDeviceIdentity>('/admin/device', undefined, undefined, opts);
+    } catch {
+      return null;
+    }
   }
 
   async benchmarkModel(
     modelId: string,
-    opts?: { prompt?: string; maxTokens?: number; runs?: number; temperature?: number },
+    opts?: { prompt?: string; maxTokens?: number; runs?: number; temperature?: number }
   ): Promise<LmxBenchmarkResult> {
     const raw = await this.fetch<RawBenchmarkResponse>(
       '/admin/benchmark',
@@ -1093,7 +1144,7 @@ export class LmxClient {
         // Benchmarks can legitimately run much longer than normal admin requests.
         timeoutMs: 180_000,
         maxRetries: 0,
-      },
+      }
     );
     return {
       modelId: raw.model_id,

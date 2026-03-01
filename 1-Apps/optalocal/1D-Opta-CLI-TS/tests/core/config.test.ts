@@ -15,6 +15,13 @@ describe('config', () => {
     expect(DEFAULT_CONFIG.autonomy.mode).toBe('execution');
     expect(DEFAULT_CONFIG.autonomy.enforceProfile).toBe(true);
     expect(DEFAULT_CONFIG.autonomy.objectiveReassessment).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.foreground.enabled).toBe(false);
+    expect(DEFAULT_CONFIG.computerControl.foreground.requireDangerousMode).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.foreground.allowScreenActions).toBe(false);
+    expect(DEFAULT_CONFIG.computerControl.background.enabled).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.background.allowBrowserSessionHosting).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.background.allowScreenStreaming).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.background.maxHostedBrowserSessions).toBe(5);
     expect(DEFAULT_CONFIG.safety.maxToolCalls).toBe(30);
     expect(DEFAULT_CONFIG.safety.compactAt).toBe(0.7);
     expect(DEFAULT_CONFIG.journal.enabled).toBe(true);

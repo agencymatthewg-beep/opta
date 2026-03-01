@@ -1,6 +1,7 @@
 import { spawn, type ChildProcess } from 'node:child_process';
 import { nanoid } from 'nanoid';
 import { debug } from './debug.js';
+import { shellArgs } from '../platform/index.js';
 
 // --- CircularBuffer ---
 
@@ -122,10 +123,7 @@ export class ProcessManager {
     return [...this.processes.values()].filter((p) => p.state === 'running').length;
   }
 
-  async start(
-    command: string,
-    opts?: { timeout?: number; label?: string }
-  ): Promise<ProcessHandle> {
+  start(command: string, opts?: { timeout?: number; label?: string }): ProcessHandle {
     if (this.activeCount >= this.opts.maxConcurrent) {
       throw new Error(
         `Max concurrent processes (${this.opts.maxConcurrent}) reached. Kill a process first.`
@@ -134,14 +132,17 @@ export class ProcessManager {
 
     const id = nanoid(8);
     const timeout = opts?.timeout ?? this.opts.defaultTimeout;
-    const child = spawn('sh', ['-c', command], {
+    const [shell, shellFlag] = shellArgs();
+    const child = spawn(shell, [shellFlag, command], {
       cwd: process.cwd(),
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false,
     });
 
     if (!child.pid) {
-      throw new Error(`Background process: Failed to spawn "${command}". Verify the command exists and is executable.`);
+      throw new Error(
+        `Background process: Failed to spawn "${command}". Verify the command exists and is executable.`
+      );
     }
 
     const proc: ManagedProcess = {
@@ -159,8 +160,8 @@ export class ProcessManager {
       child,
     };
 
-    child.stdout!.on('data', (chunk: Buffer) => proc.stdout.append(chunk.toString()));
-    child.stderr!.on('data', (chunk: Buffer) => proc.stderr.append(chunk.toString()));
+    child.stdout.on('data', (chunk: Buffer) => proc.stdout.append(chunk.toString()));
+    child.stderr.on('data', (chunk: Buffer) => proc.stderr.append(chunk.toString()));
 
     child.on('error', (err) => {
       if (proc.state === 'running') {
@@ -256,7 +257,7 @@ export class ProcessManager {
     return { stdout, stderr, truncated: false };
   }
 
-  async kill(id: string, signal: NodeJS.Signals = 'SIGTERM'): Promise<boolean> {
+  kill(id: string, signal: NodeJS.Signals = 'SIGTERM'): boolean {
     const proc = this.processes.get(id);
     if (!proc) throw new Error(`Process "${id}" not found`);
     if (proc.state !== 'running') return false;
@@ -276,13 +277,15 @@ export class ProcessManager {
     return true;
   }
 
-  async killAll(): Promise<void> {
+  killAll(): void {
     const running = [...this.processes.values()].filter((p) => p.state === 'running');
-    await Promise.all(running.map((p) => this.kill(p.id)));
+    for (const p of running) {
+      this.kill(p.id);
+    }
   }
 
-  async cleanup(): Promise<void> {
-    await this.killAll();
+  cleanup(): void {
+    this.killAll();
     this.processes.clear();
   }
 }

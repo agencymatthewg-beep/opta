@@ -73,6 +73,84 @@ async def test_openclaw_stream_include_usage_contract(client: AsyncClient) -> No
     assert usage_seen is True
 
 
+async def test_openclaw_stream_multi_choice_contract(client: AsyncClient) -> None:
+    """Streaming chat supports n>1 with indexed choice chunks."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args: object, **kwargs: object):
+        yield "A"
+        yield "B"
+
+    engine.stream_generate = mock_stream
+
+    seen_indices: set[int] = set()
+    done_seen = False
+    async with client.stream(
+        "POST",
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "stream": True,
+            "n": 2,
+            "messages": [{"role": "user", "content": "hi"}],
+        },
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                done_seen = True
+                continue
+            data = json.loads(payload)
+            for choice in data.get("choices", []):
+                seen_indices.add(choice["index"])
+
+    assert done_seen is True
+    assert seen_indices == {0, 1}
+
+
+async def test_openclaw_stream_logprobs_placeholder_contract(client: AsyncClient) -> None:
+    """Streaming chat includes null logprobs placeholders when requested."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args: object, **kwargs: object):
+        yield "A"
+        yield "B"
+
+    engine.stream_generate = mock_stream
+
+    saw_logprobs = False
+    async with client.stream(
+        "POST",
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "stream": True,
+            "logprobs": True,
+            "top_logprobs": 2,
+            "messages": [{"role": "user", "content": "hi"}],
+        },
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                continue
+            data = json.loads(payload)
+            for choice in data.get("choices", []):
+                if "logprobs" in choice:
+                    saw_logprobs = True
+                    assert choice["logprobs"] is None
+
+    assert saw_logprobs is True
+
+
 async def test_openclaw_responses_endpoint_contract(client: AsyncClient) -> None:
     """Responses endpoint returns response object with output text."""
     await client.post("/admin/models/load", json={"model_id": "test-model"})
@@ -184,3 +262,17 @@ async def test_openclaw_models_lookup_contract(client: AsyncClient) -> None:
     model = response.json()
     assert model["id"] == "test-model"
     assert model["object"] == "model"
+
+
+async def test_openclaw_legacy_completions_contract(client: AsyncClient) -> None:
+    """Legacy completions endpoint remains OpenAI-compatible for old clients."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/completions",
+        json={"model": "test-model", "prompt": "hello world"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["object"] == "text_completion"
+    assert payload["id"].startswith("cmpl-")
+    assert len(payload["choices"]) == 1

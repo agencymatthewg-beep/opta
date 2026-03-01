@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from unittest.mock import AsyncMock, patch
 
 from httpx import AsyncClient
@@ -120,6 +121,182 @@ async def test_load_and_chat(client: AsyncClient) -> None:
     assert data["usage"]["total_tokens"] > 0
 
 
+async def test_chat_completions_supports_n_for_non_stream(client: AsyncClient) -> None:
+    """Non-stream chat completions supports n>1 choices."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "n": 2,
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["choices"]) == 2
+    assert data["choices"][0]["index"] == 0
+    assert data["choices"][1]["index"] == 1
+    assert data["usage"]["total_tokens"] > 0
+
+
+async def test_chat_completions_stream_supports_n_gt_1(client: AsyncClient) -> None:
+    """Streaming chat supports multi-choice fan-out for n>1."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args: object, **kwargs: object):
+        yield "A"
+        yield "B"
+
+    engine.stream_generate = mock_stream
+
+    seen_indices: set[int] = set()
+    finished_indices: set[int] = set()
+    done_seen = False
+    async with client.stream(
+        "POST",
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "stream": True,
+            "n": 2,
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                done_seen = True
+                continue
+            chunk = json.loads(payload)
+            for choice in chunk.get("choices", []):
+                idx = choice["index"]
+                seen_indices.add(idx)
+                if choice.get("finish_reason") is not None:
+                    finished_indices.add(idx)
+
+    assert done_seen is True
+    assert seen_indices == {0, 1}
+    assert finished_indices == {0, 1}
+
+
+async def test_chat_completions_accepts_seed_and_logprobs(client: AsyncClient) -> None:
+    """Chat accepts seed/logprobs params for compatibility."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "seed": 42,
+            "logprobs": True,
+            "top_logprobs": 2,
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["choices"]) == 1
+    assert "logprobs" in data["choices"][0]
+    assert data["choices"][0]["logprobs"] is None
+
+
+async def test_chat_completions_busy_returns_429_retry_after(client: AsyncClient) -> None:
+    """Busy chat path returns OpenAI-style 429 + Retry-After contract."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def busy_generate(*args: object, **kwargs: object):
+        raise RuntimeError("Server is busy")
+
+    engine.generate = busy_generate
+
+    response = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 429
+    assert response.headers.get("Retry-After") == "5"
+    assert response.json()["error"]["code"] == "rate_limit_exceeded"
+
+
+async def test_chat_busy_uses_openclaw_agent_header_for_metrics(client: AsyncClient) -> None:
+    """Busy chat path still attributes metrics to OpenClaw header identity."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def busy_generate(*args: object, **kwargs: object):
+        raise RuntimeError("Server is busy")
+
+    engine.generate = busy_generate
+
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={"x-openclaw-agent-id": "bot-busy"},
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 429
+    metrics = await client.get("/admin/metrics/json")
+    assert "bot-busy" in metrics.json()["per_client"]
+
+
+async def test_chat_passes_effective_client_id_to_engine(client: AsyncClient) -> None:
+    """Chat forwards effective client identity to engine for concurrency controls."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={"x-openclaw-agent-id": "bot-forward"},
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    assert seen["client_id"] == "bot-forward"
+
+
+async def test_chat_client_id_header_takes_precedence_over_openclaw_header(
+    client: AsyncClient,
+) -> None:
+    """X-Client-ID should override OpenClaw header when both are present."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={
+            "X-Client-ID": "cli-primary",
+            "x-openclaw-agent-id": "bot-secondary",
+        },
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    metrics = await client.get("/admin/metrics/json")
+    per_client = metrics.json()["per_client"]
+    assert "cli-primary" in per_client
+    assert "bot-secondary" not in per_client
+
+
 async def test_unload_model(client: AsyncClient) -> None:
     """Load then unload a model."""
     # Load
@@ -176,19 +353,276 @@ async def test_admin_models_after_load(client: AsyncClient) -> None:
     assert "last_used_at" in model
 
 
-# --- Legacy completions stub tests (M5) ---
+# --- Legacy completions compatibility tests (M5) ---
 
 
-async def test_legacy_completions_returns_501(client: AsyncClient) -> None:
-    """POST /v1/completions returns 501 Not Implemented."""
+async def test_legacy_completions_success(client: AsyncClient) -> None:
+    """POST /v1/completions returns OpenAI-compatible text completion payload."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
     response = await client.post(
         "/v1/completions",
-        json={"model": "test", "prompt": "Hello"},
+        json={"model": "test-model", "prompt": "Hello", "n": 2},
     )
-    assert response.status_code == 501
+    assert response.status_code == 200
     data = response.json()
-    assert data["error"]["code"] == "not_implemented"
-    assert "/v1/chat/completions" in data["error"]["message"]
+    assert data["object"] == "text_completion"
+    assert data["id"].startswith("cmpl-")
+    assert data["model"] == "test-model"
+    assert len(data["choices"]) == 2
+    assert data["choices"][0]["index"] == 0
+    assert data["choices"][1]["index"] == 1
+    assert "text" in data["choices"][0]
+    assert data["usage"]["total_tokens"] > 0
+
+
+async def test_legacy_completions_accepts_best_of_noop(client: AsyncClient) -> None:
+    """Legacy completions accepts best_of as a compatibility no-op."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/completions",
+        json={"model": "test-model", "prompt": "Hello", "n": 1, "best_of": 3},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["choices"]) == 1
+    assert data["choices"][0]["index"] == 0
+
+
+async def test_legacy_completions_streaming_contract(client: AsyncClient) -> None:
+    """Streaming /v1/completions emits completion chunks and [DONE]."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args, **kwargs):
+        yield "A"
+        yield "B"
+
+    engine.stream_generate = mock_stream
+
+    chunks: list[dict] = []
+    async with client.stream(
+        "POST",
+        "/v1/completions",
+        json={"model": "test-model", "prompt": "hi", "stream": True},
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                continue
+            chunks.append(json.loads(payload))
+
+    assert len(chunks) >= 3  # first chunk + token chunks + final finish chunk
+    assert chunks[0]["object"] == "text_completion"
+    assert chunks[0]["choices"][0]["text"] == ""
+
+
+async def test_legacy_completions_stream_supports_n_gt_1(client: AsyncClient) -> None:
+    """Legacy streaming supports n>1 with per-choice indexes and single DONE."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args: object, **kwargs: object):
+        yield "A"
+        yield "B"
+
+    engine.stream_generate = mock_stream
+
+    seen_indices: set[int] = set()
+    finished_indices: set[int] = set()
+    done_count = 0
+    async with client.stream(
+        "POST",
+        "/v1/completions",
+        json={"model": "test-model", "prompt": "hi", "stream": True, "n": 2},
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                done_count += 1
+                continue
+            chunk = json.loads(payload)
+            choice = chunk["choices"][0]
+            idx = choice["index"]
+            seen_indices.add(idx)
+            if choice.get("finish_reason") is not None:
+                finished_indices.add(idx)
+
+    assert done_count == 1
+    assert seen_indices == {0, 1}
+    assert finished_indices == {0, 1}
+
+
+async def test_legacy_completions_stream_supports_prompt_array(client: AsyncClient) -> None:
+    """Legacy streaming supports prompt arrays with global index progression."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def mock_stream(*args: object, **kwargs: object):
+        yield "X"
+
+    engine.stream_generate = mock_stream
+
+    seen_indices: set[int] = set()
+    done_count = 0
+    async with client.stream(
+        "POST",
+        "/v1/completions",
+        json={
+            "model": "test-model",
+            "prompt": ["p1", "p2"],
+            "stream": True,
+            "n": 2,
+        },
+    ) as response:
+        assert response.status_code == 200
+        async for line in response.aiter_lines():
+            if not line.startswith("data: "):
+                continue
+            payload = line.removeprefix("data: ").strip()
+            if payload == "[DONE]":
+                done_count += 1
+                continue
+            chunk = json.loads(payload)
+            seen_indices.add(chunk["choices"][0]["index"])
+
+    assert done_count == 1
+    assert seen_indices == {0, 1, 2, 3}
+
+
+async def test_responses_invalid_json_returns_openai_error(client: AsyncClient) -> None:
+    """/v1/responses malformed JSON returns OpenAI-style error envelope."""
+    response = await client.post(
+        "/v1/responses",
+        content="{not-json",
+        headers={"content-type": "application/json"},
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert "error" in data
+    assert data["error"]["type"] == "invalid_request_error"
+    assert data["error"]["code"] == "invalid_json"
+
+
+async def test_responses_busy_returns_429_retry_after(client: AsyncClient) -> None:
+    """/v1/responses busy path returns OpenAI-style 429 + Retry-After."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+
+    async def busy_generate(*args: object, **kwargs: object):
+        raise RuntimeError("Server is busy")
+
+    engine.generate = busy_generate
+
+    response = await client.post(
+        "/v1/responses",
+        json={"model": "test-model", "input": "Hello"},
+    )
+    assert response.status_code == 429
+    assert response.headers.get("Retry-After") == "5"
+    assert response.json()["error"]["code"] == "rate_limit_exceeded"
+
+
+async def test_responses_passes_effective_client_id_to_engine(client: AsyncClient) -> None:
+    """/v1/responses forwards effective client identity to engine calls."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/responses",
+        headers={"x-openclaw-agent-id": "bot-resp"},
+        json={"model": "test-model", "input": "Hello"},
+    )
+    assert response.status_code == 200
+    assert seen["client_id"] == "bot-resp"
+
+
+async def test_responses_maps_max_output_tokens_to_max_tokens(client: AsyncClient) -> None:
+    """/v1/responses maps max_output_tokens to engine max_tokens."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/responses",
+        json={
+            "model": "test-model",
+            "input": "Hello",
+            "max_tokens": 3,
+            "max_output_tokens": 9,
+        },
+    )
+    assert response.status_code == 200
+    assert seen["max_tokens"] == 9
+
+
+async def test_responses_rejects_invalid_max_output_tokens(client: AsyncClient) -> None:
+    """/v1/responses rejects non-integer max_output_tokens with request error."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/responses",
+        json={"model": "test-model", "input": "Hello", "max_output_tokens": "bad"},
+    )
+    assert response.status_code == 400
+    data = response.json()
+    assert data["error"]["type"] == "invalid_request_error"
+    assert data["error"]["param"] == "max_output_tokens"
+
+
+async def test_responses_accepts_input_message_parts_array(client: AsyncClient) -> None:
+    """/v1/responses accepts common input message arrays with input_text parts."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/responses",
+        json={
+            "model": "test-model",
+            "input": [
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": "Hello from parts."},
+                    ],
+                }
+            ],
+        },
+    )
+    assert response.status_code == 200
+    messages = seen["messages"]
+    assert isinstance(messages, list)
+    assert messages[0].role == "user"
+    assert isinstance(messages[0].content, list)
+    assert messages[0].content[0].type == "text"
+    assert messages[0].content[0].text == "Hello from parts."
 
 
 # --- Admin key authentication tests ---

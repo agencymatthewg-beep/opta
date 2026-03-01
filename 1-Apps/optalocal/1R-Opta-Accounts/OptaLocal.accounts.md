@@ -15,7 +15,7 @@ Purpose: simple integration source-of-truth for `accounts.optalocal.com`.
   - CLI browser callback auth
 
 ### Accounts Website
-- App: `1P-Opta-Accounts` (Next.js 16 + React 19 + TS)
+- App: `1R-Opta-Accounts` (Next.js 16 + React 19 + TS)
 - Primary domain: `accounts.optalocal.com`
 - Redirect domains: `auth.optalocal.com`, `login.optalocal.com`
 - Security controls:

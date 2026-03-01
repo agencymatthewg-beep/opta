@@ -58,19 +58,13 @@ export async function mcpList(opts: McpListOptions): Promise<void> {
   console.log(chalk.bold(`\n${entries.length} MCP server(s):\n`));
   for (const [name, cfg] of entries) {
     const transport =
-      cfg.transport === 'stdio'
-        ? `${cfg.command} ${cfg.args.join(' ')}`.trim()
-        : cfg.url;
+      cfg.transport === 'stdio' ? `${cfg.command} ${cfg.args.join(' ')}`.trim() : cfg.url;
     console.log(`  ${chalk.cyan(name)}  ${chalk.dim(cfg.transport)}  ${transport}`);
   }
   console.log();
 }
 
-export async function mcpAdd(
-  name: string,
-  command: string,
-  opts: { env?: string }
-): Promise<void> {
+export async function mcpAdd(name: string, command: string, opts: { env?: string }): Promise<void> {
   const parts = command.split(/\s+/);
   const cmd = parts[0]!;
   const args = parts.slice(1);
@@ -120,7 +114,7 @@ export async function mcpRemove(name: string): Promise<void> {
     return;
   }
 
-  delete servers[name];
+  Reflect.deleteProperty(servers, name);
   store.set('mcp.servers', servers);
   console.log(chalk.green('\u2713') + ` Removed MCP server: ${name}`);
 }

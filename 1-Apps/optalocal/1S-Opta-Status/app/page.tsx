@@ -4,6 +4,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import { Cpu, Terminal, Server, Globe, RefreshCw, ExternalLink, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
+import { OptaRing } from '@/components/OptaRing'
+import { FALLBACK_RELEASE_NOTES } from './release-notes'
+import { GENERATED_RELEASE_NOTES } from './release-notes.generated'
 
 type ServiceStatus = 'online' | 'offline' | 'degraded' | 'checking' | 'unconfigured'
 
@@ -93,6 +96,11 @@ const BADGE: Record<ServiceStatus, { bg: string; text: string; dot: string }> = 
   unconfigured: { bg: 'bg-zinc-500/10', text: 'text-text-muted', dot: 'bg-text-muted' },
 }
 
+const RELEASE_NOTES =
+  GENERATED_RELEASE_NOTES.length > 0
+    ? GENERATED_RELEASE_NOTES
+    : FALLBACK_RELEASE_NOTES
+
 function StatusBadge({ status }: { status: ServiceStatus }) {
   const b = BADGE[status]
   return (
@@ -158,20 +166,9 @@ export default function StatusPage() {
       {/* Header bar */}
       <header className="border-b border-[var(--color-border)]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="relative flex items-center justify-center w-3 h-3">
-              <div
-                className="w-2.5 h-2.5 rounded-full"
-                style={{ backgroundColor: overallColor }}
-              />
-              {allOnline && !anyChecking && (
-                <div
-                  className="absolute w-2.5 h-2.5 rounded-full animate-ping opacity-60"
-                  style={{ backgroundColor: overallColor }}
-                />
-              )}
-            </div>
-            <span className="font-mono text-sm text-text-secondary tracking-tight">
+          <div className="flex items-center gap-3">
+            <OptaRing size={48} className="shrink-0 scale-[0.6] origin-center -ml-2" paused={!allOnline || anyOffline} />
+            <span className="font-mono text-sm text-text-secondary tracking-tight -ml-2">
               status.optalocal.com
             </span>
           </div>
@@ -190,6 +187,13 @@ export default function StatusPage() {
               <RefreshCw size={11} className={refreshing ? 'animate-spin' : ''} />
               Refresh
             </button>
+            <Link
+              href="#release-notes"
+              className="hidden sm:flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
+            >
+              Release Notes
+              <ArrowRight size={11} />
+            </Link>
             <Link
               href="/features"
               className="flex items-center gap-1 text-xs text-text-muted hover:text-primary transition-colors"
@@ -327,6 +331,90 @@ export default function StatusPage() {
             )
           })}
         </div>
+
+        {/* Release notes */}
+        <motion.section
+          id="release-notes"
+          className="mt-12"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28, duration: 0.3 }}
+        >
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div>
+              <h2 className="text-lg font-semibold font-sora tracking-tight">
+                Release Notes
+              </h2>
+              <p className="text-xs text-text-muted mt-1">
+                Recent platform updates across the optalocal stack.
+              </p>
+            </div>
+            <Link
+              href="/features"
+              className="text-xs text-text-muted hover:text-primary transition-colors whitespace-nowrap"
+            >
+              View feature registry
+            </Link>
+          </div>
+
+          <div className="space-y-3">
+            {RELEASE_NOTES.map((note) => {
+              const isRolling = note.status === 'rolling_out'
+              return (
+                <article key={note.id} className="glass rounded-xl p-4 sm:p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="text-xs font-mono text-text-muted">
+                      {note.date}
+                    </div>
+                    <span
+                      className={`text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ${
+                        isRolling
+                          ? 'bg-amber-500/10 text-neon-amber'
+                          : 'bg-green-500/10 text-neon-green'
+                      }`}
+                    >
+                      {isRolling ? 'Rolling Out' : 'Released'}
+                    </span>
+                  </div>
+
+                  <h3 className="mt-2 text-sm sm:text-base font-semibold text-text-primary">
+                    {note.title}
+                  </h3>
+                  <p className="mt-1 text-sm text-text-secondary">
+                    {note.summary}
+                  </p>
+
+                  <ul className="mt-3 space-y-1.5">
+                    {note.highlights.map((item) => (
+                      <li
+                        key={item}
+                        className="text-xs text-text-secondary flex items-start gap-2"
+                      >
+                        <span className="mt-[6px] h-1.5 w-1.5 rounded-full bg-primary flex-shrink-0" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {note.links && note.links.length > 0 && (
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      {note.links.map((link) => (
+                        <Link
+                          key={link.href + link.label}
+                          href={link.href}
+                          className="text-xs text-primary hover:text-primary-glow transition-colors inline-flex items-center gap-1"
+                        >
+                          {link.label}
+                          <ArrowRight size={11} />
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        </motion.section>
 
         {/* Footer nav */}
         <motion.div

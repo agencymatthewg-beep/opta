@@ -1,14 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { LspManager } from '../../src/lsp/manager.js';
 
-// Mock child_process.execFile for which-style checks
-vi.mock('node:child_process', async () => {
-  const actual = await vi.importActual<typeof import('node:child_process')>('node:child_process');
+vi.mock('../../src/platform/index.js', async () => {
+  const actual = await vi.importActual<typeof import('../../src/platform/index.js')>(
+    '../../src/platform/index.js'
+  );
   return {
     ...actual,
-    execFile: vi.fn((_cmd: string, _args: string[], callback: Function) => {
-      callback(new Error('not found'), '', '');
-    }),
+    isBinaryAvailable: vi.fn().mockResolvedValue(false),
   };
 });
 
@@ -116,18 +115,40 @@ describe('LspManager', () => {
       });
       expect(result).toContain('npm install -g');
     });
+
+    it('rejects unsafe custom server command values before binary lookup', async () => {
+      const unsafeManager = new LspManager({
+        cwd: '/project',
+        config: {
+          enabled: true,
+          timeout: 10000,
+          servers: {
+            typescript: {
+              command: 'typescript-language-server; touch /tmp/pwned',
+              args: ['--stdio'],
+              initializationOptions: {},
+            },
+          },
+        },
+      });
+
+      const { isBinaryAvailable } = await import('../../src/platform/index.js');
+      const result = await unsafeManager.execute('lsp_definition', {
+        path: 'src/app.ts',
+        line: 1,
+        character: 0,
+      });
+
+      expect(result).toContain('command rejected');
+      expect(isBinaryAvailable).not.toHaveBeenCalled();
+      await unsafeManager.shutdownAll();
+    });
   });
 
   describe('server pooling', () => {
     it('reuses existing client for same language', async () => {
-      // Make the binary check succeed
-      const { execFile } = await import('node:child_process');
-      vi.mocked(execFile).mockImplementation(
-        (_cmd: any, _args: any, callback: any) => {
-          callback(null, '/usr/bin/typescript-language-server', '');
-          return {} as any;
-        }
-      );
+      const { isBinaryAvailable } = await import('../../src/platform/index.js');
+      vi.mocked(isBinaryAvailable).mockResolvedValue(true);
 
       await manager.execute('lsp_definition', {
         path: 'a.ts',
@@ -148,14 +169,8 @@ describe('LspManager', () => {
 
   describe('execute routing', () => {
     beforeEach(async () => {
-      // Make binary check succeed
-      const { execFile } = await import('node:child_process');
-      vi.mocked(execFile).mockImplementation(
-        (_cmd: any, _args: any, callback: any) => {
-          callback(null, '/usr/bin/typescript-language-server', '');
-          return {} as any;
-        }
-      );
+      const { isBinaryAvailable } = await import('../../src/platform/index.js');
+      vi.mocked(isBinaryAvailable).mockResolvedValue(true);
     });
 
     it('routes lsp_definition correctly', async () => {
@@ -220,13 +235,8 @@ describe('LspManager', () => {
 
   describe('notifyFileChanged', () => {
     beforeEach(async () => {
-      const { execFile } = await import('node:child_process');
-      vi.mocked(execFile).mockImplementation(
-        (_cmd: any, _args: any, callback: any) => {
-          callback(null, '/usr/bin/typescript-language-server', '');
-          return {} as any;
-        }
-      );
+      const { isBinaryAvailable } = await import('../../src/platform/index.js');
+      vi.mocked(isBinaryAvailable).mockResolvedValue(true);
     });
 
     it('sends didChange notification for tracked files', async () => {
@@ -243,21 +253,14 @@ describe('LspManager', () => {
     });
 
     it('does not throw for files without an LSP client', async () => {
-      await expect(
-        manager.notifyFileChanged('/project/readme.md')
-      ).resolves.not.toThrow();
+      await expect(manager.notifyFileChanged('/project/readme.md')).resolves.not.toThrow();
     });
   });
 
   describe('shutdownAll', () => {
     it('shuts down all running servers', async () => {
-      const { execFile } = await import('node:child_process');
-      vi.mocked(execFile).mockImplementation(
-        (_cmd: any, _args: any, callback: any) => {
-          callback(null, '/usr/bin/tls', '');
-          return {} as any;
-        }
-      );
+      const { isBinaryAvailable } = await import('../../src/platform/index.js');
+      vi.mocked(isBinaryAvailable).mockResolvedValue(true);
 
       await manager.execute('lsp_hover', {
         path: 'a.ts',

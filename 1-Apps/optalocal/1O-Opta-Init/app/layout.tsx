@@ -1,13 +1,6 @@
 import './globals.css'
 import type { Metadata } from 'next'
-import { Sora } from 'next/font/google'
 import localFont from 'next/font/local'
-
-const sora = Sora({ 
-  subsets: ['latin'],
-  variable: '--font-sora',
-  display: 'swap',
-})
 
 const jetbrains = localFont({
   src: [
@@ -56,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={`${sora.variable} ${jetbrains.variable}`}>
+    <html lang="en" className={jetbrains.variable}>
       <body className="bg-void text-text-primary selection:bg-primary/30 selection:text-white">
         {children}
       </body>

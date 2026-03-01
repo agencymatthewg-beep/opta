@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { colorizeOptaWord, optaWord } from '../../src/ui/brand.js';
+import {
+  colorizeOptaWord,
+  OPTA_BRAND_GLYPH,
+  OPTA_BRAND_NAME,
+  optaLockup,
+  optaWord,
+} from '../../src/ui/brand.js';
 
 describe('brand text colorization', () => {
   it('does not emit bold reset sequences that break dim text', () => {
@@ -13,5 +19,9 @@ describe('brand text colorization', () => {
     expect(colored).toMatch(/opta|Opta|OPTA/);
     expect(colored).toContain('CLI');
     expect(colored).toContain('faster');
+  });
+
+  it('provides the ring glyph lockup used by the TUI header', () => {
+    expect(optaLockup()).toBe(`${OPTA_BRAND_GLYPH} ${OPTA_BRAND_NAME}`);
   });
 });

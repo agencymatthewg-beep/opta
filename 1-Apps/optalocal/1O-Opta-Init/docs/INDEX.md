@@ -14,19 +14,21 @@
 8. docs/WORKFLOWS.md — build, deploy, Clauding pattern
 9. docs/DECISIONS.md — locked architectural decisions
 10. docs/CHANGELOG.md — version history
+11. docs/GO-LIVE-CHECKLIST.md — release readiness checklist with owners
 
 ## File Map
 
-| File | Last Updated | Purpose |
-|------|-------------|---------|
-| APP.md | 2026-02-27 | Project identity and purpose |
-| CLAUDE.md | 2026-02-27 | AI coding instructions |
-| ARCHITECTURE.md | 2026-02-27 | System design |
-| docs/INDEX.md | 2026-02-27 | This file |
-| docs/ROADMAP.md | 2026-02-27 | Build phases |
-| docs/GUARDRAILS.md | 2026-02-27 | Hard rules |
-| docs/ECOSYSTEM.md | 2026-02-27 | Ecosystem relationships |
-| docs/KNOWLEDGE.md | 2026-02-27 | Research + references |
-| docs/WORKFLOWS.md | 2026-02-27 | Dev + deploy flows |
-| docs/DECISIONS.md | 2026-02-27 | Locked decisions |
-| docs/CHANGELOG.md | 2026-02-27 | Version history |
+| File                      | Last Updated | Purpose                            |
+| ------------------------- | ------------ | ---------------------------------- |
+| APP.md                    | 2026-02-28   | Project identity and purpose       |
+| CLAUDE.md                 | 2026-02-28   | AI coding instructions             |
+| ARCHITECTURE.md           | 2026-02-28   | System design                      |
+| docs/INDEX.md             | 2026-02-28   | This file                          |
+| docs/ROADMAP.md           | 2026-02-28   | Build phases                       |
+| docs/GUARDRAILS.md        | 2026-02-28   | Hard rules                         |
+| docs/ECOSYSTEM.md         | 2026-02-28   | Ecosystem relationships            |
+| docs/KNOWLEDGE.md         | 2026-02-27   | Research + references              |
+| docs/WORKFLOWS.md         | 2026-02-28   | Dev + deploy flows                 |
+| docs/DECISIONS.md         | 2026-02-28   | Locked decisions                   |
+| docs/CHANGELOG.md         | 2026-02-28   | Version history                    |
+| docs/GO-LIVE-CHECKLIST.md | 2026-02-28   | Download and run go-live readiness |

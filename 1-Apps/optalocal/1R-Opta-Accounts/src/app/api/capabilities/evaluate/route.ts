@@ -1,6 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { writeAuditEvent } from '@/lib/api/audit';
 import { asObject, HIGH_RISK_SCOPES, isIsoDateInPast, isUuid, parseString } from '@/lib/api/policy';
+import { RateLimiter } from '@/lib/rate-limit';
+
+// 60 capability checks per minute per IP (accounts for normal CLI usage)
+const rateLimiter = new RateLimiter(60, 60_000);
 
 type Decision = 'allow' | 'deny' | 'step_up';
 
@@ -15,6 +20,11 @@ function isValidScope(value: string): boolean {
 }
 
 export async function POST(request: Request) {
+  const ip = request.headers.get('x-forwarded-for') || '127.0.0.1';
+  if (!rateLimiter.check(ip)) {
+    return NextResponse.json({ allow: false, reason: 'rate_limit_exceeded' }, { status: 429 });
+  }
+
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ allow: false, reason: 'supabase_unconfigured' }, { status: 500 });
 
@@ -84,10 +94,25 @@ export async function POST(request: Request) {
   const grant = data?.[0];
   const allow = Boolean(grant?.granted) && !isIsoDateInPast(grant?.expires_at ?? null);
 
+  const decision = (allow ? 'allow' : 'deny') as Decision;
+  await writeAuditEvent(supabase, {
+    userId: user.id,
+    eventType: 'capability.evaluate',
+    riskLevel: HIGH_RISK_SCOPES.has(scope) ? 'high' : 'low',
+    decision,
+    deviceId: deviceId ?? null,
+    context: { scope, reason: allow ? 'grant_found' : 'no_active_grant' },
+  });
+
   return NextResponse.json({
     allow,
-    decision: (allow ? 'allow' : 'deny') as Decision,
+    decision,
     scope,
     reason: allow ? 'grant_found' : 'no_active_grant',
-  }, { status: allow ? 200 : 403 });
+  }, {
+    status: allow ? 200 : 403,
+    headers: allow ? {
+      'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=120'
+    } : {}
+  });
 }

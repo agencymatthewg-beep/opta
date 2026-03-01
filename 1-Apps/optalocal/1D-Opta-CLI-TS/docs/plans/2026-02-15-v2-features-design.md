@@ -1,6 +1,6 @@
 ---
 title: "Opta CLI V2 Features Design: Git, Repo Awareness, MCP, OPIS Integration"
-status: approved
+status: active
 created: 2026-02-15
 author: Matthew Byrden + Claude Opus 4.6
 scope: V2 feature set — 4 capabilities + 1 command

@@ -15,7 +15,7 @@ const flush = () => new Promise<void>(r => setTimeout(r, 50));
 describe('InputBox', () => {
   it('should render with prompt', () => {
     const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="normal" />);
-    expect(lastFrame()).toContain('>');
+    expect(lastFrame()).toContain('◆');
   });
 
   it('should show mode indicator', () => {
@@ -81,7 +81,7 @@ describe('InputBox', () => {
   it('should show cursor indicator', () => {
     const { lastFrame } = render(<InputBox onSubmit={() => {}} mode="normal" />);
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('>');
+    expect(frame).toContain('◆');
   });
 
   it('should clear buffer on escape', async () => {

@@ -27,6 +27,7 @@ import {
 import { Button, cn } from '@opta/ui';
 
 import { useAuthSafe } from '@/components/shared/AuthProvider';
+import { buildAccountSignInHref } from '@/lib/auth-utils';
 import type { DeviceRole } from '@/types/cloud';
 
 type PairStatus = 'pending' | 'claiming' | 'success' | 'error';
@@ -55,11 +56,14 @@ export default function PairPage() {
 function PairPageInner() {
   const auth = useAuthSafe();
   const searchParams = useSearchParams();
-  const pairNextParam = useMemo(() => {
+  const pairNextPath = useMemo(() => {
     const query = searchParams.toString();
-    const nextPath = query ? `/pair?${query}` : '/pair';
-    return encodeURIComponent(nextPath);
+    return query ? `/pair?${query}` : '/pair';
   }, [searchParams]);
+  const signInHref = useMemo(
+    () => buildAccountSignInHref(pairNextPath),
+    [pairNextPath],
+  );
 
   // Parse device info from query params
   const deviceInfo = useMemo(() => {
@@ -231,7 +235,7 @@ function PairPageInner() {
             After sign-in, you will return here to confirm pairing.
           </p>
           <a
-            href={`/sign-in?next=${pairNextParam}`}
+            href={signInHref}
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             Sign In to Continue

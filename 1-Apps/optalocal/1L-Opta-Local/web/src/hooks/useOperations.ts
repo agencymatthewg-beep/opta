@@ -6,7 +6,6 @@ import type {
   OperationResponse,
   OptaDaemonClient,
 } from "@/lib/opta-daemon-client";
-import type { DaemonOperationSafetyClass } from "@/lib/opta-daemon-client";
 type DaemonOperationId = string;
 
 interface OperationExecutePayload extends Record<string, unknown> {

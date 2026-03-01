@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev --port 3005",
+    "prebuild": "npm run release-notes:generate",
     "build": "next build",
     "start": "next start --port 3005",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "release-notes:generate": "node scripts/generate-release-notes.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

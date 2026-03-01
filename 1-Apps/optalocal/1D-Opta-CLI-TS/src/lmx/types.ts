@@ -720,3 +720,47 @@ export interface LmxRequestOptions {
   timeoutMs?: number;
   maxRetries?: number;
 }
+
+export interface LmxHardwareProfile {
+  hostname: string;
+  chip_name: string | null;
+  memory_gb: number | null;
+  cpu_cores: number | null;
+  metal_available: boolean;
+  architecture: string | null;
+  gpu_family: string | null;
+}
+
+export interface LmxDeviceIdentity {
+  hardware: LmxHardwareProfile;
+  identity: {
+    name: string;
+    purpose: string;
+    role: string;
+  };
+}
+
+// ─── Zero-Config Discovery ─────────────────────────────────────────────────
+
+export interface LmxDiscoveryEndpoints {
+  preferred_base_url: string;
+  base_urls: string[];
+  openai_base_url: string;
+  admin_base_url: string;
+  websocket_url: string;
+}
+
+export interface LmxDiscoveryDoc {
+  service: string;           // "opta-lmx"
+  version: string;
+  security_profile: string;  // "open" | "local-key" | "jwt"
+  ready: boolean;
+  loaded_models: string[];
+  auth: {
+    admin_key_required: boolean;
+    inference_key_required: boolean;
+    supabase_jwt_enabled: boolean;
+  };
+  endpoints: LmxDiscoveryEndpoints;
+  client_probe_order: string[];
+}

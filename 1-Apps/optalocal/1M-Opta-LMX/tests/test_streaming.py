@@ -92,6 +92,57 @@ class TestFormatSSEStream:
         # Should still end with [DONE]
         assert chunks[-1] == "data: [DONE]\n\n"
 
+    @pytest.mark.asyncio
+    async def test_choice_index_override_applies_to_all_chunks(self) -> None:
+        """Custom choice index is propagated through role/content/final chunks."""
+        chunks = []
+        async for line in format_sse_stream(
+            _async_tokens("x"),
+            "req-1",
+            "m",
+            choice_index=3,
+        ):
+            chunks.append(line)
+
+        first = json.loads(chunks[0].removeprefix("data: ").strip())
+        middle = json.loads(chunks[1].removeprefix("data: ").strip())
+        final = json.loads(chunks[-2].removeprefix("data: ").strip())
+        assert first["choices"][0]["index"] == 3
+        assert middle["choices"][0]["index"] == 3
+        assert final["choices"][0]["index"] == 3
+
+    @pytest.mark.asyncio
+    async def test_emit_done_false_suppresses_done_sentinel(self) -> None:
+        """emit_done=False omits terminal [DONE] marker for composition."""
+        chunks = []
+        async for line in format_sse_stream(
+            _async_tokens("x"),
+            "req-1",
+            "m",
+            emit_done=False,
+        ):
+            chunks.append(line)
+        assert all(line != "data: [DONE]\n\n" for line in chunks)
+
+    @pytest.mark.asyncio
+    async def test_logprobs_placeholder_can_be_injected(self) -> None:
+        """Requested logprobs compatibility emits `choices[].logprobs: null`."""
+        chunks = []
+        async for line in format_sse_stream(
+            _async_tokens("x"),
+            "req-1",
+            "m",
+            include_logprobs_placeholder=True,
+        ):
+            chunks.append(line)
+
+        data_lines = [line for line in chunks if line.startswith("data: {")]
+        for line in data_lines:
+            payload = json.loads(line.removeprefix("data: ").strip())
+            for choice in payload.get("choices", []):
+                assert "logprobs" in choice
+                assert choice["logprobs"] is None
+
 
 class TestFormatSSEToolStream:
     """Tests for SSE streaming with tool call support."""
@@ -156,3 +207,38 @@ class TestFormatSSEToolStream:
 
         final = json.loads(chunks[-2].removeprefix("data: ").strip())
         assert final["choices"][0]["finish_reason"] == "stop"
+
+    @pytest.mark.asyncio
+    async def test_choice_index_override_applies_to_tool_chunks(self) -> None:
+        """Tool stream respects a custom choice index in all emitted chunks."""
+        stream = _async_chunks(StreamChunk(content="tool-text"))
+        chunks = []
+        async for line in format_sse_tool_stream(stream, "req-1", "m", choice_index=5):
+            chunks.append(line)
+
+        first = json.loads(chunks[0].removeprefix("data: ").strip())
+        middle = json.loads(chunks[1].removeprefix("data: ").strip())
+        final = json.loads(chunks[-2].removeprefix("data: ").strip())
+        assert first["choices"][0]["index"] == 5
+        assert middle["choices"][0]["index"] == 5
+        assert final["choices"][0]["index"] == 5
+
+    @pytest.mark.asyncio
+    async def test_tool_stream_logprobs_placeholder_can_be_injected(self) -> None:
+        """Tool-aware streaming also emits null logprobs placeholders when requested."""
+        stream = _async_chunks(StreamChunk(content="tool-text"))
+        chunks = []
+        async for line in format_sse_tool_stream(
+            stream,
+            "req-1",
+            "m",
+            include_logprobs_placeholder=True,
+        ):
+            chunks.append(line)
+
+        data_lines = [line for line in chunks if line.startswith("data: {")]
+        for line in data_lines:
+            payload = json.loads(line.removeprefix("data: ").strip())
+            for choice in payload.get("choices", []):
+                assert "logprobs" in choice
+                assert choice["logprobs"] is None

@@ -88,6 +88,21 @@ describe('LspClient', () => {
       );
     });
 
+    it('rejects unsafe command strings before spawn', async () => {
+      const { spawn } = await import('node:child_process');
+      const unsafeClient = new LspClient({
+        command: 'typescript-language-server; touch /tmp/pwned',
+        args: ['--stdio'],
+        rootUri: 'file:///project',
+        language: 'typescript',
+      });
+
+      await expect(unsafeClient.initialize({ timeout: 50 })).rejects.toThrow(
+        /command rejected/i
+      );
+      expect(spawn).not.toHaveBeenCalled();
+    });
+
     it('sends initialized notification after initialize response', async () => {
       await initializeClient(client, mockProc);
 

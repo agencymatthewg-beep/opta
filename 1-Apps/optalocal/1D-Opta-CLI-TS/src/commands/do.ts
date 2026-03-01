@@ -5,6 +5,8 @@ import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
 import { NO_MODEL_ERROR } from '../utils/errors.js';
 import { DaemonClient } from '../daemon/client.js';
+import { loadAccountState } from '../accounts/storage.js';
+import { evaluateCapability } from '../accounts/cloud.js';
 
 // --- Types ---
 
@@ -90,6 +92,20 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
 
   const silent = outputFormat === 'json' || outputFormat === 'quiet';
 
+  const accountState = await loadAccountState();
+  if (accountState?.session) {
+    const gate = await evaluateCapability(accountState, 'cli.run', accountState.deviceId);
+    if (!gate.allow) {
+      const message = `Capability denied for cli.run${gate.reason ? ` (${gate.reason})` : ''}`;
+      if (outputFormat === 'json') {
+        console.log(JSON.stringify({ error: message, exit_code: EXIT.PERMISSION }));
+      } else {
+        console.error(chalk.red('✗') + ` ${message}`);
+      }
+      throw new ExitError(EXIT.PERMISSION);
+    }
+  }
+
   try {
     const config = await loadConfig(overrides);
 
@@ -125,7 +141,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       const stats = daemonResp.stats;
       doResult = {
         response: daemonResp.response ?? '',
-        toolCallCount: Number(stats?.toolCalls ?? 0),
+        toolCallCount: stats?.toolCalls ?? 0,
         model: daemonResp.model ?? config.model.default,
         exitCode: 0,
       };
@@ -153,18 +169,20 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     // Elapsed time footer in text mode
     if (outputFormat === 'text') {
       const elapsed = ((Date.now() - taskStart) / 1000).toFixed(1);
-      const toolStr = doResult.toolCallCount > 0
-        ? chalk.dim(` · ${doResult.toolCallCount} tool call${doResult.toolCallCount !== 1 ? 's' : ''}`)
-        : '';
+      const toolStr =
+        doResult.toolCallCount > 0
+          ? chalk.dim(
+              ` · ${doResult.toolCallCount} tool call${doResult.toolCallCount !== 1 ? 's' : ''}`
+            )
+          : '';
       console.log(chalk.dim(`\n  Done in ${elapsed}s${toolStr}`));
     }
 
     // Write to file if --output specified
     if (opts.output) {
       const { writeFile } = await import('node:fs/promises');
-      const fullOutput = outputFormat === 'json'
-        ? formatDoResult(doResult, 'json')
-        : doResult.response;
+      const fullOutput =
+        outputFormat === 'json' ? formatDoResult(doResult, 'json') : doResult.response;
       await writeFile(opts.output, fullOutput, 'utf-8');
       if (!silent) {
         console.log(chalk.dim(`  Output written to ${opts.output}`));

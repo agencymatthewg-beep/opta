@@ -22,6 +22,7 @@ import {
   CONNECTION_SETTINGS_UPDATED_EVENT,
 } from '@/lib/connection';
 import { useConnection, type UseConnectionReturn } from '@/hooks/useConnection';
+import { useOptaVisualState } from '@/hooks/useOptaVisualState';
 
 // ---------------------------------------------------------------------------
 // Context
@@ -57,10 +58,18 @@ function ConnectionProviderInner({
   children: ReactNode;
 }) {
   const connection = useConnection(settings);
+  const visual = useOptaVisualState(connection);
 
   return (
     <ConnectionContext.Provider value={connection}>
-      {children}
+      <div
+        className="opta-visual-scope"
+        data-connection={visual.dataAttributes['data-connection']}
+        data-visual-state={visual.dataAttributes['data-visual-state']}
+        data-opta-motion={visual.dataAttributes['data-opta-motion']}
+      >
+        {children}
+      </div>
     </ConnectionContext.Provider>
   );
 }
@@ -71,6 +80,7 @@ function ConnectionProviderInner({
 
 export function ConnectionProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<ConnectionSettings | null>(null);
+  const visual = useOptaVisualState();
 
   useEffect(() => {
     let cancelled = false;
@@ -117,7 +127,14 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
   if (!settings) {
     return (
       <ConnectionContext.Provider value={null}>
-        {children}
+        <div
+          className="opta-visual-scope"
+          data-connection={visual.dataAttributes['data-connection']}
+          data-visual-state={visual.dataAttributes['data-visual-state']}
+          data-opta-motion={visual.dataAttributes['data-opta-motion']}
+        >
+          {children}
+        </div>
       </ConnectionContext.Provider>
     );
   }

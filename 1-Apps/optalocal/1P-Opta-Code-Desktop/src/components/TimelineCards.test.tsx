@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { TimelineCards } from "./TimelineCards";
-import type { TimelineItem } from "../types";
+import type { PermissionRequest, TimelineItem } from "../types";
 
 function item(partial: Partial<TimelineItem>): TimelineItem {
   return {
@@ -43,5 +43,45 @@ describe("TimelineCards", () => {
     );
 
     expect(screen.getByText("Plan state: drift risk")).toBeInTheDocument();
+  });
+
+  it("renders browser visual state text and browser tool card treatment", () => {
+    render(
+      <TimelineCards
+        sessionId="sess_browser"
+        isStreaming={true}
+        items={[
+          item({ id: "1", kind: "tool", title: "browser_navigate", body: "{}" }),
+          item({ id: "2", kind: "assistant", title: "Assistant", body: "navigating" }),
+        ]}
+      />,
+    );
+
+    expect(screen.getByText("Browser activity: working")).toBeInTheDocument();
+    const browserLabel = screen.getByText("browser");
+    expect(browserLabel.closest("article")).toHaveClass("tool-browser");
+  });
+
+  it("shows blocked browser state when browser permission is pending", () => {
+    const pendingPermissions: PermissionRequest[] = [
+      {
+        requestId: "req_1",
+        toolName: "browser_click",
+        args: { ref: "button" },
+        sessionId: "sess_blocked",
+      },
+    ];
+
+    render(
+      <TimelineCards
+        sessionId="sess_blocked"
+        pendingPermissions={pendingPermissions}
+        items={[item({ id: "1", kind: "assistant", title: "Assistant", body: "waiting" })]}
+      />,
+    );
+
+    expect(
+      screen.getByText("Browser activity: awaiting permission"),
+    ).toBeInTheDocument();
   });
 });

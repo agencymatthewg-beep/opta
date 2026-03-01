@@ -1,6 +1,6 @@
 import chalk from 'chalk';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { getConfigDir } from '../platform/paths.js';
 import { loadConfig, saveConfig } from '../core/config.js';
 import { agentLoop, buildSystemPrompt } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
@@ -63,6 +63,7 @@ export function formatChatJsonLine(messages: AgentMessage[]): string {
 export interface ChatState {
   currentMode: OptaMode;
   agentProfile: string;
+  autoAccept?: boolean;
   lastThinkingRenderer?: import('../ui/thinking.js').ThinkingRenderer;
   thinkingExpanded?: boolean;
 }
@@ -86,15 +87,18 @@ interface ModelPreflightStatus {
   error?: string;
 }
 
-const OPTA_CONFIG_DIR = join(homedir(), '.config', 'opta');
+const OPTA_CONFIG_DIR = getConfigDir();
 
 function pickModelFlavor(model: string): string {
   const lower = model.toLowerCase();
   if (lower.includes('qwen')) return 'I can move fast on coding and shell workflows.';
-  if (lower.includes('minimax')) return 'I can balance long-context reasoning with practical execution.';
+  if (lower.includes('minimax'))
+    return 'I can balance long-context reasoning with practical execution.';
   if (lower.includes('kimi')) return 'I can handle broad context windows and deep planning.';
-  if (lower.includes('glm')) return 'I can keep responses concise while staying technically grounded.';
-  if (lower.includes('claude')) return 'I can help with structured reasoning and high-quality edits.';
+  if (lower.includes('glm'))
+    return 'I can keep responses concise while staying technically grounded.';
+  if (lower.includes('claude'))
+    return 'I can help with structured reasoning and high-quality edits.';
   return 'I can help with focused coding and terminal tasks.';
 }
 
@@ -118,21 +122,23 @@ function toTuiTurnError(payload: unknown): TuiErrorEvent {
     return payload;
   }
 
-  const record = payload && typeof payload === 'object'
-    ? payload as Record<string, unknown>
-    : undefined;
-  const message = typeof record?.['message'] === 'string' && record['message'].length > 0
-    ? record['message']
-    : 'Turn failed';
-  const code = typeof record?.['code'] === 'string' && record['code'].length > 0
-    ? record['code']
-    : undefined;
+  const record =
+    payload && typeof payload === 'object' ? (payload as Record<string, unknown>) : undefined;
+  const message =
+    typeof record?.['message'] === 'string' && record['message'].length > 0
+      ? record['message']
+      : 'Turn failed';
+  const code =
+    typeof record?.['code'] === 'string' && record['code'].length > 0 ? record['code'] : undefined;
 
   const structured: TuiErrorPayload = code ? { message, code } : { message };
   return structured;
 }
 
-async function probeModelPreflight(config: Awaited<ReturnType<typeof loadConfig>>, modelId: string): Promise<ModelPreflightStatus> {
+async function probeModelPreflight(
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  modelId: string
+): Promise<ModelPreflightStatus> {
   // When running on Anthropic (zero-config fallback or explicit config), the
   // model is always "loaded" from the CLI's perspective — no LMX probe needed.
   if ((config.provider?.active ?? 'lmx') === 'anthropic') {
@@ -160,7 +166,7 @@ async function probeModelPreflight(config: Awaited<ReturnType<typeof loadConfig>
 
 async function runChatDiskPreflight(
   config: Awaited<ReturnType<typeof loadConfig>>,
-  jsonMode: boolean,
+  jsonMode: boolean
 ): Promise<void> {
   try {
     await ensureDiskHeadroom(OPTA_CONFIG_DIR, {
@@ -284,7 +290,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     console.error(chalk.red('✗') + ' ' + NO_MODEL_ERROR);
     console.error('');
     console.error(chalk.dim('  Fix options:'));
-    console.error(chalk.dim('    1. Set a default model:  ') + chalk.cyan('opta config set model.default <model-name>'));
+    console.error(
+      chalk.dim('    1. Set a default model:  ') +
+        chalk.cyan('opta config set model.default <model-name>')
+    );
     console.error(chalk.dim('    2. Discover models:      ') + chalk.cyan('opta models'));
     console.error(chalk.dim('    3. Check LMX status:     ') + chalk.cyan('opta status'));
     console.error(chalk.dim('    4. Run diagnostics:      ') + chalk.cyan('opta doctor'));
@@ -307,14 +316,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       } else if (matches.length > 1) {
         try {
           const { select } = await import('@inquirer/prompts');
-          const choice = await runMenuPrompt((context) =>
-            select({
-              message: chalk.dim(`Multiple sessions match "${opts.resume}"`),
-              choices: matches.slice(0, 10).map(m => ({
-                name: `${m.title || m.id.slice(0, 8)}  ${chalk.dim(m.model || '')}  ${chalk.dim(new Date(m.created).toLocaleDateString())}${m.tags?.length ? '  ' + chalk.cyan(m.tags.join(', ')) : ''}`,
-                value: m.id,
-              })),
-            }, context), 'select');
+          const choice = await runMenuPrompt(
+            (context) =>
+              select(
+                {
+                  message: chalk.dim(`Multiple sessions match "${opts.resume}"`),
+                  choices: matches.slice(0, 10).map((m) => ({
+                    name: `${m.title || m.id.slice(0, 8)}  ${chalk.dim(m.model || '')}  ${chalk.dim(new Date(m.created).toLocaleDateString())}${m.tags?.length ? '  ' + chalk.cyan(m.tags.join(', ')) : ''}`,
+                    value: m.id,
+                  })),
+                },
+                context
+              ),
+            'select'
+          );
           if (!choice) return;
           session = await loadSession(choice);
         } catch {
@@ -323,8 +338,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         }
       } else {
         console.error(
-          chalk.red('✗') + ` Session not found: ${opts.resume}\n\n` +
-          chalk.dim('Run ') + chalk.cyan('opta sessions') + chalk.dim(' to list available sessions')
+          chalk.red('✗') +
+            ` Session not found: ${opts.resume}\n\n` +
+            chalk.dim('Run ') +
+            chalk.cyan('opta sessions') +
+            chalk.dim(' to list available sessions')
         );
         throw new ExitError(EXIT.NOT_FOUND);
       }
@@ -334,20 +352,23 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     startupPreflightError = startupPreflight.error;
 
     if (!jsonMode) {
-      const msgCount = session.messages.filter(m => m.role !== 'system').length;
-      const providerLabel = (config.provider?.active ?? 'lmx') === 'anthropic'
-        ? 'Anthropic'
-        : 'LMX';
-      const providerValue = (config.provider?.active ?? 'lmx') === 'anthropic'
-        ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
-        : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
-      console.log('\n' + box('Opta', [
-        kv(providerLabel, providerValue),
-        kv('Model', session.model),
-        kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(resumed)')}`),
-        ...(session.title ? [kv('Title', chalk.italic(session.title.slice(0, 40)))] : []),
-        kv('Messages', String(msgCount)),
-      ]));
+      const msgCount = session.messages.filter((m) => m.role !== 'system').length;
+      const providerLabel =
+        (config.provider?.active ?? 'lmx') === 'anthropic' ? 'Anthropic' : 'LMX';
+      const providerValue =
+        (config.provider?.active ?? 'lmx') === 'anthropic'
+          ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
+          : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
+      console.log(
+        '\n' +
+          box('Opta', [
+            kv(providerLabel, providerValue),
+            kv('Model', session.model),
+            kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(resumed)')}`),
+            ...(session.title ? [kv('Title', chalk.italic(session.title.slice(0, 40)))] : []),
+            kv('Messages', String(msgCount)),
+          ])
+      );
     }
   } else {
     session = await createSession(config.model.default);
@@ -361,17 +382,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     startupPreflightError = startupPreflight.error;
 
     if (!jsonMode) {
-      const providerLabel = (config.provider?.active ?? 'lmx') === 'anthropic'
-        ? 'Anthropic'
-        : 'LMX';
-      const providerValue = (config.provider?.active ?? 'lmx') === 'anthropic'
-        ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
-        : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
-      console.log('\n' + box('Opta', [
-        kv(providerLabel, providerValue),
-        kv('Model', session.model),
-        kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(new)')}`),
-      ]));
+      const providerLabel =
+        (config.provider?.active ?? 'lmx') === 'anthropic' ? 'Anthropic' : 'LMX';
+      const providerValue =
+        (config.provider?.active ?? 'lmx') === 'anthropic'
+          ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
+          : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
+      console.log(
+        '\n' +
+          box('Opta', [
+            kv(providerLabel, providerValue),
+            kv('Model', session.model),
+            kv('Session', `${session.id.slice(0, 8)} ${chalk.dim('(new)')}`),
+          ])
+      );
     }
   }
 
@@ -382,21 +406,31 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   // Non-blocking startup connection check (fire-and-forget)
   if (!jsonMode) {
     const { host, port } = config.connection;
-    runConnectionDiagnostics(host, port).then(results => {
-      const hasError = results.some(r => r.status === 'error');
-      const hasWarning = results.some(r => r.status === 'warning');
-      if (hasError || hasWarning) {
-        console.log(formatDiagnostics(results));
-        console.log('');
-      }
-    }).catch(() => {
-      // Silently ignore diagnostic failures — don't disrupt the REPL
-    });
+    runConnectionDiagnostics(host, port)
+      .then((results) => {
+        const hasError = results.some((r) => r.status === 'error');
+        const hasWarning = results.some((r) => r.status === 'warning');
+        if (hasError || hasWarning) {
+          console.log(formatDiagnostics(results));
+          console.log('');
+        }
+      })
+      .catch(() => {
+        // Silently ignore diagnostic failures — don't disrupt the REPL
+      });
   }
 
   // Mode state (shared by both TUI and REPL modes)
   const chatState: ChatState = {
-    currentMode: opts.plan ? 'plan' : opts.review ? 'review' : opts.research ? 'research' : (opts.auto ? 'auto-accept' : 'normal'),
+    currentMode: opts.plan
+      ? 'plan'
+      : opts.review
+        ? 'review'
+        : opts.research
+          ? 'research'
+          : opts.auto
+            ? 'auto-accept'
+            : 'normal',
     agentProfile: 'default',
   };
   if (opts.dangerous || opts.yolo) chatState.currentMode = 'normal'; // dangerous handled by config mode
@@ -405,7 +439,9 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     await saveSession(session);
 
     const journal = config.journal;
-    if (journal?.enabled === false) return null;
+    // loadConfig returns defaults in production, but treat missing journal config
+    // as enabled to preserve backward-compatible session logging in partial test stubs.
+    if ((journal?.enabled ?? true) === false) return null;
 
     try {
       const written = await writeSessionLog(session, {
@@ -434,18 +470,22 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     const writerId = `writer-${nanoid(6)}`;
     const nonSystemMessageCount = session.messages.filter((m) => m.role !== 'system').length;
     const startupMessages: TuiMessage[] = startupModelLoaded
-      ? [{
-          role: 'assistant',
-          content: buildStartupIntro(session.model, Boolean(opts.resume), nonSystemMessageCount),
-          createdAt: Date.now(),
-        }]
-      : [{
-          role: 'error',
-          content: startupPreflightError
-            ? `No Model Loaded - Use Opta Menu to begin.\nLMX preflight failed: ${startupPreflightError}`
-            : 'No Model Loaded - Use Opta Menu to begin.',
-          createdAt: Date.now(),
-        }];
+      ? [
+          {
+            role: 'assistant',
+            content: buildStartupIntro(session.model, Boolean(opts.resume), nonSystemMessageCount),
+            createdAt: Date.now(),
+          },
+        ]
+      : [
+          {
+            role: 'error',
+            content: startupPreflightError
+              ? `No Model Loaded - Use Opta Menu to begin.\nLMX preflight failed: ${startupPreflightError}`
+              : 'No Model Loaded - Use Opta Menu to begin.',
+            createdAt: Date.now(),
+          },
+        ];
     await daemon.createSession({
       sessionId: session.id,
       model: session.model,
@@ -500,7 +540,8 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               break;
             }
             case 'turn.start':
-              activeTurnId = typeof payload['turnId'] === 'string' ? payload['turnId'] : activeTurnId;
+              activeTurnId =
+                typeof payload['turnId'] === 'string' ? payload['turnId'] : activeTurnId;
               emitter.emit('turn:start');
               break;
             case 'turn.token':
@@ -531,8 +572,8 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               break;
             case 'permission.request':
               emitter.emit('permission:request', {
-                id: String(payload['requestId'] ?? ''),
-                toolName: String(payload['toolName'] ?? 'tool'),
+                id: typeof payload['requestId'] === 'string' ? payload['requestId'] : '',
+                toolName: typeof payload['toolName'] === 'string' ? payload['toolName'] : 'tool',
                 args: (payload['args'] as Record<string, unknown>) ?? {},
               });
               break;
@@ -547,14 +588,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
                 toolCalls: Number(stats?.['toolCalls'] ?? 0),
                 elapsed: Number(stats?.['elapsed'] ?? 0),
                 speed: Number(stats?.['speed'] ?? 0),
-                firstTokenLatencyMs: stats?.['firstTokenLatencyMs'] == null ? null : Number(stats['firstTokenLatencyMs']),
+                firstTokenLatencyMs:
+                  stats?.['firstTokenLatencyMs'] == null
+                    ? null
+                    : Number(stats['firstTokenLatencyMs']),
               });
-              void daemon.getSession(session.id).then((remote) => {
-                const remoteMessages = (remote.messages ?? []) as AgentMessage[];
-                session.messages = remoteMessages;
-                session.toolCallCount = remote.toolCallCount ?? session.toolCallCount;
-                return saveSession(session);
-              }).catch(() => {});
+              void daemon
+                .getSession(session.id)
+                .then((remote) => {
+                  const remoteMessages = (remote.messages ?? []) as AgentMessage[];
+                  session.messages = remoteMessages;
+                  session.toolCallCount = remote.toolCallCount ?? session.toolCallCount;
+                  return saveSession(session);
+                })
+                .catch(() => {});
               break;
             }
             case 'turn.error':
@@ -577,15 +624,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     reconnect();
 
-    const onPermissionResponse = (id: string, decision: import('../tui/PermissionPrompt.js').PermissionDecision) => {
+    const onPermissionResponse = (
+      id: string,
+      decision: import('../tui/PermissionPrompt.js').PermissionDecision
+    ) => {
       const mapped = decision === 'deny' ? 'deny' : 'allow';
-      void daemon.resolvePermission(session.id, {
-        requestId: id,
-        decision: mapped,
-        decidedBy: clientId,
-      }).catch((err: unknown) => {
-        emitter.emit('error', `Permission resolution failed: ${errorMessage(err)}`);
-      });
+      void daemon
+        .resolvePermission(session.id, {
+          requestId: id,
+          decision: mapped,
+          decidedBy: clientId,
+        })
+        .catch((err: unknown) => {
+          emitter.emit('error', `Permission resolution failed: ${errorMessage(err)}`);
+        });
     };
     emitter.on('permission:response', onPermissionResponse);
 
@@ -597,20 +649,28 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       requireLoadedModel: true,
       initialModelLoaded: startupModelLoaded,
       title: session.title,
-      onModeChange: (mode) => { currentTuiMode = mode; },
+      onModeChange: (mode) => {
+        currentTuiMode = mode;
+      },
       onCancelTurn: () => {
         if (!turnInFlight) return;
-        void daemon.cancel(session.id, { turnId: activeTurnId, writerId }).then((res) => {
-          if (res.cancelled > 0) {
-            emitter.emit('error', '⏹ Turn cancelled');
-          }
-        }).catch((err: unknown) => {
-          emitter.emit('error', `Cancel failed: ${errorMessage(err)}`);
-        });
+        void daemon
+          .cancel(session.id, { turnId: activeTurnId, writerId })
+          .then((res) => {
+            if (res.cancelled > 0) {
+              emitter.emit('error', '⏹ Turn cancelled');
+            }
+          })
+          .catch((err: unknown) => {
+            emitter.emit('error', `Cancel failed: ${errorMessage(err)}`);
+          });
       },
       onSubmit: (text: string) => {
         if (turnInFlight) {
-          emitter.emit('error', 'A turn is already running. Wait for it to finish before sending another message.');
+          emitter.emit(
+            'error',
+            'A turn is already running. Wait for it to finish before sending another message.'
+          );
           return;
         }
         // Fire-and-forget: the emitter events drive the TUI updates
@@ -638,12 +698,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
             },
           });
           activeTurnId = queued.turnId;
-        })().catch(() => {
-          turnInFlight = false;
-          emitter.emit('error', 'Failed to submit turn to daemon');
-        }).finally(() => {
-          // Reset happens on turn.done / turn.error to preserve in-flight guard.
-        });
+        })()
+          .catch(() => {
+            turnInFlight = false;
+            emitter.emit('error', 'Failed to submit turn to daemon');
+          })
+          .finally(() => {
+            // Reset happens on turn.done / turn.error to preserve in-flight guard.
+          });
       },
       onSlashCommand: async (input: string) => {
         // Bare `/` opens interactive browser in REPL mode, but in TUI mode
@@ -673,9 +735,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     const logPath = await saveSessionWithJournal();
     if (!jsonMode) {
-      const msgCount = session.messages.filter(m => m.role !== 'system').length;
+      const msgCount = session.messages.filter((m) => m.role !== 'system').length;
       console.log(
-        '\n' + chalk.green('✓') + chalk.dim(` Session saved: ${session.id.slice(0, 8)} · ${msgCount} msgs`)
+        '\n' +
+          chalk.green('✓') +
+          chalk.dim(` Session saved: ${session.id.slice(0, 8)} · ${msgCount} msgs`)
       );
       if (logPath) {
         console.log(chalk.dim(`  Session log: ${logPath}`));
@@ -713,13 +777,15 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         config.connection.host,
         config.connection.port,
         config.connection.fallbackHosts,
-        config.connection.adminKey,
+        config.connection.adminKey
       );
 
   // Initialize slash command TAB completion cache (non-blocking)
-  import('../ui/autocomplete.js').then(({ initSlashCompletionCache }) => {
-    initSlashCompletionCache().catch(() => {});
-  }).catch(() => {});
+  import('../ui/autocomplete.js')
+    .then(({ initSlashCompletionCache }) => {
+      initSlashCompletionCache().catch(() => {});
+    })
+    .catch(() => {});
 
   // REPL loop
   const { input } = await import('@inquirer/prompts');
@@ -741,9 +807,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         stopConnectionMonitor();
         const logPath = await saveSessionWithJournal();
         if (!jsonMode) {
-          const msgCount = session.messages.filter(m => m.role !== 'system').length;
+          const msgCount = session.messages.filter((m) => m.role !== 'system').length;
           console.log(
-            '\n' + chalk.green('✓') + chalk.dim(` Session saved: ${session.id.slice(0, 8)} · ${msgCount} msgs`)
+            '\n' +
+              chalk.green('✓') +
+              chalk.dim(` Session saved: ${session.id.slice(0, 8)} · ${msgCount} msgs`)
           );
           if (logPath) {
             console.log(chalk.dim(`  Session log: ${logPath}`));
@@ -765,11 +833,12 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         stopConnectionMonitor();
         const logPath = await saveSessionWithJournal();
         if (!jsonMode) {
-          const msgCount = session.messages.filter(m => m.role !== 'system').length;
+          const msgCount = session.messages.filter((m) => m.role !== 'system').length;
           console.log(
-            chalk.green('✓') + chalk.dim(` Session saved: ${session.id.slice(0, 8)}`) +
-            (session.title ? chalk.dim(` "${session.title}"`) : '') +
-            chalk.dim(` · ${msgCount} msgs`)
+            chalk.green('✓') +
+              chalk.dim(` Session saved: ${session.id.slice(0, 8)}`) +
+              (session.title ? chalk.dim(` "${session.title}"`) : '') +
+              chalk.dim(` · ${msgCount} msgs`)
           );
           if (logPath) {
             console.log(chalk.dim(`  Session log: ${logPath}`));
@@ -818,7 +887,9 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         const files = await getProjectFiles(process.cwd());
         const matches = getCompletions(atMatch[1], files, 5);
         if (matches.length > 0 && matches[0] !== atMatch[1]) {
-          console.log(chalk.dim('  Matches: ') + matches.map(f => chalk.cyan(`@${f}`)).join(chalk.dim(', ')));
+          console.log(
+            chalk.dim('  Matches: ') + matches.map((f) => chalk.cyan(`@${f}`)).join(chalk.dim(', '))
+          );
         }
       }
     }
@@ -838,9 +909,15 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         existingMessages: session.messages,
         sessionId: session.id,
         silent: jsonMode,
-        mode: chatState.currentMode !== 'normal' && chatState.currentMode !== 'auto-accept' ? chatState.currentMode : undefined,
+        mode:
+          chatState.currentMode !== 'normal' && chatState.currentMode !== 'auto-accept'
+            ? chatState.currentMode
+            : undefined,
         profile: chatState.agentProfile !== 'default' ? chatState.agentProfile : undefined,
-        images: images.length > 0 ? images.map(img => ({ base64: img.base64, mimeType: img.mimeType, name: img.name })) : undefined,
+        images:
+          images.length > 0
+            ? images.map((img) => ({ base64: img.base64, mimeType: img.mimeType, name: img.name }))
+            : undefined,
       });
 
       session.messages = result.messages;

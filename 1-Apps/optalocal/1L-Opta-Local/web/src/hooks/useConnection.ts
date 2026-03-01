@@ -16,6 +16,7 @@ import {
   type ConnectionSettings,
   type ConnectionType,
   type ConnectionProbeResult,
+  type DiagnosticCategory,
   getOptimalBaseUrl,
   getActiveUrl,
   createClientWithUrl,
@@ -33,13 +34,14 @@ interface ConnectionState {
   mode: ConnectionMode;
   latencyMs: number | null;
   error: string | null;
+  diagnostic: DiagnosticCategory;
 }
 
 type ConnectionAction =
   | { type: 'PROBE_START' }
-  | { type: 'LAN_OK'; latencyMs: number }
-  | { type: 'WAN_OK'; latencyMs: number }
-  | { type: 'ALL_FAILED'; error: string }
+  | { type: 'LAN_OK'; latencyMs: number; diagnostic: DiagnosticCategory }
+  | { type: 'WAN_OK'; latencyMs: number; diagnostic: DiagnosticCategory }
+  | { type: 'ALL_FAILED'; error: string; diagnostic: DiagnosticCategory }
   | { type: 'DISCONNECTED' };
 
 /** Public return type of useConnection */
@@ -54,6 +56,8 @@ export interface UseConnectionReturn {
   latencyMs: number | null;
   /** Error message if connection failed, null otherwise */
   error: string | null;
+  /** Primary category of failure (NODE_DOWN, UNAUTHORIZED, OK, etc) */
+  diagnostic: DiagnosticCategory;
   /** Trigger an immediate connection re-check */
   recheckNow: () => void;
   /** Configured LMXClient instance using the active URL */
@@ -70,6 +74,7 @@ const initialState: ConnectionState = {
   mode: 'probing',
   latencyMs: null,
   error: null,
+  diagnostic: 'UNKNOWN',
 };
 
 function connectionReducer(
@@ -78,15 +83,15 @@ function connectionReducer(
 ): ConnectionState {
   switch (action.type) {
     case 'PROBE_START':
-      return { ...state, mode: 'probing', error: null };
+      return { ...state, mode: 'probing', error: null, diagnostic: 'UNKNOWN' };
     case 'LAN_OK':
-      return { mode: 'lan', latencyMs: action.latencyMs, error: null };
+      return { mode: 'lan', latencyMs: action.latencyMs, error: null, diagnostic: action.diagnostic };
     case 'WAN_OK':
-      return { mode: 'wan', latencyMs: action.latencyMs, error: null };
+      return { mode: 'wan', latencyMs: action.latencyMs, error: null, diagnostic: action.diagnostic };
     case 'ALL_FAILED':
-      return { mode: 'offline', latencyMs: null, error: action.error };
+      return { mode: 'offline', latencyMs: null, error: action.error, diagnostic: action.diagnostic };
     case 'DISCONNECTED':
-      return { ...state, mode: 'probing' };
+      return { ...state, mode: 'probing', diagnostic: 'UNKNOWN' };
     default:
       return state;
   }
@@ -114,7 +119,7 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
   const probe = useCallback(async () => {
     // Quick pre-check: if browser reports offline, skip network probing
     if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      dispatch({ type: 'ALL_FAILED', error: 'Browser reports offline' });
+      dispatch({ type: 'ALL_FAILED', error: 'Browser reports offline', diagnostic: 'NODE_DOWN' });
       return;
     }
 
@@ -128,21 +133,23 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
       dispatch({
         type: 'ALL_FAILED',
         error: 'Server unreachable via LAN and WAN',
+        diagnostic: 'UNKNOWN'
       });
       return;
     }
 
     switch (result.type) {
       case 'lan':
-        dispatch({ type: 'LAN_OK', latencyMs: result.latencyMs });
+        dispatch({ type: 'LAN_OK', latencyMs: result.latencyMs, diagnostic: result.diagnostic });
         break;
       case 'wan':
-        dispatch({ type: 'WAN_OK', latencyMs: result.latencyMs });
+        dispatch({ type: 'WAN_OK', latencyMs: result.latencyMs, diagnostic: result.diagnostic });
         break;
       default:
         dispatch({
           type: 'ALL_FAILED',
           error: 'Server unreachable via LAN and WAN',
+          diagnostic: result.diagnostic
         });
     }
   }, []);
@@ -184,7 +191,7 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
       probe();
     };
     const handleOffline = () => {
-      dispatch({ type: 'ALL_FAILED', error: 'Network offline' });
+      dispatch({ type: 'ALL_FAILED', error: 'Network offline', diagnostic: 'NODE_DOWN' });
     };
 
     document.addEventListener('visibilitychange', handleVisibility);
@@ -223,6 +230,7 @@ export function useConnection(settings: ConnectionSettings): UseConnectionReturn
     isConnected,
     latencyMs: state.latencyMs,
     error: state.error,
+    diagnostic: state.diagnostic,
     recheckNow: probe,
     client,
     adminKey: settings.adminKey,

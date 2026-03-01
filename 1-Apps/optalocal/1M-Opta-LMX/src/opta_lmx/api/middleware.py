@@ -7,6 +7,7 @@ bodies into memory before forwarding, causing memory spikes during SSE streaming
 
 from __future__ import annotations
 
+import json
 import logging
 import secrets
 import time
@@ -125,28 +126,186 @@ class RequestLoggingMiddleware:
 
 
 class MTLSMiddleware:
-    """Mutual TLS middleware stub — full mTLS enforcement planned for Phase 11.
+    """Mutual TLS middleware with configurable enforcement modes."""
 
-    Currently a pass-through; instantiated by FastAPI's middleware stack.
-    """
-
-    def __init__(self, app: Any, mode: str = "off", client_subject_header: str = "",
-                 allowed_subjects: list[str] | None = None) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        mode: str = "off",
+        client_subject_header: str = "",
+        allowed_subjects: list[str] | None = None,
+    ) -> None:
         self.app = app
-        self.mode = mode
+        normalized_mode = (mode or "off").strip().lower()
+        self.mode = normalized_mode if normalized_mode in {"off", "optional", "required"} else "off"
+        self.client_subject_header = client_subject_header.strip()
+        self.allowed_subjects = {
+            subject.strip()
+            for subject in (allowed_subjects or [])
+            if subject.strip()
+        }
 
-    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+    async def _reject(self, send: Send, *, status_code: int, detail: str) -> None:
+        body = json.dumps({"detail": detail}).encode("utf-8")
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status_code,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("latin-1")),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or self.mode == "off":
+            await self.app(scope, receive, send)
+            return
+
+        subject: str | None = None
+        if self.client_subject_header:
+            raw_subject = _get_header(scope, self.client_subject_header)
+            if raw_subject is not None:
+                candidate = raw_subject.strip()
+                if candidate:
+                    subject = candidate
+
+        if self.mode == "required" and subject is None:
+            await self._reject(send, status_code=401, detail="mTLS client subject required")
+            return
+
+        if subject is not None and self.allowed_subjects and subject not in self.allowed_subjects:
+            await self._reject(send, status_code=403, detail="mTLS subject not allowed")
+            return
+
+        if subject is not None:
+            state = scope.setdefault("state", {})
+            if isinstance(state, dict):
+                state["mtls_subject"] = subject
+
         await self.app(scope, receive, send)
+
+
+def _get_otel_trace_api() -> Any | None:
+    """Best-effort import for OpenTelemetry trace API."""
+    try:
+        from opentelemetry import trace  # type: ignore[import-not-found]
+
+        return trace
+    except Exception:
+        return None
+
+
+def _set_span_attribute(span: Any, key: str, value: Any) -> None:
+    """Set span attribute without allowing tracing failures to break requests."""
+    try:
+        span.set_attribute(key, value)
+    except Exception:
+        return
+
+
+def _build_traceparent(span: Any) -> str | None:
+    """Build W3C traceparent header value from current span context."""
+    try:
+        span_context = span.get_span_context()
+        trace_id = int(getattr(span_context, "trace_id", 0))
+        span_id = int(getattr(span_context, "span_id", 0))
+        if trace_id == 0 or span_id == 0:
+            return None
+        trace_flags = int(getattr(span_context, "trace_flags", 1)) & 0xFF
+        return f"00-{trace_id:032x}-{span_id:016x}-{trace_flags:02x}"
+    except Exception:
+        return None
 
 
 class OpenTelemetryMiddleware:
-    """OpenTelemetry tracing middleware stub — OTEL integration planned for Phase 12.
+    """OpenTelemetry tracing middleware (fail-open when OTEL is unavailable)."""
 
-    Currently a pass-through.
-    """
-
-    def __init__(self, app: Any, **kwargs: Any) -> None:
+    def __init__(
+        self,
+        app: ASGIApp,
+        *,
+        enabled: bool = False,
+        service_name: str = "opta-lmx",
+        tracer: Any | None = None,
+        **_: Any,
+    ) -> None:
         self.app = app
+        self.enabled = enabled
+        self._tracer = tracer
+        self._span_kind_server: Any | None = None
+        if not self.enabled:
+            return
+        if self._tracer is not None:
+            return
 
-    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
-        await self.app(scope, receive, send)
+        trace_api = _get_otel_trace_api()
+        if trace_api is None:
+            return
+
+        try:
+            self._span_kind_server = trace_api.SpanKind.SERVER
+        except Exception:
+            self._span_kind_server = None
+        try:
+            self._tracer = trace_api.get_tracer(f"{service_name}.http")
+        except Exception:
+            self._tracer = None
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http" or not self.enabled or self._tracer is None:
+            await self.app(scope, receive, send)
+            return
+
+        path = _get_path(scope)
+        method = str(scope.get("method", ""))
+        span_name = f"{method} {path}".strip() or "http.request"
+        query_string = scope.get("query_string", b"")
+        query = ""
+        if isinstance(query_string, (bytes, bytearray)) and query_string:
+            query = query_string.decode("latin-1", errors="ignore")
+        host = _get_header(scope, "host")
+        scheme = scope.get("scheme")
+        http_version = scope.get("http_version")
+        status_code: int | None = None
+
+        start_kwargs: dict[str, Any] = {}
+        if self._span_kind_server is not None:
+            start_kwargs["kind"] = self._span_kind_server
+
+        with self._tracer.start_as_current_span(span_name, **start_kwargs) as span:
+            if method:
+                _set_span_attribute(span, "http.request.method", method)
+            if path:
+                _set_span_attribute(span, "url.path", path)
+            if query:
+                _set_span_attribute(span, "url.query", query)
+            if scheme:
+                _set_span_attribute(span, "url.scheme", str(scheme))
+            if host:
+                _set_span_attribute(span, "server.address", host)
+            if http_version:
+                _set_span_attribute(span, "network.protocol.version", str(http_version))
+
+            async def send_wrapper(message: Message) -> None:
+                nonlocal status_code
+                if message["type"] == "http.response.start":
+                    status_code = int(message.get("status", 0))
+                    _set_span_attribute(span, "http.response.status_code", status_code)
+                    _set_span_attribute(span, "http.status_code", status_code)
+                    traceparent = _build_traceparent(span)
+                    if traceparent:
+                        message.setdefault("headers", [])
+                        headers = MutableHeaders(scope=message)
+                        headers.append("traceparent", traceparent)
+                await send(message)
+
+            try:
+                await self.app(scope, receive, send_wrapper)
+            except Exception:
+                if status_code is None:
+                    _set_span_attribute(span, "http.response.status_code", 500)
+                    _set_span_attribute(span, "http.status_code", 500)
+                raise

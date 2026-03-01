@@ -41,6 +41,10 @@ interface MessageListProps {
   liveActivity?: TurnActivityItem[];
   /** Partial streaming text being received (current assistant response). */
   liveStreamingText?: string;
+  /** Live streaming thinking text being received. */
+  liveThinkingText?: string;
+  /** Live streaming thinking token count. */
+  liveThinkingTokens?: number;
   /** Whether to auto-follow latest output (auto-scroll). */
   autoFollow?: boolean;
   /** Imperative scroll handle ref — filled by ScrollView, called by parent. */
@@ -77,16 +81,77 @@ function formatTurnSeparator(turnNumber: number, width: number): string {
 
 function TurnSeparator({ turnNumber, width }: { turnNumber: number; width: number }) {
   return (
-    <Box justifyContent="center" marginY={1}>
+    <Box justifyContent="center" marginTop={1}>
       <Text color={TUI_COLORS.borderSoft}>{formatTurnSeparator(turnNumber, width)}</Text>
     </Box>
   );
 }
 
+function ThinkingBlock({ text, tokens, expanded, isLive }: { text: string; tokens: number; expanded: boolean; isLive?: boolean }) {
+  if (!text) return null;
+  const lines = text.split('\n').filter(Boolean);
+
+  // In collapsed state, show 2 lines for both live and cached
+  const isCachedCollapsed = !expanded && !isLive;
+  const displayLines = expanded ? lines : (isLive ? lines.slice(-2) : lines.slice(0, 2));
+
+  // Explicitly tell ScrollView the line count of the text blocks
+  const collapsedLines = displayLines.length + 1; // Header + text lines
+  const expandedLines = lines.length + 4; // Header + separator + text + borders
+
+  if (!expanded) {
+    return React.createElement(Box, {
+      flexDirection: 'column',
+      marginBottom: 1,
+      paddingLeft: 1,
+      estimatedLines: collapsedLines
+    } as any,
+      <Box justifyContent="space-between" width={60}>
+        <Text color={TUI_COLORS.accent} bold>Thinking Process</Text>
+        <Text dimColor>{tokens} tk{isCachedCollapsed ? ' · [CTRL+T]' : ' · [CTRL+T]'}</Text>
+      </Box>,
+      <Box flexDirection="column" marginTop={0}>
+        {displayLines.map((line, idx) => (
+          <Box key={idx}>
+            <Text color={TUI_COLORS.accent}>{'┃ '}</Text>
+            <Text dimColor italic wrap="wrap">{line}</Text>
+          </Box>
+        ))}
+      </Box>
+    );
+  }
+
+  // Expanded Mode (Console / Glass Expansion)
+  return React.createElement(Box, {
+    flexDirection: 'column',
+    marginBottom: 1,
+    borderStyle: 'round',
+    borderColor: TUI_COLORS.accent,
+    paddingX: 1,
+    estimatedLines: expandedLines
+  } as any,
+    <Box justifyContent="space-between">
+      <Text color={TUI_COLORS.accent} bold>Thinking Process</Text>
+      <Text color={TUI_COLORS.accent}>{tokens} tk</Text>
+    </Box>,
+    <Box marginBottom={1}>
+      <Text dimColor>{"-".repeat(20)}</Text>
+    </Box>,
+    <Box flexDirection="column">
+      {lines.map((line, idx) => (
+        <Text color={TUI_COLORS.accent} dimColor={true} wrap="wrap" key={idx}>
+          {line}
+        </Text>
+      ))}
+    </Box>
+  );
+}
+
+
 function renderToolMessage(msg: TuiMessage, i: number): ReactNode {
   const status = msg.toolStatus === 'running' ? 'running'
     : msg.toolStatus === 'error' ? 'error'
-    : 'done';
+      : 'done';
 
   return (
     <ToolCard
@@ -188,6 +253,7 @@ interface ChatMessageProps {
   assistantBodyWidth: number;
   safeAssistantBodyWidth: number;
   safeMode: boolean;
+  thinkingExpanded: boolean;
 }
 
 export function ChatMessage({
@@ -197,6 +263,7 @@ export function ChatMessage({
   assistantBodyWidth,
   safeAssistantBodyWidth,
   safeMode,
+  thinkingExpanded,
 }: ChatMessageProps) {
   const isAssistant = msg.role === 'assistant';
   const createdAtRef = useRef<number>(msg.createdAt ?? Date.now());
@@ -230,7 +297,17 @@ export function ChatMessage({
               </Box>
             </>
           ) : null}
-          <Box paddingLeft={2} marginTop={1}>
+          <Box paddingLeft={2} flexDirection="column">
+            {msg.thinking && msg.thinking.text && (
+              <Box marginBottom={1}>
+                <ThinkingBlock
+                  text={msg.thinking.text}
+                  tokens={msg.thinking.tokens}
+                  expanded={thinkingExpanded}
+                  isLive={false}
+                />
+              </Box>
+            )}
             <MarkdownText
               text={formattedAssistantText}
               isStreaming={isStreaming}
@@ -264,7 +341,17 @@ export function ChatMessage({
               </Box>
             </>
           ) : null}
-          <Box paddingLeft={1} paddingY={0} marginTop={1}>
+          <Box paddingLeft={1} paddingY={0} flexDirection="column">
+            {msg.thinking && msg.thinking.text && (
+              <Box marginBottom={1}>
+                <ThinkingBlock
+                  text={msg.thinking.text}
+                  tokens={msg.thinking.tokens}
+                  expanded={thinkingExpanded}
+                  isLive={false}
+                />
+              </Box>
+            )}
             <MarkdownText
               text={formattedAssistantText}
               isStreaming={isStreaming}
@@ -286,7 +373,7 @@ export function ChatMessage({
         </Text>
       </Box>
       <MetaTimestamp timestamp={timestamp} />
-      <Box paddingLeft={2} marginTop={1}>
+      <Box paddingLeft={2}>
         <Text wrap="wrap">{colorizeOptaWord(sanitizeTerminalText(msg.content))}</Text>
       </Box>
     </Box>
@@ -298,13 +385,15 @@ export function MessageList({
   height,
   focusable = false,
   terminalWidth = 100,
-  thinkingExpanded: _thinkingExpanded = false,
+  thinkingExpanded = false,
   connectionState,
   model,
   contextTotal,
   toolCount,
   liveActivity,
   liveStreamingText,
+  liveThinkingText,
+  liveThinkingTokens,
   autoFollow = true,
   scrollRef,
   safeMode = false,
@@ -369,6 +458,7 @@ export function MessageList({
             assistantBodyWidth={layoutWidths.assistantBodyWidth}
             safeAssistantBodyWidth={layoutWidths.safeAssistantBodyWidth}
             safeMode={safeMode}
+            thinkingExpanded={thinkingExpanded}
           />,
         );
       }
@@ -381,10 +471,10 @@ export function MessageList({
   // These collapse into a permanent activity-summary + assistant message on turn:end.
   const liveRows = useMemo(() => {
     const rows: ReactNode[] = [];
-    if (!liveStreamingText) return rows;
-    const formattedLiveText = formatAssistantDisplayText(liveStreamingText, { streaming: true });
+    if (!liveStreamingText && !liveThinkingText) return rows;
+    const formattedLiveText = liveStreamingText ? formatAssistantDisplayText(liveStreamingText, { streaming: true }) : '';
     const liveWidth = safeMode ? layoutWidths.safeAssistantBodyWidth : layoutWidths.assistantBodyWidth;
-    const liveEstimateText = buildMarkdownEstimateText(formattedLiveText, liveWidth);
+    const liveEstimateText = formattedLiveText ? buildMarkdownEstimateText(formattedLiveText, liveWidth) : '';
 
     rows.push(
       <Box key="live-text" flexDirection="column" marginBottom={1} width="100%">
@@ -400,19 +490,31 @@ export function MessageList({
           <Box justifyContent="flex-end">
             <Text dimColor>live</Text>
           </Box>
-          <Box paddingLeft={safeMode ? 2 : 1} marginTop={1}>
-            <MarkdownText
-              text={formattedLiveText}
-              isStreaming={true}
-              width={liveWidth}
-              estimatedText={liveEstimateText}
-            />
+          <Box paddingLeft={safeMode ? 2 : 1} flexDirection="column">
+            {liveThinkingText && (
+              <Box marginBottom={formattedLiveText ? 1 : 0}>
+                <ThinkingBlock
+                  text={liveThinkingText}
+                  tokens={liveThinkingTokens ?? 0}
+                  expanded={thinkingExpanded}
+                  isLive={true}
+                />
+              </Box>
+            )}
+            {formattedLiveText && (
+              <MarkdownText
+                text={formattedLiveText}
+                isStreaming={true}
+                width={liveWidth}
+                estimatedText={liveEstimateText}
+              />
+            )}
           </Box>
         </Box>
       </Box>,
     );
     return rows;
-  }, [liveStreamingText, layoutWidths.assistantBodyWidth, layoutWidths.safeAssistantBodyWidth, safeMode]);
+  }, [liveStreamingText, liveThinkingText, liveThinkingTokens, thinkingExpanded, layoutWidths.assistantBodyWidth, layoutWidths.safeAssistantBodyWidth, safeMode]);
 
   if (height !== undefined && height > 0) {
     return (

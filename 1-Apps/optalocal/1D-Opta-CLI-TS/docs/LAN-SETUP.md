@@ -54,7 +54,7 @@ api_key  = opta_sk_...
 opta config set connection.ssh.user opta
 opta config set connection.ssh.identityFile ~/.ssh/id_ed25519
 opta config set connection.ssh.connectTimeoutSec 20
-opta config set connection.ssh.lmxPath /Users/Shared/312/Opta/1-Apps/1M-Opta-LMX
+opta config set connection.ssh.lmxPath /Users/Shared/312/Opta/1-Apps/optalocal/1M-Opta-LMX
 opta config set connection.ssh.pythonPath /Users/opta/.mlx-env/bin/python
 ```
 

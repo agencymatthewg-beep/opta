@@ -4,14 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-Opta Local is a multi-platform dashboard and chat client for the Opta LMX inference server (Mac Studio at `192.168.188.11:1234`). The browser talks directly to LMX — there is no intermediate backend. Two platforms share the same backend contracts defined in `SHARED.md`.
+Opta Local is a web dashboard and chat client for the Opta LMX inference server (Mac Studio at `192.168.188.11:1234`). The browser talks directly to LMX — there is no intermediate backend.
 
 | Platform | Location | Stack |
 |----------|----------|-------|
 | Web | `web/` | Next.js 16, React 19, TypeScript, Tailwind v4 |
-| iOS | `ios/` | SwiftUI (iOS 17+), Swift strict concurrency |
 
-Read `SHARED.md` for backend API contracts, data models, and design tokens shared by both platforms. Each platform has its own `CLAUDE.md` with detailed rules.
+Read `SHARED.md` for backend API contracts and design tokens.
 
 ---
 
@@ -128,21 +127,3 @@ All design tokens defined in `SHARED.md`. Rules (mandatory, enforced):
 - **Dark mode only**, OLED-optimized, desktop-first responsive
 
 ---
-
-## iOS App
-
-See `ios/CLAUDE.md` for all rules.
-
-**Build:** The Xcode project is generated from `ios/project.yml` via XcodeGen:
-```bash
-cd ios
-xcodegen generate    # regenerate .xcodeproj after editing project.yml
-open OptaLocal.xcodeproj
-```
-Regenerate whenever you add/remove Swift files or change build settings. Never edit `.xcodeproj` directly.
-
-Key constraints:
-- SwiftUI only (no UIKit), strict concurrency (`@Observable @MainActor`)
-- Keychain for admin key (not UserDefaults)
-- Bonjour (`_opta-lmx._tcp`) for LAN discovery — no manual IP entry needed
-- No Combine, no Alamofire, no force unwraps

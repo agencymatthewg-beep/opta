@@ -122,3 +122,31 @@ def test_logging_format_validation() -> None:
 
     config = LMXConfig(logging={"format": "text"})  # type: ignore[arg-type]
     assert config.logging.format == "text"
+
+
+def test_mtls_mode_validation() -> None:
+    """mTLS mode must be off/optional/required."""
+    with pytest.raises(ValueError):
+        LMXConfig(security={"mtls_mode": "strict"})  # type: ignore[arg-type]
+
+    config = LMXConfig(
+        security={
+            "mtls_mode": "optional",
+            "mtls_client_subject_header": "x-client-subject",
+        }
+    )  # type: ignore[arg-type]
+    assert config.security.mtls_mode == "optional"
+
+
+def test_mtls_header_required_when_mtls_enabled() -> None:
+    """mTLS mode optional/required requires a client subject header name."""
+    with pytest.raises(ValueError):
+        LMXConfig(security={"mtls_mode": "required"})  # type: ignore[arg-type]
+
+    config = LMXConfig(
+        security={
+            "mtls_mode": "required",
+            "mtls_client_subject_header": "x-client-subject",
+        }
+    )  # type: ignore[arg-type]
+    assert config.security.mtls_mode == "required"

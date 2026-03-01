@@ -161,7 +161,7 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
   process.stdin.resume();
   process.stdout.write('\x1b[?25l');
 
-  return await new Promise<PaneMenuSelection | null>((resolve) => {
+  return new Promise<PaneMenuSelection | null>((resolve) => {
     const cleanup = (): void => {
       process.stdin.off('keypress', onKeypress);
       if (!previousRawMode && process.stdin.isTTY) process.stdin.setRawMode(false);

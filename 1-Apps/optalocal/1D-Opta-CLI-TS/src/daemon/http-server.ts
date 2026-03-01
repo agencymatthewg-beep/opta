@@ -130,54 +130,6 @@ function mapMutationError(err: unknown): { status: number; message: string } {
   return { status: 500, message };
 }
 
-async function waitForTurnDone(
-  sessionManager: SessionManager,
-  sessionId: string,
-  turnId: string,
-  timeoutMs = 600_000
-): Promise<{ stats: unknown; message: string }> {
-  return new Promise((resolve, reject) => {
-    let done = false;
-    const timeout = setTimeout(() => {
-      if (done) return;
-      done = true;
-      unsubscribe();
-      reject(new Error(`Timed out waiting for turn ${turnId}`));
-    }, timeoutMs);
-    timeout.unref();
-
-    const unsubscribe = sessionManager.subscribe(sessionId, (event) => {
-      if (done) return;
-      if (event.event === 'turn.done') {
-        const payload = event.payload as { turnId?: string; stats?: unknown };
-        if (payload.turnId !== turnId) return;
-        done = true;
-        clearTimeout(timeout);
-        unsubscribe();
-        sessionManager
-          .getSessionMessages(sessionId)
-          .then((messages) => {
-            const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
-            const last = assistantMsgs[assistantMsgs.length - 1];
-            const text = typeof last?.content === 'string' ? last.content : '';
-            resolve({ stats: payload.stats, message: text });
-          })
-          .catch((err: unknown) => {
-            reject(err instanceof Error ? err : new Error(String(err)));
-          });
-      }
-      if (event.event === 'turn.error') {
-        const payload = event.payload as { turnId?: string; message?: string };
-        if (payload.turnId !== turnId) return;
-        done = true;
-        clearTimeout(timeout);
-        unsubscribe();
-        reject(new Error(payload.message ?? 'Turn failed'));
-      }
-    });
-  });
-}
-
 function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void {
   app.get('/health', () => ({
     status: 'ok',

@@ -1,6 +1,6 @@
 # Opta Local Stack
 
-**Last updated:** 2026-02-20
+**Last updated:** 2026-02-28
 
 ## Components
 
@@ -51,14 +51,19 @@ npm run dev -- daemon start
 npm run dev -- daemon status
 npm run dev -- chat --tui
 
-# LMX
-cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
-python -m opta_lmx
-
 # Web
 cd ~/Synced/Opta/1-Apps/optalocal/1L-Opta-Local/web
 npm run dev
 ```
+
+## Host Policy (Critical)
+
+- **Opta48 (MacBook) is client-only** for models.
+- Do **not** run local inference hosting (`python -m opta_lmx`) on Opta48.
+- Do **not** store local model artifacts on Opta48.
+- Inference host is **Mono512** (192.168.188.11:1234).
+- If you need to operate LMX directly, do it on Mono512, not Opta48.
+
 
 ## Focus Areas
 

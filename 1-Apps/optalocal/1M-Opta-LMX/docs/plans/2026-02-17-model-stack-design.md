@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Model Stack Design — Role-Based Model Routing with Remote Helpers
 
 **Date:** 2026-02-17

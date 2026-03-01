@@ -7,6 +7,7 @@ quantize, predictor, helpers).
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from typing import Any
@@ -63,6 +64,31 @@ router.include_router(admin_config_router)
 
 
 # ─── Status & Memory ────────────────────────────────────────────────────────
+
+
+@router.get("/admin/device", responses={403: {"model": ErrorResponse}})
+async def device_identity(
+    _auth: AdminAuth,
+    request: Request,
+) -> JSONResponse:
+    """Hardware identity and declared device profile.
+
+    Returns chip, memory, hostname, and operator-configured name/purpose/role.
+    Cached — safe to poll frequently.
+    """
+    from opta_lmx.hardware_probe import probe
+    from opta_lmx.config import LMXConfig
+
+    hw = await asyncio.to_thread(probe)
+    config: LMXConfig = request.app.state.config
+    return JSONResponse(content={
+        "hardware": hw,
+        "identity": {
+            "name": config.device.name,
+            "purpose": config.device.purpose,
+            "role": config.device.role,
+        },
+    })
 
 
 @router.get("/admin/status", responses={403: {"model": ErrorResponse}})

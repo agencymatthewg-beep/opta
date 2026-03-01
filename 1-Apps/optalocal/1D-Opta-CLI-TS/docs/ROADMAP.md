@@ -32,7 +32,7 @@ The core feature set is complete. The CLI ships a production-quality agent loop,
 
 ## Path to v1.0
 
-### Phase 1 — Stability Lock (In Progress)
+### Phase 1 — Stability Lock (Complete)
 
 **Goal:** Verify the system holds under real workloads with no known flakes.
 
@@ -41,8 +41,8 @@ The core feature set is complete. The CLI ships a production-quality agent loop,
 | Full `npm test` passes on clean tree | ✅ Done |
 | `npm run typecheck` passes | ✅ Done |
 | Daemon parity suite (`test:parity:ws9`) | ✅ Done |
-| Browser safety/runtime regression suites | ⬜ TODO |
-| Cancel/reconnect flake audit | ⬜ TODO |
+| Browser safety/runtime regression suites | ✅ Done |
+| Cancel/reconnect flake audit | ✅ Done |
 
 **Exit criteria:** No known flakes in session attach, reconnect, or cancel paths.
 

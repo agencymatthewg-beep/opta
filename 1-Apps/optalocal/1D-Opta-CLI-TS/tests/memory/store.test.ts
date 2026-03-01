@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdir, rm, readdir, readFile } from 'node:fs/promises';
+import { mkdir, rm, readdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
@@ -135,6 +135,51 @@ describe('session store', () => {
       const items = await listSessions();
       const found = items.find((i) => i.id === session.id);
       expect(found?.messageCount).toBe(2); // user + assistant, not system
+    });
+
+    it('removes stale index entries when backing session file is missing', async () => {
+      const session = await createSession('test-model');
+      const dir = join(TEST_SESSIONS_DIR, 'home', '.config', 'opta', 'sessions');
+      const indexPath = join(dir, 'index.json');
+
+      await rm(join(dir, `${session.id}.json`), { force: true });
+
+      const items = await listSessions();
+      expect(items.find((i) => i.id === session.id)).toBeUndefined();
+
+      const indexRaw = await readFile(indexPath, 'utf-8');
+      const index = JSON.parse(indexRaw) as { entries: Record<string, unknown> };
+      expect(index.entries[session.id]).toBeUndefined();
+    });
+
+    it('backfills missing index entries from session files', async () => {
+      const session = await createSession('test-model');
+      session.title = 'Backfill me';
+      session.messages = [
+        { role: 'system', content: 'system prompt' },
+        { role: 'user', content: 'hello' },
+      ];
+      await saveSession(session);
+
+      const dir = join(TEST_SESSIONS_DIR, 'home', '.config', 'opta', 'sessions');
+      const indexPath = join(dir, 'index.json');
+      const index = JSON.parse(await readFile(indexPath, 'utf-8')) as {
+        entries: Record<string, unknown>;
+        updatedAt: string;
+      };
+      delete index.entries[session.id];
+      await writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+
+      const items = await listSessions();
+      const found = items.find((i) => i.id === session.id);
+      expect(found?.title).toBe('Backfill me');
+      expect(found?.messageCount).toBe(1);
+
+      const rebuiltIndex = JSON.parse(await readFile(indexPath, 'utf-8')) as {
+        entries: Record<string, { title: string; messageCount: number }>;
+      };
+      expect(rebuiltIndex.entries[session.id]?.title).toBe('Backfill me');
+      expect(rebuiltIndex.entries[session.id]?.messageCount).toBe(1);
     });
   });
 

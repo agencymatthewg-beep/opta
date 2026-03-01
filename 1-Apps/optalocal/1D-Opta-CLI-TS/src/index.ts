@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 
-import { Command } from 'commander';
+import { Command, InvalidArgumentError } from 'commander';
 import chalk from 'chalk';
 import { VERSION } from './core/version.js';
 import { EXIT, ExitError } from './core/errors.js';
 import { setVerbose, setDebug } from './core/debug.js';
+import { parseProviderOverride, type ProviderOverrideName } from './utils/config-helpers.js';
 import type { UpdateTargetMode } from './commands/update.js';
 
 // --- SIGINT handler ---
@@ -19,6 +20,24 @@ async function cleanup(): Promise<void> {
     // Best effort cleanup
   }
 }
+
+// Ensure unhandled promise rejections are surfaced cleanly rather than silently dying or spitting raw stack traces over the TUI.
+process.on('unhandledRejection', (reason) => {
+  if (isShuttingDown) return;
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  if (msg.includes('read ECONNRESET') || msg.includes('write EPIPE')) return; // Ignore common silent network drops
+  if (process.env['OPTA_DEBUG']) {
+    console.error(chalk.red('\n[Unhandled Rejection]'), reason);
+  }
+});
+
+process.on('uncaughtException', (err) => {
+  if (isShuttingDown) return;
+  if (process.env['OPTA_DEBUG']) {
+    console.error(chalk.red('\n[Uncaught Exception]'), err);
+  }
+  process.exit(EXIT.ERROR);
+});
 
 process.on('SIGINT', () => {
   if (isShuttingDown) process.exit(EXIT.SIGINT); // Second SIGINT = force kill
@@ -45,29 +64,49 @@ program
   .version(VERSION, '-V, --version')
   .option('-v, --verbose', 'detailed output')
   .option('--debug', 'debug info including API calls')
+  .option('-r, --resume <id>', 'resume a previous session')
+  .option('--plan', 'plan mode — read-only, design implementation approach')
+  .option('--review', 'code review mode — read-only, structured review output')
+  .option('--research', 'research mode — explore ideas, gather information')
+  .option('-m, --model <name>', 'override default model')
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
+  .option('-f, --format <type>', 'output format: text (default) or json')
+  .option('--no-commit', 'disable auto-commit at task end')
+  .option('--no-checkpoints', 'disable checkpoint creation')
+  .option('-a, --auto', 'auto-accept file edits without prompting')
+  .option('--dangerous', 'bypass all permission prompts')
+  .option('--yolo', 'alias for --dangerous')
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts<{ verbose?: boolean; debug?: boolean }>();
     if (opts.verbose) setVerbose(true);
     if (opts.debug) setDebug(true);
   });
 
+// Explicitly enable the 'help' command, allowing users to run `opta help`
+program.addHelpCommand('help [command]', 'display help for command');
+
 // Default action — launch chat/menu in interactive terminals, help in non-interactive contexts.
 program.action(async () => {
+  const opts = program.opts<ChatCommandOptions>();
   const interactive = process.stdin.isTTY && process.stdout.isTTY;
-  if (!interactive) {
+  if (!interactive && !opts.resume && !opts.plan && !opts.review && !opts.research) {
     program.outputHelp();
     return;
   }
-  await runChat({ tui: true });
+  await applyDeviceOption(opts);
+  await runChat({ ...opts, tui: true });
 });
 
 program.addHelpText(
   'after',
   `
 Examples:
+  $ opta                         Start interactive session in TUI
+  $ opta --resume abc123         Resume session
+  $ opta --model qwen2.5         Use specific model
+  $ opta --device mono512:1234
   $ opta onboard                 Run guided setup wizard
-  $ opta chat                    Start interactive session
-  $ opta tui                     Start full-screen terminal UI
   $ opta do "fix the auth bug"   One-shot task
   $ opta embed "semantic query"  Generate an embedding via Opta LMX
   $ opta rerank "release notes" --documents "notes|commits|chat"
@@ -89,6 +128,7 @@ type ChatCommandOptions = {
   review?: boolean;
   research?: boolean;
   model?: string;
+  provider?: ProviderOverrideName;
   device?: string;
   format?: string;
   commit?: boolean;
@@ -98,23 +138,6 @@ type ChatCommandOptions = {
   yolo?: boolean;
   tui?: boolean;
 };
-
-function addChatOptions(command: Command): Command {
-  return command
-    .option('-r, --resume <id>', 'resume a previous session')
-    .option('--plan', 'plan mode — read-only, design implementation approach')
-    .option('--review', 'code review mode — read-only, structured review output')
-    .option('--research', 'research mode — explore ideas, gather information')
-    .option('-m, --model <name>', 'override default model')
-    .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
-    .option('-f, --format <type>', 'output format: text (default) or json')
-    .option('--no-commit', 'disable auto-commit at task end')
-    .option('--no-checkpoints', 'disable checkpoint creation')
-    .option('-a, --auto', 'auto-accept file edits without prompting')
-    .option('--dangerous', 'bypass all permission prompts')
-    .option('--yolo', 'alias for --dangerous')
-    .option('--tui', 'use full-screen terminal UI');
-}
 
 async function runChat(opts: ChatCommandOptions): Promise<void> {
   const { startChat } = await import('./commands/chat.js');
@@ -127,6 +150,7 @@ interface DeviceOption {
 
 interface DoCommandOptions extends DeviceOption {
   model?: string;
+  provider?: ProviderOverrideName;
   format?: string;
   quiet?: boolean;
   output?: string;
@@ -157,11 +181,13 @@ interface BenchmarkCommandOptions {
 
 interface StatusCommandOptions extends DeviceOption {
   json?: boolean;
+  full?: boolean;
 }
 
 interface ModelsCommandOptions extends DeviceOption {
   remote?: boolean;
   json?: boolean;
+  full?: boolean;
 }
 
 interface EnvCommandOptions {
@@ -266,6 +292,19 @@ interface DaemonCommandOptions {
 interface DoctorCommandOptions {
   json?: boolean;
   format?: string;
+  fix?: boolean;
+}
+
+function parseProviderOption(value: string): ProviderOverrideName {
+  try {
+    return parseProviderOverride(value);
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : `Invalid provider "${value}". Expected one of: lmx, anthropic.`;
+    throw new InvalidArgumentError(message);
+  }
 }
 
 async function applyDeviceOption(opts?: DeviceOption): Promise<void> {
@@ -298,45 +337,11 @@ async function applyModelsTargetOption(opts: ModelsCommandOptions): Promise<void
   await applyDeviceOption(opts);
 }
 
-addChatOptions(program.command('chat').description('Start an interactive AI chat session'))
-  .addHelpText(
-    'after',
-    `
-Examples:
-  $ opta chat                    New session
-  $ opta chat --resume abc123    Resume session
-  $ opta chat --model qwen2.5    Use specific model
-  $ opta chat --device mono512:1234
-  $ opta chat --tui              Full-screen mode
-`
-  )
-  .action(async (opts: ChatCommandOptions) => {
-    await applyDeviceOption(opts);
-    await runChat(opts);
-  });
-
-addChatOptions(
-  program.command('tui').description('Start full-screen terminal UI (alias for `opta chat --tui`)')
-)
-  .addHelpText(
-    'after',
-    `
-Examples:
-  $ opta tui                     New full-screen session
-  $ opta tui --resume abc123     Resume session in full-screen mode
-  $ opta tui --model qwen2.5     Use specific model in full-screen mode
-  $ opta tui --device mono512
-`
-  )
-  .action(async (opts: ChatCommandOptions) => {
-    await applyDeviceOption(opts);
-    await runChat({ ...opts, tui: true });
-  });
-
 program
   .command('do <task...>')
   .description('Execute a coding task using the agent loop')
   .option('-m, --model <name>', 'use specific model for this task')
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('-q, --quiet', 'suppress output (exit code only, errors to stderr)')
@@ -449,6 +454,7 @@ program
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('--remote', 'use configured remote connection host (alias for --device from config)')
   .option('--json', 'machine-readable output')
+  .option('--full', 'perform an extensive, more purposeful check (may take longer)')
   .action(async (opts: StatusCommandOptions) => {
     await applyDeviceOption(opts);
     const { status } = await import('./commands/status.js');
@@ -466,6 +472,7 @@ program
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('--remote', 'use configured remote connection host (alias for --device from config)')
   .option('--json', 'machine-readable output')
+  .option('--full', 'perform an extensive, more purposeful scan (may take longer)')
   .addHelpText(
     'after',
     `
@@ -905,14 +912,31 @@ daemonCmd
     await daemonLogs(opts);
   });
 
+daemonCmd
+  .command('install')
+  .description('Install daemon as a system service (launchd/systemd/schtasks)')
+  .action(async (opts: DaemonCommandOptions) => {
+    const { daemonInstall } = await import('./commands/daemon.js');
+    await daemonInstall(opts);
+  });
+
+daemonCmd
+  .command('uninstall')
+  .description('Remove daemon system service registration')
+  .action(async (opts: DaemonCommandOptions) => {
+    const { daemonUninstall } = await import('./commands/daemon.js');
+    await daemonUninstall(opts);
+  });
+
 program
   .command('doctor')
   .description('Check Opta setup, inference auth, and host failover')
   .option('--json', 'machine-readable output')
   .option('-f, --format <type>', 'output format (text, json)')
+  .option('--fix', 'auto-fix issues where possible')
   .action(async (opts: DoctorCommandOptions) => {
     // --json is the canonical flag; --format json is kept for backwards compat
-    const effectiveOpts = { format: opts.json ? 'json' : opts.format };
+    const effectiveOpts = { format: opts.json ? 'json' : opts.format, fix: opts.fix };
     const { runDoctor } = await import('./commands/doctor.js');
     await runDoctor(effectiveOpts);
   });

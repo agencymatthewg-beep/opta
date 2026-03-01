@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import SkillExecutorDep, SkillRegistryDep
+from opta_lmx.api.deps import SkillExecutorDep, SkillRegistryDep, SkillsPolicyGuard
 from opta_lmx.skills.dispatch import SkillDispatchOverloadedError
 from opta_lmx.skills.executors import SkillExecutionResult
 from opta_lmx.skills.manifest import SkillManifest, validate_skill_arguments
@@ -472,6 +472,7 @@ async def call_mcp_tool(
     request: Request,
     registry: SkillRegistryDep,
     executor: SkillExecutorDep,
+    _policy_guard: SkillsPolicyGuard,
 ) -> Response:
     """Execute a tool call in an MCP-compatible shape."""
     if not _mcp_enabled(request):
@@ -696,6 +697,7 @@ async def execute_skill(
     request: Request,
     registry: SkillRegistryDep,
     executor: SkillExecutorDep,
+    _policy_guard: SkillsPolicyGuard,
 ) -> Response:
     """Execute one skill with structured arguments."""
     if not _allow_execute(request):
@@ -754,6 +756,7 @@ async def openclaw_invoke(
     request: Request,
     registry: SkillRegistryDep,
     executor: SkillExecutorDep,
+    _policy_guard: SkillsPolicyGuard,
 ) -> Response:
     """OpenClaw compatibility shim for tool invocation payload variants."""
     if not _allow_execute(request):

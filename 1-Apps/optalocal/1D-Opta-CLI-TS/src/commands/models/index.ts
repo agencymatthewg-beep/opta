@@ -11,11 +11,7 @@ import chalk from 'chalk';
 import { loadConfig } from '../../core/config.js';
 import { ExitError, EXIT } from '../../core/errors.js';
 import { LmxClient } from '../../lmx/client.js';
-import { modelIdsEqual } from '../../lmx/model-lifecycle.js';
-import {
-  isInteractiveTerminal,
-  type ModelsOptions,
-} from './types.js';
+import { isInteractiveTerminal, type ModelsOptions } from './types.js';
 import { readModelAliasMap, resolveModelAlias } from './aliases.js';
 import {
   resolveEffectiveDefaultModel,
@@ -37,11 +33,7 @@ import {
   stopAllModels,
   swapModel,
 } from './lifecycle.js';
-import {
-  browseLocalModels,
-  browseFullLibrary,
-  promptManagerAction,
-} from './browser.js';
+import { browseLocalModels, browseFullLibrary, promptManagerAction } from './browser.js';
 import {
   showPredictorStats,
   showHelpersHealth,
@@ -64,10 +56,7 @@ export {
 } from './types.js';
 
 // history.ts — public symbols
-export {
-  normalizeModelHistoryEntries,
-  mergeModelHistoryEntries,
-} from './history.js';
+export { normalizeModelHistoryEntries, mergeModelHistoryEntries } from './history.js';
 
 // ── Main entry function ─────────────────────────────────────────────
 
@@ -205,7 +194,7 @@ export async function models(
 async function interactiveModelManager(
   client: LmxClient,
   initialConfig: Awaited<ReturnType<typeof loadConfig>>,
-  opts?: ModelsOptions,
+  opts?: ModelsOptions
 ): Promise<void> {
   if (opts?.json || !isInteractiveTerminal()) {
     await listModels(client, initialConfig.model.default, opts);
@@ -275,27 +264,49 @@ async function interactiveModelManager(
 
 function printModelsHelp(): void {
   console.log(chalk.bold('Model Commands\n'));
-  console.log(`  ${chalk.reset('opta models')}                     interactive manager (TTY) or list`);
+  console.log(
+    `  ${chalk.reset('opta models')}                     interactive manager (TTY) or list`
+  );
   console.log(`  ${chalk.reset('opta models list')}                list loaded models`);
   console.log(`  ${chalk.reset('opta models history')}             show recent model activity`);
   console.log(`  ${chalk.reset('opta models manage')}              open interactive model manager`);
-  console.log(`  ${chalk.reset('opta models use [name]')}          switch default (fuzzy + picker)`);
+  console.log(
+    `  ${chalk.reset('opta models use [name]')}          switch default (fuzzy + picker)`
+  );
   console.log(`  ${chalk.reset('opta models load [name]')}         load a downloaded model`);
   console.log(`  ${chalk.reset('opta models unload [name]')}       unload a running model`);
   console.log(`  ${chalk.reset('opta models swap [old] [new]')}    replace running model`);
-  console.log(`  ${chalk.reset('opta models dashboard')}           show live model inventory dashboard`);
+  console.log(
+    `  ${chalk.reset('opta models dashboard')}           show live model inventory dashboard`
+  );
   console.log(`  ${chalk.reset('opta models aliases')}             list custom aliases`);
   console.log(`  ${chalk.reset('opta models alias <a> <model>')}   map alias to a model id`);
   console.log(`  ${chalk.reset('opta models unalias <a>')}         remove an alias`);
   console.log(`  ${chalk.reset('opta models stop')}                unload all models`);
-  console.log(`  ${chalk.reset('opta models predictor')}           predictor stats and next-model guess`);
+  console.log(
+    `  ${chalk.reset('opta models predictor')}           predictor stats and next-model guess`
+  );
   console.log(`  ${chalk.reset('opta models helpers')}             helper node health dashboard`);
-  console.log(`  ${chalk.reset('opta models quantize ...')}        start/list/check quantization jobs`);
-  console.log(`  ${chalk.reset('opta models agents ...')}          list/start/status/cancel/watch agent runs`);
-  console.log(`  ${chalk.reset('opta models skills ...')}          list/show/run/mcp-call/openclaw skills`);
-  console.log(`  ${chalk.reset('opta models rag ...')}             query/list/delete/ingest/context RAG`);
-  console.log(`  ${chalk.reset('opta models health')}              liveness/readiness/admin health checks`);
+  console.log(
+    `  ${chalk.reset('opta models quantize ...')}        start/list/check quantization jobs`
+  );
+  console.log(
+    `  ${chalk.reset('opta models agents ...')}          list/start/status/cancel/watch agent runs`
+  );
+  console.log(
+    `  ${chalk.reset('opta models skills ...')}          list/show/run/mcp-call/openclaw skills`
+  );
+  console.log(
+    `  ${chalk.reset('opta models rag ...')}             query/list/delete/ingest/context RAG`
+  );
+  console.log(
+    `  ${chalk.reset('opta models health')}              liveness/readiness/admin health checks`
+  );
   console.log(`  ${chalk.reset('opta models scan')}                full local/cloud inventory`);
-  console.log(`  ${chalk.reset('opta models browse-local')}        browse downloaded models + history`);
-  console.log(`  ${chalk.reset('opta models browse-library')}      browse global Hugging Face library`);
+  console.log(
+    `  ${chalk.reset('opta models browse-local')}        browse downloaded models + history`
+  );
+  console.log(
+    `  ${chalk.reset('opta models browse-library')}      browse global Hugging Face library`
+  );
 }

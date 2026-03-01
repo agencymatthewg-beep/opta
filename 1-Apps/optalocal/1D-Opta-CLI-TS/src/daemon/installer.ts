@@ -3,22 +3,24 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { homedir } from 'node:os';
 import { execa } from 'execa';
+import { getDaemonDir } from '../platform/paths.js';
 
 const LABEL = 'com.opta.daemon';
 const SYSTEMD_SERVICE_NAME = 'opta-daemon';
 const SCHTASKS_NAME = 'Opta Daemon';
 
 function daemonLogDir(): string {
-  return join(homedir(), '.config', 'opta', 'daemon');
+  return getDaemonDir();
 }
 
 async function getOptaBinPath(): Promise<string> {
   // If running from the installed binary, process.execPath points to node;
   // the actual opta binary is argv[1] only when invoked via `opta`.
-  // Prefer `which opta` to find the installed binary.
+  // Prefer `which`/`where` to find the installed binary.
+  const lookupCommand = process.platform === 'win32' ? 'where' : 'which';
   try {
-    const { stdout } = await execa('which', ['opta']);
-    const resolved = stdout.trim();
+    const { stdout } = await execa(lookupCommand, ['opta']);
+    const resolved = stdout.trim().split('\n')[0]?.trim();
     if (resolved) return resolved;
   } catch {
     // fall through

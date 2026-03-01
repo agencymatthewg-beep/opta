@@ -46,3 +46,5 @@
 ---
 
 *Updated — 2026-02-20*
+
+| 11 | 2026-02-28 | Remove Opta Local iOS app and standardize web-only scope | Keep deferred iOS track in-repo | User requested full deletion due non-functional one-prompt scaffold; reduces ambiguity and maintenance overhead |

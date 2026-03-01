@@ -19,6 +19,8 @@ import {
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import { OptaRing } from "./components/OptaRing";
+import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
+import { LiveBrowserView } from "./components/LiveBrowserView";
 import {
   deriveBrowserVisualState,
   type BrowserVisualSummary,
@@ -49,6 +51,8 @@ function getTauriInvoke(): TauriInvoke | null {
 
 // ---------------------------------------------------------------------------
 
+export type BrowserViewMode = "default" | "expanded" | "minimized";
+
 function App() {
   // null = loading (show blank), true = first run (show wizard), false = normal app
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
@@ -66,7 +70,7 @@ function App() {
       .catch(() => setFirstRun(false)); // On error, don't block the app
   }, []);
 
-  const [showTerminal, setShowTerminal] = useState(true);
+  const [showTerminal, setShowTerminal] = useState(false); // Changed initial state from true to false
   const [composerDraft, setComposerDraft] = useState("");
   const [submissionMode, setSubmissionMode] = useState<"chat" | "do">("chat");
   const [selectedWorkspace, setSelectedWorkspace] = useLocalStorage("opta:selectedWorkspace", "all");
@@ -74,6 +78,7 @@ function App() {
   const [activePage, setActivePage] = useState<AppPage>("sessions");
   const [showToken, setShowToken] = useState(false);
   const [hasEverConnected, setHasEverConnected] = useState(false);
+  const [browserViewMode, setBrowserViewMode] = useState<BrowserViewMode>("default");
 
   const {
     activeSessionId,
@@ -99,11 +104,15 @@ function App() {
     initialCheckDone,
   } = useDaemonSessions();
 
+  const { getSlotForSession } = useBrowserLiveHost();
+
   const activeSession = useMemo(
     () =>
       sessions.find((session) => session.sessionId === activeSessionId) ?? null,
     [activeSessionId, sessions],
   );
+
+  const activeBrowserSlot = activeSessionId ? getSlotForSession(activeSessionId) : undefined;
 
   const activeStreamCount = useMemo(
     () => Object.values(streamingBySession).filter(Boolean).length,
@@ -193,6 +202,28 @@ function App() {
     const timeout = window.setTimeout(() => setNotice(null), 3800);
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
+  // Effect: Global Keyboard Shortcuts (e.g., Ctrl+B for browser mode)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ignore if the user is typing in an input/textarea
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        setBrowserViewMode((current) => {
+          if (current === "default") return "expanded";
+          if (current === "expanded") return "minimized";
+          return "default";
+        });
+        setNotice(`Browser mode: ${browserViewMode === "default" ? "Expanded" : browserViewMode === "expanded" ? "Minimized" : "Default"}`);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [browserViewMode]);
 
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
@@ -472,73 +503,77 @@ function App() {
               <div style={{ marginRight: "1rem", display: "flex" }}>
                 <OptaRing size={48} paused={palette.isOpen} />
               </div>
-              <button
-                type="button"
-                className={activePage === "sessions" ? "active" : ""}
-                onClick={() => setActivePage("sessions")}
-              >
-                Sessions
-              </button>
-              <button
-                type="button"
-                className={activePage === "models" ? "active" : ""}
-                onClick={() => setActivePage("models")}
-              >
-                Models
-              </button>
-              <button
-                type="button"
-                className={activePage === "operations" ? "active" : ""}
-                onClick={() => setActivePage("operations")}
-              >
-                Operations
-              </button>
-              <button
-                type="button"
-                className={activePage === "jobs" ? "active" : ""}
-                onClick={() => setActivePage("jobs")}
-              >
-                Jobs
-              </button>
-              <button
-                type="button"
-                className={activePage === "logs" ? "active" : ""}
-                onClick={() => setActivePage("logs")}
-              >
-                Logs
-              </button>
-              <button type="button" onClick={palette.open}>
-                Palette (Cmd/Ctrl+K)
-              </button>
+              <div className="segmented-nav-pill">
+                <button
+                  type="button"
+                  className={activePage === "sessions" ? "active" : ""}
+                  onClick={() => setActivePage("sessions")}
+                >
+                  Sessions
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "models" ? "active" : ""}
+                  onClick={() => setActivePage("models")}
+                >
+                  Models
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "operations" ? "active" : ""}
+                  onClick={() => setActivePage("operations")}
+                >
+                  Operations
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "jobs" ? "active" : ""}
+                  onClick={() => setActivePage("jobs")}
+                >
+                  Jobs
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "logs" ? "active" : ""}
+                  onClick={() => setActivePage("logs")}
+                >
+                  Logs
+                </button>
+                <button type="button" onClick={palette.open}>
+                  Palette (Cmd/Ctrl+K)
+                </button>
+              </div>
             </div>
 
-            <a
-              href={ACCOUNTS_PORTAL_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="accounts-btn accounts-btn-pulse"
-              aria-label="Open Opta Accounts portal"
-            >
-              Accounts
-            </a>
+            <div style={{ position: "absolute", top: "1.25rem", right: "1.5rem", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
+              <div className="minimal-tools-group" style={{ borderLeft: "none", paddingLeft: "0", margin: 0 }}>
+                <button
+                  type="button"
+                  className={`minimal-emoji-btn ${showTerminal ? "active" : ""}`}
+                  title={showTerminal ? "Hide Runtime Telemetry" : "Show Runtime Telemetry"}
+                  onClick={() => setShowTerminal((current) => !current)}
+                >
+                  {showTerminal ? "🖥️" : "💻"}
+                </button>
+                <button
+                  type="button"
+                  className="minimal-emoji-btn"
+                  title="Settings"
+                  onClick={() => setIsSettingsOpen(true)}
+                >
+                  ⚙️
+                </button>
+              </div>
 
-            <div className="minimal-tools-group" style={{ position: "absolute", top: "1.25rem", right: "1.5rem", zIndex: 10, borderLeft: "none", paddingLeft: "0" }}>
-              <button
-                type="button"
-                className={`minimal-emoji-btn ${showTerminal ? "active" : ""}`}
-                title={showTerminal ? "Hide Runtime Telemetry" : "Show Runtime Telemetry"}
-                onClick={() => setShowTerminal((current) => !current)}
+              <a
+                href={ACCOUNTS_PORTAL_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="accounts-btn accounts-btn-pulse"
+                aria-label="Open Opta Accounts portal"
               >
-                {showTerminal ? "🖥️" : "💻"}
-              </button>
-              <button
-                type="button"
-                className="minimal-emoji-btn"
-                title="Settings"
-                onClick={() => setIsSettingsOpen(true)}
-              >
-                ⚙️
-              </button>
+                Accounts
+              </a>
             </div>
           </header>
 
@@ -573,34 +608,43 @@ function App() {
                   onRemoveSession={removeSession}
                 />
 
-                <div style={{ display: "flex", flexDirection: "column", flex: 1, minWidth: 0 }}>
-                  {activeSessionId && timelineItems.length > 0 && (
-                    <div className="session-export-bar">
-                      <button
-                        type="button"
-                        className="session-export-btn"
-                        onClick={() => {
-                          const md = exportToMarkdown(activeSessionId, timelineItems);
-                          downloadAsFile(`opta-session-${activeSessionId}.md`, md);
-                          setNotice("Session exported as Markdown");
-                        }}
-                        title="Export session as Markdown"
-                      >
-                        <Download size={12} aria-hidden="true" />
-                        Export
-                      </button>
-                    </div>
-                  )}
-                  <TimelineCards
-                    sessionId={activeSessionId}
-                    sessionTitle={activeSession?.title}
-                    items={timelineItems}
-                    isStreaming={isStreaming}
-                    pendingPermissions={pendingPermissions}
-                    onResolvePermission={resolvePermission}
-                    connectionState={connectionState}
-                    browserVisualState={activeBrowserVisual}
-                  />
+                <div className={`browser-layout-row browser-mode-${browserViewMode}`}>
+                  <div className="timeline-module">
+                    {activeSessionId && timelineItems.length > 0 && (
+                      <div className="session-export-bar">
+                        <button
+                          type="button"
+                          className="session-export-btn"
+                          onClick={() => {
+                            const md = exportToMarkdown(activeSessionId, timelineItems);
+                            downloadAsFile(`opta-session-${activeSessionId}.md`, md);
+                            setNotice("Session exported as Markdown");
+                          }}
+                          title="Export session as Markdown"
+                        >
+                          <Download size={12} aria-hidden="true" />
+                          Export
+                        </button>
+                      </div>
+                    )}
+                    <TimelineCards
+                      sessionId={activeSessionId}
+                      sessionTitle={activeSession?.title}
+                      items={timelineItems}
+                      isStreaming={isStreaming}
+                      pendingPermissions={pendingPermissions}
+                      onResolvePermission={resolvePermission}
+                      connectionState={connectionState}
+                      browserVisualState={activeBrowserVisual}
+                    />
+                  </div>
+                  <div className="browser-module">
+                    {activeBrowserSlot ? (
+                      <LiveBrowserView slot={activeBrowserSlot} />
+                    ) : (
+                      <LiveBrowserView />
+                    )}
+                  </div>
                 </div>
               </>
             )}
@@ -656,33 +700,37 @@ function App() {
             ) : null}
           </main>
 
-          <div className="status-strip" aria-live="polite">
-            <span>State: {connectionState}</span>
-            <span>Sessions: {sessionCount}</span>
-            <span
-              className={`status-browser status-browser-${activeBrowserVisual.state}`}
-            >
-              Browser: {activeBrowserVisual.activityText}
-            </span>
-            <span>
-              Active:{" "}
-              {activeSession
-                ? `${activeSession.title} (${activeSession.sessionId})`
-                : "none"}
-            </span>
-            {notice ? <strong>{notice}</strong> : null}
-          </div>
+          <div className={`bottom-modules bottom-mode-${browserViewMode}`}>
+            <div className="bottom-modules-inner">
+              <div className="status-strip" aria-live="polite">
+                <span>State: {connectionState}</span>
+                <span>Sessions: {sessionCount}</span>
+                <span
+                  className={`status-browser status-browser-${activeBrowserVisual.state}`}
+                >
+                  Browser: {activeBrowserVisual.activityText}
+                </span>
+                <span>
+                  Active:{" "}
+                  {activeSession
+                    ? `${activeSession.title} (${activeSession.sessionId})`
+                    : "none"}
+                </span>
+                {notice ? <strong>{notice}</strong> : null}
+              </div>
 
-          <Composer
-            value={composerDraft}
-            onChange={setComposerDraft}
-            onSubmit={onSubmitComposer}
-            onCancel={() => void cancelActiveTurn()}
-            isStreaming={isStreaming}
-            disabled={!activeSessionId}
-            mode={submissionMode}
-            onModeChange={setSubmissionMode}
-          />
+              <Composer
+                value={composerDraft}
+                onChange={setComposerDraft}
+                onSubmit={onSubmitComposer}
+                onCancel={() => void cancelActiveTurn()}
+                isStreaming={isStreaming}
+                disabled={!activeSessionId}
+                mode={submissionMode}
+                onModeChange={setSubmissionMode}
+              />
+            </div>
+          </div>
 
           <SettingsModal
             isOpen={isSettingsOpen}

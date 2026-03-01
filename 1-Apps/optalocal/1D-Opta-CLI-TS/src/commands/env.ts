@@ -88,15 +88,18 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
   for (const [key, value] of Object.entries(raw as Record<string, unknown>)) {
     if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
     const obj = value as Record<string, unknown>;
-    const host = typeof obj.connection === 'object' && obj.connection !== null
-      ? (obj.connection as Record<string, unknown>).host
-      : undefined;
-    const port = typeof obj.connection === 'object' && obj.connection !== null
-      ? (obj.connection as Record<string, unknown>).port
-      : undefined;
-    const adminKey = typeof obj.connection === 'object' && obj.connection !== null
-      ? (obj.connection as Record<string, unknown>).adminKey
-      : undefined;
+    const host =
+      typeof obj.connection === 'object' && obj.connection !== null
+        ? (obj.connection as Record<string, unknown>).host
+        : undefined;
+    const port =
+      typeof obj.connection === 'object' && obj.connection !== null
+        ? (obj.connection as Record<string, unknown>).port
+        : undefined;
+    const adminKey =
+      typeof obj.connection === 'object' && obj.connection !== null
+        ? (obj.connection as Record<string, unknown>).adminKey
+        : undefined;
     const modelDefault = obj.modelDefault;
     const provider = obj.provider;
     const defaultMode = obj.defaultMode;
@@ -122,7 +125,8 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
       modelDefault: normalizedModelDefault,
       provider,
       defaultMode: defaultMode as DefaultMode,
-      updatedAt: typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now(),
+      updatedAt:
+        typeof updatedAt === 'number' && Number.isFinite(updatedAt) ? updatedAt : Date.now(),
     };
   }
 
@@ -165,12 +169,20 @@ function printHelp(): void {
   console.log(chalk.bold('Environment Profiles\n'));
   console.log(`  ${chalk.reset('opta env')}                         list profiles`);
   console.log(`  ${chalk.reset('opta env list')}                    list profiles`);
-  console.log(`  ${chalk.reset('opta env show [name]')}             show a profile (or active one)`);
-  console.log(`  ${chalk.reset('opta env save <name>')}             save current/overridden settings as profile`);
-  console.log(`  ${chalk.reset('opta env use <name>')}              apply profile to active config`);
+  console.log(
+    `  ${chalk.reset('opta env show [name]')}             show a profile (or active one)`
+  );
+  console.log(
+    `  ${chalk.reset('opta env save <name>')}             save current/overridden settings as profile`
+  );
+  console.log(
+    `  ${chalk.reset('opta env use <name>')}              apply profile to active config`
+  );
   console.log(`  ${chalk.reset('opta env delete <name>')}           remove a profile`);
   console.log('');
-  console.log(chalk.dim('Flags for save: --host --port --admin-key --model --provider --mode --json'));
+  console.log(
+    chalk.dim('Flags for save: --host --port --admin-key --model --provider --mode --json')
+  );
 }
 
 async function listProfiles(opts: EnvCommandOptions): Promise<void> {
@@ -197,7 +209,9 @@ async function listProfiles(opts: EnvCommandOptions): Promise<void> {
     const admin = profile.connection.adminKey ? 'admin-key' : 'no-admin-key';
     console.log(
       `  ${dot} ${chalk.bold(profile.name)}${activeTag} ` +
-      chalk.dim(`(${profile.connection.host}:${profile.connection.port} · ${profile.provider} · ${profile.defaultMode} · ${admin} · ${formatRelativeTime(profile.updatedAt)})`),
+        chalk.dim(
+          `(${profile.connection.host}:${profile.connection.port} · ${profile.provider} · ${profile.defaultMode} · ${admin} · ${formatRelativeTime(profile.updatedAt)})`
+        )
     );
     if (profile.modelDefault) {
       console.log(chalk.dim(`     model ${profile.modelDefault}`));
@@ -229,7 +243,9 @@ async function showProfile(name: string | undefined, opts: EnvCommandOptions): P
   console.log(chalk.bold(`Environment · ${profile.name}\n`));
   console.log(`  Host:        ${profile.connection.host}`);
   console.log(`  Port:        ${profile.connection.port}`);
-  console.log(`  Admin key:   ${profile.connection.adminKey ? chalk.green('set') : chalk.dim('not set')}`);
+  console.log(
+    `  Admin key:   ${profile.connection.adminKey ? chalk.green('set') : chalk.dim('not set')}`
+  );
   console.log(`  Provider:    ${profile.provider}`);
   console.log(`  Mode:        ${profile.defaultMode}`);
   console.log(`  Model:       ${profile.modelDefault || chalk.dim('(empty)')}`);
@@ -259,8 +275,12 @@ async function saveProfile(name: string | undefined, opts: EnvCommandOptions): P
       host,
       port: parsePort(opts.port, config.connection.port),
       ...(opts.adminKey !== undefined
-        ? (opts.adminKey.trim() ? { adminKey: opts.adminKey.trim() } : {})
-        : (config.connection.adminKey ? { adminKey: config.connection.adminKey } : {})),
+        ? opts.adminKey.trim()
+          ? { adminKey: opts.adminKey.trim() }
+          : {}
+        : config.connection.adminKey
+          ? { adminKey: config.connection.adminKey }
+          : {}),
     },
     modelDefault: normalizeConfiguredModelId(opts.model?.trim() ?? config.model.default),
     provider: parseProvider(opts.provider, config.provider.active),
@@ -325,7 +345,11 @@ async function useProfile(name: string | undefined, opts: EnvCommandOptions): Pr
   }
 
   console.log(chalk.green('✓') + ` Activated environment ${chalk.bold(profile.name)}`);
-  console.log(chalk.dim(`  ${profile.connection.host}:${profile.connection.port} · ${profile.provider} · ${profile.defaultMode}`));
+  console.log(
+    chalk.dim(
+      `  ${profile.connection.host}:${profile.connection.port} · ${profile.provider} · ${profile.defaultMode}`
+    )
+  );
   if (profile.modelDefault) {
     console.log(chalk.dim(`  model ${profile.modelDefault}`));
   }
@@ -344,7 +368,7 @@ async function deleteProfile(name: string | undefined, opts: EnvCommandOptions):
     throw new ExitError(EXIT.NOT_FOUND);
   }
 
-  delete profiles[profileName];
+  Reflect.deleteProperty(profiles, profileName);
   await writeProfiles(profiles);
 
   const current = await getCurrentProfileName();
@@ -369,7 +393,7 @@ async function deleteProfile(name: string | undefined, opts: EnvCommandOptions):
 export async function envCommand(
   action?: string,
   name?: string,
-  opts: EnvCommandOptions = {},
+  opts: EnvCommandOptions = {}
 ): Promise<void> {
   const normalizedAction = (action ?? 'list').toLowerCase();
 

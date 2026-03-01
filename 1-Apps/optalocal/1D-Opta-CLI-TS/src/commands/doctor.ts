@@ -1,8 +1,8 @@
 import chalk from 'chalk';
 import { readdir, stat, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
-import { homedir } from 'node:os';
 import { loadConfig } from '../core/config.js';
+import { getConfigDir, getSessionsDir, getDaemonDir } from '../platform/paths.js';
 import { VERSION } from '../core/version.js';
 import { debug } from '../core/debug.js';
 import { errorMessage } from '../utils/errors.js';
@@ -580,7 +580,7 @@ export async function checkAccount(): Promise<CheckResult> {
 }
 
 export async function checkDiskUsage(): Promise<CheckResult> {
-  const sessionsDir = join(homedir(), '.config', 'opta', 'sessions');
+  const sessionsDir = getSessionsDir();
 
   let sessionCount = 0;
   let totalBytes = 0;
@@ -633,7 +633,7 @@ export async function checkDiskHeadroom(
   minFreeBytes = diskHeadroomMbToBytes()
 ): Promise<CheckResult> {
   try {
-    const disk = await readDiskHeadroom(join(homedir(), '.config', 'opta'));
+    const disk = await readDiskHeadroom(getConfigDir());
     const available = formatBytes(disk.availableBytes);
     const required = formatBytes(minFreeBytes);
 
@@ -688,11 +688,11 @@ export async function checkDaemon(): Promise<CheckResult> {
 }
 
 export async function checkConfigDirs(): Promise<CheckResult> {
-  const configDir = join(homedir(), '.config', 'opta');
+  const configDir = getConfigDir();
   const requiredDirs = [
     configDir,
-    join(configDir, 'sessions'),
-    join(configDir, 'daemon'),
+    getSessionsDir(),
+    getDaemonDir(),
   ];
 
   const missing: string[] = [];

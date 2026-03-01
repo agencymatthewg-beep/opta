@@ -7,7 +7,7 @@ import { getPrevNext } from "@/lib/content";
 
 const tocItems = [
   { id: "what-is-opta-local", title: "What is Opta Local?", level: 2 as const },
-  { id: "the-three-components", title: "The Three Components", level: 2 as const },
+  { id: "the-three-core-apps", title: "The Three Core Apps", level: 2 as const },
   { id: "who-is-it-for", title: "Who is it For?", level: 2 as const },
   { id: "key-benefits", title: "Key Benefits", level: 2 as const },
   { id: "architecture-overview", title: "Architecture Overview", level: 2 as const },
@@ -45,9 +45,9 @@ export default function GettingStartedIntroPage() {
             where local models can run at speeds competitive with cloud APIs.
           </p>
 
-          <h2 id="the-three-components">The Three Components</h2>
+          <h2 id="the-three-core-apps">The Three Core Apps</h2>
           <p>
-            The Opta Local stack consists of three layered components that work together:
+            Opta Local is packaged as three core apps. Internally, these apps are powered by layered services:
           </p>
 
           <div className="overflow-x-auto mb-6">
@@ -61,32 +61,35 @@ export default function GettingStartedIntroPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td><strong>Opta CLI + Daemon</strong></td>
+                  <td><strong>Opta CLI</strong></td>
                   <td>
-                    Terminal interface and background orchestration service. Handles chat,
-                    task execution, session management, permissions, and tool routing.
+                    Terminal-first control surface for chat, task execution, sessions, permissions, and tool routing. (Internally powered by the local daemon.)
                   </td>
                   <td>Your workstation (MacBook, desktop)</td>
                 </tr>
                 <tr>
-                  <td><strong>Opta LMX</strong></td>
+                  <td><strong>Opta LMX + Dashboard</strong></td>
                   <td>
-                    Apple Silicon inference server. Serves models via an OpenAI-compatible
-                    API using MLX for optimized Metal GPU inference.
+                    Local inference engine (LMX) plus its dashboard experience for monitoring and control.
                   </td>
                   <td>Mac Studio / Mac Pro (high-memory host)</td>
                 </tr>
                 <tr>
-                  <td><strong>Opta Local Web</strong></td>
+                  <td><strong>Opta Code Desktop (macOS + Windows)</strong></td>
                   <td>
-                    Browser-based dashboard for real-time monitoring, chat, model management,
-                    and VRAM usage tracking.
+                    Desktop application surface for Opta workflows on macOS and Windows.
                   </td>
-                  <td>Any device on your LAN (or remotely via tunnel)</td>
+                  <td>macOS + Windows workstations</td>
                 </tr>
               </tbody>
             </table>
           </div>
+
+          <Callout variant="info" title="Product vs architecture">
+            Product taxonomy uses three core apps: Opta CLI, Opta LMX + Dashboard, and
+            Opta Code Desktop. Surface websites (Home, Init, Help, Accounts) are entrypoints,
+            not core apps.
+          </Callout>
 
           <Callout variant="info" title="How they connect">
             The CLI daemon runs on your development machine and proxies requests to the

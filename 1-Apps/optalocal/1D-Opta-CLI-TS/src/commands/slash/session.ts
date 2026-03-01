@@ -12,7 +12,8 @@ import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 function parseSlashArgs(raw: string): string[] {
   const tokens: string[] = [];
-  const pattern = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
+  const pattern =
+    /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(raw)) !== null) {
@@ -24,7 +25,9 @@ function parseSlashArgs(raw: string): string[] {
 }
 
 function printSessionsUsage(): void {
-  console.log(chalk.dim('  Usage: /sessions [list|resume|delete|export|search|menu] [id|query] [options]'));
+  console.log(
+    chalk.dim('  Usage: /sessions [list|resume|delete|export|search|menu] [id|query] [options]')
+  );
   console.log(chalk.dim('    /sessions'));
   console.log(chalk.dim('    /sessions list --limit 20 --model minimax --since 7d --tag bugfix'));
   console.log(chalk.dim('    /sessions search "auth bug"'));
@@ -32,33 +35,39 @@ function printSessionsUsage(): void {
   console.log(chalk.dim('    /sessions menu'));
 }
 
-const exitHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
-  return 'exit';
+const exitHandler = (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+  return Promise.resolve('exit');
 };
 
-const clearHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+const clearHandler = (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
   console.clear();
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 const shareHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const { writeFile } = await import('node:fs/promises');
-  const { join } = await import('node:path');
+  const nodePath = await import('node:path');
   const { select } = await import('@inquirer/prompts');
   const { formatSessionExport } = await import('../share.js');
   type ExportFormat = import('../share.js').ExportFormat;
 
   let format: ExportFormat = 'markdown';
   try {
-    const picked = await runMenuPrompt((context) =>
-      select<ExportFormat>({
-        message: chalk.dim('Export format'),
-        choices: [
-          { name: 'Markdown (.md)', value: 'markdown' as ExportFormat },
-          { name: 'JSON (.json)', value: 'json' as ExportFormat },
-          { name: 'Plain text (.txt)', value: 'text' as ExportFormat },
-        ],
-      }, context), 'select');
+    const picked = await runMenuPrompt(
+      (context) =>
+        select<ExportFormat>(
+          {
+            message: chalk.dim('Export format'),
+            choices: [
+              { name: 'Markdown (.md)', value: 'markdown' as ExportFormat },
+              { name: 'JSON (.json)', value: 'json' as ExportFormat },
+              { name: 'Plain text (.txt)', value: 'text' as ExportFormat },
+            ],
+          },
+          context
+        ),
+      'select'
+    );
     if (!picked) return 'handled';
     format = picked;
   } catch {
@@ -67,7 +76,7 @@ const shareHandler = async (_args: string, ctx: SlashContext): Promise<SlashResu
 
   const ext = format === 'json' ? 'json' : format === 'text' ? 'txt' : 'md';
   const filename = `opta-session-${ctx.session.id.slice(0, 8)}-${Date.now()}.${ext}`;
-  const filepath = join(process.cwd(), filename);
+  const filepath = nodePath.join(process.cwd(), filename);
 
   const content = formatSessionExport(ctx.session, format);
   await writeFile(filepath, content, 'utf-8');
@@ -76,7 +85,11 @@ const shareHandler = async (_args: string, ctx: SlashContext): Promise<SlashResu
 };
 
 const interactiveSessionsBrowser = async (ctx: SlashContext): Promise<SlashResult> => {
-  const { listSessions, deleteSession, loadSession: loadSess } = await import('../../memory/store.js');
+  const {
+    listSessions,
+    deleteSession,
+    loadSession: loadSess,
+  } = await import('../../memory/store.js');
   const { formatSessionExport } = await import('../share.js');
   const { select } = await import('@inquirer/prompts');
 
@@ -92,7 +105,9 @@ const interactiveSessionsBrowser = async (ctx: SlashContext): Promise<SlashResul
       const isCurrent = s.id === ctx.session.id;
       const dot = isCurrent ? chalk.green('\u25cf ') : '  ';
       const title = (s.title || 'Untitled').slice(0, 30);
-      const meta = chalk.dim(`${s.messageCount} msgs \u00b7 ${new Date(s.created).toLocaleDateString()}`);
+      const meta = chalk.dim(
+        `${s.messageCount} msgs \u00b7 ${new Date(s.created).toLocaleDateString()}`
+      );
       return {
         name: `${dot}${s.id.slice(0, 8)}  ${title}  ${meta}`,
         value: s.id,
@@ -101,11 +116,17 @@ const interactiveSessionsBrowser = async (ctx: SlashContext): Promise<SlashResul
 
     let selectedId: string;
     try {
-      const picked = await runMenuPrompt((context) =>
-        select({
-          message: chalk.dim('Select session'),
-          choices,
-        }, context), 'select');
+      const picked = await runMenuPrompt(
+        (context) =>
+          select(
+            {
+              message: chalk.dim('Select session'),
+              choices,
+            },
+            context
+          ),
+        'select'
+      );
       if (!picked) return 'handled';
       selectedId = picked;
     } catch {
@@ -122,11 +143,17 @@ const interactiveSessionsBrowser = async (ctx: SlashContext): Promise<SlashResul
 
     let action: string;
     try {
-      const picked = await runMenuPrompt((context) =>
-        select({
-          message: chalk.dim(`Action for ${selectedId.slice(0, 8)}`),
-          choices: actionChoices,
-        }, context), 'select');
+      const picked = await runMenuPrompt(
+        (context) =>
+          select(
+            {
+              message: chalk.dim(`Action for ${selectedId.slice(0, 8)}`),
+              choices: actionChoices,
+            },
+            context
+          ),
+        'select'
+      );
       // Back key from action prompt should return to the session list.
       if (!picked) continue;
       action = picked;
@@ -136,15 +163,15 @@ const interactiveSessionsBrowser = async (ctx: SlashContext): Promise<SlashResul
 
     switch (action) {
       case 'resume':
-        console.log(chalk.dim(`  To resume, run: opta chat -r ${selectedId.slice(0, 8)}`));
+        console.log(chalk.dim(`  To resume, run: opta -r ${selectedId.slice(0, 8)}`));
         return 'handled';
       case 'export': {
         const { writeFile } = await import('node:fs/promises');
-        const { join } = await import('node:path');
+        const nodePath2 = await import('node:path');
         const sess = await loadSess(selectedId);
         const content = formatSessionExport(sess, 'markdown');
         const filename = `opta-session-${selectedId.slice(0, 8)}-${Date.now()}.md`;
-        await writeFile(join(process.cwd(), filename), content, 'utf-8');
+        await writeFile(nodePath2.join(process.cwd(), filename), content, 'utf-8');
         console.log(chalk.green('\u2713') + ` Exported to ${chalk.cyan(filename)}`);
         return 'handled';
       }
@@ -244,9 +271,10 @@ const sessionsHandler = async (args: string, ctx: SlashContext): Promise<SlashRe
     return 'handled';
   }
 
-  const id = action === 'search' || action === 'find'
-    ? (positional.join(' ').trim() || undefined)
-    : positional[0];
+  const id =
+    action === 'search' || action === 'find'
+      ? positional.join(' ').trim() || undefined
+      : positional[0];
 
   try {
     const { sessions } = await import('../sessions.js');
@@ -263,27 +291,30 @@ const sessionsHandler = async (args: string, ctx: SlashContext): Promise<SlashRe
 
 const initHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const { access } = await import('node:fs/promises');
-  const { join } = await import('node:path');
-  const contextFile = join(process.cwd(), 'OPTA.md');
+  const nodePath3 = await import('node:path');
+  const contextFile = nodePath3.join(process.cwd(), 'OPTA.md');
 
   try {
     await access(contextFile);
     console.log(chalk.yellow('  OPTA.md already exists. Delete it first to regenerate.'));
     return 'handled';
-  } catch { /* doesn't exist, good */ }
+  } catch {
+    /* doesn't exist, good */
+  }
 
   console.log(chalk.dim('  Analyzing project...'));
   ctx.session.messages.push({
     role: 'user',
-    content: 'Analyze this project and generate an OPTA.md project context file. Include: project name, tech stack, architecture overview, key files, coding conventions, and any important notes for an AI assistant working on this codebase. Write it as a markdown file.',
+    content:
+      'Analyze this project and generate an OPTA.md project context file. Include: project name, tech stack, architecture overview, key files, coding conventions, and any important notes for an AI assistant working on this codebase. Write it as a markdown file.',
   });
-  console.log(chalk.dim('  Ask me to generate the OPTA.md file and I\'ll analyze the project.'));
+  console.log(chalk.dim("  Ask me to generate the OPTA.md file and I'll analyze the project."));
   return 'handled';
 };
 
 const editorHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
   const { editText } = await import('../editor.js');
-  const text = await editText(args || '');
+  const text = editText(args || '');
   if (text) {
     console.log(chalk.dim(`  Editor returned ${text.split('\n').length} lines`));
     // Inject editor text as user message for processing
@@ -309,12 +340,12 @@ const imageHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
   const question = parts.slice(1).join(' ') || 'What is in this image?';
 
   try {
-    const { readFile: readFs } = await import('node:fs/promises');
-    const { resolve: resolvePath, extname } = await import('node:path');
-    const fullPath = resolvePath(imagePath);
-    const data = await readFs(fullPath);
+    const nodeFs4 = await import('node:fs/promises');
+    const nodePath4 = await import('node:path');
+    const fullPath = nodePath4.resolve(imagePath);
+    const data = await nodeFs4.readFile(fullPath);
     const base64 = data.toString('base64');
-    const ext = extname(fullPath).slice(1).toLowerCase();
+    const ext = nodePath4.extname(fullPath).slice(1).toLowerCase();
     const mime = ext === 'jpg' ? 'jpeg' : ext;
 
     // Set title from first image
@@ -350,7 +381,7 @@ const tagHandler = async (args: string, ctx: SlashContext): Promise<SlashResult>
     if (tags.length === 0) {
       console.log(chalk.dim('  No tags on this session. Use /tag add <tag> to add one.'));
     } else {
-      console.log(chalk.dim('  Tags: ') + tags.map(t => chalk.cyan(t)).join(', '));
+      console.log(chalk.dim('  Tags: ') + tags.map((t) => chalk.cyan(t)).join(', '));
     }
     return 'handled';
   }
@@ -363,7 +394,9 @@ const tagHandler = async (args: string, ctx: SlashContext): Promise<SlashResult>
     }
     await tagSession(ctx.session.id, tagsToAdd);
     ctx.session.tags = [...new Set([...(ctx.session.tags ?? []), ...tagsToAdd])];
-    console.log(chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map(t => chalk.cyan(t)).join(', ')}`);
+    console.log(
+      chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map((t) => chalk.cyan(t)).join(', ')}`
+    );
     return 'handled';
   }
 
@@ -374,8 +407,10 @@ const tagHandler = async (args: string, ctx: SlashContext): Promise<SlashResult>
       return 'handled';
     }
     await untagSession(ctx.session.id, tagsToRemove);
-    ctx.session.tags = (ctx.session.tags ?? []).filter(t => !tagsToRemove.includes(t));
-    console.log(chalk.green('\u2713') + ` Removed tags: ${tagsToRemove.map(t => chalk.cyan(t)).join(', ')}`);
+    ctx.session.tags = (ctx.session.tags ?? []).filter((t) => !tagsToRemove.includes(t));
+    console.log(
+      chalk.green('\u2713') + ` Removed tags: ${tagsToRemove.map((t) => chalk.cyan(t)).join(', ')}`
+    );
     return 'handled';
   }
 
@@ -383,7 +418,9 @@ const tagHandler = async (args: string, ctx: SlashContext): Promise<SlashResult>
   const tagsToAdd = parts.filter(Boolean);
   await tagSession(ctx.session.id, tagsToAdd);
   ctx.session.tags = [...new Set([...(ctx.session.tags ?? []), ...tagsToAdd])];
-  console.log(chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map(t => chalk.cyan(t)).join(', ')}`);
+  console.log(
+    chalk.green('\u2713') + ` Added tags: ${tagsToAdd.map((t) => chalk.cyan(t)).join(', ')}`
+  );
   return 'handled';
 };
 
@@ -399,7 +436,7 @@ const renameHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
-const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const costHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const messages = ctx.session.messages;
   const isLocal = ctx.config.provider.active === 'lmx';
 
@@ -414,7 +451,7 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
     } else if (Array.isArray(msg.content)) {
       text = msg.content
         .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-        .map(p => p.text)
+        .map((p) => p.text)
         .join('');
     }
 
@@ -445,7 +482,9 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   console.log(chalk.dim('  ' + '\u2500'.repeat(32)));
 
   if (isLocal) {
-    console.log(`  Cost:           ${chalk.green('Free')} ${chalk.dim('(local inference via Opta-LMX)')}`);
+    console.log(
+      `  Cost:           ${chalk.green('Free')} ${chalk.dim('(local inference via Opta-LMX)')}`
+    );
   } else {
     // Rough cost estimate for Anthropic Claude models
     // claude-sonnet-4-5: $3/M input, $15/M output
@@ -460,7 +499,7 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   }
 
   console.log();
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 export const sessionCommands: SlashCommandDef[] = [
@@ -494,8 +533,15 @@ export const sessionCommands: SlashCommandDef[] = [
     description: 'Browse or manage sessions (list/search/resume/delete/export)',
     handler: sessionsHandler,
     category: 'session',
-    usage: '/sessions [list|resume|delete|export|search|menu] [id|query] [--json|--model <name>|--since <date>|--tag <tag>|--limit <n>]',
-    examples: ['/sessions', '/sessions menu', '/sessions list --limit 10', '/sessions search auth', '/sessions resume abc123'],
+    usage:
+      '/sessions [list|resume|delete|export|search|menu] [id|query] [--json|--model <name>|--since <date>|--tag <tag>|--limit <n>]',
+    examples: [
+      '/sessions',
+      '/sessions menu',
+      '/sessions list --limit 10',
+      '/sessions search auth',
+      '/sessions resume abc123',
+    ],
   },
   {
     command: 'init',

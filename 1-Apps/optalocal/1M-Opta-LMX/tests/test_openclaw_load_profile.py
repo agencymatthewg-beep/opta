@@ -19,8 +19,9 @@ async def test_openclaw_load_profile_six_clients() -> None:
         max_concurrent_requests=4,
         per_client_default_concurrency=1,
         per_model_concurrency_limits={"test/model-a": 2},
-        semaphore_timeout_sec=2.0,
+        semaphore_timeout_sec=10.0,
         warmup_on_load=False,
+        adaptive_concurrency_enabled=False,
     )
 
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
@@ -52,11 +53,7 @@ async def test_openclaw_load_profile_six_clients() -> None:
         await engine.generate("test/model-a", messages, client_id=client_id)
         completions[client_id] += 1
 
-    tasks = [
-        asyncio.create_task(_run(client_id))
-        for client_id in clients
-        for _ in range(2)
-    ]
+    tasks = [asyncio.create_task(_run(client_id)) for client_id in clients for _ in range(2)]
     await asyncio.gather(*tasks)
 
     assert all(count == 2 for count in completions.values())

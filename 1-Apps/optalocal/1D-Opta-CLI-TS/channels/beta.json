@@ -1,0 +1,11 @@
+{
+  "channel": "beta",
+  "appId": "1D-Opta-CLI-TS",
+  "packageName": "opta-cli-beta",
+  "stateRoot": "~/.config/opta-beta",
+  "sessionRoot": "~/.config/opta-beta/sessions",
+  "lmx": {
+    "host": "192.168.188.11",
+    "port": 2234
+  }
+}

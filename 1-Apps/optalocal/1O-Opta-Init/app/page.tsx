@@ -9,7 +9,7 @@ import {
   DASHBOARD_URL,
   ACCOUNTS_URL,
 } from "@/lib/constants";
-import { DOWNLOAD_TARGETS, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
+import { DOWNLOAD_TARGETS, resolveDownloadAvailability, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
 import { OptaRing } from "@/components/OptaRing";
 
 // Icon mapper for features
@@ -32,49 +32,12 @@ export default function Home() {
     let mounted = true;
 
     const detectAssets = async () => {
-      const entries = await Promise.all(
-        Object.entries(DOWNLOAD_TARGETS).map(async ([key, target]) => {
-          const macTarget = target.platforms.macos;
-          const fallback = macTarget?.fallbackUrl ?? null;
-
-          const release = macTarget
-            ? await fetch(`https://api.github.com/repos/${macTarget.repo}/releases/latest`)
-                .then(async (res) => {
-                  if (!res.ok) return null;
-                  const data = (await res.json()) as {
-                    assets?: Array<{ name: string; browser_download_url: string }>;
-                  };
-                  const assets = data.assets ?? [];
-                  const match = assets.find((asset) => {
-                    const name = asset.name.toLowerCase();
-                    return macTarget.patterns.some((token) => name.includes(token.replace(".", "")));
-                  });
-                  return match?.browser_download_url ?? null;
-                })
-                .catch(() => null)
-            : null;
-
-          const macUrl = release ?? fallback;
-          const isInstaller = Boolean(macUrl && (macUrl.endsWith(".pkg") || macUrl.endsWith(".dmg")));
-
-          return [
-            key,
-            {
-              name: target.name,
-              description: target.description,
-              macos: {
-                url: macUrl,
-                available: Boolean(macUrl),
-                label: macUrl ? (isInstaller ? "Installer Ready" : "Package Ready") : "Coming Soon",
-                source: release ? "release" : fallback ? "fallback" : "none",
-              },
-              windows: { url: null, available: false, label: "Coming Soon", source: "none" },
-            },
-          ] as const;
-        })
-      );
-
-      if (mounted) setDownloadState(Object.fromEntries(entries) as DownloadAvailabilityMap);
+      try {
+        const result = await resolveDownloadAvailability();
+        if (mounted) setDownloadState(result);
+      } catch (e) {
+        console.error("Failed to detect assets", e);
+      }
     };
 
     void detectAssets();
@@ -103,7 +66,7 @@ export default function Home() {
     hidden: { scaleX: 0, originX: 0 },
     show: { scaleX: 1, transition: { duration: 1.5, ease: [0.77, 0, 0.175, 1] } }
   };
-  
+
   const lineRevealY: Variants = {
     hidden: { scaleY: 0, originY: 0 },
     show: { scaleY: 1, transition: { duration: 1.5, ease: [0.77, 0, 0.175, 1] } }
@@ -122,16 +85,16 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-void text-text-primary font-sans overflow-x-hidden selection:bg-primary/30 selection:text-white">
       <div className="film-grain"></div>
-      
+
       {/* Opta Atmospheric Fog */}
       <div className="fixed inset-0 z-0 opacity-20 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.5)_0%,transparent_50%)] pointer-events-none"></div>
       <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] z-0 opacity-10 bg-[radial-gradient(circle,rgba(59,130,246,0.5)_0%,transparent_60%)] blur-3xl pointer-events-none"></div>
-      
+
       {/* Structural HUD Grid Lines (Persistent Overlay) */}
       <motion.div initial="hidden" animate="show" variants={lineRevealY} className="fixed inset-y-0 left-[8%] w-px bg-gradient-to-b from-primary/50 via-neon-blue/20 to-transparent z-0 hidden md:block pointer-events-none" />
       <motion.div initial="hidden" animate="show" variants={lineRevealY} className="fixed inset-y-0 right-[8%] w-px bg-gradient-to-b from-primary/50 via-neon-blue/20 to-transparent z-0 hidden md:block pointer-events-none" />
       <motion.div initial="hidden" animate="show" variants={lineRevealX} className="fixed inset-x-0 top-[12%] h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent z-0 hidden md:block pointer-events-none" />
-      
+
       {/* HEADER */}
       <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-void/50 border-b border-white/5">
         <div className="flex items-center justify-between px-[8%] py-6">
@@ -151,7 +114,7 @@ export default function Home() {
 
       <main className="relative z-10 pt-40 pb-32">
         {/* --- HERO SECTION --- */}
-        <motion.section 
+        <motion.section
           initial="hidden"
           animate="show"
           transition={{ staggerChildren: 0.1 }}
@@ -186,7 +149,7 @@ export default function Home() {
             <motion.p variants={textUp} className="text-lg font-light leading-relaxed text-text-secondary">
               The definitive bootstrap for Apple Silicon AI. Run LLMs locally with our highly optimized, private inference stack. Zero cloud. Pure capability.
             </motion.p>
-            
+
             <motion.a href="#install" variants={textUp} className="mt-12 group cursor-pointer inline-flex items-center gap-4 obsidian-interactive p-3 rounded-full pr-8 border border-white/10">
               <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]">
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
@@ -199,7 +162,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- APP SHOWCASE (CLI UI Mockups) --- */}
-        <motion.section 
+        <motion.section
           id="showcase"
           initial="hidden"
           whileInView="show"
@@ -312,7 +275,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- INSTALLATION SECTION --- */}
-        <motion.section 
+        <motion.section
           id="install"
           initial="hidden"
           whileInView="show"
@@ -328,7 +291,7 @@ export default function Home() {
                   <Terminal className="w-5 h-5" />
                   <span className="text-sm font-mono uppercase tracking-widest">Bootstrap Command</span>
                 </div>
-                <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br/>Full Stack.</h2>
+                <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br />Full Stack.</h2>
                 <p className="text-text-secondary mb-10 font-light leading-relaxed">
                   Run the bootstrap script and the installer wizard takes over. It verifies hardware, installs CLI + LMX in order, and leaves you with a ready-to-run stack.
                 </p>
@@ -377,7 +340,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- ARCHITECTURE SECTION --- */}
-        <motion.section 
+        <motion.section
           initial="hidden"
           whileInView="show"
           viewport={{ once: true, margin: "-100px" }}
@@ -394,24 +357,24 @@ export default function Home() {
             <div className="hidden md:block absolute top-[4.5rem] left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent z-0"></div>
 
             {[
-              { 
+              {
                 step: "01",
-                title: "Opta CLI Daemon", 
-                icon: <Code2 className="w-5 h-5" />, 
+                title: "Opta CLI Daemon",
+                icon: <Code2 className="w-5 h-5" />,
                 port: "127.0.0.1:9999",
                 desc: "Session orchestration, permission gating, and event persistence. Proxies requests to LMX."
               },
-              { 
+              {
                 step: "02",
-                title: "Opta LMX Server", 
-                icon: <Layers className="w-5 h-5" />, 
+                title: "Opta LMX Server",
+                icon: <Layers className="w-5 h-5" />,
                 port: "127.0.0.1:1234",
                 desc: "The core MLX inference server. OpenAI API-compatible. Automatically degrades on OOM rather than crashing."
               },
-              { 
+              {
                 step: "03",
-                title: "Opta Local Web", 
-                icon: <Box className="w-5 h-5" />, 
+                title: "Opta Local Web",
+                icon: <Box className="w-5 h-5" />,
                 port: "localhost:3004",
                 desc: "React dashboard connecting directly to LMX. Runs in LAN mode or Cloud mode via Supabase auth."
               }
@@ -438,7 +401,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- FEATURES GRID --- */}
-        <motion.section 
+        <motion.section
           id="features"
           initial="hidden"
           whileInView="show"
@@ -469,7 +432,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- DOWNLOADS SECTION --- */}
-        <motion.section 
+        <motion.section
           id="downloads"
           initial="hidden"
           whileInView="show"
@@ -495,7 +458,7 @@ export default function Home() {
                 <p className="text-text-secondary font-light leading-relaxed mb-8 flex-1">
                   {data.description}
                 </p>
-                
+
                 {data.macos.available && data.macos.url ? (
                   <a href={data.macos.url} className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors">
                     <Download className="w-4 h-4" />
@@ -519,7 +482,7 @@ export default function Home() {
         </motion.section>
 
         {/* --- DASHBOARD CTA --- */}
-        <motion.section 
+        <motion.section
           id="dashboard"
           initial="hidden"
           whileInView="show"
@@ -532,7 +495,7 @@ export default function Home() {
               <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
               {/* Internal glow */}
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none"></div>
-              
+
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-5xl font-bold mb-6 text-moonlight">Ready to manage your models?</h2>
                 <p className="text-lg text-text-secondary font-light max-w-xl mx-auto mb-10">

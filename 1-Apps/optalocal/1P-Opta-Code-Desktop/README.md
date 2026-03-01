@@ -54,9 +54,18 @@ The GitHub Actions workflow `.github/workflows/opta-code-windows-build.yml` runs
 
 1. **Unit tests** (Linux, fast) — TypeScript type-check + Vitest
 2. **Windows installer** (`windows-latest`) — Tauri v2 MSI + NSIS via `tauri-apps/tauri-action`
-3. **Smoke test** (main-only) — verifies installer artifact exists
+3. **Smoke test** — verifies installer artifacts and packaged app startup (alive for 5s)
+4. **Readiness summary** — writes pass/fail evidence to GitHub step summary
 
-Artifacts are uploaded as `opta-code-windows-installer` and retained for 30 days.
+Artifacts are uploaded as:
+- `opta-code-windows-installer` (MSI, NSIS EXE, packaged `opta-code.exe`)
+- `opta-code-windows-smoke-logs` (startup smoke log)
+
+### Local verification gate
+
+```bash
+npm run check:desktop
+```
 
 ### Build locally on Windows
 
@@ -87,3 +96,9 @@ The frontend connects to the Opta CLI daemon at `http://127.0.0.1:9999` by defau
 cd ../1D-Opta-CLI-TS
 npm run dev -- daemon start
 ```
+
+## Windows Compatibility Contract
+
+See [docs/WINDOWS-COMPATIBILITY.md](docs/WINDOWS-COMPATIBILITY.md) for the
+supported/conditional/out-of-scope feature matrix and release evidence
+requirements.

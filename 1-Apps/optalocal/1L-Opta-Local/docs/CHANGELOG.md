@@ -1,6 +1,13 @@
+## 2026-02-28
+
+### [Shared]
+- Removed `ios/` application directory by explicit user request.
+- Normalized project metadata/docs/configs to web-only scope.
+- Removed iOS channel namespaces from release channel config.
+
 # Opta Local — Changelog
 
-> What changed and when. Tagged [Web] / [iOS] / [Shared] per platform.
+> What changed and when. Tagged [Web] / [Shared].
 
 ---
 

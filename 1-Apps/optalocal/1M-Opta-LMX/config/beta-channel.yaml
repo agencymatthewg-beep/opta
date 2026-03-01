@@ -1,0 +1,31 @@
+# Opta-LMX beta channel profile
+server:
+  host: "0.0.0.0"
+  port: 2234
+  workers: 1
+  timeout_sec: 600
+
+models:
+  # Beta can test broader model sets; do not autoload risky models.
+  default_model: "inferencerlabs/MiniMax-M2.5-MLX-6.5bit"
+  auto_load: ["inferencerlabs/MiniMax-M2.5-MLX-6.5bit"]
+  max_concurrent_requests: 4
+  inference_timeout_sec: 600
+  warmup_on_load: true
+  adaptive_concurrency_enabled: true
+  gguf_fallback_enabled: true
+
+memory:
+  max_memory_percent: 85
+  auto_evict_lru: true
+  load_shedding_percent: 94
+
+logging:
+  level: "INFO"
+  format: "structured"
+  file: "~/.opta-lmx/logs/opta-lmx-beta.log"
+
+security:
+  profile: "lan"
+  admin_key: "replace-with-beta-admin-key"
+  inference_api_key: "replace-with-beta-inference-key"

@@ -110,7 +110,7 @@ describe('ProcessManager', () => {
     await pm.start('sleep 10');
     await pm.start('sleep 10');
     await pm.start('sleep 10');
-    await expect(pm.start('sleep 10')).rejects.toThrow('concurrent');
+    expect(() => pm.start('sleep 10')).toThrow('concurrent');
   });
 
   it('kills a running process', async () => {
@@ -238,9 +238,9 @@ describe('ProcessManager.kill', () => {
     await pm.killAll();
   });
 
-  it('throws for unknown process id', async () => {
+  it('throws for unknown process id', () => {
     const pm = new ProcessManager({ maxConcurrent: 5, defaultTimeout: 5000, maxBufferSize: 1024 });
-    await expect(pm.kill('bogus')).rejects.toThrow('not found');
+    expect(() => pm.kill('bogus')).toThrow('not found');
   });
 });
 

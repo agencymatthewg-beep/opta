@@ -35,6 +35,11 @@ const FAST_SCAN_REQUEST_OPTS: LmxRequestOptions = {
   maxRetries: 0,
 };
 
+const FULL_SCAN_REQUEST_OPTS: LmxRequestOptions = {
+  timeoutMs: 20_000,
+  maxRetries: 1,
+};
+
 // --- Formatting Helpers ---
 
 export function shortId(id: string): string {
@@ -75,7 +80,7 @@ export function buildRoleMap(roles: Record<string, LmxStackRole>): Map<string, s
  * Both the CLI `opta models scan` command and the `/scan` slash command
  * should call this instead of duplicating the query logic.
  */
-export async function scanModels(config: OptaConfig): Promise<ScanResult> {
+export async function scanModels(config: OptaConfig, full = false): Promise<ScanResult> {
   const { host, port } = config.connection;
   const client = new LmxClient({
     host,
@@ -94,19 +99,25 @@ export async function scanModels(config: OptaConfig): Promise<ScanResult> {
     cloudHealthy: false,
     lmxReachable: false,
   };
+  
+  const reqOpts = full ? FULL_SCAN_REQUEST_OPTS : FAST_SCAN_REQUEST_OPTS;
 
   // Query LMX endpoints in parallel (all may fail if LMX is down)
   const lmxPromises = Promise.all([
-    client.models(FAST_SCAN_REQUEST_OPTS).catch(() => null),
-    client.available(FAST_SCAN_REQUEST_OPTS).catch(() => null),
-    client.presets(FAST_SCAN_REQUEST_OPTS).catch(() => null),
-    client.stack(FAST_SCAN_REQUEST_OPTS).catch(() => null),
-    client.memory(FAST_SCAN_REQUEST_OPTS).catch(() => null),
+    client.models(reqOpts).catch(() => null),
+    client.available(reqOpts).catch(() => null),
+    client.presets(reqOpts).catch(() => null),
+    client.stack(reqOpts).catch(() => null),
+    client.memory(reqOpts).catch(() => null),
   ]);
 
   // Query Anthropic provider in parallel with LMX
   const anthropicPromise = (async () => {
-    if (config.provider?.active === 'anthropic' || config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']) {
+    if (
+      config.provider.active === 'anthropic' ||
+      config.provider.anthropic.apiKey ||
+      process.env['ANTHROPIC_API_KEY']
+    ) {
       try {
         const { getProvider } = await import('./manager.js');
         const anthropicConfig = { ...config, provider: { ...config.provider, active: 'anthropic' as const } };

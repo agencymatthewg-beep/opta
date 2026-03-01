@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
-import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
+import { getDaemonDir } from '../platform/paths.js';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { debug } from '../core/debug.js';
@@ -32,7 +32,7 @@ function envDiskHeadroomMb(): number | undefined {
 }
 
 function daemonDir(): string {
-  return join(homedir(), '.config', 'opta', 'daemon');
+  return getDaemonDir();
 }
 
 function statePath(): string {

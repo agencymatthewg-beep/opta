@@ -97,7 +97,7 @@ export const DEFAULT_TRIGGER_MODE_DEFINITIONS: TriggerModeDefinition[] = [
 ];
 
 export function normalizeTriggerModeDefinitions(
-  definitions: TriggerModeDefinition[],
+  definitions: TriggerModeDefinition[]
 ): TriggerModeDefinition[] {
   const normalizedWords = uniqueNormalized(definitions.map((definition) => definition.word));
   if (normalizedWords.length === 0) return [];
@@ -109,9 +109,10 @@ export function normalizeTriggerModeDefinitions(
 
     byWord.set(normalizedWord, {
       word: normalizedWord,
-      modeHint: definition.modeHint && isKnownWorkflowMode(definition.modeHint)
-        ? definition.modeHint
-        : undefined,
+      modeHint:
+        definition.modeHint && isKnownWorkflowMode(definition.modeHint)
+          ? definition.modeHint
+          : undefined,
       priority: Number.isFinite(definition.priority) ? Number(definition.priority) : 0,
       capabilities: uniqueStrings(definition.capabilities ?? []),
       skills: uniqueStrings(definition.skills ?? []),
@@ -123,15 +124,13 @@ export function normalizeTriggerModeDefinitions(
     .filter((definition): definition is TriggerModeDefinition => Boolean(definition));
 }
 
-export function triggerWordsFromDefinitions(
-  definitions: TriggerModeDefinition[],
-): string[] {
+export function triggerWordsFromDefinitions(definitions: TriggerModeDefinition[]): string[] {
   return normalizeTriggerModeDefinitions(definitions).map((definition) => definition.word);
 }
 
 export function collectMatchedTriggerDefinitions(
   prompt: string,
-  definitions: TriggerModeDefinition[],
+  definitions: TriggerModeDefinition[]
 ): TriggerModeDefinition[] {
   const normalizedPrompt = prompt.trim();
   if (!normalizedPrompt) return [];
@@ -147,8 +146,8 @@ export function collectMatchedTriggerDefinitions(
   }
 
   return matched.sort((left, right) => {
-    const leftPriority = Number(left.priority ?? 0);
-    const rightPriority = Number(right.priority ?? 0);
+    const leftPriority = left.priority ?? 0;
+    const rightPriority = right.priority ?? 0;
     if (leftPriority !== rightPriority) return rightPriority - leftPriority;
     return left.word.localeCompare(right.word);
   });
@@ -156,7 +155,7 @@ export function collectMatchedTriggerDefinitions(
 
 export function resolveEffectiveMode(
   currentMode: TriggerWorkflowMode,
-  modeHints: TriggerWorkflowMode[],
+  modeHints: TriggerWorkflowMode[]
 ): TriggerWorkflowMode {
   const candidates = [currentMode, ...modeHints];
   let selected: TriggerWorkflowMode = currentMode;
@@ -182,13 +181,13 @@ export function resolveTriggerRouting(options: {
   const matchedDefinitions = collectMatchedTriggerDefinitions(options.prompt, definitions);
   const matchedWords = matchedDefinitions.map((definition) => definition.word);
   const requestedCapabilities = uniqueStrings(
-    matchedDefinitions.flatMap((definition) => definition.capabilities ?? []),
+    matchedDefinitions.flatMap((definition) => definition.capabilities ?? [])
   );
   const requestedSkills = uniqueStrings(
-    matchedDefinitions.flatMap((definition) => definition.skills ?? []),
+    matchedDefinitions.flatMap((definition) => definition.skills ?? [])
   );
   const requestedModes = uniqueStrings(
-    matchedDefinitions.map((definition) => definition.modeHint ?? ''),
+    matchedDefinitions.map((definition) => definition.modeHint ?? '')
   ).filter((mode): mode is TriggerWorkflowMode => isKnownWorkflowMode(mode));
   const effectiveMode = resolveEffectiveMode(options.currentMode, requestedModes);
 

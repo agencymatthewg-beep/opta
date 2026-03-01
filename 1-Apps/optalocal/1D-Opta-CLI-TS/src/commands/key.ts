@@ -4,6 +4,7 @@ import { execa } from 'execa';
 import { getConfigStore, loadConfig } from '../core/config.js';
 import { ExitError, EXIT } from '../core/errors.js';
 import { resolveRemoteHostCandidates, selectReachableRemoteHost } from './update.js';
+import { homedir, isWindows } from '../platform/index.js';
 
 const SSH_CONNECT_TIMEOUT_SECONDS = 25;
 
@@ -53,8 +54,7 @@ function quoteSh(input: string): string {
 
 function expandHome(input: string): string {
   if (!input.startsWith('~')) return input;
-  const home = process.env['HOME'] ?? '';
-  return input.replace(/^~(?=$|\/)/, home);
+  return homedir() + input.slice(1);
 }
 
 function isLocalHost(host: string): boolean {
@@ -108,10 +108,14 @@ function parseRemoteConfigPath(output: string): ParsedRemotePath {
 async function runRemoteCommand(ssh: SshConfig, command: string): Promise<CommandResult> {
   const commandWithPath = `export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; ${command}`;
   const args: string[] = [
-    '-o', 'BatchMode=yes',
-    '-o', `ConnectTimeout=${SSH_CONNECT_TIMEOUT_SECONDS}`,
-    '-o', 'ServerAliveInterval=5',
-    '-o', 'ServerAliveCountMax=2',
+    '-o',
+    'BatchMode=yes',
+    '-o',
+    `ConnectTimeout=${SSH_CONNECT_TIMEOUT_SECONDS}`,
+    '-o',
+    'ServerAliveInterval=5',
+    '-o',
+    'ServerAliveCountMax=2',
   ];
 
   if (ssh.identityFile) {
@@ -131,7 +135,7 @@ async function selectRemoteHost(
   host: string,
   fallbackHosts: readonly string[],
   sshUser: string,
-  identityFile?: string,
+  identityFile?: string
 ): Promise<{ selectedHost: string | null; detail: string }> {
   const candidates = resolveRemoteHostCandidates(host, fallbackHosts);
   const selection = await selectReachableRemoteHost(candidates, async (candidateHost) => {
@@ -141,12 +145,14 @@ async function selectRemoteHost(
         user: sshUser,
         identityFile,
       },
-      'echo connected',
+      'echo connected'
     );
   });
 
   if (!selection.selectedHost) {
-    const detail = selection.probes.map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`).join('; ');
+    const detail = selection.probes
+      .map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`)
+      .join('; ');
     return { selectedHost: null, detail: detail || 'ssh probe failed' };
   }
 
@@ -156,7 +162,7 @@ async function selectRemoteHost(
 async function applyRemoteInferenceKey(
   ssh: SshConfig,
   lmxPath: string,
-  key: string,
+  key: string
 ): Promise<{ ok: boolean; configPath?: string; message: string }> {
   const script = [
     `OPTA_LMX_PATH=${quoteSh(lmxPath)};`,
@@ -243,11 +249,15 @@ async function applyRemoteInferenceKey(
   };
 }
 
-async function reloadLmxConfig(host: string, port: number, adminKey?: string): Promise<{ ok: boolean; message: string }> {
+async function reloadLmxConfig(
+  host: string,
+  port: number,
+  adminKey?: string
+): Promise<{ ok: boolean; message: string }> {
   if (!adminKey?.trim()) {
     return {
       ok: false,
-      message: "connection.adminKey is required to trigger /admin/config/reload",
+      message: 'connection.adminKey is required to trigger /admin/config/reload',
     };
   }
 
@@ -274,7 +284,11 @@ async function reloadLmxConfig(host: string, port: number, adminKey?: string): P
   }
 }
 
-async function verifyInferenceKey(host: string, port: number, key: string): Promise<{ ok: boolean; message: string }> {
+async function verifyInferenceKey(
+  host: string,
+  port: number,
+  key: string
+): Promise<{ ok: boolean; message: string }> {
   try {
     const response = await fetch(`http://${host}:${port}/v1/models`, {
       headers: {
@@ -316,6 +330,42 @@ async function copyToClipboard(value: string): Promise<{ ok: boolean; message: s
     }
   }
 
+  if (process.platform === 'win32') {
+    const windowsCandidates: Array<{ cmd: string; args: string[] }> = [
+      {
+        cmd: 'powershell',
+        args: [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          'Set-Clipboard -Value ([Console]::In.ReadToEnd())',
+        ],
+      },
+      {
+        cmd: 'clip',
+        args: [],
+      },
+    ];
+    const attempts: string[] = [];
+    for (const candidate of windowsCandidates) {
+      try {
+        const result = await execa(candidate.cmd, candidate.args, {
+          input: text,
+          reject: false,
+        });
+        if (result.exitCode === 0) {
+          return { ok: true, message: `copied to clipboard (${candidate.cmd})` };
+        }
+        attempts.push(`${candidate.cmd}: ${result.stderr || `exit ${result.exitCode ?? 1}`}`);
+      } catch (err) {
+        attempts.push(
+          `${candidate.cmd}: ${err instanceof Error ? err.message : 'failed to execute'}`
+        );
+      }
+    }
+    return { ok: false, message: `no clipboard utility succeeded (${attempts.join('; ')})` };
+  }
+
   const linuxCandidates: Array<{ cmd: string; args: string[] }> = [
     { cmd: 'wl-copy', args: [] },
     { cmd: 'xclip', args: ['-selection', 'clipboard'] },
@@ -334,7 +384,7 @@ async function copyToClipboard(value: string): Promise<{ ok: boolean; message: s
       attempts.push(`${candidate.cmd}: ${result.stderr || `exit ${result.exitCode ?? 1}`}`);
     } catch (err) {
       attempts.push(
-        `${candidate.cmd}: ${err instanceof Error ? err.message : 'failed to execute'}`,
+        `${candidate.cmd}: ${err instanceof Error ? err.message : 'failed to execute'}`
       );
     }
   }
@@ -363,45 +413,63 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
   };
 
   if (remoteRequested && !isLocalHost(remoteHost)) {
-    const selected = await selectRemoteHost(
-      remoteHost,
-      config.connection.fallbackHosts,
-      config.connection.ssh.user,
-      expandHome(config.connection.ssh.identityFile),
-    );
-    if (!selected.selectedHost) {
-      output.remote = { ok: false, message: `ssh unavailable: ${selected.detail}` };
+    if (isWindows) {
+      output.remote = {
+        ok: false,
+        message:
+          'remote Studio sync requires POSIX SSH shell tools; run from macOS/Linux or use --no-remote',
+      };
       if (!opts?.json) {
-        console.log(chalk.yellow('!') + ` Studio sync skipped: ${selected.detail}`);
+        console.log(
+          chalk.yellow('!') +
+            ' Studio sync skipped on Windows: use --no-remote or run from macOS/Linux'
+        );
       }
     } else {
-      const ssh: SshConfig = {
-        host: selected.selectedHost,
-        user: config.connection.ssh.user,
-        identityFile: expandHome(config.connection.ssh.identityFile),
-      };
-      const remoteApply = await applyRemoteInferenceKey(ssh, config.connection.ssh.lmxPath, key);
-      if (!remoteApply.ok) {
-        output.remote = { ok: false, message: remoteApply.message };
+      const selected = await selectRemoteHost(
+        remoteHost,
+        config.connection.fallbackHosts,
+        config.connection.ssh.user,
+        expandHome(config.connection.ssh.identityFile)
+      );
+      if (!selected.selectedHost) {
+        output.remote = { ok: false, message: `ssh unavailable: ${selected.detail}` };
         if (!opts?.json) {
-          console.log(chalk.red('✗') + ` Studio key update failed: ${remoteApply.message}`);
+          console.log(chalk.yellow('!') + ` Studio sync skipped: ${selected.detail}`);
         }
       } else {
-        const reload = await reloadLmxConfig(ssh.host, config.connection.port, config.connection.adminKey);
-        const verify = await verifyInferenceKey(ssh.host, config.connection.port, key);
-        output.remote = {
-          ok: remoteApply.ok && reload.ok && verify.ok,
-          host: ssh.host,
-          configPath: remoteApply.configPath,
-          reload: reload.message,
-          verify: verify.message,
+        const ssh: SshConfig = {
+          host: selected.selectedHost,
+          user: config.connection.ssh.user,
+          identityFile: expandHome(config.connection.ssh.identityFile),
         };
+        const remoteApply = await applyRemoteInferenceKey(ssh, config.connection.ssh.lmxPath, key);
+        if (!remoteApply.ok) {
+          output.remote = { ok: false, message: remoteApply.message };
+          if (!opts?.json) {
+            console.log(chalk.red('✗') + ` Studio key update failed: ${remoteApply.message}`);
+          }
+        } else {
+          const reload = await reloadLmxConfig(
+            ssh.host,
+            config.connection.port,
+            config.connection.adminKey
+          );
+          const verify = await verifyInferenceKey(ssh.host, config.connection.port, key);
+          output.remote = {
+            ok: remoteApply.ok && reload.ok && verify.ok,
+            host: ssh.host,
+            configPath: remoteApply.configPath,
+            reload: reload.message,
+            verify: verify.message,
+          };
 
-        if (!opts?.json) {
-          console.log(chalk.green('✓') + ` Studio key synced on ${ssh.host}`);
-          console.log(chalk.dim(`  Config: ${remoteApply.configPath}`));
-          console.log(chalk.dim(`  Reload: ${reload.message}`));
-          console.log(chalk.dim(`  Verify: ${verify.message}`));
+          if (!opts?.json) {
+            console.log(chalk.green('✓') + ` Studio key synced on ${ssh.host}`);
+            console.log(chalk.dim(`  Config: ${remoteApply.configPath}`));
+            console.log(chalk.dim(`  Reload: ${reload.message}`));
+            console.log(chalk.dim(`  Verify: ${verify.message}`));
+          }
         }
       }
     }
@@ -425,7 +493,7 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
 
   if (opts?.json) {
     const safeOutput = { ...output };
-    if (typeof safeOutput['key'] === 'string') safeOutput['key'] = maskKey(safeOutput['key'] as string);
+    if (typeof safeOutput['key'] === 'string') safeOutput['key'] = maskKey(safeOutput['key']);
     console.log(JSON.stringify(safeOutput, null, 2));
     return;
   }
@@ -434,7 +502,9 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
   console.log(chalk.bold('Opta Inference API Key'));
   console.log(`Base URL: http://${config.connection.host}:${config.connection.port}/v1`);
   console.log(`API Key:  ${maskKey(key)}`);
-  console.log(chalk.dim('(Full key was copied to clipboard — paste it now, it will not be shown again)'));
+  console.log(
+    chalk.dim('(Full key was copied to clipboard — paste it now, it will not be shown again)')
+  );
   console.log(chalk.dim('Use in clients as Authorization: Bearer <API Key>'));
 }
 
@@ -444,11 +514,17 @@ export async function keyShow(opts?: KeyShowOptions): Promise<void> {
 
   if (!resolved.key) {
     if (opts?.json) {
-      console.log(JSON.stringify({
-        key: null,
-        source: resolved.source,
-        configured: false,
-      }, null, 2));
+      console.log(
+        JSON.stringify(
+          {
+            key: null,
+            source: resolved.source,
+            configured: false,
+          },
+          null,
+          2
+        )
+      );
       return;
     }
     console.log(chalk.yellow('!') + ' No inference API key configured yet.');
@@ -466,11 +542,17 @@ export async function keyShow(opts?: KeyShowOptions): Promise<void> {
   }
 
   if (opts?.json) {
-    console.log(JSON.stringify({
-      key: opts?.reveal ? resolved.key : displayKey,
-      source: resolved.source,
-      configured: true,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          key: opts?.reveal ? resolved.key : displayKey,
+          source: resolved.source,
+          configured: true,
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 

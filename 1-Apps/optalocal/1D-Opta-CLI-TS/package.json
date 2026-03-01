@@ -16,11 +16,11 @@
   ],
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "build": "tsup src/index.ts src/daemon/worker-pool-worker.ts src/core/tools/executors.ts --format esm --dts --clean",
+    "build": "tsup src/index.ts src/daemon/worker-pool-worker.ts src/core/tools/executors.ts src/platform/index.ts --format esm --dts --clean",
     "start": "node dist/index.js",
     "test": "vitest",
     "test:run": "vitest --run",
-    "test:ci": "npm run typecheck && npm run lint && npm run build && npm run check-dist && npm run test:run",
+    "test:ci": "npm run typecheck && npm run lint:budget && npm run build && npm run check-dist && npm run test:run",
     "test:tui": "vitest tests/tui/",
     "test:core": "vitest tests/core/ tests/utils/ tests/ui/",
     "test:browser:gates": "vitest run tests/browser/quality-gates.test.ts tests/integration/browser-artifact-completeness-gate.test.ts",
@@ -35,7 +35,7 @@
     "test:parity:ws9-permission-race": "vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts tests/daemon/http-server.test.ts",
     "test:parity:ws9": "npm run test:parity:ws9-daemon-health && npm run test:parity:ws9-reconnect && npm run test:parity:ws9-permission-race && npm run test:parity:desktop-path",
     "lint": "eslint src",
-    "lint:budget": "npm run lint -- --max-warnings 711",
+    "lint:budget": "npm run lint -- --max-warnings 365",
     "format": "prettier --write src",
     "typecheck": "tsc --noEmit",
     "chat": "npm run build && node dist/index.js chat",
@@ -45,7 +45,10 @@
     "check-dist": "node -e \"const fs=require('fs');const s=fs.statSync('dist/index.js');if(s.size===0)throw new Error('dist/index.js is empty — run npm run build')\"",
     "postbuild": "node --eval \"const s=require('fs').statSync('dist/index.js');if(s.size===0){console.error('FATAL: dist/index.js is empty — tsup --clean was interrupted');process.exit(1)}\"",
     "test:contract": "vitest run tests/protocol/operations-contract.test.ts tests/daemon/http-server.test.ts tests/daemon/client-contract.test.ts",
-    "quality:gate": "npm run typecheck && npm run test:contract && npm run test:parity:core-smoke"
+    "plan-state:check": "node scripts/plan-state/sync.mjs",
+    "plan-state:sync": "node scripts/plan-state/sync.mjs --write",
+    "quality:gate": "npm run plan-state:check && npm run typecheck && npm run test:contract && npm run test:parity:core-smoke",
+    "smoke:features": "node scripts/feature-smoke-live.mjs"
   },
   "optionalDependencies": {
     "playwright": "^1.50.0"

@@ -1,5 +1,5 @@
 ---
-status: review
+status: active
 ---
 
 # Codex Desktop Parity Spec (macOS Enforcement)

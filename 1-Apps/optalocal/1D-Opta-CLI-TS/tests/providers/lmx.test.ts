@@ -22,6 +22,7 @@ vi.mock('../../src/lmx/connection.js', () => ({
 // Mock api-key resolution
 vi.mock('../../src/lmx/api-key.js', () => ({
   resolveLmxApiKey: vi.fn(),
+  resolveLmxApiKeyAsync: vi.fn(),
 }));
 
 // ---------------------------------------------------------------------------
@@ -105,8 +106,8 @@ beforeEach(async () => {
   const { probeLmxConnection } = await import('../../src/lmx/connection.js');
   vi.mocked(probeLmxConnection).mockResolvedValue(DEFAULT_PROBE);
 
-  const { resolveLmxApiKey } = await import('../../src/lmx/api-key.js');
-  vi.mocked(resolveLmxApiKey).mockReturnValue('opta-lmx');
+  const { resolveLmxApiKeyAsync } = await import('../../src/lmx/api-key.js');
+  vi.mocked(resolveLmxApiKeyAsync).mockResolvedValue('opta-lmx');
 });
 
 afterEach(() => {
@@ -175,8 +176,8 @@ describe('LmxProvider — getClient', () => {
   });
 
   it('passes the resolved API key to the OpenAI constructor', async () => {
-    const { resolveLmxApiKey } = await import('../../src/lmx/api-key.js');
-    vi.mocked(resolveLmxApiKey).mockReturnValue('my-test-api-key');
+    const { resolveLmxApiKeyAsync } = await import('../../src/lmx/api-key.js');
+    vi.mocked(resolveLmxApiKeyAsync).mockResolvedValue('my-test-api-key');
 
     const fakeClient = makeMockOpenAI();
     mockOpenAIConstructor.mockReturnValue(fakeClient);

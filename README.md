@@ -1,7 +1,7 @@
 # Opta Ecosystem
 
 > One platform. Every device. Built by Matthew Byrden @ Opta Operations.
-*Last updated: 2026-02-28*
+*Last updated: 2026-03-01*
 
 ---
 
@@ -11,7 +11,7 @@
 ~/Synced/Opta/
 ├── 1-Apps/
 │   ├── optamize/    # optamize.biz products (1E 1F 1G 1H 1J)
-│   ├── optalocal/   # optalocal.com products (1D 1L 1M 1O 1P)
+│   ├── optalocal/   # optalocal.com products (1D 1L 1M 1O 1P 1R 1S 1T 1U)
 │   └── shared/      # cross-domain elements, design, infra (1A 1I 1N)
 ├── 2-Docs/          # Shared documentation (auth, infra, design)
 ├── 3-Services/      # Deployed services (Vercel, launchd)
@@ -42,6 +42,10 @@
 | 1M | Opta LMX | macOS service (Python + MLX) | Live on Mono512:1234 |
 | 1O | Opta Init | Web (Next.js 15) | Live → init.optalocal.com |
 | 1P | Opta Code Desktop | Electron/Vite (TypeScript) | Emerging |
+| 1R | Opta Accounts | Web (Next.js 16) | In dev → accounts.optalocal.com |
+| 1S | Opta Status | Web (Next.js 16) | In dev → status.optalocal.com |
+| 1T | Opta Home | Web (Next.js 16) | In dev → optalocal.com |
+| 1U | Opta Help | Web (Next.js 16 docs) | Live → help.optalocal.com |
 
 ### shared/ — cross-domain
 | ID | App | Platform | Status |
@@ -79,3 +83,4 @@
 | Local stack overview | `1-Apps/OPTA-LOCAL-STACK.md` |
 | OptaCloud auth spec | `1-Apps/shared/1N-Opta-Cloud-Accounts/` |
 | APP.md system docs | `docs/APP-MD-SYSTEM.md` |
+| SOT boundary model | `2-Docs/Operations/SOT-OPTA-OPERATING-MODEL.md` |

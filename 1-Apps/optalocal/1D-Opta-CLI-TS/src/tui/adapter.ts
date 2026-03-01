@@ -177,6 +177,9 @@ export async function runAgentWithEvents(
       onUsage(usage: { promptTokens: number; completionTokens: number }) {
         apiPromptTokens = usage.promptTokens;
       },
+      onAtpoState(state: import('./Header.js').AtpoState) {
+        emitter.emit('atpo:state', state);
+      },
       /**
        * Bridge permission requests from the agent loop to the TUI.
        *

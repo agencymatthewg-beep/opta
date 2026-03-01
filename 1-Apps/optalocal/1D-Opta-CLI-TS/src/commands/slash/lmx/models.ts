@@ -1,5 +1,5 @@
 /**
- * LMX model interaction handlers: models, benchmark, embed, rerank, agents, skills, rag.
+ * LMX model interaction handlers: models, benchmark, embed, rerank, model-perf, agents, skills, rag.
  */
 
 import chalk from 'chalk';
@@ -489,6 +489,70 @@ export const ragHandler = async (args: string, ctx: SlashContext): Promise<Slash
     await runModelsProxyAction('rag', args, ctx);
   } catch (err) {
     console.error(chalk.red('\u2717') + ` rag command failed: ${errorMessage(err)}`);
+  }
+  return 'handled';
+};
+
+export const modelPerfHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const json = tokens.includes('--json');
+  const positional = tokens.filter((token) => !token.startsWith('--'));
+  const modelId = positional.join(' ').trim();
+
+  if (!modelId) {
+    console.log(chalk.dim('  Usage: /model-perf <model-id> [--json]'));
+    return 'handled';
+  }
+
+  const { LmxClient } = await import('../../../lmx/client.js');
+  const lmx = new LmxClient({
+    host: ctx.config.connection.host,
+    fallbackHosts: ctx.config.connection.fallbackHosts,
+    port: ctx.config.connection.port,
+    adminKey: ctx.config.connection.adminKey,
+  });
+
+  try {
+    const perf = await lmx.modelPerformance(modelId);
+
+    if (json) {
+      console.log(renderJson(perf));
+      return 'handled';
+    }
+
+    const dp = getDisplayProfile(perf.modelId);
+    const ctxK = perf.contextLength > 0
+      ? `${Math.round(perf.contextLength / 1024)}K`
+      : chalk.dim('(unknown)');
+
+    const lines: string[] = [
+      kv('Model', `${chalk.bold(dp.displayName)} ${fmtTag(dp.format)} ${chalk.dim(dp.orgAbbrev)}`),
+      kv('Backend', chalk.cyan(perf.backendType)),
+      kv('Context', ctxK),
+      kv('Memory', `${perf.memoryGb.toFixed(1)} GB`),
+      kv('Requests', String(perf.requestCount)),
+      kv('Batching', perf.useBatching ? chalk.green('enabled') : chalk.dim('disabled')),
+      kv('Loaded At', perf.loadedAt),
+    ];
+
+    if (perf.lastUsedAt) {
+      lines.push(kv('Last Used', perf.lastUsedAt));
+    }
+
+    const overrideEntries = Object.entries(perf.performanceOverrides);
+    if (overrideEntries.length > 0) {
+      lines.push('');
+      lines.push(chalk.dim('Performance Overrides:'));
+      for (const [key, val] of overrideEntries) {
+        const label = key.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+        lines.push(`  ${kv(label, String(val))}`);
+      }
+    }
+
+    console.log('\n' + box('Model Performance', lines));
+  } catch (err) {
+    console.error(chalk.red('\u2717') + ` Model performance failed: ${errorMessage(err)}`);
+    console.log(chalk.dim(`  Is "${modelId}" loaded? Run /scan to check`));
   }
   return 'handled';
 };

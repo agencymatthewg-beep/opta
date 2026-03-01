@@ -20,14 +20,18 @@
 
 ## Aesthetic Non-Negotiables
 
+**Owner-approved design (2026-02-28).** The v1.0 visual system is locked. Do not propose redesigns.
+
 - Background: #09090b only (not #000, not #111, not #0a0a0a — use the canonical token)
 - Primary accent: #8b5cf6 — not blue, not teal, not any other hue
 - Font: Sora for UI, JetBrains Mono for code — no substitutions
 - Motion: spring physics only — no ease-in-out, no linear timing
+- New components: must match existing glass card + violet CTA patterns (see DECISIONS.md D07)
 
 ## Scope Guard
 
 If a proposed feature would:
+
 - Require a backend → reject
 - Add user state / auth → reject
 - Duplicate another optalocal.com page's purpose → reject
@@ -36,6 +40,7 @@ If a proposed feature would:
 ## Performance Floor
 
 Lighthouse scores below these values = do not ship:
+
 - Performance: 95
 - Accessibility: 100
 - SEO: 100

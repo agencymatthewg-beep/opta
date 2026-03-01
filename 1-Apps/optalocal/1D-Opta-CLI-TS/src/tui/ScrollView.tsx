@@ -71,16 +71,16 @@ function estimateChildLines(child: ReactNode, availableWidth: number): number {
 
     const hasOwnContent =
       (inner !== undefined && inner !== null && inner !== false) ||
-      textProp !== undefined;
+      textProp !== undefined || estimatedTextProp !== undefined;
     const baseContentRows = hasOwnContent ? Math.max(childLines, 1) : 0;
 
     return (
       baseContentRows +
       paddingTop +
       paddingBottom +
-      borderRows +
       marginTop +
-      marginBottom
+      marginBottom +
+      borderRows
     );
   }
 
@@ -317,7 +317,7 @@ export function ScrollView({
                   {isThumb ? (
                     <Text color={TUI_COLORS.accentSoft}>{'┃'}</Text>
                   ) : (
-                    <Text dimColor>{'│'}</Text>
+                    <Text color={TUI_COLORS.dim}>{'│'}</Text>
                   )}
                 </Box>
               );
@@ -327,13 +327,13 @@ export function ScrollView({
       </Box>
       {showNewLinesIndicator && (
         <Box justifyContent="flex-end" paddingRight={2}>
-          <Text color="yellow" bold>{'\u2193'} {newLinesSinceScroll} new line{newLinesSinceScroll !== 1 ? 's' : ''}</Text>
-          <Text dimColor>  (End/Ctrl+J to jump)</Text>
+          <Text color={TUI_COLORS.warning} bold>{'\u2193'} {newLinesSinceScroll} new line{newLinesSinceScroll !== 1 ? 's' : ''}</Text>
+          <Text color={TUI_COLORS.dim}>  (End/Ctrl+J to jump)</Text>
         </Box>
       )}
       {showLineCount && !showNewLinesIndicator && (
         <Box justifyContent="flex-end" paddingRight={2}>
-          <Text dimColor>{scrollOffset + height}/{totalLines} lines</Text>
+          <Text color={TUI_COLORS.dim}>{scrollOffset + height}/{totalLines} lines</Text>
         </Box>
       )}
     </Box>

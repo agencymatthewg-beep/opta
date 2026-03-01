@@ -9,6 +9,7 @@
 import React from 'react';
 import { Box, Text, useInput } from 'ink';
 import { defaultKeybindings, type KeybindingConfig } from './keybindings.js';
+import { TUI_COLORS } from './palette.js';
 
 export interface HelpOverlayProps {
   onClose: () => void;
@@ -79,14 +80,14 @@ export function HelpOverlay({ onClose, keybindings }: HelpOverlayProps) {
   return (
     <Box
       flexDirection="column"
-      borderStyle="round"
-      borderColor="cyan"
+      borderStyle="single"
+      borderColor={TUI_COLORS.borderSoft}
       paddingX={2}
       paddingY={1}
     >
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="cyan">Keybindings</Text>
+        <Text bold color={TUI_COLORS.accentSoft}>Keybindings</Text>
       </Box>
 
       {/* Keybinding rows */}
@@ -95,7 +96,7 @@ export function HelpOverlay({ onClose, keybindings }: HelpOverlayProps) {
         return (
           <Box key={action}>
             <Box width={KEY_COLUMN_WIDTH}>
-              <Text bold color="yellow">{formatKey(binding.key)}</Text>
+              <Text bold color={TUI_COLORS.warning}>{formatKey(binding.key)}</Text>
             </Box>
             <Text>{binding.description}</Text>
           </Box>
@@ -104,38 +105,38 @@ export function HelpOverlay({ onClose, keybindings }: HelpOverlayProps) {
 
       {/* Separator */}
       <Box marginTop={1} marginBottom={1}>
-        <Text dimColor>{'─'.repeat(32)}</Text>
+        <Text color={TUI_COLORS.dim}>{'─'.repeat(32)}</Text>
       </Box>
 
       {/* Input hints */}
       <Box>
         <Box width={KEY_COLUMN_WIDTH}>
-          <Text bold color="yellow">/</Text>
+          <Text bold color={TUI_COLORS.warning}>/</Text>
         </Box>
         <Text>Slash commands</Text>
       </Box>
       <Box>
         <Box width={KEY_COLUMN_WIDTH}>
-          <Text bold color="yellow">@</Text>
+          <Text bold color={TUI_COLORS.warning}>@</Text>
         </Box>
         <Text>File references</Text>
       </Box>
       <Box>
         <Box width={KEY_COLUMN_WIDTH}>
-          <Text bold color="yellow">!</Text>
+          <Text bold color={TUI_COLORS.warning}>!</Text>
         </Box>
         <Text>Shell commands</Text>
       </Box>
       <Box>
         <Box width={KEY_COLUMN_WIDTH}>
-          <Text bold color="yellow">Alt+Enter</Text>
+          <Text bold color={TUI_COLORS.warning}>Alt+Enter</Text>
         </Box>
         <Text>Insert newline</Text>
       </Box>
 
       {/* Footer */}
       <Box marginTop={1}>
-        <Text dimColor>Press any key to close</Text>
+        <Text color={TUI_COLORS.dim}>Press any key to close</Text>
       </Box>
     </Box>
   );

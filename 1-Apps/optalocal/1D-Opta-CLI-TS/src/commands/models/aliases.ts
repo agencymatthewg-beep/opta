@@ -80,7 +80,7 @@ export async function setModelAlias(
   aliasInput: string | undefined,
   targetInput: string | undefined,
   client: LmxClient,
-  defaultModel: string,
+  defaultModel: string
 ): Promise<void> {
   const aliasName = normalizeAliasName(aliasInput ?? '');
   if (!aliasName) {
@@ -110,10 +110,14 @@ export async function setModelAlias(
         candidateOptions,
         defaultModel,
         'Select model for alias',
-        aliases,
+        aliases
       );
     } catch (err) {
-      if (err instanceof ExitError && err.exitCode === EXIT.NOT_FOUND && resolvedTarget.includes('/')) {
+      if (
+        err instanceof ExitError &&
+        err.exitCode === EXIT.NOT_FOUND &&
+        resolvedTarget.includes('/')
+      ) {
         // Allow aliases to point at IDs not detected locally yet.
       } else {
         throw err;
@@ -140,7 +144,7 @@ export async function removeModelAlias(aliasInput: string | undefined): Promise<
     throw new ExitError(EXIT.NOT_FOUND);
   }
 
-  delete aliases[aliasName];
+  Reflect.deleteProperty(aliases, aliasName);
   await writeModelAliasMap(aliases);
   console.log(chalk.green('✓') + ` Removed alias ${chalk.cyan(aliasName)}`);
 }

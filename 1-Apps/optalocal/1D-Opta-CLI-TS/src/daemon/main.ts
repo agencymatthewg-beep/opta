@@ -1,6 +1,6 @@
 import { nanoid } from 'nanoid';
-import { homedir } from 'node:os';
 import { join } from 'node:path';
+import { getDaemonDir } from '../platform/paths.js';
 import { SessionManager } from './session-manager.js';
 import { startHttpServer } from './http-server.js';
 import { clearDaemonState, createDaemonToken, defaultDaemonHost, defaultDaemonPort, writeDaemonToken } from './lifecycle.js';
@@ -18,7 +18,7 @@ export interface RunDaemonOptions {
 
 export async function runDaemon(options?: RunDaemonOptions): Promise<void> {
   const startupConfig = await loadConfig();
-  await ensureDiskHeadroom(join(homedir(), '.config', 'opta', 'daemon'), {
+  await ensureDiskHeadroom(getDaemonDir(), {
     minFreeBytes: diskHeadroomMbToBytes(startupConfig.safety?.diskHeadroomMb),
   });
 

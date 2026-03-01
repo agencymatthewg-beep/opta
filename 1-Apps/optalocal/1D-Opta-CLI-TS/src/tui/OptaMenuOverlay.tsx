@@ -67,6 +67,7 @@ export function OptaMenuOverlay({
   const [showInfoPanel, setShowInfoPanel] = useState(true);
   const [pendingCommand, setPendingCommand] = useState<string | null>(null);
   const [guidedFlow, setGuidedFlow] = useState<GuidedFlowState | null>(null);
+  const [resultScrollOffset, setResultScrollOffset] = useState(0);
   const { stdout } = useStdout();
   const columns = stdout?.columns ?? process.stdout.columns ?? LAYOUT.fallbackColumns;
   const stdoutRows = stdout?.rows ?? process.stdout.rows ?? LAYOUT.fallbackRows;
@@ -201,6 +202,16 @@ export function OptaMenuOverlay({
       },
       {
         action: 'run-slash',
+        label: 'Status Check (Full)',
+        description: `Run extensive /status --full (includes VRAM & disk info)`,
+        command: '/status --full',
+        color: '#0ea5e9',
+        infoTitle: 'Extensive status diagnostic',
+        infoBody: 'Runs a full-depth check including device metrics, loaded VRAM allocations, and complete inventory checks with higher timeouts.',
+        learnMoreCommand: '/status --full',
+      },
+      {
+        action: 'run-slash',
         label: 'Doctor Check + Fix',
         description: 'Run diagnostics and auto-remediate fixable issues',
         command: '/doctor --fix',
@@ -219,6 +230,16 @@ export function OptaMenuOverlay({
         infoTitle: 'Refresh model and runtime discovery data',
         infoBody: 'Scan gives the canonical list of loaded/on-disk models and role routing, which informs benchmark and model menu actions.',
         learnMoreCommand: '/scan',
+      },
+      {
+        action: 'run-slash',
+        label: 'LMX Scan (Full)',
+        description: 'Deep inventory scan with cloud failover checks',
+        command: '/scan --full',
+        color: '#0284c7',
+        infoTitle: 'Extensive runtime scan',
+        infoBody: 'Applies higher latency thresholds to ensure all remote providers (Anthropic, Gemini) resolve successfully before completion.',
+        learnMoreCommand: '/scan --full',
       },
       {
         action: 'run-slash',
@@ -434,6 +455,15 @@ export function OptaMenuOverlay({
         color: '#a78bfa',
         infoTitle: 'Setup Wizard',
         infoBody: 'Walk through the guided setup process to reconfigure LMX connection, default model, SSH, paths, and preferences.',
+      },
+      {
+        action: 'run-slash',
+        label: 'Account Sign In',
+        description: 'Open Opta account OAuth and sync this CLI session',
+        command: '!opta account login --oauth-opta-browser --timeout 300',
+        color: '#f472b6',
+        infoTitle: 'Sign in to Opta account',
+        infoBody: 'Runs browser OAuth login in an Opta-managed session and persists local CLI account state for continuity.',
       },
       {
         action: 'run-slash',
@@ -810,11 +840,13 @@ export function OptaMenuOverlay({
   const setPage = (page: MenuPageId): void => {
     setSelectedPage(page);
     setSelectedIndex(0);
+    setResultScrollOffset(0);
   };
 
   const runMenuCommand = useCallback((command: string) => {
     if (!command || pendingCommand) return;
     setPendingCommand(command);
+    setResultScrollOffset(0);
     Promise.resolve(onRunCommand(command))
       .catch((err: unknown) => {
         console.error(`[menu] Command failed: ${errorMessage(err)}`);
@@ -908,18 +940,38 @@ export function OptaMenuOverlay({
     }
     if (input === 'k' && !key.ctrl && !key.meta) {
       setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+      setResultScrollOffset(0);
       return;
     }
     if (input === 'j' && !key.ctrl && !key.meta) {
       setSelectedIndex((prev) => (prev + 1) % items.length);
+      setResultScrollOffset(0);
       return;
     }
     if (key.upArrow) {
-      setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+      if (key.shift) {
+        setResultScrollOffset((prev) => Math.max(0, prev - 1));
+      } else {
+        setSelectedIndex((prev) => (prev - 1 + items.length) % items.length);
+        setResultScrollOffset(0);
+      }
       return;
     }
     if (key.downArrow) {
-      setSelectedIndex((prev) => (prev + 1) % items.length);
+      if (key.shift) {
+        setResultScrollOffset((prev) => prev + 1);
+      } else {
+        setSelectedIndex((prev) => (prev + 1) % items.length);
+        setResultScrollOffset(0);
+      }
+      return;
+    }
+    if (input === 'w' && !key.ctrl && !key.meta) {
+      setResultScrollOffset((prev) => Math.max(0, prev - 1));
+      return;
+    }
+    if (input === 's' && !key.ctrl && !key.meta) {
+      setResultScrollOffset((prev) => prev + 1);
       return;
     }
     if ((input === 'i' || input === '?') && !key.ctrl && !key.meta) {
@@ -993,11 +1045,15 @@ export function OptaMenuOverlay({
       ? '◕'
       : '●';
 
-  const selectedResultPreview = (selectedCommandResult?.outputSnippet ?? '')
+  const rawResultLines = (selectedCommandResult?.outputSnippet ?? '')
     .split('\n')
     .map((line) => line.trim())
-    .filter(Boolean)
-    .slice(0, 2);
+    .filter(Boolean);
+
+  const maxOffset = Math.max(0, rawResultLines.length - 8);
+  const clampedOffset = Math.min(resultScrollOffset, maxOffset);
+  const selectedResultPreview = rawResultLines.slice(clampedOffset, clampedOffset + 8);
+  const hasMoreOutput = rawResultLines.length > 8;
 
   const guidedCommandPreview = guidedFlow
     ? (buildGuidedCommand(guidedFlow.kind, guidedFlow.value) ?? '')
@@ -1092,6 +1148,7 @@ export function OptaMenuOverlay({
             pendingCommand={pendingCommand}
             selectedCommandResult={selectedCommandResult}
             selectedResultPreview={selectedResultPreview}
+            hasMoreOutput={hasMoreOutput}
             latestMenuResults={latestMenuResults}
           />
         </>

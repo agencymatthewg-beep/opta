@@ -92,7 +92,7 @@ Model management features currently in Opta CLI's plans migrate to Opta-LMX. CLI
 
 ## Existing Opta CLI Codebase Summary
 
-**Location:** `~/Synced/Opta/1-Apps/1D-Opta-CLI-TS/`
+**Location:** `~/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/`
 **Lines:** 1,692 TypeScript across 19 files
 **Status:** Agent loop (346 lines) and tools (374 lines) are complete and solid. Chat, sessions, memory, skills are stubs.
 

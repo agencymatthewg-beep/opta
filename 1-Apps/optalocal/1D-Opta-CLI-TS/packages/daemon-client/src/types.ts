@@ -4,6 +4,7 @@ import type {
   BackgroundSignal,
   ClientSubmitTurn,
   CreateSessionRequest,
+  OperationId,
   PermissionDecision,
   SessionSnapshot,
   V3Envelope,
@@ -124,13 +125,13 @@ export interface DaemonLmxDownloadResponse {
 }
 
 export type DaemonOperationSafetyClass = 'read' | 'write' | 'dangerous';
+export type DaemonOperationId = OperationId;
 
 export interface DaemonOperationDefinition {
-  id: string;
-  safety?: DaemonOperationSafetyClass;
-  description?: string;
-  inputSchema?: unknown;
-  outputSchema?: unknown;
+  id: DaemonOperationId;
+  title: string;
+  description: string;
+  safety: DaemonOperationSafetyClass;
   [key: string]: unknown;
 }
 
@@ -139,13 +140,33 @@ export interface DaemonListOperationsResponse {
 }
 
 export type DaemonOperationPayload = Record<string, unknown>;
+export type DaemonOperationExecuteBody<TPayload extends DaemonOperationPayload = DaemonOperationPayload> = {
+  input?: TPayload;
+  confirmDangerous?: boolean;
+};
+export type DaemonOperationRequestPayload<
+  TPayload extends DaemonOperationPayload = DaemonOperationPayload,
+> = TPayload | DaemonOperationExecuteBody<TPayload>;
 
-export interface DaemonRunOperationResponse<TResult = unknown> {
-  ok?: boolean;
-  result?: TResult;
-  error?: string;
-  [key: string]: unknown;
+export interface DaemonOperationError {
+  code: string;
+  message: string;
+  details?: unknown;
 }
+
+export type DaemonRunOperationResponse<TResult = unknown> =
+  | {
+      ok: true;
+      id: DaemonOperationId;
+      safety: DaemonOperationSafetyClass;
+      result: TResult;
+    }
+  | {
+      ok: false;
+      id: DaemonOperationId;
+      safety: DaemonOperationSafetyClass;
+      error: DaemonOperationError;
+    };
 
 export interface DaemonHttpApi {
   health(): Promise<DaemonHealthResponse>;
@@ -165,7 +186,7 @@ export interface DaemonHttpApi {
   listOperations(): Promise<DaemonListOperationsResponse>;
   runOperation<TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
     id: string,
-    payload?: TPayload
+    payload?: DaemonOperationRequestPayload<TPayload>
   ): Promise<DaemonRunOperationResponse<TResult>>;
   listBackground(sessionId?: string): Promise<DaemonBackgroundListResponse>;
   startBackground(payload: DaemonBackgroundStartRequest): Promise<DaemonBackgroundStatusResponse>;

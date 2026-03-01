@@ -48,7 +48,17 @@ const NOOP_RESULT: HookResult = Object.freeze({ cancelled: false });
 const DEFAULT_TIMEOUT = 10_000;
 
 /** Only these env vars are passed to hook subprocesses (security: prevents API key leaks). */
-export const ALLOWED_ENV_KEYS = new Set(['PATH', 'HOME', 'USER', 'SHELL', 'TERM', 'LANG', 'LC_ALL', 'NODE_ENV', 'TMPDIR']);
+export const ALLOWED_ENV_KEYS = new Set([
+  'PATH',
+  'HOME',
+  'USER',
+  'SHELL',
+  'TERM',
+  'LANG',
+  'LC_ALL',
+  'NODE_ENV',
+  'TMPDIR',
+]);
 
 // ── Compiled hook (internal) ────────────────────────────────────────────
 
@@ -115,15 +125,13 @@ export class HookManager {
   /**
    * Execute a single hook command with env vars from context.
    */
-  protected async runHook(
-    hook: CompiledHook,
-    context: HookContext,
-  ): Promise<HookResult> {
+  protected async runHook(hook: CompiledHook, context: HookContext): Promise<HookResult> {
     const env = this.buildEnv(context);
     const timeout = hook.timeout ?? DEFAULT_TIMEOUT;
 
     try {
-      const result = await execa('sh', ['-c', hook.command], {
+      const [shell, shellFlag] = (await import('../platform/index.js')).shellArgs();
+      const result = await execa(shell, [shellFlag, hook.command], {
         env,
         extendEnv: false,
         timeout,
@@ -190,11 +198,8 @@ export class NoOpHookManager extends HookManager {
     super([]);
   }
 
-  override async fire(
-    _event: HookEvent,
-    _context: HookContext,
-  ): Promise<HookResult> {
-    return NOOP_RESULT;
+  override fire(_event: HookEvent, _context: HookContext): Promise<HookResult> {
+    return Promise.resolve(NOOP_RESULT);
   }
 }
 

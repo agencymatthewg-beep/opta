@@ -100,7 +100,12 @@ class EmbeddingEngine:
             from mlx_embeddings.utils import generate
 
             result = generate(self._model, self._tokenizer, texts)
-            # result is an MLX array — convert to Python lists
+            # mlx-embeddings >=0.0.5 returns BaseModelOutput; extract embeddings
+            if hasattr(result, "text_embeds") and result.text_embeds is not None:
+                return result.text_embeds.tolist()  # type: ignore[no-any-return]
+            if hasattr(result, "pooler_output") and result.pooler_output is not None:
+                return result.pooler_output.tolist()  # type: ignore[no-any-return]
+            # Fallback: assume result is already an array (older versions)
             return result.tolist()  # type: ignore[no-any-return]
         except Exception as e:
             logger.error("embedding_failed", extra={"error": str(e), "num_texts": len(texts)})

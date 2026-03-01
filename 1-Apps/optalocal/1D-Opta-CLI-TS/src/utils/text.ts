@@ -1,4 +1,4 @@
-// eslint-disable-next-line no-control-regex
+ 
 const ANSI_ESCAPE_RE = /\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))/g;
 
 /**
@@ -25,7 +25,7 @@ export function sanitizeTerminalText(input: string): string {
     // Normalize tabs to spaces so table/log output remains deterministic in Ink.
     .replace(/\t/g, '  ')
     // Remove all remaining control chars except \n.
-    // eslint-disable-next-line no-control-regex
+     
     .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '')
     // Remove zero-width formatting chars that can break width estimation.
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '')
@@ -34,7 +34,7 @@ export function sanitizeTerminalText(input: string): string {
     // Space-only lines are effectively blank lines in terminal rendering.
     .replace(/^[ \t]+$/gm, '')
     // Keep user-visible spacing but cap runaway blank-line growth.
-    .replace(/\n{5,}/g, '\n\n\n\n');
+    .replace(/\n{4,}/g, '\n\n\n');
 }
 
 /**
@@ -53,7 +53,7 @@ export function sanitizeTerminalTokenChunk(input: string): string {
     .replace(/\r/g, ' ')
     .replace(/\t/g, '  ')
     // Remove control chars but preserve visible whitespace (\n and spaces).
-    // eslint-disable-next-line no-control-regex
+     
     .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '')
     .replace(/[\u200B-\u200D\u2060\uFEFF]/g, '');
 }
@@ -169,7 +169,7 @@ function formatDenseNonCodeSegment(segment: string, streaming: boolean): string 
 
   // Keep clear spacing, but avoid runaway blank vertical gaps.
   formatted = formatted
-    .replace(/\n{4,}/g, '\n\n\n')
+    .replace(/\n{3,}/g, '\n\n')
     .replace(/[ \t]+$/gm, '')
     .trim();
 
@@ -225,7 +225,7 @@ export function formatAssistantDisplayText(
 
   flushProseBuffer();
 
-  return out.join('\n').replace(/\n{4,}/g, '\n\n\n').trim();
+  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 /**
@@ -271,7 +271,7 @@ function normalizeForWidth(input: string): string {
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '')
     // Keep tabs/newlines and spaces intact for layout math.
-    // eslint-disable-next-line no-control-regex
+     
     .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g, '');
 }
 

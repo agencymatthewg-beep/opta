@@ -22,6 +22,10 @@ from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.rag.store import VectorStore
 from opta_lmx.router.strategy import TaskRouter
+from opta_lmx.security.policy_hooks import (
+    enforce_sensitive_endpoint_policy,
+    is_sensitive_admin_request,
+)
 from opta_lmx.sessions.store import SessionStore
 
 
@@ -101,6 +105,11 @@ def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -
     If security.admin_key is null in config, authentication is disabled
     (LAN-only trust model). If set, the header must match exactly.
     """
+    path = getattr(getattr(request, "url", None), "path", "")
+    method = str(getattr(request, "method", ""))
+    if path and method and is_sensitive_admin_request(path, method):
+        enforce_sensitive_endpoint_policy(request, surface="admin", action="admin_sensitive")
+
     config_key: str | None = getattr(request.app.state, "admin_key", None)
     if config_key is None:
         return  # No auth configured — trust LAN
@@ -150,6 +159,16 @@ def verify_inference_key(
         raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
+def verify_sensitive_skills_policy(request: Request) -> None:
+    """Apply optional policy hooks to skills mutation endpoints."""
+    enforce_sensitive_endpoint_policy(request, surface="skills", action="skills_execute")
+
+
+def verify_sensitive_agents_policy(request: Request) -> None:
+    """Apply optional policy hooks to agents mutation endpoints."""
+    enforce_sensitive_endpoint_policy(request, surface="agents", action="agents_run")
+
+
 # ─── Annotated type aliases for Depends() injection ────────────────────────
 
 Engine = Annotated[InferenceEngine, Depends(get_engine)]
@@ -167,6 +186,8 @@ SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
 RagStore = Annotated[VectorStore | None, Depends(get_rag_store)]
 RerankerDep = Annotated[object | None, Depends(get_reranker_engine)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]
+SkillsPolicyGuard = Annotated[None, Depends(verify_sensitive_skills_policy)]
+AgentsPolicyGuard = Annotated[None, Depends(verify_sensitive_agents_policy)]
 
 
 def get_agent_runtime(request: Request) -> object:

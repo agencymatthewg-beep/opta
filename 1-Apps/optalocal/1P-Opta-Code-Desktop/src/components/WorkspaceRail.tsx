@@ -1,6 +1,12 @@
 import { useRef, useState } from "react";
-import { AlertTriangle, Copy, Search, X } from "lucide-react";
+import { AlertTriangle, Copy, Search, X, Pin, PinOff } from "lucide-react";
+import { useLocalStorage } from "../hooks/useLocalStorage";
 import type { DaemonSessionSummary } from "../types";
+import {
+  getBrowserVisualShortLabel,
+  type BrowserVisualState,
+  type BrowserVisualSummary,
+} from "../lib/browserVisualState";
 
 interface WorkspaceRailProps {
   sessions: DaemonSessionSummary[];
@@ -8,6 +14,7 @@ interface WorkspaceRailProps {
   selectedWorkspace: string;
   streamingBySession?: Record<string, boolean>;
   pendingPermissionsBySession?: Record<string, unknown[]>;
+  browserVisualBySession?: Record<string, BrowserVisualSummary>;
   onSelectWorkspace: (workspace: string) => void;
   onSelectSession: (sessionId: string) => void;
   onRemoveSession?: (sessionId: string) => void;
@@ -19,18 +26,30 @@ export function WorkspaceRail({
   selectedWorkspace,
   streamingBySession = {},
   pendingPermissionsBySession = {},
+  browserVisualBySession = {},
   onSelectWorkspace,
   onSelectSession,
   onRemoveSession,
 }: WorkspaceRailProps) {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [pinnedWorkspaces, setPinnedWorkspaces] = useLocalStorage<string[]>("opta:pinnedWorkspaces", []);
   const copyTimerRef = useRef<number | null>(null);
 
-  const workspaces = [
+  const dynamicWorkspaces = [
     "all",
     ...new Set(sessions.map((session) => session.workspace)),
   ];
+
+  // Combine pinned and dynamic distinctively
+  const workspaces = [...new Set(["all", ...pinnedWorkspaces, ...dynamicWorkspaces])];
+
+  const handleTogglePin = (workspace: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setPinnedWorkspaces(prev =>
+      prev.includes(workspace) ? prev.filter(w => w !== workspace) : [...prev, workspace]
+    );
+  };
 
   const byWorkspace =
     selectedWorkspace === "all"
@@ -39,10 +58,10 @@ export function WorkspaceRail({
 
   const visible = search.trim()
     ? byWorkspace.filter(
-        (session) =>
-          session.title.toLowerCase().includes(search.toLowerCase()) ||
-          session.sessionId.includes(search),
-      )
+      (session) =>
+        session.title.toLowerCase().includes(search.toLowerCase()) ||
+        session.sessionId.includes(search),
+    )
     : byWorkspace;
 
   const copyId = (sessionId: string, event: React.MouseEvent) => {
@@ -61,16 +80,31 @@ export function WorkspaceRail({
       </header>
 
       <div className="workspace-chips">
-        {workspaces.map((workspace) => (
-          <button
-            key={workspace}
-            type="button"
-            className={workspace === selectedWorkspace ? "active" : ""}
-            onClick={() => onSelectWorkspace(workspace)}
-          >
-            {workspace}
-          </button>
-        ))}
+        {workspaces.map((workspace) => {
+          const isPinned = pinnedWorkspaces.includes(workspace);
+          const isAll = workspace === "all";
+          return (
+            <div key={workspace} className={`workspace-chip-row ${workspace === selectedWorkspace ? "active" : ""}`}>
+              <button
+                type="button"
+                className={`workspace-chip-btn ${workspace === selectedWorkspace ? "active" : ""}`}
+                onClick={() => onSelectWorkspace(workspace)}
+              >
+                {workspace}
+              </button>
+              {!isAll && (
+                <button
+                  type="button"
+                  className="workspace-pin-btn"
+                  onClick={(e) => handleTogglePin(workspace, e)}
+                  title={isPinned ? "Unpin Project" : "Pin Project"}
+                >
+                  {isPinned ? <Pin size={12} fill="currentColor" /> : <PinOff size={12} />}
+                </button>
+              )}
+            </div>
+          );
+        })}
       </div>
 
       <div className="rail-search-wrap">
@@ -94,11 +128,20 @@ export function WorkspaceRail({
           visible.map((session) => {
             const isSessionStreaming = streamingBySession[session.sessionId] ?? false;
             const pendingCount = pendingPermissionsBySession[session.sessionId]?.length ?? 0;
+            const browserSummary = browserVisualBySession[session.sessionId];
+            const browserState: BrowserVisualState =
+              browserSummary?.state ??
+              (pendingCount > 0 ? "blocked" : isSessionStreaming ? "working" : "idle");
+            const showBrowserCue =
+              browserState === "active" ||
+              browserState === "blocked" ||
+              browserState === "working";
+            const browserLabel = getBrowserVisualShortLabel(browserState);
 
             return (
               <div
                 key={session.sessionId}
-                className={`session-row${session.sessionId === activeSessionId ? " active" : ""}${isSessionStreaming ? " session-row--streaming" : ""}`}
+                className={`session-row${session.sessionId === activeSessionId ? " active" : ""}${isSessionStreaming ? " session-row--streaming" : ""}${showBrowserCue ? ` session-row--browser-${browserState}` : ""}`}
               >
                 <button
                   type="button"
@@ -122,6 +165,15 @@ export function WorkspaceRail({
                       >
                         <AlertTriangle size={10} aria-hidden="true" />
                         {pendingCount}
+                      </span>
+                    )}
+                    {showBrowserCue && (
+                      <span
+                        className={`session-browser-chip session-browser-chip-${browserState}`}
+                        aria-label={`Browser ${browserLabel}`}
+                        title={`Browser ${browserSummary?.activityText ?? browserLabel}`}
+                      >
+                        {browserLabel}
                       </span>
                     )}
                   </span>

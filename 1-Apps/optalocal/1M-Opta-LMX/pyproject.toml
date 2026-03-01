@@ -36,7 +36,7 @@ dev = [
     "openai>=1.0",
 ]
 embeddings = [
-    "mlx-embeddings>=0.1.0",
+    "mlx-embeddings>=0.0.5",
 ]
 gguf = [
     "llama-cpp-python>=0.3.0",

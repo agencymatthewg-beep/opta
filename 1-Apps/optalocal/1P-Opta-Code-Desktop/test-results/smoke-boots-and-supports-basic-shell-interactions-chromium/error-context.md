@@ -1,0 +1,68 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e4]:
+  - banner [ref=e5]:
+    - generic [ref=e6]:
+      - paragraph [ref=e7]: Operator cockpit for parallel sessions, model control, and daemon telemetry.
+      - generic [ref=e8]:
+        - generic [ref=e9]: Offline
+        - generic [ref=e10]: 0 tracked sessions
+        - generic [ref=e11]: Browser offline
+        - generic [ref=e12]: Chat mode
+        - generic [ref=e13]: Runtime hidden
+      - generic [ref=e14]:
+        - paragraph [ref=e15]:
+          - text: Run
+          - code [ref=e16]: opta daemon start
+          - text: to connect
+        - paragraph [ref=e17]: "Daemon request failed (401): {\"error\":\"Unauthorized\"}"
+    - generic:
+      - generic: ".·:·. ██████╗ ██████╗ ████████╗ █████╗ : O : ██╔═══██╗ ██╔══██╗ ╚══██╔══╝██╔══██╗ '·:·' ██║ ██║ ██████╔╝ ██║ ███████║ ╚██████╔╝ ██╔═══╝ ██║ ██║ ██║ ╚═════╝ ╚═╝ ╚═╝ ╚═╝ ╚═╝"
+    - generic [ref=e28]:
+      - button "Sessions" [ref=e29] [cursor=pointer]
+      - button "Models" [ref=e30] [cursor=pointer]
+      - button "Operations" [ref=e31] [cursor=pointer]
+      - button "Jobs" [ref=e32] [cursor=pointer]
+      - button "Logs" [ref=e33] [cursor=pointer]
+      - button "Palette (Cmd/Ctrl+K)" [ref=e34] [cursor=pointer]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - button "💻" [ref=e37] [cursor=pointer]
+        - button "⚙️" [ref=e38] [cursor=pointer]
+      - link "Open Opta Accounts portal" [ref=e39] [cursor=pointer]:
+        - /url: https://accounts.optalocal.com
+        - text: Accounts
+  - main [ref=e40]:
+    - complementary [ref=e41]:
+      - heading "Workspaces" [level=2] [ref=e43]
+      - button "all" [ref=e46] [cursor=pointer]
+      - generic [ref=e47]:
+        - img
+        - searchbox "Filter sessions" [ref=e48]
+      - paragraph [ref=e50]: No sessions in this workspace.
+    - generic [ref=e51]:
+      - generic [ref=e53]:
+        - generic [ref=e54]:
+          - heading "Session timeline" [level=2] [ref=e55]
+          - paragraph [ref=e56]: No active session
+          - paragraph [ref=e57]: "Browser activity: offline"
+        - paragraph [ref=e59]: No timeline events yet. Send a prompt to begin.
+      - generic [ref=e61]:
+        - generic [ref=e68]: Offline
+        - generic [ref=e71]: Browser Offline
+  - generic [ref=e73]:
+    - generic [ref=e74]:
+      - generic [ref=e75]: "State: disconnected"
+      - generic [ref=e76]: "Sessions: 0"
+      - generic [ref=e77]: "Browser: offline"
+      - generic [ref=e78]: "Active: none"
+    - contentinfo [ref=e79]:
+      - textbox "Select or create a session to start..." [disabled] [ref=e80]
+      - generic [ref=e81]:
+        - group "Submission mode" [ref=e82]:
+          - button "Chat" [ref=e83] [cursor=pointer]
+          - button "Do" [ref=e84] [cursor=pointer]
+        - generic [ref=e85]: Cmd/Ctrl + Enter
+        - button "Send" [disabled] [ref=e86] [cursor=pointer]
+```

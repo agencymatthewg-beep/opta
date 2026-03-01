@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import React from 'react';
 import { render } from 'ink-testing-library';
 import { Header } from '../../src/tui/Header.js';
+import { OPTA_BRAND_GLYPH } from '../../src/ui/brand.js';
 
 describe('Header', () => {
   it('should show model name and session ID', () => {
@@ -18,6 +19,7 @@ describe('Header', () => {
       <Header model="test" sessionId="abc12345" connectionStatus={true} />
     );
     expect(lastFrame()).toContain('Opta');
+    expect(lastFrame()).toContain(OPTA_BRAND_GLYPH);
   });
 
   it('should truncate model name and hide session ID when compact', () => {

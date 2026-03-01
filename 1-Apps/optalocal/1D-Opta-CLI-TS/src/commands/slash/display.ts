@@ -18,20 +18,56 @@ const HELP_AREA_ORDER = [
 ] as const;
 
 const MODEL_COMMANDS = new Set([
-  'model', 'models', 'scan', 'load', 'unload', 'serve', 'memory', 'metrics', 'benchmark',
+  'model',
+  'models',
+  'scan',
+  'load',
+  'unload',
+  'serve',
+  'memory',
+  'metrics',
+  'benchmark',
 ]);
 
 const CODING_COMMANDS = new Set([
-  'plan', 'review', 'research', 'agent', 'format', 'editor', 'image', 'undo', 'checkpoint', 'compact',
+  'plan',
+  'review',
+  'research',
+  'agent',
+  'format',
+  'editor',
+  'image',
+  'undo',
+  'checkpoint',
+  'compact',
 ]);
 
 const SESSION_COMMANDS = new Set([
-  'exit', 'clear', 'save', 'share', 'export', 'sessions', 'init', 'tag', 'rename',
+  'exit',
+  'clear',
+  'save',
+  'share',
+  'export',
+  'sessions',
+  'init',
+  'tag',
+  'rename',
 ]);
 
 const MANAGEMENT_COMMANDS = new Set([
-  'config', 'doctor', 'mcp', 'quickfix', 'permissions', 'skills', 'keys', 'theme', 'sidebar',
-  'update', 'server', 'daemon', 'completions',
+  'config',
+  'doctor',
+  'mcp',
+  'quickfix',
+  'permissions',
+  'skills',
+  'keys',
+  'theme',
+  'sidebar',
+  'update',
+  'server',
+  'daemon',
+  'completions',
 ]);
 
 function classifyHelpArea(def: SlashCommandDef): string {
@@ -57,14 +93,13 @@ export function buildHelpSections(commands: SlashCommandDef[]): PaneMenuSection[
     id: area.id,
     label: area.label,
     color: area.color,
-    items: (area.id === 'all'
-      ? defs
-      : defs.filter((def) => classifyHelpArea(def) === area.id)
-    ).map((def) => ({
-      id: def.command,
-      label: `/${def.command}`,
-      description: def.description,
-    })),
+    items: (area.id === 'all' ? defs : defs.filter((def) => classifyHelpArea(def) === area.id)).map(
+      (def) => ({
+        id: def.command,
+        label: `/${def.command}`,
+        description: def.description,
+      })
+    ),
   }));
 
   return base.filter((s) => s.items.length > 0);
@@ -126,15 +161,21 @@ async function interactiveHelpBrowser(ctx: SlashContext): Promise<boolean> {
 
     let next: 'back' | 'cmd-help' | 'exit';
     try {
-      const picked = await runMenuPrompt((context) =>
-        select<'back' | 'cmd-help' | 'exit'>({
-          message: chalk.dim('Next'),
-          choices: [
-            { name: 'Back to navigator', value: 'back' },
-            { name: `Show /${selected.command} --help`, value: 'cmd-help' },
-            { name: 'Exit help', value: 'exit' },
-          ],
-        }, context), 'select');
+      const picked = await runMenuPrompt(
+        (context) =>
+          select<'back' | 'cmd-help' | 'exit'>(
+            {
+              message: chalk.dim('Next'),
+              choices: [
+                { name: 'Back to navigator', value: 'back' },
+                { name: `Show /${selected.command} --help`, value: 'cmd-help' },
+                { name: 'Exit help', value: 'exit' },
+              ],
+            },
+            context
+          ),
+        'select'
+      );
       if (!picked) continue;
       next = picked;
     } catch {
@@ -174,8 +215,7 @@ const helpHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
     { label: 'Server', category: 'server' },
   ];
 
-  const cmdLine = (cmd: string, desc: string) =>
-    chalk.cyan(cmd.padEnd(18)) + chalk.dim(desc);
+  const cmdLine = (cmd: string, desc: string) => chalk.cyan(cmd.padEnd(18)) + chalk.dim(desc);
 
   const lines: string[] = [];
   for (const group of groups) {
@@ -190,14 +230,18 @@ const helpHandler = async (args: string, ctx: SlashContext): Promise<SlashResult
   if (lines[lines.length - 1] === '') lines.pop();
 
   console.log('\n' + box('Commands', lines));
-  console.log(chalk.dim(`  Tip: type / to browse commands interactively, or ${chalk.cyan('/help menu')} for area-first navigation\n`));
+  console.log(
+    chalk.dim(
+      `  Tip: type / to browse commands interactively, or ${chalk.cyan('/help menu')} for area-first navigation\n`
+    )
+  );
   return 'handled';
 };
 
-const expandHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const expandHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   if (!ctx.chatState.lastThinkingRenderer?.hasThinking()) {
     console.log(chalk.dim('  No thinking to display'));
-    return 'handled';
+    return Promise.resolve('handled');
   }
   if (ctx.chatState.thinkingExpanded) {
     console.log(ctx.chatState.lastThinkingRenderer.getCollapsedSummary());
@@ -206,7 +250,7 @@ const expandHandler = async (_args: string, ctx: SlashContext): Promise<SlashRes
     console.log(ctx.chatState.lastThinkingRenderer.getExpandedView());
     ctx.chatState.thinkingExpanded = true;
   }
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 const themeHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult> => {
@@ -215,11 +259,19 @@ const themeHandler = async (args: string, _ctx: SlashContext): Promise<SlashResu
   if (!args) {
     const themes = listThemes();
     const current = getTheme();
-    console.log('\n' + box('Themes', themes.map(t =>
-      (t.name === current.name ? chalk.green('\u25cf ') : chalk.dim('  ')) +
-      chalk.cyan(t.name.padEnd(14)) + chalk.dim(t.description) +
-      (t.custom ? chalk.magenta(' (custom)') : '')
-    )));
+    console.log(
+      '\n' +
+        box(
+          'Themes',
+          themes.map(
+            (t) =>
+              (t.name === current.name ? chalk.green('\u25cf ') : chalk.dim('  ')) +
+              chalk.cyan(t.name.padEnd(14)) +
+              chalk.dim(t.description) +
+              (t.custom ? chalk.magenta(' (custom)') : '')
+          )
+        )
+    );
     console.log(chalk.dim('  Usage: /theme <name>'));
     console.log(chalk.dim('  Custom: ~/.config/opta/themes/*.json or .opta/themes/*.json\n'));
     return 'handled';
@@ -234,10 +286,10 @@ const themeHandler = async (args: string, _ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
-const sidebarHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+const sidebarHandler = (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
   // Toggle sidebar visibility (TUI mode only)
   console.log(chalk.dim('  Sidebar toggle: Ctrl+B in TUI mode'));
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 const keysHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
@@ -251,7 +303,7 @@ const keysHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
-const formatHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+const formatHandler = (args: string, ctx: SlashContext): Promise<SlashResult> => {
   const validFormats = ['text', 'json', 'markdown'];
   const state = ctx.chatState as unknown as Record<string, unknown>;
   const current = (state.outputFormat as string) || 'text';
@@ -259,17 +311,19 @@ const formatHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   if (!args) {
     console.log(`  Output format: ${chalk.cyan(current)}`);
     console.log(chalk.dim(`  Usage: /format <${validFormats.join('|')}>`));
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   if (!validFormats.includes(args)) {
-    console.log(chalk.yellow(`  Unknown format: ${args}`) + chalk.dim(` (try: ${validFormats.join(', ')})`));
-    return 'handled';
+    console.log(
+      chalk.yellow(`  Unknown format: ${args}`) + chalk.dim(` (try: ${validFormats.join(', ')})`)
+    );
+    return Promise.resolve('handled');
   }
 
   state.outputFormat = args;
   console.log(chalk.green('\u2713') + ` Output format: ${chalk.cyan(args)}`);
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 export const displayCommands: SlashCommandDef[] = [

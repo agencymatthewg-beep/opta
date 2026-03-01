@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { writeAuditEvent } from '@/lib/api/audit';
 import { requireScopeOrPrivilegedRole } from '@/lib/api/authz';
 
 export async function POST() {
@@ -26,6 +27,14 @@ export async function POST() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const { error: signOutError } = await supabase.auth.signOut({ scope: 'global' });
+  await writeAuditEvent(supabase, {
+    userId: user.id,
+    eventType: 'session.revoke_all',
+    riskLevel: 'medium',
+    decision: 'allow',
+    context: { revokedAt: now },
+  });
+
   if (signOutError) {
     return NextResponse.json({ ok: true, warning: signOutError.message });
   }

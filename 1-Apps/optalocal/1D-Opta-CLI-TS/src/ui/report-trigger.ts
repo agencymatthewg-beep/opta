@@ -14,7 +14,12 @@ import { writeFile, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { hostname } from 'node:os';
 import { execa } from 'execa';
-import { renderGlassReport, type ReportSection, type StatItem, type TimelineEvent } from './html-report.js';
+import {
+  renderGlassReport,
+  type ReportSection,
+  type StatItem,
+  type TimelineEvent,
+} from './html-report.js';
 import type { TurnStats } from '../tui/adapter.js';
 import type { Session } from '../memory/store.js';
 import type { OptaConfig } from '../core/config.js';
@@ -66,7 +71,7 @@ export type ReportTriggerReason = 'benchmark' | 'plan' | 'autonomous' | 'manual'
 export function shouldAutoReport(
   turnStats: TurnStats,
   mode: string | undefined,
-  reportConfig: ReportConfig,
+  reportConfig: ReportConfig
 ): ReportTriggerReason | null {
   if (!reportConfig.enabled) return null;
 
@@ -165,7 +170,9 @@ function extractToolTimeline(session: Session): TimelineEvent[] {
           if (typeof path === 'string') {
             detail = path.length > 80 ? path.slice(0, 77) + '...' : path;
           }
-        } catch { /* ignore parse errors */ }
+        } catch {
+          /* ignore parse errors */
+        }
 
         events.push({
           time: `#${toolIndex}`,
@@ -235,7 +242,7 @@ export function buildSessionReportSections(
   session: Session,
   turnStats: TurnStats,
   reason: ReportTriggerReason,
-  gitChanges: GitChanges,
+  gitChanges: GitChanges
 ): ReportSection[] {
   const sections: ReportSection[] = [];
 
@@ -250,7 +257,9 @@ export function buildSessionReportSections(
   // Prompt for sentence derivation
   const userMessages = (session.messages ?? []).filter((m) => m.role === 'user');
   const firstPrompt = userMessages[0]
-    ? (typeof userMessages[0].content === 'string' ? userMessages[0].content : '')
+    ? typeof userMessages[0].content === 'string'
+      ? userMessages[0].content
+      : ''
     : '';
   const sentenceInput: ResponseIntentSentenceInput = {
     ...intentInput,
@@ -309,7 +318,8 @@ export function buildSessionReportSections(
   }
 
   // §4 — File changes
-  const totalChanges = gitChanges.created.length + gitChanges.modified.length + gitChanges.deleted.length;
+  const totalChanges =
+    gitChanges.created.length + gitChanges.modified.length + gitChanges.deleted.length;
   if (totalChanges > 0) {
     sections.push({ type: 'divider' });
     sections.push({
@@ -353,7 +363,7 @@ export function buildSessionReportSections(
   sections.push({ type: 'divider' });
   sections.push({
     type: 'section-header',
-    number: String(totalChanges > 0 ? '07' : '05').padStart(2, '0'),
+    number: (totalChanges > 0 ? '07' : '05').padStart(2, '0'),
     title: 'Summary',
   });
   sections.push({
@@ -364,19 +374,17 @@ export function buildSessionReportSections(
   return sections;
 }
 
-export function buildPlanReportSections(
-  session: Session,
-  turnStats: TurnStats,
-): ReportSection[] {
+export function buildPlanReportSections(session: Session, turnStats: TurnStats): ReportSection[] {
   const sections: ReportSection[] = [];
 
   // Extract the final assistant message as the plan content
   const assistantMsgs = (session.messages ?? []).filter((m) => m.role === 'assistant');
-  const planText = assistantMsgs.length > 0
-    ? (typeof assistantMsgs[assistantMsgs.length - 1]!.content === 'string'
-        ? assistantMsgs[assistantMsgs.length - 1]!.content as string
-        : '')
-    : '';
+  const planText =
+    assistantMsgs.length > 0
+      ? typeof assistantMsgs[assistantMsgs.length - 1]!.content === 'string'
+        ? (assistantMsgs[assistantMsgs.length - 1]!.content as string)
+        : ''
+      : '';
 
   // Stats
   sections.push({
@@ -427,19 +435,21 @@ export function buildPlanReportSections(
 // ── Write + Open ─────────────────────────────────────────────────
 
 function slugify(text: string, maxLen = 48): string {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, maxLen)
-    .replace(/-+$/g, '') || 'report';
+  return (
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, maxLen)
+      .replace(/-+$/g, '') || 'report'
+  );
 }
 
 export async function writeAndOpenReport(
   html: string,
   outputDir: string,
   slug: string,
-  autoOpen: boolean,
+  autoOpen: boolean
 ): Promise<string> {
   await mkdir(outputDir, { recursive: true });
 
@@ -451,7 +461,9 @@ export async function writeAndOpenReport(
 
   if (autoOpen) {
     // Fire-and-forget — don't block on browser opening
-    execa('open', [filePath], { reject: false }).catch(() => { /* ignore */ });
+    execa('open', [filePath], { reject: false }).catch(() => {
+      /* ignore */
+    });
   }
 
   return filePath;
@@ -470,7 +482,7 @@ export async function maybeGenerateReport(
   turnStats: TurnStats,
   config: OptaConfig,
   mode?: string,
-  reason?: ReportTriggerReason,
+  reason?: ReportTriggerReason
 ): Promise<string | null> {
   const rc = resolveReportConfig(config);
 
@@ -511,7 +523,7 @@ export async function maybeGenerateReport(
 export async function generateManualReport(
   session: Session,
   turnStats: TurnStats,
-  config: OptaConfig,
+  config: OptaConfig
 ): Promise<string> {
   const rc = resolveReportConfig(config);
   const cwd = session.cwd || process.cwd();

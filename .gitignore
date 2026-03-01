@@ -170,3 +170,12 @@ __pycache__/
 
 # Session / local logs
 12-Session-Logs/
+
+# OpenClaw/Claude transient runtime
+.claude/worktrees/
+1-Apps/.opta/
+1-Apps/optalocal/.opta/
+
+# Screenshots / generated captures in root apps index area
+1-Apps/*.png
+1-Apps/*.html

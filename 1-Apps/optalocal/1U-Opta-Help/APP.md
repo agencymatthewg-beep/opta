@@ -29,3 +29,5 @@ npm install
 npm run dev     # http://localhost:3006
 npm run build   # Static export to out/
 ```
+
+Canonical taxonomy: `../docs/PRODUCT-MODEL.md` (Opta Local = 3 core apps; websites are surfaces).

@@ -141,6 +141,10 @@ class TestRerankerEngine:
 
 async def test_rerank_no_backend(client: AsyncClient) -> None:
     """Returns 503 when no reranking backend is configured."""
+    app = client._transport.app  # type: ignore[union-attr]
+    app.state.remote_reranking = None
+    app.state.reranker_engine = None
+
     resp = await client.post("/v1/rerank", json={
         "model": "jina-reranker",
         "query": "what is Python",
@@ -214,7 +218,28 @@ async def test_rerank_remote_failure_skip(client: AsyncClient) -> None:
 
 
 async def test_rerank_remote_failure_local_fallback(client: AsyncClient) -> None:
-    """Remote failure with local fallback falls through to 503 (no local engine yet)."""
+    """Remote failure with local fallback returns 503 when local engine is unavailable."""
+    app = client._transport.app  # type: ignore[union-attr]
+
+    mock_remote = AsyncMock(spec=HelperNodeClient)
+    mock_remote.rerank = AsyncMock(
+        side_effect=HelperNodeError("Connection refused", fallback="local"),
+    )
+    mock_remote.url = "http://192.168.188.21:1234"
+    app.state.remote_reranking = mock_remote
+    app.state.reranker_engine = None
+
+    resp = await client.post("/v1/rerank", json={
+        "model": "jina-reranker",
+        "query": "test",
+        "documents": ["doc1"],
+    })
+    assert resp.status_code == 503
+    assert resp.json()["error"]["code"] == "reranking_unavailable"
+
+
+async def test_rerank_remote_failure_local_fallback_success(client: AsyncClient) -> None:
+    """Remote failure with local fallback uses local reranker engine."""
     app = client._transport.app  # type: ignore[union-attr]
 
     mock_remote = AsyncMock(spec=HelperNodeClient)
@@ -224,13 +249,66 @@ async def test_rerank_remote_failure_local_fallback(client: AsyncClient) -> None
     mock_remote.url = "http://192.168.188.21:1234"
     app.state.remote_reranking = mock_remote
 
+    mock_local = MagicMock()
+    mock_local.rerank = MagicMock(return_value=[
+        {"index": 1, "score": 0.93},
+        {"index": 0, "score": 0.61},
+    ])
+    mock_local.model_id = "local-reranker-v1"
+    app.state.reranker_engine = mock_local
+
     resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
+        "model": "ignored-when-local",
+        "query": "search query",
+        "documents": ["doc one", "doc two"],
+        "top_n": 99,
+    })
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"] == "local-reranker-v1"
+    assert data["results"][0]["index"] == 1
+    assert data["results"][0]["relevance_score"] == 0.93
+    assert data["results"][0]["document"]["text"] == "doc two"
+    assert data["results"][1]["index"] == 0
+    assert data["results"][1]["document"]["text"] == "doc one"
+    assert data["usage"]["total_tokens"] > 0
+    mock_remote.rerank.assert_called_once_with(
+        query="search query", documents=["doc one", "doc two"], top_n=2,
+    )
+    mock_local.rerank.assert_called_once_with(
+        "search query", ["doc one", "doc two"], top_n=2,
+    )
+
+
+async def test_rerank_local_only_backend(client: AsyncClient) -> None:
+    """Uses local reranker when no remote helper is configured."""
+    app = client._transport.app  # type: ignore[union-attr]
+    app.state.remote_reranking = None
+
+    mock_local = MagicMock()
+    mock_local.rerank = MagicMock(return_value=[
+        {"index": 0, "score": 0.77},
+    ])
+    mock_local.model_id = "local-only-reranker"
+    app.state.reranker_engine = mock_local
+
+    resp = await client.post("/v1/rerank", json={
+        "model": "request-model",
         "query": "test",
         "documents": ["doc1"],
     })
-    # Falls through to 503 since no local reranking engine exists
-    assert resp.status_code == 503
+
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["model"] == "local-only-reranker"
+    assert data["results"] == [{
+        "index": 0,
+        "relevance_score": 0.77,
+        "document": {"text": "doc1"},
+    }]
+    assert data["usage"]["total_tokens"] > 0
+    mock_local.rerank.assert_called_once_with("test", ["doc1"], top_n=None)
 
 
 async def test_rerank_top_n_clamped(client: AsyncClient) -> None:

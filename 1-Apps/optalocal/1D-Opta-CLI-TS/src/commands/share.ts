@@ -3,7 +3,7 @@ export type ExportFormat = 'markdown' | 'json' | 'text';
 interface ExportInput {
   id: string;
   model: string;
-  messages: Array<{ role: string; content: string | unknown }>;
+  messages: Array<{ role: string; content: unknown }>;
   title?: string;
   created?: string;
   toolCallCount?: number;
@@ -12,19 +12,23 @@ interface ExportInput {
 export function formatSessionExport(session: ExportInput, format: ExportFormat): string {
   switch (format) {
     case 'json':
-      return JSON.stringify({
-        id: session.id,
-        model: session.model,
-        title: session.title,
-        created: session.created ?? new Date().toISOString(),
-        messages: session.messages
-          .filter(m => m.role !== 'system')
-          .map(m => ({
-            role: m.role,
-            content: typeof m.content === 'string' ? m.content : '[multimodal]',
-          })),
-        toolCallCount: session.toolCallCount ?? 0,
-      }, null, 2);
+      return JSON.stringify(
+        {
+          id: session.id,
+          model: session.model,
+          title: session.title,
+          created: session.created ?? new Date().toISOString(),
+          messages: session.messages
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({
+              role: m.role,
+              content: typeof m.content === 'string' ? m.content : '[multimodal]',
+            })),
+          toolCallCount: session.toolCallCount ?? 0,
+        },
+        null,
+        2
+      );
 
     case 'text': {
       const lines: string[] = [];
@@ -42,7 +46,9 @@ export function formatSessionExport(session: ExportInput, format: ExportFormat):
           for (const part of m.content as Array<{ type: string; image_url?: { url?: string } }>) {
             if (part.type === 'image_url') {
               const url = part.image_url?.url;
-              lines.push(`[Image: ${url?.startsWith('data:') ? 'embedded base64' : url || 'unknown'}]`);
+              lines.push(
+                `[Image: ${url?.startsWith('data:') ? 'embedded base64' : url || 'unknown'}]`
+              );
             }
           }
         }

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 from collections.abc import AsyncIterator
@@ -18,6 +19,19 @@ from opta_lmx.inference.tool_parser import StreamChunk
 logger = logging.getLogger(__name__)
 
 
+def _dump_chat_chunk_json(
+    chunk: ChatCompletionChunk,
+    *,
+    include_logprobs_placeholder: bool,
+) -> str:
+    """Serialize a chunk and inject OpenAI-compatible logprobs placeholders."""
+    payload = chunk.model_dump()
+    if include_logprobs_placeholder:
+        for choice in payload.get("choices", []):
+            choice["logprobs"] = None
+    return json.dumps(payload)
+
+
 async def format_sse_stream(
     token_stream: AsyncIterator[str],
     request_id: str,
@@ -25,6 +39,12 @@ async def format_sse_stream(
     max_tokens: int | None = None,
     include_usage: bool = False,
     prompt_tokens: int = 0,
+    *,
+    choice_index: int = 0,
+    emit_done: bool = True,
+    usage_accumulator: dict[str, int] | None = None,
+    created: int | None = None,
+    include_logprobs_placeholder: bool = False,
 ) -> AsyncIterator[str]:
     """Convert a token stream to OpenAI SSE format.
 
@@ -45,7 +65,8 @@ async def format_sse_stream(
     """
     from opta_lmx.api.inference import _StreamEndMarker
 
-    created = int(time.time())
+    if created is None:
+        created = int(time.time())
     completion_tokens = 0
     hit_max_tokens = False
 
@@ -56,12 +77,20 @@ async def format_sse_stream(
         model=model,
         choices=[
             ChunkChoice(
+                index=choice_index,
                 delta=DeltaMessage(role="assistant", content=""),
                 finish_reason=None,
             )
         ],
     )
-    yield f"data: {first_chunk.model_dump_json()}\n\n"
+    yield (
+        "data: "
+        + _dump_chat_chunk_json(
+            first_chunk,
+            include_logprobs_placeholder=include_logprobs_placeholder,
+        )
+        + "\n\n"
+    )
 
     # Content chunks — wrapped in try/except for GUARDRAIL G-LMX-05
     try:
@@ -78,12 +107,20 @@ async def format_sse_stream(
                 model=model,
                 choices=[
                     ChunkChoice(
+                        index=choice_index,
                         delta=DeltaMessage(content=item),
                         finish_reason=None,
                     )
                 ],
             )
-            yield f"data: {chunk.model_dump_json()}\n\n"
+            yield (
+                "data: "
+                + _dump_chat_chunk_json(
+                    chunk,
+                    include_logprobs_placeholder=include_logprobs_placeholder,
+                )
+                + "\n\n"
+            )
     except Exception as e:
         logger.error(
             "stream_mid_generation_error",
@@ -97,12 +134,20 @@ async def format_sse_stream(
             model=model,
             choices=[
                 ChunkChoice(
+                    index=choice_index,
                     delta=DeltaMessage(content=f"\n\n[Error: {e}]"),
                     finish_reason=None,
                 )
             ],
         )
-        yield f"data: {error_chunk.model_dump_json()}\n\n"
+        yield (
+            "data: "
+            + _dump_chat_chunk_json(
+                error_chunk,
+                include_logprobs_placeholder=include_logprobs_placeholder,
+            )
+            + "\n\n"
+        )
 
     # Determine finish_reason: use authoritative hit_max_tokens from end marker,
     # fall back to count-based check if marker was never received
@@ -117,12 +162,28 @@ async def format_sse_stream(
         model=model,
         choices=[
             ChunkChoice(
+                index=choice_index,
                 delta=DeltaMessage(),
                 finish_reason=finish_reason,
             )
         ],
     )
-    yield f"data: {final_chunk.model_dump_json()}\n\n"
+    yield (
+        "data: "
+        + _dump_chat_chunk_json(
+            final_chunk,
+            include_logprobs_placeholder=include_logprobs_placeholder,
+        )
+        + "\n\n"
+    )
+
+    if usage_accumulator is not None:
+        usage_accumulator["prompt_tokens"] = (
+            usage_accumulator.get("prompt_tokens", 0) + prompt_tokens
+        )
+        usage_accumulator["completion_tokens"] = (
+            usage_accumulator.get("completion_tokens", 0) + completion_tokens
+        )
 
     # Optional usage chunk — emitted when stream_options.include_usage=True
     if include_usage:
@@ -142,7 +203,8 @@ async def format_sse_stream(
         yield f"data: {usage_chunk.model_dump_json()}\n\n"
 
     # Done sentinel
-    yield "data: [DONE]\n\n"
+    if emit_done:
+        yield "data: [DONE]\n\n"
 
 
 async def format_sse_tool_stream(
@@ -152,6 +214,12 @@ async def format_sse_tool_stream(
     max_tokens: int | None = None,
     include_usage: bool = False,
     prompt_tokens: int = 0,
+    *,
+    choice_index: int = 0,
+    emit_done: bool = True,
+    usage_accumulator: dict[str, int] | None = None,
+    created: int | None = None,
+    include_logprobs_placeholder: bool = False,
 ) -> AsyncIterator[str]:
     """Convert a StreamChunk stream to OpenAI SSE format with tool call support.
 
@@ -170,7 +238,8 @@ async def format_sse_tool_stream(
     """
     from opta_lmx.api.inference import _StreamEndMarker
 
-    created = int(time.time())
+    if created is None:
+        created = int(time.time())
     saw_tool_calls = False
     completion_tokens = 0
     hit_max_tokens = False
@@ -182,12 +251,20 @@ async def format_sse_tool_stream(
         model=model,
         choices=[
             ChunkChoice(
+                index=choice_index,
                 delta=DeltaMessage(role="assistant", content=""),
                 finish_reason=None,
             )
         ],
     )
-    yield f"data: {first_chunk.model_dump_json()}\n\n"
+    yield (
+        "data: "
+        + _dump_chat_chunk_json(
+            first_chunk,
+            include_logprobs_placeholder=include_logprobs_placeholder,
+        )
+        + "\n\n"
+    )
 
     try:
         async for stream_chunk in chunk_stream:
@@ -205,12 +282,20 @@ async def format_sse_tool_stream(
                     model=model,
                     choices=[
                         ChunkChoice(
+                            index=choice_index,
                             delta=DeltaMessage(content=stream_chunk.content),
                             finish_reason=None,
                         )
                     ],
                 )
-                yield f"data: {chunk.model_dump_json()}\n\n"
+                yield (
+                    "data: "
+                    + _dump_chat_chunk_json(
+                        chunk,
+                        include_logprobs_placeholder=include_logprobs_placeholder,
+                    )
+                    + "\n\n"
+                )
 
             elif stream_chunk.tool_call_delta is not None:
                 saw_tool_calls = True
@@ -221,6 +306,7 @@ async def format_sse_tool_stream(
                     model=model,
                     choices=[
                         ChunkChoice(
+                            index=choice_index,
                             delta=DeltaMessage(
                                 tool_calls=[
                                     ToolCallDelta(
@@ -238,7 +324,14 @@ async def format_sse_tool_stream(
                         )
                     ],
                 )
-                yield f"data: {chunk.model_dump_json()}\n\n"
+                yield (
+                    "data: "
+                    + _dump_chat_chunk_json(
+                        chunk,
+                        include_logprobs_placeholder=include_logprobs_placeholder,
+                    )
+                    + "\n\n"
+                )
     except Exception as e:
         logger.error(
             "stream_mid_generation_error",
@@ -250,12 +343,20 @@ async def format_sse_tool_stream(
             model=model,
             choices=[
                 ChunkChoice(
+                    index=choice_index,
                     delta=DeltaMessage(content=f"\n\n[Error: {e}]"),
                     finish_reason=None,
                 )
             ],
         )
-        yield f"data: {error_chunk.model_dump_json()}\n\n"
+        yield (
+            "data: "
+            + _dump_chat_chunk_json(
+                error_chunk,
+                include_logprobs_placeholder=include_logprobs_placeholder,
+            )
+            + "\n\n"
+        )
 
     # Determine finish_reason: check max_tokens first, then tool_calls
     if saw_tool_calls:
@@ -271,12 +372,28 @@ async def format_sse_tool_stream(
         model=model,
         choices=[
             ChunkChoice(
+                index=choice_index,
                 delta=DeltaMessage(),
                 finish_reason=finish_reason,
             )
         ],
     )
-    yield f"data: {final_chunk.model_dump_json()}\n\n"
+    yield (
+        "data: "
+        + _dump_chat_chunk_json(
+            final_chunk,
+            include_logprobs_placeholder=include_logprobs_placeholder,
+        )
+        + "\n\n"
+    )
+
+    if usage_accumulator is not None:
+        usage_accumulator["prompt_tokens"] = (
+            usage_accumulator.get("prompt_tokens", 0) + prompt_tokens
+        )
+        usage_accumulator["completion_tokens"] = (
+            usage_accumulator.get("completion_tokens", 0) + completion_tokens
+        )
 
     if include_usage:
         from opta_lmx.inference.schema import Usage
@@ -294,4 +411,5 @@ async def format_sse_tool_stream(
         )
         yield f"data: {usage_chunk.model_dump_json()}\n\n"
 
-    yield "data: [DONE]\n\n"
+    if emit_done:
+        yield "data: [DONE]\n\n"

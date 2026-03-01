@@ -423,9 +423,9 @@ describe('SessionManager', () => {
   // -----------------------------------------------------------------------
 
   describe('background processes', () => {
-    it('listBackgroundProcesses throws for non-existent session', async () => {
-      await expect(manager.listBackgroundProcesses('nonexistent')).rejects.toThrow(
-        'Session not found: nonexistent',
+    it('listBackgroundProcesses throws for non-existent session', () => {
+      expect(() => manager.listBackgroundProcesses('nonexistent')).toThrow(
+        'Session not found: nonexistent'
       );
     });
 

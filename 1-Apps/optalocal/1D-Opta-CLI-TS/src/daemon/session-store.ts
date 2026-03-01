@@ -1,6 +1,6 @@
 import { mkdir, readFile, writeFile, appendFile, stat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
-import { homedir } from 'node:os';
+import { getDaemonDir } from '../platform/paths.js';
 import type { AgentMessage } from '../core/agent.js';
 import type { V3Envelope } from '../protocol/v3/types.js';
 
@@ -16,7 +16,7 @@ export interface StoredSessionSnapshot {
 }
 
 function daemonRootDir(): string {
-  return join(homedir(), '.config', 'opta', 'daemon');
+  return getDaemonDir();
 }
 
 function sessionsDir(): string {

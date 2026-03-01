@@ -205,7 +205,7 @@ export async function loadOpisContext(cwd: string): Promise<OpisContext> {
 
   if (appMdContent === null) {
     // No OPIS scaffold -- try fallback chain
-    return await loadFallbackContext(cwd, docsDir);
+    return loadFallbackContext(cwd, docsDir);
   }
 
   // Parse APP.md

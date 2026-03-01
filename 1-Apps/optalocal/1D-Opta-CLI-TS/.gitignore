@@ -5,3 +5,10 @@ coverage/
 *.tsbuildinfo
 .DS_Store
 .opta/checkpoints/
+
+# Runtime telemetry/artifacts (keep only explicit checkpoints)
+.opta/browser/
+.opta/learning/
+.opta/policy/
+.opta/tmp/
+.githooks/

@@ -18,6 +18,13 @@ describe('v3 operations contract', () => {
       'env.save',
       'env.use',
       'env.delete',
+      'account.status',
+      'account.logout',
+      'sessions.list',
+      'sessions.search',
+      'sessions.export',
+      'sessions.delete',
+      'diff',
       'mcp.list',
       'mcp.add',
       'mcp.add-playwright',
@@ -80,6 +87,38 @@ describe('v3 operations contract', () => {
         },
       })
     ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'sessions.search',
+        input: {
+          query: 'project alpha',
+        },
+      })
+    ).toMatchObject({ id: 'sessions.search' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'sessions.search',
+        input: {
+          query: '',
+        },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'diff',
+        input: {},
+      })
+    ).toMatchObject({ id: 'diff' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'diff',
+        input: { unknown: true },
+      })
+    ).toThrow();
   });
 
   it('validates typed execute/list responses', () => {
@@ -116,4 +155,3 @@ describe('v3 operations contract', () => {
     expect(() => SharedOperationIdSchema.parse('not-real')).toThrow();
   });
 });
-

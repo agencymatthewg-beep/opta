@@ -1,5 +1,6 @@
 import { debug } from '../core/debug.js';
 import { errorMessage } from '../utils/errors.js';
+import { assertSafeExecutableCommand } from '../utils/command-safety.js';
 
 export interface McpTool {
   name: string;
@@ -82,6 +83,10 @@ export async function connectMcpServer(
   name: string,
   config: McpServerConfig
 ): Promise<McpConnection> {
+  if (config.transport === 'stdio') {
+    assertSafeExecutableCommand(config.command, `MCP server "${name}"`);
+  }
+
   const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
   let client = new Client({ name: `opta-${name}`, version: '1.0.0' });
 

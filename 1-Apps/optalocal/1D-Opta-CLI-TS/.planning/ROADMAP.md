@@ -1,3 +1,7 @@
+---
+status: completed
+---
+
 # Roadmap: Opta CLI
 
 ## Overview

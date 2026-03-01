@@ -1,13 +1,15 @@
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import TextInput from 'ink-text-input';
 import type { AccountState } from '../accounts/types.js';
+import { resolveSupabaseAuthConfig } from '../accounts/supabase.js';
 import { InlineSelect, InlineSlider, type SelectOption } from './InlineSelect.js';
 import { OPTA_BRAND_GLYPH, OPTA_BRAND_NAME } from '../ui/brand.js';
+import { errorMessage } from '../utils/errors.js';
 
 // --- TYPES ---
 
-type SettingsPageId = 'connection' | 'models' | 'safety' | 'paths' | 'advanced' | 'account';
+type SettingsPageId = 'connection' | 'models' | 'safety' | 'paths' | 'advanced' | 'atpo' | 'account';
 type SettingsDisplayProfile = 'compact' | 'opta' | 'advanced';
 
 interface SettingsPage { id: SettingsPageId; label: string; color: string; }
@@ -31,7 +33,7 @@ interface SettingsItem {
   /** Descriptions per slider value */
   sliderLabels?: Record<number, string>;
   /** Callback for 'action' items — invoked on Enter/Space */
-  action?: () => void;
+  action?: () => void | Promise<void>;
 }
 
 export interface SettingsOverlayProps {
@@ -57,6 +59,7 @@ const PAGES: SettingsPage[] = [
   { id: 'safety',     label: 'Safety',      color: '#f59e0b' },
   { id: 'paths',      label: 'Paths',       color: '#38bdf8' },
   { id: 'advanced',   label: 'Advanced',    color: '#22d3ee' },
+  { id: 'atpo',       label: 'Atpo',        color: '#c084fc' },
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
 
@@ -212,7 +215,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
       ],
     },
     { label: 'SearXNG URL',         configKey: 'search.searxngUrl',            defaultValue: 'http://localhost:8081', description: 'SearXNG instance URL',                                hint: 'Self-hosted or remote' },
-    { label: 'TUI Default',         configKey: 'tui.default',                  defaultValue: 'false',               description: 'Launch TUI automatically on opta chat',
+    { label: 'TUI Default',         configKey: 'tui.default',                  defaultValue: 'false',               description: 'Launch TUI automatically on opta (legacy, now always true)',
       inputType: 'toggle', options: [
         { label: 'Enabled',  value: 'true',  description: 'Always start in TUI mode' },
         { label: 'Disabled', value: 'false', description: 'Start in plain CLI mode' },
@@ -229,6 +232,17 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Exa API Key',         configKey: 'research.providers.exa.apiKey',      defaultValue: '', sensitive: true, description: 'Exa neural search API key', hint: 'exa.ai' },
     { label: 'Tavily API Key',      configKey: 'research.providers.tavily.apiKey',   defaultValue: '', sensitive: true, description: 'Tavily AI search API key', hint: 'tavily.com' },
     { label: 'Gemini API Key',      configKey: 'research.providers.gemini.apiKey',   defaultValue: '', sensitive: true, description: 'Google Gemini API key', hint: 'aistudio.google.com' },
+  ],
+  atpo: [
+    { label: 'Atpo Enabled',      configKey: 'atpo.enabled',               defaultValue: 'true',                description: 'Enable Atpo autonomous supervisor', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
+    { label: 'Provider',          configKey: 'atpo.provider',              defaultValue: 'auto',                description: 'Provider to use for Atpo', inputType: 'select', options: [{label: 'Auto', value: 'auto'}, {label: 'Anthropic', value: 'anthropic'}, {label: 'Gemini', value: 'gemini'}, {label: 'OpenAI', value: 'openai'}, {label: 'OpenCode Zen', value: 'opencode_zen'}] },
+    { label: 'API Key',           configKey: 'atpo.apiKey',                defaultValue: '', sensitive: true,   description: 'API key for Atpo provider (leave blank if auto)', hint: 'Automatically detected if possible' },
+    { label: 'Model',             configKey: 'atpo.model',                 defaultValue: '',                    description: 'Specific model name for Atpo', hint: 'Leave blank for default' },
+    { label: 'Payment Method',    configKey: 'atpo.paymentMethod',         defaultValue: 'pay-as-you-go',       description: 'Billing structure for cost estimation', inputType: 'select', options: [{label: 'Pay-As-You-Go', value: 'pay-as-you-go'}, {label: 'Subscription Plan', value: 'subscription'}] },
+    { label: 'Autonomy Level',    configKey: 'atpo.autonomyLevel',         defaultValue: '2',                   description: 'Extent of proactive help (0=Fallback, 1=Warn, 2=Auto-Debug, 3=Co-Pilot, 4=Full)', inputType: 'slider', min: 0, max: 4, sliderLabels: { 0: 'Fallback', 1: 'Warn', 2: 'Auto-Debug', 3: 'Co-Pilot', 4: 'Full' } },
+    { label: 'Error Threshold',   configKey: 'atpo.thresholds.errorCount', defaultValue: '3',                   description: 'Number of consecutive errors to trigger intervention', inputType: 'slider', min: 1, max: 10 },
+    { label: 'Auto Pause Limit',  configKey: 'atpo.limits.autoPauseThreshold', defaultValue: '5',               description: 'Pause Atpo after this much cost/percentage is reached', hint: 'Value based on payment method' },
+    { label: 'Provider Failover', configKey: 'atpo.limits.providerFailover', defaultValue: 'false',             description: 'Switch providers when limit is reached instead of pausing', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
   ],
   account: [
     {
@@ -378,9 +392,20 @@ function filterItemsForDisplayProfile(
 interface AccountPageContentProps {
   accountState: AccountState | null | 'loading';
   pageColor: string;
+  syncStatus: 'idle' | 'running' | 'success' | 'error';
+  syncMessage: string | null;
 }
 
-function AccountPageContent({ accountState, pageColor }: AccountPageContentProps): React.ReactElement {
+function accountIdentity(state: AccountState | null): string | null {
+  return state?.user?.email ?? state?.user?.phone ?? state?.user?.id ?? null;
+}
+
+function AccountPageContent({
+  accountState,
+  pageColor,
+  syncStatus,
+  syncMessage,
+}: AccountPageContentProps): React.ReactElement {
   if (accountState === 'loading') {
     return (
       <Box marginTop={1}>
@@ -389,8 +414,7 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
     );
   }
 
-  const supabaseUrl = process.env['OPTA_SUPABASE_URL'];
-  const supabaseConfigured = Boolean(supabaseUrl?.trim());
+  const supabaseConfigured = Boolean(resolveSupabaseAuthConfig());
 
   const user = accountState?.user ?? null;
   const session = accountState?.session ?? null;
@@ -459,6 +483,25 @@ function AccountPageContent({ accountState, pageColor }: AccountPageContentProps
         }
       </Box>
 
+      {syncMessage && (
+        <Box>
+          <Text dimColor>  Sync     </Text>
+          <Text
+            color={
+              syncStatus === 'error'
+                ? COLOR.error
+                : syncStatus === 'running'
+                  ? pageColor
+                  : syncStatus === 'success'
+                    ? COLOR.success
+                    : COLOR.muted
+            }
+          >
+            {syncMessage}
+          </Text>
+        </Box>
+      )}
+
     </Box>
   );
 }
@@ -513,15 +556,87 @@ export function SettingsOverlay({
 
   // Account page state
   const [accountState, setAccountState] = useState<AccountState | null | 'loading'>('loading');
+  const [accountSyncStatus, setAccountSyncStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle');
+  const [accountSyncMessage, setAccountSyncMessage] = useState<string | null>(null);
+  const accountSignInInFlightRef = useRef(false);
+
+  const runAccountOauthSignIn = useCallback(async (trigger: 'auto' | 'manual') => {
+    if (accountSignInInFlightRef.current) return;
+    accountSignInInFlightRef.current = true;
+    setAccountSyncStatus('running');
+    setAccountSyncMessage(trigger === 'auto'
+      ? 'Opening Opta account sign-in to sync this CLI session…'
+      : 'Opening Opta account sign-in…');
+    try {
+      const config = resolveSupabaseAuthConfig();
+      if (!config) {
+        setAccountSyncStatus('error');
+        setAccountSyncMessage('Set OPTA_SUPABASE_URL and OPTA_SUPABASE_ANON_KEY to enable CLI account sync.');
+        if (trigger === 'manual') {
+          openInBrowser('https://accounts.optalocal.com');
+        }
+        return;
+      }
+      const { runOAuthLoginFlow } = await import('../commands/account.js');
+      const result = await runOAuthLoginFlow({ browserMode: 'opta-session' });
+      setAccountState(result.state);
+      const identity = result.user?.email ?? result.user?.phone ?? result.user?.id ?? accountIdentity(result.state);
+      setAccountSyncStatus('success');
+      setAccountSyncMessage(identity
+        ? `Signed in as ${identity}`
+        : 'Sign-in complete. Account state synced.');
+    } catch (err) {
+      setAccountSyncStatus('error');
+      setAccountSyncMessage(errorMessage(err));
+    } finally {
+      accountSignInInFlightRef.current = false;
+    }
+  }, []);
 
   useEffect(() => {
     if (selectedPage !== 'account') return;
-    setAccountState('loading');
-    import('../accounts/storage.js')
-      .then(mod => mod.loadAccountState())
-      .then(state => setAccountState(state))
-      .catch(() => setAccountState(null));
-  }, [selectedPage]);
+    let cancelled = false;
+
+    const loadAndMaybeAutoSignIn = async (): Promise<void> => {
+      setAccountState('loading');
+      setAccountSyncStatus('idle');
+      setAccountSyncMessage(null);
+
+      try {
+        const { loadAccountState } = await import('../accounts/storage.js');
+        const state = await loadAccountState();
+        if (cancelled) return;
+        setAccountState(state);
+
+        if (state?.session?.access_token) {
+          const identity = accountIdentity(state);
+          setAccountSyncStatus('success');
+          setAccountSyncMessage(identity ? `Session active for ${identity}` : 'Session active.');
+          return;
+        }
+
+        if (process.env['VITEST'] === 'true' || process.env['NODE_ENV'] === 'test') {
+          return;
+        }
+
+        if (!resolveSupabaseAuthConfig()) {
+          return;
+        }
+
+        await runAccountOauthSignIn('auto');
+      } catch (err) {
+        if (cancelled) return;
+        setAccountState(null);
+        setAccountSyncStatus('error');
+        setAccountSyncMessage(errorMessage(err));
+      }
+    };
+
+    void loadAndMaybeAutoSignIn();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedPage, runAccountOauthSignIn]);
 
   const items = useMemo(
     () => filterItemsForDisplayProfile(PAGE_ITEMS[selectedPage], displayProfile),
@@ -649,7 +764,11 @@ export function SettingsOverlay({
       const item = items[selectedIndex];
       if (!item) return;
       if (item.inputType === 'action') {
-        item.action?.();
+        if (item.configKey === '__account_signin') {
+          void runAccountOauthSignIn('manual');
+        } else {
+          void item.action?.();
+        }
         return;
       }
       if (item.inputType === 'toggle') {
@@ -685,7 +804,7 @@ export function SettingsOverlay({
         <>
           {/* HINT */}
           <Box marginTop={1}>
-            <Text dimColor>←/→ switch page · ↑/↓ navigate · Enter/Space edit · 1-6 jump · Shift+Tab view</Text>
+            <Text dimColor>{`←/→ switch page · ↑/↓ navigate · Enter/Space edit · 1-${PAGES.length} jump · Shift+Tab view`}</Text>
           </Box>
           <Box>
             <Text dimColor>View: </Text>
@@ -756,7 +875,12 @@ export function SettingsOverlay({
 
           {/* ACCOUNT PAGE */}
           {showItems && !editingKey && selectedPage === 'account' ? (
-            <AccountPageContent accountState={accountState} pageColor={pageColor} />
+            <AccountPageContent
+              accountState={accountState}
+              pageColor={pageColor}
+              syncStatus={accountSyncStatus}
+              syncMessage={accountSyncMessage}
+            />
           ) : null}
 
           {/* ITEMS LIST */}

@@ -3,8 +3,8 @@ app: opta-init
 type: web-app
 platforms: [web]
 language: typescript
-status: planning
-version: 0.1
+status: live
+version: 1.0.1
 depends_on: [opta-cli-ts, opta-lmx, opta-local]
 depended_on_by: []
 port: 3005
@@ -13,7 +13,7 @@ opis_mode: ecosystem
 ---
 
 <!-- AI-SUMMARY (50 words max)
-Opta Init: The official download and getting-started site for the Opta Local stack (Opta CLI, Opta LMX, Opta Local). macOS + Windows installers, step-by-step setup guides, optimal usage tips. Static Next.js site at init.optalocal.com. Obsidian Glassmorphism aesthetic. Zero auth, zero dashboards — pure onboarding. -->
+Opta Init is the static onboarding site for the Opta Local stack. It presents the value prop, install command, architecture overview, feature set, and downloads for Opta CLI/LMX, then hands users to LMX dashboard and Opta Accounts. No backend logic. -->
 
 # Opta Init — APP.md
 
@@ -23,18 +23,18 @@ Opta Init: The official download and getting-started site for the Opta Local sta
 
 ## 1. Identity
 
-| Field | Value |
-|-------|-------|
-| **Name** | Opta Init |
-| **Full Name** | Opta Initializer |
-| **Tagline** | Your local AI stack, ready in minutes |
-| **Type** | Static Marketing + Onboarding Website |
-| **Platform** | Web (Next.js, statically exported) |
-| **Language** | TypeScript |
-| **Status** | v1.0 Live — https://init.optalocal.com |
-| **Owner** | Matthew Byrden / Opta Operations |
-| **Domain** | init.optalocal.com |
-| **Parent Platform** | optalocal.com (multi-app LLM platform) |
+| Field               | Value                                                          |
+| ------------------- | -------------------------------------------------------------- |
+| **Name**            | Opta Init                                                      |
+| **Full Name**       | Opta Initializer                                               |
+| **Tagline**         | Your local AI stack, ready in minutes                          |
+| **Type**            | Static Marketing + Onboarding Website                          |
+| **Platform**        | Web (Next.js, statically exported)                             |
+| **Language**        | TypeScript                                                     |
+| **Status**          | v1.0 Live — https://init.optalocal.com — UI/UX design approved |
+| **Owner**           | Matthew Byrden / Opta Operations                               |
+| **Domain**          | init.optalocal.com                                             |
+| **Parent Platform** | optalocal.com (multi-app LLM platform)                         |
 
 ---
 
@@ -45,9 +45,9 @@ Opta Init: The official download and getting-started site for the Opta Local sta
 Opta Init is the front door to the Opta Local stack. It gives any user — whether a seasoned Claude Code power user or someone running LLMs at home — a clean, beautiful, frictionless path to:
 
 1. **Download** Opta CLI and Opta LMX for their platform (macOS / Windows)
-2. **Set up** their local inference stack in minutes with clear sequential guides
-3. **Use it optimally** — tips, commands, and workflows for real productivity
-4. **Access the dashboard** — direct link to lmx.optalocal.com once running
+2. **Bootstrap install** with a single-command install section and clear prerequisites
+3. **Understand the stack** through visual CLI and architecture sections
+4. **Access runtime apps** via dashboard and account CTAs (lmx/accounts subdomains)
 
 ### What Problem It Solves
 
@@ -62,7 +62,7 @@ The Opta Local stack has no public onboarding surface. Discovery happens through
 
 ### What It Does NOT Do
 
-- No user accounts / authentication
+- No embedded user accounts / authentication flows (site only links out to accounts.optalocal.com)
 - No model downloads or LLM inference
 - No dashboard functionality (that is lmx.optalocal.com)
 - No blog, changelog, or news section
@@ -88,15 +88,15 @@ Lead with outcomes ("chat with your own models"), not implementation ("MLX-nativ
 
 ## 4. Non-Negotiable Capabilities
 
-| # | Capability | Why |
-|---|-----------|-----|
-| 1 | macOS + Windows download buttons for Opta CLI and Opta LMX | Core function |
-| 2 | Step-by-step setup guides for each app | Without this downloads are orphaned |
-| 3 | Optimal usage tips per app | Differentiates from a plain download page |
-| 4 | Open Dashboard CTA linking to lmx.optalocal.com | Completes the funnel |
-| 5 | Opta Glassmorphism aesthetic with spring animations + micro-interactions | Quality signal |
-| 6 | Deployed and live on init.optalocal.com via Vercel | Must be publicly accessible at v1 |
-| 7 | Static — no server-side logic | No runtime failures, fast everywhere |
+| #   | Capability                                                               | Why                                       |
+| --- | ------------------------------------------------------------------------ | ----------------------------------------- |
+| 1   | macOS + Windows download buttons for Opta CLI and Opta LMX               | Core function                             |
+| 2   | Install bootstrap command + prerequisites                                | Converts interest to first run            |
+| 3   | Architecture + feature sections                                          | Explains value and capability quickly     |
+| 4   | Dashboard and Accounts CTAs linking to optalocal subdomains              | Completes onboarding handoff              |
+| 5   | Opta Glassmorphism aesthetic with spring animations + micro-interactions | Quality signal                            |
+| 6   | Deployed and live on init.optalocal.com via Vercel                       | Must be publicly accessible at v1         |
+| 7   | Static — no server-side logic                                            | No runtime failures, fast everywhere      |
 
 ---
 
@@ -112,6 +112,7 @@ Font UI: Sora / Font Mono: JetBrains Mono
 Motion: Spring physics only — no CSS ease/linear for interactive elements
 
 Premium animation principles (from Opta research):
+
 - Spring physics — mass/stiffness/damping, never duration-based
 - Staggered entry — items cascade 10-20ms apart
 - Blur-in on scroll reveal — elements emerge from blur + opacity
@@ -125,12 +126,13 @@ Premium animation principles (from Opta research):
 ## 6. Architecture Overview
 
 init.optalocal.com (Vercel CDN, static export)
-  -> Next.js 15 (app router, static export)
-     -> Hero Section (value prop, primary CTAs)
-     -> Download Section (per-app macOS/Windows buttons)
-     -> Setup Guide (tabbed, per-app, step-by-step)
-     -> Optimal Usage (tips per app)
-     -> Dashboard CTA (Open Dashboard -> lmx.optalocal.com)
+-> Next.js 16 (app router, static export)
+-> Hero Section (value prop, primary CTAs)
+-> CLI Showcase (visual terminal flows)
+-> Install Section (bootstrap command + requirements)
+-> Architecture + Features sections
+-> Download Section (CLI active, LMX coming soon state)
+-> Dashboard CTA (Open Web Dashboard + Manage Account)
 
 No backend. No API routes. No auth. No database.
 
@@ -144,17 +146,17 @@ No backend. No API routes. No auth. No database.
 - Sibling: lmx.optalocal.com (LMX management dashboard)
 
 Domain architecture:
-  optalocal.com          (platform root)
-  init.optalocal.com     (this site — onboarding + downloads)
-  lmx.optalocal.com      (Opta Local dashboard)
-  [future subdomains as new apps ship]
+optalocal.com (platform root)
+init.optalocal.com (this site — onboarding + downloads)
+lmx.optalocal.com (Opta Local dashboard)
+[future subdomains as new apps ship]
 
 ---
 
 ## 8. Development Rules
 
-- Framework: Next.js 15, app router, static export (output: export)
-- Styling: Tailwind CSS v4 with --opta-* CSS variables
+- Framework: Next.js 16, app router, static export (output: export)
+- Styling: Tailwind CSS v4 with --opta-\* CSS variables
 - Fonts: Sora + JetBrains Mono via next/font (self-hosted)
 - Animations: Framer Motion (web spring physics) for interactive elements
 - Lighthouse: must score >= 95 Performance, 100 Accessibility, 100 SEO before v1
@@ -165,13 +167,20 @@ Domain architecture:
 
 ## 9. Current Phase
 
-**v1.0 shipped 2026-02-28.** Site live at https://init.optalocal.com and https://opta-init.vercel.app.
-Next: v1.1 (dynamic download buttons via GitHub API), v1.2 (Lighthouse audit + real download URLs).
+**v1.0.1 shipped 2026-02-28.** Site live at https://init.optalocal.com and https://opta-init.vercel.app.
+
+**UI/UX design approved 2026-02-28 by owner.** The Obsidian Glassmorphism aesthetic, section layout, animation system, and component design are locked. The visual direction is not under review — future work is functionality-first.
+
+Next:
+
+- v1.1 — Real download artifacts (blocked on 1D CLI + 1M LMX releases), dynamic version badges, bootstrap script endpoint
+- v1.2 — Lighthouse audit + cross-browser QA pass
 
 ---
 
 ## 10. Open Questions
 
-- Are Opta CLI and Opta LMX releases on GitHub Releases? (determines download URLs)
+- CLI asset is live; when does LMX publish a production installer asset?
+- Should the install section command move from placeholder bootstrap URL to a live hosted script endpoint?
 - Does optalocal.com root need its own landing page first?
 - Should Windows build exist at v1 or macOS-only for initial launch?

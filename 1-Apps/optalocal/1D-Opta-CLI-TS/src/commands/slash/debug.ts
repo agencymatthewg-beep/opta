@@ -3,34 +3,36 @@
  */
 
 import chalk from 'chalk';
-import { box, kv, fmtTokens, progressBar } from '../../ui/box.js';
+import { box, kv, progressBar } from '../../ui/box.js';
+import { formatTokens } from '../../utils/tokens.js';
 import { estimateTokens } from '../../utils/tokens.js';
 import { estimateCost, formatCost } from '../../utils/pricing.js';
 import type { AgentMessage } from '../../core/agent.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
-const historyHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const historyHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const userMessages = ctx.session.messages.filter(
     (m: AgentMessage) => m.role === 'user' || m.role === 'assistant'
   );
   if (userMessages.length === 0) {
     console.log(chalk.dim('  No messages yet'));
-    return 'handled';
+    return Promise.resolve('handled');
   }
   console.log();
   userMessages.forEach((m: AgentMessage, i: number) => {
     const role = m.role === 'user' ? chalk.cyan('user') : chalk.green('assistant');
-    const rawContent = typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? '[multimodal]' : '';
+    const rawContent =
+      typeof m.content === 'string' ? m.content : Array.isArray(m.content) ? '[multimodal]' : '';
     const content = rawContent.slice(0, 80).replace(/\n/g, ' ');
     const toolCount = m.tool_calls?.length;
     const suffix = toolCount ? chalk.dim(` (${toolCount} tool calls)`) : '';
     console.log(`  ${i + 1}. [${role}] ${content}${suffix}`);
   });
   console.log();
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
-const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const costHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const msgs = ctx.session.messages;
   let promptTok = 0;
   let completionTok = 0;
@@ -43,23 +45,31 @@ const costHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
   const contextLimit = ctx.config.model.contextLimit ?? 128000;
   const usageRatio = total / contextLimit;
 
-  console.log('\n' + box('Token Usage', [
-    kv('Prompt', `~${fmtTokens(promptTok)} tokens`),
-    kv('Completion', `~${fmtTokens(completionTok)} tokens`),
-    kv('Total', `~${fmtTokens(total)} tokens`),
-    kv('Context', `${progressBar(usageRatio, 16)} ${chalk.dim(`${fmtTokens(total)}/${fmtTokens(contextLimit)}`)}`),
-    '',
-    kv('Messages', String(msgs.length)),
-    kv('Tool calls', String(ctx.session.toolCallCount)),
-    (() => {
-      const provider = ctx.config.provider.active;
-      const model = provider === 'lmx' ? ctx.config.model.default : ctx.config.provider.anthropic.model;
-      const cost = estimateCost(promptTok, completionTok, provider, model);
-      if (cost.isLocal) return kv('Cost', chalk.green('Free') + chalk.dim(' (local inference)'));
-      return kv('Cost', chalk.yellow(formatCost(cost) + ' USD'));
-    })(),
-  ]));
-  return 'handled';
+  console.log(
+    '\n' +
+      box('Token Usage', [
+        kv('Prompt', `~${formatTokens(promptTok)} tokens`),
+        kv('Completion', `~${formatTokens(completionTok)} tokens`),
+        kv('Total', `~${formatTokens(total)} tokens`),
+        kv(
+          'Context',
+          `${progressBar(usageRatio, 16)} ${chalk.dim(`${formatTokens(total)}/${formatTokens(contextLimit)}`)}`
+        ),
+        '',
+        kv('Messages', String(msgs.length)),
+        kv('Tool calls', String(ctx.session.toolCallCount)),
+        (() => {
+          const provider = ctx.config.provider.active;
+          const model =
+            provider === 'lmx' ? ctx.config.model.default : ctx.config.provider.anthropic.model;
+          const cost = estimateCost(promptTok, completionTok, provider, model);
+          if (cost.isLocal)
+            return kv('Cost', chalk.green('Free') + chalk.dim(' (local inference)'));
+          return kv('Cost', chalk.yellow(formatCost(cost) + ' USD'));
+        })(),
+      ])
+  );
+  return Promise.resolve('handled');
 };
 
 const statsHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
@@ -72,18 +82,21 @@ const statsHandler = async (_args: string, _ctx: SlashContext): Promise<SlashRes
     .sort(([, a], [, b]) => b - a)
     .map(([model, count]) => kv(model, `${count} sessions`, 20));
 
-  console.log('\n' + box('Session Analytics', [
-    kv('Total', `${analytics.totalSessions} sessions`, 14),
-    kv('Messages', `${analytics.totalMessages} total`, 14),
-    kv('Tool Calls', `${analytics.totalToolCalls} total`, 14),
-    kv('Avg/Session', `${analytics.avgMessagesPerSession.toFixed(1)} msgs`, 14),
-    kv('Today', `${analytics.sessionsToday()} sessions`, 14),
-    '',
-    chalk.dim('Model Usage:'),
-    ...modelLines,
-    '',
-    kv('Cost', chalk.green('Free') + chalk.dim(' (aggregate cost tracked per-turn)'), 14),
-  ]));
+  console.log(
+    '\n' +
+      box('Session Analytics', [
+        kv('Total', `${analytics.totalSessions} sessions`, 14),
+        kv('Messages', `${analytics.totalMessages} total`, 14),
+        kv('Tool Calls', `${analytics.totalToolCalls} total`, 14),
+        kv('Avg/Session', `${analytics.avgMessagesPerSession.toFixed(1)} msgs`, 14),
+        kv('Today', `${analytics.sessionsToday()} sessions`, 14),
+        '',
+        chalk.dim('Model Usage:'),
+        ...modelLines,
+        '',
+        kv('Cost', chalk.green('Free') + chalk.dim(' (aggregate cost tracked per-turn)'), 14),
+      ])
+  );
   return 'handled';
 };
 

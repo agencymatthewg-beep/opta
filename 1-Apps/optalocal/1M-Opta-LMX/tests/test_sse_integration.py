@@ -208,3 +208,32 @@ class TestSSEIntegration:
         assert response.status_code == 404
         data = response.json()
         assert data["error"]["type"] == "invalid_request_error"
+
+    @pytest.mark.asyncio
+    async def test_sse_stream_supports_multi_choice_indices(self, sse_client: AsyncClient) -> None:
+        """Streaming n>1 emits chunks keyed by choice indices and one DONE."""
+        seen_indices: set[int] = set()
+        done_count = 0
+        async with aconnect_sse(
+            sse_client,
+            "POST",
+            "/v1/chat/completions",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hi"}],
+                "stream": True,
+                "n": 2,
+            },
+        ) as event_source:
+            events = [sse async for sse in event_source.aiter_sse()]
+
+        for event in events:
+            if event.data == "[DONE]":
+                done_count += 1
+                continue
+            payload = json.loads(event.data)
+            for choice in payload.get("choices", []):
+                seen_indices.add(choice["index"])
+
+        assert seen_indices == {0, 1}
+        assert done_count == 1

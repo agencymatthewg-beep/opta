@@ -64,6 +64,7 @@ describe('daemon operations routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager: makeSessionManager(),
+      listen: false,
     });
 
     const unauthorized = await running.app.inject({
@@ -84,6 +85,11 @@ describe('daemon operations routes', () => {
     expect(body.operations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'doctor', safety: 'read' }),
+        expect.objectContaining({ id: 'account.status', safety: 'read' }),
+        expect.objectContaining({ id: 'account.logout', safety: 'write' }),
+        expect.objectContaining({ id: 'sessions.list', safety: 'read' }),
+        expect.objectContaining({ id: 'sessions.delete', safety: 'write' }),
+        expect.objectContaining({ id: 'diff', safety: 'read' }),
         expect.objectContaining({ id: 'benchmark', safety: 'dangerous' }),
       ])
     );
@@ -96,6 +102,7 @@ describe('daemon operations routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager: makeSessionManager(),
+      listen: false,
     });
 
     const unauthorized = await running.app.inject({
@@ -130,6 +137,86 @@ describe('daemon operations routes', () => {
       profiles: expect.any(Array),
     });
 
+    const accountStatus = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/account.status',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(accountStatus.statusCode).toBe(200);
+    expect(accountStatus.json()).toMatchObject({
+      ok: true,
+      id: 'account.status',
+      safety: 'read',
+      result: {
+        authenticated: expect.any(Boolean),
+      },
+    });
+
+    const sessionsList = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/sessions.list',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(sessionsList.statusCode).toBe(200);
+    expect(sessionsList.json()).toMatchObject({
+      ok: true,
+      id: 'sessions.list',
+      safety: 'read',
+      result: expect.any(Array),
+    });
+
+    const diffOp = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/diff',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(diffOp.statusCode).toBe(200);
+    expect(diffOp.json()).toMatchObject({
+      ok: true,
+      id: 'diff',
+      safety: 'read',
+      result: {
+        stdout: expect.any(String),
+        stderr: expect.any(String),
+      },
+    });
+
+    const sessionsDelete = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/sessions.delete',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: { id: 'missing-session' } },
+    });
+    expect(sessionsDelete.statusCode).toBe(200);
+    expect(sessionsDelete.json()).toMatchObject({
+      ok: true,
+      id: 'sessions.delete',
+      safety: 'write',
+      result: {
+        stdout: expect.any(String),
+        stderr: expect.any(String),
+      },
+    });
+
+    const accountLogout = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/account.logout',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(accountLogout.statusCode).toBe(200);
+    expect(accountLogout.json()).toMatchObject({
+      ok: true,
+      id: 'account.logout',
+      safety: 'write',
+      result: {
+        action: 'logout',
+      },
+    });
+
     const dangerousDenied = await running.app.inject({
       method: 'POST',
       url: '/v3/operations/benchmark',
@@ -156,4 +243,3 @@ describe('daemon operations routes', () => {
     expect(invalidOperation.statusCode).toBe(400);
   });
 });
-

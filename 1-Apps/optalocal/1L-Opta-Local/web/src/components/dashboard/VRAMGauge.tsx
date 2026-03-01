@@ -43,7 +43,7 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
   // Idle state when no model loaded
   if (totalGB === 0) {
     return (
-      <Card variant="glass">
+      <Card variant="glass" className="group transition-all hover:bg-white/[0.03] hover:border-white/10 hover:shadow-[0_8px_32px_-8px_rgba(139,92,246,0.15)] relative overflow-hidden">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
             <Cpu className="h-4 w-4 text-neon-cyan" />
@@ -71,9 +71,9 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
                 transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}
               />
             </motion.svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-1">
-              <span className="text-xl font-bold text-text-secondary">Ready</span>
-              <span className="text-sm text-text-muted">512 GB</span>
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <span className="text-2xl font-bold text-text-primary tracking-tight mb-0.5">Ready</span>
+              <span className="text-[11px] font-medium text-text-secondary">512 GB VRAM</span>
             </div>
           </div>
         </CardContent>
@@ -89,7 +89,7 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
   const color = getGaugeColor(percentage);
 
   return (
-    <Card variant="glass">
+    <Card variant="glass" className="group transition-all hover:bg-white/[0.03] hover:border-white/10 hover:shadow-[0_8px_32px_-8px_rgba(139,92,246,0.15)] relative overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
           <Cpu className="h-4 w-4 text-neon-cyan" />
@@ -126,14 +126,21 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
               fill="none"
               stroke="var(--color-chart-track)"
               strokeWidth={strokeWidth}
+              className="drop-shadow-sm"
             />
             {/* Animated fill */}
+            <defs>
+              <linearGradient id="vram-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor={color} stopOpacity="1" />
+                <stop offset="100%" stopColor={color} stopOpacity="0.4" />
+              </linearGradient>
+            </defs>
             <motion.circle
               cx={size / 2}
               cy={size / 2}
               r={radius}
               fill="none"
-              stroke={color}
+              stroke="url(#vram-gradient)"
               strokeWidth={strokeWidth}
               strokeLinecap="round"
               strokeDasharray={circumference}
@@ -145,18 +152,27 @@ export function VRAMGauge({ usedGB, totalGB, size = 200 }: VRAMGaugeProps) {
 
           {/* Center text overlay */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-text-primary tabular-nums">
-              {usedGB.toFixed(1)}
-            </span>
-            <span className="text-[11px] text-text-secondary">
-              / {totalGB.toFixed(0)} GB
-            </span>
-            <span
-              className="mt-1.5 text-[10px] font-semibold uppercase tracking-widest"
-              style={{ color }}
-            >
-              {(percentage * 100).toFixed(0)}%
-            </span>
+            <div className="flex items-baseline gap-1">
+              <span className="text-4xl font-bold tracking-tight text-text-primary tabular-nums">
+                {usedGB.toFixed(1)}
+              </span>
+              <span className="text-[11px] font-semibold text-text-secondary uppercase">
+                GB
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5 mt-1 opacity-80">
+              <span className="text-[10px] text-text-muted font-medium">
+                of {totalGB.toFixed(0)}
+              </span>
+              <span className="h-2 w-px bg-white/20" />
+              <span
+                className="text-[11px] font-bold tracking-wider"
+                style={{ color }}
+              >
+                {(percentage * 100).toFixed(0)}%
+              </span>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -57,7 +57,7 @@ describe('theme system', () => {
   it('should fallback to opta when current theme name is unknown', () => {
     const theme = getTheme();
     expect(theme.name).toBe('opta');
-    expect(theme.colors.primary).toBe('#8B5CF6');
+    expect(theme.colors.primary).toBe('#A855F7');
   });
 
   it('should return two directories from getCustomThemeDirs', () => {

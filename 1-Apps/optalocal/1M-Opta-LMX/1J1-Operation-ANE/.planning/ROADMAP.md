@@ -1,3 +1,7 @@
+---
+status: review
+---
+
 # Operation ANE — Roadmap
 
 ## Phase 0: Reconnaissance (1 day)

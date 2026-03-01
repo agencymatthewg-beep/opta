@@ -8,12 +8,12 @@
 import chalk from 'chalk';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
-const reviewHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+const reviewHandler = (args: string, ctx: SlashContext): Promise<SlashResult> => {
   // Toggle off if already in review mode and no args
   if (!args && ctx.chatState.currentMode === 'review') {
     ctx.chatState.currentMode = 'normal';
     console.log(chalk.green('\u2713') + ' Exited review mode');
-    return 'handled';
+    return Promise.resolve('handled');
   }
 
   // Enter review mode
@@ -32,7 +32,7 @@ const reviewHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   }
 
   console.log(chalk.dim('  Type /review to exit'));
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 export const reviewCommands: SlashCommandDef[] = [

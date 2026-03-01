@@ -14,14 +14,14 @@ Both platforms connect to the same Opta LMX server via HTTP/HTTPS:
 |-----------|----------|----------|
 | REST (HTTPS) | OpenAI-compatible | Chat completions, model management |
 | SSE (HTTPS) | Server-Sent Events | Live dashboard metrics, server events |
-| Bonjour/mDNS | UDP multicast | LAN server discovery (iOS native, Web manual) |
+| LAN endpoint | HTTP | Manual LAN server connection from web client |
 | Cloudflare Tunnel | HTTPS | WAN access through `*.trycloudflare.com` |
 
 ### Authentication
 
 - **Admin Key:** `X-Admin-Key` header for admin endpoints
 - **Chat API:** Bearer token or no auth (configurable in LMX)
-- **Key Storage:** iOS Keychain, Web localStorage (encrypted)
+- **Key Storage:** Web localStorage (encrypted)
 - **WAN Auth:** Admin key + optional TOTP (TBD)
 
 ### Data Models
@@ -109,7 +109,7 @@ interface Session {
 
 ### Typography
 
-- **Font:** Sora (Web), SF Pro (iOS fallback)
+- **Font:** Sora
 - **Headings:** 600-700 weight, gradient text for hero elements
 - **Body:** 400 weight, 0.85-0.95rem
 - **Monospace:** SF Mono / Fira Code for code, metrics, server output
@@ -117,14 +117,14 @@ interface Session {
 ### Iconography
 
 - **Web:** Lucide React
-- **iOS:** SF Symbols
+- **Icons:** Lucide React
 - **Style:** Outline, 1.5px stroke, rounded joins
 
 ### Motion Principles
 
 - **Web:** Framer Motion — `ease-out` for entrances, `spring` for interactions
-- **iOS:** SwiftUI `.spring(response: 0.35, dampingFraction: 0.8)` — `.optaSpring`
-- **Glass panels:** `backdrop-filter: blur(20px)` (Web), `.ultraThinMaterial` (iOS)
+- **Motion:** Framer Motion spring presets
+- **Glass panels:** `backdrop-filter: blur(20px)`
 - **Entrance animations:** Fade up with stagger (50ms between siblings)
 - **Data updates:** Animate number changes, smooth gauge transitions
 
@@ -132,10 +132,10 @@ interface Session {
 
 ## Feature Parity Matrix
 
-| Feature | Web | iOS | Notes |
+| Feature | Web | Notes |
 |---------|-----|-----|-------|
-| Server discovery (LAN) | Manual IP entry | Bonjour auto-discover | mDNS not available in browsers |
-| Server discovery (WAN) | Manual tunnel URL | QR code scan | iOS camera-native |
+| Server discovery (LAN) | Manual endpoint entry | mDNS not available in browsers |
+| Server discovery (WAN) | Manual tunnel URL | Cloudflare tunnel endpoint |
 | Streaming chat | Full | Full | Identical API |
 | Dashboard metrics | Full (SSE) | Full (SSE) | Same data, different layout |
 | Model load/unload | Full | Full | Identical API |
@@ -143,14 +143,14 @@ interface Session {
 | Session management | Full CRUD | Browse + resume | Web has full editing |
 | RAG Studio | Full (drag-drop) | Simplified | Desktop-grade feature |
 | Multi-model router | Full (drag UI) | Simplified (picker) | Web has richer interaction |
-| Voice chat | N/A | Full (Whisper+TTS) | iOS microphone-native |
+| Voice chat | Planned | Browser mic permissions + pipeline TBD |
 | Image/Vision chat | Drag-and-drop | Camera capture | Platform-native input |
-| Push notifications | N/A | Full | iOS-exclusive |
-| Widgets | N/A | Home screen + Lock | iOS-exclusive |
-| Siri Shortcuts | N/A | Full | iOS-exclusive |
-| Tool approval | Full | Push notification | iOS push + Web inline |
+| Notifications | Planned | Web notifications backlog |
+| Widgets | N/A | Not in web scope |
+| Shortcuts | N/A | Not in web scope |
+| Tool approval | Full | Inline web approvals |
 | Multi-server fleet | Full | Simplified | Admin feature |
-| Shared conversations | Full (WebSocket) | Observer only | Web = host, iOS = join |
+| Shared conversations | Full (WebSocket) | Web-only host/join |
 | Automation scheduler | Full (calendar UI) | N/A | Desktop-grade feature |
 
 **Legend:**
@@ -167,7 +167,7 @@ interface Session {
 |--------|---------|---------|
 | `@opta/ui` | React component library (glass, buttons, inputs) | Web |
 | API types (TypeScript) | Shared request/response types | Web |
-| LMX API client | HTTP client for Opta LMX | Web (npm), iOS (reimplemented) |
+| LMX API client | HTTP client for Opta LMX | Web (npm) |
 | Session format | JSON session schema | Both (same format as Opta CLI) |
 
 ---
@@ -177,7 +177,7 @@ interface Session {
 Single-user app — no user accounts in v1.
 
 - **Server auth:** Admin API key set during LMX configuration
-- **Key storage:** iOS Keychain / Web encrypted localStorage
+- **Key storage:** encrypted localStorage
 - **WAN auth:** Admin key transported via QR code (contains URL + key)
 - **Future:** Optional TOTP for WAN access
 

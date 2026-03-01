@@ -35,11 +35,12 @@ describe('MessageList', () => {
     const messages = [
       {
         role: 'assistant',
-        content: '## Capability Summary\n\n---\n\n| Tool | Status |\n| --- | --- |\n| find_files | Working |',
+        content:
+          '## Capability Summary\n\n---\n\n| Tool | Status |\n| --- | --- |\n| find_files | Working |',
       },
     ];
     const { lastFrame } = render(
-      <MessageList messages={messages} terminalWidth={542} height={20} thinkingExpanded={false} />,
+      <MessageList messages={messages} terminalWidth={542} height={20} thinkingExpanded={false} />
     );
     const frame = sanitizeTerminalText(lastFrame() ?? '');
     const hrWidths = frame
@@ -78,15 +79,12 @@ describe('MessageList', () => {
   it('should show welcome screen when no messages exist', () => {
     const { lastFrame } = render(<MessageList messages={[]} />);
     const frame = lastFrame() ?? '';
-    expect(frame).toContain('Opta CLI');
-    expect(frame).toContain('/help');
-    expect(frame).toContain('Quick Start');
+    expect(frame).toContain('QUICK START');
+    expect(frame).toContain('KEYBINDINGS');
   });
 
   it('should render assistant markdown content', () => {
-    const messages = [
-      { role: 'assistant', content: '**bold** and `code`' },
-    ];
+    const messages = [{ role: 'assistant', content: '**bold** and `code`' }];
     const { lastFrame } = render(<MessageList messages={messages} />);
     // Should contain the text (with ANSI styling applied by marked-terminal)
     expect(lastFrame()).toContain('Opta');
@@ -113,9 +111,7 @@ describe('MessageList', () => {
   });
 
   it('applies assistant premium formatting for inline markdown headings', () => {
-    const messages = [
-      { role: 'assistant', content: 'Intro ## Section' },
-    ];
+    const messages = [{ role: 'assistant', content: 'Intro ## Section' }];
     const { lastFrame } = render(<MessageList messages={messages} />);
     const frame = sanitizeTerminalText(lastFrame() ?? '');
     expect(frame).toContain('Intro');
@@ -124,9 +120,7 @@ describe('MessageList', () => {
   });
 
   it('should render user messages as plain text', () => {
-    const messages = [
-      { role: 'user', content: '**not rendered as markdown**' },
-    ];
+    const messages = [{ role: 'user', content: '**not rendered as markdown**' }];
     const { lastFrame } = render(<MessageList messages={messages} />);
     // User messages stay raw — no markdown processing
     expect(lastFrame()).toContain('**not rendered as markdown**');
@@ -147,9 +141,7 @@ describe('MessageList', () => {
   });
 
   it('should accept streamingIdx prop', () => {
-    const messages = [
-      { role: 'assistant', content: 'Hello' },
-    ];
+    const messages = [{ role: 'assistant', content: 'Hello' }];
     const { lastFrame } = render(<MessageList messages={messages} streamingIdx={0} />);
     expect(lastFrame()).toContain('Hello');
   });

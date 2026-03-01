@@ -8,6 +8,7 @@ import { ExitError, EXIT } from '../core/errors.js';
 import { createSegmentedStepProgressTracker } from '../ui/progress.js';
 import { colorizeOptaWord } from '../ui/brand.js';
 import { writeUpdateLog } from '../journal/update-log.js';
+import { homedir, isWindows } from '../platform/index.js';
 
 export type UpdateComponent = 'cli' | 'lmx' | 'plus' | 'web';
 export type UpdateTarget = 'local' | 'remote';
@@ -115,8 +116,7 @@ function quoteSh(input: string): string {
 
 function expandHome(input: string): string {
   if (!input.startsWith('~')) return input;
-  const home = process.env['HOME'] ?? '';
-  return input.replace(/^~(?=$|\/)/, home);
+  return homedir() + input.slice(1);
 }
 
 function isLocalHost(host: string): boolean {
@@ -160,7 +160,10 @@ export function remoteConnectFailureStatus(mode: UpdateTargetMode): StepStatus {
   return mode === 'auto' ? 'skip' : 'fail';
 }
 
-export function resolveRemoteHostCandidates(primaryHost: string, fallbackHosts: readonly string[] = []): string[] {
+export function resolveRemoteHostCandidates(
+  primaryHost: string,
+  fallbackHosts: readonly string[] = []
+): string[] {
   const hosts = [primaryHost, ...fallbackHosts]
     .map((host) => host.trim())
     .filter((host) => host.length > 0);
@@ -180,7 +183,7 @@ export function resolveRemoteHostCandidates(primaryHost: string, fallbackHosts: 
 export async function selectReachableRemoteHost(
   hosts: readonly string[],
   probeHost: (host: string) => Promise<CommandResult>,
-  options: SelectReachableRemoteHostOptions = {},
+  options: SelectReachableRemoteHostOptions = {}
 ): Promise<RemoteHostSelection> {
   if (options.parallel) {
     const settled = await Promise.all(
@@ -192,7 +195,7 @@ export async function selectReachableRemoteHost(
           exitCode: result.exitCode,
           detail,
         } satisfies RemoteHostProbe;
-      }),
+      })
     );
 
     const selected = settled.find((entry) => entry.exitCode === 0);
@@ -254,10 +257,7 @@ function detectAppsRoot(startCwd: string): string | null {
       return asApps;
     }
 
-    if (
-      existsSync(join(resolved, '1D-Opta-CLI-TS')) &&
-      existsSync(join(resolved, '1M-Opta-LMX'))
-    ) {
+    if (existsSync(join(resolved, '1D-Opta-CLI-TS')) && existsSync(join(resolved, '1M-Opta-LMX'))) {
       return resolved;
     }
   }
@@ -287,7 +287,11 @@ function componentRepoPath(component: UpdateComponent, appsRoot: string): string
   }
 }
 
-async function runLocalCommand(command: string, cwd?: string, dryRun = false): Promise<CommandResult> {
+async function runLocalCommand(
+  command: string,
+  cwd?: string,
+  dryRun = false
+): Promise<CommandResult> {
   if (dryRun) {
     return { exitCode: 0, stdout: `[dry-run] ${command}`, stderr: '' };
   }
@@ -304,17 +308,25 @@ async function runLocalCommand(command: string, cwd?: string, dryRun = false): P
   };
 }
 
-async function runRemoteCommand(ssh: SshConfig, command: string, dryRun = false): Promise<CommandResult> {
+async function runRemoteCommand(
+  ssh: SshConfig,
+  command: string,
+  dryRun = false
+): Promise<CommandResult> {
   if (dryRun) {
     return { exitCode: 0, stdout: `[dry-run][${ssh.host}] ${command}`, stderr: '' };
   }
 
   const commandWithPath = `export PATH=/opt/homebrew/bin:/usr/local/bin:$PATH; ${command}`;
   const args: string[] = [
-    '-o', 'BatchMode=yes',
-    '-o', `ConnectTimeout=${SSH_CONNECT_TIMEOUT_SECONDS}`,
-    '-o', 'ServerAliveInterval=5',
-    '-o', 'ServerAliveCountMax=2',
+    '-o',
+    'BatchMode=yes',
+    '-o',
+    `ConnectTimeout=${SSH_CONNECT_TIMEOUT_SECONDS}`,
+    '-o',
+    'ServerAliveInterval=5',
+    '-o',
+    'ServerAliveCountMax=2',
   ];
   if (ssh.identityFile) {
     args.push('-i', ssh.identityFile);
@@ -329,7 +341,10 @@ async function runRemoteCommand(ssh: SshConfig, command: string, dryRun = false)
   };
 }
 
-async function verifyRemoteCliCommands(ssh: SshConfig, dryRun: boolean): Promise<{ status: StepStatus; message: string }> {
+async function verifyRemoteCliCommands(
+  ssh: SshConfig,
+  dryRun: boolean
+): Promise<{ status: StepStatus; message: string }> {
   if (dryRun) {
     return { status: 'ok', message: 'dry-run remote command verification' };
   }
@@ -347,7 +362,11 @@ async function verifyRemoteCliCommands(ssh: SshConfig, dryRun: boolean): Promise
 
   const result = await runRemoteCommand(ssh, script, false);
   if (result.exitCode === 40) {
-    return { status: 'fail', message: 'node runtime missing on remote host (install Node.js so /opt/homebrew/bin/opta can run)' };
+    return {
+      status: 'fail',
+      message:
+        'node runtime missing on remote host (install Node.js so /opt/homebrew/bin/opta can run)',
+    };
   }
   if (result.exitCode === 41) {
     return { status: 'fail', message: 'opta command not found in PATH on remote host' };
@@ -361,7 +380,10 @@ async function verifyRemoteCliCommands(ssh: SshConfig, dryRun: boolean): Promise
     return { status: 'fail', message: `missing command entries in remote opta --help: ${missing}` };
   }
   if (result.exitCode !== 0) {
-    return { status: 'fail', message: result.stderr || result.stdout || 'remote command verification failed' };
+    return {
+      status: 'fail',
+      message: result.stderr || result.stdout || 'remote command verification failed',
+    };
   }
 
   const versionMarker = result.stdout.split('\n').find((line) => line.startsWith('__VERSION__:'));
@@ -410,7 +432,7 @@ function delayMs(ms: number): Promise<void> {
 async function runRemoteLanStabilityGuard(
   ssh: SshConfig,
   dryRun: boolean,
-  mode: UpdateTargetMode,
+  mode: UpdateTargetMode
 ): Promise<RemoteLanGuardResult> {
   if (dryRun) {
     return {
@@ -506,9 +528,10 @@ async function runRemoteLanStabilityGuard(
   const failureStatus = remoteConnectFailureStatus(mode);
   const fixDetail = summarizeOutput(fix.stderr || fix.stdout);
   const verifyDetail = summarizeOutput(verify.stderr || verify.stdout);
-  const modeHint = mode === 'auto'
-    ? 'auto mode skipped Studio updates; use --target remote once SSH is stable'
-    : 'fix network path and rerun update';
+  const modeHint =
+    mode === 'auto'
+      ? 'auto mode skipped Studio updates; use --target remote once SSH is stable'
+      : 'fix network path and rerun update';
 
   return {
     status: failureStatus,
@@ -527,7 +550,10 @@ function isRecoverableGitFailure(raw: string): boolean {
   );
 }
 
-function handleGitPullFailure(result: CommandResult, prefix: string): { status: StepStatus; message: string } {
+function handleGitPullFailure(
+  result: CommandResult,
+  prefix: string
+): { status: StepStatus; message: string } {
   const detail = result.stderr || result.stdout;
   if (isRecoverableGitFailure(detail)) {
     return {
@@ -542,7 +568,11 @@ function handleGitPullFailure(result: CommandResult, prefix: string): { status: 
   };
 }
 
-async function updateGitLocal(repoPath: string, noPull: boolean, dryRun: boolean): Promise<{ status: StepStatus; message: string }> {
+async function updateGitLocal(
+  repoPath: string,
+  noPull: boolean,
+  dryRun: boolean
+): Promise<{ status: StepStatus; message: string }> {
   if (!existsSync(repoPath)) {
     return { status: 'skip', message: `repo missing: ${repoPath}` };
   }
@@ -550,14 +580,21 @@ async function updateGitLocal(repoPath: string, noPull: boolean, dryRun: boolean
     return { status: 'skip', message: 'not a git repository (skipped pull)' };
   }
 
-  const hasHead = await runLocalCommand('git rev-parse --verify HEAD >/dev/null 2>&1', repoPath, dryRun);
+  const hasHead = await runLocalCommand(
+    'git rev-parse --verify HEAD >/dev/null 2>&1',
+    repoPath,
+    dryRun
+  );
   if (hasHead.exitCode !== 0) {
     return { status: 'skip', message: 'invalid git metadata (missing HEAD, skipped pull)' };
   }
 
   const dirty = await runLocalCommand('git status --porcelain', repoPath, dryRun);
   if (dirty.exitCode !== 0) {
-    return { status: 'skip', message: `git status unavailable (skipped pull): ${summarizeOutput(dirty.stderr || dirty.stdout)}` };
+    return {
+      status: 'skip',
+      message: `git status unavailable (skipped pull): ${summarizeOutput(dirty.stderr || dirty.stdout)}`,
+    };
   }
   if (!dryRun && dirty.stdout.trim().length > 0) {
     return { status: 'skip', message: 'dirty working tree (skipped pull)' };
@@ -567,7 +604,11 @@ async function updateGitLocal(repoPath: string, noPull: boolean, dryRun: boolean
     return { status: 'ok', message: 'git pull skipped (--no-pull)' };
   }
 
-  const pull = await runLocalCommand('git fetch --all --prune && git pull --ff-only', repoPath, dryRun);
+  const pull = await runLocalCommand(
+    'git fetch --all --prune && git pull --ff-only',
+    repoPath,
+    dryRun
+  );
   if (pull.exitCode !== 0) {
     return handleGitPullFailure(pull, 'git pull');
   }
@@ -575,37 +616,63 @@ async function updateGitLocal(repoPath: string, noPull: boolean, dryRun: boolean
   return { status: 'ok', message: dryRun ? 'dry-run git sync' : 'git sync complete' };
 }
 
-async function updateGitRemote(repoPath: string, noPull: boolean, ssh: SshConfig, dryRun: boolean): Promise<{ status: StepStatus; message: string }> {
+async function updateGitRemote(
+  repoPath: string,
+  noPull: boolean,
+  ssh: SshConfig,
+  dryRun: boolean
+): Promise<{ status: StepStatus; message: string }> {
   const script = [
     `if [ ! -d ${quoteSh(repoPath)} ]; then exit 24; fi`,
     `if [ ! -d ${quoteSh(join(repoPath, '.git'))} ]; then exit 26; fi`,
     `git -C ${quoteSh(repoPath)} rev-parse --verify HEAD >/dev/null 2>&1 || exit 27`,
     `status_out="$(git -C ${quoteSh(repoPath)} status --porcelain 2>/dev/null)" || exit 28`,
     'if [ -n "$status_out" ]; then exit 25; fi',
-    noPull ? ':' : `git -C ${quoteSh(repoPath)} fetch --all --prune && git -C ${quoteSh(repoPath)} pull --ff-only`,
+    noPull
+      ? ':'
+      : `git -C ${quoteSh(repoPath)} fetch --all --prune && git -C ${quoteSh(repoPath)} pull --ff-only`,
   ].join('; ');
 
   const result = await runRemoteCommand(ssh, script, dryRun);
 
   if (result.exitCode === 24) return { status: 'skip', message: `repo missing: ${repoPath}` };
-  if (result.exitCode === 26) return { status: 'skip', message: 'not a git repository (skipped pull)' };
-  if (result.exitCode === 27) return { status: 'skip', message: 'invalid git metadata (missing HEAD, skipped pull)' };
-  if (result.exitCode === 28) return { status: 'skip', message: 'git status unavailable (skipped pull)' };
-  if (result.exitCode === 25) return { status: 'skip', message: 'dirty working tree (skipped pull)' };
+  if (result.exitCode === 26)
+    return { status: 'skip', message: 'not a git repository (skipped pull)' };
+  if (result.exitCode === 27)
+    return { status: 'skip', message: 'invalid git metadata (missing HEAD, skipped pull)' };
+  if (result.exitCode === 28)
+    return { status: 'skip', message: 'git status unavailable (skipped pull)' };
+  if (result.exitCode === 25)
+    return { status: 'skip', message: 'dirty working tree (skipped pull)' };
   if (result.exitCode !== 0) {
     return handleGitPullFailure(result, 'git sync');
   }
 
-  return { status: 'ok', message: noPull ? 'git pull skipped (--no-pull)' : (dryRun ? 'dry-run git sync' : 'git sync complete') };
+  return {
+    status: 'ok',
+    message: noPull
+      ? 'git pull skipped (--no-pull)'
+      : dryRun
+        ? 'dry-run git sync'
+        : 'git sync complete',
+  };
 }
 
-async function runComponentBuildLocal(component: UpdateComponent, repoPath: string, dryRun: boolean, lmxPort: number): Promise<{ status: StepStatus; message: string }> {
+async function runComponentBuildLocal(
+  component: UpdateComponent,
+  repoPath: string,
+  dryRun: boolean,
+  lmxPort: number
+): Promise<{ status: StepStatus; message: string }> {
   switch (component) {
     case 'cli': {
       const cmd = CLI_UPDATE_BUILD_SCRIPT;
       const result = await runLocalCommand(cmd, repoPath, dryRun);
       if (result.exitCode !== 0) return { status: 'fail', message: result.stderr || result.stdout };
-      return { status: 'ok', message: dryRun ? 'dry-run typecheck + build' : 'npm typecheck + build complete' };
+      return {
+        status: 'ok',
+        message: dryRun ? 'dry-run typecheck + build' : 'npm typecheck + build complete',
+      };
     }
     case 'lmx': {
       const installCmd = [
@@ -615,7 +682,8 @@ async function runComponentBuildLocal(component: UpdateComponent, repoPath: stri
       ].join(' ');
 
       const install = await runLocalCommand(installCmd, repoPath, dryRun);
-      if (install.exitCode !== 0) return { status: 'fail', message: install.stderr || install.stdout };
+      if (install.exitCode !== 0)
+        return { status: 'fail', message: install.stderr || install.stdout };
 
       const restartCmd = [
         'pkill -f "python -m opta_lmx.main" >/dev/null 2>&1 || true;',
@@ -633,10 +701,16 @@ async function runComponentBuildLocal(component: UpdateComponent, repoPath: stri
 
       const restart = await runLocalCommand(restartCmd, repoPath, dryRun);
       if (restart.exitCode !== 0) {
-        return { status: 'fail', message: `install ok, restart/health failed: ${restart.stderr || restart.stdout}` };
+        return {
+          status: 'fail',
+          message: `install ok, restart/health failed: ${restart.stderr || restart.stdout}`,
+        };
       }
 
-      return { status: 'ok', message: dryRun ? 'dry-run install/restart' : 'install + restart + health check complete' };
+      return {
+        status: 'ok',
+        message: dryRun ? 'dry-run install/restart' : 'install + restart + health check complete',
+      };
     }
     case 'plus': {
       const result = await runLocalCommand('swift build', repoPath, dryRun);
@@ -647,7 +721,7 @@ async function runComponentBuildLocal(component: UpdateComponent, repoPath: stri
       const result = await runLocalCommand(
         'if command -v pnpm >/dev/null 2>&1; then pnpm -C web run build || (pnpm -C web install --no-frozen-lockfile && pnpm -C web run build); else npm --prefix web run build || (npm --prefix web install --no-fund --no-audit && npm --prefix web run build); fi',
         repoPath,
-        dryRun,
+        dryRun
       );
       if (result.exitCode !== 0) return { status: 'fail', message: result.stderr || result.stdout };
       return { status: 'ok', message: dryRun ? 'dry-run build' : 'web build complete' };
@@ -655,7 +729,14 @@ async function runComponentBuildLocal(component: UpdateComponent, repoPath: stri
   }
 }
 
-async function runComponentBuildRemote(component: UpdateComponent, repoPath: string, dryRun: boolean, ssh: SshConfig, lmxPort: number, lmxPythonPath: string): Promise<{ status: StepStatus; message: string }> {
+async function runComponentBuildRemote(
+  component: UpdateComponent,
+  repoPath: string,
+  dryRun: boolean,
+  ssh: SshConfig,
+  lmxPort: number,
+  lmxPythonPath: string
+): Promise<{ status: StepStatus; message: string }> {
   let command: string;
 
   switch (component) {
@@ -703,11 +784,18 @@ async function runComponentBuildRemote(component: UpdateComponent, repoPath: str
     return { status: 'fail', message: result.stderr || result.stdout || 'remote command failed' };
   }
 
-  const okMessage = component === 'lmx'
-    ? (dryRun ? 'dry-run install/restart' : 'install + restart + health check complete')
-    : component === 'cli'
-      ? (dryRun ? 'dry-run typecheck + build' : 'typecheck + build complete')
-    : (dryRun ? 'dry-run build' : 'build complete');
+  const okMessage =
+    component === 'lmx'
+      ? dryRun
+        ? 'dry-run install/restart'
+        : 'install + restart + health check complete'
+      : component === 'cli'
+        ? dryRun
+          ? 'dry-run typecheck + build'
+          : 'typecheck + build complete'
+        : dryRun
+          ? 'dry-run build'
+          : 'build complete';
   return { status: 'ok', message: okMessage };
 }
 
@@ -716,17 +804,19 @@ function printHumanSummary(results: StepResult[]): void {
   console.log(chalk.bold(colorizeOptaWord('Opta Update Summary')));
 
   for (const result of results) {
-    const prefix = result.status === 'ok'
-      ? chalk.green('✓')
-      : result.status === 'skip'
-        ? chalk.yellow('!')
-        : chalk.red('✗');
+    const prefix =
+      result.status === 'ok'
+        ? chalk.green('✓')
+        : result.status === 'skip'
+          ? chalk.yellow('!')
+          : chalk.red('✗');
 
-    const targetLabel = result.target === 'remote' && result.host
-      ? `${result.target}@${result.host}`
-      : result.target;
+    const targetLabel =
+      result.target === 'remote' && result.host ? `${result.target}@${result.host}` : result.target;
 
-    console.log(`${prefix} [${targetLabel}] ${result.component}:${result.step} — ${result.message}`);
+    console.log(
+      `${prefix} [${targetLabel}] ${result.component}:${result.step} — ${result.message}`
+    );
   }
 
   const failures = results.filter((r) => r.status === 'fail').length;
@@ -742,7 +832,7 @@ function componentStep(
   component: UpdateComponent,
   step: string,
   outcome: { status: StepStatus; message: string },
-  host?: string,
+  host?: string
 ): StepResult {
   return {
     target,
@@ -766,6 +856,14 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const mode = opts.target ?? 'auto';
   const remoteHost = opts.remoteHost ?? config.connection.host;
   const targets = resolveTargets(mode, remoteHost);
+
+  // Windows can run local updates but not SSH-based remote updates.
+  if (isWindows && targets.includes('remote') && !isLocalHost(remoteHost)) {
+    throw new (await import('../core/errors.js')).OptaError(
+      'Remote updates via SSH are not supported on Windows.\n\n' +
+        'Use --target local to update local components, or run remote updates from a macOS/Linux host.'
+    );
+  }
   let remoteHostUsed: string | null = null;
 
   const results: StepResult[] = [];
@@ -773,45 +871,43 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const noBuild = opts.build === false;
   const noPull = opts.pull === false;
 
-  const localAppsRoot = opts.localRoot
-    ? expandHome(opts.localRoot)
-    : detectAppsRoot(process.cwd());
+  const localAppsRoot = opts.localRoot ? expandHome(opts.localRoot) : detectAppsRoot(process.cwd());
 
   const remoteAppsRoot = opts.remoteRoot
     ? expandHome(opts.remoteRoot)
     : deriveRemoteAppsRootFromLmxPath(config.connection.ssh.lmxPath);
 
-  const verifyStepCount = targets.includes('remote') && components.includes('cli') && !isLocalHost(remoteHost)
-    ? 1
-    : 0;
-  const remoteGuardStepCount = targets.includes('remote') && !isLocalHost(remoteHost)
-    ? 1
-    : 0;
+  const verifyStepCount =
+    targets.includes('remote') && components.includes('cli') && !isLocalHost(remoteHost) ? 1 : 0;
+  const remoteGuardStepCount = targets.includes('remote') && !isLocalHost(remoteHost) ? 1 : 0;
   const localStepCount = targets.includes('local')
-    ? (localAppsRoot ? components.length * 2 : 1)
+    ? localAppsRoot
+      ? components.length * 2
+      : 1
     : 0;
   const remoteStepCount = targets.includes('remote')
-    ? (
-        isLocalHost(remoteHost)
-          ? components.length
-          : (components.length * 2 + verifyStepCount + remoteGuardStepCount)
-      )
+    ? isLocalHost(remoteHost)
+      ? components.length
+      : components.length * 2 + verifyStepCount + remoteGuardStepCount
     : 0;
   const progress = createSegmentedStepProgressTracker(
     [
       ...(localStepCount > 0 ? [{ key: 'local', label: 'Local', totalSteps: localStepCount }] : []),
-      ...(remoteStepCount > 0 ? [{ key: 'remote', label: 'Studio', totalSteps: remoteStepCount }] : []),
+      ...(remoteStepCount > 0
+        ? [{ key: 'remote', label: 'Studio', totalSteps: remoteStepCount }]
+        : []),
     ],
     'Update progress',
-    !opts.json,
+    !opts.json
   );
   const pushResult = (result: StepResult): void => {
     results.push(result);
-    const hostSuffix = result.target === 'remote' && result.host
-      ? `@${result.host}`
-      : '';
+    const hostSuffix = result.target === 'remote' && result.host ? `@${result.host}` : '';
     const scope = result.target === 'remote' ? 'studio' : 'local';
-    progress.tick(result.target, `[${scope}] ${result.component}:${result.step}${hostSuffix} ${result.status}`);
+    progress.tick(
+      result.target,
+      `[${scope}] ${result.component}:${result.step}${hostSuffix} ${result.status}`
+    );
   };
 
   if (targets.includes('local')) {
@@ -842,7 +938,12 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           continue;
         }
 
-        const buildResult = await runComponentBuildLocal(component, repoPath, dryRun, config.connection.port);
+        const buildResult = await runComponentBuildLocal(
+          component,
+          repoPath,
+          dryRun,
+          config.connection.port
+        );
         pushResult(componentStep('local', component, 'build', buildResult));
       }
     }
@@ -868,22 +969,39 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
         identityFile: expandHome(opts.identityFile ?? config.connection.ssh.identityFile),
       };
 
-      const remoteCandidates = resolveRemoteHostCandidates(remoteHost, config.connection.fallbackHosts);
-      const selection = await selectReachableRemoteHost(remoteCandidates, (candidateHost) => runRemoteCommand({
-        ...baseSshConfig,
-        host: candidateHost,
-      }, 'echo connected', dryRun), { parallel: true });
+      const remoteCandidates = resolveRemoteHostCandidates(
+        remoteHost,
+        config.connection.fallbackHosts
+      );
+      const selection = await selectReachableRemoteHost(
+        remoteCandidates,
+        (candidateHost) =>
+          runRemoteCommand(
+            {
+              ...baseSshConfig,
+              host: candidateHost,
+            },
+            'echo connected',
+            dryRun
+          ),
+        { parallel: true }
+      );
 
       if (!selection.selectedHost) {
         const connectStatus = remoteConnectFailureStatus(mode);
-        const attemptDetail = selection.probes.length > 0
-          ? selection.probes.map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`).join('; ')
-          : 'ssh failed';
-        const attemptedHosts = remoteCandidates.length > 0 ? remoteCandidates.join(', ') : remoteHost;
+        const attemptDetail =
+          selection.probes.length > 0
+            ? selection.probes
+                .map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`)
+                .join('; ')
+            : 'ssh failed';
+        const attemptedHosts =
+          remoteCandidates.length > 0 ? remoteCandidates.join(', ') : remoteHost;
         const connectDetail = `ssh failed for hosts (${attemptedHosts}) — ${attemptDetail}`;
-        const connectMessage = mode === 'auto'
-          ? `${connectDetail} (auto mode skipped Studio updates; use --target remote once SSH is reachable)`
-          : connectDetail;
+        const connectMessage =
+          mode === 'auto'
+            ? `${connectDetail} (auto mode skipped Studio updates; use --target remote once SSH is reachable)`
+            : connectDetail;
         for (const component of components) {
           pushResult({
             target: 'remote',
@@ -903,10 +1021,18 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
         const guardComponent = components[0] ?? 'cli';
         const guard = await runRemoteLanStabilityGuard(sshConfig, dryRun, mode);
-        pushResult(componentStep('remote', guardComponent, 'network', {
-          status: guard.status,
-          message: guard.message,
-        }, sshConfig.host));
+        pushResult(
+          componentStep(
+            'remote',
+            guardComponent,
+            'network',
+            {
+              status: guard.status,
+              message: guard.message,
+            },
+            sshConfig.host
+          )
+        );
 
         if (!guard.canProceed) {
           const gatedMessage = 'skipped due LAN guard failure';
@@ -953,11 +1079,12 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           }
         } else {
           for (const component of components) {
-            const repoPath = component === 'lmx'
-              ? config.connection.ssh.lmxPath
-              : remoteAppsRoot
-                ? componentRepoPath(component, remoteAppsRoot)
-                : '';
+            const repoPath =
+              component === 'lmx'
+                ? config.connection.ssh.lmxPath
+                : remoteAppsRoot
+                  ? componentRepoPath(component, remoteAppsRoot)
+                  : '';
 
             if (!repoPath) {
               pushResult({
@@ -994,7 +1121,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
                 dryRun,
                 sshConfig,
                 config.connection.port,
-                config.connection.ssh.pythonPath,
+                config.connection.ssh.pythonPath
               );
               pushResult(componentStep('remote', component, 'build', buildResult, sshConfig.host));
             }
@@ -1012,26 +1139,32 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   progress.done('all update steps finished');
 
   if (opts.json) {
-    console.log(JSON.stringify({
-      mode,
-      components,
-      targets,
-      dryRun,
-      noBuild,
-      noPull,
-      localAppsRoot,
-      remoteHost,
-      remoteHostUsed,
-      remoteAppsRoot,
-      results,
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          mode,
+          components,
+          targets,
+          dryRun,
+          noBuild,
+          noPull,
+          localAppsRoot,
+          remoteHost,
+          remoteHostUsed,
+          remoteAppsRoot,
+          results,
+        },
+        null,
+        2
+      )
+    );
   } else {
     printHumanSummary(results);
   }
 
   let updateLogPath: string | null = null;
   const journal = config.journal;
-  if (journal?.enabled !== false) {
+  if (journal?.enabled) {
     try {
       const written = await writeUpdateLog({
         summary: `opta update (${mode}) — ${components.join(', ')}`,
