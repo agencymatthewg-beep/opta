@@ -32,7 +32,7 @@ export default function HomePage() {
       <Nav />
       <main className="pt-16">
         {/* Hero */}
-        <section className="relative py-24 px-6 overflow-hidden">
+        <section className="relative py-12 sm:py-16 lg:py-20 px-6 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
           <div className="max-w-4xl mx-auto text-center relative">
             <motion.div
@@ -40,15 +40,15 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={spring}
             >
-              <OptaRing size={64} className="mx-auto mb-6" />
-              <h1 className="text-4xl sm:text-5xl font-bold text-moonlight mb-4">
+              <OptaRing size={48} className="mx-auto mb-4 sm:mb-6 hidden sm:block" />
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-moonlight mb-3 sm:mb-4">
                 Opta Help
               </h1>
-              <p className="text-lg text-text-secondary max-w-2xl mx-auto mb-8">
+              <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto mb-6 sm:mb-8">
                 Comprehensive documentation for the Opta Local private AI stack.
                 CLI, Daemon, LMX inference, Local Web, and more.
               </p>
-              <div className="flex items-center justify-center gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Link
                   href="/docs/getting-started/"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all"

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TabGroup } from "@/components/docs/TabGroup";
@@ -19,6 +20,7 @@ const tocItems = [
 ];
 
 export default function DeveloperAuthPage() {
+  const { prev, next } = getPrevNext("/docs/developer/auth/");
   return (
     <>
       <Breadcrumb
@@ -166,7 +168,7 @@ const ws = new WebSocket(
                       The admin key is set during LMX installation and stored
                       in the macOS Keychain. To update it:
                     </p>
-                    <pre className="text-xs text-text-muted font-mono bg-[#0a0a0f] rounded p-2 overflow-x-auto">
+                    <pre className="text-xs text-text-muted font-mono bg-[var(--color-code-bg)] rounded p-2 overflow-x-auto">
                       {`security add-generic-password \\
   -s "opta-lmx" -a "admin" \\
   -w "<new-key>" -U`}
@@ -182,7 +184,7 @@ const ws = new WebSocket(
                       Pass the admin key as a Bearer token for administrative
                       requests:
                     </p>
-                    <pre className="text-xs text-text-muted font-mono bg-[#0a0a0f] rounded p-2 overflow-x-auto">
+                    <pre className="text-xs text-text-muted font-mono bg-[var(--color-code-bg)] rounded p-2 overflow-x-auto">
                       {`curl -X POST http://192.168.188.11:1234/admin/models/load \\
   -H "Authorization: Bearer <admin-key>" \\
   -H "Content-Type: application/json" \\
@@ -252,10 +254,7 @@ export ANTHROPIC_API_KEY="sk-ant-..."`}
             no Supabase configuration is needed.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Daemon Client SDK", href: "/docs/developer/sdk/" }}
-            next={{ title: "Feature Status", href: "/docs/feature-status/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

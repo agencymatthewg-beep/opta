@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -24,6 +25,8 @@ const tocItems = [
 ];
 
 export default function DaemonHttpApiPage() {
+  const { prev, next } = getPrevNext("/docs/daemon/http-api/");
+
   return (
     <>
       <Breadcrumb
@@ -262,10 +265,7 @@ export default function DaemonHttpApiPage() {
             <li><code>INTERNAL_ERROR</code> — Unexpected daemon error (500)</li>
           </ul>
 
-          <PrevNextNav
-            prev={{ title: "Lifecycle", href: "/docs/daemon/lifecycle/" }}
-            next={{ title: "WebSocket Events", href: "/docs/daemon/websocket/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

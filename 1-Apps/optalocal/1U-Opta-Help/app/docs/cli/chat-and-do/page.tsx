@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Callout } from "@/components/docs/Callout";
@@ -23,6 +24,8 @@ const tocItems = [
 ];
 
 export default function ChatAndDoPage() {
+  const { prev, next } = getPrevNext("/docs/cli/chat-and-do/");
+
   return (
     <>
       <Breadcrumb
@@ -314,10 +317,7 @@ Content: (47 lines)
             ]}
           />
 
-          <PrevNextNav
-            prev={{ title: "CLI Overview", href: "/docs/cli/" }}
-            next={{ title: "Model Management", href: "/docs/cli/models/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

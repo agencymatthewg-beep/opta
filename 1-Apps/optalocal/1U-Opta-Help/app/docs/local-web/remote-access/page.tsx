@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TabGroup } from "@/components/docs/TabGroup";
@@ -17,6 +18,8 @@ const tocItems = [
 ];
 
 export default function LocalWebRemoteAccessPage() {
+  const { prev, next } = getPrevNext("/docs/local-web/remote-access/");
+
   return (
     <>
       <Breadcrumb
@@ -183,10 +186,7 @@ Content-Type: application/json
             the browser&apos;s local storage for the duration of the session.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Chat", href: "/docs/local-web/chat/" }}
-            next={{ title: "Code Desktop", href: "/docs/code-desktop/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

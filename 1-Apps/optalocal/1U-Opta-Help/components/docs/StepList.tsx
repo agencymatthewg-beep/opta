@@ -1,5 +1,3 @@
-"use client";
-
 interface Step {
   title: string;
   description?: string;
@@ -14,7 +12,7 @@ export function StepList({ steps }: StepListProps) {
   return (
     <div className="space-y-6 mb-6">
       {steps.map((step, i) => (
-        <div key={i} className="flex gap-4">
+        <div key={step.title} className="flex gap-4">
           <div className="flex flex-col items-center">
             <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary shrink-0">
               {i + 1}

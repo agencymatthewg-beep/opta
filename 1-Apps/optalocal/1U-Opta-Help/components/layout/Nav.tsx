@@ -1,14 +1,67 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Search, Menu, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { Search, Menu, X, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { OptaRing } from "@/components/shared/OptaRing";
 import { SearchDialog } from "@/components/docs/SearchDialog";
+import { navigation } from "@/lib/content";
+
+function MobileSidebar({ onNavigate }: { onNavigate: () => void }) {
+  const pathname = usePathname();
+  return (
+    <nav className="space-y-6">
+      {navigation.map((section) => (
+        <div key={section.slug}>
+          <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-3">
+            {section.title}
+          </h3>
+          <ul className="space-y-0.5">
+            {section.items.map((item) => {
+              const isActive = pathname === item.href || pathname === item.href.replace(/\/$/, "");
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={onNavigate}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
+                      isActive
+                        ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
+                        : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                    )}
+                  >
+                    {isActive && <ChevronRight size={12} className="shrink-0" />}
+                    <span>{item.title}</span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+    </nav>
+  );
+}
 
 export function Nav() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const toggleSearch = useCallback(() => setSearchOpen(prev => !prev), []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        toggleSearch();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [toggleSearch]);
 
   return (
     <>
@@ -73,6 +126,19 @@ export function Nav() {
       </nav>
 
       <SearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} />
+
+      {/* Mobile navigation overlay */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
+          <div className="fixed inset-0 bg-void/80 backdrop-blur-sm" />
+          <div
+            className="fixed top-16 left-0 bottom-0 w-[280px] bg-surface border-r border-white/5 overflow-y-auto p-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <MobileSidebar onNavigate={() => setMobileMenuOpen(false)} />
+          </div>
+        </div>
+      )}
     </>
   );
 }

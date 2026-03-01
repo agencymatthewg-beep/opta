@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -19,6 +20,8 @@ const tocItems = [
 ];
 
 export default function LmxOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/lmx/");
+
   return (
     <>
       <Breadcrumb items={[{ label: "LMX", href: "/docs/lmx/" }, { label: "Overview" }]} />
@@ -194,10 +197,7 @@ for chunk in response:
             configuration instructions.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Troubleshooting", href: "/docs/daemon/troubleshooting/" }}
-            next={{ title: "Setup", href: "/docs/lmx/setup/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

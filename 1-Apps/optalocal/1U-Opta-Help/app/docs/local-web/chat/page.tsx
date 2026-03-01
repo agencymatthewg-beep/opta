@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -16,6 +17,8 @@ const tocItems = [
 ];
 
 export default function LocalWebChatPage() {
+  const { prev, next } = getPrevNext("/docs/local-web/chat/");
+
   return (
     <>
       <Breadcrumb
@@ -166,10 +169,7 @@ Content-Type: application/json
             consistent typography throughout.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Dashboard", href: "/docs/local-web/dashboard/" }}
-            next={{ title: "Remote Access", href: "/docs/local-web/remote-access/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

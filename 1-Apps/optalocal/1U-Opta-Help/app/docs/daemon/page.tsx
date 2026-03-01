@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -19,6 +20,8 @@ const tocItems = [
 ];
 
 export default function DaemonOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/daemon/");
+
   return (
     <>
       <Breadcrumb items={[{ label: "Daemon", href: "/docs/daemon/" }, { label: "Overview" }]} />
@@ -170,10 +173,7 @@ Token written to ~/.config/opta/daemon/state.json`}
             daemon process.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Slash Commands", href: "/docs/cli/slash-commands/" }}
-            next={{ title: "Lifecycle", href: "/docs/daemon/lifecycle/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

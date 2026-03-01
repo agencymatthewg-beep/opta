@@ -15,7 +15,7 @@ export function Sidebar() {
         <nav className="space-y-6">
           {navigation.map((section) => (
             <div key={section.slug}>
-              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 px-3">
+              <h3 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-2 px-3">
                 {section.title}
               </h3>
               <ul className="space-y-0.5">

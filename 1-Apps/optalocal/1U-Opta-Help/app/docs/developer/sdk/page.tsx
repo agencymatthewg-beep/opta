@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -19,6 +20,7 @@ const tocItems = [
 ];
 
 export default function DeveloperSdkPage() {
+  const { prev, next } = getPrevNext("/docs/developer/sdk/");
   return (
     <>
       <Breadcrumb
@@ -273,10 +275,7 @@ ws.on("disconnect", () => {
             events for everything that happened before the disconnection.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "MCP Integration", href: "/docs/developer/mcp/" }}
-            next={{ title: "API Authentication", href: "/docs/developer/auth/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 
 interface ApiEndpointProps {
@@ -53,7 +51,7 @@ export function ApiEndpoint({ method, path, description, auth, params, response 
         {response && (
           <div className="mt-3">
             <h4 className="text-xs font-semibold uppercase text-text-muted mb-1">Response</h4>
-            <pre className="text-xs text-text-muted font-mono bg-[#0a0a0f] rounded p-2 overflow-x-auto">{response}</pre>
+            <pre className="text-xs text-text-muted font-mono bg-[var(--color-code-bg)] rounded p-2 overflow-x-auto">{response}</pre>
           </div>
         )}
       </div>

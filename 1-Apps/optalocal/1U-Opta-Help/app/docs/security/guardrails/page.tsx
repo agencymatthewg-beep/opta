@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 
 const tocItems = [
@@ -20,6 +21,7 @@ const tocItems = [
 ];
 
 export default function SecurityGuardrailsPage() {
+  const { prev, next } = getPrevNext("/docs/security/guardrails/");
   return (
     <>
       <Breadcrumb
@@ -168,10 +170,7 @@ export default function SecurityGuardrailsPage() {
             and awareness of the implications.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Privacy", href: "/docs/security/privacy/" }}
-            next={{ title: "Developer", href: "/docs/developer/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

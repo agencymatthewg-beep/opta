@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 
 const tocItems = [
@@ -16,6 +17,7 @@ const tocItems = [
 ];
 
 export default function BrowserAutomationToolsPage() {
+  const { prev, next } = getPrevNext("/docs/browser-automation/tools/");
   return (
     <>
       <Breadcrumb
@@ -215,10 +217,7 @@ export default function BrowserAutomationToolsPage() {
             tool always requires explicit approval in chat mode.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Overview", href: "/docs/browser-automation/" }}
-            next={{ title: "Recording & Replay", href: "/docs/browser-automation/recording/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Callout } from "@/components/docs/Callout";
@@ -19,6 +20,8 @@ const tocItems = [
 ];
 
 export default function SessionsPage() {
+  const { prev, next } = getPrevNext("/docs/cli/sessions/");
+
   return (
     <>
       <Breadcrumb
@@ -226,10 +229,7 @@ jkl44556    Write API documentation        5 days ago        31`}
             picks up exactly where you left off, with full context preserved.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Model Management", href: "/docs/cli/models/" }}
-            next={{ title: "Configuration", href: "/docs/cli/configuration/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -16,6 +17,7 @@ const tocItems = [
 ];
 
 export default function SecurityOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/security/");
   return (
     <>
       <Breadcrumb items={[{ label: "Security" }]} />
@@ -166,10 +168,7 @@ LMX connections: outbound only (daemon → LMX)`}
             </li>
           </ul>
 
-          <PrevNextNav
-            prev={{ title: "Recording & Replay", href: "/docs/browser-automation/recording/" }}
-            next={{ title: "Permissions", href: "/docs/security/permissions/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

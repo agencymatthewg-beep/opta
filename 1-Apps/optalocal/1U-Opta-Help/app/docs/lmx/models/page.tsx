@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -26,6 +27,8 @@ const tocItems = [
 ];
 
 export default function LmxModelsPage() {
+  const { prev, next } = getPrevNext("/docs/lmx/models/");
+
   return (
     <>
       <Breadcrumb
@@ -297,10 +300,7 @@ oom_threshold_pct = 90   # Auto-unload threshold`}
             their total parameter count.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "API Reference", href: "/docs/lmx/api/" }}
-            next={{ title: "Monitoring", href: "/docs/lmx/monitoring/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

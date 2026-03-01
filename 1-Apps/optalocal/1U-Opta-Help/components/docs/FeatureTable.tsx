@@ -1,5 +1,3 @@
-"use client";
-
 import { Check, X, Minus } from "lucide-react";
 
 interface FeatureRow {
@@ -26,6 +24,8 @@ const statusLabels = {
 };
 
 export function FeatureTable({ title, features }: FeatureTableProps) {
+  const hasDescriptions = features.some(f => f.description);
+
   return (
     <div className="rounded-lg border border-white/5 overflow-hidden mb-4">
       {title && (
@@ -38,14 +38,14 @@ export function FeatureTable({ title, features }: FeatureTableProps) {
           <tr className="border-b border-white/5">
             <th className="text-left px-4 py-2 text-text-muted font-medium text-xs uppercase">Feature</th>
             <th className="text-left px-4 py-2 text-text-muted font-medium text-xs uppercase">Status</th>
-            {features.some(f => f.description) && (
+            {hasDescriptions && (
               <th className="text-left px-4 py-2 text-text-muted font-medium text-xs uppercase hidden sm:table-cell">Notes</th>
             )}
           </tr>
         </thead>
         <tbody>
-          {features.map((f, i) => (
-            <tr key={i} className="border-b border-white/5 last:border-0">
+          {features.map((f) => (
+            <tr key={f.feature} className="border-b border-white/5 last:border-0">
               <td className="px-4 py-2.5 text-text-primary">{f.feature}</td>
               <td className="px-4 py-2.5">
                 <span className="inline-flex items-center gap-1.5">
@@ -53,7 +53,7 @@ export function FeatureTable({ title, features }: FeatureTableProps) {
                   <span className="text-text-secondary text-xs">{statusLabels[f.status]}</span>
                 </span>
               </td>
-              {features.some(ff => ff.description) && (
+              {hasDescriptions && (
                 <td className="px-4 py-2.5 text-text-muted text-xs hidden sm:table-cell">{f.description}</td>
               )}
             </tr>

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 
 const tocItems = [
@@ -15,6 +16,7 @@ const tocItems = [
 ];
 
 export default function SecurityPermissionsPage() {
+  const { prev, next } = getPrevNext("/docs/security/permissions/");
   return (
     <>
       <Breadcrumb
@@ -179,10 +181,7 @@ export default function SecurityPermissionsPage() {
             guarantee that permission checks are always present.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Overview", href: "/docs/security/" }}
-            next={{ title: "Privacy", href: "/docs/security/privacy/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { TabGroup } from "@/components/docs/TabGroup";
@@ -22,6 +23,8 @@ const tocItems = [
 ];
 
 export default function DaemonWebSocketPage() {
+  const { prev, next } = getPrevNext("/docs/daemon/websocket/");
+
   return (
     <>
       <Breadcrumb
@@ -544,10 +547,7 @@ ws.onmessage = (e) => {
 };`}
           />
 
-          <PrevNextNav
-            prev={{ title: "HTTP API", href: "/docs/daemon/http-api/" }}
-            next={{ title: "Troubleshooting", href: "/docs/daemon/troubleshooting/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

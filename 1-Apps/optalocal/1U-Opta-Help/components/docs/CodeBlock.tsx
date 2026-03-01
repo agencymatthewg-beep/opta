@@ -14,10 +14,12 @@ interface CodeBlockProps {
 export function CodeBlock({ code, language, filename, className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable in non-secure contexts */ }
   };
 
   return (
@@ -37,7 +39,7 @@ export function CodeBlock({ code, language, filename, className }: CodeBlockProp
         </div>
       )}
       <div className="relative">
-        <pre className="p-4 overflow-x-auto text-sm leading-relaxed bg-[#0a0a0f]">
+        <pre className="p-4 overflow-x-auto text-sm leading-relaxed bg-[var(--color-code-bg)]">
           <code className="text-text-secondary">{code}</code>
         </pre>
         {!filename && !language && (

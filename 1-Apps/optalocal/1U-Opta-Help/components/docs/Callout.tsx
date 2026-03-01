@@ -1,5 +1,3 @@
-"use client";
-
 import { Info, AlertTriangle, AlertOctagon, Lightbulb } from "lucide-react";
 import { cn } from "@/lib/utils";
 

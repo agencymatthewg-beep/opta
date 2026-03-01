@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -17,6 +18,7 @@ const tocItems = [
 ];
 
 export default function DeveloperOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/developer/");
   return (
     <>
       <Breadcrumb items={[{ label: "Developer Guide" }]} />
@@ -166,10 +168,7 @@ ws.onmessage = (event) => {
             details on listing, adding, testing, and removing MCP servers.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Guardrails", href: "/docs/security/guardrails/" }}
-            next={{ title: "MCP Integration", href: "/docs/developer/mcp/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

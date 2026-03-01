@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -22,6 +23,8 @@ const tocItems = [
 ];
 
 export default function DaemonTroubleshootingPage() {
+  const { prev, next } = getPrevNext("/docs/daemon/troubleshooting/");
+
   return (
     <>
       <Breadcrumb
@@ -257,10 +260,7 @@ All checks passed.`}
             session data. Deleting it will permanently erase your conversation history.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "WebSocket Events", href: "/docs/daemon/websocket/" }}
-            next={{ title: "LMX Overview", href: "/docs/lmx/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

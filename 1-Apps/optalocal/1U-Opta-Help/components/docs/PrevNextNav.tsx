@@ -1,5 +1,3 @@
-"use client";
-
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import type { NavItem } from "@/lib/content";

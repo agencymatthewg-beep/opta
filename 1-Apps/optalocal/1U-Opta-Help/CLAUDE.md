@@ -12,7 +12,7 @@ TypeScript (strict mode)
 Tailwind CSS v3
 Framer Motion ^12
 Lucide React (icons)
-flexsearch (client-side search)
+Client-side search (manual corpus in search-data.ts)
 ```
 
 Static export only — `output: 'export'` in next.config.ts. No API routes. No server actions.
@@ -44,7 +44,7 @@ components/
 lib/
   utils.ts           ← cn()
   content.ts         ← Navigation tree + page metadata
-  search-data.ts     ← Search corpus for flexsearch
+  search-data.ts     ← Search corpus (derived from content.ts)
 ```
 
 ## Build

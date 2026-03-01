@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -24,6 +25,8 @@ const tocItems = [
 ];
 
 export default function DaemonLifecyclePage() {
+  const { prev, next } = getPrevNext("/docs/daemon/lifecycle/");
+
   return (
     <>
       <Breadcrumb
@@ -251,10 +254,7 @@ Daemon stopped.`}
             all previous sessions remain intact on disk and can be resumed.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Daemon Overview", href: "/docs/daemon/" }}
-            next={{ title: "HTTP API", href: "/docs/daemon/http-api/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

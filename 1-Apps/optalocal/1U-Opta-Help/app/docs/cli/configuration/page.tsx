@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { Callout } from "@/components/docs/Callout";
@@ -20,6 +21,8 @@ const tocItems = [
 ];
 
 export default function ConfigurationPage() {
+  const { prev, next } = getPrevNext("/docs/cli/configuration/");
+
   return (
     <>
       <Breadcrumb
@@ -275,10 +278,7 @@ ui.streaming        true`}
             </table>
           </div>
 
-          <PrevNextNav
-            prev={{ title: "Sessions", href: "/docs/cli/sessions/" }}
-            next={{ title: "Slash Commands", href: "/docs/cli/slash-commands/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

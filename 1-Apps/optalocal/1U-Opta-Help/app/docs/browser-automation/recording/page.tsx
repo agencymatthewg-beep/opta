@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -16,6 +17,7 @@ const tocItems = [
 ];
 
 export default function BrowserAutomationRecordingPage() {
+  const { prev, next } = getPrevNext("/docs/browser-automation/recording/");
   return (
     <>
       <Breadcrumb
@@ -168,10 +170,7 @@ export default function BrowserAutomationRecordingPage() {
             are at the browser root level.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Tools", href: "/docs/browser-automation/tools/" }}
-            next={{ title: "Security", href: "/docs/security/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

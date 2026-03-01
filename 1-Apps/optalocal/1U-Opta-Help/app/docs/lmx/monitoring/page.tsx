@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 import { CommandBlock } from "@/components/docs/CommandBlock";
@@ -26,6 +27,8 @@ const tocItems = [
 ];
 
 export default function LmxMonitoringPage() {
+  const { prev, next } = getPrevNext("/docs/lmx/monitoring/");
+
   return (
     <>
       <Breadcrumb
@@ -415,10 +418,7 @@ WARNING:  SSE client disconnected: ConnectionResetError`}
             details.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Model Management", href: "/docs/lmx/models/" }}
-            next={{ title: "Local Web Overview", href: "/docs/local-web/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>

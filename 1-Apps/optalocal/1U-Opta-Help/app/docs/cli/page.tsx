@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { Callout } from "@/components/docs/Callout";
 import { FeatureTable } from "@/components/docs/FeatureTable";
@@ -18,6 +19,8 @@ const tocItems = [
 ];
 
 export default function CliOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/cli/");
+
   return (
     <>
       <Breadcrumb
@@ -194,10 +197,7 @@ Commands:
             </table>
           </div>
 
-          <PrevNextNav
-            prev={{ title: "First Session", href: "/docs/getting-started/first-session/" }}
-            next={{ title: "Chat & Do", href: "/docs/cli/chat-and-do/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

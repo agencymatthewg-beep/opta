@@ -37,14 +37,8 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
   }, [query, search]);
 
   useEffect(() => {
+    if (!open) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        if (open) {
-          onClose();
-        }
-      }
-      if (!open) return;
       if (e.key === "Escape") {
         onClose();
       } else if (e.key === "ArrowDown") {

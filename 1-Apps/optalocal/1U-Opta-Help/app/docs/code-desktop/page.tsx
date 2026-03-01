@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -15,6 +16,8 @@ const tocItems = [
 ];
 
 export default function CodeDesktopOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/code-desktop/");
+
   return (
     <>
       <Breadcrumb items={[{ label: "Code Desktop" }]} />
@@ -127,10 +130,7 @@ Opta LMX  192.168.188.11:1234`}
             <li>Framer Motion spring physics for animations</li>
           </ul>
 
-          <PrevNextNav
-            prev={{ title: "Remote Access", href: "/docs/local-web/remote-access/" }}
-            next={{ title: "Sessions", href: "/docs/code-desktop/sessions/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

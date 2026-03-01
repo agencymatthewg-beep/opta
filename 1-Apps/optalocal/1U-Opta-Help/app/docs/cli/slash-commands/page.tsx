@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { Callout } from "@/components/docs/Callout";
 import { TabGroup } from "@/components/docs/TabGroup";
@@ -21,6 +22,8 @@ const tocItems = [
 ];
 
 export default function SlashCommandsPage() {
+  const { prev, next } = getPrevNext("/docs/cli/slash-commands/");
+
   return (
     <>
       <Breadcrumb
@@ -353,10 +356,7 @@ Throughput: 38.7 tok/s (avg)`}
             press Tab to autocomplete.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Configuration", href: "/docs/cli/configuration/" }}
-            next={{ title: "Daemon Overview", href: "/docs/daemon/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

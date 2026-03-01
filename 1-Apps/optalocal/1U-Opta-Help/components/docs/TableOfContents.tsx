@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 
 interface TocItem {
@@ -18,7 +16,7 @@ export function TableOfContents({ items }: TableOfContentsProps) {
   return (
     <div className="hidden xl:block w-[200px] shrink-0">
       <div className="sticky top-20">
-        <h4 className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-3">
+        <h4 className="text-xs font-semibold uppercase tracking-wider text-text-secondary mb-3">
           On this page
         </h4>
         <nav className="space-y-1">
@@ -27,7 +25,7 @@ export function TableOfContents({ items }: TableOfContentsProps) {
               key={item.id}
               href={`#${item.id}`}
               className={cn(
-                "block text-xs text-text-muted hover:text-text-secondary transition-colors py-0.5",
+                "block text-[13px] leading-snug text-zinc-500 hover:text-text-secondary transition-colors py-0.5",
                 item.level === 3 && "pl-3"
               )}
             >

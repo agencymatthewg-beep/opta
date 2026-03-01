@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -20,6 +21,8 @@ const tocItems = [
 ];
 
 export default function ModelsPage() {
+  const { prev, next } = getPrevNext("/docs/cli/models/");
+
   return (
     <>
       <Breadcrumb
@@ -239,10 +242,7 @@ Uptime: 4h 23m`}
             instead of falling back to Anthropic.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Chat & Do", href: "/docs/cli/chat-and-do/" }}
-            next={{ title: "Sessions", href: "/docs/cli/sessions/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

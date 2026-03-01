@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 
 const tocItems = [
@@ -16,6 +17,7 @@ const tocItems = [
 ];
 
 export default function SecurityPrivacyPage() {
+  const { prev, next } = getPrevNext("/docs/security/privacy/");
   return (
     <>
       <Breadcrumb
@@ -170,10 +172,7 @@ export default function SecurityPrivacyPage() {
             domains unless explicitly configured to do so.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Permissions", href: "/docs/security/permissions/" }}
-            next={{ title: "Guardrails", href: "/docs/security/guardrails/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

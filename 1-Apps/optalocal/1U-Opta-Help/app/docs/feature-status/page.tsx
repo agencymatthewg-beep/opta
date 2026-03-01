@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { FeatureTable } from "@/components/docs/FeatureTable";
 
 const tocItems = [
@@ -15,6 +16,7 @@ const tocItems = [
 ];
 
 export default function FeatureStatusPage() {
+  const { prev, next } = getPrevNext("/docs/feature-status/");
   return (
     <>
       <Breadcrumb items={[{ label: "Feature Status" }]} />
@@ -101,9 +103,7 @@ export default function FeatureStatusPage() {
             ]}
           />
 
-          <PrevNextNav
-            prev={{ title: "API Authentication", href: "/docs/developer/auth/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

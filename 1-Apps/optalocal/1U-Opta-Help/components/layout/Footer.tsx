@@ -1,5 +1,3 @@
-"use client";
-
 import { OptaRing } from "@/components/shared/OptaRing";
 
 export function Footer() {

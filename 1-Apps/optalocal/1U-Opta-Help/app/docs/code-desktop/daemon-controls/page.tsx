@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 
 const tocItems = [
@@ -14,6 +15,8 @@ const tocItems = [
 ];
 
 export default function CodeDesktopDaemonControlsPage() {
+  const { prev, next } = getPrevNext("/docs/code-desktop/daemon-controls/");
+
   return (
     <>
       <Breadcrumb
@@ -156,10 +159,7 @@ export default function CodeDesktopDaemonControlsPage() {
             Desktop to connect to.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Sessions", href: "/docs/code-desktop/sessions/" }}
-            next={{ title: "Browser Automation", href: "/docs/browser-automation/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

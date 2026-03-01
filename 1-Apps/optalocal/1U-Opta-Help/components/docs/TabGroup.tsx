@@ -20,7 +20,7 @@ export function TabGroup({ tabs }: TabGroupProps) {
       <div className="flex border-b border-white/5 bg-surface">
         {tabs.map((tab, i) => (
           <button
-            key={i}
+            key={tab.label}
             onClick={() => setActive(i)}
             className={cn(
               "px-4 py-2.5 text-sm transition-colors",

@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -18,6 +19,7 @@ const tocItems = [
 ];
 
 export default function DeveloperMcpPage() {
+  const { prev, next } = getPrevNext("/docs/developer/mcp/");
   return (
     <>
       <Breadcrumb
@@ -188,10 +190,7 @@ export default function DeveloperMcpPage() {
             section for complete documentation on browser tools.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Overview", href: "/docs/developer/" }}
-            next={{ title: "Daemon Client SDK", href: "/docs/developer/sdk/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

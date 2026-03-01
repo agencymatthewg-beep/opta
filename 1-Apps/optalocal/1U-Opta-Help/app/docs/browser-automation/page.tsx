@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -16,6 +17,7 @@ const tocItems = [
 ];
 
 export default function BrowserAutomationOverviewPage() {
+  const { prev, next } = getPrevNext("/docs/browser-automation/");
   return (
     <>
       <Breadcrumb items={[{ label: "Browser Automation" }]} />
@@ -149,10 +151,7 @@ export default function BrowserAutomationOverviewPage() {
             history.
           </p>
 
-          <PrevNextNav
-            prev={{ title: "Daemon Controls", href: "/docs/code-desktop/daemon-controls/" }}
-            next={{ title: "Tools", href: "/docs/browser-automation/tools/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

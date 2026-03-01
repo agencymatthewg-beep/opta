@@ -12,10 +12,12 @@ interface CommandBlockProps {
 export function CommandBlock({ command, output, description }: CommandBlockProps) {
   const [copied, setCopied] = useState(false);
 
-  const handleCopy = () => {
-    navigator.clipboard.writeText(command);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard unavailable in non-secure contexts */ }
   };
 
   return (
@@ -25,7 +27,7 @@ export function CommandBlock({ command, output, description }: CommandBlockProps
           {description}
         </div>
       )}
-      <div className="flex items-center gap-3 px-4 py-3 bg-[#0a0a0f] group">
+      <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-code-bg)] group">
         <Terminal size={14} className="text-text-muted shrink-0" />
         <code className="flex-1 text-sm text-neon-cyan font-mono">{command}</code>
         <button
@@ -37,7 +39,7 @@ export function CommandBlock({ command, output, description }: CommandBlockProps
         </button>
       </div>
       {output && (
-        <pre className="px-4 py-3 border-t border-white/5 bg-[#0a0a0f] text-xs text-text-muted font-mono overflow-x-auto">
+        <pre className="px-4 py-3 border-t border-white/5 bg-[var(--color-code-bg)] text-xs text-text-muted font-mono overflow-x-auto">
           {output}
         </pre>
       )}

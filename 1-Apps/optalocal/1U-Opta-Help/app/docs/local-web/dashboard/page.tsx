@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { CodeBlock } from "@/components/docs/CodeBlock";
 
@@ -16,6 +17,8 @@ const tocItems = [
 ];
 
 export default function LocalWebDashboardPage() {
+  const { prev, next } = getPrevNext("/docs/local-web/dashboard/");
+
   return (
     <>
       <Breadcrumb
@@ -152,10 +155,7 @@ data: {"type":"model_status","model":"qwen3-72b","state":"ready"}`}
             updates without requiring a page refresh.
           </Callout>
 
-          <PrevNextNav
-            prev={{ title: "Overview", href: "/docs/local-web/" }}
-            next={{ title: "Chat", href: "/docs/local-web/chat/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
 
         <TableOfContents items={tocItems} />

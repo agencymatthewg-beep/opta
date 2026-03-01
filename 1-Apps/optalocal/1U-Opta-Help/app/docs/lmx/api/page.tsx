@@ -3,6 +3,7 @@
 import { Breadcrumb } from "@/components/layout/Breadcrumb";
 import { PrevNextNav } from "@/components/docs/PrevNextNav";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { getPrevNext } from "@/lib/content";
 import { Callout } from "@/components/docs/Callout";
 import { ApiEndpoint } from "@/components/docs/ApiEndpoint";
 import { CodeBlock } from "@/components/docs/CodeBlock";
@@ -26,6 +27,8 @@ const tocItems = [
 ];
 
 export default function LmxApiPage() {
+  const { prev, next } = getPrevNext("/docs/lmx/api/");
+
   return (
     <>
       <Breadcrumb
@@ -345,10 +348,7 @@ data: {"type":"heartbeat","uptime":3600}`}
             </table>
           </div>
 
-          <PrevNextNav
-            prev={{ title: "Setup", href: "/docs/lmx/setup/" }}
-            next={{ title: "Model Management", href: "/docs/lmx/models/" }}
-          />
+          <PrevNextNav prev={prev} next={next} />
         </div>
         <TableOfContents items={tocItems} />
       </div>
