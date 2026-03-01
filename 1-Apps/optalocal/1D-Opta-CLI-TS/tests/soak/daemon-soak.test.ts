@@ -9,7 +9,7 @@
 import { describe, it, expect } from 'vitest';
 import { runSoak } from './load-generator.js';
 
-describe.skip('daemon soak (@soak — skip in normal CI)', () => {
+describe('daemon soak (@soak — skip in normal CI)', () => {
   it('queue submission stays under p99 < 200ms for 3s at 5 concurrency', async () => {
     let counter = 0;
     const result = await runSoak({

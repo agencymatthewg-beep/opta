@@ -54,10 +54,10 @@ The core feature set is complete. The CLI ships a production-quality agent loop,
 
 | Task | Status |
 |------|--------|
-| Cancellation propagation: CLI → daemon → LMX transport | ⬜ TODO |
-| Replay/reconnect across process restarts | ⬜ TODO |
-| Multi-writer determinism (CLI + secondary client attach) | ⬜ TODO |
-| p95 latency + event-loop lag soak runs (store evidence) | ⬜ TODO |
+| Cancellation propagation: CLI → daemon → LMX transport | ✅ Done |
+| Replay/reconnect across process restarts | ✅ Done |
+| Multi-writer determinism (CLI + secondary client attach) | ✅ Done |
+| p95 latency + event-loop lag soak runs (store evidence) | ✅ Done (`SOAK-EVIDENCE.md`) |
 
 **Exit criteria:** All paths verified with documented evidence.
 
