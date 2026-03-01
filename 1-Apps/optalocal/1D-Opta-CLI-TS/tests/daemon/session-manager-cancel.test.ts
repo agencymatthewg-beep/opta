@@ -107,7 +107,7 @@ describe('SessionManager cancellation', () => {
     expect(lastSignal?.aborted).toBe(false);
 
     const cancelled = await manager.cancelSessionTurns('sess-1', { writerId: 'writer-a' });
-    expect(cancelled).toBe(1);
+    expect(cancelled).toEqual({ cancelledQueued: 0, cancelledActive: true });
     expect(lastSignal?.aborted).toBe(true);
     await waitFor(() => emitted.some((e) => e.event === 'turn.error'));
     expect(emitted.some((e) => e.event === 'session.cancelled')).toBe(true);

@@ -43,6 +43,14 @@ vi.mock('../../src/utils/disk.js', () => ({
 
 // Mock platform file-permission helper.
 vi.mock('../../src/platform/index.js', () => ({
+  isWindows: false,
+  isMacOS: true,
+  isLinux: false,
+  homedir: () => process.env.HOME || "/tmp",
+  pathSep: "/",
+  requiresPosixPlatform: vi.fn(),
+  shellArgs: () => ["/bin/sh", "-c"],
+  isBinaryAvailable: vi.fn(async () => true),
   restrictFileToCurrentUser: vi.fn(async () => {}),
 }));
 

@@ -272,11 +272,11 @@ describe('saveAccountState', () => {
     await saveAccountState(state);
 
     expect(mkdir).toHaveBeenCalledWith(
-      '/mock-home/.config/opta',
+      `${process.env.HOME || '/home/runner'}/.config/opta`,
       expect.objectContaining({ recursive: true }),
     );
     expect(writeFile).toHaveBeenCalledWith(
-      '${process.env.HOME || '/home/runner'}/.config/opta/account.json',
+      `${process.env.HOME || '/home/runner'}/.config/opta/account.json`,
       expect.stringContaining('"project"'),
       expect.objectContaining({ encoding: 'utf-8' }),
     );
@@ -329,7 +329,7 @@ describe('clearAccountState', () => {
 
   it('removes the account file with force flag', async () => {
     await clearAccountState();
-    expect(rm).toHaveBeenCalledWith('${process.env.HOME || '/home/runner'}/.config/opta/account.json', { force: true });
+    expect(rm).toHaveBeenCalledWith(`${process.env.HOME || '/home/runner'}/.config/opta/account.json`, { force: true });
   });
 
   it('does not throw if file does not exist (force: true)', async () => {

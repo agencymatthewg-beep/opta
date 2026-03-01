@@ -62,6 +62,8 @@ program
   .name('opta')
   .description('Agentic AI coding CLI powered by local LLMs')
   .version(VERSION, '-V, --version')
+  .enablePositionalOptions()
+  .passThroughOptions()
   .option('-v, --verbose', 'detailed output')
   .option('--debug', 'debug info including API calls')
   .option('-r, --resume <id>', 'resume a previous session')

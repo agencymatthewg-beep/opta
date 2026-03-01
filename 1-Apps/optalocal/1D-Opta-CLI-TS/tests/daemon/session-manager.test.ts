@@ -255,7 +255,7 @@ describe('SessionManager', () => {
   describe('cancelSessionTurns', () => {
     it('returns 0 for a non-existent session', async () => {
       const cancelled = await manager.cancelSessionTurns('nonexistent', { turnId: 't1' });
-      expect(cancelled).toBe(0);
+      expect(cancelled).toEqual({ cancelledQueued: 0, cancelledActive: false });
     });
 
     it('returns 0 when no matching queued turns', async () => {
@@ -263,7 +263,7 @@ describe('SessionManager', () => {
       const cancelled = await manager.cancelSessionTurns('cancel-test', {
         turnId: 'non-existent-turn',
       });
-      expect(cancelled).toBe(0);
+      expect(cancelled).toEqual({ cancelledQueued: 0, cancelledActive: false });
     });
   });
 
