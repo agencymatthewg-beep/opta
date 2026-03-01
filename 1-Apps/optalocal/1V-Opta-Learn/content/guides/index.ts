@@ -20,15 +20,9 @@ export interface Guide {
 }
 
 import { lmxOverview } from './lmx-overview';
-import { optaLocalIntro } from './opta-local-intro';
-import { cliSetup } from './cli-setup';
-import { accountsSync } from './accounts-sync';
 
 export const allGuides: Guide[] = [
-  optaLocalIntro,
   lmxOverview,
-  cliSetup,
-  accountsSync,
 ];
 
 export function getGuide(slug: string): Guide | undefined {

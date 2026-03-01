@@ -1,7 +1,7 @@
 import type { Guide } from './index';
 
 export const lmxOverview: Guide = {
-  slug: 'lmx-overview',
+  slug: 'lmx',
   title: 'LMX Masterclass',
   app: 'lmx',
   category: 'reference',
