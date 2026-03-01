@@ -4,12 +4,12 @@ import Link from 'next/link'
 import { OptaRing } from '@/components/OptaRing'
 
 export const metadata: Metadata = {
-  title: 'Opta Status — optalocal.com service health',
-  description: 'Live status and feature completeness for the optalocal.com stack: LMX, CLI daemon, Opta Local, and more.',
-  keywords: 'optalocal, status, uptime, LMX, Opta CLI, local AI',
+  title: 'Opta Status — Opta Local ecosystem health',
+  description: 'Live status for the Opta Local ecosystem: Opta CLI, Opta Code, Opta LMX, and Opta management websites.',
+  keywords: 'optalocal, status, uptime, LMX, Opta CLI, Opta Code, local AI',
   openGraph: {
     title: 'Opta Status',
-    description: 'Live health and feature registry for the optalocal stack.',
+    description: 'Live health and feature registry for the Opta Local ecosystem.',
     url: 'https://status.optalocal.com',
     siteName: 'Opta Status',
     locale: 'en_US',

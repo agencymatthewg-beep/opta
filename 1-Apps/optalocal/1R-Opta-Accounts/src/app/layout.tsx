@@ -17,7 +17,7 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Opta Accounts — Sign In',
   description:
-    'Sign in to your Opta account. One login for Opta Local, Opta CLI, Opta Life, and all Opta apps.',
+    'Sign in to your Opta account. One login for Opta Local, Life Manager, and all Opta apps.',
   openGraph: {
     title: 'Opta Accounts — Sign In',
     description: 'One login for all Opta apps.',

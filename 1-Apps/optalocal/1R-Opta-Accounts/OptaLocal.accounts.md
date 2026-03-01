@@ -94,8 +94,8 @@ Can use more (recommended):
 - [ ] Admin operations require explicit account role checks
 
 ## G. App-by-App Wiring
-- [ ] 1F Opta Life Web uses Accounts as auth entrypoint
-- [ ] 1E Opta Life iOS follows same Supabase user identity
+- [ ] 1F Life Manager Web uses Accounts as auth entrypoint
+- [ ] 1E Life Manager iOS follows same Supabase user identity
 - [ ] 1L Opta Local Web uses same session/account model
 - [ ] 1I OptaPlus adopts shared account contracts
 - [ ] Any new app must integrate through 1N contracts first

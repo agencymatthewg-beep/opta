@@ -59,8 +59,8 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'local',
-    name: 'Opta Local',
-    subtitle: 'Dashboard & chat',
+    name: 'OptaLocal.com',
+    subtitle: 'Opta Local management website',
     icon: Server,
     docs: 'https://optalocal.com',
   },
@@ -77,6 +77,13 @@ const SERVICES: ServiceDef[] = [
     subtitle: 'Identity, SSO & capability control',
     icon: Globe,
     docs: 'https://accounts.optalocal.com',
+  },
+  {
+    id: 'help',
+    name: 'Opta Help',
+    subtitle: 'Documentation & support',
+    icon: Globe,
+    docs: 'https://help.optalocal.com',
   },
 ]
 
@@ -217,15 +224,10 @@ export default function StatusPage() {
           </h1>
           <p className="text-text-secondary">
             Real-time health of the{' '}
-            <a
-              href="https://optalocal.com"
-              className="text-primary hover:text-primary-glow transition-colors"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              optalocal.com
-            </a>{' '}
-            service stack.
+            <span className="text-primary">
+              Opta Local
+            </span>{' '}
+            ecosystem.
           </p>
         </motion.div>
 
@@ -346,7 +348,7 @@ export default function StatusPage() {
                 Release Notes
               </h2>
               <p className="text-xs text-text-muted mt-1">
-                Recent platform updates across the optalocal stack.
+                Recent platform updates across the Opta Local ecosystem.
               </p>
             </div>
             <Link
@@ -431,7 +433,7 @@ export default function StatusPage() {
             <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
           </Link>
           <span className="text-xs text-text-muted font-mono">
-            optalocal.com stack
+            Opta Local ecosystem
           </span>
         </motion.div>
       </div>

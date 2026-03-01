@@ -9,7 +9,7 @@
 const ALLOWED_PATTERNS: RegExp[] = [
   // Same-domain subdomains (*.optalocal.com)
   /^https:\/\/[a-z0-9-]+\.optalocal\.com(\/.*)?$/,
-  // Opta Life (external domain)
+  // Life Manager (external domain)
   /^https:\/\/life\.opta\.app(\/.*)?$/,
   // CLI localhost callback (127.0.0.1 only, never 0.0.0.0)
   /^http:\/\/127\.0\.0\.1:\d+(\/.*)?$/,

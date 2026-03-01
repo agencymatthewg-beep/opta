@@ -51,6 +51,21 @@ interface BuildToolRegistryOptions {
 
 const PLAYWRIGHT_MCP_SERVER_KEY = 'playwright';
 
+/**
+ * Fire-and-forget dispatch of a custom DOM event to the browser's chrome overlay.
+ * The overlay (injected via initScript) listens on `window` for `opta:*` events.
+ * This must NEVER block tool execution — all errors are swallowed silently.
+ */
+function dispatchOverlayEvent(
+  mcpConn: McpConnection,
+  eventName: string,
+  detail: Record<string, unknown>,
+): void {
+  const detailJson = JSON.stringify(detail);
+  const expression = `window.dispatchEvent(new CustomEvent(${JSON.stringify(eventName)}, { detail: ${detailJson} }))`;
+  void mcpConn.call('browser_evaluate', { expression }).catch(() => {});
+}
+
 function normalizeStringList(values: string[] | undefined): string[] {
   if (!values || values.length === 0) return [];
   const seen = new Set<string>();
@@ -267,8 +282,12 @@ export async function buildToolRegistry(
 
         // Route Playwright MCP browser calls through the policy/safety interceptor
         if (mcpConn.name === PLAYWRIGHT_MCP_SERVER_KEY && config.browser?.enabled) {
-          const { interceptBrowserMcpCall } = await import('../browser/mcp-interceptor.js');
+          const { interceptBrowserMcpCall, BrowserPolicyDeniedError } = await import('../browser/mcp-interceptor.js');
           const { resolveBrowserPolicyConfig } = await import('../core/browser-policy-config.js');
+
+          // Signal the overlay that a tool is about to execute
+          dispatchOverlayEvent(mcpConn, 'opta:state', { state: 'executing' });
+
           try {
             const result = await interceptBrowserMcpCall(
               originalName,
@@ -291,8 +310,26 @@ export async function buildToolRegistry(
               },
               () => mcpConn.call(originalName, args),
             );
+
+            // Dispatch tool-specific visual events after successful execution
+            if (originalName === 'browser_navigate') {
+              dispatchOverlayEvent(mcpConn, 'opta:navigate', { url: String(args.url ?? '') });
+            } else if (originalName === 'browser_click') {
+              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'click', selector: String(args.selector ?? args.element ?? '') });
+            } else if (originalName === 'browser_type' || originalName === 'browser_fill_form') {
+              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'type', selector: String(args.selector ?? args.element ?? '') });
+            }
+
+            // Reset overlay to idle after successful execution
+            dispatchOverlayEvent(mcpConn, 'opta:state', { state: 'idle' });
+
             return typeof result === 'string' ? result : JSON.stringify(result);
           } catch (err) {
+            // Dispatch policy gated event or error state to the overlay
+            if (err instanceof BrowserPolicyDeniedError) {
+              dispatchOverlayEvent(mcpConn, 'opta:policy', { action: originalName, decision: 'gated' });
+            }
+            dispatchOverlayEvent(mcpConn, 'opta:state', { state: 'error' });
             return `Error: ${errorMessage(err)}`;
           }
         }

@@ -105,7 +105,7 @@ export default async function FeaturesPage({
           Feature Registry
         </h1>
         <p className="text-text-secondary text-sm">
-          Canonical feature completeness across the optalocal stack.
+          Canonical feature completeness across the Opta Local ecosystem.
         </p>
 
         {/* Global progress */}

@@ -27,6 +27,10 @@ const SERVICES: Record<
     urlFallback: 'https://accounts.optalocal.com',
     path: '/api/health/supabase',
   },
+  help: {
+    urlFallback: 'https://help.optalocal.com',
+    path: '/',
+  },
 }
 
 export async function GET(

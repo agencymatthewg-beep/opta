@@ -1,44 +1,32 @@
-# Opta Local Ecosystem Aesthetics
+# Opta Ecosystem Aesthetics
 
-This document outlines how the core **Opta Local Design System** (defined in `OPTA-AESTHETIC-CONTEXT.md`) adapts to individual apps within the ecosystem. While all apps share the same DNA, specific contexts require different variations of the aesthetic.
+This document outlines how the core **Opta Design System** (defined in `OPTA-AESTHETIC-CONTEXT.md`) adapts to individual apps within the business, specifically focusing on the **Opta Local** sub-ecosystem and its supporting management websites.
 
-## 1. Shared Foundation
-All Opta Local applications share the following baseline aesthetic:
+## 1. Shared Foundation (Opta / Opta AI)
+All Opta applications (including the Opta Local sub-ecosystem and other optimization apps like Life Manager) share the following baseline aesthetic:
 *   **Void-native Backgrounds:** Pure `#09090b` for the main background. Never lighter.
 *   **Typography:** `Sora` for UI elements and prose, `JetBrains Mono` for all data, code, statistics, and terminal output.
 *   **Glass Elements:** Consistent `rgba(12,12,18,0.6)` cards with `rgba(255,255,255,0.15)` borders.
 *   **Tone:** Precision engineering, calm authority, data as texture.
 
-## 2. App-Specific Accent Colors
-Apps use specific accent colors for key states, badges, and primary actions.
+## 2. Opta Local: Main Local Apps
+These are the core products within the Opta Local sub-ecosystem. They are the actual applications that help a user run and use Local LLMs. They prioritize density, contrast, and raw data visibility.
 
-| Application | Accent Color | Hex Code | Use Case |
+| Application | Accent Color | Hex Code | Aesthetic Focus |
 | :--- | :--- | :--- | :--- |
-| **Opta LMX** | Electric Violet | `#a855f7` | Inference engine, core identity |
-| **Opta CLI** | Neon Green | `#22c55e` | Command line, local status |
-| **Opta Accounts** | Identity Blue | `#3b82f6` | Authentication and user data |
-| **Opta Init** | Neon Amber | `#f59e0b` | Onboarding and conditional flows |
-| **Opta Status** | Status-dependent | (Dynamic) | System health and monitoring |
-| **Global/Shared** | Muted Grey | `#a1a1aa` | Cross-app content and navigation |
+| **Opta LMX** | Electric Violet | `#a855f7` | Inference engine. Core identity, trust, and clear state communication. |
+| **Opta Local** | Electric Violet | `#a855f7` | LMX management dashboard. Heavy data visibility, terminal-like density. |
+| **Opta CLI** | Neon Green | `#22c55e` | Command line tool. High contrast, pure utility, fast workflows. |
+| **Opta Code Desktop**| Electric Violet / Green| Mixed | AI-assisted coding. Code highlights (`#06b6d4`), solid void backgrounds, minimal visual noise. |
 
-## 3. Contextual Variations
+## 3. Opta Management Websites
+These web properties are the management websites that assist the main apps, handling discovery, onboarding, identity, documentation, and overall status. They prioritize trust, clarity, and structural readability.
 
-### Marketing & Portals (Home, Learn)
-*   **Apps:** Opta-Home (`optalocal.com`), Opta-Learn (`learn.optalocal.com`)
-*   **Aesthetic Priority:** Visual impact, animated components (0.5-0.7s spring easing).
-*   **Key UI Elements:** `.text-moonlight` gradient text, `.bg-dot-subtle` and `.bg-grid-subtle` backgrounds, obsidian bento cards.
-
-### Productivity & Tools (Desktop, CLI, Local)
-*   **Apps:** Opta-Code-Desktop, Opta-CLI, Opta-Local
-*   **Aesthetic Priority:** Density, contrast, and raw data visibility.
-*   **Key UI Elements:** Heavy use of `JetBrains Mono`, inline code highlights (`#06b6d4`), solid void backgrounds (minimal background textures to reduce visual noise).
-
-### Documentation & Reference (Help)
-*   **Apps:** Opta-Help (`help.optalocal.com`)
-*   **Aesthetic Priority:** Readability, structure, and low-distraction.
-*   **Key UI Elements:** 3-column layout, left sidebars, `.prose-opta` text styling, color-coded callout boxes (amber/green/red), extensive dark-mode code blocks.
-
-### System & Infrastructure (LMX, Accounts, Init)
-*   **Apps:** Opta-LMX, Opta-Init, Opta-Accounts
-*   **Aesthetic Priority:** Trust, clarity, and state communication.
-*   **Key UI Elements:** Animated status badges/pills, clear error states (`#ef4444`), identity glow accents.
+| Website / Service | Accent Color | Hex Code | Aesthetic Focus |
+| :--- | :--- | :--- | :--- |
+| **Opta Accounts** | Identity Blue | `#3b82f6` | Authentication. Animated status badges, trust, clear error states (`#ef4444`). |
+| **Opta Status** | Dynamic | Dynamic | System health. Color directly reflects live status (Green/Amber/Red). |
+| **Opta Home (optalocal.com)**| Muted Grey/Mixed| `#a1a1aa` | Marketing portal. `.text-moonlight` gradients, obsidian bento cards, animated components. |
+| **Opta Help** | Muted Grey | `#a1a1aa` | Documentation. 3-column layout, `.prose-opta`, color-coded callouts, high readability. |
+| **Opta Learn** | Mixed (Per App)| Mixed | Discovery portal. `.bg-dot-subtle`, glass search bars, interactive guide cards. |
+| **Opta Init** | Neon Amber | `#f59e0b` | Onboarding flows. Conditional states, clear step-by-step progress. |

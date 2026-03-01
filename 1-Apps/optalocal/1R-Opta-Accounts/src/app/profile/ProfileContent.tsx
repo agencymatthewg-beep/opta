@@ -22,7 +22,7 @@ const OPTA_LOCAL_APPS = [
     desc: "Terminal-first control surface",
   },
   {
-    name: "Opta Code Desktop",
+    name: "Opta Code",
     url: "https://help.optalocal.com/docs/code-desktop",
     desc: "Desktop app (macOS + Windows)",
   },
