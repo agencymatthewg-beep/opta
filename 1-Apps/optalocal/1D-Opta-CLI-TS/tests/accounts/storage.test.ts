@@ -14,7 +14,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 
 vi.mock('node:os', () => ({
-  homedir: vi.fn().mockReturnValue('/mock-home'),
+  homedir: vi.fn().mockReturnValue(process.env.HOME || '/mock-home'),
 }));
 
 // Prevent actual dynamic imports to supabase module
@@ -70,7 +70,7 @@ function makeAccountState(overrides: Partial<AccountState> = {}): AccountState {
 describe('accountStatePath', () => {
   it('returns the path under ~/.config/opta/account.json', () => {
     const path = accountStatePath();
-    expect(path).toBe('/mock-home/.config/opta/account.json');
+    expect(path).toBe('${process.env.HOME || '/home/runner'}/.config/opta/account.json');
   });
 });
 
@@ -276,7 +276,7 @@ describe('saveAccountState', () => {
       expect.objectContaining({ recursive: true }),
     );
     expect(writeFile).toHaveBeenCalledWith(
-      '/mock-home/.config/opta/account.json',
+      '${process.env.HOME || '/home/runner'}/.config/opta/account.json',
       expect.stringContaining('"project"'),
       expect.objectContaining({ encoding: 'utf-8' }),
     );
@@ -329,7 +329,7 @@ describe('clearAccountState', () => {
 
   it('removes the account file with force flag', async () => {
     await clearAccountState();
-    expect(rm).toHaveBeenCalledWith('/mock-home/.config/opta/account.json', { force: true });
+    expect(rm).toHaveBeenCalledWith('${process.env.HOME || '/home/runner'}/.config/opta/account.json', { force: true });
   });
 
   it('does not throw if file does not exist (force: true)', async () => {
