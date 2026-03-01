@@ -59,7 +59,7 @@ export default function HomePage() {
         </motion.div>
 
         <motion.p variants={itemVariants} className="mt-8 text-xs font-mono text-text-muted">
-          {allGuides.length} guides available · more added continuously
+          {allGuides.length} verified guide available
         </motion.p>
       </motion.div>
     </main>

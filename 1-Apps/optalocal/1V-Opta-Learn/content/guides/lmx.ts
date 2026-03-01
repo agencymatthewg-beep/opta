@@ -14,7 +14,7 @@ export const lmxOverview: Guide = {
       heading: 'Ecosystem Role',
       body: `
         <p><span class="text-opta">Opta</span> LMX is the local inference engine that powers the Opta ecosystem. It operates entirely as a headless background daemon, designed to provide programmatic access to local large language models without requiring a graphical user interface (GUI).</p>
-        <p>While the platform is typically bootstrapped using <a href="/guides/init" class="app-link link-init">Opta Init</a>, LMX handles the underlying compute. When issuing agentic commands via the <a href="/guides/cli" class="app-link link-cli">Opta CLI</a>, visualizing system health via the <a href="/guides/dashboard" class="app-link link-dashboard">Opta Local Dashboard</a>, or managing configurations with <a href="/guides/accounts" class="app-link link-accounts">Opta Accounts</a>, these applications are acting as clients making API requests to the LMX daemon.</p>
+        <p>While the platform is typically bootstrapped using <a href="https://init.optalocal.com" class="app-link link-init">Opta Init</a>, LMX handles the underlying compute. When issuing agentic commands via the <a href="https://help.optalocal.com/docs/cli" class="app-link link-cli">Opta CLI</a>, visualizing system health via the <a href="https://lmx.optalocal.com" class="app-link link-dashboard">Opta Local Dashboard</a>, or managing configurations with <a href="https://accounts.optalocal.com" class="app-link link-accounts">Opta Accounts</a>, these applications are acting as clients making API requests to the LMX daemon.</p>
       `,
     },
     {
@@ -129,7 +129,7 @@ export const lmxOverview: Guide = {
           <div class="flex items-start gap-4">
             <div class="w-8 h-8 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-500 font-bold text-sm">1</div>
             <div>
-              <h3 class="text-lg font-semibold text-text_primary mb-1">Deployment via <a href="/guides/init" class="app-link link-init">Opta Init</a></h3>
+              <h3 class="text-lg font-semibold text-text_primary mb-1">Deployment via <a href="https://init.optalocal.com" class="app-link link-init">Opta Init</a></h3>
               <p class="text-sm text-text_secondary leading-relaxed">Opta Init is responsible for bootstrapping the environment. It downloads the required Python dependencies, fetches the initial MLX weights from HuggingFace, and securely binds the LMX daemon to macOS <code class="bg-surface px-1 py-0.5 rounded border border-white/10">launchd</code> to ensure it runs automatically on system boot.</p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export const lmxOverview: Guide = {
           <div class="flex items-start gap-4">
             <div class="w-8 h-8 rounded-full bg-neon-green/10 border border-neon-green/30 flex items-center justify-center flex-shrink-0 text-neon-green font-bold text-sm">2</div>
             <div>
-              <h3 class="text-lg font-semibold text-text_primary mb-1">Execution via <a href="/guides/cli" class="app-link link-cli">Opta CLI</a></h3>
+              <h3 class="text-lg font-semibold text-text_primary mb-1">Execution via <a href="https://help.optalocal.com/docs/cli" class="app-link link-cli">Opta CLI</a></h3>
               <p class="text-sm text-text_secondary leading-relaxed">The Opta CLI is your primary interface. It acts as the intelligent client wrapper around LMX. When you run <code class="text-neon-green bg-neon-green/10 px-1 py-0.5 rounded border border-neon-green/20">opta do "refactor this file"</code>, the CLI translates your intent, connects to the LMX Admin API to ensure the <code class="bg-surface px-1 py-0.5 rounded border border-white/10">code</code> alias model is loaded, and streams the completion back to your terminal.</p>
             </div>
           </div>
@@ -145,7 +145,7 @@ export const lmxOverview: Guide = {
           <div class="flex items-start gap-4">
             <div class="w-8 h-8 rounded-full bg-primary/10 border border-primary/30 flex items-center justify-center flex-shrink-0 text-primary font-bold text-sm">3</div>
             <div>
-              <h3 class="text-lg font-semibold text-text_primary mb-1">Observation via <a href="/guides/dashboard" class="app-link link-dashboard">Local Dashboard</a></h3>
+              <h3 class="text-lg font-semibold text-text_primary mb-1">Observation via <a href="https://lmx.optalocal.com" class="app-link link-dashboard">Local Dashboard</a></h3>
               <p class="text-sm text-text_secondary leading-relaxed">For visual management, the Local Dashboard connects to the LMX Admin port to visualize VRAM saturation, review the real-time inference queues, and monitor active network bindings across your LAN.</p>
             </div>
           </div>
