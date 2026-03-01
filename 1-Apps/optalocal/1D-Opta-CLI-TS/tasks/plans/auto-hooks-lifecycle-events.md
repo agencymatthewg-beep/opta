@@ -1,10 +1,10 @@
-# Auto Task: JSON output
+# Auto Task: Hooks / lifecycle events
 
 ## Why now
 Competitive gap score is **3** (HIGH). Multiple competitors now ship this capability.
 
 ## Objective
-Implement **JSON output** in Opta CLI with production-safe defaults and no regression to current behavior.
+Implement **Hooks / lifecycle events** in Opta CLI with production-safe defaults and no regression to current behavior.
 
 ## Scope
 - Add the smallest viable end-to-end implementation.

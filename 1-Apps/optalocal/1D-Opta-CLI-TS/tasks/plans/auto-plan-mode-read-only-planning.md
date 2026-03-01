@@ -1,10 +1,10 @@
-# Auto Task: JSON output
+# Auto Task: Plan mode (read-only planning)
 
 ## Why now
 Competitive gap score is **3** (HIGH). Multiple competitors now ship this capability.
 
 ## Objective
-Implement **JSON output** in Opta CLI with production-safe defaults and no regression to current behavior.
+Implement **Plan mode (read-only planning)** in Opta CLI with production-safe defaults and no regression to current behavior.
 
 ## Scope
 - Add the smallest viable end-to-end implementation.

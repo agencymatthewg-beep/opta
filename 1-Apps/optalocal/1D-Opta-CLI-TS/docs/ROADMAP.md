@@ -1,6 +1,6 @@
 ---
 title: Opta CLI Roadmap
-updated: 2026-02-28
+updated: 2026-03-01
 status: active
 ---
 
@@ -117,3 +117,14 @@ These are out of scope for v1.0:
 - Native alternate TUI client implementations
 - Rich remote multi-device orchestration
 - Cloud session sync
+
+
+## Competitive Priorities (Monthly Deep Dive — 2026-03-01)
+
+1. **CRITICAL:** Sub-agents / parallel execution
+2. **CRITICAL:** MCP support
+3. **CRITICAL:** Plan mode (read-only planning) parity
+4. **HIGH:** Multi-root workspace context (`--add-dir` parity)
+5. **HIGH:** JSON output + webhook hooks + lifecycle hooks hardening
+
+**Execution policy:** prioritize CRITICAL parity items before any new UX polish work.

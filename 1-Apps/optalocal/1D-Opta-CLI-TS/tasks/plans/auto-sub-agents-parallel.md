@@ -1,10 +1,10 @@
-# Auto Task: JSON output
+# Auto Task: Sub-agents / parallel
 
 ## Why now
-Competitive gap score is **3** (HIGH). Multiple competitors now ship this capability.
+Competitive gap score is **5** (CRITICAL). Multiple competitors now ship this capability.
 
 ## Objective
-Implement **JSON output** in Opta CLI with production-safe defaults and no regression to current behavior.
+Implement **Sub-agents / parallel** in Opta CLI with production-safe defaults and no regression to current behavior.
 
 ## Scope
 - Add the smallest viable end-to-end implementation.

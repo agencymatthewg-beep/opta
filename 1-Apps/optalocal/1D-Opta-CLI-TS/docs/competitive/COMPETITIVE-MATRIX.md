@@ -70,9 +70,9 @@
 | 40 | Token usage display | ⬜ | ✅ Status bar | ✅ Token % display | ⬜ | ✅ | ⬜ | MEDIUM | 2 |
 | 41 | Todo/task tracking | ⬜ | ✅ TodoWrite tool | ⬜ | ⬜ | ⬜ | ⬜ | LOW | 1 |
 | 42 | Diff view | ✅ `opta diff` | ⬜ | ✅ File change view | ⬜ | ✅ | ⬜ | — | 0 |
-| 43 | Multi-root workspace context | ⬜ | ⬜ | ⬜ | ✅ `--add-dir` + `/add-dir` | ⬜ | ✅ `/dir add` support | MEDIUM | 2 |
+| 43 | Multi-root workspace context | ⬜ | ✅ `--add-dir` | ⬜ | ✅ `--add-dir` + `/add-dir` | ⬜ | ✅ `/dir add` support | HIGH | 3 |
 | 44 | HTTP hooks / webhook callbacks | ⬜ | ✅ HTTP hooks (POST JSON) | ✅ Plugin hooks (scriptable) | ⬜ | ⬜ | ✅ Runtime hooks | HIGH | 3 |
-| 45 | Plan mode (read-only planning) | ⬜ | ⬜ | ✅ Plan mode | ✅ Plan mode | ⬜ | ✅ Plan mode w/ constraints | HIGH | 3 |
+| 45 | Plan mode (read-only planning) | ⬜ | ✅ `--permission-mode plan` | ✅ Plan mode | ✅ Plan mode | ⬜ | ✅ Plan mode w/ constraints | CRITICAL | 5 |
 
 ---
 
@@ -102,7 +102,7 @@
 10. Undo/rollback — OpenCode has /undo, Aider has git-based
 11. JSON output — now standard across Claude, OpenCode, Gemini
 12. HTTP hooks / webhook callbacks — now present in Claude + OpenCode + Gemini
-13. Plan mode (read-only planning) — now present in OpenCode + Kimi + Gemini
+13. Plan mode (read-only planning) — now present in Claude + OpenCode + Kimi + Gemini
 
 ---
 
@@ -111,4 +111,4 @@
 | Date | Scanner | Changes |
 |------|---------|---------|
 | 2026-02-16 | Opta Max | Initial matrix — 42 features, 6 competitors |
-| 2026-03-01 | Opta Max | Added rows 43-45 (multi-root context, HTTP hooks, plan mode); updated JSON output + hooks statuses from latest releases |
+| 2026-03-01 | Opta Max | Monthly deep dive: re-audited docs; marked Claude `--add-dir` + `--permission-mode plan`; escalated plan mode to CRITICAL and multi-root to HIGH; regenerated task plans |

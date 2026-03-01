@@ -1,10 +1,10 @@
-# Auto Task: JSON output
+# Auto Task: Custom subagent definitions
 
 ## Why now
 Competitive gap score is **3** (HIGH). Multiple competitors now ship this capability.
 
 ## Objective
-Implement **JSON output** in Opta CLI with production-safe defaults and no regression to current behavior.
+Implement **Custom subagent definitions** in Opta CLI with production-safe defaults and no regression to current behavior.
 
 ## Scope
 - Add the smallest viable end-to-end implementation.
