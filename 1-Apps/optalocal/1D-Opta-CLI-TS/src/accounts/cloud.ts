@@ -34,6 +34,53 @@ function normalizeProvider(provider: string): string {
   return provider.trim().toLowerCase();
 }
 
+export interface CloudApiKeyEntry {
+  id: string;
+  provider: string;
+  label: string | null;
+  keyValue: string;
+  updatedAt: string;
+}
+
+/** Fetch all active cloud keys for a provider (or all providers if omitted). */
+export async function listCloudApiKeys(
+  state: AccountState | null,
+  provider?: string,
+): Promise<CloudApiKeyEntry[]> {
+  const accessToken = state?.session?.access_token?.trim();
+  if (!accessToken) return [];
+
+  const url = new URL('/api/keys', accountsBaseUrl());
+  if (provider) url.searchParams.set('provider', normalizeProvider(provider));
+
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: authHeaders(accessToken),
+    });
+    if (!response.ok) return [];
+    const payload = (await response.json().catch(() => null)) as
+      | { keys?: Array<{ id?: string; provider?: string; label?: string | null; key_value?: string; updated_at?: string }> }
+      | null;
+    return (payload?.keys ?? [])
+      .filter((k) => k.id && k.key_value)
+      .map((k) => ({
+        id: k.id!,
+        provider: k.provider ?? provider ?? '',
+        label: k.label ?? null,
+        keyValue: k.key_value!,
+        updatedAt: k.updated_at ?? '',
+      }));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Resolve the best active cloud API key for a provider.
+ * Prefers the most-recently updated key (GET /api/keys already sorts by updated_at DESC).
+ * Result is cached for CLOUD_KEY_TTL_MS to avoid repeated round-trips.
+ */
 export async function resolveCloudApiKey(
   state: AccountState | null,
   provider: string,
@@ -47,28 +94,75 @@ export async function resolveCloudApiKey(
   const cached = cloudKeyCache.get(cacheKey);
   if (cached && cached.expiresAt > Date.now()) return cached.value;
 
-  const url = new URL('/api/keys', accountsBaseUrl());
-  url.searchParams.set('provider', p);
+  const keys = await listCloudApiKeys(state, p);
+  // GET /api/keys returns active keys sorted by updated_at DESC — first entry is most recent.
+  const key = keys[0]?.keyValue?.trim();
+  if (!key) return null;
 
+  cloudKeyCache.set(cacheKey, { value: key, expiresAt: Date.now() + CLOUD_KEY_TTL_MS });
+  return key;
+}
+
+/**
+ * Store (or update) an API key in the user's Opta Accounts cloud.
+ * Uses POST /api/keys which upserts on (user_id, provider, label) conflict.
+ * Returns true on success, false on auth failure or network error.
+ */
+export async function storeCloudApiKey(
+  state: AccountState | null,
+  provider: string,
+  keyValue: string,
+  label = 'default',
+): Promise<boolean> {
+  const accessToken = state?.session?.access_token?.trim();
+  if (!accessToken) return false;
+
+  const url = new URL('/api/keys', accountsBaseUrl());
   try {
     const response = await fetch(url.toString(), {
-      method: 'GET',
+      method: 'POST',
       headers: {
+        'content-type': 'application/json',
         ...authHeaders(accessToken),
       },
+      body: JSON.stringify({ provider: normalizeProvider(provider), keyValue: keyValue.trim(), label }),
     });
-
-    if (!response.ok) return null;
-    const payload = (await response.json().catch(() => null)) as
-      | { keys?: Array<{ keyValue?: string }> }
-      | null;
-    const key = payload?.keys?.[0]?.keyValue?.trim();
-    if (!key) return null;
-
-    cloudKeyCache.set(cacheKey, { value: key, expiresAt: Date.now() + CLOUD_KEY_TTL_MS });
-    return key;
+    if (response.ok) {
+      // Invalidate cache so the next resolve picks up the new key immediately.
+      const project = state?.project?.trim();
+      if (project) cloudKeyCache.delete(`${project}:${normalizeProvider(provider)}`);
+    }
+    return response.ok;
   } catch {
-    return null;
+    return false;
+  }
+}
+
+/**
+ * Delete a cloud API key by its UUID.
+ * Returns true on success, false on auth failure or network error.
+ */
+export async function deleteCloudApiKey(
+  state: AccountState | null,
+  keyId: string,
+  provider?: string,
+): Promise<boolean> {
+  const accessToken = state?.session?.access_token?.trim();
+  if (!accessToken) return false;
+
+  const url = new URL(`/api/keys/${encodeURIComponent(keyId)}`, accountsBaseUrl());
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'DELETE',
+      headers: authHeaders(accessToken),
+    });
+    if (response.ok && provider) {
+      const project = state?.project?.trim();
+      if (project) cloudKeyCache.delete(`${project}:${normalizeProvider(provider)}`);
+    }
+    return response.ok;
+  } catch {
+    return false;
   }
 }
 
