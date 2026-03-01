@@ -1,13 +1,13 @@
 import { notFound } from 'next/navigation';
 import { GuideViewer } from '@/components/GuideViewer';
-import { allGuides, getGuide } from '@/content/guides';
+import { getGuide, getPublishedGuides } from '@/content/guides';
 
 interface GuidePageProps {
   params: Promise<{ slug: string }>;
 }
 
 export function generateStaticParams() {
-  return allGuides.map((guide) => ({ slug: guide.slug }));
+  return getPublishedGuides().map((guide) => ({ slug: guide.slug }));
 }
 
 export default async function GuidePage({ params }: GuidePageProps) {

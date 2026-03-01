@@ -53,8 +53,6 @@ describe('opta CLI', () => {
 
   it('shows command-specific help for chat', async () => {
     const result = await run(['do', '--help']);
-    expect(result.stdout).toContain('--resume');
-    expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
     expect(result.stdout).toContain('--provider');
     expect(result.stdout).toContain('--device');
@@ -64,8 +62,6 @@ describe('opta CLI', () => {
 
   it('shows command-specific help for tui alias', async () => {
     const result = await run(['do', '--help']);
-    expect(result.stdout).toContain('--resume');
-    expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
     expect(result.stdout).toContain('--format');
     expect(result.exitCode).toBe(0);

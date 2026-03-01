@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Nav } from '@/components/Nav';
 import { SearchBar } from '@/components/SearchBar';
-import { allGuides } from '@/content/guides';
+import { getPublishedGuides } from '@/content/guides';
 
 const ease: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
@@ -32,6 +32,8 @@ const itemVariants = {
 };
 
 export default function HomePage() {
+  const publishedGuides = getPublishedGuides();
+
   return (
     <main className="min-h-screen bg-void flex flex-col items-center justify-center px-6 bg-dot-subtle">
       <Nav />
@@ -61,11 +63,11 @@ export default function HomePage() {
         </motion.div>
 
         <motion.div variants={itemVariants} className="w-full flex justify-center">
-          <SearchBar guides={allGuides} />
+          <SearchBar guides={publishedGuides} />
         </motion.div>
 
         <motion.p variants={itemVariants} className="mt-8 text-xs font-mono text-text-muted">
-          {allGuides.length} guides available · more added continuously
+          {publishedGuides.length} guides available · more added continuously
         </motion.p>
       </motion.div>
     </main>

@@ -70,7 +70,7 @@ function makeAccountState(overrides: Partial<AccountState> = {}): AccountState {
 describe('accountStatePath', () => {
   it('returns the path under ~/.config/opta/account.json', () => {
     const path = accountStatePath();
-    expect(path).toBe('${process.env.HOME || '/home/runner'}/.config/opta/account.json');
+    expect(path).toBe(`${process.env.HOME || '/home/runner'}/.config/opta/account.json`);
   });
 });
 

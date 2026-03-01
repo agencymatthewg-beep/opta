@@ -17,27 +17,16 @@ export interface Guide {
   tags: string[];
   sections: GuideSection[];
   updatedAt: string;
-  status?: 'verified' | 'draft';
 }
 
-import { lmxOverview } from './lmx-overview';
-import { optaLocalIntro } from './opta-local-intro';
-import { cliSetup } from './cli-setup';
-import { accountsSync } from './accounts-sync';
+import { lmxOverview } from './lmx';
 
 export const allGuides: Guide[] = [
-  { ...optaLocalIntro, status: "draft" },
-  { ...lmxOverview, status: "verified" },
-  { ...cliSetup, status: "draft" },
-  { ...accountsSync, status: "draft" },
+  lmxOverview,
 ];
 
 export function getGuide(slug: string): Guide | undefined {
-  return getPublishedGuides().find((g) => g.slug === slug);
-}
-
-export function getPublishedGuides(): Guide[] {
-  return allGuides.filter((g) => g.status === 'verified');
+  return allGuides.find((g) => g.slug === slug);
 }
 
 export const appColors: Record<AppSlug, string> = {
