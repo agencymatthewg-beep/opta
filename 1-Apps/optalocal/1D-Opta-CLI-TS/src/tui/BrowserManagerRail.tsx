@@ -4,8 +4,12 @@ import type { BrowserApprovalEvent } from '../browser/approval-log.js';
 import type { BrowserRuntimeHealth } from '../browser/runtime-daemon.js';
 import type { BrowserPendingApprovalItem } from './BrowserControlOverlay.js';
 import { actionStatusColor, type ActionEventStatus } from './activity.js';
-import { TUI_COLORS } from './palette.js';
 import { riskColor, riskPriority } from './browser-formatters.js';
+import {
+  browserVisualGlyph,
+  deriveBrowserVisualState,
+  useBrowserVisualTick,
+} from './browser-visual-state.js';
 
 interface BrowserManagerRailProps {
   safeMode?: boolean;
@@ -15,6 +19,8 @@ interface BrowserManagerRailProps {
   busy: boolean;
   message: string;
   messageStatus: ActionEventStatus;
+  /** Playwright tool name currently executing (e.g. 'browser_navigate'). Shows 'active' state. */
+  activeTool?: string;
 }
 
 function summarizePendingByRisk(pending: BrowserPendingApprovalItem[]): {
@@ -60,6 +66,7 @@ export function BrowserManagerRail({
   busy,
   message,
   messageStatus,
+  activeTool,
 }: BrowserManagerRailProps) {
   const pendingOrdered = useMemo(
     () => [...pendingApprovals]
@@ -79,7 +86,17 @@ export function BrowserManagerRail({
     () => approvalDecisionSummary(recentApprovals),
     [recentApprovals],
   );
-  const highestPendingRisk = pendingOrdered[0]?.risk;
+  const visualState = useMemo(
+    () => deriveBrowserVisualState({
+      browserHealth,
+      pendingApprovals: pendingOrdered,
+      busy,
+      activeTool,
+    }),
+    [activeTool, browserHealth, busy, pendingOrdered],
+  );
+  const visualTick = useBrowserVisualTick(true);
+  const visualGlyph = browserVisualGlyph(visualState.kind, visualTick);
   const runtimeLabel = browserHealth
     ? `running=${String(browserHealth.running)} paused=${String(browserHealth.paused)} killed=${String(browserHealth.killed)} sessions=${browserHealth.sessionCount}/${browserHealth.maxSessions}`
     : 'runtime=unavailable';
@@ -88,10 +105,13 @@ export function BrowserManagerRail({
   if (safeMode) {
     return (
       <Box flexDirection="column" paddingX={1}>
-        <Text color={highestPendingRisk ? riskColor(highestPendingRisk) : TUI_COLORS.warning}>
-          🌐 Browser controls: Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh
+        <Text color={visualState.color}>
+          {visualGlyph} Browser controls: Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh
+          {visualState.activeTool ? <Text> · {visualState.reason}</Text> : null}
         </Text>
         <Text dimColor wrap="truncate-end">
+          state={visualState.label}
+          {' · '}
           pending={pendingSummary.total} (high={pendingSummary.high}, med={pendingSummary.medium}, low={pendingSummary.low})
           {' · '}
           approvals approved={approvalSummary.approved} denied={approvalSummary.denied}
@@ -102,10 +122,12 @@ export function BrowserManagerRail({
 
   return (
     <Box flexDirection="column" paddingX={1}>
-      <Text color={highestPendingRisk ? riskColor(highestPendingRisk) : TUI_COLORS.accent}>
-        🌐 Browser Manager Rail · Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh
+      <Text color={visualState.color}>
+        {visualGlyph} Browser Manager Rail [{visualState.label}] · Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh
       </Text>
       <Text dimColor wrap="truncate-end">
+        {visualState.reason}
+        {' · '}
         {runtimeLabel}
         {' · '}
         pending={pendingSummary.total} (high={pendingSummary.high}, med={pendingSummary.medium}, low={pendingSummary.low})

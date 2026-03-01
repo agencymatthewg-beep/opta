@@ -97,6 +97,8 @@ export interface AgentLoopOptions {
   onSubAgentProgress?: (event: import('./subagent-events.js').SubAgentProgressEvent) => void;
   /** Called when a sub-agent completes with its final result text. */
   onSubAgentDone?: (agentId: string, result: string) => void;
+  /** Called after each successfully executed browser MCP action. Used to stream events to the TUI. */
+  onBrowserEvent?: (toolName: string, sessionId: string) => void;
 }
 
 export interface AgentLoopResult {
@@ -317,6 +319,7 @@ export async function agentLoop(
     onSubAgentSpawn: options?.onSubAgentSpawn,
     onSubAgentProgress: options?.onSubAgentProgress,
     onSubAgentDone: options?.onSubAgentDone,
+    onBrowserEvent: options?.onBrowserEvent,
   });
 
   const { getAgentProfile, filterToolsForMode } = await import('./agent-profiles.js');

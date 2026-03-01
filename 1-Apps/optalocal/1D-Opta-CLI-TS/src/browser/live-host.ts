@@ -472,7 +472,7 @@ function renderSlotHtml(runtime: BrowserLiveHostRuntime, slotIndex: number): str
   <h1>${title}</h1>
   <div class="meta" id="meta">Loading session status...</div>
   <img class="frame" id="frame" src="/frame?token=${encodeURIComponent(viewerToken)}&ts=0" alt="Live browser frame slot ${slotNumber}" />
-  <div class="hint">Auto-refresh every 1500ms.</div>
+  <div class="hint">Auto-refresh every 800ms.</div>
   <script>
     const frame = document.getElementById('frame');
     const meta = document.getElementById('meta');
@@ -492,7 +492,7 @@ function renderSlotHtml(runtime: BrowserLiveHostRuntime, slotIndex: number): str
       }
     }
     refresh();
-    setInterval(refresh, 1500);
+    setInterval(refresh, 800);
   </script>
 </body>
 </html>`;
@@ -574,7 +574,7 @@ function renderPeekabooScreenHtml(screenAuthToken: string, actionsEnabled: boole
 </head>
 <body>
   <h1>Opta CEO Peekaboo Screen Stream</h1>
-  <p>Auto-refresh every 1200ms. This stream is local-only on 127.0.0.1.</p>
+  <p>Auto-refresh every 800ms. This stream is local-only on 127.0.0.1.</p>
   ${actionModeLine}
   <img class="frame" id="frame" src="/api/screen/frame?token=${escapedToken}&ts=0" alt="Peekaboo screen stream" />
   <div class="row">
@@ -619,7 +619,7 @@ function renderPeekabooScreenHtml(screenAuthToken: string, actionsEnabled: boole
     function refresh() {
       frame.src = '/api/screen/frame?token=' + encodeURIComponent(screenToken) + '&ts=' + Date.now();
     }
-    setInterval(refresh, 1200);
+    setInterval(refresh, 800);
   </script>
 </body>
 </html>`;
@@ -641,7 +641,7 @@ async function serveSlotFrame(
 
   const screenshot = await daemon.screenshot(slot.sessionId, {
     type: 'jpeg',
-    quality: 55,
+    quality: 80,
   });
 
   if (!screenshot.ok || !screenshot.data) {

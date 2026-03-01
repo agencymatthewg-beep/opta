@@ -16,6 +16,7 @@ import { errorMessage } from '../utils/errors.js';
 import type { SubAgentDisplayState, SubAgentProgressEvent } from '../core/subagent-events.js';
 import { probeLmxConnection } from '../lmx/connection.js';
 import { resolveLmxEndpoint } from '../lmx/endpoints.js';
+import type { AtpoState } from './Header.js';
 
 /** Average characters per token for rough estimation. */
 const CHARS_PER_TOKEN = 4;
@@ -67,6 +68,9 @@ export interface TuiEventMap {
   'subagent:progress': [event: SubAgentProgressEvent];
   'subagent:done': [agentId: string, result: string];
   'subagent:clear': [];
+  'atpo:state': [state: AtpoState];
+  /** Emitted after each successfully executed Playwright MCP tool call. */
+  'browser:event': [toolName: string, sessionId: string];
 }
 
 export class TuiEmitter extends EventEmitter {
@@ -215,6 +219,9 @@ export async function runAgentWithEvents(
     },
     onSubAgentDone(agentId: string, result: string) {
       emitter.emit('subagent:done', agentId, result);
+    },
+    onBrowserEvent(toolName: string, sessionId: string) {
+      emitter.emit('browser:event', toolName, sessionId);
     },
   };
 

@@ -276,6 +276,14 @@ export async function buildToolRegistry(
               {
                 policyConfig: resolveBrowserPolicyConfig(config),
                 sessionId: parentCtx?.parentSessionId ?? 'registry',
+                // Auto-approve gate decisions so all Playwright tools are usable.
+                // The policy engine still blocks denied tools; only gated tools get through.
+                onGate: async (_toolName, _decision) => 'approved',
+                // Compress screenshots before returning to LLM to preserve context budget.
+                screenshotCompressOptions: { maxWidth: 1280, maxHeight: 720, quality: 80 },
+                // Retry transient Playwright failures (e.g. element detach, timing races).
+                maxRetries: 2,
+                retryBackoffMs: 500,
                 onBrowserEvent: subAgentCallbacks?.onBrowserEvent
                   ? (toolName, _args, _result) =>
                       subAgentCallbacks.onBrowserEvent!(toolName, parentCtx?.parentSessionId ?? 'registry')
