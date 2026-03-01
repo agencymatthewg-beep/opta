@@ -47,6 +47,32 @@ describe('capability evaluator runtime enforcement', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
+  it('evaluates high-risk write operations through capability endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ allow: true }),
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+
+    const decision = await evaluateOperationCapability(withRuntimePolicy({}), {
+      id: 'config.reset',
+      safety: 'write',
+      operationInput: {},
+    });
+
+    expect(decision).toEqual({ kind: 'allow' });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    const request = fetchMock.mock.calls[0]?.[1] as RequestInit | undefined;
+    expect(JSON.parse(String(request?.body))).toEqual({
+      scope: 'automation.high_risk',
+      context: {
+        source: 'opta-cli',
+        operationId: 'config.reset',
+        safety: 'write',
+      },
+    });
+  });
+
   it('denies when evaluator returns allow=false', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

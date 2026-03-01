@@ -29,7 +29,7 @@ export async function versionCommand(opts: { check?: boolean }): Promise<void> {
   }
 }
 
-async function fetchLatestVersion(): Promise<string | null> {
+export async function fetchLatestVersion(): Promise<string | null> {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000);

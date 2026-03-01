@@ -11,6 +11,7 @@ import { ModelsPage } from "./pages/ModelsPage";
 import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
 import { OperationsPage } from "./pages/OperationsPage";
+import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { DaemonPanel } from "./components/DaemonPanel";
 import {
   downloadAsFile,
@@ -29,7 +30,7 @@ import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
-type AppPage = "sessions" | "models" | "operations" | "jobs" | "logs";
+type AppPage = "sessions" | "models" | "operations" | "config" | "jobs" | "logs";
 const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
 
 export type BrowserViewMode = "default" | "expanded" | "minimized";
@@ -305,6 +306,13 @@ function App() {
         run: () => setActivePage("operations"),
       },
       {
+        id: "open-config-studio",
+        title: "Open config studio",
+        description: "Inspect, search, and edit daemon config values",
+        keywords: ["config", "settings", "keys", "reset"],
+        run: () => setActivePage("config"),
+      },
+      {
         id: "open-jobs",
         title: "Open background jobs",
         description: "View and manage daemon background processes",
@@ -510,6 +518,13 @@ function App() {
                 </button>
                 <button
                   type="button"
+                  className={activePage === "config" ? "active" : ""}
+                  onClick={() => setActivePage("config")}
+                >
+                  Config
+                </button>
+                <button
+                  type="button"
                   className={activePage === "jobs" ? "active" : ""}
                   onClick={() => setActivePage("jobs")}
                 >
@@ -567,6 +582,8 @@ function App() {
               <ModelsPage connection={connection} />
             ) : activePage === "operations" ? (
               <OperationsPage connection={connection} />
+            ) : activePage === "config" ? (
+              <ConfigStudioPage connection={connection} />
             ) : activePage === "jobs" ? (
               <BackgroundJobsPage connection={connection} />
             ) : activePage === "logs" ? (

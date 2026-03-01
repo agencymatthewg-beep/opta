@@ -4,7 +4,9 @@ import { errorMessage } from '../../utils/errors.js';
 
 const HIGH_RISK_WRITE_OPERATIONS = new Set<OperationId>([
   'env.delete',
+  'config.reset',
   'mcp.remove',
+  'daemon.stop',
   'keychain.delete-anthropic',
   'keychain.delete-lmx',
 ]);

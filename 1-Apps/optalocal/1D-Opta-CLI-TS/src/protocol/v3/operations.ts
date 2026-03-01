@@ -7,8 +7,23 @@ export const OPERATION_IDS = [
   'env.save',
   'env.use',
   'env.delete',
+  'config.get',
+  'config.set',
+  'config.list',
+  'config.reset',
   'account.status',
   'account.logout',
+  'key.create',
+  'key.show',
+  'key.copy',
+  'version.check',
+  'completions.generate',
+  'daemon.start',
+  'daemon.stop',
+  'daemon.status',
+  'daemon.logs',
+  'daemon.install',
+  'daemon.uninstall',
   'sessions.list',
   'sessions.search',
   'sessions.export',
@@ -76,8 +91,57 @@ export const OperationInputSchemaById = {
       name: z.string().min(1),
     })
     .strict(),
+  'config.get': z
+    .object({
+      key: z.string().min(1),
+    })
+    .strict(),
+  'config.set': z
+    .object({
+      key: z.string().min(1),
+      value: z.unknown(),
+    })
+    .strict(),
+  'config.list': EmptyInputSchema,
+  'config.reset': z
+    .object({
+      key: z.string().min(1).optional(),
+    })
+    .strict(),
   'account.status': EmptyInputSchema,
   'account.logout': EmptyInputSchema,
+  'key.create': z
+    .object({
+      value: z.string().min(1).optional(),
+      remote: z.boolean().optional(),
+      copy: z.boolean().optional(),
+    })
+    .strict(),
+  'key.show': z
+    .object({
+      reveal: z.boolean().optional(),
+      copy: z.boolean().optional(),
+    })
+    .strict(),
+  'key.copy': EmptyInputSchema,
+  'version.check': EmptyInputSchema,
+  'completions.generate': z
+    .object({
+      shell: z.enum(['bash', 'zsh', 'fish']),
+      install: z.boolean().optional(),
+    })
+    .strict(),
+  'daemon.start': z
+    .object({
+      host: z.string().min(1).optional(),
+      port: z.union([z.string().min(1), z.number().int().min(1).max(65_535)]).optional(),
+    })
+    .strict(),
+  'daemon.stop': EmptyInputSchema,
+  'daemon.status': EmptyInputSchema,
+  'daemon.logs': EmptyInputSchema,
+  'daemon.install': EmptyInputSchema,
+  'daemon.uninstall': EmptyInputSchema,
   'sessions.list': z
     .object({
       model: z.string().min(1).optional(),
@@ -206,6 +270,15 @@ export const OperationOutputSchemaById = {
   'env.save': z.unknown(),
   'env.use': z.unknown(),
   'env.delete': z.unknown(),
+  'config.get': z
+    .object({
+      key: z.string().min(1),
+      value: z.string(),
+    })
+    .strict(),
+  'config.set': z.unknown(),
+  'config.list': z.unknown(),
+  'config.reset': z.unknown(),
   'account.status': z
     .object({
       ok: z.literal(true),
@@ -237,6 +310,24 @@ export const OperationOutputSchemaById = {
       warning: z.string().nullable(),
     })
     .strict(),
+  'key.create': z.unknown(),
+  'key.show': z.unknown(),
+  'key.copy': z.unknown(),
+  'version.check': z
+    .object({
+      current: z.string().min(1),
+      latest: z.string().nullable(),
+      upToDate: z.boolean().nullable(),
+      updateAvailable: z.boolean().nullable(),
+    })
+    .strict(),
+  'completions.generate': TextCommandOutputSchema,
+  'daemon.start': z.unknown(),
+  'daemon.stop': TextCommandOutputSchema,
+  'daemon.status': z.unknown(),
+  'daemon.logs': z.unknown(),
+  'daemon.install': TextCommandOutputSchema,
+  'daemon.uninstall': TextCommandOutputSchema,
   'sessions.list': z.array(SessionSummarySchema),
   'sessions.search': z.array(SessionSummarySchema),
   'sessions.export': z.unknown(),
@@ -278,8 +369,23 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('env.save'),
   makeExecuteRequestVariant('env.use'),
   makeExecuteRequestVariant('env.delete'),
+  makeExecuteRequestVariant('config.get'),
+  makeExecuteRequestVariant('config.set'),
+  makeExecuteRequestVariant('config.list'),
+  makeExecuteRequestVariant('config.reset'),
   makeExecuteRequestVariant('account.status'),
   makeExecuteRequestVariant('account.logout'),
+  makeExecuteRequestVariant('key.create'),
+  makeExecuteRequestVariant('key.show'),
+  makeExecuteRequestVariant('key.copy'),
+  makeExecuteRequestVariant('version.check'),
+  makeExecuteRequestVariant('completions.generate'),
+  makeExecuteRequestVariant('daemon.start'),
+  makeExecuteRequestVariant('daemon.stop'),
+  makeExecuteRequestVariant('daemon.status'),
+  makeExecuteRequestVariant('daemon.logs'),
+  makeExecuteRequestVariant('daemon.install'),
+  makeExecuteRequestVariant('daemon.uninstall'),
   makeExecuteRequestVariant('sessions.list'),
   makeExecuteRequestVariant('sessions.search'),
   makeExecuteRequestVariant('sessions.export'),
@@ -396,6 +502,30 @@ export const OPERATION_TAXONOMY = [
     safety: 'write',
   },
   {
+    id: 'config.get',
+    title: 'Config Get',
+    description: 'Read one flattened Opta config value by key.',
+    safety: 'read',
+  },
+  {
+    id: 'config.set',
+    title: 'Config Set',
+    description: 'Persist one Opta config key to a new value.',
+    safety: 'write',
+  },
+  {
+    id: 'config.list',
+    title: 'Config List',
+    description: 'List current Opta config with resolved defaults.',
+    safety: 'read',
+  },
+  {
+    id: 'config.reset',
+    title: 'Config Reset',
+    description: 'Reset one config key or all overrides back to defaults.',
+    safety: 'write',
+  },
+  {
     id: 'account.status',
     title: 'Account Status',
     description: 'Inspect local Supabase account session status.',
@@ -406,6 +536,72 @@ export const OPERATION_TAXONOMY = [
     title: 'Account Logout',
     description: 'Clear local account session and revoke remote auth token when available.',
     safety: 'write',
+  },
+  {
+    id: 'key.create',
+    title: 'Key Create',
+    description: 'Create or rotate local inference API key.',
+    safety: 'write',
+  },
+  {
+    id: 'key.show',
+    title: 'Key Show',
+    description: 'Inspect current local inference API key state.',
+    safety: 'read',
+  },
+  {
+    id: 'key.copy',
+    title: 'Key Copy',
+    description: 'Copy current inference API key to clipboard.',
+    safety: 'write',
+  },
+  {
+    id: 'version.check',
+    title: 'Version Check',
+    description: 'Check npm registry for latest Opta CLI version.',
+    safety: 'read',
+  },
+  {
+    id: 'completions.generate',
+    title: 'Completions Generate',
+    description: 'Generate or install shell completion scripts.',
+    safety: 'write',
+  },
+  {
+    id: 'daemon.start',
+    title: 'Daemon Start',
+    description: 'Start daemon process (or attach to running daemon).',
+    safety: 'write',
+  },
+  {
+    id: 'daemon.stop',
+    title: 'Daemon Stop',
+    description: 'Stop the running daemon process.',
+    safety: 'write',
+  },
+  {
+    id: 'daemon.status',
+    title: 'Daemon Status',
+    description: 'Inspect daemon lifecycle status.',
+    safety: 'read',
+  },
+  {
+    id: 'daemon.logs',
+    title: 'Daemon Logs',
+    description: 'Read daemon logs tail output.',
+    safety: 'read',
+  },
+  {
+    id: 'daemon.install',
+    title: 'Daemon Install',
+    description: 'Install daemon as system service.',
+    safety: 'dangerous',
+  },
+  {
+    id: 'daemon.uninstall',
+    title: 'Daemon Uninstall',
+    description: 'Uninstall daemon system service registration.',
+    safety: 'dangerous',
   },
   {
     id: 'sessions.list',

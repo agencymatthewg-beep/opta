@@ -1,6 +1,6 @@
 # Opta CLI — Competitive Feature Matrix
 
-**Last scanned:** 2026-02-16
+**Last scanned:** 2026-03-01
 **Scanner:** Opta Max (automated)
 **Competitors:** Claude Code, OpenCode, Kimi Code, Aider, Gemini CLI, Codex CLI
 
@@ -52,7 +52,7 @@
 | 24 | Streaming output | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | — | 0 |
 | 25 | Markdown rendering | ✅ marked-terminal | ✅ | ✅ | ✅ | ✅ | ✅ | — | 0 |
 | 26 | Non-interactive mode | ✅ `opta do` | ✅ `claude -p` | ✅ `opencode -p` | ✅ | ⬜ | ✅ | — | 0 |
-| 27 | JSON output | ⬜ | ✅ --output-format json | ✅ -f json | ⬜ | ⬜ | ⬜ | MEDIUM | 2 |
+| 27 | JSON output | ⬜ | ✅ --output-format json | ✅ -f json | ⬜ | ⬜ | ✅ `-o/--output-format json` | HIGH | 3 |
 | **Model Management** | | | | | | | | | |
 | 28 | Local model support | ✅ Native LMX | ❌ Anthropic only | ✅ Any endpoint | Partial | ✅ | ⬜ | — | 0 (we lead) |
 | 29 | Model load/unload/swap | ✅ LMX admin API | ❌ | ❌ | ❌ | ❌ | ❌ | — | 0 (unique) |
@@ -64,12 +64,15 @@
 | 34 | Session persistence | ✅ JSON store | ✅ Auto-save | ✅ SQLite | ✅ | ⬜ | ⬜ | — | 0 |
 | 35 | Shell completions | ✅ Bash/Zsh/Fish | ❌ | ❌ | ❌ | ❌ | ❌ | — | 0 (unique) |
 | 36 | Permissions system | ✅ ask_user | 🟣 Granular per-tool | ✅ Per-tool config | ✅ Human-in-loop | ⬜ | ⬜ | MEDIUM | 2 |
-| 37 | Hooks / lifecycle events | ⬜ | 🟣 PreToolUse/PostToolUse/Stop/Notification | ✅ Plugin hooks | ⬜ | ⬜ | ⬜ | HIGH | 3 |
+| 37 | Hooks / lifecycle events | ⬜ | 🟣 PreToolUse/PostToolUse/Stop/Notification | ✅ Plugin hooks | ⬜ | ⬜ | ✅ RuntimeHook functions | HIGH | 3 |
 | 38 | Custom tools (user-defined) | ⬜ | ✅ Via hooks | 🟣 JS/TS files in .opencode/tools/ | ✅ Skills | ⬜ | ⬜ | HIGH | 3 |
 | 39 | Undo/rollback | ⬜ | ⬜ | 🟣 /undo command | ⬜ | ✅ Git-based | ⬜ | HIGH | 3 |
 | 40 | Token usage display | ⬜ | ✅ Status bar | ✅ Token % display | ⬜ | ✅ | ⬜ | MEDIUM | 2 |
 | 41 | Todo/task tracking | ⬜ | ✅ TodoWrite tool | ⬜ | ⬜ | ⬜ | ⬜ | LOW | 1 |
 | 42 | Diff view | ✅ `opta diff` | ⬜ | ✅ File change view | ⬜ | ✅ | ⬜ | — | 0 |
+| 43 | Multi-root workspace context | ⬜ | ⬜ | ⬜ | ✅ `--add-dir` + `/add-dir` | ⬜ | ✅ `/dir add` support | MEDIUM | 2 |
+| 44 | HTTP hooks / webhook callbacks | ⬜ | ✅ HTTP hooks (POST JSON) | ✅ Plugin hooks (scriptable) | ⬜ | ⬜ | ✅ Runtime hooks | HIGH | 3 |
+| 45 | Plan mode (read-only planning) | ⬜ | ⬜ | ✅ Plan mode | ✅ Plan mode | ⬜ | ✅ Plan mode w/ constraints | HIGH | 3 |
 
 ---
 
@@ -77,10 +80,10 @@
 
 | CLI | Features Implemented | Best-in-Class | Unique Features | Gap Score (lower = better) |
 |-----|---------------------|---------------|-----------------|---------------------------|
-| **Opta CLI** | 22/42 (52%) | 0 | 4 (model mgmt, OPIS, shell completions, routing) | 53 |
-| **Claude Code** | 33/42 (79%) | 5 | 2 (Agent Teams, hooks) | — |
-| **OpenCode** | 35/42 (83%) | 5 | 2 (LSP, /undo) | — |
-| **Kimi Code** | 27/42 (64%) | 2 | 1 (Agent Swarm) | — |
+| **Opta CLI** | 22/45 (49%) | 0 | 4 (model mgmt, OPIS, shell completions, routing) | 62 |
+| **Claude Code** | 34/45 (76%) | 5 | 2 (Agent Teams, hooks) | — |
+| **OpenCode** | 37/45 (82%) | 5 | 2 (LSP, /undo) | — |
+| **Kimi Code** | 29/45 (64%) | 2 | 1 (Agent Swarm) | — |
 
 ## Critical Gaps (Score ≥ 5)
 
@@ -94,9 +97,12 @@
 5. Auto-compact / context management — Claude Code and OpenCode have this
 6. Export map / symbol index — OpenCode (LSP) and Aider (tree-sitter) have this
 7. Git integration (/undo, checkpoints) — OpenCode leads with /undo
-8. Hooks / lifecycle events — Claude Code leads with 4 hook types
+8. Hooks / lifecycle events — Claude Code + OpenCode + Gemini now all have this
 9. Custom tools (user-defined) — OpenCode leads with JS/TS file tools
 10. Undo/rollback — OpenCode has /undo, Aider has git-based
+11. JSON output — now standard across Claude, OpenCode, Gemini
+12. HTTP hooks / webhook callbacks — now present in Claude + OpenCode + Gemini
+13. Plan mode (read-only planning) — now present in OpenCode + Kimi + Gemini
 
 ---
 
@@ -105,3 +111,4 @@
 | Date | Scanner | Changes |
 |------|---------|---------|
 | 2026-02-16 | Opta Max | Initial matrix — 42 features, 6 competitors |
+| 2026-03-01 | Opta Max | Added rows 43-45 (multi-root context, HTTP hooks, plan mode); updated JSON output + hooks statuses from latest releases |

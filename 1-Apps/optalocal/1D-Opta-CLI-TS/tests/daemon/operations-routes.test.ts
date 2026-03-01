@@ -85,8 +85,12 @@ describe('daemon operations routes', () => {
     expect(body.operations).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: 'doctor', safety: 'read' }),
+        expect.objectContaining({ id: 'config.list', safety: 'read' }),
         expect.objectContaining({ id: 'account.status', safety: 'read' }),
         expect.objectContaining({ id: 'account.logout', safety: 'write' }),
+        expect.objectContaining({ id: 'key.show', safety: 'read' }),
+        expect.objectContaining({ id: 'daemon.status', safety: 'read' }),
+        expect.objectContaining({ id: 'daemon.install', safety: 'dangerous' }),
         expect.objectContaining({ id: 'sessions.list', safety: 'read' }),
         expect.objectContaining({ id: 'sessions.delete', safety: 'write' }),
         expect.objectContaining({ id: 'diff', safety: 'read' }),
@@ -135,6 +139,57 @@ describe('daemon operations routes', () => {
     });
     expect(successBody.result).toMatchObject({
       profiles: expect.any(Array),
+    });
+
+    const configList = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/config.list',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(configList.statusCode).toBe(200);
+    expect(configList.json()).toMatchObject({
+      ok: true,
+      id: 'config.list',
+      safety: 'read',
+      result: {
+        connection: expect.any(Object),
+      },
+    });
+
+    const configGet = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/config.get',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: { key: 'connection.host' } },
+    });
+    expect(configGet.statusCode).toBe(200);
+    expect(configGet.json()).toMatchObject({
+      ok: true,
+      id: 'config.get',
+      safety: 'read',
+      result: {
+        key: 'connection.host',
+        value: expect.any(String),
+      },
+    });
+
+    const configResetKey = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/config.reset',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: { key: 'connection.host' } },
+    });
+    expect(configResetKey.statusCode).toBe(200);
+    expect(configResetKey.json()).toMatchObject({
+      ok: true,
+      id: 'config.reset',
+      safety: 'write',
+      result: {
+        ok: true,
+        scope: 'key',
+        key: 'connection.host',
+      },
     });
 
     const accountStatus = await running.app.inject({
@@ -228,6 +283,22 @@ describe('daemon operations routes', () => {
     expect(deniedBody).toMatchObject({
       ok: false,
       id: 'benchmark',
+      safety: 'dangerous',
+      error: {
+        code: 'dangerous_confirmation_required',
+      },
+    });
+
+    const daemonInstallDenied = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/daemon.install',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(daemonInstallDenied.statusCode).toBe(403);
+    expect(daemonInstallDenied.json()).toMatchObject({
+      ok: false,
+      id: 'daemon.install',
       safety: 'dangerous',
       error: {
         code: 'dangerous_confirmation_required',

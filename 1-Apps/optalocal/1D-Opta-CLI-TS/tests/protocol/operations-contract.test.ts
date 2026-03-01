@@ -18,8 +18,23 @@ describe('v3 operations contract', () => {
       'env.save',
       'env.use',
       'env.delete',
+      'config.get',
+      'config.set',
+      'config.list',
+      'config.reset',
       'account.status',
       'account.logout',
+      'key.create',
+      'key.show',
+      'key.copy',
+      'version.check',
+      'completions.generate',
+      'daemon.start',
+      'daemon.stop',
+      'daemon.status',
+      'daemon.logs',
+      'daemon.install',
+      'daemon.uninstall',
       'sessions.list',
       'sessions.search',
       'sessions.export',
@@ -119,6 +134,34 @@ describe('v3 operations contract', () => {
         input: { unknown: true },
       })
     ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'config.get',
+        input: { key: 'connection.host' },
+      })
+    ).toMatchObject({ id: 'config.get' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'config.set',
+        input: { key: 'connection.port', value: 9999 },
+      })
+    ).toMatchObject({ id: 'config.set' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'config.reset',
+        input: { key: 'connection.port' },
+      })
+    ).toMatchObject({ id: 'config.reset' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'completions.generate',
+        input: { shell: 'zsh', install: true },
+      })
+    ).toMatchObject({ id: 'completions.generate' });
   });
 
   it('validates typed execute/list responses', () => {
