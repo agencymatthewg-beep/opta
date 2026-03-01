@@ -11,7 +11,7 @@ beforeEach(() => {
 
 // All commands that should appear in completions
 const ALL_COMMANDS = [
-  'chat', 'tui', 'do', 'benchmark', 'init', 'status', 'models', 'env', 'config',
+  'do', 'benchmark', 'init', 'status', 'models', 'env', 'config',
   'sessions', 'mcp', 'diff', 'server', 'daemon', 'serve', 'update', 'completions',
 ];
 
@@ -22,7 +22,7 @@ describe('completions', () => {
     const text = output.join('\n');
     expect(text).toContain('_opta_completions');
     expect(text).toContain('complete -F');
-    expect(text).toContain('chat');
+    expect(text).toContain('do');
     expect(text).toContain('status');
   });
 
@@ -32,7 +32,7 @@ describe('completions', () => {
     const text = output.join('\n');
     expect(text).toContain('#compdef opta');
     expect(text).toContain('_opta');
-    expect(text).toContain('chat');
+    expect(text).toContain('do');
   });
 
   it('generates fish completions', async () => {
@@ -41,7 +41,7 @@ describe('completions', () => {
     const text = output.join('\n');
     expect(text).toContain('complete -c opta');
     expect(text).toContain('__fish_use_subcommand');
-    expect(text).toContain('chat');
+    expect(text).toContain('do');
   });
 
   it('is case-insensitive', async () => {
@@ -73,7 +73,7 @@ describe('completions', () => {
       expect(text).toContain('--auto');
       expect(text).toContain('--dangerous');
       expect(text).toContain('--yolo');
-      expect(text).toContain('--tui');
+      expect(text).toContain('--plan');
     });
 
     it('has flag completions for do command', async () => {
@@ -148,7 +148,7 @@ describe('completions', () => {
       const { completions } = await import('../../src/commands/completions.js');
       await completions('zsh');
       const text = output.join('\n');
-      expect(text).toContain('--tui');
+      expect(text).toContain('--plan');
       expect(text).toContain('--dangerous');
       expect(text).toContain('--no-commit');
     });

@@ -13,7 +13,7 @@ describe('opta CLI', () => {
   it('shows help when no command given', async () => {
     const result = await run([]);
     expect(result.stdout).toContain('Agentic AI coding CLI powered by local LLMs');
-    expect(result.stdout).toContain('chat');
+    expect(result.stdout).toContain('do');
     expect(result.stdout).toContain('status');
     expect(result.stdout).toContain('do');
     expect(result.exitCode).toBe(0);
@@ -38,7 +38,7 @@ describe('opta CLI', () => {
 
   it('lists all expected commands in help', async () => {
     const result = await run(['--help']);
-    const commands = ['chat', 'tui', 'do', 'benchmark', 'status', 'models', 'env', 'config', 'sessions', 'mcp', 'init', 'diff', 'completions', 'daemon', 'update'];
+    const commands = ['do', 'benchmark', 'status', 'models', 'env', 'config', 'sessions', 'mcp', 'init', 'diff', 'completions', 'daemon', 'update'];
     for (const cmd of commands) {
       expect(result.stdout).toContain(cmd);
     }
@@ -52,7 +52,7 @@ describe('opta CLI', () => {
   });
 
   it('shows command-specific help for chat', async () => {
-    const result = await run(['chat', '--help']);
+    const result = await run(['do', '--help']);
     expect(result.stdout).toContain('--resume');
     expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
@@ -63,7 +63,7 @@ describe('opta CLI', () => {
   });
 
   it('shows command-specific help for tui alias', async () => {
-    const result = await run(['tui', '--help']);
+    const result = await run(['do', '--help']);
     expect(result.stdout).toContain('--resume');
     expect(result.stdout).toContain('--plan');
     expect(result.stdout).toContain('--model');
@@ -81,7 +81,7 @@ describe('opta CLI', () => {
   });
 
   it('fails clearly for invalid chat provider', async () => {
-    const result = await run(['chat', '--provider', 'invalid']);
+    const result = await run(['do', '--provider', 'invalid', 'test']);
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain('Invalid provider');
     expect(result.stderr).toContain('lmx, anthropic');
@@ -95,7 +95,7 @@ describe('opta CLI', () => {
   });
 
   it('chat command accepts --auto flag', async () => {
-    const result = await run(['chat', '--help']);
+    const result = await run(['do', '--help']);
     expect(result.stdout).toContain('--auto');
     expect(result.stdout).toContain('--dangerous');
   });
@@ -155,7 +155,7 @@ describe('opta CLI', () => {
   });
 
   it('chat command shows --format flag with json description', async () => {
-    const result = await run(['chat', '--help']);
+    const result = await run(['do', '--help']);
     expect(result.stdout).toContain('--format');
     expect(result.stdout).toContain('json');
   });
