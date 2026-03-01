@@ -12,9 +12,12 @@ import { ArrowLeft } from 'lucide-react'
 const APPS = [
   { id: 'cli', label: 'CLI', name: 'Opta CLI', subtitle: '1D — Terminal & Daemon' },
   { id: 'lmx', label: 'LMX', name: 'Opta LMX', subtitle: '1M — MLX Inference' },
-  { id: 'local-web', label: 'Local Web', name: 'Opta Local', subtitle: '1L — Dashboard & Chat' },
   { id: 'code-desktop', label: 'Code', name: 'Opta Code Desktop', subtitle: '1P — Desktop Client' },
+  { id: 'local-web', label: 'OptaLocal', name: 'OptaLocal.com', subtitle: '1L — Management Website' },
+  { id: 'accounts', label: 'Accounts', name: 'Opta Accounts', subtitle: '1R — Identity & SSO' },
   { id: 'init', label: 'Init', name: 'Opta Init', subtitle: '1O — Setup Portal' },
+  { id: 'status', label: 'Status', name: 'Opta Status', subtitle: '1S — Ecosystem Health' },
+  { id: 'help', label: 'Help', name: 'Opta Help', subtitle: '1U — Docs & Support' },
 ] as const
 
 type AppId = (typeof APPS)[number]['id']

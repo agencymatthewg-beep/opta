@@ -30,3 +30,34 @@ These web properties are the management websites that assist the main apps, hand
 | **Opta Help** | Muted Grey | `#a1a1aa` | Documentation. 3-column layout, `.prose-opta`, color-coded callouts, high readability. |
 | **Opta Learn** | Mixed (Per App)| Mixed | Discovery portal. `.bg-dot-subtle`, glass search bars, interactive guide cards. |
 | **Opta Init** | Neon Amber | `#f59e0b` | Onboarding flows. Conditional states, clear step-by-step progress. |
+
+---
+
+## 4. App Logo System (Canonical Template)
+
+All Opta Local app logos — across both Main Local Apps and Management Websites — share a **single locked template**. Only two elements vary per app.
+
+> Full spec: `/design/logos/LOGO-SYSTEM.md`
+> Template source: `/design/logos/opta-logo-template.html`
+
+### Shared Across Every Logo (Locked)
+1. **Aesthetic / colouring:** Void black radial background, gravitational violet/white particle field, inverse-square density distribution
+2. **Outer ring:** 3-layer depth system — outermost halo → mid soft ring → main gradient arc (`#c084fc` top-left → `#4c1d95` bottom-right) with glow filter + inner edge trace
+3. **Orbit elements:** Gradient ellipse with node dots + centre layered bloom
+4. **Typography:** Sora SemiBold 600 · `0.22em` tracking · `"opta local"` in `#71717a` · divider · app name in **`#a855f7` (Electric Violet)**
+
+### What Changes Per App (Only Two Variables)
+| Variable | Example |
+|----------|---------|
+| App name text | `learn` / `help` / `lmx` / `accounts` / `status` |
+| Inner mark (inside the ring) | Orbit ellipse (Learn) · unique glyph per app |
+
+### Current Status
+| App | Status |
+|-----|--------|
+| Opta Learn | ✅ Canonical (template source) — `/design/logos/Opta-Learn/opta-learn-logo.png` |
+| Opta Help | ⬜ Pending inner mark design |
+| Opta Local (dashboard) | ⬜ Pending inner mark design |
+| Opta Status | ⬜ Pending inner mark design |
+| Opta Accounts | ⬜ Pending inner mark design |
+| Opta LMX | ⬜ Pending inner mark design |

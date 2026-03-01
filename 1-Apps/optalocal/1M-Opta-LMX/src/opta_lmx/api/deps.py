@@ -155,8 +155,19 @@ def verify_inference_key(
         return  # LAN mode — no auth
 
     candidate = token or x_api_key
-    if candidate is None or not secrets.compare_digest(candidate, inference_api_key):
-        raise HTTPException(status_code=401, detail="Invalid or missing API key")
+    if candidate is not None and secrets.compare_digest(candidate, inference_api_key):
+        return
+
+    # Allow admin key to be used for inference routes
+    admin_key: str | None = getattr(request.app.state, "admin_key", None)
+    if admin_key is not None:
+        if candidate is not None and secrets.compare_digest(candidate, admin_key):
+            return
+        x_admin_key = request.headers.get("x-admin-key")
+        if x_admin_key is not None and secrets.compare_digest(x_admin_key, admin_key):
+            return
+
+    raise HTTPException(status_code=401, detail="Invalid or missing API key")
 
 
 def verify_sensitive_skills_policy(request: Request) -> None:

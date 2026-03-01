@@ -150,7 +150,7 @@ def build_discovery_document(
             "openai_base_url": f"{preferred_base_url}/v1",
             "admin_base_url": f"{preferred_base_url}/admin",
             "websocket_url": (
-                _to_ws_url(preferred_host, config.server.port, "/ws/chat")
+                _to_ws_url(preferred_host, config.server.port, "/v1/chat/stream")
                 if config.server.websocket_enabled
                 else None
             ),
