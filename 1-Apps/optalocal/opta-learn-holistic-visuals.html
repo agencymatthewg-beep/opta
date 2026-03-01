@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#09090b] text-[#fafafa] scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn - LMX Masterclass (Deep Education - Visuals Edition)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sora', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        void: '#09090b', surface: '#0c0c12', elevated: '#1a1a24',
+                        amber: '#f59e0b', violet: '#a855f7', green: '#22c55e', blue: '#3b82f6',
+                        text_primary: '#fafafa', text_secondary: '#a1a1aa', text_muted: '#52525b',
+                        code_bg: '#0a0a0f', obsidian: 'rgba(5,3,10,0.8)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-grid-subtle { background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 48px 48px; }
+        .obsidian { background: rgba(5,3,10,0.8); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(16px); border-radius: 16px; }
+        .text-moonlight { background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168,85,247,0.5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .callout { background: rgba(168,85,247,0.1); border-left: 3px solid #a855f7; }
+        .glass-nav { background: rgba(12,12,18,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .text-opta { color: #a855f7; -webkit-text-fill-color: #a855f7; display: inline; font-weight: inherit; }
+        section { scroll-margin-top: 100px; }
+        
+        /* Inline Wikipedia-style App Links (Style 1: Colored Text + Dotted Underline) */
+        .app-link { 
+            font-weight: 500; 
+            text-decoration: underline; 
+            text-decoration-style: dotted; 
+            text-underline-offset: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .app-link:hover { text-decoration-style: solid; text-decoration-thickness: 2px; }
+        
+        .link-cli { color: #22c55e; text-decoration-color: rgba(34,197,94,0.4); }
+        .link-cli:hover { text-decoration-color: #22c55e; background: rgba(34,197,94,0.1); border-radius: 2px; }
+        .link-accounts { color: #3b82f6; text-decoration-color: rgba(59,130,246,0.4); }
+        .link-accounts:hover { text-decoration-color: #3b82f6; background: rgba(59,130,246,0.1); border-radius: 2px; }
+        .link-init { color: #f59e0b; text-decoration-color: rgba(245,158,11,0.4); }
+        .link-init:hover { text-decoration-color: #f59e0b; background: rgba(245,158,11,0.1); border-radius: 2px; }
+        .link-dashboard { color: #a855f7; text-decoration-color: rgba(168,85,247,0.4); }
+        .link-dashboard:hover { text-decoration-color: #a855f7; background: rgba(168,85,247,0.1); border-radius: 2px; }
+
+        .toc-link { color: #a1a1aa; border-left: 2px solid transparent; transition: all 0.3s ease; display: block; padding-left: 16px; padding-top: 10px; padding-bottom: 10px; margin-left: -1px; }
+        .toc-link:hover { color: #fafafa; background: rgba(255,255,255,0.02); }
+        .toc-link.active { color: #fafafa; border-left-color: #a855f7; background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, transparent 100%); }
+
+        /* Custom Chart Animations */
+        @keyframes fillBar { from { width: 0; } }
+        .animate-bar { animation: fillBar 1.2s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-void min-h-screen relative overflow-x-hidden flex flex-col">
+    <div class="fixed inset-0 bg-grid-subtle pointer-events-none -z-10"></div>
+    
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 glass-nav px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4 font-mono text-sm text-text_muted">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-violet shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                <span><span class="text-opta lowercase font-semibold">Opta</span> local</span> 
+                <span>/</span> <span>learn</span> <span>/</span> <span class="text-violet">lmx</span>
+            </div>
+        </div>
+        <div class="relative w-full max-w-md hidden md:block">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text_muted"></i>
+            <input type="text" placeholder="Search guides..." class="w-full bg-[rgba(12,12,18,0.8)] border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-text_primary focus:outline-none focus:border-violet/50" />
+        </div>
+        <div class="w-[150px] hidden md:block"></div>
+    </header>
+
+    <div class="flex flex-1 pt-[72px]">
+        <!-- TOC Sidebar -->
+        <aside class="w-72 fixed h-[calc(100vh-72px)] border-r border-white/10 p-8 hidden lg:flex flex-col gap-8 overflow-y-auto z-40 bg-void/80 backdrop-blur-md">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-mono text-text_muted uppercase tracking-wider">Guide Navigation</span>
+                <h2 class="text-lg font-semibold text-text_primary"><span class="text-opta">Opta</span> LMX Masterclass</h2>
+            </div>
+            <nav id="toc" class="flex flex-col text-sm font-sans font-medium border-l border-white/10">
+                <a href="#overview" class="toc-link active" data-target="overview">1. Ecosystem Role</a>
+                <a href="#competitors" class="toc-link" data-target="competitors">2. The Competitive Landscape</a>
+                <a href="#performance" class="toc-link" data-target="performance">3. Model Performance & Benchmarks</a>
+                <a href="#architecture" class="toc-link" data-target="architecture">4. Architecture & Memory</a>
+                <a href="#capabilities" class="toc-link" data-target="capabilities">5. Core Capabilities</a>
+                <a href="#workflows" class="toc-link" data-target="workflows">6. Integrated App Workflows</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 lg:ml-72 p-8 md:p-12 lg:p-24 max-w-4xl flex flex-col gap-24 relative">
+            
+            <section id="overview" class="flex flex-col gap-6 pt-8">
+                <div class="inline-flex items-center gap-2 w-max px-3 py-1 text-xs font-mono bg-violet/10 border border-violet/30 rounded text-violet uppercase tracking-wider">
+                    Whole App Guide
+                </div>
+                <h1 class="text-5xl md:text-6xl font-bold tracking-tight text-moonlight mb-2"><span class="text-opta">Opta</span> LMX Masterclass</h1>
+                <p class="text-xl text-text_secondary max-w-3xl leading-relaxed">
+                    The comprehensive, objective guide to the Local Model eXecution engine. Understand its architecture, capabilities, tradeoffs, and workflows.
+                </p>
+                <div class="text-text_secondary leading-relaxed text-lg mt-6 flex flex-col gap-6">
+                    <p><span class="text-opta">Opta</span> LMX is the local inference engine that powers the Opta ecosystem. It operates entirely as a headless background daemon, designed to provide programmatic access to local large language models without requiring a graphical user interface (GUI).</p>
+                    <p>While the platform is typically bootstrapped using <a href="/guides/init" class="app-link link-init">Opta Init</a>, LMX handles the underlying compute. When issuing agentic commands via the <a href="/guides/cli" class="app-link link-cli">Opta CLI</a>, visualizing system health via the <a href="/guides/dashboard" class="app-link link-dashboard">Opta Local Dashboard</a>, or managing configurations with <a href="/guides/accounts" class="app-link link-accounts">Opta Accounts</a>, these applications are acting as clients making API requests to the LMX daemon.</p>
+                </div>
+            </section>
+
+            <section id="competitors" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">The Competitive Landscape</h2>
+                <p class="text-text_secondary leading-relaxed text-lg">
+                    The local AI execution space contains several mature tools. LMX was engineered specifically for programmatic autonomy on Apple Silicon, but evaluating the right tool requires an objective look at the pros and cons of the major engines.
+                </p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4">
+                    <div class="obsidian p-6 rounded-xl border border-white/5 flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-4">
+                            <h3 class="text-xl font-semibold text-text_primary">LM Studio</h3>
+                            <span class="text-xs font-mono bg-surface px-2 py-1 rounded text-text_muted">GUI Client</span>
+                        </div>
+                        <div>
+                            <strong class="text-neon_green text-sm flex items-center gap-2 mb-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Pros</strong>
+                            <ul class="text-sm text-text_secondary space-y-1 pl-6 list-disc">
+                                <li>Excellent visual interface for beginners.</li>
+                                <li>Built-in HuggingFace model browser.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong class="text-amber-500 text-sm flex items-center gap-2 mb-2"><i data-lucide="minus-circle" class="w-4 h-4"></i> Cons</strong>
+                            <ul class="text-sm text-text_secondary space-y-1 pl-6 list-disc">
+                                <li>GUI-dependent; difficult to run cleanly as a headless daemon.</li>
+                                <li>Bundles its own <code class="text-text_muted">llama.cpp</code>, delaying support for new model architectures (like GLM-5).</li>
+                                <li>Cannot be fully operated autonomously by bots.</li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div class="obsidian p-6 rounded-xl border border-white/5 flex flex-col gap-4">
+                        <div class="flex items-center justify-between border-b border-white/5 pb-4">
+                            <h3 class="text-xl font-semibold text-text_primary">Ollama</h3>
+                            <span class="text-xs font-mono bg-surface px-2 py-1 rounded text-text_muted">CLI Daemon</span>
+                        </div>
+                        <div>
+                            <strong class="text-neon_green text-sm flex items-center gap-2 mb-2"><i data-lucide="plus-circle" class="w-4 h-4"></i> Pros</strong>
+                            <ul class="text-sm text-text_secondary space-y-1 pl-6 list-disc">
+                                <li>Industry-leading developer CLI experience.</li>
+                                <li>Massive, highly curated community model registry.</li>
+                            </ul>
+                        </div>
+                        <div>
+                            <strong class="text-amber-500 text-sm flex items-center gap-2 mb-2"><i data-lucide="minus-circle" class="w-4 h-4"></i> Cons</strong>
+                            <ul class="text-sm text-text_secondary space-y-1 pl-6 list-disc">
+                                <li>Written primarily in Go/C++, historically lagging slightly behind Apple's native MLX optimization.</li>
+                                <li>Can lack the strict zero-copy memory architecture natively integrated Python wrappers provide.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="obsidian p-8 rounded-xl border border-violet/30 bg-[rgba(168,85,247,0.02)] mt-2">
+                    <h3 class="text-2xl font-semibold text-text_primary mb-4 flex items-center gap-3">
+                        <div class="w-2 h-2 rounded-full bg-violet shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                        <span class="text-opta">Opta</span> LMX (The Differentiator)
+                    </h3>
+                    <p class="text-text_secondary leading-relaxed mb-6">
+                        LMX is a headless daemon built strictly for automated, agentic workflows on Apple Silicon. It is built natively on Apple's MLX framework, guaranteeing zero-copy memory performance, and exposes a comprehensive Admin API allowing bots to programmatically download, unload, and route models without human input.
+                    </p>
+                    <div class="flex items-center gap-8 text-sm">
+                        <div class="flex flex-col gap-1">
+                            <span class="text-text_muted font-mono uppercase tracking-wider text-xs">Performance</span>
+                            <span class="text-neon_green font-semibold">15-30% faster via MLX</span>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-text_muted font-mono uppercase tracking-wider text-xs">Flexibility</span>
+                            <span class="text-text_primary font-semibold">Day-zero Python architecture support</span>
+                        </div>
+                        <div class="flex flex-col gap-1">
+                            <span class="text-text_muted font-mono uppercase tracking-wider text-xs">Platform Limit</span>
+                            <span class="text-amber-500 font-semibold">Apple Silicon Only</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="performance" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Model Performance & Benchmarks</h2>
+                <div class="text-text_secondary leading-relaxed text-lg">
+                    <p>Through comprehensive lab benchmarking, we have vetted specific models and their quantizations to construct the <span class="text-opta">Opta</span> smart-routing alias chains. Here is what we found during our Apple Silicon evaluations:</p>
+                </div>
+
+                <!-- Educational Visual: Chart -->
+                <div class="obsidian p-8 rounded-2xl border border-white/10 mt-4 relative">
+                    <h3 class="font-mono text-sm text-text_muted uppercase tracking-wider mb-6">Inference Throughput (Tokens/sec on M3 Ultra)</h3>
+                    
+                    <div class="flex flex-col gap-6">
+                        <!-- Bar 1 -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-text_primary">MiniMax-M2.5 (4-bit MLX)</span>
+                                <span class="text-violet font-mono">112 t/s</span>
+                            </div>
+                            <div class="w-full bg-surface rounded-full h-3 overflow-hidden border border-white/5">
+                                <div class="bg-gradient-to-r from-violet/50 to-violet h-full rounded-full animate-bar" style="width: 100%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Bar 2 -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-text_primary">Llama-3-8B-Instruct (4-bit MLX)</span>
+                                <span class="text-violet font-mono">98 t/s</span>
+                            </div>
+                            <div class="w-full bg-surface rounded-full h-3 overflow-hidden border border-white/5">
+                                <div class="bg-gradient-to-r from-violet/50 to-violet h-full rounded-full animate-bar" style="width: 87%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Bar 3 -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-text_primary">MiniMax-M2.5 (8-bit MLX) <span class="text-text_muted font-normal ml-2">Reasoning Tier</span></span>
+                                <span class="text-amber-500 font-mono">42 t/s</span>
+                            </div>
+                            <div class="w-full bg-surface rounded-full h-3 overflow-hidden border border-white/5">
+                                <div class="bg-amber-500 h-full rounded-full animate-bar opacity-80" style="width: 37%"></div>
+                            </div>
+                        </div>
+                        
+                        <!-- Bar 4 (GGUF Competitor baseline) -->
+                        <div class="flex flex-col gap-2">
+                            <div class="flex justify-between text-sm">
+                                <span class="font-semibold text-text_primary">Llama-3-8B (GGUF / llama.cpp) <span class="text-text_muted font-normal ml-2">Baseline</span></span>
+                                <span class="text-text_secondary font-mono">75 t/s</span>
+                            </div>
+                            <div class="w-full bg-surface rounded-full h-3 overflow-hidden border border-white/5">
+                                <div class="bg-text_secondary h-full rounded-full animate-bar opacity-50" style="width: 67%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-6 border-t border-white/5 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h4 class="font-semibold text-text_primary mb-2">The MLX Advantage</h4>
+                            <p class="text-sm text-text_secondary leading-relaxed">Because MLX uses <strong class="text-white">zero-copy memory</strong> on Apple Silicon, LMX doesn't have to copy data from CPU RAM to GPU VRAM across the PCIe bus. This yields a 15-30% speedup over traditional GGUF/llama.cpp inference pipelines.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-semibold text-text_primary mb-2">The GGUF Fallback (GLM-5)</h4>
+                            <p class="text-sm text-text_secondary leading-relaxed">Not all models have MLX-compiled weights on launch day. LMX includes an auto-detecting <strong class="text-white">llama-cpp-python fallback</strong> engine, allowing us to still run massive bleeding-edge models like GLM-5 immediately via GGUF.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Architecture & Memory</h2>
+                <div class="text-text_secondary leading-relaxed text-lg">
+                    <p>LMX solves the hardest problem in local AI: Out-Of-Memory (OOM) crashes. It achieves this via a three-tier memory abstraction that dynamically monitors system limits and gracefully degrades performance rather than terminating the daemon.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                    <div class="obsidian p-6 flex flex-col gap-4">
+                        <div class="text-violet font-mono text-sm tracking-wide">Tier 1: VRAM</div>
+                        <h3 class="text-text_primary font-semibold text-lg">Unified Execution</h3>
+                        <p class="text-text_secondary text-sm leading-relaxed">The optimal tier. LMX attempts to map 100% of the model's weights directly into Apple Silicon's unified memory for maximum throughput.</p>
+                    </div>
+                    <div class="obsidian p-6 flex flex-col gap-4">
+                        <div class="text-amber-500 font-mono text-sm tracking-wide">Tier 2: CPU RAM</div>
+                        <h3 class="text-text_primary font-semibold text-lg">Layer Offload</h3>
+                        <p class="text-text_secondary text-sm leading-relaxed">If unified memory reaches its 90% critical threshold, LMX calculates maximum fit and dynamically spills remainder layers to the CPU. Inference slows, but avoids crashing.</p>
+                    </div>
+                    <div class="obsidian p-6 flex flex-col gap-4">
+                        <div class="text-text_muted font-mono text-sm tracking-wide">Tier 3: Disk</div>
+                        <h3 class="text-text_primary font-semibold text-lg">KV Cache Swap</h3>
+                        <p class="text-text_secondary text-sm leading-relaxed">During massive 100k+ token document ingestions, the KV cache grows linearly. LMX pages older contextual states to the local NVMe drive to preserve stability.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="capabilities" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Core Capabilities Deep-Dive</h2>
+                <p class="text-text_secondary leading-relaxed text-lg">LMX provides specific infrastructure-level features required to run a multi-agent ecosystem:</p>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-4">
+                    <div class="flex flex-col gap-3">
+                        <div class="w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center mb-2">
+                            <i data-lucide="code" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary">API Parity & Tool Pass-Through</h3>
+                        <p class="text-text_secondary leading-relaxed text-sm">LMX serves an OpenAI-compatible <code class="bg-surface px-1 py-0.5 rounded border border-white/10 text-neon_green">/v1/chat/completions</code> endpoint. This ensures existing SDKs function normally, and standard JSON-based function/tool calling is passed through to the model natively, which is critical for MiniMax-based XML parsers.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <div class="w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center mb-2">
+                            <i data-lucide="repeat-2" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary">Zero-Downtime Hot-Swaps</h3>
+                        <p class="text-text_secondary leading-relaxed text-sm">The server operates independently of its loaded weights. A client can issue an API command to switch from an 8B model to a 70B model. LMX unloads the current memory mapping and streams the new weights from disk while keeping the primary port listener alive.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <div class="w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center mb-2">
+                            <i data-lucide="layers" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary">Concurrent Request Queuing</h3>
+                        <p class="text-text_secondary leading-relaxed text-sm">If multiple automated scripts or bots send requests simultaneously, LMX queues the payloads and processes them sequentially (or via batched inference), returning HTTP 200 responses reliably instead of connection refusals.</p>
+                    </div>
+
+                    <div class="flex flex-col gap-3">
+                        <div class="w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center mb-2">
+                            <i data-lucide="shield-check" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary">Air-Gapped Telemetry</h3>
+                        <p class="text-text_secondary leading-relaxed text-sm">Performance logs, hardware introspection, and token-throughput analytics are written strictly to local disk. LMX contains no external telemetry or analytics dependencies, operating perfectly inside a Faraday cage.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="workflows" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Integrated App Workflows</h2>
+                <div class="text-text_secondary leading-relaxed text-lg">
+                    <p>LMX is an unopinionated backend. While it can be queried via standard cURL or Python scripts, the true power of the engine unlocks when operating as part of the broader <span class="text-opta">Opta</span> Local ecosystem.</p>
+                </div>
+
+                <div class="obsidian p-8 flex flex-col gap-8 mt-2 relative overflow-hidden">
+                    <div class="absolute right-0 top-0 w-64 h-full bg-gradient-to-l from-violet/5 to-transparent pointer-events-none"></div>
+                    
+                    <div class="flex items-start gap-6 relative z-10">
+                        <div class="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center flex-shrink-0 text-amber-500 font-bold">1</div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-text_primary mb-2">Deployment via <a class="app-link link-init">Opta Init</a></h3>
+                            <p class="text-text_secondary text-sm leading-relaxed">Opta Init is responsible for bootstrapping the environment. It downloads the required Python dependencies, fetches the initial MLX weights from HuggingFace, and securely binds the LMX daemon to macOS <code class="bg-surface px-1 py-0.5 rounded border border-white/10">launchd</code> to ensure it runs automatically on system boot.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-6 relative z-10">
+                        <div class="w-12 h-12 rounded-full bg-neon_green/10 border border-neon_green/30 flex items-center justify-center flex-shrink-0 text-neon_green font-bold">2</div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-text_primary mb-2">Execution via <a class="app-link link-cli">Opta CLI</a></h3>
+                            <p class="text-text_secondary text-sm leading-relaxed">The Opta CLI is your primary interface. It acts as the intelligent client wrapper around LMX. When you run <code class="text-neon_green bg-neon_green/10 px-1 py-0.5 rounded border border-neon_green/20">opta do "refactor this file"</code>, the CLI translates your intent, connects to the LMX Admin API to ensure the <code>code</code> alias model is loaded, and streams the completion back to your terminal.</p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-start gap-6 relative z-10">
+                        <div class="w-12 h-12 rounded-full bg-violet/10 border border-violet/30 flex items-center justify-center flex-shrink-0 text-violet font-bold">3</div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-text_primary mb-2">Observation via <a class="app-link link-dashboard">Local Dashboard</a></h3>
+                            <p class="text-text_secondary text-sm leading-relaxed">For visual management, the Local Dashboard connects to the LMX Admin port to visualize VRAM saturation, review the real-time inference queues, and monitor active network bindings across your LAN.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="h-32"></div>
+        </main>
+    </div>
+    <script>
+        lucide.createIcons();
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section");
+            const navLinks = document.querySelectorAll(".toc-link");
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach((link) => {
+                            link.classList.remove("active");
+                            if (link.getAttribute("data-target") === entry.target.id) {
+                                link.classList.add("active");
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-100px 0px -60% 0px", threshold: 0 });
+
+            sections.forEach((section) => observer.observe(section));
+        });
+    </script>
+</body>
+</html>
