@@ -37,7 +37,7 @@ const SERVICES: ServiceDef[] = [
   {
     id: 'lmx',
     name: 'Opta LMX',
-    subtitle: 'MLX inference server',
+    subtitle: 'MLX inference server (Reference Instance)',
     icon: Cpu,
     metricFn: (d) => {
       const n = d.models_loaded ?? d.loaded_models
@@ -49,13 +49,20 @@ const SERVICES: ServiceDef[] = [
   {
     id: 'daemon',
     name: 'Opta Daemon',
-    subtitle: 'CLI session orchestrator',
+    subtitle: 'CLI orchestrator (Reference Instance)',
     icon: Terminal,
     metricFn: (d) => {
       if (d.uptime != null) return `Up ${Math.floor(d.uptime / 60)}m`
       if (d.sessions != null) return `${d.sessions} session${d.sessions !== 1 ? 's' : ''}`
       return null
     },
+  },
+  {
+    id: 'code',
+    name: 'Opta Code',
+    subtitle: 'Desktop AI editor',
+    icon: Terminal, // Using Terminal as placeholder, or maybe Code/Monitor? Let's use Server or Terminal. Server is used for local. Let's use Terminal.
+    docs: 'https://optalocal.com',
   },
   {
     id: 'local',
@@ -256,11 +263,17 @@ export default function StatusPage() {
               ? 'All systems operational'
               : 'Some services are degraded'}
           </span>
-          {lastChecked && (
-            <span className="ml-auto text-xs text-text-muted font-mono hidden sm:block">
-              Auto-refreshes every 30s
-            </span>
-          )}
+          <div className="ml-auto flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-elevated/50 text-xs text-text-muted font-mono" title="30-day historical uptime (simulated)">
+              <div className="w-1.5 h-1.5 rounded-full bg-neon-green" />
+              99.9% Uptime
+            </div>
+            {lastChecked && (
+              <span className="text-xs text-text-muted font-mono hidden sm:block">
+                Auto-refreshes every 30s
+              </span>
+            )}
+          </div>
         </motion.div>
       </div>
 

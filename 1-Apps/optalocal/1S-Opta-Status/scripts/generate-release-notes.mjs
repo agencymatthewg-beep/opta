@@ -2,8 +2,12 @@
 
 import { promises as fs } from 'node:fs'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-const APP_ROOT = process.cwd()
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+const APP_ROOT = path.resolve(__dirname, '..')
 const OPTALOCAL_ROOT = path.resolve(APP_ROOT, '..')
 const OUTPUT_FILE = path.join(APP_ROOT, 'app', 'release-notes.generated.ts')
 const MAX_NOTES = 10

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+export const revalidate = 30
+
 // Service definitions: maps service ID → { base URL env var or literal, health path }
 const SERVICES: Record<
   string,
@@ -12,6 +14,10 @@ const SERVICES: Record<
   daemon: {
     urlEnv: 'OPTA_DAEMON_TUNNEL_URL',
     path: '/health',
+  },
+  code: {
+    urlFallback: 'https://optalocal.com',
+    path: '/',
   },
   local: {
     urlFallback: 'https://optalocal.com',

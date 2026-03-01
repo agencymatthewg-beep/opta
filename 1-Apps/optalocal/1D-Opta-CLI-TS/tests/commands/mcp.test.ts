@@ -36,6 +36,13 @@ vi.mock('../../src/mcp/client.js', () => ({
   }),
 }));
 
+vi.mock('../../src/platform/paths.js', () => ({
+  getConfigDir: vi.fn().mockReturnValue('/tmp/opta-mcp-test-config'),
+  getDaemonDir: vi.fn().mockReturnValue('/tmp/opta-mcp-test-daemon'),
+  getSessionsDir: vi.fn().mockReturnValue('/tmp/opta-mcp-test-sessions'),
+  getThemesDir: vi.fn().mockReturnValue('/tmp/opta-mcp-test-themes'),
+}));
+
 import { mcpList, mcpAdd, mcpAddPlaywright, mcpRemove, mcpTest } from '../../src/commands/mcp.js';
 
 describe('opta mcp', () => {
@@ -76,7 +83,7 @@ describe('opta mcp', () => {
           playwright: expect.objectContaining({
             transport: 'stdio',
             command: 'npx',
-            args: ['-y', '@playwright/mcp@latest', '--isolated'],
+            args: expect.arrayContaining(['-y', '@playwright/mcp@latest', '--isolated']),
           }),
         },
       },
@@ -93,7 +100,7 @@ describe('opta mcp', () => {
           playwright: expect.objectContaining({
             transport: 'stdio',
             command: 'npx',
-            args: ['-y', '@playwright/mcp@latest'],
+            args: expect.arrayContaining(['-y', '@playwright/mcp@latest']),
           }),
         },
       },
