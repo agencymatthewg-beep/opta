@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { OptaRing } from '@/components/OptaRing';
 
@@ -14,6 +15,8 @@ interface OptaLogoProps {
   suffix?: string;
   /** Pause the ring animations (no-op for ASCII) */
   paused?: boolean;
+  /** Optional image logo source to use instead of OptaRing */
+  logoSrc?: string;
 }
 
 /**
@@ -26,18 +29,33 @@ export function OptaLogo({
   layout = 'horizontal',
   showText = true,
   suffix,
-  paused = false
+  paused = false,
+  logoSrc,
 }: OptaLogoProps) {
   // Map size to a scale factor for text to roughly match the ring
   const scale = size / 64;
 
   return (
-    <div className={cn(
-      "flex",
-      layout === 'horizontal' ? 'flex-row items-center gap-4' : 'flex-col items-center justify-center gap-4',
-      className
-    )}>
-      <OptaRing size={size as any} paused={paused} className="shrink-0 pointer-events-none" />
+    <div
+      className={cn(
+        'flex',
+        layout === 'horizontal' ? 'flex-row items-center gap-4' : 'flex-col items-center justify-center gap-4',
+        className
+      )}
+    >
+      {logoSrc ? (
+        <Image
+          src={logoSrc}
+          alt={`${suffix ? `Opta ${suffix}` : 'Opta'} logo`}
+          width={size}
+          height={size}
+          className="shrink-0 pointer-events-none"
+          unoptimized
+          priority
+        />
+      ) : (
+        <OptaRing size={size as any} paused={paused} className="shrink-0 pointer-events-none" />
+      )}
 
       {showText && (
         <div
@@ -49,11 +67,13 @@ export function OptaLogo({
           </div>
 
           {suffix && (
-            <span className={cn(
-              "font-sans font-bold uppercase tracking-[0.2em] leading-none mt-1",
-              "text-opta-text-muted",
-              "text-[10px]"
-            )}>
+            <span
+              className={cn(
+                'font-sans font-bold uppercase tracking-[0.2em] leading-none mt-1',
+                'text-opta-text-muted',
+                'text-[10px]'
+              )}
+            >
               {suffix}
             </span>
           )}

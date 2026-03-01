@@ -31,7 +31,7 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
       >
         {/* Logo + Title */}
         <div className="flex flex-col items-center mb-8">
-          <OptaLogo size={64} layout="vertical" className="mb-6" />
+          <OptaLogo size={64} layout="vertical" className="mb-6" logoSrc="/opta-accounts-logo-final.svg" suffix="ACCOUNTS" />
           <h1 className="text-xl font-semibold text-opta-text-primary">
             {mode === "sign-in"
               ? "Sign in to Opta"
