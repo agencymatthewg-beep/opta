@@ -164,6 +164,10 @@ code, pre {
   100% { transform: translateY(100vh); opacity: 0; }
 }
 
+@keyframes fillBar {
+  from { width: 0; }
+}
+
 /* Grid texture utility */
 .bg-grid-subtle {
   background-image:
@@ -252,6 +256,10 @@ section {
 .app-link:hover {
   text-decoration-style: solid;
   text-decoration-thickness: 2px;
+}
+
+.animate-bar {
+  animation: fillBar 1.2s ease-out forwards;
 }
 
 .link-cli { color: var(--color-neon-green); text-decoration-color: rgba(34, 197, 94, 0.4); }
