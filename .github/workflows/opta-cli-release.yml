@@ -23,7 +23,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: 1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -50,7 +49,6 @@ jobs:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
           cache: 'npm'
-          cache-dependency-path: 1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -74,7 +72,6 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: 1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json
 
       - name: Install dependencies
         run: npm ci
