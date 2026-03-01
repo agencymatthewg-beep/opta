@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#09090b] text-[#fafafa]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn - Init Whole App Guide (Design 3: Split Pane Layout)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sora', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        void: '#09090b', surface: '#0c0c12', elevated: '#1a1a24',
+                        amber: '#f59e0b', text_primary: '#fafafa', text_secondary: '#a1a1aa', text_muted: '#52525b',
+                        code_bg: '#0a0a0f', identity_blue: '#3b82f6', violet: '#a855f7', neon_green: '#22c55e'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-grid-subtle { background-image: radial-gradient(rgba(255,255,255,0.05) 1px, transparent 1px); background-size: 24px 24px; }
+        .text-moonlight { background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(245,158,11,0.5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .nav-active { border-left: 2px solid #f59e0b; color: #fafafa; background: linear-gradient(90deg, rgba(245,158,11,0.1) 0%, transparent 100%); }
+        .glass { background: rgba(12,12,18,0.4); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(8px); }
+        .callout { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-void h-screen flex overflow-hidden">
+    <div class="fixed inset-0 bg-grid-subtle pointer-events-none -z-10"></div>
+    
+    <!-- Left Sidebar: Guide Navigation -->
+    <aside class="w-80 h-full glass border-r border-white/10 flex flex-col flex-shrink-0 relative z-10">
+        <div class="p-6 border-b border-white/10 flex items-center gap-3">
+            <div class="w-2 h-2 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
+            <span class="font-semibold tracking-wide text-text_secondary text-sm">opta <span class="text-text_muted mx-1">/</span> <span class="text-amber">learn</span></span>
+        </div>
+        
+        <div class="p-6 flex flex-col gap-2">
+            <div class="text-xs font-mono text-text_muted uppercase tracking-wider mb-2">Init Guide</div>
+            <h2 class="text-lg font-semibold text-text_primary mb-4 text-moonlight">Opta Init Overview</h2>
+            
+            <nav class="flex flex-col text-sm text-text_secondary font-medium font-sans">
+                <a href="#overview" class="py-2.5 px-4 nav-active rounded-r-md transition-colors">1. Overview</a>
+                <a href="#core-capabilities" class="py-2.5 px-4 hover:text-text_primary hover:bg-white/5 rounded-r-md transition-colors border-left border-transparent pl-[18px]">2. Core Capabilities</a>
+                <a href="#architecture" class="py-2.5 px-4 hover:text-text_primary hover:bg-white/5 rounded-r-md transition-colors border-left border-transparent pl-[18px]">3. Architecture</a>
+                <a href="#next-steps" class="py-2.5 px-4 hover:text-text_primary hover:bg-white/5 rounded-r-md transition-colors border-left border-transparent pl-[18px]">4. Next Steps</a>
+            </nav>
+        </div>
+        
+        <div class="mt-auto p-6 border-t border-white/10">
+            <div class="text-xs text-text_muted font-mono flex items-center justify-between">
+                <span>Updated: 2026-03-01</span>
+                <span class="px-2 py-0.5 rounded bg-surface border border-white/10 text-text_secondary">Init</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Right Area: Content Scroll -->
+    <main class="flex-1 h-full overflow-y-auto relative p-12 lg:p-24">
+        <div class="max-w-3xl flex flex-col gap-16">
+            
+            <!-- Header inline -->
+            <div class="flex flex-col gap-4 mb-8">
+                <div class="inline-flex items-center gap-2 w-max px-3 py-1 text-xs font-mono callout text-amber uppercase tracking-wider">
+                    Whole App Guide
+                </div>
+                <h1 class="text-5xl font-bold tracking-tight text-text_primary">Opta Init Overview</h1>
+                <p class="text-xl text-text_secondary leading-relaxed">
+                    The bootstrapping and initial setup platform for the Opta Local ecosystem. Get your first local model running in minutes.
+                </p>
+            </div>
+
+            <div class="h-px w-full bg-gradient-to-r from-white/20 to-transparent"></div>
+
+            <!-- Sections -->
+            <section id="overview" class="flex flex-col gap-6">
+                <h2 class="text-2xl font-semibold text-text_primary flex items-center gap-4">
+                    <span class="text-amber font-mono text-xl opacity-50">1.</span> Overview
+                </h2>
+                <div class="text-text_secondary leading-relaxed text-lg flex flex-col gap-4">
+                    <p>Opta Init is the gateway to your private AI infrastructure. Designed to smoothly bridge the gap between empty hardware and a fully functional local inference engine, Init handles environment detection, dependency verification, and the initial model download.</p>
+                </div>
+            </section>
+
+            <section id="core-capabilities" class="flex flex-col gap-6">
+                <h2 class="text-2xl font-semibold text-text_primary flex items-center gap-4">
+                    <span class="text-amber font-mono text-xl opacity-50">2.</span> Core Capabilities
+                </h2>
+                <div class="text-text_secondary leading-relaxed text-lg flex flex-col gap-6">
+                    <p>Init removes the guesswork from local AI deployments. Its primary capabilities include:</p>
+                    <ul class="list-disc pl-6 flex flex-col gap-3 text-text_primary">
+                        <li>Hardware introspection (Apple Silicon, CUDA, ROCm detection)</li>
+                        <li>Automated dependency resolution</li>
+                        <li>Interactive LMX (Opta Local) configuration</li>
+                    </ul>
+                    
+                    <div class="callout p-5 mt-2 flex gap-4 text-base">
+                        <svg class="w-6 h-6 text-amber flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="text-text_primary font-medium">Opta Init requires an active internet connection only for the initial download phase. Once the model is retrieved, the entire stack runs offline.</span>
+                    </div>
+                </div>
+            </section>
+
+            <section id="architecture" class="flex flex-col gap-6">
+                <h2 class="text-2xl font-semibold text-text_primary flex items-center gap-4">
+                    <span class="text-amber font-mono text-xl opacity-50">3.</span> Architecture
+                </h2>
+                <div class="text-text_secondary leading-relaxed text-lg flex flex-col gap-6">
+                    <p>Init runs as an ephemeral web service on <code class="bg-surface px-1.5 py-0.5 rounded font-mono text-sm text-text_primary border border-white/10">localhost:3000</code>. It communicates directly with your system's package managers and hardware APIs to bootstrap the core <strong class="text-text_primary">LMX</strong> service.</p>
+                    
+                    <div class="bg-code_bg border border-white/10 rounded-lg p-5 font-mono text-sm overflow-x-auto shadow-inner">
+                        <span class="text-text_muted"># Default architecture mapping for Init</span><br>
+                        <span class="text-amber">export</span> <span class="text-text_primary">OPTA_INIT_PORT</span>=<span class="text-[#06b6d4]">3000</span><br>
+                        <span class="text-amber">export</span> <span class="text-text_primary">OPTA_TARGET_ENGINE</span>=<span class="text-text_secondary">"lmx-core"</span>
+                    </div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+</body>
+</html>

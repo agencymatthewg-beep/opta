@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#09090b] text-[#fafafa]">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn - Init Whole App Guide (Design 1: Step-by-Step Layout)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sora', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        void: '#09090b', surface: '#0c0c12', elevated: '#1a1a24',
+                        amber: '#f59e0b', text_primary: '#fafafa', text_secondary: '#a1a1aa', text_muted: '#52525b',
+                        code_bg: '#0a0a0f', identity_blue: '#3b82f6', violet: '#a855f7', neon_green: '#22c55e'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-dot-subtle { background-image: radial-gradient(rgba(245,158,11,0.10) 1px, transparent 1px); background-size: 32px 32px; }
+        .glass { background: rgba(12,12,18,0.6); border: 1px solid rgba(255,255,255,0.15); backdrop-filter: blur(12px); border-radius: 12px; }
+        .text-moonlight { background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(245,158,11,0.5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .amber-glow { box-shadow: 0 0 24px rgba(245,158,11,0.08); }
+        .callout { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; }
+    </style>
+</head>
+<body class="bg-void min-h-screen relative overflow-x-hidden flex flex-col items-center pt-24 pb-32">
+    <div class="fixed inset-0 bg-dot-subtle pointer-events-none -z-10"></div>
+    
+    <header class="fixed top-0 w-full glass mx-auto max-w-5xl mt-6 px-6 py-4 flex justify-between items-center z-50 rounded-full border border-white/10">
+        <div class="flex items-center gap-3">
+            <div class="w-6 h-6 rounded-full border border-amber/50 flex items-center justify-center">
+                <div class="w-2 h-2 rounded-full bg-amber shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
+            </div>
+            <span class="font-semibold tracking-wide text-text_secondary">opta local <span class="text-text_muted mx-2">/</span> <span class="text-amber">learn</span></span>
+        </div>
+        <div class="flex gap-4 text-sm font-mono text-text_muted">
+            <span class="hover:text-amber cursor-pointer transition-colors">/guides</span>
+            <span class="hover:text-amber cursor-pointer transition-colors">/search</span>
+        </div>
+    </header>
+
+    <main class="w-full max-w-3xl flex flex-col gap-12 mt-12 px-6">
+        <!-- Hero Section -->
+        <div class="flex flex-col gap-4">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="px-3 py-1 text-xs font-mono callout text-amber uppercase tracking-wider">Whole App Guide</span>
+                <span class="text-sm font-mono text-text_muted">App: Init</span>
+            </div>
+            <h1 class="text-5xl font-bold tracking-tight text-moonlight mb-4">Opta Init Overview</h1>
+            <p class="text-xl text-text_secondary leading-relaxed">
+                The bootstrapping and initial setup platform for the Opta Local ecosystem. Get your first local model running in minutes.
+            </p>
+        </div>
+
+        <!-- Content Structure: Step-by-Step Focus -->
+        <div class="flex gap-8 relative">
+            <!-- Timeline Line -->
+            <div class="absolute left-[11px] top-4 bottom-0 w-[2px] bg-white/5"></div>
+            
+            <div class="flex flex-col gap-12 w-full">
+                <!-- Section 1: Overview -->
+                <section class="flex gap-6 relative">
+                    <div class="w-6 h-6 rounded-full bg-surface border border-amber flex-shrink-0 flex items-center justify-center z-10 amber-glow mt-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-amber"></div>
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <h2 class="text-2xl font-semibold text-text_primary">1. Overview</h2>
+                        <div class="glass p-6 text-text_secondary leading-relaxed text-base">
+                            <p>Opta Init is the gateway to your private AI infrastructure. Designed to smoothly bridge the gap between empty hardware and a fully functional local inference engine, Init handles environment detection, dependency verification, and the initial model download.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 2: Core Capabilities -->
+                <section class="flex gap-6 relative">
+                    <div class="w-6 h-6 rounded-full bg-surface border border-white/20 flex-shrink-0 flex items-center justify-center z-10 mt-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                    </div>
+                    <div class="flex flex-col gap-4 w-full">
+                        <h2 class="text-2xl font-semibold text-text_primary">2. Core Capabilities</h2>
+                        <div class="glass p-6 text-text_secondary leading-relaxed flex flex-col gap-4">
+                            <p>Init removes the guesswork from local AI deployments. Its primary capabilities include:</p>
+                            <ul class="list-disc pl-5 flex flex-col gap-2 text-text_primary">
+                                <li>Hardware introspection (Apple Silicon, CUDA, ROCm detection)</li>
+                                <li>Automated dependency resolution</li>
+                                <li>Interactive LMX (Opta Local) configuration</li>
+                            </ul>
+                            
+                            <div class="callout p-4 mt-2 flex gap-3 text-sm">
+                                <svg class="w-5 h-5 text-amber flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                <span class="text-amber">Opta Init requires an active internet connection only for the initial download phase. Once the model is retrieved, the entire stack runs offline.</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Section 3: Architecture -->
+                <section class="flex gap-6 relative">
+                    <div class="w-6 h-6 rounded-full bg-surface border border-white/20 flex-shrink-0 flex items-center justify-center z-10 mt-1">
+                        <div class="w-1.5 h-1.5 rounded-full bg-white/20"></div>
+                    </div>
+                    <div class="flex flex-col gap-4 w-full">
+                        <h2 class="text-2xl font-semibold text-text_primary">3. Architecture</h2>
+                        <div class="glass p-6 flex flex-col gap-4">
+                            <p class="text-text_secondary">Init runs as an ephemeral web service on <code>localhost:3000</code>. It communicates directly with your system's package managers and hardware APIs to bootstrap the core <strong>LMX</strong> service.</p>
+                            <div class="bg-code_bg border border-white/10 rounded-md p-4 font-mono text-sm overflow-x-auto">
+                                <span class="text-text_muted"># Default architecture mapping for Init</span><br>
+                                <span class="text-amber">export</span> <span class="text-text_primary">OPTA_INIT_PORT</span>=<span class="text-[#06b6d4]">3000</span><br>
+                                <span class="text-amber">export</span> <span class="text-text_primary">OPTA_TARGET_ENGINE</span>=<span class="text-text_secondary">"lmx-core"</span>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
