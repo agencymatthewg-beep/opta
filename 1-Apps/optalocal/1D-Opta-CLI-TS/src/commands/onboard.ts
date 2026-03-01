@@ -5,6 +5,8 @@ import { homedir } from 'node:os';
 import { access, writeFile, mkdir } from 'node:fs/promises';
 import chalk from 'chalk';
 import { saveConfig, loadConfig } from '../core/config.js';
+import { isKeychainAvailable } from '../keychain/index.js';
+import { storeAnthropicKey } from '../keychain/api-keys.js';
 
 // ── Onboard marker (first-run detection) ────────────────────────────────────
 
@@ -108,12 +110,55 @@ export async function runOnboarding(): Promise<void> {
     let lmxHost = '192.168.188.11';
     let lmxPort = 1234;
     let anthropicKey = '';
+    let anthropicKeyForConfig = '';
+    let anthropicKeyStorage: 'none' | 'config' | 'keychain' = 'none';
 
     if (provider === 'lmx') {
       console.log('');
-      lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || '192.168.188.11');
-      const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
-      lmxPort = parseInt(portStr, 10) || 1234;
+
+      // Auto-discover LMX servers on LAN
+      process.stdout.write(chalk.dim('  Scanning LAN for Opta-LMX servers...'));
+      let discoveredHosts: Array<{ host: string; port: number; latencyMs: number }> = [];
+      try {
+        const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
+        discoveredHosts = await discoverLmxHosts(2000);
+      } catch { /* discovery is best-effort */ }
+
+      if (discoveredHosts.length > 0) {
+        process.stdout.write(
+          '\r' +
+            chalk.green(`  Found ${discoveredHosts.length} LMX server${discoveredHosts.length !== 1 ? 's' : ''} on LAN`) +
+            '                    \n'
+        );
+        for (const d of discoveredHosts) {
+          console.log(
+            chalk.dim(`    ${d.host}:${d.port}`) +
+              chalk.dim(` (${d.latencyMs}ms)`)
+          );
+        }
+        console.log('');
+
+        const useDiscovered = await confirm(
+          rl,
+          `  Use ${discoveredHosts[0]!.host}:${discoveredHosts[0]!.port}?`,
+          true
+        );
+        if (useDiscovered) {
+          lmxHost = discoveredHosts[0]!.host;
+          lmxPort = discoveredHosts[0]!.port;
+        } else {
+          lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || '192.168.188.11');
+          const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
+          lmxPort = parseInt(portStr, 10) || 1234;
+        }
+      } else {
+        process.stdout.write(
+          '\r' + chalk.dim('  No LMX servers found on LAN — enter address manually') + '         \n'
+        );
+        lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || '192.168.188.11');
+        const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
+        lmxPort = parseInt(portStr, 10) || 1234;
+      }
 
       const testConn = await confirm(rl, '  Test connection now?', true);
       if (testConn) {
@@ -149,6 +194,39 @@ export async function runOnboarding(): Promise<void> {
         '  Anthropic API key',
         existing?.provider?.anthropic?.apiKey || ''
       );
+      const trimmed = anthropicKey.trim();
+
+      if (!trimmed) {
+        anthropicKeyStorage = 'none';
+        anthropicKeyForConfig = '';
+      } else if (isKeychainAvailable()) {
+        const storeSecurely = await confirm(
+          rl,
+          '  Store key securely in OS keychain?',
+          true
+        );
+
+        if (storeSecurely) {
+          const stored = await storeAnthropicKey(trimmed);
+          if (stored) {
+            anthropicKeyStorage = 'keychain';
+            anthropicKeyForConfig = '';
+            console.log(chalk.green('  ✓ Key stored in keychain (not saved in plaintext config)'));
+          } else {
+            anthropicKeyStorage = 'config';
+            anthropicKeyForConfig = trimmed;
+            console.log(
+              chalk.yellow('  ! Keychain write failed — saving key in config instead')
+            );
+          }
+        } else {
+          anthropicKeyStorage = 'config';
+          anthropicKeyForConfig = trimmed;
+        }
+      } else {
+        anthropicKeyStorage = 'config';
+        anthropicKeyForConfig = trimmed;
+      }
     }
 
     // ── Step 2: Preferences ────────────────────────────────────────────────
@@ -186,9 +264,15 @@ export async function runOnboarding(): Promise<void> {
     if (provider === 'lmx') {
       console.log(`    LMX host  : ${chalk.cyan(lmxHost + ':' + lmxPort)}`);
     } else {
-      console.log(
-        `    API key   : ${chalk.cyan(anthropicKey ? '••••' + anthropicKey.slice(-4) : '(not set)')}`
+      const suffix = anthropicKey ? '••••' + anthropicKey.slice(-4) : '(not set)';
+      const storageLabel = (
+        anthropicKeyStorage === 'keychain'
+          ? 'stored in keychain'
+          : anthropicKeyStorage === 'config'
+            ? 'saved in config'
+            : 'not set'
       );
+      console.log(`    API key   : ${chalk.cyan(`${suffix} (${storageLabel})`)}`);
     }
     const autonomyLabels = ['Supervised', 'Balanced', 'Autonomous'];
     console.log(`    Autonomy  : ${chalk.cyan(autonomyLabels[autonomyLevel - 1])}`);
@@ -209,7 +293,7 @@ export async function runOnboarding(): Promise<void> {
       'provider.active': provider,
       ...(provider === 'lmx'
         ? { 'connection.host': lmxHost, 'connection.port': lmxPort }
-        : { 'provider.anthropic.apiKey': anthropicKey }),
+        : { 'provider.anthropic.apiKey': anthropicKeyForConfig }),
       'autonomy.level': autonomyLevel,
       'tui.default': tuiDefault,
     });

@@ -29,6 +29,7 @@ interface WorkerSlot {
   busy: boolean;
   disposed: boolean;
   currentJob?: ToolJob;
+  lastIdleAt?: number;
 }
 
 function makeAbortError(message: string): Error {
@@ -38,13 +39,48 @@ function makeAbortError(message: string): Error {
 }
 
 export class ToolWorkerPool {
+  private static readonly IDLE_REAP_MS = 60_000;
+  private static readonly REAPER_INTERVAL_MS = 30_000;
+
   private readonly maxWorkers: number;
+  private readonly minWorkers: number;
   private readonly queue: ToolJob[] = [];
   private readonly workers: WorkerSlot[] = [];
   private closed = false;
+  private reaperTimer: ReturnType<typeof setInterval> | null = null;
 
-  constructor(maxWorkers: number = defaultWorkerCount()) {
+  constructor(maxWorkers: number = defaultWorkerCount(), minWorkers: number = 2) {
     this.maxWorkers = Math.max(1, maxWorkers);
+    this.minWorkers = Math.min(Math.max(0, minWorkers), this.maxWorkers);
+    this.startReaper();
+  }
+
+  private startReaper(): void {
+    this.reaperTimer = setInterval(() => {
+      this.reapIdleWorkers();
+    }, ToolWorkerPool.REAPER_INTERVAL_MS);
+    // Allow Node.js to exit even when the reaper timer is active
+    this.reaperTimer.unref();
+  }
+
+  private reapIdleWorkers(): void {
+    if (this.closed) return;
+    const now = Date.now();
+    const idleSlots = this.workers
+      .filter((slot) => !slot.busy && !slot.disposed && slot.lastIdleAt !== undefined)
+      .sort((a, b) => (a.lastIdleAt ?? 0) - (b.lastIdleAt ?? 0)); // oldest idle first
+
+    const liveCount = this.workers.filter((s) => !s.disposed).length;
+    const reaperBudget = Math.max(0, liveCount - this.minWorkers);
+
+    let reaped = 0;
+    for (const slot of idleSlots) {
+      if (reaped >= reaperBudget) break;
+      if ((slot.lastIdleAt ?? now) + ToolWorkerPool.IDLE_REAP_MS <= now) {
+        this.detachWorker(slot);
+        reaped++;
+      }
+    }
   }
 
   async runTool(tool: string, argsJson: string, signal?: AbortSignal): Promise<string> {
@@ -82,6 +118,10 @@ export class ToolWorkerPool {
 
   close(): void {
     this.closed = true;
+    if (this.reaperTimer !== null) {
+      clearInterval(this.reaperTimer);
+      this.reaperTimer = null;
+    }
 
     while (this.queue.length > 0) {
       const job = this.queue.shift();
@@ -149,6 +189,7 @@ export class ToolWorkerPool {
       worker,
       busy: false,
       disposed: false,
+      lastIdleAt: Date.now(),
     };
 
     worker.on('message', (message: WorkerResponse) => {
@@ -157,6 +198,7 @@ export class ToolWorkerPool {
       if (message.id !== job.id) return;
       slot.currentJob = undefined;
       slot.busy = false;
+      slot.lastIdleAt = Date.now();
       if (message.ok) {
         this.resolveJob(job, message.result ?? '');
       } else {

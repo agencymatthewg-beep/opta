@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { readdir, stat, access } from 'node:fs/promises';
+import { readdir, stat, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import { loadConfig } from '../core/config.js';
@@ -13,6 +13,7 @@ import { colorizeOptaWord } from '../ui/brand.js';
 
 export interface DoctorOptions {
   format?: string;
+  fix?: boolean;
 }
 
 export interface CheckResult {
@@ -20,6 +21,7 @@ export interface CheckResult {
   status: 'pass' | 'warn' | 'fail';
   message: string;
   detail?: string;
+  fix?: () => Promise<string>;
 }
 
 interface LmxDoctorSnapshot {
@@ -34,19 +36,44 @@ interface LmxDoctorSnapshot {
 const FAST_DOCTOR_REQUEST_OPTS = { timeoutMs: 2_500, maxRetries: 0 } as const;
 
 function buildFailoverHint(fallbackHosts: string[]): string {
-  const normalized = fallbackHosts
-    .map((value) => value.trim())
-    .filter((value) => value.length > 0);
+  const normalized = fallbackHosts.map((value) => value.trim()).filter((value) => value.length > 0);
   return normalized.length > 0
     ? `Configured fallback hosts: ${normalized.join(', ')}.`
     : "Configure failover hosts: 'opta config set connection.fallbackHosts hostA,hostB'.";
+}
+
+export async function checkLmxDiscovery(): Promise<CheckResult> {
+  try {
+    const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
+    const discovered = await discoverLmxHosts(2000);
+    if (discovered.length === 0) {
+      return {
+        name: 'LMX Discovery',
+        status: 'warn',
+        message: 'No LMX servers found on LAN',
+        detail: "Ensure Opta-LMX is running and reachable on port 1234. Run 'opta onboard' to configure manually.",
+      };
+    }
+    const hostList = discovered.map((d) => `${d.host}:${d.port} (${d.latencyMs}ms)`).join(', ');
+    return {
+      name: 'LMX Discovery',
+      status: 'pass',
+      message: `LAN discovery: ${discovered.length} LMX server${discovered.length !== 1 ? 's' : ''} found — ${hostList}`,
+    };
+  } catch (err) {
+    return {
+      name: 'LMX Discovery',
+      status: 'warn',
+      message: `LMX discovery unavailable (${errorMessage(err)})`,
+    };
+  }
 }
 
 async function collectLmxDoctorSnapshot(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = [],
+  fallbackHosts: string[] = []
 ): Promise<LmxDoctorSnapshot> {
   const start = Date.now();
   try {
@@ -54,14 +81,17 @@ async function collectLmxDoctorSnapshot(
       import('../lmx/endpoints.js'),
       import('../lmx/client.js'),
     ]);
-    const resolved = await resolveLmxEndpoint({
-      host,
-      port,
-      adminKey,
-      fallbackHosts,
-    }, {
-      timeoutMs: 1_500,
-    });
+    const resolved = await resolveLmxEndpoint(
+      {
+        host,
+        port,
+        adminKey,
+        fallbackHosts,
+      },
+      {
+        timeoutMs: 1_500,
+      }
+    );
     const lmx = new LmxClient({
       host: resolved.host,
       port,
@@ -95,12 +125,14 @@ function lmxConnectionResultFromSnapshot(
   snapshot: LmxDoctorSnapshot,
   host: string,
   port: number,
-  fallbackHosts: string[] = [],
+  fallbackHosts: string[] = []
 ): CheckResult {
   if (snapshot.reachable) {
     const modelCount = snapshot.loadedModelIds.length;
-    const modelSuffix = modelCount > 0 ? `, ${modelCount} model${modelCount !== 1 ? 's' : ''} loaded` : '';
-    const failoverSuffix = snapshot.source === 'fallback' ? chalk.dim(` via fallback ${snapshot.host}`) : '';
+    const modelSuffix =
+      modelCount > 0 ? `, ${modelCount} model${modelCount !== 1 ? 's' : ''} loaded` : '';
+    const failoverSuffix =
+      snapshot.source === 'fallback' ? chalk.dim(` via fallback ${snapshot.host}`) : '';
     return {
       name: 'LMX Connection',
       status: 'pass',
@@ -108,9 +140,7 @@ function lmxConnectionResultFromSnapshot(
     };
   }
 
-  const reason = snapshot.error && snapshot.error.length > 0
-    ? snapshot.error
-    : 'unknown error';
+  const reason = snapshot.error && snapshot.error.length > 0 ? snapshot.error : 'unknown error';
   const failoverHint = buildFailoverHint(fallbackHosts);
   return {
     name: 'LMX Connection',
@@ -122,10 +152,14 @@ function lmxConnectionResultFromSnapshot(
       failoverHint,
       "Run 'opta status' or 'opta config set connection.host <host>' to reconfigure.",
     ].join(' '),
+    fix: async () => 'Ensure LMX server is running on Mono512 (192.168.188.11:1234). Cannot auto-start remote server.',
   };
 }
 
-function activeModelResultFromSnapshot(configModel: string, snapshot: LmxDoctorSnapshot): CheckResult {
+function activeModelResultFromSnapshot(
+  configModel: string,
+  snapshot: LmxDoctorSnapshot
+): CheckResult {
   if (!configModel) {
     return {
       name: 'Active Model',
@@ -163,7 +197,7 @@ function activeModelResultFromSnapshot(configModel: string, snapshot: LmxDoctorS
 
 // --- Individual Checks ---
 
-export async function checkNode(): Promise<CheckResult> {
+export function checkNode(): CheckResult {
   const version = process.version;
   const major = parseInt(version.slice(1).split('.')[0] ?? '0', 10);
 
@@ -187,7 +221,7 @@ export async function checkLmxConnection(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = [],
+  fallbackHosts: string[] = []
 ): Promise<CheckResult> {
   const snapshot = await collectLmxDoctorSnapshot(host, port, adminKey, fallbackHosts);
   return lmxConnectionResultFromSnapshot(snapshot, host, port, fallbackHosts);
@@ -198,7 +232,7 @@ export async function checkActiveModel(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = [],
+  fallbackHosts: string[] = []
 ): Promise<CheckResult> {
   const snapshot = await collectLmxDoctorSnapshot(host, port, adminKey, fallbackHosts);
   if (!snapshot.reachable) {
@@ -207,9 +241,11 @@ export async function checkActiveModel(
   return activeModelResultFromSnapshot(configModel, snapshot);
 }
 
-export async function checkConfig(preloadedConfig?: Awaited<ReturnType<typeof loadConfig>>): Promise<CheckResult> {
+export async function checkConfig(
+  preloadedConfig?: Awaited<ReturnType<typeof loadConfig>>
+): Promise<CheckResult> {
   try {
-    const config = preloadedConfig ?? await loadConfig();
+    const config = preloadedConfig ?? (await loadConfig());
 
     // Check for common misconfigurations
     const issues: string[] = [];
@@ -262,9 +298,14 @@ export async function checkOpis(cwd: string): Promise<CheckResult> {
 
   // Count available OPIS docs
   const opisFiles = [
-    'ARCHITECTURE.md', 'GUARDRAILS.md', 'DECISIONS.md',
-    'ECOSYSTEM.md', 'KNOWLEDGE.md', 'WORKFLOWS.md',
-    'ROADMAP.md', 'INDEX.md',
+    'ARCHITECTURE.md',
+    'GUARDRAILS.md',
+    'DECISIONS.md',
+    'ECOSYSTEM.md',
+    'KNOWLEDGE.md',
+    'WORKFLOWS.md',
+    'ROADMAP.md',
+    'INDEX.md',
   ];
 
   let docCount = 1; // APP.md counts
@@ -287,7 +328,16 @@ export async function checkOpis(cwd: string): Promise<CheckResult> {
 }
 
 export async function checkMcpServers(
-  servers: Record<string, { transport: string; command?: string; url?: string; args?: string[]; env?: Record<string, string> }>
+  servers: Record<
+    string,
+    {
+      transport: string;
+      command?: string;
+      url?: string;
+      args?: string[];
+      env?: Record<string, string>;
+    }
+  >
 ): Promise<CheckResult> {
   const names = Object.keys(servers);
 
@@ -299,53 +349,96 @@ export async function checkMcpServers(
     };
   }
 
+  const probeStdioServers = process.env['OPTA_DOCTOR_PROBE_STDIO_MCP'] === '1';
+  const probeTargets = names.filter((name) => {
+    const server = servers[name]!;
+    if (server.transport === 'http') return true;
+    if (server.transport === 'stdio') return probeStdioServers;
+    return false;
+  });
+  const skippedStdio = names.filter((name) => servers[name]!.transport === 'stdio' && !probeStdioServers);
+
   const { connectMcpServer } = await import('../mcp/client.js');
-  const settled = await Promise.all(names.map(async (name) => {
-    const serverConfig = servers[name]!;
-    try {
-      let timeoutId: ReturnType<typeof setTimeout>;
-      const timeout = new Promise<never>((_, reject) => {
-        timeoutId = setTimeout(() => reject(new Error('timeout')), 5000);
-      });
-      const conn = await Promise.race([
-        connectMcpServer(name, serverConfig as Parameters<typeof connectMcpServer>[1]),
-        timeout,
-      ]);
-      clearTimeout(timeoutId!);
-      const toolCount = conn.tools.length;
-      await conn.close();
-      return { name, ok: true as const, toolCount };
-    } catch {
-      return { name, ok: false as const, toolCount: 0 };
-    }
-  }));
+  const settled = await Promise.all(
+    probeTargets.map(async (name) => {
+      const serverConfig = servers[name]!;
+      const connectPromise = connectMcpServer(
+        name,
+        serverConfig as Parameters<typeof connectMcpServer>[1]
+      );
+      let timedOut = false;
+      let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+      try {
+        const timeout = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            timedOut = true;
+            reject(new Error('timeout'));
+          }, 5000);
+        });
+        const conn = await Promise.race([connectPromise, timeout]);
+        const toolCount = conn.tools.length;
+        await conn.close();
+        return { name, ok: true as const, toolCount };
+      } catch {
+        if (timedOut) {
+          // Best-effort late cleanup if the connect promise resolves after timeout.
+          void connectPromise
+            .then(async (conn) => {
+              await conn.close();
+            })
+            .catch(() => {});
+        }
+        return { name, ok: false as const, toolCount: 0 };
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
+    })
+  );
 
   const connected = settled.filter((entry) => entry.ok).length;
   const totalTools = settled.reduce((sum, entry) => sum + entry.toolCount, 0);
   const failed = settled.filter((entry) => !entry.ok).map((entry) => entry.name);
 
-  if (failed.length === 0) {
+  if (failed.length === 0 && skippedStdio.length === 0) {
     return {
       name: 'MCP',
       status: 'pass',
-      message: `MCP: ${connected}/${names.length} servers connected (${totalTools} tool${totalTools !== 1 ? 's' : ''})`,
+      message: `MCP: ${connected}/${probeTargets.length} servers connected (${totalTools} tool${totalTools !== 1 ? 's' : ''})`,
     };
   }
 
-  if (connected > 0) {
+  if (failed.length === 0 && skippedStdio.length > 0) {
     return {
       name: 'MCP',
       status: 'warn',
-      message: `MCP: ${connected}/${names.length} servers connected (${failed.join(', ')} failed)`,
-      detail: `Failed servers: ${failed.join(', ')}. Check server commands and availability.`,
+      message: `MCP: ${connected}/${probeTargets.length} probed (${skippedStdio.length} stdio server${skippedStdio.length !== 1 ? 's' : ''} skipped)`,
+      detail:
+        "Deep stdio MCP probing is skipped in doctor mode to avoid hanging transports. Set OPTA_DOCTOR_PROBE_STDIO_MCP=1 or run 'opta mcp test <name>'.",
+    };
+  }
+
+  if (connected > 0 || skippedStdio.length > 0) {
+    return {
+      name: 'MCP',
+      status: 'warn',
+      message: `MCP: ${connected}/${probeTargets.length} probed (${failed.length} failed, ${skippedStdio.length} skipped)`,
+      detail: [
+        failed.length > 0 ? `Failed servers: ${failed.join(', ')}.` : '',
+        skippedStdio.length > 0
+          ? "Skipped stdio servers require manual probe: run 'opta mcp test <name>' or set OPTA_DOCTOR_PROBE_STDIO_MCP=1."
+          : '',
+      ]
+        .filter(Boolean)
+        .join(' '),
     };
   }
 
   return {
     name: 'MCP',
     status: 'fail',
-    message: `MCP: 0/${names.length} servers connected`,
-    detail: `All MCP servers failed: ${failed.join(', ')}`,
+    message: `MCP: 0/${probeTargets.length} probed servers connected`,
+    detail: `All probed MCP servers failed: ${failed.join(', ')}`,
   };
 }
 
@@ -424,7 +517,8 @@ export async function checkAccount(): Promise<CheckResult> {
       name: 'Account',
       status: 'warn',
       message: 'OPTA_SUPABASE_URL not configured (account features disabled)',
-      detail: "Set OPTA_SUPABASE_URL and OPTA_SUPABASE_ANON_KEY environment variables to enable account features.",
+      detail:
+        'Set OPTA_SUPABASE_URL and OPTA_SUPABASE_ANON_KEY environment variables to enable account features.',
     };
   }
 
@@ -504,7 +598,7 @@ export async function checkDiskUsage(): Promise<CheckResult> {
         } catch {
           return 0;
         }
-      }),
+      })
     );
     totalBytes = stats.reduce((sum, size) => sum + size, 0);
   } catch {
@@ -523,7 +617,8 @@ export async function checkDiskUsage(): Promise<CheckResult> {
       name: 'Sessions',
       status: 'warn',
       message: `Sessions: ${sessionCount} (${sizeStr})`,
-      detail: "Session storage exceeds 100 MB. Run 'opta sessions' to review and delete old sessions.",
+      detail:
+        "Session storage exceeds 100 MB. Run 'opta sessions' to review and delete old sessions.",
     };
   }
 
@@ -534,7 +629,9 @@ export async function checkDiskUsage(): Promise<CheckResult> {
   };
 }
 
-export async function checkDiskHeadroom(minFreeBytes = diskHeadroomMbToBytes()): Promise<CheckResult> {
+export async function checkDiskHeadroom(
+  minFreeBytes = diskHeadroomMbToBytes()
+): Promise<CheckResult> {
   try {
     const disk = await readDiskHeadroom(join(homedir(), '.config', 'opta'));
     const available = formatBytes(disk.availableBytes);
@@ -546,6 +643,7 @@ export async function checkDiskHeadroom(minFreeBytes = diskHeadroomMbToBytes()):
         status: 'fail',
         message: `Disk headroom below required minimum (${available} available, ${required} required)`,
         detail: 'Free disk space on the filesystem backing ~/.config/opta and rerun opta doctor.',
+        fix: async () => 'Disk space is low — free space manually. Cannot auto-fix.',
       };
     }
 
@@ -563,6 +661,71 @@ export async function checkDiskHeadroom(minFreeBytes = diskHeadroomMbToBytes()):
   }
 }
 
+export async function checkDaemon(): Promise<CheckResult> {
+  const { isDaemonRunning, readDaemonState } = await import('../daemon/lifecycle.js');
+  const state = await readDaemonState();
+  const running = await isDaemonRunning(state);
+
+  if (running) {
+    return {
+      name: 'Daemon',
+      status: 'pass',
+      message: `Daemon running (pid=${state!.pid}, port=${state!.port})`,
+    };
+  }
+
+  return {
+    name: 'Daemon',
+    status: 'warn',
+    message: 'Daemon not running',
+    detail: "Run 'opta daemon start' to start the background daemon.",
+    fix: async () => {
+      const { ensureDaemonRunning } = await import('../daemon/lifecycle.js');
+      const daemonState = await ensureDaemonRunning();
+      return `Daemon started (pid=${daemonState.pid}, port=${daemonState.port})`;
+    },
+  };
+}
+
+export async function checkConfigDirs(): Promise<CheckResult> {
+  const configDir = join(homedir(), '.config', 'opta');
+  const requiredDirs = [
+    configDir,
+    join(configDir, 'sessions'),
+    join(configDir, 'daemon'),
+  ];
+
+  const missing: string[] = [];
+  for (const dir of requiredDirs) {
+    try {
+      await access(dir);
+    } catch {
+      missing.push(dir);
+    }
+  }
+
+  if (missing.length === 0) {
+    return {
+      name: 'Config Dirs',
+      status: 'pass',
+      message: 'Config directories exist',
+    };
+  }
+
+  return {
+    name: 'Config Dirs',
+    status: 'warn',
+    message: `Missing config directories (${missing.length})`,
+    detail: missing.join(', '),
+    fix: async () => {
+      for (const dir of missing) {
+        await mkdir(dir, { recursive: true });
+      }
+      return `Created ${missing.length} missing director${missing.length !== 1 ? 'ies' : 'y'}`;
+    },
+  };
+}
+
 // --- Formatting Helpers ---
 
 function formatBytes(bytes: number): string {
@@ -575,9 +738,12 @@ function formatBytes(bytes: number): string {
 
 function statusIcon(status: 'pass' | 'warn' | 'fail'): string {
   switch (status) {
-    case 'pass': return chalk.green('\u2713');
-    case 'warn': return chalk.yellow('\u26A0');
-    case 'fail': return chalk.red('\u2717');
+    case 'pass':
+      return chalk.green('\u2713');
+    case 'warn':
+      return chalk.yellow('\u26A0');
+    case 'fail':
+      return chalk.red('\u2717');
   }
 }
 
@@ -590,8 +756,8 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
   const { host, port, adminKey } = config.connection;
   const cwd = process.cwd();
 
+  const nodeResult = checkNode();
   const [
-    nodeResult,
     lmxSnapshot,
     configResult,
     opisResult,
@@ -600,8 +766,10 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     diskResult,
     diskHeadroomResult,
     accountResult,
+    daemonResult,
+    configDirsResult,
+    lmxDiscoveryResult,
   ] = await Promise.all([
-    checkNode(),
     collectLmxDoctorSnapshot(host, port, adminKey, config.connection.fallbackHosts),
     checkConfig(config),
     checkOpis(cwd),
@@ -610,16 +778,22 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     checkDiskUsage(),
     checkDiskHeadroom(diskHeadroomMbToBytes(config.safety?.diskHeadroomMb)),
     checkAccount(),
+    checkDaemon(),
+    checkConfigDirs(),
+    checkLmxDiscovery(),
   ]);
 
   const results: CheckResult[] = [
     nodeResult,
     lmxConnectionResultFromSnapshot(lmxSnapshot, host, port, config.connection.fallbackHosts),
+    lmxDiscoveryResult,
     activeModelResultFromSnapshot(config.model.default, lmxSnapshot),
     configResult,
+    configDirsResult,
     opisResult,
     mcpResult,
     gitResult,
+    daemonResult,
     diskResult,
     diskHeadroomResult,
     accountResult,
@@ -631,11 +805,17 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     const warnings = results.filter((r) => r.status === 'warn').length;
     const failures = results.filter((r) => r.status === 'fail').length;
 
-    console.log(JSON.stringify({
-      version: VERSION,
-      checks: results,
-      summary: { passed, warnings, failures },
-    }, null, 2));
+    console.log(
+      JSON.stringify(
+        {
+          version: VERSION,
+          checks: results.map(({ fix: _fix, ...rest }) => rest),
+          summary: { passed, warnings, failures },
+        },
+        null,
+        2
+      )
+    );
     return;
   }
 
@@ -667,4 +847,28 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
   const summaryColor = failures > 0 ? chalk.red : warnings > 0 ? chalk.yellow : chalk.green;
   console.log('  ' + summaryColor(parts.join(', ')));
   console.log('');
+
+  // --fix: attempt to auto-fix failed/warned checks
+  if (options.fix) {
+    const fixable = results.filter((r) => r.status !== 'pass' && r.fix);
+    if (fixable.length === 0) {
+      console.log(chalk.dim('  No auto-fixable issues found.'));
+      console.log('');
+      return;
+    }
+
+    console.log(chalk.bold('  Applying fixes...'));
+    console.log('');
+
+    for (const result of fixable) {
+      try {
+        const fixMessage = await result.fix!();
+        console.log(`  ${chalk.green('\u2713')} ${result.name}: ${fixMessage}`);
+      } catch (err) {
+        console.log(`  ${chalk.red('\u2717')} ${result.name}: fix failed — ${errorMessage(err)}`);
+      }
+    }
+
+    console.log('');
+  }
 }

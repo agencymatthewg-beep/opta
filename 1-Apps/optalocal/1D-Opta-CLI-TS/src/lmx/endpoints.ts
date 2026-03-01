@@ -1,11 +1,14 @@
 import type { LmxConnectionState } from './connection.js';
 import { probeLmxConnection } from './connection.js';
+import { discoverLmxHosts } from './mdns-discovery.js';
 
 export interface LmxEndpointConfig {
   host: string;
   port: number;
   adminKey?: string;
   fallbackHosts?: string[];
+  /** When true (default), scan the LAN for LMX servers if no primary is configured. */
+  autoDiscover?: boolean;
 }
 
 export interface ResolvedLmxEndpoint {
@@ -108,8 +111,22 @@ export async function resolveLmxEndpoint(
     throw makeAbortError('LMX endpoint resolution aborted');
   }
 
-  const candidates = listCandidateHosts(config);
+  let candidates = listCandidateHosts(config);
   const normalizedPrimary = normalizeHost(config.host);
+
+  // Auto-discover LMX servers on the LAN when enabled and no explicit host is configured
+  if (config.autoDiscover !== false && candidates.length === 0) {
+    try {
+      const discovered = await discoverLmxHosts(1500);
+      const discoveredHosts = discovered.map((d) => d.host);
+      // Rebuild candidates with discovered hosts prepended
+      candidates = listCandidateHosts({
+        host: discoveredHosts[0] ?? config.host,
+        fallbackHosts: [...discoveredHosts.slice(1), ...(config.fallbackHosts ?? [])],
+      });
+    } catch { /* discovery is best-effort */ }
+  }
+
   const primaryHost = candidates[0] ?? (normalizedPrimary.length > 0 ? normalizedPrimary : 'localhost');
   const cacheKey = makeCacheKey(config.port, candidates);
 

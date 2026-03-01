@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile, appendFile, stat, readdir } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { homedir } from 'node:os';
 import type { AgentMessage } from '../core/agent.js';
 import type { V3Envelope } from '../protocol/v3/types.js';
@@ -23,7 +23,24 @@ function sessionsDir(): string {
   return join(daemonRootDir(), 'sessions');
 }
 
+// Allowlist: alphanumeric, hyphen, underscore only; max 64 chars.
+// This prevents path traversal attacks via user-controlled sessionId values.
+const SESSION_ID_RE = /^[a-zA-Z0-9_-]{1,64}$/;
+
+function assertSafeSessionId(sessionId: string): void {
+  if (!SESSION_ID_RE.test(sessionId)) {
+    throw new Error(`Invalid sessionId: "${sessionId}"`);
+  }
+  // Secondary guard: resolved path must remain within sessionsDir.
+  const base = sessionsDir();
+  const resolved = resolve(base, sessionId);
+  if (!resolved.startsWith(base + '/') && resolved !== base) {
+    throw new Error(`Session path escapes sessions directory: "${sessionId}"`);
+  }
+}
+
 function sessionDir(sessionId: string): string {
+  assertSafeSessionId(sessionId);
   return join(sessionsDir(), sessionId);
 }
 
@@ -35,13 +52,49 @@ function eventLogPath(sessionId: string): string {
   return join(sessionDir(sessionId), 'events.jsonl');
 }
 
+// In-flight mkdir Promises keyed by sessionId.
+// Replaces the plain Set so concurrent callers with the same sessionId await
+// the same mkdir rather than each racing past the guard and independently
+// issuing mkdir (which is idempotent but would hide failures: if the first
+// mkdir threw, the Set would not be populated, yet a concurrent second caller
+// might have already written to the Set and silently skipped the mkdir on all
+// future calls — leaving the directory absent).
+const pendingSessionDirCreations = new Map<string, Promise<void>>();
+
 export async function ensureDaemonStore(): Promise<void> {
   await mkdir(sessionsDir(), { recursive: true });
 }
 
 export async function ensureSessionStore(sessionId: string): Promise<void> {
-  await ensureDaemonStore();
-  await mkdir(sessionDir(sessionId), { recursive: true });
+  assertSafeSessionId(sessionId);
+
+  const existing = pendingSessionDirCreations.get(sessionId);
+  if (existing) {
+    await existing;
+    return;
+  }
+
+  const creation = (async () => {
+    await ensureDaemonStore();
+    await mkdir(sessionDir(sessionId), { recursive: true });
+  })();
+
+  pendingSessionDirCreations.set(sessionId, creation);
+  try {
+    await creation;
+  } finally {
+    // Only remove from map if the stored Promise is still ours, preventing
+    // a race where a new caller overwrote the map entry while we were awaiting.
+    if (pendingSessionDirCreations.get(sessionId) === creation) {
+      pendingSessionDirCreations.delete(sessionId);
+    }
+  }
+}
+
+/** Clear the session-dir creation cache. Intended for use in tests that wipe
+ *  session directories between runs within the same process. */
+export function clearSessionDirCache(): void {
+  pendingSessionDirCreations.clear();
 }
 
 export async function writeSessionSnapshot(snapshot: StoredSessionSnapshot): Promise<void> {

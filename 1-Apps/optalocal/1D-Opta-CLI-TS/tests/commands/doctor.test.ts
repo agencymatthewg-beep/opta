@@ -352,6 +352,76 @@ describe('checkMcpServers', () => {
   });
 });
 
+// --- runDoctor --fix ---
+
+describe('runDoctor --fix', () => {
+  it('calls ensureDaemonRunning when daemon check fails and fix:true', async () => {
+    const ensureDaemonRunningMock = vi.fn().mockResolvedValue({ pid: 42, port: 9999 });
+
+    // Mock lifecycle so isDaemonRunning returns false (daemon is not running)
+    vi.doMock('../../src/daemon/lifecycle.js', () => ({
+      readDaemonState: vi.fn().mockResolvedValue(null),
+      isDaemonRunning: vi.fn().mockResolvedValue(false),
+      ensureDaemonRunning: ensureDaemonRunningMock,
+    }));
+
+    // Suppress fetch calls for LMX checks
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
+
+    const { runDoctor } = await import('../../src/commands/doctor.js');
+    await runDoctor({ fix: true });
+
+    expect(ensureDaemonRunningMock).toHaveBeenCalledTimes(1);
+
+    globalThis.fetch = originalFetch;
+    vi.doUnmock('../../src/daemon/lifecycle.js');
+  });
+
+  it('does NOT call fix functions when fix:false even if checks fail', async () => {
+    const ensureDaemonRunningMock = vi.fn().mockResolvedValue({ pid: 42, port: 9999 });
+
+    vi.doMock('../../src/daemon/lifecycle.js', () => ({
+      readDaemonState: vi.fn().mockResolvedValue(null),
+      isDaemonRunning: vi.fn().mockResolvedValue(false),
+      ensureDaemonRunning: ensureDaemonRunningMock,
+    }));
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
+
+    const { runDoctor } = await import('../../src/commands/doctor.js');
+    await runDoctor({ fix: false });
+
+    // fix() should not be invoked when fix option is false
+    expect(ensureDaemonRunningMock).not.toHaveBeenCalled();
+
+    globalThis.fetch = originalFetch;
+    vi.doUnmock('../../src/daemon/lifecycle.js');
+  });
+
+  it('checks without fix functions still produce output under --fix', async () => {
+    vi.doMock('../../src/daemon/lifecycle.js', () => ({
+      readDaemonState: vi.fn().mockResolvedValue(null),
+      isDaemonRunning: vi.fn().mockResolvedValue(false),
+      ensureDaemonRunning: vi.fn().mockResolvedValue({ pid: 99, port: 9999 }),
+    }));
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
+
+    const { runDoctor } = await import('../../src/commands/doctor.js');
+    await runDoctor({ fix: true });
+
+    const text = output.join('\n');
+    // Node.js check always passes and has no fix — it must still appear in output
+    expect(text).toContain('Node.js');
+
+    globalThis.fetch = originalFetch;
+    vi.doUnmock('../../src/daemon/lifecycle.js');
+  });
+});
+
 // --- runDoctor (integration) ---
 
 describe('runDoctor', () => {
@@ -384,7 +454,9 @@ describe('runDoctor', () => {
     expect(parsed).toHaveProperty('checks');
     expect(parsed).toHaveProperty('summary');
     expect(Array.isArray(parsed.checks)).toBe(true);
-    expect(parsed.checks.length).toBe(10);
+    // runDoctor runs 13 checks: Node, LMX Connection, LMX Discovery, Active Model,
+    // Config, Config Dirs, OPIS, MCP, Git, Daemon, Sessions, Disk Headroom, Account
+    expect(parsed.checks.length).toBe(13);
     expect(parsed.summary).toHaveProperty('passed');
     expect(parsed.summary).toHaveProperty('warnings');
     expect(parsed.summary).toHaveProperty('failures');

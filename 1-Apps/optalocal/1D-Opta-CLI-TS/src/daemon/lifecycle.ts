@@ -5,8 +5,10 @@ import { homedir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { debug } from '../core/debug.js';
 import { daemonLogsPath } from './telemetry.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom } from '../utils/disk.js';
+import { restrictFileToCurrentUser } from '../platform/index.js';
 
 export interface DaemonState {
   pid: number;
@@ -68,10 +70,7 @@ export async function writeDaemonState(state: DaemonState): Promise<void> {
 }
 
 export async function clearDaemonState(): Promise<void> {
-  await Promise.all([
-    rm(statePath(), { force: true }),
-    rm(pidPath(), { force: true }),
-  ]);
+  await Promise.all([rm(statePath(), { force: true }), rm(pidPath(), { force: true })]);
 }
 
 export async function readDaemonToken(): Promise<string | null> {
@@ -85,6 +84,7 @@ export async function readDaemonToken(): Promise<string | null> {
 export async function writeDaemonToken(token: string): Promise<void> {
   await ensureDaemonDir();
   await writeFile(tokenPath(), token, { encoding: 'utf-8', mode: 0o600 });
+  await restrictFileToCurrentUser(tokenPath());
 }
 
 export async function createDaemonToken(): Promise<string> {
@@ -110,12 +110,20 @@ export function isProcessRunning(pid: number): boolean {
   }
 }
 
-async function pingDaemon(host: string, port: number, timeoutMs = 500): Promise<boolean> {
+async function pingDaemon(
+  host: string,
+  port: number,
+  token: string,
+  timeoutMs = 500
+): Promise<boolean> {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   timer.unref();
   try {
-    const res = await fetch(`http://${host}:${port}/v3/health`, { signal: controller.signal });
+    const tokenParam = encodeURIComponent(token);
+    const res = await fetch(`http://${host}:${port}/v3/health?token=${tokenParam}`, {
+      signal: controller.signal,
+    });
     return res.ok;
   } catch {
     return false;
@@ -125,10 +133,10 @@ async function pingDaemon(host: string, port: number, timeoutMs = 500): Promise<
 }
 
 export async function isDaemonRunning(state?: DaemonState | null): Promise<boolean> {
-  const current = state ?? await readDaemonState();
+  const current = state ?? (await readDaemonState());
   if (!current) return false;
   if (!isProcessRunning(current.pid)) return false;
-  return pingDaemon(current.host, current.port, 800);
+  return pingDaemon(current.host, current.port, current.token, 800);
 }
 
 function resolveCliEntrypoint(): string {
@@ -149,7 +157,10 @@ function resolveCliEntrypoint(): string {
   return parent;
 }
 
-export async function startDaemonDetached(opts?: { host?: string; port?: number }): Promise<DaemonState> {
+export async function startDaemonDetached(opts?: {
+  host?: string;
+  port?: number;
+}): Promise<DaemonState> {
   const existing = await readDaemonState();
   if (await isDaemonRunning(existing)) {
     return existing!;
@@ -191,15 +202,24 @@ async function waitForDaemonReady(timeoutMs: number): Promise<boolean> {
   const start = Date.now();
   while (Date.now() - start < timeoutMs) {
     const current = await readDaemonState();
-    if (current && await isDaemonRunning(current)) return true;
-    await new Promise(resolve => setTimeout(resolve, 120));
+    if (current && (await isDaemonRunning(current))) return true;
+    await new Promise((resolve) => setTimeout(resolve, 120));
   }
   return false;
 }
 
-export async function ensureDaemonRunning(opts?: { host?: string; port?: number }): Promise<DaemonState> {
+export async function ensureDaemonRunning(opts?: {
+  host?: string;
+  port?: number;
+}): Promise<DaemonState> {
   const current = await readDaemonState();
-  if (await isDaemonRunning(current)) return current!;
+  if (current) {
+    const alive = await isDaemonRunning(current);
+    if (alive) return current;
+    // Crash guardian: state file exists but process is dead — clean up stale state
+    debug(`Crash guardian: stale daemon state (pid=${current.pid}), restarting`);
+    await clearDaemonState();
+  }
   return startDaemonDetached(opts);
 }
 
@@ -219,7 +239,7 @@ export async function stopDaemon(): Promise<boolean> {
       await clearDaemonState();
       return true;
     }
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
   }
 
   // Last resort

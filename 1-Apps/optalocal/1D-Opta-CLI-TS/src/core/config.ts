@@ -90,6 +90,7 @@ export const OptaConfigSchema = z.object({
     .object({
       host: z.string().default('localhost'),
       fallbackHosts: z.array(z.string()).default([]),
+      autoDiscover: z.boolean().default(true),
       port: z.number().default(1234),
       protocol: z.literal('http').default('http'),
       adminKey: z.string().optional(),
@@ -99,8 +100,8 @@ export const OptaConfigSchema = z.object({
           user: z.string().default('opta'),
           identityFile: z.string().default('~/.ssh/id_ed25519'),
           connectTimeoutSec: z.number().min(3).max(120).default(20),
-          lmxPath: z.string().default('~/opta-lmx'),
-          pythonPath: z.string().default('python3'),
+          lmxPath: z.string().default('/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX'),
+          pythonPath: z.string().default('/Users/opta/.mlx-env/bin/python'),
         })
         .default({}),
       inferenceTimeout: z.number().min(5000).max(600_000).default(120_000),
@@ -126,12 +127,18 @@ export const OptaConfigSchema = z.object({
             label: z.string().min(1),
             color: z.string().optional(),
             patterns: z.array(z.string()).default([]),
-          }),
+          })
         )
         .optional(),
+      /** HuggingFace model ID for embeddings (e.g. nomic-ai/nomic-embed-text-v2-moe) */
+      embeddingModel: z.string().default(''),
+      /** HuggingFace model ID for reranking (e.g. BAAI/bge-reranker-v2-m3) */
+      rerankerModel: z.string().default(''),
     })
     .default({}),
-  defaultMode: z.enum(['safe', 'auto', 'plan', 'review', 'research', 'dangerous', 'ci']).default('safe'),
+  defaultMode: z
+    .enum(['safe', 'auto', 'plan', 'review', 'research', 'dangerous', 'ci'])
+    .default('safe'),
   autonomy: z
     .object({
       level: z.number().int().min(1).max(5).default(2),
@@ -143,70 +150,92 @@ export const OptaConfigSchema = z.object({
       headlessContinue: z.boolean().default(false),
     })
     .default({}),
-  permissions: z
-    .record(z.string(), ToolPermission)
-    .default({
-      // File operations
-      read_file: 'allow',
-      list_dir: 'allow',
-      search_files: 'allow',
-      find_files: 'allow',
-      edit_file: 'ask',
-      write_file: 'ask',
-      multi_edit: 'ask',
-      delete_file: 'ask',
-      // Shell
-      run_command: 'ask',
-      // User interaction
-      ask_user: 'allow',
-      // Project docs
-      read_project_docs: 'allow',
-      // Web
-      web_search: 'allow',
-      web_fetch: 'allow',
-      // Research
-      research_query: 'allow',
-      research_health: 'allow',
-      // Browser automation
-      browser_open: 'ask',
-      browser_navigate: 'ask',
-      browser_click: 'ask',
-      browser_type: 'ask',
-      browser_snapshot: 'ask',
-      browser_screenshot: 'ask',
-      browser_close: 'ask',
-      // Learning
-      learning_log: 'allow',
-      learning_summary: 'allow',
-      learning_retrieve: 'allow',
-      // Memory
-      save_memory: 'allow',
-      // Background processes
-      bg_start: 'ask',
-      bg_status: 'allow',
-      bg_output: 'allow',
-      bg_kill: 'ask',
-      // LSP
-      lsp_definition: 'allow',
-      lsp_references: 'allow',
-      lsp_hover: 'allow',
-      lsp_symbols: 'allow',
-      lsp_document_symbols: 'allow',
-      lsp_rename: 'ask',
-      // Sub-agents
-      spawn_agent: 'ask',
-      delegate_task: 'ask',
-      // Git
-      git_status: 'allow',
-      git_diff: 'allow',
-      git_log: 'allow',
-      git_commit: 'ask',
-    }),
+  computerControl: z
+    .object({
+      foreground: z
+        .object({
+          enabled: z.boolean().default(false),
+          requireDangerousMode: z.boolean().default(true),
+          allowScreenActions: z.boolean().default(false),
+        })
+        .default({}),
+      background: z
+        .object({
+          enabled: z.boolean().default(true),
+          allowBrowserSessionHosting: z.boolean().default(true),
+          allowScreenStreaming: z.boolean().default(true),
+          maxHostedBrowserSessions: z.number().int().min(1).max(5).default(5),
+        })
+        .default({}),
+    })
+    .default({}),
+  permissions: z.record(z.string(), ToolPermission).default({
+    // File operations
+    read_file: 'allow',
+    list_dir: 'allow',
+    search_files: 'allow',
+    find_files: 'allow',
+    edit_file: 'ask',
+    write_file: 'ask',
+    multi_edit: 'ask',
+    delete_file: 'ask',
+    // Shell
+    run_command: 'ask',
+    // User interaction
+    ask_user: 'allow',
+    // Project docs
+    read_project_docs: 'allow',
+    // Web
+    web_search: 'allow',
+    web_fetch: 'allow',
+    // Research
+    research_query: 'allow',
+    research_health: 'allow',
+    // Browser automation
+    browser_open: 'ask',
+    browser_navigate: 'allow',
+    browser_click: 'ask',
+    browser_type: 'ask',
+    browser_snapshot: 'allow',
+    browser_screenshot: 'allow',
+    browser_close: 'allow',
+    // Learning
+    learning_log: 'allow',
+    learning_summary: 'allow',
+    learning_retrieve: 'allow',
+    // Memory
+    save_memory: 'allow',
+    // Background processes
+    bg_start: 'ask',
+    bg_status: 'allow',
+    bg_output: 'allow',
+    bg_kill: 'ask',
+    // LSP
+    lsp_definition: 'allow',
+    lsp_references: 'allow',
+    lsp_hover: 'allow',
+    lsp_symbols: 'allow',
+    lsp_document_symbols: 'allow',
+    lsp_rename: 'ask',
+    // Sub-agents
+    spawn_agent: 'ask',
+    delegate_task: 'ask',
+    // Git
+    git_status: 'allow',
+    git_diff: 'allow',
+    git_log: 'allow',
+    git_commit: 'ask',
+  }),
   safety: z
     .object({
       maxToolCalls: z.number().default(30), // backward compat
-      maxParallelTools: z.number().min(1).max(10).default(5),
-      diskHeadroomMb: z.number().int().min(1).max(1024 * 1024).default(64),
+      maxParallelTools: z.number().min(1).max(16).default(8),
+      diskHeadroomMb: z
+        .number()
+        .int()
+        .min(1)
+        .max(1024 * 1024)
+        .default(64),
       compactAt: z.number().default(0.7),
       circuitBreaker: z
         .object({
@@ -268,8 +297,6 @@ export const OptaConfigSchema = z.object({
       mode: z.enum(['isolated', 'attach']).default('isolated'),
       autoInvoke: z.boolean().default(false),
       screenshotPolicy: z.enum(['on-demand', 'always', 'disabled']).default('on-demand'),
-      globalAllowedHosts: z.array(z.string()).default([]),
-      blockedOrigins: z.array(z.string()).default([]),
       runtime: z
         .object({
           enabled: z.boolean().default(true),
@@ -300,12 +327,31 @@ export const OptaConfigSchema = z.object({
       adaptation: z
         .object({
           enabled: z.boolean().default(DEFAULT_BROWSER_ADAPTATION_CONFIG.enabled),
-          minAssessedSessions: z.number().min(1).max(5000).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.minAssessedSessions),
-          regressionPressureThreshold: z.number().min(0).max(1).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.regressionPressureThreshold),
-          meanRegressionScoreThreshold: z.number().min(0).max(1).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.meanRegressionScoreThreshold),
-          failureRateThreshold: z.number().min(0).max(1).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.failureRateThreshold),
-          investigateWeight: z.number().min(0).max(1).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.investigateWeight),
-          intentRoutePenalty: z.number().min(0).max(20).default(DEFAULT_BROWSER_ADAPTATION_CONFIG.intentRoutePenalty),
+          minAssessedSessions: z
+            .number()
+            .min(1)
+            .max(5000)
+            .default(DEFAULT_BROWSER_ADAPTATION_CONFIG.minAssessedSessions),
+          regressionPressureThreshold: z
+            .number()
+            .min(0)
+            .max(1)
+            .default(DEFAULT_BROWSER_ADAPTATION_CONFIG.regressionPressureThreshold),
+          meanRegressionScoreThreshold: z
+            .number()
+            .min(0)
+            .max(1)
+            .default(DEFAULT_BROWSER_ADAPTATION_CONFIG.meanRegressionScoreThreshold),
+          failureRateThreshold: z
+            .number()
+            .min(0)
+            .max(1)
+            .default(DEFAULT_BROWSER_ADAPTATION_CONFIG.failureRateThreshold),
+          investigateWeight: z
+            .number()
+            .min(0)
+            .max(1)
+            .default(DEFAULT_BROWSER_ADAPTATION_CONFIG.investigateWeight),
         })
         .default({}),
       artifacts: z
@@ -337,6 +383,8 @@ export const OptaConfigSchema = z.object({
           requireApproval: z.boolean().default(true),
         })
         .default({}),
+      /** URL to navigate to automatically when the Playwright browser starts. */
+      homePage: z.string().optional(),
     })
     .default({}),
   background: z
@@ -362,7 +410,7 @@ export const OptaConfigSchema = z.object({
         matcher: z.string().optional(),
         timeout: z.number().min(100).max(60000).optional(),
         background: z.boolean().optional(),
-      }),
+      })
     )
     .default([]),
   lsp: z
@@ -430,6 +478,20 @@ export const OptaConfigSchema = z.object({
       gateAllAutonomy: z.boolean().default(true),
       failureMode: z.enum(['closed', 'degraded-safe', 'open']).default('closed'),
       requireApprovalForModeSwitch: z.boolean().default(true),
+      runtimeEnforcement: z
+        .object({
+          enabled: z.boolean().default(false),
+          endpoint: z.string().min(1).default('http://127.0.0.1:3002/api/capabilities/evaluate'),
+          timeoutMs: z.number().int().min(100).max(30_000).default(2500),
+          failOpen: z.boolean().default(true),
+          applyTo: z
+            .object({
+              dangerous: z.boolean().default(true),
+              highRiskWrites: z.boolean().default(true),
+            })
+            .default({}),
+        })
+        .default({}),
       audit: z
         .object({
           enabled: z.boolean().default(true),
@@ -501,7 +563,7 @@ let loadConfigCache: LoadConfigCacheEntry | null = null;
 function cloneConfig(config: OptaConfig): OptaConfig {
   return typeof structuredClone === 'function'
     ? structuredClone(config)
-    : JSON.parse(JSON.stringify(config)) as OptaConfig;
+    : (JSON.parse(JSON.stringify(config)) as OptaConfig);
 }
 
 function stableStringify(value: unknown): string {
@@ -530,12 +592,22 @@ function buildLoadConfigCacheKey(overrides?: Record<string, unknown>): string {
   return `${envKey}::${overrideKey}`;
 }
 
+function applyProcessEnvFromConfig(config: OptaConfig): void {
+  // Make the resolved key visible to components instantiated after loadConfig()
+  // without threading connection.apiKey through every call site.
+  const apiKey = config.connection.apiKey?.trim();
+  if (apiKey && !process.env['OPTA_API_KEY']) {
+    process.env['OPTA_API_KEY'] = apiKey;
+  }
+}
+
 export function clearLoadConfigCache(): void {
   loadConfigCache = null;
 }
 
 /** Canonical permission defaults derived from the Zod schema. Single source of truth. */
-export const DEFAULT_PERMISSIONS: Record<string, 'allow' | 'ask' | 'deny'> = DEFAULT_CONFIG.permissions;
+export const DEFAULT_PERMISSIONS: Record<string, 'allow' | 'ask' | 'deny'> =
+  DEFAULT_CONFIG.permissions;
 
 // ---------------------------------------------------------------------------
 // Part D: Zod error formatting
@@ -595,7 +667,7 @@ export function formatZodErrors(error: z.ZodError): string[] {
  */
 function stripBrokenKeys(
   raw: Record<string, unknown>,
-  issues: z.ZodIssue[],
+  issues: z.ZodIssue[]
 ): Record<string, unknown> {
   const clone = { ...raw };
   for (const issue of issues) {
@@ -619,7 +691,7 @@ function stripBrokenKeys(
 function deleteNestedKey(obj: Record<string, unknown>, path: (string | number)[]): void {
   if (path.length === 0) return;
   if (path.length === 1) {
-    delete obj[path[0] as string];
+    Reflect.deleteProperty(obj, path[0] as string);
     return;
   }
 
@@ -629,7 +701,7 @@ function deleteNestedKey(obj: Record<string, unknown>, path: (string | number)[]
     deleteNestedKey(child as Record<string, unknown>, rest);
   } else {
     // Cannot traverse further — delete the whole branch
-    delete obj[head as string];
+    Reflect.deleteProperty(obj, head as string);
   }
 }
 
@@ -637,11 +709,13 @@ function deleteNestedKey(obj: Record<string, unknown>, path: (string | number)[]
 // Part A: loadConfig with safeParse + self-healing
 // ---------------------------------------------------------------------------
 
-export async function loadConfig(
-  overrides?: Record<string, unknown>
-): Promise<OptaConfig> {
+export async function loadConfig(overrides?: Record<string, unknown>): Promise<OptaConfig> {
   const cacheKey = buildLoadConfigCacheKey(overrides);
-  if (loadConfigCache && loadConfigCache.key === cacheKey && loadConfigCache.expiresAt > Date.now()) {
+  if (
+    loadConfigCache &&
+    loadConfigCache.key === cacheKey &&
+    loadConfigCache.expiresAt > Date.now()
+  ) {
     return cloneConfig(loadConfigCache.value);
   }
 
@@ -674,14 +748,14 @@ export async function loadConfig(
   if (process.env['OPTA_ADMIN_KEY']) connectionPatch['adminKey'] = process.env['OPTA_ADMIN_KEY'];
   if (process.env['OPTA_API_KEY']) connectionPatch['apiKey'] = process.env['OPTA_API_KEY'];
   if (Object.keys(connectionPatch).length > 0) {
-    (raw as Record<string, unknown>)['connection'] = {
+    raw['connection'] = {
       ...((raw as Record<string, Record<string, unknown>>)['connection'] ?? {}),
       ...connectionPatch,
     };
   }
   const envModel = normalizeConfiguredModelId(process.env['OPTA_MODEL']);
   if (envModel) {
-    (raw as Record<string, unknown>).model = {
+    raw.model = {
       ...((raw as Record<string, Record<string, unknown>>).model ?? {}),
       default: envModel,
     };
@@ -689,7 +763,7 @@ export async function loadConfig(
   if (process.env['OPTA_DISK_HEADROOM_MB']) {
     const parsed = Number.parseInt(process.env['OPTA_DISK_HEADROOM_MB'], 10);
     if (Number.isFinite(parsed)) {
-      (raw as Record<string, unknown>).safety = {
+      raw.safety = {
         ...((raw as Record<string, Record<string, unknown>>).safety ?? {}),
         diskHeadroomMb: parsed,
       };
@@ -712,6 +786,7 @@ export async function loadConfig(
         default: normalizeConfiguredModelId(result.data.model.default),
       },
     };
+    applyProcessEnvFromConfig(normalized);
     loadConfigCache = {
       key: cacheKey,
       expiresAt: Date.now() + LOAD_CONFIG_CACHE_TTL_MS,
@@ -733,7 +808,7 @@ export async function loadConfig(
   if (retryResult.success) {
     const issueCount = result.error.issues.length;
     console.error(
-      `Auto-healed ${issueCount} config issue${issueCount === 1 ? '' : 's'}. Run /quickfix for details.`,
+      `Auto-healed ${issueCount} config issue${issueCount === 1 ? '' : 's'}. Run /quickfix for details.`
     );
     const normalized = {
       ...retryResult.data,
@@ -742,6 +817,7 @@ export async function loadConfig(
         default: normalizeConfiguredModelId(retryResult.data.model.default),
       },
     };
+    applyProcessEnvFromConfig(normalized);
     loadConfigCache = {
       key: cacheKey,
       expiresAt: Date.now() + LOAD_CONFIG_CACHE_TTL_MS,
@@ -753,8 +829,8 @@ export async function loadConfig(
   // Still broken after stripping — fatal error
   throw new Error(
     'Config is unparseable even after removing broken fields. ' +
-    'Run "opta config reset" to restore defaults.\n' +
-    formatZodErrors(retryResult.error).join('\n'),
+      'Run "opta config reset" to restore defaults.\n' +
+      formatZodErrors(retryResult.error).join('\n')
   );
 }
 
@@ -825,15 +901,15 @@ export async function healConfig(): Promise<ConfigIssue[]> {
     deleteNestedKey(testRaw, zodIssue.path as string[]);
     const testResult = OptaConfigSchema.safeParse(testRaw);
 
-    const canAutoFix = testResult.success ||
-      !testResult.error.issues.some(i => i.path.join('.') === path);
+    const canAutoFix =
+      testResult.success || !testResult.error.issues.some((i) => i.path.join('.') === path);
 
     if (canAutoFix) {
       // Apply the fix to the persisted store
       const topKey = zodIssue.path[0];
       if (topKey !== undefined && typeof topKey === 'string') {
         // Delete the broken key from the conf store
-        store.delete(topKey as string);
+        store.delete(topKey);
       }
       // Mutate raw for subsequent iterations
       deleteNestedKey(raw, zodIssue.path as string[]);
@@ -850,9 +926,7 @@ export async function healConfig(): Promise<ConfigIssue[]> {
   return issues;
 }
 
-export async function saveConfig(
-  updates: Record<string, unknown>
-): Promise<void> {
+export async function saveConfig(updates: Record<string, unknown>): Promise<void> {
   clearLoadConfigCache();
   const store = await getConfigStore();
 
@@ -868,9 +942,7 @@ export async function saveConfig(
     ) {
       const modelUpdate = { ...(rawValue as Record<string, unknown>) };
       if (typeof modelUpdate['default'] === 'string') {
-        modelUpdate['default'] = normalizeConfiguredModelId(
-          modelUpdate['default'] as string,
-        );
+        modelUpdate['default'] = normalizeConfiguredModelId(modelUpdate['default']);
       }
       value = modelUpdate;
     }

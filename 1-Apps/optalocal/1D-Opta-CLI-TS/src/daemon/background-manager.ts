@@ -79,11 +79,23 @@ function parseShellCommand(cmd: string): [string, string[]] {
   let inDouble = false;
   for (let i = 0; i < cmd.length; i++) {
     const ch = cmd[i];
-    if (ch === "'" && !inDouble) { inSingle = !inSingle; continue; }
-    if (ch === '"' && !inSingle) { inDouble = !inDouble; continue; }
-    if (ch === '\\' && !inSingle && i + 1 < cmd.length) { current += cmd[++i]; continue; }
+    if (ch === "'" && !inDouble) {
+      inSingle = !inSingle;
+      continue;
+    }
+    if (ch === '"' && !inSingle) {
+      inDouble = !inDouble;
+      continue;
+    }
+    if (ch === '\\' && !inSingle && i + 1 < cmd.length) {
+      current += cmd[++i];
+      continue;
+    }
     if ((ch === ' ' || ch === '\t') && !inSingle && !inDouble) {
-      if (current) { tokens.push(current); current = ''; }
+      if (current) {
+        tokens.push(current);
+        current = '';
+      }
       continue;
     }
     current += ch;
@@ -93,9 +105,7 @@ function parseShellCommand(cmd: string): [string, string[]] {
   return [exe, args];
 }
 
-function reasonFromState(
-  state: BackgroundProcessState
-): BackgroundStatusEventPayload['reason'] {
+function reasonFromState(state: BackgroundProcessState): BackgroundStatusEventPayload['reason'] {
   switch (state) {
     case 'completed':
       return 'completed';
@@ -176,7 +186,7 @@ export class BackgroundManager {
     };
   }
 
-  async start(input: StartBackgroundProcessInput): Promise<BackgroundProcessSnapshot> {
+  start(input: StartBackgroundProcessInput): BackgroundProcessSnapshot {
     const running = [...this.processes.values()].filter((proc) => proc.state === 'running').length;
     if (running >= this.options.maxConcurrent) {
       throw new Error(`Max concurrent processes (${this.options.maxConcurrent}) reached`);
@@ -290,7 +300,7 @@ export class BackgroundManager {
     return this.toSnapshot(proc);
   }
 
-  async kill(processId: string, signal: BackgroundSignal = 'SIGTERM'): Promise<KillBackgroundResult | null> {
+  kill(processId: string, signal: BackgroundSignal = 'SIGTERM'): KillBackgroundResult | null {
     const proc = this.processes.get(processId);
     if (!proc) return null;
     if (proc.state !== 'running') {
@@ -313,24 +323,28 @@ export class BackgroundManager {
     return { killed, process: this.toSnapshot(proc) };
   }
 
-  async killSession(sessionId: string, signal: BackgroundSignal = 'SIGTERM'): Promise<number> {
+  killSession(sessionId: string, signal: BackgroundSignal = 'SIGTERM'): number {
     let killed = 0;
     for (const proc of this.processes.values()) {
       if (proc.sessionId !== sessionId || proc.state !== 'running') continue;
-      const result = await this.kill(proc.processId, signal);
+      const result = this.kill(proc.processId, signal);
       if (result?.killed) killed += 1;
     }
     return killed;
   }
 
-  async close(signal: BackgroundSignal = 'SIGTERM'): Promise<void> {
+  close(signal: BackgroundSignal = 'SIGTERM'): void {
     const running = [...this.processes.values()].filter((proc) => proc.state === 'running');
-    await Promise.all(running.map(async (proc) => {
-      await this.kill(proc.processId, signal);
-    }));
+    for (const proc of running) {
+      this.kill(proc.processId, signal);
+    }
   }
 
-  private appendOutput(proc: ManagedBackgroundProcess, stream: BackgroundStream, text: string): void {
+  private appendOutput(
+    proc: ManagedBackgroundProcess,
+    stream: BackgroundStream,
+    text: string
+  ): void {
     if (text.length === 0) return;
     const chunk: BackgroundOutputChunk = {
       seq: ++proc.nextOutputSeq,

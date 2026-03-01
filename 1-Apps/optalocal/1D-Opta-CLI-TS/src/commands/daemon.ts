@@ -3,6 +3,10 @@ import { readFile } from 'node:fs/promises';
 import { daemonLogsPath } from '../daemon/telemetry.js';
 import { daemonStatus, ensureDaemonRunning, stopDaemon } from '../daemon/lifecycle.js';
 import { runDaemon } from '../daemon/main.js';
+import {
+  installDaemonService,
+  uninstallDaemonService,
+} from '../daemon/installer.js';
 
 interface DaemonCmdOptions {
   host?: string;
@@ -86,4 +90,14 @@ export async function daemonLogs(opts: DaemonCmdOptions): Promise<void> {
     }
     console.log(chalk.dim('No daemon logs yet.'));
   }
+}
+
+export async function daemonInstall(_opts: DaemonCmdOptions): Promise<void> {
+  await installDaemonService();
+  console.log(chalk.green('✓') + ' daemon service installed and registered');
+}
+
+export async function daemonUninstall(_opts: DaemonCmdOptions): Promise<void> {
+  await uninstallDaemonService();
+  console.log(chalk.green('✓') + ' daemon service uninstalled');
 }

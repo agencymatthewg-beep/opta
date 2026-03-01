@@ -110,7 +110,7 @@ describe('daemon http-server telemetry and routes', () => {
     lmxClientCtor.mockClear();
   });
 
-  it('serves /v3/health and protects /v3/metrics with auth', async () => {
+  it('protects /v3/health and /v3/metrics with auth', async () => {
     const sessionManager = makeSessionManager();
     running = await startHttpServer({
       daemonId: 'daemon_test',
@@ -118,11 +118,21 @@ describe('daemon http-server telemetry and routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager,
+      listen: false,
     });
+
+    const unauthorizedHealth = await running.app.inject({
+      method: 'GET',
+      url: '/v3/health',
+    });
+    expect(unauthorizedHealth.statusCode).toBe(401);
 
     const healthRes = await running.app.inject({
       method: 'GET',
       url: '/v3/health',
+      headers: {
+        authorization: 'Bearer secret-token',
+      },
     });
     expect(healthRes.statusCode).toBe(200);
     expect(healthRes.json()).toMatchObject({
@@ -156,6 +166,56 @@ describe('daemon http-server telemetry and routes', () => {
     expect(Number.isNaN(Date.parse(metrics.ts))).toBe(false);
   });
 
+  it('adds CORS headers for loopback origins and handles preflight', async () => {
+    const sessionManager = makeSessionManager();
+    running = await startHttpServer({
+      daemonId: 'daemon_test',
+      host: '127.0.0.1',
+      port: 0,
+      token: 'secret-token',
+      sessionManager,
+      listen: false,
+    });
+
+    const preflight = await running.app.inject({
+      method: 'OPTIONS',
+      url: '/v3/health',
+      headers: {
+        origin: 'http://localhost:5173',
+        'access-control-request-method': 'GET',
+      },
+    });
+    expect(preflight.statusCode).toBe(204);
+    expect(preflight.headers['access-control-allow-origin']).toBe(
+      'http://localhost:5173'
+    );
+    expect(preflight.headers['access-control-allow-methods']).toContain('GET');
+
+    const healthRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/health',
+      headers: {
+        origin: 'http://localhost:5173',
+        authorization: 'Bearer secret-token',
+      },
+    });
+    expect(healthRes.statusCode).toBe(200);
+    expect(healthRes.headers['access-control-allow-origin']).toBe(
+      'http://localhost:5173'
+    );
+
+    const blockedOrigin = await running.app.inject({
+      method: 'OPTIONS',
+      url: '/v3/health',
+      headers: {
+        origin: 'https://evil.example.com',
+        'access-control-request-method': 'GET',
+      },
+    });
+    expect(blockedOrigin.statusCode).toBe(204);
+    expect(blockedOrigin.headers['access-control-allow-origin']).toBeUndefined();
+  });
+
   it('returns session events for the authorized background events route', async () => {
     const events = [makeEvent(6), makeEvent(7)];
     const getEventsAfter = vi.fn(async () => events);
@@ -166,6 +226,7 @@ describe('daemon http-server telemetry and routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager,
+      listen: false,
     });
 
     const res = await running.app.inject({
@@ -189,6 +250,7 @@ describe('daemon http-server telemetry and routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager,
+      listen: false,
     });
 
     const unauthorized = await running.app.inject({
@@ -246,6 +308,7 @@ describe('daemon http-server telemetry and routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager,
+      listen: false,
     });
 
     const res = await running.app.inject({
@@ -284,6 +347,7 @@ describe('daemon http-server telemetry and routes', () => {
       port: 0,
       token: 'secret-token',
       sessionManager,
+      listen: false,
     });
 
     const res = await running.app.inject({
@@ -306,35 +370,23 @@ describe('daemon http-server telemetry and routes', () => {
     });
   });
 
-  it('maps legacy /v1/chat ENOSPC submit failures to HTTP 507', async () => {
-    const storageError = Object.assign(new Error('ENOSPC: no space left on device'), {
-      code: 'ENOSPC',
-    });
-    const sessionManager = makeSessionManager({
-      submitTurn: vi.fn(async () => {
-        throw storageError;
-      }),
-    });
-
+  it('legacy /v1/chat endpoint returns 404 (route was removed)', async () => {
     running = await startHttpServer({
       daemonId: 'daemon_test',
       host: '127.0.0.1',
       port: 0,
       token: 'secret-token',
-      sessionManager,
+      sessionManager: makeSessionManager({}),
+      listen: false,
     });
 
     const res = await running.app.inject({
       method: 'POST',
       url: '/v1/chat',
-      payload: {
-        message: 'hello',
-      },
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { message: 'hello' },
     });
 
-    expect(res.statusCode).toBe(507);
-    expect(res.json()).toMatchObject({
-      error: expect.stringContaining('space'),
-    });
+    expect(res.statusCode).toBe(404);
   });
 });
