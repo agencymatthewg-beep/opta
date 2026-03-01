@@ -256,3 +256,25 @@ When generating or editing visuals:
   - Hero/section artwork: WebP preferred, PNG fallback
   - Logos/marks: SVG where possible, PNG @2x fallback (source: `/design/logos/`)
 - Validate final output against contrast and readability in dark mode before handoff.
+
+---
+
+## App Logo System (Canonical — All Apps Share This Template)
+
+All Opta Local app logos share a single locked template. Only two elements vary.
+
+**Locked across every logo:**
+- Void black radial background (`#0d0c14` → `#09090b`)
+- Gravitational particle field (violet/white, inverse-square density toward centre)
+- Outer ring: 3-layer depth (halo → soft → gradient arc `#c084fc`→`#4c1d95` + glow)
+- Orbit ellipse with gradient stroke + node dots
+- Layered centre bloom + specular flare
+- Wordmark: Sora 600 · "opta local" `#71717a` · divider · **app name `#a855f7`**
+
+**Two variables per app:**
+1. App name text (e.g. `learn`, `help`, `lmx`, `accounts`, `status`)
+2. Inner mark inside the ring (unique glyph per app)
+
+Template source: `/design/logos/opta-logo-template.html`
+Full spec: `/design/logos/LOGO-SYSTEM.md`
+Canonical render (Opta Learn): `/design/logos/Opta-Learn/opta-learn-logo.png`
