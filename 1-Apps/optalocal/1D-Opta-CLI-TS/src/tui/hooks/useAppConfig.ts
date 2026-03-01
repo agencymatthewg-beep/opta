@@ -225,6 +225,24 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
       .catch(() => setAccountState(null));
   }, [persistenceEnabled]);
 
+  // --- 30-minute cloud session heartbeat — keeps last_seen_at current ---
+  // Fires once immediately after account state loads (if authenticated), then every 30 min.
+  useEffect(() => {
+    if (!persistenceEnabled) return;
+    const touch = () => {
+      import('../../accounts/storage.js')
+        .then((mod) => mod.loadAccountState())
+        .then((state) => {
+          if (!state?.session) return;
+          return import('../../accounts/cloud.js').then((mod) => mod.touchSessionRecord(state));
+        })
+        .catch(() => undefined);
+    };
+    touch();
+    const interval = setInterval(touch, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [persistenceEnabled]);
+
   // --- 30-second LMX heartbeat — keeps connectionState current ---
   useEffect(() => {
     const checkConnection = async () => {
