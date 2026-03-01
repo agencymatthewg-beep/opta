@@ -52,7 +52,7 @@ function makeHealth(sessions: Array<{ sessionId: string; runtime?: 'playwright' 
   };
 }
 
-function makeOpenResult(sessionId: string) {
+function makeOpenResult(sessionId: string, mode: 'isolated' | 'attach' = 'isolated') {
   return {
     ok: true,
     action: {
@@ -64,7 +64,7 @@ function makeOpenResult(sessionId: string) {
     },
     data: {
       id: sessionId,
-      mode: 'isolated' as const,
+      mode,
       status: 'open' as const,
       runtime: 'playwright' as const,
       createdAt: '2026-02-25T00:00:00.000Z',
@@ -155,6 +155,46 @@ describe('ensureBrowserSessionForTriggeredPrompt', () => {
         headless: false,
       }),
     );
+  });
+
+  it('opens attach sessions using configured wsEndpoint when attach mode is enabled', async () => {
+    const config = makeConfig();
+    config.browser.attach.enabled = true;
+    config.browser.attach.wsEndpoint = 'ws://127.0.0.1:9222/devtools/browser/mock';
+    runtimeDaemon.daemon.health.mockReturnValue(makeHealth([]));
+    runtimeDaemon.daemon.openSession.mockResolvedValue(makeOpenResult('sess-attach-001', 'attach'));
+
+    const result = await ensureBrowserSessionForTriggeredPrompt({
+      prompt: 'browser continue in my signed-in browser',
+      config,
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.sessionId).toBe('sess-attach-001');
+    expect(runtimeDaemon.daemon.openSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'attach',
+        wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/mock',
+        headless: false,
+      }),
+    );
+  });
+
+  it('fails fast when attach mode is requested without a wsEndpoint', async () => {
+    const config = makeConfig();
+    config.browser.attach.enabled = true;
+    config.browser.attach.wsEndpoint = '';
+    runtimeDaemon.daemon.health.mockReturnValue(makeHealth([]));
+
+    const result = await ensureBrowserSessionForTriggeredPrompt({
+      prompt: 'browser use attached mode',
+      config,
+    });
+
+    expect(result.triggered).toBe(true);
+    expect(result.ok).toBe(false);
+    expect(result.message).toContain('attach mode requires browser.attach.wsEndpoint');
+    expect(runtimeDaemon.daemon.openSession).not.toHaveBeenCalled();
   });
 
   it('returns an error when browser runtime is disabled', async () => {

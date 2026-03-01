@@ -57,7 +57,9 @@ export interface BrowserArtifactPruneResult {
 function sanitizePathSegment(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length === 0) return 'session';
-  return trimmed.replace(/[\\/]/g, '_');
+  const sanitized = trimmed.replace(/[\\/]/g, '_');
+  if (sanitized === '.' || sanitized === '..') return 'session';
+  return sanitized;
 }
 
 function normalizeExtension(ext: string): string {

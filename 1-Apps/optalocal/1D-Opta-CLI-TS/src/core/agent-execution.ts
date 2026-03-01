@@ -53,7 +53,7 @@ export interface ExecutionResult {
 
 function queueLearningCapture(
   config: OptaConfig,
-  event: import('../learning/hooks.js').CaptureLearningEventInput,
+  event: import('../learning/hooks.js').CaptureLearningEventInput
 ): void {
   if (!config.learning.enabled) return;
   void import('../learning/hooks.js')
@@ -64,11 +64,11 @@ function queueLearningCapture(
 function isSuccessfulVerificationCommand(
   toolName: string,
   args: Record<string, unknown>,
-  result: string,
+  result: string
 ): boolean {
   if (toolName !== 'run_command') return false;
   if (!result.includes('[exit code: 0]')) return false;
-  const command = String(args['command'] ?? '').toLowerCase();
+  const command = (typeof args['command'] === 'string' ? args['command'] : '').toLowerCase();
   return /(test|build|typecheck|lint|vitest|npm run)/.test(command);
 }
 
@@ -81,7 +81,7 @@ export async function executeToolCalls(
   messages: AgentMessage[],
   ctx: ExecutionContext,
   prevToolCallCount: number,
-  prevCheckpointCount: number,
+  prevCheckpointCount: number
 ): Promise<ExecutionResult> {
   const ensureNotAborted = () => {
     if (ctx.signal?.aborted) {
@@ -96,24 +96,40 @@ export async function executeToolCalls(
   let toolCallCount = prevToolCallCount;
   let checkpointCount = prevCheckpointCount;
 
-  const approvedCalls = decisions.filter(d => d.approved);
+  const approvedCalls = decisions.filter((d) => d.approved);
 
   // Simple semaphore for bounded concurrency
   let running = 0;
   const queue: Array<() => void> = [];
-  const acquire = () => new Promise<void>(resolve => {
-    if (running < maxParallel) { running++; resolve(); }
-    else queue.push(() => { running++; resolve(); });
-  });
-  const release = () => { running--; const next = queue.shift(); if (next) next(); };
+  const acquire = () =>
+    new Promise<void>((resolve) => {
+      if (running < maxParallel) {
+        running++;
+        resolve();
+      } else
+        queue.push(() => {
+          running++;
+          resolve();
+        });
+    });
+  const release = () => {
+    running--;
+    const next = queue.shift();
+    if (next) next();
+  };
 
-  const executionResults = new Map<string, { result: string; error?: undefined } | { result?: undefined; error: string }>();
+  const executionResults = new Map<
+    string,
+    { result: string; error?: undefined } | { result?: undefined; error: string }
+  >();
 
   // Display tool cards for approved calls
   for (const { call, executionArgsJson } of approvedCalls) {
     const effectiveArgs = executionArgsJson ?? call.args;
     if (!ctx.silent) {
-      const parsedArgs = safeParseJson<Record<string, unknown>>(effectiveArgs, { raw: effectiveArgs });
+      const parsedArgs = safeParseJson<Record<string, unknown>>(effectiveArgs, {
+        raw: effectiveArgs,
+      });
       console.log(formatToolCall(call.name, parsedArgs));
     }
     ctx.streamCallbacks?.onToolStart?.(call.name, call.id, effectiveArgs);
@@ -122,7 +138,9 @@ export async function executeToolCalls(
 
   // Execute in parallel with semaphore
   if (approvedCalls.length > 0) {
-    ctx.spinner.start(`Running ${approvedCalls.length} tool${approvedCalls.length > 1 ? 's' : ''}...`);
+    ctx.spinner.start(
+      `Running ${approvedCalls.length} tool${approvedCalls.length > 1 ? 's' : ''}...`
+    );
     await Promise.all(
       approvedCalls.map(async ({ call, executionArgsJson }) => {
         ensureNotAborted();
@@ -130,7 +148,12 @@ export async function executeToolCalls(
         try {
           ensureNotAborted();
           const effectiveArgs = executionArgsJson ?? call.args;
-          const result = await ctx.registry.execute(call.name, effectiveArgs, undefined, ctx.signal);
+          const result = await ctx.registry.execute(
+            call.name,
+            effectiveArgs,
+            undefined,
+            ctx.signal
+          );
           executionResults.set(call.id, { result });
           ctx.streamCallbacks?.onToolEnd?.(call.name, call.id, result);
           await fireToolPost(ctx.hooks, call.name, effectiveArgs, result, ctx.sessionCtx);
@@ -200,9 +223,16 @@ export async function executeToolCalls(
         verified: false,
       });
     } else if (isSuccessfulVerificationCommand(call.name, parsedArgs, result)) {
+      const cmdVal = parsedArgs['command'];
+      const cmdStr =
+        typeof cmdVal === 'string'
+          ? cmdVal
+          : typeof cmdVal === 'object'
+            ? JSON.stringify(cmdVal)
+            : String(cmdVal as number | boolean | bigint | null | undefined);
       queueLearningCapture(ctx.config, {
         kind: 'solution',
-        topic: `Verification succeeded: ${String(parsedArgs['command'] ?? '').slice(0, 120)}`,
+        topic: `Verification succeeded: ${cmdStr.slice(0, 120)}`,
         content: result.slice(0, 1200),
         tags: ['verification', 'success', 'run_command'],
         evidence: [{ label: 'session', uri: `session://${ctx.sessionId}` }],
@@ -218,11 +248,21 @@ export async function executeToolCalls(
     debug(`Tool call #${toolCallCount}: ${call.name} \u2192 ${result.slice(0, 100)}`);
 
     // Create checkpoint for file-modifying tools (skip for sub-agents)
-    if (!ctx.isSubAgent && ctx.config.git.checkpoints && (call.name === 'edit_file' || call.name === 'write_file')) {
+    if (
+      !ctx.isSubAgent &&
+      ctx.config.git.checkpoints &&
+      (call.name === 'edit_file' || call.name === 'write_file')
+    ) {
       try {
-        if (gitUtilsMod && gitCheckpointsMod && await gitUtilsMod.isGitRepo(process.cwd())) {
+        if (gitUtilsMod && gitCheckpointsMod && (await gitUtilsMod.isGitRepo(process.cwd()))) {
           checkpointCount++;
-          await gitCheckpointsMod.createCheckpoint(process.cwd(), ctx.sessionId, checkpointCount, call.name, String(parsedArgs['path'] ?? 'unknown'));
+          await gitCheckpointsMod.createCheckpoint(
+            process.cwd(),
+            ctx.sessionId,
+            checkpointCount,
+            call.name,
+            typeof parsedArgs['path'] === 'string' ? parsedArgs['path'] : 'unknown'
+          );
         }
       } catch {
         // Checkpoint creation failed — non-fatal

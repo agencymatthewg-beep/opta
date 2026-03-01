@@ -18,30 +18,23 @@ function normalizeHostList(values: string[] | undefined): string[] {
   return normalized;
 }
 
-function isWildcardOnlyAllowlist(values: string[]): boolean {
-  return values.length === 1 && values[0] === '*';
-}
-
-export function resolveBrowserPolicyConfig(config: OptaConfig | null | undefined): ResolvedBrowserPolicyConfig {
+export function resolveBrowserPolicyConfig(
+  config: OptaConfig | null | undefined
+): ResolvedBrowserPolicyConfig {
   const browser = config?.browser;
   if (!browser) return {};
 
-  const policyAllowedHosts = normalizeHostList(browser.policy?.allowedHosts);
-  const globalAllowedHosts = normalizeHostList(browser.globalAllowedHosts);
-  const policyBlockedOrigins = normalizeHostList(browser.policy?.blockedOrigins);
-  const globalBlockedOrigins = normalizeHostList(browser.blockedOrigins);
+  const legacy = browser as typeof browser & {
+    globalAllowedHosts?: string[];
+    blockedOrigins?: string[];
+  };
 
-  const useGlobalAllowedHosts = (
-    globalAllowedHosts.length > 0
-    && (policyAllowedHosts.length === 0 || isWildcardOnlyAllowlist(policyAllowedHosts))
-  );
-
-  const allowedHosts = useGlobalAllowedHosts
-    ? globalAllowedHosts
-    : policyAllowedHosts;
-  const blockedOrigins = policyBlockedOrigins.length > 0
-    ? policyBlockedOrigins
-    : globalBlockedOrigins;
+  // Backward compatibility: `browser.globalAllowedHosts` historically provided
+  // the top-level host allowlist. If present, it takes precedence.
+  const allowedHosts = normalizeHostList(legacy.globalAllowedHosts ?? browser.policy?.allowedHosts);
+  // Backward compatibility: `browser.blockedOrigins` was also supported before
+  // the nested `browser.policy.blockedOrigins` shape.
+  const blockedOrigins = normalizeHostList(legacy.blockedOrigins ?? browser.policy?.blockedOrigins);
 
   return {
     requireApprovalForHighRisk: browser.policy?.requireApprovalForHighRisk,

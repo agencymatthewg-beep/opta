@@ -11,24 +11,15 @@ import { resolveBrowserPolicyConfig } from './browser-policy-config.js';
 import { resolvePermission } from './tools/index.js';
 import { PolicyEngine } from '../policy/engine.js';
 import type { PolicyConfig } from '../policy/types.js';
-import {
-  evaluateBrowserPolicyAction,
-  isBrowserToolName,
-} from '../browser/policy-engine.js';
-import {
-  appendBrowserApprovalEvent,
-  extractBrowserSessionId,
-} from '../browser/approval-log.js';
+import { evaluateBrowserPolicyAction, isBrowserToolName } from '../browser/policy-engine.js';
+import { appendBrowserApprovalEvent, extractBrowserSessionId } from '../browser/approval-log.js';
 import { loadBrowserRunCorpusAdaptationHint } from '../browser/adaptation.js';
 import { safeParseJson } from '../utils/json.js';
 import { runMenuPrompt } from '../ui/prompt-nav.js';
 import type { OnStreamCallbacks } from './agent.js';
 import type { ToolCallAccum } from './agent-streaming.js';
 import type { SessionContext } from '../hooks/integration.js';
-import {
-  fireToolPre,
-  type HookManager,
-} from '../hooks/integration.js';
+import { fireToolPre, type HookManager } from '../hooks/integration.js';
 
 // --- Types ---
 
@@ -50,21 +41,35 @@ interface BrowserSessionScanResult {
   error?: string;
 }
 
+function resolveBrowserSpawnMode(config: OptaConfig): 'isolated' | 'attach' {
+  if (config.browser.attach.enabled) return 'attach';
+  return config.browser.mode ?? 'isolated';
+}
+
+function resolveBrowserAttachWsEndpoint(
+  config: OptaConfig,
+  mode: 'isolated' | 'attach',
+): string | undefined {
+  if (mode !== 'attach') return undefined;
+  const endpoint = config.browser.attach.wsEndpoint.trim();
+  return endpoint.length > 0 ? endpoint : undefined;
+}
+
 function isShellBrowserAutomationCommand(value: unknown): boolean {
   if (typeof value !== 'string') return false;
   const command = value.toLowerCase();
   if (!command.includes('osascript')) return false;
   return (
-    command.includes('application "safari"')
-    || command.includes('application "google chrome"')
-    || command.includes('application "chrome"')
-    || command.includes('document.queryselector')
-    || command.includes('javascript')
+    command.includes('application "safari"') ||
+    command.includes('application "google chrome"') ||
+    command.includes('application "chrome"') ||
+    command.includes('document.queryselector') ||
+    command.includes('javascript')
   );
 }
 
 function mapPolicyFailureMode(
-  failureMode: OptaConfig['policy']['failureMode'],
+  failureMode: OptaConfig['policy']['failureMode']
 ): PolicyConfig['failureMode'] {
   if (failureMode === 'open') return 'open';
   // Engine accepts only open|closed; degraded-safe maps to fail-closed.
@@ -99,30 +104,42 @@ async function promptToolApproval(
 
   // Show relevant details based on tool type
   if (toolName === 'edit_file') {
-    console.log(chalk.dim(`  File: ${args['path']}`));
+    console.log(chalk.dim(`  File: ${String(args['path'])}`));
     console.log(chalk.red(`  - ${String(args['old_text']).slice(0, 100)}`));
     console.log(chalk.green(`  + ${String(args['new_text']).slice(0, 100)}`));
   } else if (toolName === 'write_file') {
-    console.log(chalk.dim(`  File: ${args['path']}`));
-    const content = String(args['content'] ?? '');
+    console.log(chalk.dim(`  File: ${String(args['path'])}`));
+    const contentVal = args['content'];
+    const content =
+      typeof contentVal === 'string'
+        ? contentVal
+        : typeof contentVal === 'object'
+          ? JSON.stringify(contentVal)
+          : String(contentVal as number | boolean | bigint | null | undefined);
     console.log(chalk.dim(`  ${content.length} bytes`));
   } else if (toolName === 'run_command') {
-    console.log(chalk.dim(`  $ ${args['command']}`));
+    console.log(chalk.dim(`  $ ${String(args['command'])}`));
   } else {
     console.log(chalk.dim(`  ${JSON.stringify(args)}`));
   }
 
   const { select } = await import('@inquirer/prompts');
-  const choice = await runMenuPrompt((context) =>
-    select({
-      message: 'Allow?',
-      choices: [
-        { name: 'Yes, allow this once', value: 'once' as const },
-        { name: 'Always allow (persist)', value: 'always' as const },
-        { name: 'Deny', value: 'deny' as const },
-      ],
-      default: 'once',
-    }, context), 'select');
+  const choice = await runMenuPrompt(
+    (context) =>
+      select(
+        {
+          message: 'Allow?',
+          choices: [
+            { name: 'Yes, allow this once', value: 'once' as const },
+            { name: 'Always allow (persist)', value: 'always' as const },
+            { name: 'Deny', value: 'deny' as const },
+          ],
+          default: 'once',
+        },
+        context
+      ),
+    'select'
+  );
 
   // Back key behaves like cancel/deny for safety.
   return choice ?? 'deny';
@@ -132,7 +149,7 @@ async function persistToolPermissionAllow(
   toolName: string,
   config: OptaConfig,
   saveConfig: (partial: Record<string, unknown>) => Promise<void>,
-  silent: boolean,
+  silent: boolean
 ): Promise<void> {
   try {
     await saveConfig({ permissions: { ...config.permissions, [toolName]: 'allow' } });
@@ -143,10 +160,7 @@ async function persistToolPermissionAllow(
   }
 }
 
-async function getBrowserRuntimeDaemon(
-  config: OptaConfig,
-  cwd: string,
-) {
+async function getBrowserRuntimeDaemon(config: OptaConfig, cwd: string) {
   const { getSharedBrowserRuntimeDaemon } = await import('../browser/runtime-daemon.js');
   return getSharedBrowserRuntimeDaemon({
     cwd,
@@ -175,14 +189,15 @@ async function getBrowserRuntimeDaemon(
 
 async function scanActiveBrowserSessions(
   config: OptaConfig,
-  cwd: string,
+  cwd: string
 ): Promise<BrowserSessionScanResult> {
   try {
     const daemon = await getBrowserRuntimeDaemon(config, cwd);
     // Ensure persisted sessions are recovered before scanning health.
     await daemon.start();
-    const sessions = daemon.health().sessions
-      .filter((session) => session.status === 'open')
+    const sessions = daemon
+      .health()
+      .sessions.filter((session) => session.status === 'open')
       .map((session) => ({
         sessionId: session.sessionId.trim(),
         currentUrl: session.currentUrl?.trim() || undefined,
@@ -219,17 +234,18 @@ export interface ResolvePermissionsOptions {
 export async function resolveToolDecisions(
   toolCalls: ToolCallAccum[],
   config: OptaConfig,
-  options: ResolvePermissionsOptions,
+  options: ResolvePermissionsOptions
 ): Promise<ToolDecision[]> {
   const { isSubAgent, silent, saveConfig, streamCallbacks, hooks, sessionCtx } = options;
   const decisions: ToolDecision[] = [];
   const isDangerousMode = (config.defaultMode ?? '').toLowerCase() === 'dangerous';
-  let browserAdaptationHint: Awaited<ReturnType<typeof loadBrowserRunCorpusAdaptationHint>> | null = null;
+  let browserAdaptationHint: Awaited<ReturnType<typeof loadBrowserRunCorpusAdaptationHint>> | null =
+    null;
   if (config.browser.adaptation.enabled) {
     try {
       browserAdaptationHint = await loadBrowserRunCorpusAdaptationHint(
         sessionCtx.cwd,
-        config.browser.adaptation,
+        config.browser.adaptation
       );
     } catch (error) {
       if (process.env.OPTA_DEBUG) {
@@ -289,7 +305,10 @@ export async function resolveToolDecisions(
           approved: false,
           denialReason: 'Denied shell browser automation command; use browser_* tools instead.',
         });
-        if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — use browser_* tools instead of shell browser automation`));
+        if (!silent)
+          console.log(
+            chalk.dim(`  ✗ ${call.name} — use browser_* tools instead of shell browser automation`)
+          );
         continue;
       }
     }
@@ -320,27 +339,52 @@ export async function resolveToolDecisions(
             continue;
           }
 
+          const spawnMode = resolveBrowserSpawnMode(config);
+          const spawnWsEndpoint = resolveBrowserAttachWsEndpoint(config, spawnMode);
+          if (spawnMode === 'attach' && !spawnWsEndpoint) {
+            decisions.push({
+              call,
+              approved: false,
+              denialReason:
+                'Cannot spawn Opta Browser attach session: browser.attach.wsEndpoint is not configured.',
+            });
+            if (!silent) {
+              console.log(
+                chalk.dim(`  ✗ ${call.name} — browser attach requires browser.attach.wsEndpoint`)
+              );
+            }
+            continue;
+          }
+
           const browserOpenPermission = resolvePermission('browser_open', config);
           if (browserOpenPermission === 'deny') {
             decisions.push({
               call,
               approved: false,
-              denialReason: 'Cannot spawn Opta Browser (browser_open permission is denied by config).',
+              denialReason:
+                'Cannot spawn Opta Browser (browser_open permission is denied by config).',
             });
-            if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — browser_open denied by configuration`));
+            if (!silent)
+              console.log(chalk.dim(`  ✗ ${call.name} — browser_open denied by configuration`));
             continue;
           }
 
           const spawnPromptArgs: Record<string, unknown> = {
-            mode: config.browser.mode ?? 'isolated',
+            mode: spawnMode,
             __opta_spawn_prompt: true,
             __opta_spawn_reason: 'No active Opta Browser sessions were found in the runtime scan.',
             __opta_spawn_trigger_tool: call.name,
             __opta_session_scan_count: 0,
           };
+          if (spawnWsEndpoint) {
+            spawnPromptArgs['ws_endpoint'] = spawnWsEndpoint;
+          }
 
           if (streamCallbacks?.onPermissionRequest) {
-            const spawnDecision = await streamCallbacks.onPermissionRequest('browser_open', spawnPromptArgs);
+            const spawnDecision = await streamCallbacks.onPermissionRequest(
+              'browser_open',
+              spawnPromptArgs
+            );
             if (spawnDecision === 'deny') {
               decisions.push({
                 call,
@@ -371,23 +415,29 @@ export async function resolveToolDecisions(
             const daemon = await getBrowserRuntimeDaemon(config, sessionCtx.cwd);
             const openResult = await daemon.openSession({
               sessionId: browserSessionId,
-              mode: config.browser.mode ?? 'isolated',
+              mode: spawnMode,
+              wsEndpoint: spawnWsEndpoint,
             });
             if (!openResult.ok || !openResult.data) {
-              const reason = openResult.error?.message ?? 'Browser runtime could not open a new session.';
+              const reason =
+                openResult.error?.message ?? 'Browser runtime could not open a new session.';
               decisions.push({
                 call,
                 approved: false,
                 denialReason: `Failed to spawn Opta Browser session: ${reason}`,
               });
-              if (!silent) console.log(chalk.dim(`  ✗ ${call.name} — failed to spawn browser session`));
+              if (!silent)
+                console.log(chalk.dim(`  ✗ ${call.name} — failed to spawn browser session`));
               continue;
             }
 
             browserSessionId = openResult.data.id;
             parsedArgs['session_id'] = browserSessionId;
             parsedArgsMutated = true;
-            if (!silent) console.log(chalk.dim(`  Spawned Opta Browser session: ${browserSessionId}`));
+            // Always require approval when a session was spawned — user must confirm the first action
+            requiresBrowserApproval = true;
+            if (!silent)
+              console.log(chalk.dim(`  Spawned Opta Browser session: ${browserSessionId}`));
           } catch (error) {
             decisions.push({
               call,
@@ -402,17 +452,19 @@ export async function resolveToolDecisions(
           if (browserSessionId) {
             parsedArgs['session_id'] = browserSessionId;
             parsedArgsMutated = true;
+            // Require approval so the user confirms the action with the auto-assigned session
+            requiresBrowserApproval = true;
           }
         }
       }
 
-      if (
-        browserSessionId &&
-        (call.name === 'browser_click' || call.name === 'browser_type')
-      ) {
-        const hasExplicitUrl = typeof parsedArgs['url'] === 'string' && String(parsedArgs['url']).trim().length > 0;
+      if (browserSessionId && (call.name === 'browser_click' || call.name === 'browser_type')) {
+        const hasExplicitUrl =
+          typeof parsedArgs['url'] === 'string' && parsedArgs['url'].trim().length > 0;
         if (!hasExplicitUrl) {
-          const activeSession = activeBrowserSessions.find((session) => session.sessionId === browserSessionId);
+          const activeSession = activeBrowserSessions.find(
+            (session) => session.sessionId === browserSessionId
+          );
           if (activeSession?.currentUrl) {
             parsedArgs['url'] = activeSession.currentUrl;
             parsedArgsMutated = true;
@@ -450,11 +502,12 @@ export async function resolveToolDecisions(
           approved: false,
           denialReason: `Denied by browser policy: ${browserPolicyDecision.reason}`,
         });
-        if (!silent) console.log(chalk.dim(`  \u2717 ${call.name} \u2014 denied by browser policy`));
+        if (!silent)
+          console.log(chalk.dim(`  \u2717 ${call.name} \u2014 denied by browser policy`));
         continue;
       }
 
-      requiresBrowserApproval = browserPolicyDecision.decision === 'gate';
+      requiresBrowserApproval = requiresBrowserApproval || browserPolicyDecision.decision === 'gate';
     }
 
     const policyDecision = await policyEngine.decide({
@@ -469,7 +522,11 @@ export async function resolveToolDecisions(
     });
 
     if (policyDecision.decision === 'deny') {
-      decisions.push({ call, approved: false, denialReason: `Denied by policy: ${policyDecision.reason}` });
+      decisions.push({
+        call,
+        approved: false,
+        denialReason: `Denied by policy: ${policyDecision.reason}`,
+      });
       if (!silent) console.log(chalk.dim(`  \u2717 ${call.name} \u2014 denied by policy`));
       continue;
     }
@@ -479,7 +536,11 @@ export async function resolveToolDecisions(
     let executionArgsJson = parsedArgsMutated ? JSON.stringify(parsedArgs) : call.args;
 
     if (permission === 'deny') {
-      decisions.push({ call, approved: false, denialReason: 'Permission denied by configuration.' });
+      decisions.push({
+        call,
+        approved: false,
+        denialReason: 'Permission denied by configuration.',
+      });
       if (!silent) console.log(chalk.dim(`  \u2717 ${call.name} \u2014 denied`));
       continue;
     }
@@ -525,7 +586,11 @@ export async function resolveToolDecisions(
     // Fire pre-tool hook (can cancel execution)
     const preResult = await fireToolPre(hooks, call.name, executionArgsJson, sessionCtx);
     if (preResult.cancelled) {
-      decisions.push({ call, approved: false, denialReason: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}` });
+      decisions.push({
+        call,
+        approved: false,
+        denialReason: `Tool blocked by hook: ${preResult.reason ?? 'no reason given'}`,
+      });
       if (!silent) console.log(chalk.dim(`  \u2717 ${call.name} \u2014 blocked by hook`));
       continue;
     }

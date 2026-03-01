@@ -62,6 +62,37 @@ describe('browser policy — security defaults', () => {
     expect(decision.decision).not.toBe('deny');
   });
 
+  it('denies cross-origin navigation from credential-bearing pages', () => {
+    const config: Partial<BrowserPolicyConfig> = {
+      allowedHosts: ['login.opta.app', 'dashboard.opta.app'],
+      credentialIsolation: true,
+    };
+    const decision = evaluateBrowserPolicyAction(config, {
+      toolName: 'browser_navigate',
+      args: { url: 'https://dashboard.opta.app/home' },
+      currentOrigin: 'https://login.opta.app',
+      currentPageHasCredentials: true,
+    });
+
+    expect(decision.decision).toBe('deny');
+    expect(decision.riskEvidence.matchedSignals).toContain('policy:credential-isolation');
+  });
+
+  it('allows same-origin navigation from credential-bearing pages', () => {
+    const config: Partial<BrowserPolicyConfig> = {
+      allowedHosts: ['login.opta.app'],
+      credentialIsolation: true,
+    };
+    const decision = evaluateBrowserPolicyAction(config, {
+      toolName: 'browser_navigate',
+      args: { url: 'https://login.opta.app/home' },
+      currentOrigin: 'https://login.opta.app',
+      currentPageHasCredentials: true,
+    });
+
+    expect(decision.decision).toBe('allow');
+  });
+
   it('allows screenshot (low-risk observation)', () => {
     const decision = evaluateBrowserPolicyAction(undefined, {
       toolName: 'browser_screenshot',

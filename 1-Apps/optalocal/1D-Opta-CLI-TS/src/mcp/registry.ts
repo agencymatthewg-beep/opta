@@ -10,7 +10,7 @@ import { LspManager } from '../lsp/manager.js';
 import { resolve } from 'node:path';
 import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } from '../core/tools/custom.js';
 import { createPlaywrightMcpServerConfig } from '../browser/mcp-bootstrap.js';
-import { resolveLmxApiKey } from '../lmx/api-key.js';
+import * as lmxApiKey from '../lmx/api-key.js';
 
 interface ToolSchema {
   type: 'function';
@@ -36,6 +36,8 @@ interface SubAgentCallbacks {
   onSubAgentSpawn?: (id: string, label: string, dependsOn?: number) => void;
   onSubAgentProgress?: (event: import('../core/subagent-events.js').SubAgentProgressEvent) => void;
   onSubAgentDone?: (agentId: string, result: string) => void;
+  /** Called after each successfully executed browser action. toolName is the Playwright tool, sessionId is the parent session. */
+  onBrowserEvent?: (toolName: string, sessionId: string) => void;
 }
 
 interface BuildToolRegistryOptions {
@@ -43,6 +45,8 @@ interface BuildToolRegistryOptions {
   onSubAgentSpawn?: (id: string, label: string, dependsOn?: number) => void;
   onSubAgentProgress?: (event: import('../core/subagent-events.js').SubAgentProgressEvent) => void;
   onSubAgentDone?: (agentId: string, result: string) => void;
+  /** Called after each successfully executed browser action. Used to stream browser events over the daemon WS bus. */
+  onBrowserEvent?: (toolName: string, sessionId: string) => void;
 }
 
 const PLAYWRIGHT_MCP_SERVER_KEY = 'playwright';
@@ -108,6 +112,7 @@ export async function buildToolRegistry(
       mode: browserMode,
       allowedHosts,
       blockedOrigins,
+      startUrl: browser.homePage,
     });
   }
 
@@ -224,6 +229,7 @@ export async function buildToolRegistry(
     onSubAgentSpawn: options?.onSubAgentSpawn,
     onSubAgentProgress: options?.onSubAgentProgress,
     onSubAgentDone: options?.onSubAgentDone,
+    onBrowserEvent: options?.onBrowserEvent,
   };
 
   // TTL cache for read-only tool results (avoids redundant file reads in multi-turn convos)
@@ -270,6 +276,10 @@ export async function buildToolRegistry(
               {
                 policyConfig: resolveBrowserPolicyConfig(config),
                 sessionId: parentCtx?.parentSessionId ?? 'registry',
+                onBrowserEvent: subAgentCallbacks?.onBrowserEvent
+                  ? (toolName, _args, _result) =>
+                      subAgentCallbacks.onBrowserEvent!(toolName, parentCtx?.parentSessionId ?? 'registry')
+                  : undefined,
               },
               () => mcpConn.call(originalName, args),
             );
@@ -450,10 +460,12 @@ async function execSubAgentTool(
   }
 
   // Create an OpenAI client for the sub-agent (direct LMX connection)
+  const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(config.connection);
+
   const { default: OpenAI } = await import('openai');
   const client = new OpenAI({
     baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
-    apiKey: resolveLmxApiKey(config.connection),
+    apiKey,
   });
 
   if (name === 'spawn_agent') {

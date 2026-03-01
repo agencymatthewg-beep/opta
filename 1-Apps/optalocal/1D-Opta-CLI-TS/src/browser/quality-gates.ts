@@ -113,7 +113,9 @@ function resolveMetadataArtifactPath(cwd: string, artifact: BrowserArtifactMetad
   if (artifact.absolutePath.trim().length > 0) {
     return artifact.absolutePath;
   }
-  return isAbsolute(artifact.relativePath) ? artifact.relativePath : join(cwd, artifact.relativePath);
+  return isAbsolute(artifact.relativePath)
+    ? artifact.relativePath
+    : join(cwd, artifact.relativePath);
 }
 
 function compareStringSets(
@@ -121,7 +123,7 @@ function compareStringSets(
   actual: string[],
   expectedLabel: string,
   actualLabel: string,
-  issues: string[],
+  issues: string[]
 ): void {
   const missing = expected.filter((value) => !actual.includes(value));
   const unexpected = actual.filter((value) => !expected.includes(value));
@@ -130,7 +132,7 @@ function compareStringSets(
     const missingList = missing.length > 0 ? missing.join(', ') : 'none';
     const unexpectedList = unexpected.length > 0 ? unexpected.join(', ') : 'none';
     issues.push(
-      `${actualLabel} does not match ${expectedLabel} (missing: ${missingList}; unexpected: ${unexpectedList}).`,
+      `${actualLabel} does not match ${expectedLabel} (missing: ${missingList}; unexpected: ${unexpectedList}).`
     );
   }
 }
@@ -138,14 +140,14 @@ function compareStringSets(
 function verifySequence(
   sourceLabel: string,
   entries: Array<{ sequence: number }>,
-  issues: string[],
+  issues: string[]
 ): void {
   for (let index = 0; index < entries.length; index += 1) {
     const expectedSequence = index + 1;
     const actualSequence = entries[index]?.sequence;
     if (actualSequence !== expectedSequence) {
       issues.push(
-        `${sourceLabel} has non-contiguous sequence at index ${index} (expected ${expectedSequence}, got ${String(actualSequence)}).`,
+        `${sourceLabel} has non-contiguous sequence at index ${index} (expected ${expectedSequence}, got ${String(actualSequence)}).`
       );
       return;
     }
@@ -156,12 +158,12 @@ function verifySessionIds(
   sourceLabel: string,
   entries: Array<{ sessionId: string }>,
   expectedSessionId: string,
-  issues: string[],
+  issues: string[]
 ): void {
   for (const [index, entry] of entries.entries()) {
     if (entry.sessionId !== expectedSessionId) {
       issues.push(
-        `${sourceLabel} entry ${index} has sessionId ${entry.sessionId} but expected ${expectedSessionId}.`,
+        `${sourceLabel} entry ${index} has sessionId ${entry.sessionId} but expected ${expectedSessionId}.`
       );
       return;
     }
@@ -209,7 +211,7 @@ function toCounts(
   metadata: BrowserSessionMetadata | null,
   steps: BrowserSessionStepRecord[],
   recordings: BrowserSessionRecordingEntry[],
-  visualDiffEntries: BrowserVisualDiffManifestEntry[],
+  visualDiffEntries: BrowserVisualDiffManifestEntry[]
 ): BrowserArtifactCompletenessCounts {
   return {
     metadataActions: metadata?.actions.length ?? 0,
@@ -228,29 +230,31 @@ function compareActionCounts(
   steps: BrowserSessionStepRecord[],
   recordings: BrowserSessionRecordingEntry[],
   visualDiffEntries: BrowserVisualDiffManifestEntry[],
-  issues: string[],
+  issues: string[]
 ): void {
   const metadataActions = metadata?.actions.length;
 
   if (metadataActions !== undefined && metadataActions !== steps.length) {
     issues.push(
-      `metadata.json action count (${metadataActions}) does not match steps.jsonl count (${steps.length}).`,
+      `metadata.json action count (${metadataActions}) does not match steps.jsonl count (${steps.length}).`
     );
   }
 
   if (metadataActions !== undefined && metadataActions !== recordings.length) {
     issues.push(
-      `metadata.json action count (${metadataActions}) does not match recordings.json count (${recordings.length}).`,
+      `metadata.json action count (${metadataActions}) does not match recordings.json count (${recordings.length}).`
     );
   }
 
   if (steps.length !== recordings.length) {
-    issues.push(`steps.jsonl count (${steps.length}) does not match recordings.json count (${recordings.length}).`);
+    issues.push(
+      `steps.jsonl count (${steps.length}) does not match recordings.json count (${recordings.length}).`
+    );
   }
 
   if (steps.length !== visualDiffEntries.length) {
     issues.push(
-      `steps.jsonl count (${steps.length}) does not match visual-diff-manifest.jsonl count (${visualDiffEntries.length}).`,
+      `steps.jsonl count (${steps.length}) does not match visual-diff-manifest.jsonl count (${visualDiffEntries.length}).`
     );
   }
 }
@@ -258,25 +262,25 @@ function compareActionCounts(
 function compareArtifactReferenceCounts(
   metadata: BrowserSessionMetadata | null,
   counts: BrowserArtifactCompletenessCounts,
-  issues: string[],
+  issues: string[]
 ): void {
   if (!metadata) return;
 
   if (counts.stepArtifactRefs !== counts.metadataArtifacts) {
     issues.push(
-      `steps.jsonl artifact reference count (${counts.stepArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`,
+      `steps.jsonl artifact reference count (${counts.stepArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`
     );
   }
 
   if (counts.recordingArtifactRefs !== counts.metadataArtifacts) {
     issues.push(
-      `recordings.json artifact reference count (${counts.recordingArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`,
+      `recordings.json artifact reference count (${counts.recordingArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`
     );
   }
 
   if (counts.visualDiffArtifactRefs !== counts.metadataArtifacts) {
     issues.push(
-      `visual-diff-manifest.jsonl artifact reference count (${counts.visualDiffArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`,
+      `visual-diff-manifest.jsonl artifact reference count (${counts.visualDiffArtifactRefs}) does not match metadata.json artifact count (${counts.metadataArtifacts}).`
     );
   }
 }
@@ -287,12 +291,12 @@ async function verifyArtifactPathsExist(
   steps: BrowserSessionStepRecord[],
   recordings: BrowserSessionRecordingEntry[],
   visualDiffEntries: BrowserVisualDiffManifestEntry[],
-  issues: string[],
+  issues: string[]
 ): Promise<void> {
   if (metadata) {
     for (const artifact of metadata.artifacts) {
       const absolutePath = resolveMetadataArtifactPath(cwd, artifact);
-      if (!await fileExists(absolutePath)) {
+      if (!(await fileExists(absolutePath))) {
         issues.push(`metadata.json artifact file is missing: ${absolutePath}.`);
       }
     }
@@ -306,7 +310,7 @@ async function verifyArtifactPathsExist(
 
   for (const relativePath of referencedPaths) {
     const absolutePath = isAbsolute(relativePath) ? relativePath : join(cwd, relativePath);
-    if (!await fileExists(absolutePath)) {
+    if (!(await fileExists(absolutePath))) {
       issues.push(`Referenced artifact path does not exist: ${relativePath}.`);
     }
   }
@@ -314,7 +318,7 @@ async function verifyArtifactPathsExist(
 
 export async function validateBrowserSessionArtifactCompleteness(
   cwd: string,
-  sessionId: string,
+  sessionId: string
 ): Promise<BrowserArtifactCompletenessResult> {
   const missingFiles: string[] = [];
   const issues: string[] = [];
@@ -348,7 +352,9 @@ export async function validateBrowserSessionArtifactCompleteness(
 
   if (filePresence.get(BROWSER_SESSION_METADATA_FILE)) {
     try {
-      const parsed = JSON.parse(await readFile(metadataPath, 'utf-8')) as Partial<BrowserSessionMetadata>;
+      const parsed = JSON.parse(
+        await readFile(metadataPath, 'utf-8')
+      ) as Partial<BrowserSessionMetadata>;
       if (!Array.isArray(parsed.actions) || !Array.isArray(parsed.artifacts)) {
         issues.push('metadata.json must include "actions" and "artifacts" arrays.');
       } else {
@@ -364,7 +370,7 @@ export async function validateBrowserSessionArtifactCompleteness(
       steps = parseJsonl<BrowserSessionStepRecord>(
         await readFile(stepsPath, 'utf-8'),
         'steps.jsonl',
-        issues,
+        issues
       );
     } catch {
       issues.push('steps.jsonl could not be read.');
@@ -373,11 +379,13 @@ export async function validateBrowserSessionArtifactCompleteness(
 
   if (filePresence.get(BROWSER_SESSION_RECORDINGS_FILE)) {
     try {
-      const parsed = JSON.parse(await readFile(recordingsPath, 'utf-8')) as Partial<BrowserSessionRecordingIndex>;
+      const parsed = JSON.parse(
+        await readFile(recordingsPath, 'utf-8')
+      ) as Partial<BrowserSessionRecordingIndex>;
       if (!Array.isArray(parsed.recordings)) {
         issues.push('recordings.json must include a "recordings" array.');
       } else {
-        recordings = parsed.recordings as BrowserSessionRecordingEntry[];
+        recordings = parsed.recordings;
       }
     } catch {
       issues.push('recordings.json is not valid JSON.');
@@ -389,7 +397,7 @@ export async function validateBrowserSessionArtifactCompleteness(
       visualDiffEntries = parseJsonl<BrowserVisualDiffManifestEntry>(
         await readFile(visualDiffPath, 'utf-8'),
         'visual-diff-manifest.jsonl',
-        issues,
+        issues
       );
     } catch {
       issues.push('visual-diff-manifest.jsonl could not be read.');
@@ -399,7 +407,9 @@ export async function validateBrowserSessionArtifactCompleteness(
   const counts = toCounts(metadata, steps, recordings, visualDiffEntries);
 
   if (metadata && metadata.sessionId !== sessionId) {
-    issues.push(`metadata.json sessionId ${metadata.sessionId} does not match expected sessionId ${sessionId}.`);
+    issues.push(
+      `metadata.json sessionId ${metadata.sessionId} does not match expected sessionId ${sessionId}.`
+    );
   }
 
   verifySessionIds('steps.jsonl', steps, sessionId, issues);
@@ -413,39 +423,55 @@ export async function validateBrowserSessionArtifactCompleteness(
   compareActionCounts(metadata, steps, recordings, visualDiffEntries, issues);
   compareArtifactReferenceCounts(metadata, counts, issues);
 
-  const metadataArtifactIds = uniqueSorted(metadata?.artifacts.map((artifact) => artifact.id) ?? []);
+  const metadataArtifactIds = uniqueSorted(
+    metadata?.artifacts.map((artifact) => artifact.id) ?? []
+  );
   const stepArtifactIds = uniqueSorted(flattenArtifactIds(steps));
   const recordingArtifactIds = uniqueSorted(flattenArtifactIds(recordings));
   const visualArtifactIds = uniqueSorted(flattenArtifactIds(visualDiffEntries));
 
   if (metadata) {
-    compareStringSets(metadataArtifactIds, stepArtifactIds, 'metadata.json artifact IDs', 'steps.jsonl artifact IDs', issues);
+    compareStringSets(
+      metadataArtifactIds,
+      stepArtifactIds,
+      'metadata.json artifact IDs',
+      'steps.jsonl artifact IDs',
+      issues
+    );
     compareStringSets(
       metadataArtifactIds,
       recordingArtifactIds,
       'metadata.json artifact IDs',
       'recordings.json artifact IDs',
-      issues,
+      issues
     );
     compareStringSets(
       metadataArtifactIds,
       visualArtifactIds,
       'metadata.json artifact IDs',
       'visual-diff-manifest.jsonl artifact IDs',
-      issues,
+      issues
     );
   }
 
-  compareStringSets(stepArtifactIds, recordingArtifactIds, 'steps.jsonl artifact IDs', 'recordings.json artifact IDs', issues);
+  compareStringSets(
+    stepArtifactIds,
+    recordingArtifactIds,
+    'steps.jsonl artifact IDs',
+    'recordings.json artifact IDs',
+    issues
+  );
   compareStringSets(
     stepArtifactIds,
     visualArtifactIds,
     'steps.jsonl artifact IDs',
     'visual-diff-manifest.jsonl artifact IDs',
-    issues,
+    issues
   );
 
-  const metadataArtifactPaths = uniqueSorted(metadata?.artifacts.map((artifact) => artifact.relativePath) ?? []);
+  const metadataArtifactPaths = uniqueSorted(
+    metadata?.artifacts.map((artifact) => artifact.relativePath) ?? []
+  );
   const stepArtifactPaths = uniqueSorted(flattenArtifactPaths(steps));
   const recordingArtifactPaths = uniqueSorted(flattenArtifactPaths(recordings));
   const visualArtifactPaths = uniqueSorted(flattenArtifactPaths(visualDiffEntries));
@@ -456,21 +482,21 @@ export async function validateBrowserSessionArtifactCompleteness(
       stepArtifactPaths,
       'metadata.json artifact paths',
       'steps.jsonl artifact paths',
-      issues,
+      issues
     );
     compareStringSets(
       metadataArtifactPaths,
       recordingArtifactPaths,
       'metadata.json artifact paths',
       'recordings.json artifact paths',
-      issues,
+      issues
     );
     compareStringSets(
       metadataArtifactPaths,
       visualArtifactPaths,
       'metadata.json artifact paths',
       'visual-diff-manifest.jsonl artifact paths',
-      issues,
+      issues
     );
   }
 
@@ -479,14 +505,14 @@ export async function validateBrowserSessionArtifactCompleteness(
     recordingArtifactPaths,
     'steps.jsonl artifact paths',
     'recordings.json artifact paths',
-    issues,
+    issues
   );
   compareStringSets(
     stepArtifactPaths,
     visualArtifactPaths,
     'steps.jsonl artifact paths',
     'visual-diff-manifest.jsonl artifact paths',
-    issues,
+    issues
   );
 
   await verifyArtifactPathsExist(cwd, metadata, steps, recordings, visualDiffEntries, issues);
@@ -502,7 +528,7 @@ export async function validateBrowserSessionArtifactCompleteness(
 
 export async function ingestBrowserBenchmarkTelemetry(
   cwd: string,
-  sessionId: string,
+  sessionId: string
 ): Promise<BrowserBenchmarkTelemetryIngestionResult> {
   const issues: string[] = [];
 
@@ -513,11 +539,15 @@ export async function ingestBrowserBenchmarkTelemetry(
   let metadataUpdatedAtMs: number | null = null;
   if (await fileExists(metadataPath)) {
     try {
-      const parsed = JSON.parse(await readFile(metadataPath, 'utf-8')) as Partial<BrowserSessionMetadata>;
+      const parsed = JSON.parse(
+        await readFile(metadataPath, 'utf-8')
+      ) as Partial<BrowserSessionMetadata>;
       if (!Array.isArray(parsed.actions)) {
-        issues.push('metadata.json must include an "actions" array for benchmark telemetry ingestion.');
+        issues.push(
+          'metadata.json must include an "actions" array for benchmark telemetry ingestion.'
+        );
       } else {
-        metadataActions = parsed.actions as BrowserSessionMetadata['actions'];
+        metadataActions = parsed.actions;
       }
 
       if (typeof parsed.updatedAt === 'string') {
@@ -535,7 +565,11 @@ export async function ingestBrowserBenchmarkTelemetry(
   let steps: BrowserSessionStepRecord[] = [];
   if (await fileExists(stepsPath)) {
     try {
-      steps = parseJsonl<BrowserSessionStepRecord>(await readFile(stepsPath, 'utf-8'), 'steps.jsonl', issues);
+      steps = parseJsonl<BrowserSessionStepRecord>(
+        await readFile(stepsPath, 'utf-8'),
+        'steps.jsonl',
+        issues
+      );
     } catch {
       issues.push('steps.jsonl could not be read.');
     }
@@ -547,7 +581,9 @@ export async function ingestBrowserBenchmarkTelemetry(
   for (const [index, actionRecord] of metadataActions.entries()) {
     const action = actionRecord?.action;
     if (!action || typeof action.id !== 'string' || typeof action.createdAt !== 'string') {
-      issues.push(`metadata.json action record at index ${index} is missing a valid action id or createdAt timestamp.`);
+      issues.push(
+        `metadata.json action record at index ${index} is missing a valid action id or createdAt timestamp.`
+      );
       continue;
     }
 
@@ -556,7 +592,11 @@ export async function ingestBrowserBenchmarkTelemetry(
       continue;
     }
 
-    const createdAtMs = parseTimestampMs(`metadata.json action ${action.id}`, action.createdAt, issues);
+    const createdAtMs = parseTimestampMs(
+      `metadata.json action ${action.id}`,
+      action.createdAt,
+      issues
+    );
     if (createdAtMs !== null) {
       actionCreatedAtMs.set(action.id, createdAtMs);
     }
@@ -579,7 +619,11 @@ export async function ingestBrowserBenchmarkTelemetry(
     if (step.ok) successCount += 1;
     else failureCount += 1;
 
-    const stepTimestampMs = parseTimestampMs(`steps.jsonl action ${step.actionId}`, step.timestamp, issues);
+    const stepTimestampMs = parseTimestampMs(
+      `steps.jsonl action ${step.actionId}`,
+      step.timestamp,
+      issues
+    );
     if (stepTimestampMs !== null) {
       lastStepTimestampMs = stepTimestampMs;
     }
@@ -656,56 +700,72 @@ export async function ingestBrowserBenchmarkTelemetry(
 function validateFiniteMetric(
   label: keyof BrowserBenchmarkMetrics,
   value: number,
-  failures: string[],
+  failures: string[]
 ): boolean {
   if (Number.isFinite(value)) return true;
-  failures.push(`Metric ${String(label)} must be a finite number.`);
+  failures.push(`Metric ${label} must be a finite number.`);
   return false;
 }
 
 function validateFiniteThreshold(
   label: keyof BrowserBenchmarkThresholds,
   value: number,
-  failures: string[],
+  failures: string[]
 ): boolean {
   if (Number.isFinite(value)) return true;
-  failures.push(`Threshold ${String(label)} must be a finite number.`);
+  failures.push(`Threshold ${label} must be a finite number.`);
   return false;
 }
 
 export function validateBrowserBenchmarkThresholds(
   metrics: BrowserBenchmarkMetrics,
-  thresholds: BrowserBenchmarkThresholds = DEFAULT_BROWSER_BENCHMARK_THRESHOLDS,
+  thresholds: BrowserBenchmarkThresholds = DEFAULT_BROWSER_BENCHMARK_THRESHOLDS
 ): BrowserBenchmarkThresholdResult {
   const failures: string[] = [];
 
   const hasSuccessRate = validateFiniteMetric('successRate', metrics.successRate, failures);
-  const hasMedianLatency = validateFiniteMetric('medianActionLatencyMs', metrics.medianActionLatencyMs, failures);
+  const hasMedianLatency = validateFiniteMetric(
+    'medianActionLatencyMs',
+    metrics.medianActionLatencyMs,
+    failures
+  );
   const hasRecovery = validateFiniteMetric('recoveryMs', metrics.recoveryMs, failures);
 
-  const hasMinSuccessRate = validateFiniteThreshold('minSuccessRate', thresholds.minSuccessRate, failures);
+  const hasMinSuccessRate = validateFiniteThreshold(
+    'minSuccessRate',
+    thresholds.minSuccessRate,
+    failures
+  );
   const hasMaxMedianLatency = validateFiniteThreshold(
     'maxMedianActionLatencyMs',
     thresholds.maxMedianActionLatencyMs,
-    failures,
+    failures
   );
-  const hasMaxRecovery = validateFiniteThreshold('maxRecoveryMs', thresholds.maxRecoveryMs, failures);
+  const hasMaxRecovery = validateFiniteThreshold(
+    'maxRecoveryMs',
+    thresholds.maxRecoveryMs,
+    failures
+  );
 
   if (hasSuccessRate && hasMinSuccessRate && metrics.successRate < thresholds.minSuccessRate) {
     failures.push(
-      `successRate ${formatNumber(metrics.successRate)} is below minimum ${formatNumber(thresholds.minSuccessRate)}.`,
+      `successRate ${formatNumber(metrics.successRate)} is below minimum ${formatNumber(thresholds.minSuccessRate)}.`
     );
   }
 
-  if (hasMedianLatency && hasMaxMedianLatency && metrics.medianActionLatencyMs > thresholds.maxMedianActionLatencyMs) {
+  if (
+    hasMedianLatency &&
+    hasMaxMedianLatency &&
+    metrics.medianActionLatencyMs > thresholds.maxMedianActionLatencyMs
+  ) {
     failures.push(
-      `medianActionLatencyMs ${formatNumber(metrics.medianActionLatencyMs)} exceeds maximum ${formatNumber(thresholds.maxMedianActionLatencyMs)}.`,
+      `medianActionLatencyMs ${formatNumber(metrics.medianActionLatencyMs)} exceeds maximum ${formatNumber(thresholds.maxMedianActionLatencyMs)}.`
     );
   }
 
   if (hasRecovery && hasMaxRecovery && metrics.recoveryMs > thresholds.maxRecoveryMs) {
     failures.push(
-      `recoveryMs ${formatNumber(metrics.recoveryMs)} exceeds maximum ${formatNumber(thresholds.maxRecoveryMs)}.`,
+      `recoveryMs ${formatNumber(metrics.recoveryMs)} exceeds maximum ${formatNumber(thresholds.maxRecoveryMs)}.`
     );
   }
 
@@ -720,7 +780,7 @@ export function validateBrowserBenchmarkThresholds(
 export async function validateBrowserBenchmarkThresholdFeed(
   cwd: string,
   sessionId: string,
-  thresholds: BrowserBenchmarkThresholds = DEFAULT_BROWSER_BENCHMARK_THRESHOLDS,
+  thresholds: BrowserBenchmarkThresholds = DEFAULT_BROWSER_BENCHMARK_THRESHOLDS
 ): Promise<BrowserBenchmarkThresholdFeedResult> {
   const ingestion = await ingestBrowserBenchmarkTelemetry(cwd, sessionId);
   const thresholdResult = validateBrowserBenchmarkThresholds(ingestion.metrics, thresholds);

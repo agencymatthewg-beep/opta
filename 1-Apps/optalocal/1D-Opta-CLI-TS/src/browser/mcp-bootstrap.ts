@@ -14,6 +14,8 @@ export interface PlaywrightMcpBootstrapOptions {
   allowedHosts?: string[];
   blockedOrigins?: string[];
   env?: Record<string, string>;
+  /** URL to navigate to automatically when the browser starts. */
+  startUrl?: string;
 }
 
 function normalizeList(values: string[] | undefined): string[] {
@@ -50,6 +52,11 @@ export function createPlaywrightMcpServerConfig(
   const blockedOrigins = normalizeList(options.blockedOrigins);
   if (blockedOrigins.length > 0) {
     args.push('--blocked-origins', blockedOrigins.join(','));
+  }
+
+  const startUrl = options.startUrl?.trim();
+  if (startUrl) {
+    args.push('--start-url', startUrl);
   }
 
   return {

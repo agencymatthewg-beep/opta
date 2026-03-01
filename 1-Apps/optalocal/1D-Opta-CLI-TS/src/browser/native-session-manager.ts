@@ -37,6 +37,12 @@ import {
   inferVisualDiffSeverity,
 } from './visual-diff.js';
 import { withRetryTaxonomy } from './retry-taxonomy.js';
+import { errorMessage } from '../utils/errors.js';
+import { fileURLToPath } from 'node:url';
+import { dirname } from 'node:path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const DEFAULT_NAVIGATION_TIMEOUT_MS = 30_000;
 const DEFAULT_ACTION_TIMEOUT_MS = 10_000;
@@ -50,12 +56,32 @@ const PLAYWRIGHT_UNAVAILABLE_ERROR: BrowserActionError = {
   retryHint: 'Install Playwright or enable browser runtime before retrying.',
 };
 
+const LOOPBACK_ATTACH_HOSTS = new Set(['127.0.0.1', '::1', 'localhost']);
+
+function normalizeAttachWsEndpoint(wsEndpoint: string): string {
+  let parsed: URL;
+  try {
+    parsed = new URL(wsEndpoint);
+  } catch {
+    throw new Error('Attach mode requires a valid wsEndpoint URL.');
+  }
+  if (parsed.protocol !== 'ws:' && parsed.protocol !== 'wss:') {
+    throw new Error('Attach mode requires wsEndpoint to use ws:// or wss://.');
+  }
+  const host = parsed.hostname.trim().toLowerCase();
+  if (!LOOPBACK_ATTACH_HOSTS.has(host)) {
+    throw new Error('Attach mode only allows loopback wsEndpoint hosts (127.0.0.1, ::1, localhost).');
+  }
+  return parsed.toString();
+}
+
 interface PlaywrightPageLike {
   goto(url: string, options?: Record<string, unknown>): Promise<unknown>;
   click(selector: string, options?: Record<string, unknown>): Promise<unknown>;
   fill(selector: string, text: string, options?: Record<string, unknown>): Promise<unknown>;
   content(): Promise<string>;
   screenshot(options?: Record<string, unknown>): Promise<Uint8Array>;
+  evaluate(pageFunction: any, arg?: any): Promise<any>;
   url(): string;
 }
 
@@ -63,6 +89,7 @@ interface PlaywrightContextLike {
   newPage(): Promise<PlaywrightPageLike>;
   pages(): PlaywrightPageLike[];
   close(): Promise<void>;
+  addInitScript(script: { path?: string; content?: string } | ((...args: any[]) => unknown) | string, arg?: any): Promise<void>;
 }
 
 interface PlaywrightBrowserLike {
@@ -214,7 +241,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('OPEN_SESSION_FAILED', `Failed to open browser session: ${this.errorMessage(err)}`);
+        : this.error('OPEN_SESSION_FAILED', `Failed to open browser session: ${errorMessage(err)}`);
       managed.session.lastError = error;
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
@@ -293,7 +320,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('NAVIGATE_FAILED', `Navigate failed: ${this.errorMessage(err)}`);
+        : this.error('NAVIGATE_FAILED', `Navigate failed: ${errorMessage(err)}`);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
       await this.persist(managed);
@@ -321,6 +348,21 @@ export class NativeSessionManager {
 
     try {
       await this.withActionSignal(managed, options, async () => {
+        // Trigger visual click animation
+        await managed.page!.evaluate(
+          ([selector]: string[]) => {
+            type DOMGlobal = {
+              dispatchEvent: (e: unknown) => void;
+              CustomEvent: new (name: string, opts: unknown) => unknown;
+            };
+            const w = globalThis as unknown as DOMGlobal;
+            w.dispatchEvent(
+              new w.CustomEvent('opta:action', { detail: { type: 'click', selector } })
+            );
+          },
+          [input.selector],
+        ).catch(() => { }); // Best effort
+
         await managed.page!.click(input.selector, {
           timeout: input.timeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS,
         });
@@ -332,7 +374,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('CLICK_FAILED', `Click failed: ${this.errorMessage(err)}`);
+        : this.error('CLICK_FAILED', `Click failed: ${errorMessage(err)}`);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
       await this.persist(managed);
@@ -360,6 +402,21 @@ export class NativeSessionManager {
 
     try {
       await this.withActionSignal(managed, options, async () => {
+        // Trigger visual type animation
+        await managed.page!.evaluate(
+          ([selector]: string[]) => {
+            type DOMGlobal = {
+              dispatchEvent: (e: unknown) => void;
+              CustomEvent: new (name: string, opts: unknown) => unknown;
+            };
+            const w = globalThis as unknown as DOMGlobal;
+            w.dispatchEvent(
+              new w.CustomEvent('opta:action', { detail: { type: 'type', selector } })
+            );
+          },
+          [input.selector],
+        ).catch(() => { }); // Best effort
+
         await managed.page!.fill(input.selector, input.text, {
           timeout: input.timeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS,
         });
@@ -371,7 +428,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('TYPE_FAILED', `Type failed: ${this.errorMessage(err)}`);
+        : this.error('TYPE_FAILED', `Type failed: ${errorMessage(err)}`);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
       await this.persist(managed);
@@ -413,7 +470,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('SNAPSHOT_FAILED', `Snapshot failed: ${this.errorMessage(err)}`);
+        : this.error('SNAPSHOT_FAILED', `Snapshot failed: ${errorMessage(err)}`);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
       await this.persist(managed);
@@ -475,7 +532,7 @@ export class NativeSessionManager {
     } catch (err) {
       const error = this.isAbortError(err)
         ? this.error('ACTION_CANCELLED', ACTION_CANCELLED_MESSAGE)
-        : this.error('SCREENSHOT_FAILED', `Screenshot failed: ${this.errorMessage(err)}`);
+        : this.error('SCREENSHOT_FAILED', `Screenshot failed: ${errorMessage(err)}`);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, false, error);
       await this.persist(managed);
@@ -498,22 +555,47 @@ export class NativeSessionManager {
       if (!wsEndpoint) {
         throw new Error('Attach mode requires wsEndpoint.');
       }
-      const browser = await runtime.chromium.connectOverCDP(wsEndpoint);
+      const normalizedEndpoint = normalizeAttachWsEndpoint(wsEndpoint);
+      const browser = await runtime.chromium.connectOverCDP(normalizedEndpoint);
       const context = browser.contexts()[0] ?? await browser.newContext();
+
+      await this.injectChromeOverlay(context);
+
       const page = context.pages()[0] ?? await context.newPage();
       return { browser, context, page };
     }
 
     if (profileDir && typeof runtime.chromium.launchPersistentContext === 'function') {
       const context = await runtime.chromium.launchPersistentContext(profileDir, { headless });
+
+      await this.injectChromeOverlay(context);
+
       const page = context.pages()[0] ?? await context.newPage();
       return { context, page };
     }
 
     const browser = await runtime.chromium.launch({ headless });
     const context = await browser.newContext();
+
+    await this.injectChromeOverlay(context);
+
     const page = await context.newPage();
     return { browser, context, page };
+  }
+
+  private async injectChromeOverlay(context: PlaywrightContextLike): Promise<void> {
+    try {
+      const overlayPath = join(__dirname, 'chrome-overlay.js'); // Assuming transpile output
+      await context.addInitScript({ path: overlayPath });
+    } catch {
+      // Best effort fallback if running uncompiled (development)
+      try {
+        const overlayPathTs = join(__dirname, 'chrome-overlay.ts');
+        await context.addInitScript({ path: overlayPathTs });
+      } catch {
+        // Silently fail if overlay injection fails so we don't block the browser
+      }
+    }
   }
 
   private ensurePage(managed: ManagedSession): BrowserActionError | null {
@@ -805,10 +887,6 @@ export class NativeSessionManager {
 
   private error(code: string, message: string): BrowserActionError {
     return withRetryTaxonomy(code, message);
-  }
-
-  private errorMessage(err: unknown): string {
-    return err instanceof Error ? err.message : String(err);
   }
 
   private isAbortError(err: unknown): boolean {

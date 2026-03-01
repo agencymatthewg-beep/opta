@@ -39,7 +39,7 @@ export async function delegateToBrowserSubAgent(
     const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } =
       await import('../core/subagent.js');
     const { default: OpenAI } = await import('openai');
-    const { resolveLmxApiKey } = await import('../lmx/api-key.js');
+    const lmxApiKey = await import('../lmx/api-key.js');
     const { buildToolRegistry } = await import('../mcp/registry.js');
 
     const sessionNote = preferredSessionId
@@ -51,10 +51,11 @@ export async function delegateToBrowserSubAgent(
     const taskDescription = `${BROWSER_SPECIALIST_PROMPT}${sessionNote}${contextNote}\n\n---\n\nGoal: ${goal}`;
 
     const childContext = createSubAgentContext(preferredSessionId ?? 'browser-agent', undefined, config);
+    const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(config.connection);
 
     const client = new OpenAI({
       baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
-      apiKey: resolveLmxApiKey(config.connection),
+      apiKey,
     });
 
     const subRegistry = await buildToolRegistry(config, 'normal');
@@ -93,4 +94,56 @@ export async function delegateToBrowserSubAgent(
       error: errorMessage(err),
     };
   }
+}
+
+export interface BrowserSubAgentParallelOptions {
+  /** List of browser goals to execute in parallel tabs. */
+  goals: string[];
+  config: OptaConfig;
+  /** Max number of goals to run concurrently. Default: 3. */
+  concurrency?: number;
+  /** Optional summary from the main agent's current context window. */
+  inheritedContext?: string;
+}
+
+/**
+ * Executes multiple browser goals in parallel batches, each in its own sub-agent.
+ * Returns results in the same order as `goals`, preserving positional correspondence
+ * even when individual goals fail.
+ */
+export async function delegateToBrowserSubAgentParallel(
+  options: BrowserSubAgentParallelOptions,
+): Promise<BrowserSubAgentResult[]> {
+  const { goals, config, concurrency = 3, inheritedContext } = options;
+  const results: BrowserSubAgentResult[] = new Array(goals.length);
+  const batchSize = Math.max(1, concurrency);
+
+  for (let i = 0; i < goals.length; i += batchSize) {
+    const batch = goals.slice(i, i + batchSize);
+    const settled = await Promise.allSettled(
+      batch.map((goal, batchIdx) =>
+        delegateToBrowserSubAgent({
+          goal,
+          config,
+          inheritedContext,
+          preferredSessionId: `browser-tab-${i + batchIdx}`,
+        }),
+      ),
+    );
+    for (let j = 0; j < settled.length; j++) {
+      const s = settled[j] as PromiseSettledResult<BrowserSubAgentResult>;
+      if (s.status === 'fulfilled') {
+        results[i + j] = s.value;
+      } else {
+        results[i + j] = {
+          ok: false,
+          summary: '',
+          artifactPaths: [],
+          error: s.reason instanceof Error ? s.reason.message : String(s.reason),
+        };
+      }
+    }
+  }
+
+  return results;
 }

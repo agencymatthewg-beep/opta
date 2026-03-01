@@ -32,15 +32,20 @@ function onOff(enabled: boolean): string {
 
 export function buildCapabilityManifest(
   config: OptaConfig,
-  runtime: CapabilityManifestRuntimeContext = {},
+  runtime: CapabilityManifestRuntimeContext = {}
 ): string {
-  const toolNames = new Set((runtime.activeToolSchemas ?? []).map((schema) => schema.function.name));
+  const toolNames = new Set(
+    (runtime.activeToolSchemas ?? []).map((schema) => schema.function.name)
+  );
   const mode = runtime.mode ?? config.defaultMode;
   const profile = runtime.profile ?? 'default';
 
   const hasWebTools = toolNames.has('web_search') || toolNames.has('web_fetch');
-  const hasResearchTool = hasWebTools || Array.from(toolNames).some((name) => name.startsWith('research_'));
-  const hasBrowserTool = Array.from(toolNames).some((name) => name.startsWith('browser_') || name.includes('playwright'));
+  const hasResearchTool =
+    hasWebTools || Array.from(toolNames).some((name) => name.startsWith('research_'));
+  const hasBrowserTool = Array.from(toolNames).some(
+    (name) => name.startsWith('browser_') || name.includes('playwright')
+  );
   const hasLearningTool = [
     'save_memory',
     'learning_log',
@@ -60,9 +65,7 @@ export function buildCapabilityManifest(
 
 export function injectCapabilityManifest(prompt: string, manifest: string): string {
   const markerIndex = prompt.indexOf(CAPABILITY_MARKER);
-  const basePrompt = markerIndex >= 0
-    ? prompt.slice(0, markerIndex).trimEnd()
-    : prompt.trimEnd();
+  const basePrompt = markerIndex >= 0 ? prompt.slice(0, markerIndex).trimEnd() : prompt.trimEnd();
 
   return `${basePrompt}${CAPABILITY_MARKER}${manifest}`;
 }
@@ -73,7 +76,7 @@ export async function getOrCreateClient(config: OptaConfig): Promise<OpenAI> {
   const { getProvider } = await import('../providers/manager.js');
   const provider = await getProvider(config);
   debug(`Using provider: ${provider.name}`);
-  const client = await provider.getClient() as OpenAI & { __optaProviderName?: string };
+  const client = (await provider.getClient()) as OpenAI & { __optaProviderName?: string };
   client.__optaProviderName = provider.name;
   return client;
 }
@@ -90,7 +93,7 @@ export async function buildSystemPrompt(
   config: OptaConfig,
   cwd?: string,
   mode?: string,
-  runtime?: CapabilityManifestRuntimeContext,
+  runtime?: CapabilityManifestRuntimeContext
 ): Promise<string> {
   const workingDir = cwd ?? process.cwd();
 
@@ -145,7 +148,7 @@ Working directory: ${workingDir}`;
   // Warn about dirty working tree
   try {
     const { isGitRepo, isDirty } = await import('../git/utils.js');
-    if (await isGitRepo(workingDir) && await isDirty(workingDir)) {
+    if ((await isGitRepo(workingDir)) && (await isDirty(workingDir))) {
       prompt += '\n\nNote: Working tree has uncommitted changes from outside this session.';
     }
   } catch {
@@ -201,7 +204,7 @@ CONSTRAINTS:
   if (runtime) {
     prompt = injectCapabilityManifest(
       prompt,
-      buildCapabilityManifest(config, { ...runtime, mode: mode ?? runtime.mode }),
+      buildCapabilityManifest(config, { ...runtime, mode: mode ?? runtime.mode })
     );
   }
 
@@ -232,7 +235,10 @@ export async function compactHistory(
   contextLimit: number
 ): Promise<AgentMessage[]> {
   const systemPrompt = messages[0]!;
-  const recentCount = Math.max(MIN_COMPACTION_WINDOW, Math.min(Math.floor(contextLimit / COMPACTION_WINDOW_SCALE), MAX_COMPACTION_WINDOW));
+  const recentCount = Math.max(
+    MIN_COMPACTION_WINDOW,
+    Math.min(Math.floor(contextLimit / COMPACTION_WINDOW_SCALE), MAX_COMPACTION_WINDOW)
+  );
   const recent = messages.slice(-recentCount);
   const middle = messages.slice(1, -recentCount);
 
@@ -240,11 +246,17 @@ export async function compactHistory(
 
   debug(`Compacting ${middle.length} messages (keeping last ${recentCount})`);
 
-  const summaryBudget = Math.max(MIN_SUMMARY_BUDGET, Math.min(Math.floor(contextLimit * SUMMARY_BUDGET_RATIO), MAX_SUMMARY_BUDGET));
+  const summaryBudget = Math.max(
+    MIN_SUMMARY_BUDGET,
+    Math.min(Math.floor(contextLimit * SUMMARY_BUDGET_RATIO), MAX_SUMMARY_BUDGET)
+  );
 
   const middleText = middle
     .filter((m) => m.content)
-    .map((m) => `[${m.role}] ${m.content}`)
+    .map(
+      (m) =>
+        `[${m.role}] ${Array.isArray(m.content) ? JSON.stringify(m.content) : (m.content ?? '')}`
+    )
     .join('\n');
 
   try {
@@ -272,7 +284,7 @@ export async function compactHistory(
       ...recent,
     ];
   } catch (err) {
-    debug(`Compaction failed: ${err}`);
+    debug(`Compaction failed: ${String(err)}`);
     return messages; // Keep original if compaction fails
   }
 }

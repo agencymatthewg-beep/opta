@@ -1,10 +1,14 @@
 import type { OptaConfig } from '../core/config.js';
-import {
-  getSharedBrowserRuntimeDaemon,
-  type BrowserRuntimeHealth,
-} from './runtime-daemon.js';
+import { getSharedBrowserRuntimeDaemon, type BrowserRuntimeHealth } from './runtime-daemon.js';
 
-export const BROWSER_CONTROL_ACTIONS = ['status', 'start', 'pause', 'resume', 'stop', 'kill'] as const;
+export const BROWSER_CONTROL_ACTIONS = [
+  'status',
+  'start',
+  'pause',
+  'resume',
+  'stop',
+  'kill',
+] as const;
 export type BrowserControlAction = (typeof BROWSER_CONTROL_ACTIONS)[number];
 
 export interface BrowserControlResult {
@@ -16,7 +20,7 @@ export interface BrowserControlResult {
 
 export async function runBrowserControlAction(
   action: BrowserControlAction,
-  config: OptaConfig,
+  config: OptaConfig
 ): Promise<BrowserControlResult> {
   const daemon = await getSharedBrowserRuntimeDaemon({
     cwd: process.cwd(),
@@ -125,7 +129,7 @@ export async function runBrowserControlAction(
       return {
         ok: false,
         action,
-        message: `Unknown browser control action: ${action}`,
+        message: `Unknown browser control action: ${String(action)}`,
         health: daemon.health(),
       };
   }

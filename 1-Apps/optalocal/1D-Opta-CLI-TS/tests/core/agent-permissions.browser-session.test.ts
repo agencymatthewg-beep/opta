@@ -142,6 +142,92 @@ describe('resolveToolDecisions browser session preflight', () => {
     expect(args['session_id']).toBe('sess-auto-001');
   });
 
+  it('spawns attach browser sessions using configured wsEndpoint when attach mode is enabled', async () => {
+    const config = makeConfig();
+    config.browser.attach.enabled = true;
+    config.browser.attach.wsEndpoint = 'ws://127.0.0.1:9222/devtools/browser/mock';
+    const onPermissionRequest = vi
+      .fn()
+      .mockResolvedValueOnce('allow')
+      .mockResolvedValueOnce('allow');
+
+    const decisions = await resolveToolDecisions(
+      [
+        {
+          id: 'call-attach-1',
+          name: 'browser_navigate',
+          args: JSON.stringify({ url: 'https://example.com' }),
+        },
+      ],
+      config,
+      {
+        isSubAgent: false,
+        silent: true,
+        saveConfig: async () => {},
+        streamCallbacks: { onPermissionRequest },
+        hooks: createHookManager({ hooks: [] }),
+        sessionCtx: {
+          sessionId: 'session-test',
+          cwd: process.cwd(),
+          model: config.model.default,
+        },
+      },
+    );
+
+    expect(onPermissionRequest).toHaveBeenNthCalledWith(
+      1,
+      'browser_open',
+      expect.objectContaining({
+        mode: 'attach',
+        ws_endpoint: 'ws://127.0.0.1:9222/devtools/browser/mock',
+      }),
+    );
+    expect(runtimeDaemon.daemon.openSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        mode: 'attach',
+        wsEndpoint: 'ws://127.0.0.1:9222/devtools/browser/mock',
+      }),
+    );
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]?.approved).toBe(true);
+  });
+
+  it('denies browser spawn when attach mode is enabled but wsEndpoint is missing', async () => {
+    const config = makeConfig();
+    config.browser.attach.enabled = true;
+    config.browser.attach.wsEndpoint = '';
+    const onPermissionRequest = vi.fn();
+
+    const decisions = await resolveToolDecisions(
+      [
+        {
+          id: 'call-attach-missing-endpoint',
+          name: 'browser_navigate',
+          args: JSON.stringify({ url: 'https://example.com' }),
+        },
+      ],
+      config,
+      {
+        isSubAgent: false,
+        silent: true,
+        saveConfig: async () => {},
+        streamCallbacks: { onPermissionRequest },
+        hooks: createHookManager({ hooks: [] }),
+        sessionCtx: {
+          sessionId: 'session-test',
+          cwd: process.cwd(),
+          model: config.model.default,
+        },
+      },
+    );
+
+    expect(onPermissionRequest).not.toHaveBeenCalled();
+    expect(runtimeDaemon.daemon.openSession).not.toHaveBeenCalled();
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]?.approved).toBe(false);
+    expect(decisions[0]?.denialReason).toContain('browser.attach.wsEndpoint');
+  });
+
   it('denies the tool call when the user declines browser spawn prompt', async () => {
     const config = makeConfig();
     const onPermissionRequest = vi.fn().mockResolvedValue('deny');

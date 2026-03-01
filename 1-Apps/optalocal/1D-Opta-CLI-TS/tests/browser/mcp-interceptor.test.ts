@@ -233,4 +233,53 @@ describe('BrowserMcpInterceptor', () => {
       expect(execute).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
     });
   });
+
+  describe('selector healing via auto-snapshot', () => {
+    it('calls executeSnapshot and onSelectorFail when selector error exhausts retries on browser_click', async () => {
+      const selectorErr = new Error('waiting for selector "#missing" failed: timeout');
+      const execute = vi.fn().mockRejectedValue(selectorErr);
+      const executeSnapshot = vi.fn().mockResolvedValue('<snapshot>page html</snapshot>');
+      const onSelectorFail = vi.fn().mockResolvedValue(undefined);
+
+      await expect(
+        interceptBrowserMcpCall(
+          'browser_click',
+          { selector: '#missing' },
+          {
+            policyConfig: {},
+            sessionId: 'test',
+            onSelectorFail,
+            executeSnapshot,
+          },
+          execute,
+        ),
+      ).rejects.toThrow('waiting for selector');
+
+      expect(executeSnapshot).toHaveBeenCalledOnce();
+      expect(onSelectorFail).toHaveBeenCalledWith('browser_click', '#missing', '<snapshot>page html</snapshot>');
+    });
+
+    it('does not call onSelectorFail for non-selector errors', async () => {
+      const networkErr = Object.assign(new Error('ECONNREFUSED'), { code: 'ECONNREFUSED' });
+      const execute = vi.fn().mockRejectedValue(networkErr);
+      const executeSnapshot = vi.fn().mockResolvedValue('<snapshot/>');
+      const onSelectorFail = vi.fn();
+
+      await expect(
+        interceptBrowserMcpCall(
+          'browser_click',
+          { selector: '#btn' },
+          {
+            policyConfig: {},
+            sessionId: 'test',
+            onSelectorFail,
+            executeSnapshot,
+          },
+          execute,
+        ),
+      ).rejects.toThrow('ECONNREFUSED');
+
+      expect(onSelectorFail).not.toHaveBeenCalled();
+    });
+  });
 });

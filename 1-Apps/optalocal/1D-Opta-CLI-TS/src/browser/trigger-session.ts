@@ -32,6 +32,20 @@ function normalizeTriggerWords(words: string[]): string[] {
   return normalized;
 }
 
+function resolveBrowserOpenMode(config: OptaConfig['browser']): BrowserMode {
+  if (config.attach.enabled) return 'attach';
+  return config.mode;
+}
+
+function resolveAttachWsEndpoint(
+  config: OptaConfig['browser'],
+  mode: BrowserMode,
+): string | undefined {
+  if (mode !== 'attach') return undefined;
+  const endpoint = config.attach.wsEndpoint.trim();
+  return endpoint.length > 0 ? endpoint : undefined;
+}
+
 export function hasBrowserTriggerWord(
   prompt: string,
   triggerWords: string[] = DEFAULT_TRIGGER_WORDS,
@@ -65,7 +79,7 @@ export async function ensureBrowserSessionForTriggeredPrompt(options: {
     };
   }
 
-  if (options.config.browser.enabled === false) {
+  if (!options.config.browser.enabled) {
     return {
       triggered: true,
       ok: false,
@@ -73,7 +87,7 @@ export async function ensureBrowserSessionForTriggeredPrompt(options: {
     };
   }
 
-  if (options.config.browser.runtime.enabled === false) {
+  if (!options.config.browser.runtime.enabled) {
     return {
       triggered: true,
       ok: false,
@@ -128,8 +142,19 @@ export async function ensureBrowserSessionForTriggeredPrompt(options: {
     };
   }
 
+  const mode = resolveBrowserOpenMode(options.config.browser);
+  const wsEndpoint = resolveAttachWsEndpoint(options.config.browser, mode);
+  if (mode === 'attach' && !wsEndpoint) {
+    return {
+      triggered: true,
+      ok: false,
+      message: 'Browser trigger detected, but attach mode requires browser.attach.wsEndpoint.',
+    };
+  }
+
   const openResult = await daemon.openSession({
-    mode: options.config.browser.mode,
+    mode,
+    wsEndpoint,
     headless: false,
   });
   if (!openResult.ok || !openResult.data) {

@@ -21,6 +21,13 @@ import {
   type BrowserControlAction,
 } from '../../browser/control-surface.js';
 import {
+  getBrowserLiveHostStatus,
+  startBrowserLiveHost,
+  stopBrowserLiveHost,
+  type BrowserLiveHostStatus,
+} from '../../browser/live-host.js';
+import { isPeekabooAvailable } from '../../browser/peekaboo.js';
+import {
   browserProfilesRootPath,
   listBrowserProfileDirs,
   pruneBrowserProfileDirs,
@@ -32,7 +39,7 @@ import type { BrowserRuntimeProfilePruneHealth } from '../../browser/runtime-dae
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 function printBrowserUsage(): void {
-  console.log(chalk.dim('  Usage: /browser [status|pause|resume|stop|kill|replay <session_id>|approvals [limit]|profiles [prune [session_id]]|trends [hours] [limit]|canary [hours]|canary rollback <pass|fail> [notes]]'));
+  console.log(chalk.dim('  Usage: /browser [status|pause|resume|stop|kill|replay <session_id>|approvals [limit]|profiles [prune [session_id]]|trends [hours] [limit]|canary [hours]|canary rollback <pass|fail> [notes]|host [start|status|stop] [--range start-end] [--screen peekaboo]]'));
   console.log(chalk.dim('    /browser status'));
   console.log(chalk.dim('    /browser pause'));
   console.log(chalk.dim('    /browser resume'));
@@ -49,6 +56,10 @@ function printBrowserUsage(): void {
   console.log(chalk.dim('    /browser canary'));
   console.log(chalk.dim('    /browser canary 24'));
   console.log(chalk.dim('    /browser canary rollback pass Rehearsal completed.'));
+  console.log(chalk.dim('    /browser host start --range 46000-47000'));
+  console.log(chalk.dim('    /browser host start --screen peekaboo'));
+  console.log(chalk.dim('    /browser host status'));
+  console.log(chalk.dim('    /browser host stop'));
 }
 
 function printStatus(result: Awaited<ReturnType<typeof runBrowserControlAction>>): void {
@@ -68,8 +79,8 @@ function printStatus(result: Awaited<ReturnType<typeof runBrowserControlAction>>
   }
 
   for (const session of health.sessions) {
-    const runtime = `${session.runtime}`.padEnd(11);
-    const status = `${session.status}`.padEnd(6);
+    const runtime = session.runtime.padEnd(11);
+    const status = session.status.padEnd(6);
     const url = session.currentUrl ?? '(none)';
     console.log(`  ${chalk.cyan(session.sessionId)}  ${chalk.dim(status)}  ${chalk.dim(runtime)}  ${url}`);
   }
@@ -128,7 +139,7 @@ async function printApprovals(limit: number): Promise<void> {
       : event.target_origin
         ? ` target=${event.target_origin}`
         : '';
-    const signalSummary = event.riskEvidence?.matchedSignals?.length
+    const signalSummary = event.riskEvidence?.matchedSignals.length
       ? ` signals=${event.riskEvidence.matchedSignals.slice(0, 3).join('|')}`
       : '';
     console.log(
@@ -216,6 +227,189 @@ function parseTrendsLimit(raw: string | undefined): number | null {
   const parsed = Number(raw);
   if (!Number.isInteger(parsed) || parsed < 1 || parsed > 50) return null;
   return parsed;
+}
+
+function parsePortRange(raw: string | undefined): { start: number; end: number } | null {
+  if (!raw) return null;
+  const match = raw.match(/^(\d+)-(\d+)$/);
+  if (!match) return null;
+
+  const [, startRaw, endRaw] = match;
+  if (!startRaw || !endRaw) return null;
+
+  const start = Number.parseInt(startRaw, 10);
+  const end = Number.parseInt(endRaw, 10);
+  if (!Number.isInteger(start) || !Number.isInteger(end)) return null;
+  if (start < 1024 || end < 1024) return null;
+  if (start > 65_535 || end > 65_535) return null;
+
+  const min = Math.min(start, end);
+  const max = Math.max(start, end);
+  if (max - min > 20_000) return null;
+  return { start: min, end: max };
+}
+
+function printBrowserLiveHostStatus(status: BrowserLiveHostStatus): void {
+  if (!status.running) {
+    console.log(chalk.dim('  Browser live host is stopped.'));
+    return;
+  }
+
+  const controlUrl = status.controlPort
+    ? `http://${status.host}:${status.controlPort}`
+    : '(unknown)';
+  console.log(chalk.green('\u2713') + ' Browser live host running.');
+  console.log(chalk.dim(`  control=${controlUrl}`));
+  console.log(
+    chalk.dim(
+      `  safe_ports=${status.safePorts.join(',')} scanned_candidates=${status.scannedCandidateCount} open_sessions=${status.openSessionCount}`,
+    ),
+  );
+  console.log(
+    chalk.dim(
+      `  slots=${status.maxSessionSlots} required_ports=${status.requiredPortCount} peekaboo_screen=${String(status.includePeekabooScreen)} screen_actions=${String(status.screenActionsEnabled)}`,
+    ),
+  );
+
+  for (const slot of status.slots) {
+    const slotUrl = `http://${status.host}:${slot.port}`;
+    const mapped = slot.sessionId
+      ? `${chalk.cyan(slot.sessionId)} ${chalk.dim(slot.currentUrl ?? '(no-url)')}`
+      : chalk.dim('idle');
+    console.log(`  slot${slot.slotIndex + 1}: ${chalk.dim(slotUrl)} -> ${mapped}`);
+  }
+
+  if (status.includePeekabooScreen) {
+    console.log(chalk.dim(`  screen=${controlUrl}/screen`));
+  }
+}
+
+async function runLiveHost(tokens: string[], ctx: SlashContext): Promise<void> {
+  const action = (tokens[1] ?? 'status').toLowerCase();
+  const backgroundControl = ctx.config.computerControl.background;
+
+  if (action === 'status') {
+    try {
+      printBrowserLiveHostStatus(await getBrowserLiveHostStatus());
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(chalk.red('\u2717') + ` Browser live host status failed: ${message}`);
+    }
+    return;
+  }
+
+  if (action === 'stop') {
+    try {
+      const stopped = await stopBrowserLiveHost();
+      printBrowserLiveHostStatus(stopped);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.log(chalk.red('\u2717') + ` Browser live host stop failed: ${message}`);
+    }
+    return;
+  }
+
+  if (action !== 'start') {
+    printBrowserUsage();
+    return;
+  }
+
+  let range: { start: number; end: number } | null = null;
+  let screenMode: string | undefined;
+  let sawScreenFlag = false;
+  let sawRangeFlag = false;
+
+  for (let index = 2; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (!token) continue;
+    if (token === '--range') {
+      sawRangeFlag = true;
+      const value = tokens[index + 1];
+      range = parsePortRange(value);
+      index += 1;
+      continue;
+    }
+    if (token.startsWith('--range=')) {
+      sawRangeFlag = true;
+      range = parsePortRange(token.slice('--range='.length));
+      continue;
+    }
+    if (token === '--screen') {
+      sawScreenFlag = true;
+      screenMode = tokens[index + 1];
+      index += 1;
+      continue;
+    }
+    if (token.startsWith('--screen=')) {
+      sawScreenFlag = true;
+      screenMode = token.slice('--screen='.length);
+      continue;
+    }
+    printBrowserUsage();
+    return;
+  }
+
+  if (sawScreenFlag && !screenMode?.trim()) {
+    printBrowserUsage();
+    return;
+  }
+
+  const normalizedScreenMode = screenMode?.trim().toLowerCase();
+  if (normalizedScreenMode && normalizedScreenMode !== 'peekaboo') {
+    printBrowserUsage();
+    return;
+  }
+
+  if (sawRangeFlag && range === null) {
+    printBrowserUsage();
+    return;
+  }
+
+  if (!backgroundControl.allowScreenStreaming) {
+    console.log(chalk.red('\u2717') + ' Background screen streaming is disabled.');
+    console.log(chalk.dim('  Enable: computerControl.background.allowScreenStreaming'));
+    return;
+  }
+
+  if (normalizedScreenMode === 'peekaboo') {
+    const available = await isPeekabooAvailable();
+    if (!available) {
+      console.log(chalk.red('\u2717') + ' Peekaboo is required for screen mode.');
+      console.log(chalk.dim('  Install: brew install peekaboo'));
+      return;
+    }
+  }
+
+  if (!backgroundControl.enabled) {
+    console.log(chalk.red('\u2717') + ' Background computer control is disabled.');
+    console.log(chalk.dim('  Enable: computerControl.background.enabled'));
+    return;
+  }
+
+  if (!backgroundControl.allowBrowserSessionHosting) {
+    console.log(chalk.red('\u2717') + ' Browser session hosting is disabled.');
+    console.log(chalk.dim('  Enable: computerControl.background.allowBrowserSessionHosting'));
+    return;
+  }
+
+  try {
+    const maxSessionSlots = Math.max(
+      1,
+      Math.min(backgroundControl.maxHostedBrowserSessions, 5),
+    );
+    const started = await startBrowserLiveHost({
+      config: ctx.config,
+      maxSessionSlots,
+      requiredPortCount: 6,
+      includePeekabooScreen: normalizedScreenMode === 'peekaboo',
+      portRangeStart: range?.start,
+      portRangeEnd: range?.end,
+    });
+    printBrowserLiveHostStatus(started);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(chalk.red('\u2717') + ` Browser live host start failed: ${message}`);
+  }
 }
 
 async function runTrendsCapture(hoursToken: string | undefined, limitToken: string | undefined): Promise<void> {
@@ -333,6 +527,11 @@ const browserHandler = async (args: string, ctx: SlashContext): Promise<SlashRes
   const tokens = args.trim().split(/\s+/).filter(Boolean);
   const action = (tokens[0] ?? 'status').toLowerCase();
 
+  if (action === 'host') {
+    await runLiveHost(tokens, ctx);
+    return 'handled';
+  }
+
   if (action === 'profiles') {
     const subcommand = (tokens[1] ?? '').toLowerCase();
 
@@ -447,7 +646,7 @@ export const browserCommands: SlashCommandDef[] = [
     description: 'Browser runtime controls and approval log view',
     handler: browserHandler,
     category: 'tools',
-    usage: '/browser [status|pause|resume|stop|kill|replay <session_id>|approvals [limit]|profiles [prune [session_id]]|trends [hours] [limit]|canary [hours]|canary rollback <pass|fail> [notes]]',
+    usage: '/browser [status|pause|resume|stop|kill|replay <session_id>|approvals [limit]|profiles [prune [session_id]]|trends [hours] [limit]|canary [hours]|canary rollback <pass|fail> [notes]|host [start|status|stop] [--range start-end] [--screen peekaboo]]',
     examples: [
       '/browser',
       '/browser status',
@@ -465,6 +664,11 @@ export const browserCommands: SlashCommandDef[] = [
       '/browser canary',
       '/browser canary 24',
       '/browser canary rollback pass Rehearsal completed in 3m',
+      '/browser host start',
+      '/browser host start --range 46000-47000',
+      '/browser host start --screen peekaboo',
+      '/browser host status',
+      '/browser host stop',
     ],
   },
 ];

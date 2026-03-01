@@ -231,6 +231,7 @@ describe('NativeSessionManager', () => {
       content: vi.fn(async () => '<html><body>ok</body></html>'),
       screenshot: vi.fn(async () => Buffer.from([0x89, 0x50, 0x4e, 0x47])),
       url: vi.fn(() => 'https://example.com/dashboard'),
+      evaluate: vi.fn(async () => undefined),
     };
 
     const context = {
@@ -362,5 +363,34 @@ describe('NativeSessionManager', () => {
     expect(screenshotDiff!.regressionSignal).toBe('none');
     expect(screenshotDiff!.fromScreenshotPath).toContain('0002-screenshot.png');
     expect(screenshotDiff!.toScreenshotPath).toContain('0003-screenshot.png');
+  });
+
+  it('rejects non-loopback wsEndpoint values in attach mode', async () => {
+    testDir = await mkdtemp(join(tmpdir(), 'opta-browser-session-'));
+    const connectOverCDP = vi.fn(async () => {
+      throw new Error('connectOverCDP should not be called for invalid wsEndpoint');
+    });
+    const manager = new NativeSessionManager({
+      cwd: testDir,
+      idFactory: () => 'sess-attach-invalid',
+      loadPlaywright: async () => ({
+        chromium: {
+          launch: vi.fn(async () => {
+            throw new Error('launch should not run for attach mode');
+          }),
+          connectOverCDP,
+        },
+      }),
+    });
+
+    const opened = await manager.openSession({
+      mode: 'attach',
+      wsEndpoint: 'ws://example.com:9222/devtools/browser/remote',
+    });
+
+    expect(opened.ok).toBe(false);
+    expect(opened.error?.code).toBe('OPEN_SESSION_FAILED');
+    expect(opened.error?.message).toContain('loopback wsEndpoint hosts');
+    expect(connectOverCDP).not.toHaveBeenCalled();
   });
 });

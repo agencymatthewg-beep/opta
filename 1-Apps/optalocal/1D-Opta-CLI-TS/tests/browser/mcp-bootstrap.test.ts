@@ -36,4 +36,52 @@ describe('createPlaywrightMcpServerConfig', () => {
     expect(config.args.slice(0, 2)).toEqual(['-y', '@playwright/mcp@1.0.0']);
     expect(config.env).toEqual({ DEBUG: 'pw:mcp' });
   });
+
+  it('passes --start-url when startUrl is provided', () => {
+    const config = createPlaywrightMcpServerConfig({ startUrl: 'https://example.com' });
+    const idx = config.args.indexOf('--start-url');
+    expect(idx).toBeGreaterThan(-1);
+    expect(config.args[idx + 1]).toBe('https://example.com');
+  });
+
+  it('trims startUrl whitespace before passing to args', () => {
+    const config = createPlaywrightMcpServerConfig({ startUrl: '  https://example.com  ' });
+    const idx = config.args.indexOf('--start-url');
+    expect(idx).toBeGreaterThan(-1);
+    expect(config.args[idx + 1]).toBe('https://example.com');
+  });
+
+  it('omits --start-url for empty or whitespace-only startUrl', () => {
+    expect(createPlaywrightMcpServerConfig({ startUrl: '' }).args).not.toContain('--start-url');
+    expect(createPlaywrightMcpServerConfig({ startUrl: '   ' }).args).not.toContain('--start-url');
+  });
+});
+
+describe('V3 browser.action event type', () => {
+  it('browser.action is registered in V3EventSchema', async () => {
+    const { V3EventSchema } = await import('../../src/protocol/v3/types.js');
+    expect(V3EventSchema.options).toContain('browser.action');
+  });
+});
+
+describe('browser.homePage config field', () => {
+  it('accepts a homePage string in browser config', async () => {
+    const { OptaConfigSchema } = await import('../../src/core/config.js');
+    const result = OptaConfigSchema.safeParse({
+      browser: { enabled: true, homePage: 'https://example.com' },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.browser?.homePage).toBe('https://example.com');
+    }
+  });
+
+  it('homePage defaults to undefined when omitted', async () => {
+    const { OptaConfigSchema } = await import('../../src/core/config.js');
+    const result = OptaConfigSchema.safeParse({ browser: { enabled: true } });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.browser?.homePage).toBeUndefined();
+    }
+  });
 });
