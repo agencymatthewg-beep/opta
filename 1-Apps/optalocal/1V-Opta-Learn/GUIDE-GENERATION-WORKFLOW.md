@@ -32,24 +32,38 @@ export interface Guide {
 
 export interface GuideSection {
   heading: string;
-  body: string;             // Primary text (Sora)
-  note?: string;            // Renders as an Amber/Green callout
-  code?: string;            // Renders in a JetBrains Mono dark block with Neon Cyan/Green
+  body: string;             // Primary text (Sora). Rendered as HTML.
+  note?: string;            // Renders as an Amber callout. Rendered as HTML.
+  code?: string;            // Renders in a JetBrains Mono dark block.
 }
 ```
+
+### 3.1 Inline Wikipedia-Style App Linking (NEW)
+
+Because the `body` and `note` fields are parsed via `dangerouslySetInnerHTML` in the Next.js frontend, **you must embed raw HTML links whenever referencing other Opta Apps**. 
+
+This creates a cohesive, Wikipedia-style interconnected learning network. Use the following syntax:
+
+- `<a href="/guides/cli" class="app-link link-cli">Opta CLI</a>`
+- `<a href="/guides/init" class="app-link link-init">Opta Init</a>`
+- `<a href="/guides/lmx" class="app-link link-lmx">Opta LMX</a>`
+- `<a href="/guides/accounts" class="app-link link-accounts">Opta Accounts</a>`
+- `<a href="/guides/dashboard" class="app-link link-dashboard">Opta Local Dashboard</a>`
+
+*Note: The frontend will automatically wrap naked plain-text "Opta" mentions in the brand purple, but generating the specific `<a>` links when cross-referencing apps is a hard requirement for all guide generation.*
 
 ## 4. Types of Guides
 
 Guides must be structured based on their scope and purpose. Use the following archetypes when generating `sections`:
 
-### A. Whole App Guide
-**Purpose:** Introduce a primary application or broad ecosystem component (e.g., LMX Overview).
-**Tone:** High-level, explanatory, technical but accessible.
+### A. Holistic Whole App Guide
+**Purpose:** An extensive, masterclass-level deep dive into a primary application (e.g., LMX Masterclass). Guides are automatically injected into an interactive sticky TOC.
+**Tone:** Educational, multi-tiered, deeply visual via code blocks and structural formatting.
 **Required Sections:**
-1. **Overview:** What the app is and its primary value proposition.
-2. **Core Capabilities:** High-level feature summary.
-3. **Architecture:** Where it runs, how it connects to the rest of the stack.
-4. **Next Steps:** Routing to process or feature guides.
+1. **Ecosystem Role / Overview:** How it fits into the Opta stack (with `app-link` cross-references).
+2. **Architecture:** How it works under the hood (memory tiers, daemons, etc).
+3. **Feature Deep-Dive:** Comprehensive breakdowns of individual capabilities.
+4. **Integrated Workflows:** How to use the app in conjunction with the rest of the stack.
 
 ### B. Feature Guide
 **Purpose:** Deep dive into a specific capability within an app (e.g., Accounts Local Sync).
@@ -83,7 +97,7 @@ When instructed to create a new guide:
 
 1. **Activate Skill:** Ensure Gemini 3.1 with the frontend design skill is active.
 2. **Analyze Request:** Determine the target `AppSlug`, `Category`, and Guide Type (App, Feature, Process, Setting).
-3. **Draft Object:** Generate the valid TypeScript object adhering to the structure.
+3. **Draft Object:** Generate the valid TypeScript object adhering to the structure. Ensure `app-link` anchor tags are heavily utilized in the `body` string.
 4. **Apply Aesthetics:** Ensure tone matches Opta guidelines. Use `note` for callouts and `code` for snippets. Keep summaries tight.
 5. **Export & Register:** 
    - Create the new file in `1V-Opta-Learn/content/guides/<slug>.ts`.

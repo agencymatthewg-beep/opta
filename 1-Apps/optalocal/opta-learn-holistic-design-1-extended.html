@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#09090b] text-[#fafafa] scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn - LMX Masterclass (Extended Design 1)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sora', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        void: '#09090b', surface: '#0c0c12', elevated: '#1a1a24',
+                        amber: '#f59e0b', violet: '#a855f7', text_primary: '#fafafa', text_secondary: '#a1a1aa', text_muted: '#52525b',
+                        code_bg: '#0a0a0f', obsidian: 'rgba(5,3,10,0.8)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-grid-subtle { background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 48px 48px; }
+        .obsidian { background: rgba(5,3,10,0.8); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(16px); border-radius: 16px; }
+        .text-moonlight { background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168,85,247,0.5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .callout { background: rgba(168,85,247,0.1); border-left: 3px solid #a855f7; }
+        .glass-nav { background: rgba(12,12,18,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .glass-search { background: rgba(12,12,18,0.8); border: 1px solid rgba(255,255,255,0.1); transition: all 0.3s ease; }
+        .glass-search:focus-within { border-color: rgba(168,85,247,0.5); box-shadow: 0 0 0 1px rgba(168,85,247,0.3); }
+        .text-opta { color: #a855f7; -webkit-text-fill-color: #a855f7; display: inline; }
+        
+        /* Sidebar TOC Interactivity */
+        .toc-link { color: #a1a1aa; border-left: 2px solid transparent; transition: all 0.3s ease; display: block; padding-left: 16px; padding-top: 10px; padding-bottom: 10px; margin-left: -1px; }
+        .toc-link:hover { color: #fafafa; background: rgba(255,255,255,0.02); }
+        .toc-link.active { color: #fafafa; border-left-color: #a855f7; background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, transparent 100%); }
+        
+        /* Smooth scrolling offset for fixed header */
+        section { scroll-margin-top: 100px; }
+        
+        /* Code Tab Styles */
+        .code-tab.active { border-bottom: 2px solid #a855f7; color: #fafafa; }
+    </style>
+</head>
+<body class="bg-void min-h-screen relative overflow-x-hidden flex flex-col">
+    <div class="fixed inset-0 bg-grid-subtle pointer-events-none -z-10"></div>
+    
+    <!-- Top Sticky Nav with Search Bar -->
+    <header class="fixed top-0 w-full z-50 glass-nav px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4 font-mono text-sm text-text_muted">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-violet shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                <span><span class="text-opta lowercase">Opta</span> local</span> 
+                <span>/</span> 
+                <span>learn</span> 
+                <span>/</span> 
+                <span class="text-violet">lmx</span>
+            </div>
+        </div>
+        
+        <div class="relative w-full max-w-md">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text_muted"></i>
+            <input type="text" placeholder="Search guides, features, apps..." class="w-full glass-search rounded-full pl-10 pr-4 py-2 text-sm font-sans text-text_primary placeholder:text-text_muted focus:outline-none" />
+        </div>
+        
+        <div class="w-[150px]"></div>
+    </header>
+
+    <div class="flex flex-1 pt-[72px]">
+        <!-- Sticky Sidebar TOC -->
+        <aside class="w-72 fixed h-[calc(100vh-72px)] border-r border-white/10 p-8 flex flex-col gap-8 overflow-y-auto z-40 bg-void/80 backdrop-blur-md">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-mono text-text_muted uppercase tracking-wider">Guide Navigation</span>
+                <h2 class="text-lg font-semibold text-text_primary"><span class="text-opta">Opta</span> LMX Masterclass</h2>
+            </div>
+            
+            <nav id="toc" class="flex flex-col text-sm font-sans font-medium border-l border-white/10">
+                <a href="#overview" class="toc-link active" data-target="overview">1. Overview</a>
+                <a href="#architecture" class="toc-link" data-target="architecture">2. Architecture</a>
+                <a href="#capabilities" class="toc-link" data-target="capabilities">3. Core Capabilities</a>
+                <a href="#usage" class="toc-link" data-target="usage">4. Workflows & Usage</a>
+                <a href="#configuration" class="toc-link" data-target="configuration">5. Deep Configuration</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-72 p-12 lg:p-24 max-w-5xl flex flex-col gap-24 relative">
+            
+            <!-- Section 1: Overview (Hero) -->
+            <section id="overview" class="flex flex-col gap-6 pt-8">
+                <div class="inline-flex items-center gap-2 w-max px-3 py-1 text-xs font-mono bg-violet/10 border border-violet/30 rounded text-violet uppercase tracking-wider">
+                    Whole App Guide
+                </div>
+                <h1 class="text-6xl font-bold tracking-tight text-moonlight mb-2"><span class="text-opta">Opta</span> LMX Masterclass</h1>
+                <p class="text-xl text-text_secondary max-w-3xl leading-relaxed">
+                    The complete, holistic guide to the Local Model eXecution engine. Understand its architecture, master its capabilities, and optimize your local AI infrastructure.
+                </p>
+                <div class="text-text_secondary leading-relaxed text-lg mt-6 flex flex-col gap-4">
+                    <p><span class="text-opta">Opta</span> LMX is the high-performance local inference engine at the heart of the <span class="text-opta">Opta</span> Local ecosystem. It is designed to abstract away the complexity of managing ML accelerators, memory allocation, and model formatting, providing a unified API for running GGUF models on Apple Silicon, CUDA, and ROCm seamlessly.</p>
+                </div>
+            </section>
+
+            <!-- Section 2: Architecture -->
+            <section id="architecture" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">How it Works</h2>
+                <div class="obsidian p-8 grid grid-cols-1 md:grid-cols-2 gap-8 items-center relative overflow-hidden group hover:border-violet/40 transition-colors duration-500">
+                    <div class="absolute -bottom-32 -left-32 w-64 h-64 bg-violet/5 rounded-full blur-[80px]"></div>
+                    
+                    <div class="flex flex-col gap-4 z-10">
+                        <h3 class="text-xl font-semibold text-text_primary">The Three-Layer Engine</h3>
+                        <p class="text-text_secondary leading-relaxed">LMX isn't just an API wrapper. It actively manages your hardware layer to prevent out-of-memory crashes and context blowouts.</p>
+                        <ul class="text-text_secondary space-y-4 mt-4 list-none">
+                            <li class="flex items-start gap-4">
+                                <div class="mt-1 bg-surface p-1.5 rounded border border-white/10"><i data-lucide="cpu" class="w-4 h-4 text-violet"></i></div>
+                                <div><strong class="text-text_primary block">Hardware Introspection</strong> Detects RAM, VRAM, and unified memory to set max layers.</div>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <div class="mt-1 bg-surface p-1.5 rounded border border-white/10"><i data-lucide="layers" class="w-4 h-4 text-violet"></i></div>
+                                <div><strong class="text-text_primary block">Unified KV Cache Manager</strong> Swaps cache to disk/RAM seamlessly during long contexts.</div>
+                            </li>
+                            <li class="flex items-start gap-4">
+                                <div class="mt-1 bg-surface p-1.5 rounded border border-white/10"><i data-lucide="network" class="w-4 h-4 text-violet"></i></div>
+                                <div><strong class="text-text_primary block">OpenAI-Compatible Router</strong> Translates `v1/chat/completions` directly into inference queues.</div>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <!-- Diagram -->
+                    <div class="glass p-6 rounded-2xl border border-white/10 font-mono text-sm text-text_muted z-10 flex flex-col gap-3 relative shadow-2xl bg-gradient-to-b from-[rgba(12,12,18,0.9)] to-void">
+                        <div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-white/5">
+                            <span class="text-text_primary">Client (Cursor/CLI)</span>
+                            <span class="text-violet bg-violet/10 px-2 py-0.5 rounded text-xs">HTTP Request</span>
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="h-6 w-px bg-gradient-to-b from-violet/50 to-transparent"></div>
+                        </div>
+                        <div class="flex justify-between items-center bg-[rgba(168,85,247,0.1)] p-3 rounded-lg border border-violet/20">
+                            <span class="text-text_primary">LMX Daemon</span>
+                            <span class="text-text_secondary text-xs">localhost:8080</span>
+                        </div>
+                        <div class="flex justify-center">
+                            <div class="h-6 w-px bg-gradient-to-b from-violet/50 to-transparent"></div>
+                        </div>
+                        <div class="flex justify-between items-center bg-surface p-3 rounded-lg border border-white/5">
+                            <span class="text-text_primary flex items-center gap-2"><i data-lucide="microchip" class="w-4 h-4"></i> Inference Core</span>
+                            <span class="text-amber">GPU / ANE</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 3: Capabilities (Bento) -->
+            <section id="capabilities" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <div class="flex justify-between items-end">
+                    <h2 class="text-3xl font-semibold text-text_primary">Core Capabilities</h2>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    
+                    <!-- Bento Item 1 -->
+                    <div class="obsidian p-8 md:col-span-2 flex flex-col gap-4 group hover:border-violet/40 transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet/20 to-transparent flex items-center justify-center border border-violet/20 group-hover:scale-110 transition-transform">
+                            <i data-lucide="zap" class="w-6 h-6 text-violet"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-text_primary mt-2">Dynamic Resource Allocation</h3>
+                        <p class="text-text_secondary text-base leading-relaxed">LMX monitors available VRAM in real-time. If you load an 8B model but only have 6GB of VRAM free, LMX automatically offloads overflow layers to CPU RAM. It prioritizes GPU execution but guarantees stability, preventing kernel panics.</p>
+                    </div>
+                    
+                    <!-- Bento Item 2 -->
+                    <div class="obsidian p-8 flex flex-col gap-4 group hover:border-violet/40 transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet/20 to-transparent flex items-center justify-center border border-violet/20 group-hover:scale-110 transition-transform">
+                            <i data-lucide="shield-check" class="w-6 h-6 text-violet"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary mt-2">Air-Gapped Reliability</h3>
+                        <p class="text-text_secondary text-sm leading-relaxed">Zero telemetry. Zero phone-homes. Once models are retrieved, LMX operates flawlessly in a Faraday cage.</p>
+                    </div>
+                    
+                    <!-- Bento Item 3 -->
+                    <div class="obsidian p-8 flex flex-col gap-4 group hover:border-violet/40 transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet/20 to-transparent flex items-center justify-center border border-violet/20 group-hover:scale-110 transition-transform">
+                            <i data-lucide="cable" class="w-6 h-6 text-violet"></i>
+                        </div>
+                        <h3 class="text-xl font-semibold text-text_primary mt-2">1:1 OpenAI Parity</h3>
+                        <p class="text-text_secondary text-sm leading-relaxed">Point LangChain, Cursor, or AutoGen to `localhost:8080/v1` and use standard `gpt-4` style API structures. LMX translates everything under the hood.</p>
+                    </div>
+                    
+                    <!-- Bento Item 4 -->
+                    <div class="obsidian p-8 md:col-span-2 flex flex-col justify-between group hover:border-violet/40 transition-all duration-300 transform hover:-translate-y-1">
+                        <div class="flex flex-col gap-4">
+                            <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-violet/20 to-transparent flex items-center justify-center border border-violet/20 group-hover:scale-110 transition-transform">
+                                <i data-lucide="hard-drive" class="w-6 h-6 text-violet"></i>
+                            </div>
+                            <h3 class="text-2xl font-semibold text-text_primary mt-2">Hot-Swappable Architectures</h3>
+                            <p class="text-text_secondary text-base leading-relaxed">Switch between a standard Llama 3 chat model to a DeepSeek coder model in milliseconds via API, without restarting the daemon. LMX flushes memory gracefully.</p>
+                        </div>
+                        <div class="mt-6 bg-surface border border-white/10 rounded-lg p-3 font-mono text-sm text-text_muted flex items-center justify-between">
+                            <span>curl -X POST /v1/models/switch</span>
+                            <span class="text-neon_green bg-neon_green/10 px-2 py-0.5 rounded text-xs">200 OK</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 4: Workflows & Usage -->
+            <section id="usage" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Workflows & Usage</h2>
+                <p class="text-text_secondary leading-relaxed text-lg">Because LMX adheres to standard API schemas, integrating it into your existing tools is trivial. The daemon handles the heavy lifting.</p>
+                
+                <div class="callout p-6 rounded-xl flex gap-4 mt-2 mb-4 bg-void">
+                    <i data-lucide="terminal" class="w-6 h-6 text-violet flex-shrink-0 mt-1"></i>
+                    <div class="flex flex-col gap-2 w-full">
+                        <h4 class="text-text_primary font-semibold">Step 1: Start the Daemon</h4>
+                        <p class="text-text_secondary text-sm">Ensure the engine is running in the background before sending requests.</p>
+                        <div class="bg-code_bg border border-white/10 rounded-lg p-4 font-mono text-sm mt-2">
+                            <span class="text-violet">opta</span> <span class="text-text_primary">lmx start</span><br>
+                            <span class="text-text_muted"># Engine listening on 0.0.0.0:8080</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="obsidian border border-white/10 rounded-xl overflow-hidden">
+                    <div class="flex border-b border-white/10 bg-surface">
+                        <button class="px-6 py-3 font-mono text-sm code-tab active transition-colors hover:text-text_primary" onclick="switchTab('curl')">cURL</button>
+                        <button class="px-6 py-3 font-mono text-sm text-text_muted code-tab hover:text-text_primary transition-colors" onclick="switchTab('python')">Python (OpenAI SDK)</button>
+                    </div>
+                    
+                    <div id="code-curl" class="p-6 bg-code_bg font-mono text-sm text-text_primary overflow-x-auto leading-loose">
+<span class="text-amber">curl</span> http://localhost:8080/v1/chat/completions 
+  <span class="text-violet">-H</span> <span class="text-neon_green">"Content-Type: application/json"</span> 
+  <span class="text-violet">-d</span> '{
+    <span class="text-[#06b6d4]">"model"</span>: <span class="text-neon_green">"llama-3-8b-instruct"</span>,
+    <span class="text-[#06b6d4]">"messages"</span>: [
+      {<span class="text-[#06b6d4]">"role"</span>: <span class="text-neon_green">"user"</span>, <span class="text-[#06b6d4]">"content"</span>: <span class="text-neon_green">"Write a quick sort in Rust."</span>}
+    ]
+  }'
+                    </div>
+                    
+                    <div id="code-python" class="p-6 bg-code_bg font-mono text-sm text-text_primary overflow-x-auto leading-loose hidden">
+<span class="text-amber">from</span> openai <span class="text-amber">import</span> OpenAI
+
+<span class="text-text_muted"># Point the standard SDK to your local LMX daemon</span>
+client = OpenAI(
+    base_url=<span class="text-neon_green">"http://localhost:8080/v1"</span>,
+    api_key=<span class="text-neon_green">"opta-local-key"</span> <span class="text-text_muted"># required but ignored</span>
+)
+
+response = client.chat.completions.create(
+    model=<span class="text-neon_green">"llama-3-8b-instruct"</span>,
+    messages=[
+        {<span class="text-[#06b6d4]">"role"</span>: <span class="text-neon_green">"user"</span>, <span class="text-[#06b6d4]">"content"</span>: <span class="text-neon_green">"Write a quick sort in Rust."</span>}
+    ]
+)
+
+<span class="text-amber">print</span>(response.choices[<span class="text-violet">0</span>].message.content)
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 5: Deep Configuration -->
+            <section id="configuration" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Deep Configuration</h2>
+                <p class="text-text_secondary leading-relaxed text-lg">LMX is highly tunable via environment variables or the `.opta/config.yaml` file. These settings control hardware limits, cache sizes, and network bindings.</p>
+                
+                <div class="glass border border-white/10 rounded-2xl overflow-hidden mt-4">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-surface border-b border-white/10">
+                                <th class="py-4 px-6 font-semibold text-text_primary font-sans text-sm tracking-wide">Environment Variable</th>
+                                <th class="py-4 px-6 font-semibold text-text_primary font-sans text-sm tracking-wide">Default</th>
+                                <th class="py-4 px-6 font-semibold text-text_primary font-sans text-sm tracking-wide">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm font-mono divide-y divide-white/5 bg-void/50">
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="py-4 px-6 text-violet">OPTA_LMX_PORT</td>
+                                <td class="py-4 px-6 text-text_muted">8080</td>
+                                <td class="py-4 px-6 text-text_secondary font-sans">The port the OpenAI-compatible router binds to.</td>
+                            </tr>
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="py-4 px-6 text-violet">OPTA_GPU_LAYERS</td>
+                                <td class="py-4 px-6 text-text_muted">-1 (Auto)</td>
+                                <td class="py-4 px-6 text-text_secondary font-sans">Number of model layers to offload to GPU VRAM. `-1` uses max available.</td>
+                            </tr>
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="py-4 px-6 text-violet">OPTA_KV_CACHE_SIZE</td>
+                                <td class="py-4 px-6 text-text_muted">2048</td>
+                                <td class="py-4 px-6 text-text_secondary font-sans">Max context size allocated in MB. Increase for long document retrieval.</td>
+                            </tr>
+                            <tr class="hover:bg-white/5 transition-colors">
+                                <td class="py-4 px-6 text-violet">OPTA_ALLOW_REMOTE</td>
+                                <td class="py-4 px-6 text-amber">false</td>
+                                <td class="py-4 px-6 text-text_secondary font-sans">If true, binds to `0.0.0.0` instead of `127.0.0.1`, exposing LMX to LAN.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            
+            <!-- Footer Spacer -->
+            <div class="h-32"></div>
+
+        </main>
+    </div>
+
+    <!-- Interactivity Scripts -->
+    <script>
+        lucide.createIcons();
+
+        // Simple Tab Switcher for Code Block
+        function switchTab(tab) {
+            const tabs = document.querySelectorAll('.code-tab');
+            tabs.forEach(t => t.classList.remove('active', 'text-text_primary'));
+            tabs.forEach(t => {
+                if(!t.classList.contains('active')) t.classList.add('text-text_muted');
+            });
+            
+            event.target.classList.add('active');
+            event.target.classList.remove('text-text_muted');
+            
+            document.getElementById('code-curl').classList.add('hidden');
+            document.getElementById('code-python').classList.add('hidden');
+            document.getElementById('code-' + tab).classList.remove('hidden');
+        }
+
+        // Intersection Observer for TOC Highlighting
+        document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section");
+            const navLinks = document.querySelectorAll(".toc-link");
+
+            const observerOptions = {
+                root: null,
+                rootMargin: "-100px 0px -60% 0px", // Triggers when section is comfortably in view
+                threshold: 0
+            };
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach((link) => {
+                            link.classList.remove("active");
+                            if (link.getAttribute("data-target") === entry.target.id) {
+                                link.classList.add("active");
+                            }
+                        });
+                    }
+                });
+            }, observerOptions);
+
+            sections.forEach((section) => {
+                observer.observe(section);
+            });
+        });
+    </script>
+</body>
+</html>

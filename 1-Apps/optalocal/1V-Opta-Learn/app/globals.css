@@ -204,3 +204,70 @@ code, pre {
   animation: opta-breathe 1s ease-in-out infinite;
   color: #a855f7;
 }
+
+/* Text Opta */
+.text-opta {
+  color: var(--color-primary);
+  -webkit-text-fill-color: var(--color-primary);
+  display: inline;
+  font-weight: inherit;
+}
+
+/* Holistic Guide TOC and Inline Link Styles */
+section {
+  scroll-margin-top: 100px;
+}
+
+.toc-link {
+  color: var(--color-text-secondary);
+  border-left: 2px solid transparent;
+  transition: all 0.3s ease;
+  display: block;
+  padding-left: 16px;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  margin-left: -1px;
+}
+
+.toc-link:hover {
+  color: var(--color-text-primary);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.toc-link.active {
+  color: var(--color-text-primary);
+  border-left-color: var(--color-primary);
+  background: linear-gradient(90deg, rgba(168, 85, 247, 0.1) 0%, transparent 100%);
+}
+
+.app-link { 
+  font-weight: 500; 
+  text-decoration: underline; 
+  text-decoration-style: dotted; 
+  text-underline-offset: 4px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.app-link:hover {
+  text-decoration-style: solid;
+  text-decoration-thickness: 2px;
+}
+
+.link-cli { color: var(--color-neon-green); text-decoration-color: rgba(34, 197, 94, 0.4); }
+.link-cli:hover { text-decoration-color: var(--color-neon-green); background: rgba(34, 197, 94, 0.1); border-radius: 2px; }
+
+.link-accounts { color: var(--color-neon-blue); text-decoration-color: rgba(59, 130, 246, 0.4); }
+.link-accounts:hover { text-decoration-color: var(--color-neon-blue); background: rgba(59, 130, 246, 0.1); border-radius: 2px; }
+
+.link-init { color: var(--color-neon-amber); text-decoration-color: rgba(245, 158, 11, 0.4); }
+.link-init:hover { text-decoration-color: var(--color-neon-amber); background: rgba(245, 158, 11, 0.1); border-radius: 2px; }
+
+.link-lmx { color: var(--color-primary); text-decoration-color: rgba(168, 85, 247, 0.4); }
+.link-lmx:hover { text-decoration-color: var(--color-primary); background: rgba(168, 85, 247, 0.1); border-radius: 2px; }
+
+.link-dashboard { color: var(--color-primary); text-decoration-color: rgba(168, 85, 247, 0.4); }
+.link-dashboard:hover { text-decoration-color: var(--color-primary); background: rgba(168, 85, 247, 0.1); border-radius: 2px; }
+
+.link-general { color: var(--color-text-secondary); text-decoration-color: rgba(161, 161, 170, 0.4); }
+.link-general:hover { text-decoration-color: var(--color-text-secondary); background: rgba(161, 161, 170, 0.1); border-radius: 2px; }

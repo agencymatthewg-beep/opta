@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-[#09090b] text-[#fafafa] scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn - LMX Masterclass (Deep Education - Inline Links)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Sora:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Sora', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: {
+                        void: '#09090b', surface: '#0c0c12', elevated: '#1a1a24',
+                        amber: '#f59e0b', violet: '#a855f7', green: '#22c55e', blue: '#3b82f6',
+                        text_primary: '#fafafa', text_secondary: '#a1a1aa', text_muted: '#52525b',
+                        code_bg: '#0a0a0f', obsidian: 'rgba(5,3,10,0.8)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .bg-grid-subtle { background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 48px 48px; }
+        .obsidian { background: rgba(5,3,10,0.8); border: 1px solid rgba(255,255,255,0.05); backdrop-filter: blur(16px); border-radius: 16px; }
+        .text-moonlight { background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168,85,247,0.5) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .callout { background: rgba(168,85,247,0.1); border-left: 3px solid #a855f7; }
+        .glass-nav { background: rgba(12,12,18,0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .text-opta { color: #a855f7; -webkit-text-fill-color: #a855f7; display: inline; font-weight: inherit; }
+        section { scroll-margin-top: 100px; }
+        
+        /* Inline Wikipedia-style App Links (Style 1: Colored Text + Dotted Underline) */
+        .app-link { 
+            font-weight: 500; 
+            text-decoration: underline; 
+            text-decoration-style: dotted; 
+            text-underline-offset: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .app-link:hover { text-decoration-style: solid; text-decoration-thickness: 2px; }
+        
+        /* App-specific link colors */
+        .link-cli { color: #22c55e; text-decoration-color: rgba(34,197,94,0.4); }
+        .link-cli:hover { text-decoration-color: #22c55e; background: rgba(34,197,94,0.1); border-radius: 2px; }
+        
+        .link-accounts { color: #3b82f6; text-decoration-color: rgba(59,130,246,0.4); }
+        .link-accounts:hover { text-decoration-color: #3b82f6; background: rgba(59,130,246,0.1); border-radius: 2px; }
+        
+        .link-init { color: #f59e0b; text-decoration-color: rgba(245,158,11,0.4); }
+        .link-init:hover { text-decoration-color: #f59e0b; background: rgba(245,158,11,0.1); border-radius: 2px; }
+        
+        .link-dashboard { color: #a855f7; text-decoration-color: rgba(168,85,247,0.4); }
+        .link-dashboard:hover { text-decoration-color: #a855f7; background: rgba(168,85,247,0.1); border-radius: 2px; }
+
+        .toc-link { color: #a1a1aa; border-left: 2px solid transparent; transition: all 0.3s ease; display: block; padding-left: 16px; padding-top: 10px; padding-bottom: 10px; margin-left: -1px; }
+        .toc-link:hover { color: #fafafa; background: rgba(255,255,255,0.02); }
+        .toc-link.active { color: #fafafa; border-left-color: #a855f7; background: linear-gradient(90deg, rgba(168,85,247,0.1) 0%, transparent 100%); }
+    </style>
+</head>
+<body class="bg-void min-h-screen relative overflow-x-hidden flex flex-col">
+    <div class="fixed inset-0 bg-grid-subtle pointer-events-none -z-10"></div>
+    
+    <!-- Header -->
+    <header class="fixed top-0 w-full z-50 glass-nav px-6 py-3 flex items-center justify-between">
+        <div class="flex items-center gap-4 font-mono text-sm text-text_muted">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 rounded-full bg-violet shadow-[0_0_8px_rgba(168,85,247,0.8)]"></div>
+                <span><span class="text-opta lowercase font-semibold">Opta</span> local</span> 
+                <span>/</span> <span>learn</span> <span>/</span> <span class="text-violet">lmx</span>
+            </div>
+        </div>
+        <div class="relative w-full max-w-md">
+            <i data-lucide="search" class="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-text_muted"></i>
+            <input type="text" placeholder="Search guides..." class="w-full bg-[rgba(12,12,18,0.8)] border border-white/10 rounded-full pl-10 pr-4 py-2 text-sm text-text_primary focus:outline-none focus:border-violet/50" />
+        </div>
+        <div class="w-[150px]"></div>
+    </header>
+
+    <div class="flex flex-1 pt-[72px]">
+        <!-- TOC Sidebar -->
+        <aside class="w-72 fixed h-[calc(100vh-72px)] border-r border-white/10 p-8 flex flex-col gap-8 overflow-y-auto z-40 bg-void/80 backdrop-blur-md">
+            <div class="flex flex-col gap-2">
+                <span class="text-xs font-mono text-text_muted uppercase tracking-wider">Guide Navigation</span>
+                <h2 class="text-lg font-semibold text-text_primary"><span class="text-opta">Opta</span> LMX Masterclass</h2>
+            </div>
+            <nav id="toc" class="flex flex-col text-sm font-sans font-medium border-l border-white/10">
+                <a href="#overview" class="toc-link active" data-target="overview">1. Ecosystem Role</a>
+                <a href="#architecture" class="toc-link" data-target="architecture">2. Architecture</a>
+                <a href="#capabilities" class="toc-link" data-target="capabilities">3. Feature Deep-Dive</a>
+                <a href="#tooling" class="toc-link" data-target="tooling">4. External Tooling</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 ml-72 p-12 lg:p-24 max-w-5xl flex flex-col gap-24 relative">
+            
+            <section id="overview" class="flex flex-col gap-6 pt-8">
+                <div class="inline-flex items-center gap-2 w-max px-3 py-1 text-xs font-mono bg-violet/10 border border-violet/30 rounded text-violet uppercase tracking-wider">
+                    Whole App Guide
+                </div>
+                <h1 class="text-6xl font-bold tracking-tight text-moonlight mb-2"><span class="text-opta">Opta</span> LMX Masterclass</h1>
+                <p class="text-xl text-text_secondary max-w-3xl leading-relaxed">
+                    The complete, holistic guide to the Local Model eXecution engine.
+                </p>
+                <div class="text-text_secondary leading-relaxed text-lg mt-6 flex flex-col gap-6">
+                    <p><span class="text-opta">Opta</span> LMX is the high-performance local inference engine at the heart of the stack. While you might first install the platform using <a href="/guides/init" class="app-link link-init" title="Read the Opta Init guide">Opta Init</a>, LMX is the actual background daemon that runs on your machine permanently.</p>
+                    <p>It acts as the invisible bridge. If you are typing commands into the <a href="/guides/cli" class="app-link link-cli" title="Read the Opta CLI guide">Opta CLI</a>, or viewing your active models via the <a href="/guides/dashboard" class="app-link link-dashboard" title="Read the Local Dashboard guide">Opta Local Dashboard</a>, they are all simply sending API requests to the LMX background service.</p>
+                </div>
+            </section>
+
+            <section id="architecture" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Architecture & Memory</h2>
+                <div class="text-text_secondary leading-relaxed text-lg">
+                    <p>LMX solves the hardest problem in local AI: Out-Of-Memory (OOM) crashes. It does this via a three-tier memory abstraction.</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                    <div class="glass p-6 rounded-xl border border-white/10 flex flex-col gap-4">
+                        <div class="font-mono text-violet text-sm">Tier 1: VRAM</div>
+                        <h3 class="text-text_primary font-semibold">GPU Execution</h3>
+                        <p class="text-text_secondary text-sm">The fastest tier. LMX attempts to load 100% of model layers into your dedicated GPU or Apple Silicon unified memory first.</p>
+                    </div>
+                    <div class="glass p-6 rounded-xl border border-white/10 flex flex-col gap-4">
+                        <div class="font-mono text-amber text-sm">Tier 2: Sys RAM</div>
+                        <h3 class="text-text_primary font-semibold">CPU Offloading</h3>
+                        <p class="text-text_secondary text-sm">If VRAM is full, LMX dynamically spills remaining layers to system RAM. Inference slows, but the app never crashes.</p>
+                    </div>
+                    <div class="glass p-6 rounded-xl border border-white/10 flex flex-col gap-4">
+                        <div class="font-mono text-text_muted text-sm">Tier 3: Disk</div>
+                        <h3 class="text-text_primary font-semibold">KV Cache Swap</h3>
+                        <p class="text-text_secondary text-sm">During massive context operations (100k+ tokens), LMX can swap older context states to NVMe storage.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="capabilities" class="flex flex-col gap-8 pt-8 border-t border-white/10">
+                <h2 class="text-3xl font-semibold text-text_primary">Feature Deep-Dive</h2>
+                
+                <div class="flex flex-col gap-12 mt-4">
+                    <!-- Feature 1 -->
+                    <div class="flex gap-6 items-start">
+                        <div class="mt-1 w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="zap" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <h3 class="text-xl font-semibold text-text_primary">Hot-Swapping Models</h3>
+                            <p class="text-text_secondary leading-relaxed">Unlike traditional setups, LMX stays running even when no models are loaded. You can switch from `llama-3` to `phi-3` via the <a href="/guides/cli" class="app-link link-cli">CLI</a> in milliseconds. LMX gracefully dumps the VRAM and loads the new GGUF file from disk without restarting the port listener.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 2 -->
+                    <div class="flex gap-6 items-start">
+                        <div class="mt-1 w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="network" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <h3 class="text-xl font-semibold text-text_primary">Concurrent Queuing</h3>
+                            <p class="text-text_secondary leading-relaxed">If multiple requests hit LMX simultaneously, it batches them safely. This is critical when you use LMX as a backend for complex multi-agent workflows.</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Feature 3 -->
+                    <div class="flex gap-6 items-start">
+                        <div class="mt-1 w-10 h-10 rounded bg-violet/10 border border-violet/30 flex items-center justify-center flex-shrink-0">
+                            <i data-lucide="cloud-off" class="text-violet w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col gap-2">
+                            <h3 class="text-xl font-semibold text-text_primary">Air-Gapped Telemetry</h3>
+                            <p class="text-text_secondary leading-relaxed">LMX generates extensive performance logs (tokens/sec, load times), but this data is stored strictly locally. If you wish to back up your config across machines, you must actively link it using <a href="/guides/accounts" class="app-link link-accounts" title="Read about Opta Accounts Sync">Opta Accounts</a>.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <div class="h-32"></div>
+        </main>
+    </div>
+    <script>
+        lucide.createIcons();
+        
+        document.addEventListener("DOMContentLoaded", () => {
+            const sections = document.querySelectorAll("section");
+            const navLinks = document.querySelectorAll(".toc-link");
+
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach((entry) => {
+                    if (entry.isIntersecting) {
+                        navLinks.forEach((link) => {
+                            link.classList.remove("active");
+                            if (link.getAttribute("data-target") === entry.target.id) {
+                                link.classList.add("active");
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: "-100px 0px -60% 0px", threshold: 0 });
+
+            sections.forEach((section) => observer.observe(section));
+        });
+    </script>
+</body>
+</html>
