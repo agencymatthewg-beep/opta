@@ -22,7 +22,8 @@ async function loadExecuteTool(): Promise<(name: string, argsJson: string) => Pr
   if (cachedExecuteTool) return cachedExecuteTool;
   await ensureRuntimeReady();
   const mod = await import('../core/tools/executors.js');
-  const executeTool = (mod as { executeTool?: (name: string, argsJson: string) => Promise<string> }).executeTool;
+  const executeTool = (mod as { executeTool?: (name: string, argsJson: string) => Promise<string> })
+    .executeTool;
   if (typeof executeTool !== 'function') {
     throw new Error('Worker tool runtime missing executeTool export');
   }
@@ -31,17 +32,19 @@ async function loadExecuteTool(): Promise<(name: string, argsJson: string) => Pr
 }
 
 if (parentPort) {
-  parentPort.on('message', async (job: ToolJob) => {
-    try {
-      const executeTool = await loadExecuteTool();
-      const result = await executeTool(job.tool, job.argsJson);
-      parentPort!.postMessage({ id: job.id, ok: true, result });
-    } catch (err) {
-      parentPort!.postMessage({
-        id: job.id,
-        ok: false,
-        error: err instanceof Error ? err.message : String(err),
-      });
-    }
+  parentPort.on('message', (job: ToolJob) => {
+    void (async () => {
+      try {
+        const executeTool = await loadExecuteTool();
+        const result = await executeTool(job.tool, job.argsJson);
+        parentPort!.postMessage({ id: job.id, ok: true, result });
+      } catch (err) {
+        parentPort!.postMessage({
+          id: job.id,
+          ok: false,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    })();
   });
 }

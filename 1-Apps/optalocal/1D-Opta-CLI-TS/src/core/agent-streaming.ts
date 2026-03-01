@@ -11,6 +11,7 @@ import { estimateTokens } from '../utils/tokens.js';
 import { sanitizeTerminalText } from '../utils/text.js';
 import { ThinkingRenderer, stripThinkTags } from '../ui/thinking.js';
 import { sleep } from '../utils/common.js';
+import { errorMessage } from '../utils/errors.js';
 import type { StatusBar } from '../ui/statusbar.js';
 import type { OnStreamCallbacks } from './agent.js';
 import type { OptaConfig } from './config.js';
@@ -99,11 +100,6 @@ type RetryConfig = {
   /** Multiplier applied to the delay on each successive attempt. */
   backoffMultiplier: number;
 };
-
-/** Returns a human-readable description of an unknown thrown value. */
-function describeError(err: unknown): string {
-  return err instanceof Error ? err.message : String(err);
-}
 
 /**
  * Opens an SSE-backed streaming chat completion via the OpenAI SDK.
@@ -469,7 +465,7 @@ function withLmxMidStreamRecovery(
           if (maxWsReconnects === 0) {
             onStatus?.('reconnecting', 1);
           }
-          debug(`LMX WebSocket mid-stream recovery falling back to SSE: ${describeError(lastWsError)}`);
+          debug(`LMX WebSocket mid-stream recovery falling back to SSE: ${errorMessage(lastWsError)}`);
           if (transport) transport.resolvedLmxHost = undefined;
           try {
             recoveredStream = await createSdkStream(client, params, transport?.signal);
@@ -532,7 +528,7 @@ export async function createStreamWithRetry(
           if (isRetryableError(err) && attempt < retryConfig.maxRetries) {
             throw err;
           }
-          debug(`LMX WebSocket stream unavailable, falling back to SSE: ${describeError(err)}`);
+          debug(`LMX WebSocket stream unavailable, falling back to SSE: ${errorMessage(err)}`);
           stream = null;
         }
       }

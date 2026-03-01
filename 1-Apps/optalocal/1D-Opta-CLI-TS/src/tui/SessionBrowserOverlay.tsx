@@ -8,6 +8,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Box, Text, useInput, useStdout } from 'ink';
 import { TUI_COLORS } from './palette.js';
+import { errorMessage } from '../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -110,8 +111,7 @@ export function SessionBrowserOverlay({
         );
       } catch (err) {
         if (cancelled) return;
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(msg);
+        setError(errorMessage(err));
       } finally {
         if (!cancelled) setLoading(false);
       }

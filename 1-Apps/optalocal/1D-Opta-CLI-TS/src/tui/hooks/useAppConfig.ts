@@ -12,6 +12,7 @@ import type { StudioConnectivityState } from '../OptaMenuOverlay.js';
 import type { ResponseIntentTone } from '../response-intent.js';
 import { DEFAULT_TRIGGER_MODE_DEFINITIONS, type TriggerModeDefinition } from '../trigger-router.js';
 import { homedir } from '../../platform/index.js';
+import { errorMessage } from '../../utils/errors.js';
 
 interface SkillRuntimeSettings {
   dynamicLoading: boolean;
@@ -178,13 +179,13 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
           .catch((err: unknown) => {
             // Log to stderr so failures surface without breaking the Ink render.
             process.stderr.write(
-              `[useAppConfig] Failed to apply config: ${err instanceof Error ? err.message : String(err)}\n`
+              `[useAppConfig] Failed to apply config: ${errorMessage(err)}\n`
             );
           });
       })
       .catch((err: unknown) => {
         process.stderr.write(
-          `[useAppConfig] Failed to import config module: ${err instanceof Error ? err.message : String(err)}\n`
+          `[useAppConfig] Failed to import config module: ${errorMessage(err)}\n`
         );
       });
   }, [

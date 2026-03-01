@@ -1,3 +1,4 @@
+import { statSync } from 'node:fs';
 import { nanoid } from 'nanoid';
 import type { AgentMessage } from '../core/agent.js';
 import { agentLoop } from '../core/agent.js';
@@ -39,6 +40,20 @@ import {
 import { errorMessage } from '../utils/errors.js';
 
 const CHARS_PER_TOKEN = 4;
+const PREFLIGHT_CACHE_TTL_MS = 10_000;
+
+// Tool result cache constants
+const CACHEABLE_TOOLS = new Set(['read_file', 'list_dir', 'search_files', 'find_files']);
+const MTIME_TOOLS = new Set(['read_file', 'list_dir']);
+const WRITE_TOOLS = new Set(['write_file', 'edit_file']);
+const CACHE_MAX_SIZE = 200;
+const CACHE_TTL_MS = 30_000;
+
+interface ToolCacheEntry {
+  result: string;
+  cachedAt: number;
+  fileMtimeMs?: number;
+}
 const LMX_PREFLIGHT_TIMEOUT_MS = 8_000;
 const NO_MODEL_LOADED_MESSAGE = 'No Model Loaded - Use Opta Menu to begin.';
 
@@ -58,6 +73,7 @@ interface ManagedSession {
   activeTurn?: QueuedTurn;
   activeAbort?: AbortController;
   seq: number;
+  toolCache: Map<string, ToolCacheEntry>;
 }
 
 type SessionSubscriber = (event: V3Envelope) => void;
@@ -67,6 +83,7 @@ export class SessionManager {
   private readonly subscribers = new Map<string, Set<SessionSubscriber>>();
   private readonly permissionCoordinator = new PermissionCoordinator();
   private readonly toolWorkers = new ToolWorkerPool();
+  private preflightCache: { modelIds: string[]; cachedAt: number } | null = null;
   private readonly backgroundManager = new BackgroundManager({
     maxConcurrent: 5,
     defaultTimeout: 300_000,
@@ -74,6 +91,7 @@ export class SessionManager {
   });
   private readonly unsubscribeBackgroundEvents: () => void;
   private ingressSeq = 0;
+  private evictionInterval: NodeJS.Timeout;
 
   constructor(
     private readonly daemonId: string,
@@ -82,6 +100,22 @@ export class SessionManager {
     this.unsubscribeBackgroundEvents = this.backgroundManager.subscribe((event) => {
       void this.handleBackgroundEvent(event);
     });
+    this.evictionInterval = setInterval(() => this.evictIdleSessions(), 5 * 60 * 1000);
+    this.evictionInterval.unref();
+  }
+
+  private evictIdleSessions() {
+    const now = Date.now();
+    for (const [sessionId, session] of this.sessions.entries()) {
+      if (
+        session.queue.size === 0 &&
+        !session.activeTurn &&
+        !this.subscribers.has(sessionId) &&
+        now - new Date(session.updatedAt).getTime() > 30 * 60 * 1000
+      ) {
+        this.sessions.delete(sessionId);
+      }
+    }
   }
 
   async hydrateFromDisk(): Promise<void> {
@@ -99,6 +133,7 @@ export class SessionManager {
         toolCallCount: snapshot.toolCallCount,
         queue: new TurnQueue(),
         seq: snapshot.seq,
+        toolCache: new Map(),
       });
     }
   }
@@ -147,6 +182,7 @@ export class SessionManager {
           toolCallCount: snapshot.toolCallCount,
           queue: new TurnQueue(),
           seq: snapshot.seq,
+          toolCache: new Map(),
         };
       }
     }
@@ -161,6 +197,7 @@ export class SessionManager {
       toolCallCount: 0,
       queue: new TurnQueue(),
       seq: 0,
+      toolCache: new Map(),
     };
 
     this.sessions.set(sessionId, session);
@@ -173,14 +210,36 @@ export class SessionManager {
     return this.sessionToSnapshot(session);
   }
 
-  getSession(sessionId: string): SessionSnapshot | null {
-    const session = this.sessions.get(sessionId);
+  async getSession(sessionId: string): Promise<SessionSnapshot | null> {
+    let session = this.sessions.get(sessionId);
+    if (!session && (await hasSessionStore(sessionId))) {
+      const snapshot = await readSessionSnapshot(sessionId);
+      if (snapshot) {
+        session = {
+          sessionId,
+          model: snapshot.model,
+          title: snapshot.title,
+          createdAt: snapshot.createdAt,
+          updatedAt: snapshot.updatedAt,
+          messages: snapshot.messages,
+          toolCallCount: snapshot.toolCallCount,
+          queue: new TurnQueue(),
+          seq: snapshot.seq,
+          toolCache: new Map(),
+        };
+        this.sessions.set(sessionId, session);
+      }
+    }
     if (!session) return null;
     return this.sessionToSnapshot(session);
   }
 
-  getSessionMessages(sessionId: string): AgentMessage[] | null {
-    const session = this.sessions.get(sessionId);
+  async getSessionMessages(sessionId: string): Promise<AgentMessage[] | null> {
+    let session = this.sessions.get(sessionId);
+    if (!session && (await hasSessionStore(sessionId))) {
+      await this.getSession(sessionId); // hydrates it
+      session = this.sessions.get(sessionId);
+    }
     if (!session) return null;
     return session.messages;
   }
@@ -192,6 +251,10 @@ export class SessionManager {
     const session = this.sessions.get(sessionId);
     if (!session) {
       throw new Error(`Session not found: ${sessionId}`);
+    }
+
+    if (payload.lastSeenSeq !== undefined && payload.lastSeenSeq < session.seq) {
+      throw this.newTurnError('Session state conflict: context has been modified since last seen', 'state-conflict' as TurnErrorCode);
     }
 
     const turn: QueuedTurn = {
@@ -216,7 +279,21 @@ export class SessionManager {
     });
     await this.persistSnapshot(session);
 
-    void this.processSessionQueue(sessionId);
+    // processSessionQueue handles all its own errors internally (try/catch in
+    // the loop body emits turn.error on failure).  The void here is intentional
+    // — we do not await it so the HTTP response returns immediately — but we
+    // attach a catch to prevent unhandled-rejection crashes if the outer async
+    // scaffolding throws before reaching the internal try/catch (e.g. a config
+    // load failure before getConfig() is awaited).
+    void this.processSessionQueue(sessionId).catch((err) => {
+      void logDaemonEvent({
+        level: 'error',
+        daemonId: this.daemonId,
+        sessionId,
+        msg: 'processSessionQueue unhandled rejection',
+        data: { message: errorMessage(err) },
+      });
+    });
     return { turnId: turn.turnId, queued: session.queue.size };
   }
 
@@ -353,6 +430,7 @@ export class SessionManager {
   }
 
   async close(): Promise<void> {
+    clearInterval(this.evictionInterval);
     this.unsubscribeBackgroundEvents();
     const cfg = await this.getConfig().catch(() => null);
     if (cfg) {
@@ -388,6 +466,82 @@ export class SessionManager {
       );
     }
     return this.toolWorkers.runTool(name, argsJson, signal);
+  }
+
+  private async runToolWithCache(
+    session: ManagedSession,
+    name: string,
+    argsJson: string,
+    signal?: AbortSignal
+  ): Promise<string> {
+    // Write tools: execute then clear the entire session cache
+    if (WRITE_TOOLS.has(name)) {
+      const result = await this.runToolWithDaemonPolicy(name, argsJson, signal);
+      session.toolCache.clear();
+      return result;
+    }
+
+    if (!CACHEABLE_TOOLS.has(name)) {
+      return this.runToolWithDaemonPolicy(name, argsJson, signal);
+    }
+
+    const key = `${name}:${argsJson}`;
+    const now = Date.now();
+    const cached = session.toolCache.get(key);
+
+    if (cached) {
+      if (MTIME_TOOLS.has(name) && cached.fileMtimeMs !== undefined) {
+        // Validate by checking current mtime
+        try {
+          const args = JSON.parse(argsJson) as { path?: string };
+          const filePath = args.path;
+          if (filePath) {
+            const stat = statSync(filePath, { throwIfNoEntry: false });
+            if (stat && stat.mtimeMs === cached.fileMtimeMs) return cached.result;
+            // Mtime changed — fall through to re-execute
+            session.toolCache.delete(key);
+          } else {
+            return cached.result;
+          }
+        } catch {
+          return cached.result;
+        }
+      } else if (now - cached.cachedAt < CACHE_TTL_MS) {
+        return cached.result;
+      } else {
+        session.toolCache.delete(key);
+      }
+    }
+
+    const result = await this.runToolWithDaemonPolicy(name, argsJson, signal);
+
+    // All code below is synchronous (no awaits), so concurrent JS turns cannot
+    // interleave here.  We evict as many entries as needed so that after
+    // inserting the new one the map stays at or below CACHE_MAX_SIZE.
+    const overflow = session.toolCache.size - CACHE_MAX_SIZE + 1; // +1 for the entry we are about to add
+    if (overflow > 0) {
+      // Collect all entries sorted oldest-first and delete the required count.
+      const sorted = [...session.toolCache.entries()].sort((a, b) => a[1].cachedAt - b[1].cachedAt);
+      for (let i = 0; i < overflow && i < sorted.length; i++) {
+        session.toolCache.delete(sorted[i]![0]);
+      }
+    }
+
+    let fileMtimeMs: number | undefined;
+    if (MTIME_TOOLS.has(name)) {
+      try {
+        const args = JSON.parse(argsJson) as { path?: string };
+        if (args.path) {
+          const stat = statSync(args.path, { throwIfNoEntry: false });
+          if (stat) fileMtimeMs = stat.mtimeMs;
+        }
+      } catch {
+        // Ignore stat errors; cache without mtime validation
+      }
+    }
+
+    session.toolCache.set(key, { result, cachedAt: now, fileMtimeMs });
+    return result;
   }
 
   private throwIfTurnAborted(session: ManagedSession): void {
@@ -469,25 +623,32 @@ export class SessionManager {
 
     const targetModel = normalizeConfiguredModelId(session.model);
     let loadedModelIds: string[] = [];
-    try {
-      const lmx = new LmxClient({
-        host: config.connection.host,
-        fallbackHosts: config.connection.fallbackHosts,
-        port: config.connection.port,
-        adminKey: config.connection.adminKey,
-        timeoutMs: LMX_PREFLIGHT_TIMEOUT_MS,
-        maxRetries: 0,
-      });
-      const loaded = await lmx.models({
-        timeoutMs: LMX_PREFLIGHT_TIMEOUT_MS,
-        maxRetries: 0,
-      });
-      loadedModelIds = loaded.models.map((model) => model.model_id);
-    } catch (err) {
-      this.throwIfTurnAborted(session);
-      const detail = errorMessage(err);
-      const code = this.inferTransportErrorCode(err, detail) ?? 'no-model-loaded';
-      throw this.newTurnError(`${NO_MODEL_LOADED_MESSAGE} LMX preflight failed: ${detail}`, code);
+    const now = Date.now();
+    const cachedPreflight = this.preflightCache;
+    if (cachedPreflight && now - cachedPreflight.cachedAt < PREFLIGHT_CACHE_TTL_MS) {
+      loadedModelIds = cachedPreflight.modelIds;
+    } else {
+      try {
+        const lmx = new LmxClient({
+          host: config.connection.host,
+          fallbackHosts: config.connection.fallbackHosts,
+          port: config.connection.port,
+          adminKey: config.connection.adminKey,
+          timeoutMs: LMX_PREFLIGHT_TIMEOUT_MS,
+          maxRetries: 0,
+        });
+        const loaded = await lmx.models({
+          timeoutMs: LMX_PREFLIGHT_TIMEOUT_MS,
+          maxRetries: 0,
+        });
+        loadedModelIds = loaded.models.map((model) => model.model_id);
+        this.preflightCache = { modelIds: loadedModelIds, cachedAt: now };
+      } catch (err) {
+        this.throwIfTurnAborted(session);
+        const detail = errorMessage(err);
+        const code = this.inferTransportErrorCode(err, detail) ?? 'no-model-loaded';
+        throw this.newTurnError(`${NO_MODEL_LOADED_MESSAGE} LMX preflight failed: ${detail}`, code);
+      }
     }
 
     this.throwIfTurnAborted(session);
@@ -553,7 +714,7 @@ export class SessionManager {
         silent: true,
         signal: session.activeAbort.signal,
         toolExecutor: (name, argsJson, signal) =>
-          this.runToolWithDaemonPolicy(name, argsJson, signal),
+          this.runToolWithCache(session, name, argsJson, signal),
         onStream: {
           // NOTE: these streaming callbacks are synchronous, so emit() cannot
           // be awaited inline.  Events are fire-and-forget here; sequence
@@ -627,7 +788,7 @@ export class SessionManager {
       await this.persistSnapshot(session);
     } catch (err) {
       const aborted = err instanceof Error && err.name === 'AbortError';
-      const message = aborted ? 'Turn cancelled' : err instanceof Error ? err.message : String(err);
+      const message = aborted ? 'Turn cancelled' : errorMessage(err);
       const code = aborted ? undefined : this.resolveTurnErrorCode(err, message);
       const payload: TurnErrorPayload = {
         turnId: turn.turnId,
@@ -635,7 +796,12 @@ export class SessionManager {
         clientId: turn.clientId,
         message,
       };
-      if (code) payload.code = code;
+      if (code) {
+        payload.code = code;
+        if (code === 'no-model-loaded' || code === 'lmx-connection-refused' || code === 'lmx-ws-closed' || code === 'lmx-timeout') {
+          this.preflightCache = null;
+        }
+      }
 
       await this.emit(session, 'turn.error', payload);
       if (!aborted) {
@@ -712,7 +878,12 @@ export class SessionManager {
       payload
     );
 
-    await appendSessionEvent(session.sessionId, envelope);
+    // High-frequency streaming events are delivered to live subscribers but not
+    // written to disk — they are ephemeral. Reconnecting clients get the complete
+    // final content from the session snapshot once the turn finishes.
+    if (event !== 'turn.token' && event !== 'turn.thinking') {
+      await appendSessionEvent(session.sessionId, envelope);
+    }
     const watchers = this.subscribers.get(session.sessionId);
     if (watchers) {
       for (const cb of watchers) {

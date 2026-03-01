@@ -16,22 +16,23 @@ import type { ProviderClient } from './base.js';
 import type { OptaConfig } from '../core/config.js';
 import { resolveLmxApiKey } from '../lmx/api-key.js';
 import { verbose } from '../core/debug.js';
+import { errorMessage } from '../utils/errors.js';
 
 let cachedProvider: ProviderClient | null = null;
 let cachedProviderKey = '';
 
 function providerCacheKey(config: OptaConfig): string {
-  const active = config.provider?.active ?? 'lmx';
-  const fallback = config.provider?.fallbackOnFailure ? '+fb' : '';
+  const active = config.provider.active;
+  const fallback = config.provider.fallbackOnFailure ? '+fb' : '';
   if (active === 'lmx') {
-    const fallbackHosts = (config.connection.fallbackHosts ?? [])
+    const fallbackHosts = config.connection.fallbackHosts
       .map((host) => host.trim().toLowerCase())
       .filter((host) => host.length > 0)
       .join(',');
     const apiKeyPrefix = resolveLmxApiKey(config.connection).slice(0, 8);
     return `lmx${fallback}|${config.connection.host}:${config.connection.port}|${fallbackHosts}|${apiKeyPrefix}`;
   }
-  const apiKey = config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+  const apiKey = config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
   return `anthropic|${apiKey.slice(0, 8)}`;
 }
 
@@ -41,7 +42,7 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
     return cachedProvider;
   }
 
-  const active = config.provider?.active ?? 'lmx';
+  const active = config.provider.active;
 
   if (active === 'anthropic') {
     const { AnthropicProvider } = await import('./anthropic.js');
@@ -50,7 +51,7 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
     const { LmxProvider } = await import('./lmx.js');
     const lmx = new LmxProvider(config);
 
-    if (config.provider?.fallbackOnFailure) {
+    if (config.provider.fallbackOnFailure) {
       const { FallbackProvider } = await import('./fallback.js');
       cachedProvider = new FallbackProvider(lmx, config);
     } else {
@@ -84,7 +85,7 @@ export function resetProviderCache(): void {
  * first-run users with only an Anthropic key work out of the box.
  */
 export async function probeProvider(config: OptaConfig): Promise<ProviderClient> {
-  const active = config.provider?.active ?? 'lmx';
+  const active = config.provider.active;
 
   // When the user has explicitly configured Anthropic, honour that.
   if (active === 'anthropic') {
@@ -110,12 +111,11 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
 
     verbose(`Provider probe: LMX unreachable at ${host}:${port} — ${result.reason ?? 'no response'}`);
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    verbose(`Provider probe: LMX probe threw — ${msg}`);
+    verbose(`Provider probe: LMX probe threw — ${errorMessage(err)}`);
   }
 
   // LMX is unreachable — check for Anthropic fallback.
-  const anthropicKey = config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+  const anthropicKey = config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
 
   if (anthropicKey) {
     verbose('Provider probe: falling back to Anthropic (LMX unreachable, ANTHROPIC_API_KEY present)');

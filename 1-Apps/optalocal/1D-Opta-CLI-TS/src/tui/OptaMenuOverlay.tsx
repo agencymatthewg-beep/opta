@@ -23,6 +23,7 @@ import {
 import { MenuItemList } from './menu/MenuItemList.js';
 import { MenuInfoPanel } from './menu/MenuInfoPanel.js';
 import { GuidedFlowInput } from './menu/GuidedFlowInput.js';
+import { errorMessage } from '../utils/errors.js';
 
 // Re-export public types for external consumers
 export type { StudioConnectivityState, OptaMenuOverlayProps, OptaMenuResultEntry } from './menu/types.js';
@@ -816,8 +817,7 @@ export function OptaMenuOverlay({
     setPendingCommand(command);
     Promise.resolve(onRunCommand(command))
       .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[menu] Command failed: ${msg}`);
+        console.error(`[menu] Command failed: ${errorMessage(err)}`);
       })
       .finally(() => {
         setPendingCommand((prev) => (prev === command ? null : prev));
@@ -1008,8 +1008,8 @@ export function OptaMenuOverlay({
   return (
     <Box
       flexDirection="column"
-      borderStyle="round"
-      borderColor={TUI_COLORS.accent}
+      borderStyle="single"
+      borderColor={TUI_COLORS.borderSoft}
       width={stableWidth}
       minHeight={stableRows}
       paddingX={2}
@@ -1017,7 +1017,7 @@ export function OptaMenuOverlay({
       overflow="hidden"
     >
       <Box justifyContent="space-between">
-        <Text color={TUI_COLORS.accent} bold>
+        <Text color="#ffffff" bold>
           Opta Menu{transitionActive ? ` · ${transitionGlyph}` : ''}
         </Text>
         <Text dimColor>{transitionActive ? `${Math.round(normalizedProgress * 100)}%` : 'Esc close'}</Text>
@@ -1057,20 +1057,23 @@ export function OptaMenuOverlay({
             />
           ) : null}
 
-          <Box marginBottom={1}>
+          <Box marginBottom={1} flexDirection="row" flexWrap="wrap">
             {PAGE_ORDER.map((page, index) => {
               const active = page.id === selectedPage;
               return (
-                <Box key={page.id} marginRight={2}>
-                  <Text color={active ? page.color : undefined} bold={active}>
-                    {active ? '[x]' : '[ ]'} {index + 1}. {page.label}
+                <Box key={page.id} marginRight={1}>
+                  <Text
+                    color={active ? '#ffffff' : TUI_COLORS.dim}
+                    backgroundColor={active ? TUI_COLORS.borderSoft : undefined}
+                  >
+                    {active ? ` [ ${page.label} ] ` : `   ${page.label}   `}
                   </Text>
                 </Box>
               );
             })}
           </Box>
 
-          <Text color={pageMeta?.color ?? TUI_COLORS.accent} bold>{pageMeta?.label ?? 'Menu'}</Text>
+          <Text color="#ffffff" bold>—— {pageMeta?.label ?? 'Menu'} ——</Text>
 
           <MenuItemList
             items={items}

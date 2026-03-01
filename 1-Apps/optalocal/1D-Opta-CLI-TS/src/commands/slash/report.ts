@@ -9,6 +9,7 @@
 import chalk from 'chalk';
 import type { SlashCommandDef } from './types.js';
 import type { TurnStats } from '../../tui/adapter.js';
+import { errorMessage } from '../../utils/errors.js';
 
 export const reportCommands: SlashCommandDef[] = [
   {
@@ -50,8 +51,7 @@ export const reportCommands: SlashCommandDef[] = [
         console.log(chalk.dim(`    ${filePath}`));
         console.log();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : String(err);
-        console.log(chalk.red(`  Report generation failed: ${msg}`));
+        console.log(chalk.red(`  Report generation failed: ${errorMessage(err)}`));
       }
 
       return 'handled';

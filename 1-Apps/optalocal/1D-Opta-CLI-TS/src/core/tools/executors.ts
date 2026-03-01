@@ -8,6 +8,7 @@ import { errorMessage } from '../../utils/errors.js';
 import type { OptaConfig } from '../config.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
 import { DEFAULT_IGNORE_DIRS } from '../../utils/ignore.js';
+import { shellArgs } from '../../platform/index.js';
 import { resetSharedBrowserRuntimeDaemonForTests } from '../../browser/runtime-daemon.js';
 import { appendLedgerEntry, learningLedgerPath, readLedgerEntries } from '../../learning/ledger.js';
 import { retrieveTopLedgerEntries } from '../../learning/retrieval.js';
@@ -299,6 +300,35 @@ export async function executeTool(name: string, argsJson: string): Promise<strin
         return execBgOutput(args);
       case 'bg_kill':
         return await execBgKill(args);
+      case 'browser_open': {
+        const { loadConfig } = await import('../config.js');
+        const runtimeConfig = await loadConfig();
+        if (!runtimeConfig.browser?.enabled) {
+          return JSON.stringify({ ok: false, code: 'BROWSER_DISABLED', message: 'Browser automation is not enabled (browser.enabled = false).' });
+        }
+        const sessionId = args['session_id'] ? String(args['session_id']) : undefined;
+        const useAttach = runtimeConfig.browser.attach?.enabled ?? false;
+        const mode = useAttach ? 'attach' : (runtimeConfig.browser.mode ?? 'isolated');
+        const wsEndpoint = String(runtimeConfig.browser.attach?.wsEndpoint ?? '').trim();
+        if (mode === 'attach' && !wsEndpoint) {
+          return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: 'Attach mode requires ws_endpoint — set browser.attach.wsEndpoint in config.' });
+        }
+        try {
+          const { getSharedBrowserRuntimeDaemon } = await import('../../browser/runtime-daemon.js');
+          const daemon = await getSharedBrowserRuntimeDaemon({ cwd: process.cwd() });
+          const result = await daemon.openSession({
+            sessionId,
+            mode: mode as 'isolated' | 'attach',
+            wsEndpoint: mode === 'attach' ? wsEndpoint : undefined,
+          });
+          if (!result.ok) {
+            return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: result.error?.message ?? 'Failed to open browser session.' });
+          }
+          return JSON.stringify({ ok: true, sessionId: result.data?.id });
+        } catch (err) {
+          return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: errorMessage(err) });
+        }
+      }
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -487,7 +517,8 @@ async function execRunCommand(args: Record<string, unknown>): Promise<string> {
   const timeout = Number(args['timeout'] ?? 30000);
 
   const { execa } = await import('execa');
-  const result = await execa('sh', ['-c', command], {
+  const [shell, shellFlag] = shellArgs();
+  const result = await execa(shell, [shellFlag, command], {
     reject: false,
     timeout,
     cwd: process.cwd(),

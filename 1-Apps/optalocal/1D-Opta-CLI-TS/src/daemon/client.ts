@@ -5,10 +5,16 @@ import {
   type DaemonHealthLike,
   validateDaemonContract,
 } from './contract.js';
-import type { ClientSubmitTurn, CreateSessionRequest, PermissionDecision, SessionSnapshot, V3Envelope } from '../protocol/v3/types.js';
+import type {
+  ClientSubmitTurn,
+  CreateSessionRequest,
+  PermissionDecision,
+  SessionSnapshot,
+  V3Envelope,
+} from '../protocol/v3/types.js';
 
 interface SessionDetail extends SessionSnapshot {
-  messages: unknown[];
+  messages: Array<{ role: string; content?: unknown }>;
 }
 
 interface LegacyChatStats {
@@ -70,14 +76,16 @@ function contractMismatchErrorMessage(health: DaemonHealthLike): string {
   if (!mismatch) return '';
 
   const daemonHint = typeof health.daemonId === 'string' ? ` daemonId=${health.daemonId}` : '';
-  const actualName = mismatch.actual.name === undefined ? 'missing' : JSON.stringify(mismatch.actual.name);
-  const actualVersion = mismatch.actual.version === undefined ? 'missing' : JSON.stringify(mismatch.actual.version);
+  const actualName =
+    mismatch.actual.name === undefined ? 'missing' : JSON.stringify(mismatch.actual.name);
+  const actualVersion =
+    mismatch.actual.version === undefined ? 'missing' : JSON.stringify(mismatch.actual.version);
 
   return [
     `Daemon/API contract mismatch.${daemonHint}`,
     `Expected ${mismatch.expected.name}@${mismatch.expected.version}.`,
     `Got name=${actualName} version=${actualVersion}.`,
-    "Upgrade/restart the daemon (`opta daemon restart`) or upgrade this CLI so both sides share the same contract.",
+    'Upgrade/restart the daemon (`opta daemon restart`) or upgrade this CLI so both sides share the same contract.',
   ].join(' ');
 }
 
@@ -129,7 +137,7 @@ export class DaemonClient {
       const daemonHint = health.daemonId ? ` daemonId=${health.daemonId}` : '';
       throw new Error(
         `Daemon health response missing contract metadata.${daemonHint} Expected ${expected.name}@${expected.version}. ` +
-        'Restart or upgrade daemon/CLI to a compatible version.'
+          'Restart or upgrade daemon/CLI to a compatible version.'
       );
     }
 
@@ -147,46 +155,89 @@ export class DaemonClient {
     return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}`);
   }
 
-  async submitTurn(sessionId: string, payload: ClientSubmitTurn): Promise<{ turnId: string; queued: number }> {
+  async submitTurn(
+    sessionId: string,
+    payload: ClientSubmitTurn
+  ): Promise<{ turnId: string; queued: number }> {
     return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/turns`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   }
 
-  async cancel(sessionId: string, payload: { turnId?: string; writerId?: string }): Promise<{ cancelled: number }> {
+  async cancel(
+    sessionId: string,
+    payload: { turnId?: string; writerId?: string }
+  ): Promise<{ cancelled: number }> {
     return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
   }
 
-  async resolvePermission(sessionId: string, payload: PermissionDecision): Promise<{ ok: boolean; conflict: boolean; message?: string }> {
-    return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/permissions/${encodeURIComponent(payload.requestId)}`, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-    });
+  async resolvePermission(
+    sessionId: string,
+    payload: PermissionDecision
+  ): Promise<{ ok: boolean; conflict: boolean; message?: string }> {
+    return this.request(
+      `/v3/sessions/${encodeURIComponent(sessionId)}/permissions/${encodeURIComponent(payload.requestId)}`,
+      {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }
+    );
   }
 
   async events(sessionId: string, afterSeq: number): Promise<{ events: V3Envelope[] }> {
-    return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/events?afterSeq=${afterSeq}`);
+    return this.request(
+      `/v3/sessions/${encodeURIComponent(sessionId)}/events?afterSeq=${afterSeq}`
+    );
   }
 
   async legacyChat(message: string, sessionId?: string): Promise<LegacyChatResponse> {
-    const url = `http://${this.host}:${this.port}/v1/chat`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        session_id: sessionId,
-      }),
+    const session = await this.createSession({ sessionId });
+    const { turnId } = await this.submitTurn(session.sessionId, {
+      clientId: 'legacy-http',
+      writerId: 'legacy-http',
+      content: message,
+      mode: 'do',
     });
-    if (!res.ok) {
-      const text = await res.text().catch(() => '');
-      throw new Error(`Daemon legacy chat failed (${res.status}): ${text || res.statusText}`);
-    }
-    return res.json() as Promise<LegacyChatResponse>;
+
+    return new Promise((resolve, reject) => {
+      const { socket, close } = this.connectWebSocket(session.sessionId, 0, {
+        onEvent: (event) => {
+          if (event.event === 'turn.done') {
+            const payload = event.payload as { turnId?: string; stats?: LegacyChatStats };
+            if (payload.turnId === turnId) {
+              close();
+              this.getSession(session.sessionId)
+                .then((detail) => {
+                  const assistantMsgs = detail.messages.filter((m) => m.role === 'assistant');
+                  const last = assistantMsgs[assistantMsgs.length - 1];
+                  const text = typeof last?.content === 'string' ? last.content : '';
+                  resolve({
+                    session_id: session.sessionId,
+                    response: text,
+                    stats: payload.stats,
+                    model: detail.model,
+                  });
+                })
+                .catch(reject);
+            }
+          } else if (event.event === 'turn.error') {
+            const payload = event.payload as { turnId?: string; message?: string };
+            if (payload.turnId === turnId) {
+              close();
+              reject(new Error(payload.message ?? 'Turn failed'));
+            }
+          }
+        },
+        onError: (err) => {
+          close();
+          reject(err);
+        },
+      });
+    });
   }
 
   connectWebSocket(
@@ -217,7 +268,13 @@ export class DaemonClient {
     });
     socket.on('message', (data: RawData) => {
       try {
-        const decoded: unknown = JSON.parse(String(data));
+        const decoded: unknown = JSON.parse(
+          Buffer.isBuffer(data)
+            ? data.toString()
+            : Array.isArray(data)
+              ? Buffer.concat(data).toString()
+              : Buffer.from(data).toString()
+        );
         if (typeof decoded !== 'object' || !decoded || !('event' in decoded)) return;
         handlers.onEvent(decoded as V3Envelope);
       } catch {

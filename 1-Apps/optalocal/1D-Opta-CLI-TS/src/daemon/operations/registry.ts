@@ -1,6 +1,7 @@
 import { VERSION } from '../../core/version.js';
 import { loadConfig } from '../../core/config.js';
 import { diskHeadroomMbToBytes } from '../../utils/disk.js';
+import { errorMessage } from '../../utils/errors.js';
 import {
   checkAccount,
   checkActiveModel,
@@ -14,17 +15,14 @@ import {
   checkOpis,
   type CheckResult,
 } from '../../commands/doctor.js';
+import { accountLogout, accountStatus } from '../../commands/account.js';
+import { diff } from '../../commands/diff.js';
 import { envCommand } from '../../commands/env.js';
 import { benchmark } from '../../commands/benchmark.js';
 import { embed } from '../../commands/embed.js';
-import {
-  mcpAdd,
-  mcpAddPlaywright,
-  mcpList,
-  mcpRemove,
-  mcpTest,
-} from '../../commands/mcp.js';
+import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { rerank } from '../../commands/rerank.js';
+import { sessions } from '../../commands/sessions.js';
 import {
   deleteAnthropicKey,
   deleteLmxKey,
@@ -41,8 +39,9 @@ import {
   type OperationInputById,
 } from '../../protocol/v3/operations.js';
 
-export interface OperationRegistryEntry<TId extends OperationId = OperationId>
-  extends OperationDescriptor {
+export interface OperationRegistryEntry<
+  TId extends OperationId = OperationId,
+> extends OperationDescriptor {
   inputSchema: (typeof OperationInputSchemaById)[TId];
   execute: (input: OperationInputById[TId]) => Promise<unknown>;
 }
@@ -58,7 +57,9 @@ function toConsoleLine(value: unknown): string {
   }
 }
 
-async function captureCommandOutput(run: () => Promise<void>): Promise<{ stdout: string; stderr: string }> {
+async function captureCommandOutput(
+  run: () => Promise<void>
+): Promise<{ stdout: string; stderr: string }> {
   const previous = captureQueue;
   let release: (() => void) | undefined;
   captureQueue = new Promise<void>((resolve) => {
@@ -97,7 +98,10 @@ async function captureCommandOutput(run: () => Promise<void>): Promise<{ stdout:
   };
 }
 
-async function runCommandForJson<T>(operationId: OperationId, run: () => Promise<void>): Promise<T> {
+async function runCommandForJson<T>(
+  operationId: OperationId,
+  run: () => Promise<void>
+): Promise<T> {
   const output = await captureCommandOutput(run);
   if (!output.stdout) {
     throw new Error(`Operation "${operationId}" returned no JSON output.`);
@@ -105,12 +109,14 @@ async function runCommandForJson<T>(operationId: OperationId, run: () => Promise
   try {
     return JSON.parse(output.stdout) as T;
   } catch (err) {
-    const reason = err instanceof Error ? err.message : String(err);
+    const reason = errorMessage(err);
     throw new Error(`Operation "${operationId}" returned invalid JSON output (${reason}).`);
   }
 }
 
-async function runCommandForText(run: () => Promise<void>): Promise<{ stdout: string; stderr: string }> {
+async function runCommandForText(
+  run: () => Promise<void>
+): Promise<{ stdout: string; stderr: string }> {
   return captureCommandOutput(run);
 }
 
@@ -127,8 +133,8 @@ async function runDoctorOperation(): Promise<{
   const { host, port, adminKey, fallbackHosts } = config.connection;
   const cwd = process.cwd();
 
-  const checks = await Promise.all([
-    checkNode(),
+  const nodeCheck = checkNode();
+  const asyncChecks = await Promise.all([
     checkLmxConnection(host, port, adminKey, fallbackHosts),
     checkActiveModel(config.model.default, host, port, adminKey, fallbackHosts),
     checkConfig(config),
@@ -139,6 +145,7 @@ async function runDoctorOperation(): Promise<{
     checkDiskHeadroom(diskHeadroomMbToBytes(config.safety?.diskHeadroomMb)),
     checkAccount(),
   ]);
+  const checks = [nodeCheck, ...asyncChecks];
 
   return {
     version: VERSION,
@@ -196,6 +203,47 @@ export const operationRegistry = {
   'env.delete': defineOperation('env.delete', async (input) =>
     runCommandForJson('env.delete', async () => {
       await envCommand('delete', input.name, { json: true });
+    })
+  ),
+  'account.status': defineOperation('account.status', async () =>
+    runCommandForJson('account.status', async () => {
+      await accountStatus({ json: true });
+    })
+  ),
+  'account.logout': defineOperation('account.logout', async () =>
+    runCommandForJson('account.logout', async () => {
+      await accountLogout({ json: true });
+    })
+  ),
+  'sessions.list': defineOperation('sessions.list', async (input) =>
+    runCommandForJson('sessions.list', async () => {
+      await sessions('list', undefined, {
+        json: true,
+        model: input.model,
+        since: input.since,
+        tag: input.tag,
+        limit: input.limit === undefined ? undefined : String(input.limit),
+      });
+    })
+  ),
+  'sessions.search': defineOperation('sessions.search', async (input) =>
+    runCommandForJson('sessions.search', async () => {
+      await sessions('search', input.query, { json: true });
+    })
+  ),
+  'sessions.export': defineOperation('sessions.export', async (input) =>
+    runCommandForJson('sessions.export', async () => {
+      await sessions('export', input.id, { json: true });
+    })
+  ),
+  'sessions.delete': defineOperation('sessions.delete', async (input) =>
+    runCommandForText(async () => {
+      await sessions('delete', input.id, { json: true });
+    })
+  ),
+  diff: defineOperation('diff', async (input) =>
+    runCommandForText(async () => {
+      await diff({ session: input.session });
     })
   ),
   'mcp.list': defineOperation('mcp.list', async () =>
@@ -300,4 +348,3 @@ export function listRegisteredOperations(): OperationDescriptor[] {
     };
   });
 }
-

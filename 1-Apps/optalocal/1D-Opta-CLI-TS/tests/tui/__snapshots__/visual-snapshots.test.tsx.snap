@@ -1,22 +1,38 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`InputBox visual snapshots > renders default prompt in normal mode > inputbox-normal 1`] = `" > █"`;
+exports[`InputBox visual snapshots > renders default prompt in normal mode > inputbox-normal 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ █                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
 
 exports[`InputBox visual snapshots > renders loading state with custom label > inputbox-loading-custom 1`] = `" ⠋ running edit_file..."`;
 
 exports[`InputBox visual snapshots > renders loading state with default label > inputbox-loading 1`] = `" ⠋ thinking..."`;
 
-exports[`InputBox visual snapshots > renders plan workflow mode badge > inputbox-plan-mode 1`] = `" [Plan] > █"`;
-
-exports[`InputBox visual snapshots > renders research workflow mode badge > inputbox-research-mode 1`] = `" [Research] > █"`;
-
-exports[`InputBox visual snapshots > renders with bypass permissions indicator and red border > inputbox-bypass 1`] = `
+exports[`InputBox visual snapshots > renders plan workflow mode badge > inputbox-plan-mode 1`] = `
 "┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [Code] ! > █                                                                                     │
+│ [Plan] ◆ █                                                                                       │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
-exports[`InputBox visual snapshots > renders with typed text > inputbox-with-text 1`] = `" > hello world█"`;
+exports[`InputBox visual snapshots > renders research workflow mode badge > inputbox-research-mode 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [Research] ◆ █                                                                                   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`InputBox visual snapshots > renders with bypass permissions indicator and red border > inputbox-bypass 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [Code] ! ◆ █                                                                                     │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
+
+exports[`InputBox visual snapshots > renders with typed text > inputbox-with-text 1`] = `
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ hello world█                                                                                   │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
+`;
 
 exports[`MessageList visual snapshots > renders multi-turn conversation with separators > messages-multi-turn 1`] = `
 " ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
@@ -46,6 +62,14 @@ exports[`MessageList visual snapshots > renders thinking blocks in assistant mes
 " ╭────────────────────────────────────────────────────────────────────────────────────────────────╮
  │ ◆ Opta · thinking 245                                                                          │
  │                                                                                       07:00 pm │
+ │                                                                                                │
+ │  ╭────────────────────────────────────────╮                                                    │
+ │  │ Thinking Process                245 tk │                                                    │
+ │  │ --------------------                   │                                                    │
+ │  │                                        │                                                    │
+ │  │ Let me consider the edge cases here... │                                                    │
+ │  ╰────────────────────────────────────────╯                                                    │
+ │                                                                                                │
  │                                                                                                │
  │  After careful analysis, the approach is correct.                                              │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
@@ -117,14 +141,14 @@ exports[`MessageList visual snapshots > renders welcome screen when no messages 
 
 
 
-                         ╭────────────────────────────────────────────────╮
+                         ┌────────────────────────────────────────────────┐
                          │                                                │
                          │  Status                           ● Connected  │
                          │  Engine                           Qwen2.5-72B  │
                          │  Context                                 125K  │
                          │  Tools                               8 active  │
                          │                                                │
-                         ╰────────────────────────────────────────────────╯
+                         └────────────────────────────────────────────────┘
 
 
 
@@ -132,7 +156,7 @@ exports[`MessageList visual snapshots > renders welcome screen when no messages 
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders benchmark page with page tabs and action items > menu-benchmark-page 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -144,24 +168,21 @@ exports[`OptaMenuOverlay visual snapshots > renders benchmark page with page tab
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -170,11 +191,11 @@ exports[`OptaMenuOverlay visual snapshots > renders benchmark page with page tab
 │  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders opening animation phase > menu-opening-animation 1`] = `
-"╭─────────────────────────────────────────────────────────────╮
+"┌─────────────────────────────────────────────────────────────┐
 │                                                             │
 │  Opta Menu · ◔                                         30%  │
 │                                                             │
@@ -189,14 +210,12 @@ exports[`OptaMenuOverlay visual snapshots > renders opening animation phase > me
 │  i or ? toggle info panel · Shift+I run learn-more · Enter  │
 │   keeps menu open · b jump Benchmark                        │
 │                                                             │
-│  [x]    [ ]   [ ]    [ ]  [ ]  [ ]  [ ]     [ ]    [ ]      │
-│  1.     2.    3.     4.   5.   6.   7. Si   8. Co  9.       │
-│  Bench  Opera Conn   Mode LMX  Runt mple    nfig   Advan    │
-│  mark   tions ecti   ls   Ops  ime  Setti   Curat  ced A    │
-│  +            vity                  ngs     ion    utist    │
-│  Info                                                       │
+│   [ Benchmark + Info ]     Operations                       │
+│     Connectivity       Models       LMX Ops                 │
+│     Runtime       Simple Settings                           │
+│     Config Curation       Advanced Autist                   │
 │                                                             │
-│  Benchmark + Info                                           │
+│  —— Benchmark + Info ——                                     │
 │                                                             │
 │  ◔ Loading actions list...                                  │
 │                                                             │
@@ -205,11 +224,11 @@ exports[`OptaMenuOverlay visual snapshots > renders opening animation phase > me
 │  │ navigation visible.                                   │  │
 │  ╰───────────────────────────────────────────────────────╯  │
 │                                                             │
-╰─────────────────────────────────────────────────────────────╯"
+└─────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders operations page after navigation > menu-operations-page 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -221,20 +240,18 @@ exports[`OptaMenuOverlay visual snapshots > renders operations page after naviga
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [ ] 1.     [x] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│     Benchmark + Info     [ Operations ]     Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Operations                                                                              │
-│  ▶  Status Check [i] [I]  Run /status for 192.168.188.11:1234                            │
-│    Doctor Check [i] [I]  Run diagnostics and quick fixes                                 │
-│    LMX Scan [i] [I]  Refresh model inventory, aliases, and loaded state                  │
-│    Update Local [i] [I]  Update local CLI/build only                                     │
-│    Settings [i]  Edit connection, model, safety, paths and advanced config               │
-│    Close Menu [i]  Return to chat                                                        │
+│  —— Operations ——                                                                        │
+│   ▶ Status Check              │ Run /status for 192.168.188.11:1234                      │
 │                                                                                          │
-│                                                                                          │
+│     Doctor Check              │ Run diagnostics and quick fixes                          │
+│     LMX Scan                  │ Refresh model inventory, aliases, and loaded state       │
+│     Update Local              │ Update local CLI/build only                              │
+│     Settings                 │Edit connection, model, safety, paths and advanced         │
+│                               config                                                     │
+│     Close Menu                │ Return to chat                                           │
 │                                                                                          │
 │                                                                                          │
 │                                                                                          │
@@ -245,11 +262,12 @@ exports[`OptaMenuOverlay visual snapshots > renders operations page after naviga
 │  │ Shift+I runs: /status                                                              │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+│                                                                                          │
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders studio unreachable with local recovery focus > menu-studio-unreachable 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -262,24 +280,21 @@ exports[`OptaMenuOverlay visual snapshots > renders studio unreachable with loca
 │  Benchmark                                                                               │
 │  Studio SSH unavailable: prioritizing local recovery actions.                            │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -288,11 +303,11 @@ exports[`OptaMenuOverlay visual snapshots > renders studio unreachable with loca
 │  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders with autonomy level and CEO mode > menu-autonomy-ceo 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -304,24 +319,21 @@ exports[`OptaMenuOverlay visual snapshots > renders with autonomy level and CEO 
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -330,11 +342,11 @@ exports[`OptaMenuOverlay visual snapshots > renders with autonomy level and CEO 
 │  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`OptaMenuOverlay visual snapshots > renders with menu result entries > menu-with-results 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -346,24 +358,21 @@ exports[`OptaMenuOverlay visual snapshots > renders with menu result entries > m
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -378,7 +387,7 @@ exports[`OptaMenuOverlay visual snapshots > renders with menu result entries > m
 │  │ ● Benchmark suite generated successfully                                           │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 72x30 — narrow terminal app shell > VG-APP-IDLE-72x30 1`] = `
@@ -416,18 +425,20 @@ exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 72x30 — narrow term
 
 
 
-                         ╭────────────────────────────────────────────────╮
+                         ┌────────────────────────────────────────────────┐
                          │                                                │
                          │  Status                           ● Connected  │
                          │  Engine                           Qwen2.5-72B  │
                          │  Context                                 125K  │
                          │  Tools                               8 active  │
                          │                                                │
-                         ╰────────────────────────────────────────────────╯
+                         └────────────────────────────────────────────────┘
 
 
 
- > █"
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ █                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 96x34 — standard terminal app shell > VG-APP-IDLE-96x34 1`] = `
@@ -465,18 +476,20 @@ exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 96x34 — standard te
 
 
 
-                         ╭────────────────────────────────────────────────╮
+                         ┌────────────────────────────────────────────────┐
                          │                                                │
                          │  Status                           ● Connected  │
                          │  Engine                           Qwen2.5-72B  │
                          │  Context                                 125K  │
                          │  Tools                               8 active  │
                          │                                                │
-                         ╰────────────────────────────────────────────────╯
+                         └────────────────────────────────────────────────┘
 
 
 
- > █"
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ █                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 128x40 — wide terminal app shell > VG-APP-IDLE-128x40 1`] = `
@@ -514,18 +527,20 @@ exports[`P0-09 VG visual golden snapshots > VG-APP-IDLE at 128x40 — wide termi
 
 
 
-                         ╭────────────────────────────────────────────────╮
+                         ┌────────────────────────────────────────────────┐
                          │                                                │
                          │  Status                           ● Connected  │
                          │  Engine                           Qwen2.5-72B  │
                          │  Context                                 125K  │
                          │  Tools                               8 active  │
                          │                                                │
-                         ╰────────────────────────────────────────────────╯
+                         └────────────────────────────────────────────────┘
 
 
 
- > █"
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ █                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-APP-SAFE at 96x34 — safe mode badge visible > VG-APP-SAFE-96x34 1`] = `
@@ -542,11 +557,13 @@ exports[`P0-09 VG visual golden snapshots > VG-APP-SAFE at 96x34 — safe mode b
  │  Yes — safe mode is active. Destructive tools require explicit confirmation.                   │
  ╰────────────────────────────────────────────────────────────────────────────────────────────────╯
 
- > █"
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ ◆ █                                                                                              │
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 72x30 — narrow overlay alignment > VG-OVERLAY-MENU-72x30 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -558,24 +575,21 @@ exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 72x30 — narrow 
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -584,11 +598,11 @@ exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 72x30 — narrow 
 │  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 128x30 — wide overlay alignment > VG-OVERLAY-MENU-128x30 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                          │
 │  Opta Menu                                                                    Esc close  │
 │                                                                                          │
@@ -600,24 +614,21 @@ exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 128x30 — wide o
 │  i or ? toggle info panel · Shift+I run learn-more · Enter keeps menu open · b jump      │
 │  Benchmark                                                                               │
 │                                                                                          │
-│  [x] 1.     [ ] 2.   [ ] 3.    [ ]    [ ]     [ ]     [ ] 7.     [ ] 8.     [ ] 9.       │
-│  Benchmark  Operatio Connect   4. Mo  5.      6. Ru   Simple     Config     Advanced     │
-│  + Info     ns       ivity     dels   LMX     ntime   Settings   Curation   Autist       │
-│                                       Ops                                                │
+│   [ Benchmark + Info ]     Operations       Connectivity       Models       LMX Ops      │
+│     Runtime       Simple Settings       Config Curation       Advanced Autist            │
 │                                                                                          │
-│  Benchmark + Info                                                                        │
-│  ▶ Benchmark Suite                  [i [I  Generate all 3 benchmark apps and host them   │
-│    (Serve)             (recommended)     locally                                         │
-│   Generate Benchmark Only [i] [I]  Create or refresh benchmark artifacts without         │
-│                                  hosting                                                 │
-│    Benchmark Smoke (JSON) [i] [I]  Run a fast benchmark smoke check with JSON output     │
-│    Inspect Benchmark Files [i] [I]  List generated benchmark suite files                 │
-│    Benchmark Manifest [i] [I]  Inspect generated manifest and quality metadata           │
-│   Benchmark Validation Pass [i] [I]  Run benchmark with stable defaults and JSON         │
-│                                    summary                                               │
-│    Educational Help Browser [i]  Open structured help topics and command education       │
-│    Slash Command Lessons [i]  Browse slash commands with examples and categories         │
-│    Back to Chat [i]  Close menu                                                          │
+│  —— Benchmark + Info ——                                                                  │
+│   ▶ Benchmark Suite (Serve)│Generate all 3 benchmark apps and host them                  │
+│                             locally                                       (recommended)  │
+│                                                                                          │
+│     Generate Benchmark Only   │ Create or refresh benchmark artifacts without hosting    │
+│     Benchmark Smoke (JSON)    │ Run a fast benchmark smoke check with JSON output        │
+│     Inspect Benchmark Files   │ List generated benchmark suite files                     │
+│     Benchmark Manifest        │ Inspect generated manifest and quality metadata          │
+│     Benchmark Validation Pass │ Run benchmark with stable defaults and JSON summary      │
+│     Educational Help Browser  │ Open structured help topics and command education        │
+│     Slash Command Lessons     │ Browse slash commands with examples and categories       │
+│     Back to Chat              │ Close menu                                               │
 │                                                                                          │
 │  ╭────────────────────────────────────────────────────────────────────────────────────╮  │
 │  │ Info: Launch the full benchmark experience                                         │  │
@@ -626,11 +637,11 @@ exports[`P0-09 VG visual golden snapshots > VG-OVERLAY-MENU at 128x30 — wide o
 │  │ Shift+I runs: !opta benchmark --serve --force                                      │  │
 │  ╰────────────────────────────────────────────────────────────────────────────────────╯  │
 │                                                                                          │
-╰──────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-PERMISSION at 96x30 — edit_file permission prompt > VG-PERMISSION-96x30 1`] = `
-"╭──────────────────────────────────────────────────────────────────────────────────────────────────╮
+"┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ 🔧 Permission Required                                                                           │
 │   edit_file wants to execute                                                                     │
 │   File: src/tui/App.tsx                                                                          │
@@ -638,7 +649,7 @@ exports[`P0-09 VG visual golden snapshots > VG-PERMISSION at 96x30 — edit_file
 │   + const foo = 2;                                                                               │
 │                                                                                                  │
 │ [Y]es / [n]o / [a]lways  (30s)                                                                   │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────╯"
+└──────────────────────────────────────────────────────────────────────────────────────────────────┘"
 `;
 
 exports[`P0-09 VG visual golden snapshots > VG-SCROLL-DEEP at 96x34 — long message list scroll state > VG-SCROLL-DEEP-96x34 1`] = `

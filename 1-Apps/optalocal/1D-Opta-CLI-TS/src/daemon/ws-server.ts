@@ -4,6 +4,7 @@ import type { RawData } from 'ws';
 import { WsInboundSchema } from '../protocol/v3/ws.js';
 import type { V3Envelope } from '../protocol/v3/types.js';
 import type { SessionManager } from './session-manager.js';
+import { errorMessage } from '../utils/errors.js';
 
 export interface WsServerDeps {
   sessionManager: SessionManager;
@@ -22,7 +23,7 @@ function sendJson(socket: WebSocket, payload: unknown): void {
   socket.send(JSON.stringify(payload));
 }
 
-export async function registerWsServer(app: FastifyInstance, deps: WsServerDeps): Promise<void> {
+export function registerWsServer(app: FastifyInstance, deps: WsServerDeps): void {
   app.get('/v3/ws', { websocket: true }, (socket, req) => {
     const query = req.query as { sessionId?: string; afterSeq?: string; token?: string };
     const bearer = readBearer(req.headers.authorization);
@@ -67,26 +68,36 @@ export async function registerWsServer(app: FastifyInstance, deps: WsServerDeps)
       sendJson(socket, event);
     });
 
-    void deps.sessionManager.getEventsAfter(sessionId, startAfterSeq).then((events) => {
-      events.sort((a, b) => a.seq - b.seq);
-      for (const event of events) {
-        if (event.seq <= cursorSeq) continue;
-        cursorSeq = event.seq;
-        sendJson(socket, event);
-      }
-    }).catch((err: unknown) => {
-      // Notify client that replay was incomplete so it can reconnect if needed.
-      const message = err instanceof Error ? err.message : String(err);
-      sendJson(socket, { error: 'Event replay failed', message, afterSeq: startAfterSeq });
-    }).finally(() => {
-      replaying = false;
-      flushBufferedLive();
-    });
+    void deps.sessionManager
+      .getEventsAfter(sessionId, startAfterSeq)
+      .then((events) => {
+        events.sort((a, b) => a.seq - b.seq);
+        for (const event of events) {
+          if (event.seq <= cursorSeq) continue;
+          cursorSeq = event.seq;
+          sendJson(socket, event);
+        }
+      })
+      .catch((err: unknown) => {
+        // Notify client that replay was incomplete so it can reconnect if needed.
+        const message = errorMessage(err);
+        sendJson(socket, { error: 'Event replay failed', message, afterSeq: startAfterSeq });
+      })
+      .finally(() => {
+        replaying = false;
+        flushBufferedLive();
+      });
 
     socket.on('message', (message: RawData) => {
       let parsed: unknown;
       try {
-        parsed = JSON.parse(String(message));
+        parsed = JSON.parse(
+          Buffer.isBuffer(message)
+            ? message.toString()
+            : Array.isArray(message)
+              ? Buffer.concat(message).toString()
+              : Buffer.from(message).toString()
+        );
       } catch {
         sendJson(socket, { error: 'Invalid JSON payload' });
         return;
@@ -100,17 +111,20 @@ export async function registerWsServer(app: FastifyInstance, deps: WsServerDeps)
 
       const inbound = decoded.data;
       if (inbound.type === 'turn.submit') {
-        void deps.sessionManager.submitTurn(inbound.sessionId, {
-          clientId: inbound.clientId,
-          writerId: inbound.writerId,
-          content: inbound.content,
-          mode: inbound.mode,
-          metadata: inbound.metadata,
-        }).then((queued) => {
-          sendJson(socket, { type: 'ack', action: 'turn.submit', ...queued });
-        }).catch((err: unknown) => {
-          sendJson(socket, { error: err instanceof Error ? err.message : String(err) });
-        });
+        void deps.sessionManager
+          .submitTurn(inbound.sessionId, {
+            clientId: inbound.clientId,
+            writerId: inbound.writerId,
+            content: inbound.content,
+            mode: inbound.mode,
+            metadata: inbound.metadata,
+          })
+          .then((queued) => {
+            sendJson(socket, { type: 'ack', action: 'turn.submit', ...queued });
+          })
+          .catch((err: unknown) => {
+            sendJson(socket, { error: errorMessage(err) });
+          });
         return;
       }
 
@@ -125,14 +139,17 @@ export async function registerWsServer(app: FastifyInstance, deps: WsServerDeps)
       }
 
       if (inbound.type === 'turn.cancel') {
-        void deps.sessionManager.cancelSessionTurns(inbound.sessionId, {
-          turnId: inbound.turnId,
-          writerId: inbound.writerId,
-        }).then((cancelled) => {
-          sendJson(socket, { type: 'ack', action: 'turn.cancel', cancelled });
-        }).catch((err: unknown) => {
-          sendJson(socket, { error: err instanceof Error ? err.message : String(err) });
-        });
+        void deps.sessionManager
+          .cancelSessionTurns(inbound.sessionId, {
+            turnId: inbound.turnId,
+            writerId: inbound.writerId,
+          })
+          .then((cancelled) => {
+            sendJson(socket, { type: 'ack', action: 'turn.cancel', cancelled });
+          })
+          .catch((err: unknown) => {
+            sendJson(socket, { error: errorMessage(err) });
+          });
       }
     });
 

@@ -24,6 +24,7 @@ import { writeDaemonState, type DaemonState } from './lifecycle.js';
 import { daemonLogsPath } from './telemetry.js';
 import { expectedDaemonContract } from './contract.js';
 import { isStorageRelatedError } from '../utils/disk.js';
+import { errorMessage } from '../utils/errors.js';
 import { loadConfig } from '../core/config.js';
 import { LmxClient } from '../lmx/client.js';
 import { executeDaemonOperation, listDaemonOperationsResponse } from './operations/execute.js';
@@ -43,6 +44,11 @@ export interface RunningHttpServer {
   port: number;
   close: () => Promise<void>;
 }
+
+const LOOPBACK_ORIGIN_RE =
+  /^https?:\/\/(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i;
+const CORS_ALLOWED_METHODS = 'GET,POST,PUT,PATCH,DELETE,OPTIONS';
+const CORS_ALLOWED_HEADERS = 'Authorization,Content-Type';
 
 function readBearer(req: FastifyRequest): string | null {
   const auth = req.headers.authorization;
@@ -85,10 +91,38 @@ function rejectUnauthorized(reply: FastifyReply): FastifyReply {
   return reply.status(401).send({ error: 'Unauthorized' });
 }
 
+function appendVaryOrigin(reply: FastifyReply): void {
+  const existing = reply.getHeader('vary');
+  if (typeof existing !== 'string' || existing.trim() === '') {
+    reply.header('Vary', 'Origin');
+    return;
+  }
+  const parts = existing
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean);
+  if (!parts.includes('origin')) {
+    reply.header('Vary', `${existing}, Origin`);
+  }
+}
+
+function applyLoopbackCorsHeaders(req: FastifyRequest, reply: FastifyReply): void {
+  const origin = req.headers.origin;
+  if (typeof origin !== 'string' || !LOOPBACK_ORIGIN_RE.test(origin)) return;
+  reply.header('Access-Control-Allow-Origin', origin);
+  reply.header('Access-Control-Allow-Credentials', 'true');
+  reply.header('Access-Control-Allow-Methods', CORS_ALLOWED_METHODS);
+  reply.header('Access-Control-Allow-Headers', CORS_ALLOWED_HEADERS);
+  appendVaryOrigin(reply);
+}
+
 function mapMutationError(err: unknown): { status: number; message: string } {
-  const message = err instanceof Error ? err.message : String(err);
+  const message = errorMessage(err);
   if (/Session not found/i.test(message)) {
     return { status: 404, message };
+  }
+  if (/Session state conflict/i.test(message)) {
+    return { status: 409, message };
   }
   if (isStorageRelatedError(err)) {
     return { status: 507, message };
@@ -120,15 +154,17 @@ async function waitForTurnDone(
         done = true;
         clearTimeout(timeout);
         unsubscribe();
-        try {
-          const messages = sessionManager.getSessionMessages(sessionId);
-          const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
-          const last = assistantMsgs[assistantMsgs.length - 1];
-          const text = typeof last?.content === 'string' ? last.content : '';
-          resolve({ stats: payload.stats, message: text });
-        } catch (err) {
-          reject(err as Error);
-        }
+        sessionManager
+          .getSessionMessages(sessionId)
+          .then((messages) => {
+            const assistantMsgs = (messages ?? []).filter((m) => m.role === 'assistant');
+            const last = assistantMsgs[assistantMsgs.length - 1];
+            const text = typeof last?.content === 'string' ? last.content : '';
+            resolve({ stats: payload.stats, message: text });
+          })
+          .catch((err: unknown) => {
+            reject(err instanceof Error ? err : new Error(String(err)));
+          });
       }
       if (event.event === 'turn.error') {
         const payload = event.payload as { turnId?: string; message?: string };
@@ -345,9 +381,9 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     const parsed = SessionParamsSchema.safeParse(req.params);
     if (!parsed.success) return reply.status(400).send({ error: 'Invalid session id' });
 
-    const snapshot = opts.sessionManager.getSession(parsed.data.sessionId);
+    const snapshot = await opts.sessionManager.getSession(parsed.data.sessionId);
     if (!snapshot) return reply.status(404).send({ error: 'Session not found' });
-    const messages = opts.sessionManager.getSessionMessages(parsed.data.sessionId);
+    const messages = await opts.sessionManager.getSessionMessages(parsed.data.sessionId);
     return { ...snapshot, messages: messages ?? [] };
   });
 
@@ -422,7 +458,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       const processes = opts.sessionManager.listBackgroundProcesses(query.data.sessionId);
       return { processes };
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       if (/Session not found/i.test(message)) {
         return reply.status(404).send({ error: message });
       }
@@ -440,7 +476,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       const process = await opts.sessionManager.startBackgroundProcess(body.data);
       return await reply.status(201).send({ process });
     } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
+      const message = errorMessage(err);
       if (/Session not found/i.test(message)) {
         return reply.status(404).send({ error: message });
       }
@@ -574,39 +610,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     });
   });
 
-  // Legacy compatibility endpoint for existing scripts.
-  app.post('/v1/chat', async (req, reply) => {
-    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const body = req.body as { message?: unknown; session_id?: unknown } | undefined;
-    if (!body || typeof body.message !== 'string' || !body.message.trim()) {
-      return reply.status(400).send({ error: 'Missing required field: message (string)' });
-    }
-
-    try {
-      const requestedId = typeof body.session_id === 'string' ? body.session_id : undefined;
-      const session = await opts.sessionManager.createSession({
-        sessionId: requestedId,
-      });
-      const queued = await opts.sessionManager.submitTurn(session.sessionId, {
-        clientId: 'legacy-http',
-        writerId: 'legacy-http',
-        content: body.message,
-        mode: 'do',
-      });
-      const done = await waitForTurnDone(opts.sessionManager, session.sessionId, queued.turnId);
-      return {
-        session_id: session.sessionId,
-        response: done.message,
-        stats: done.stats,
-        model: session.model,
-      };
-    } catch (err) {
-      const mapped = mapMutationError(err);
-      return reply.status(mapped.status).send({
-        error: mapped.message,
-      });
-    }
-  });
+  // Legacy compatibility endpoint for existing scripts has been removed (was /v1/chat).
 }
 
 async function listenWithPortFallback(
@@ -621,7 +625,7 @@ async function listenWithPortFallback(
       await app.listen({ host, port: candidate });
       return candidate;
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = errorMessage(err);
       if (!/EADDRINUSE/i.test(msg)) throw err;
       occupied.push(candidate);
     }
@@ -633,6 +637,15 @@ export async function startHttpServer(opts: HttpServerOptions): Promise<RunningH
   const app = Fastify({
     logger: false,
     bodyLimit: 10 * 1024 * 1024,
+  });
+
+  app.addHook('onRequest', (req, reply, done) => {
+    applyLoopbackCorsHeaders(req, reply);
+    if (req.method.toUpperCase() === 'OPTIONS') {
+      reply.status(204).send();
+      return;
+    }
+    done();
   });
 
   await app.register(websocket);

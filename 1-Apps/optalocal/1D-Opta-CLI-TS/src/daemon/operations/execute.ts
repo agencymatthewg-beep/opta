@@ -1,5 +1,7 @@
 import { z } from 'zod';
+import { errorMessage } from '../../utils/errors.js';
 import { EXIT, ExitError } from '../../core/errors.js';
+import { loadConfig } from '../../core/config.js';
 import {
   OperationExecuteErrorResponseSchema,
   OperationExecuteRequestSchema,
@@ -11,6 +13,7 @@ import {
   type OperationListResponse,
 } from '../../protocol/v3/operations.js';
 import { getRegisteredOperation, listRegisteredOperations } from './registry.js';
+import { evaluateOperationCapability } from './capability-evaluator.js';
 
 export interface ExecuteDaemonOperationInput {
   id: OperationId;
@@ -97,7 +100,7 @@ function mapOperationExecutionError(err: unknown): {
     };
   }
 
-  const message = err instanceof Error ? err.message : String(err);
+  const message = errorMessage(err);
   return {
     statusCode: 500,
     code: 'execution_failed',
@@ -138,6 +141,25 @@ export async function executeDaemonOperation(
         operation.safety,
         'dangerous_confirmation_required',
         `Operation "${parsed.data.id}" requires confirmDangerous=true.`
+      ),
+    };
+  }
+
+  const config = await loadConfig();
+  const capabilityDecision = await evaluateOperationCapability(config, {
+    id: parsed.data.id,
+    safety: operation.safety,
+    operationInput: parsed.data.input,
+  });
+  if (capabilityDecision.kind === 'deny') {
+    return {
+      statusCode: capabilityDecision.code === 'capability_denied' ? 403 : 503,
+      body: executionErrorResponse(
+        parsed.data.id,
+        operation.safety,
+        capabilityDecision.code,
+        capabilityDecision.message,
+        capabilityDecision.details
       ),
     };
   }
