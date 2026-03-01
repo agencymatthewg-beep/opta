@@ -130,7 +130,7 @@ POST /admin/models/unload          # Unload model
 
 ---
 
-### Opta Code Desktop (1P-Opta-Code-Desktop)
+### Opta Code Desktop (1P-Opta-Code-Universal)
 
 **What it is:** Browser-served web app (Vite + React) for daemon session monitoring.
 

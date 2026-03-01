@@ -1,7 +1,0 @@
-{
-  "channel": "beta",
-  "appId": "1P-Opta-Code-Desktop",
-  "desktopAppId": "com.opta.code.desktop.beta",
-  "stateRoot": "~/Library/Application Support/OptaCodeBeta",
-  "daemonUrl": "http://127.0.0.1:10999"
-}

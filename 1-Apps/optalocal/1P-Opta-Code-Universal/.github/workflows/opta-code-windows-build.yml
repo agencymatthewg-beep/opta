@@ -1,0 +1,251 @@
+name: Opta Code — Windows Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v*"
+    paths:
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
+      - ".github/workflows/opta-code-windows-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
+  workflow_dispatch:
+  schedule:
+    # Nightly Windows installer health run (UTC)
+    - cron: "0 6 * * *"
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal
+
+jobs:
+  # Unit + vitest tests (Linux, fast)
+  unit-tests:
+    name: Unit tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install CLI workspace dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+        run: npm install --ignore-scripts
+      - name: Install daemon-client dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
+        run: npm install --ignore-scripts
+      - name: Install desktop dependencies
+        run: npm install
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run vitest
+        run: npm run test:run
+
+  # Windows MSI/NSIS installer build via Tauri v2
+  windows-build:
+    name: Windows installer (Tauri v2)
+    runs-on: windows-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri -> target"
+      - name: Install CLI workspace dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+        run: npm install --ignore-scripts
+      - name: Install daemon-client dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
+        run: npm install --ignore-scripts
+      - name: Install Node dependencies
+        run: npm install
+
+      - name: Require Authenticode secrets on release tags
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)) {
+            Write-Error "Release tag builds require WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD secrets."
+            exit 1
+          }
+
+      # Authenticode signing — only runs when both certificate secrets are set.
+      # To enable code signing:
+      #   1. Obtain an Authenticode PFX certificate
+      #   2. Store base64(PFX) as repository secret WINDOWS_CERTIFICATE
+      #   3. Store PFX passphrase as repository secret WINDOWS_CERTIFICATE_PASSWORD
+      # The step imports the PFX and patches tauri.conf.json with the thumbprint.
+      - name: Configure Authenticode signing
+        if: env.SIGNING_ENABLED == 'true'
+        env:
+          SIGNING_ENABLED: ${{ secrets.WINDOWS_CERTIFICATE != '' && secrets.WINDOWS_CERTIFICATE_PASSWORD != '' }}
+          WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
+          WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+        shell: pwsh
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP "opta-code.pfx"
+          [IO.File]::WriteAllBytes(
+            $pfxPath,
+            [Convert]::FromBase64String($env:WINDOWS_CERTIFICATE)
+          )
+          $securePwd = ConvertTo-SecureString $env:WINDOWS_CERTIFICATE_PASSWORD -AsPlainText -Force
+          Import-PfxCertificate -FilePath $pfxPath -CertStoreLocation Cert:\CurrentUser\My -Password $securePwd | Out-Null
+          $thumbprint = (Get-PfxCertificate -FilePath $pfxPath -Password $securePwd).Thumbprint
+          Remove-Item $pfxPath -Force
+          $confPath = "src-tauri\tauri.conf.json"
+          $conf = Get-Content $confPath -Raw | ConvertFrom-Json
+          $conf.bundle.windows.certificateThumbprint = $thumbprint
+          $conf.bundle.windows.timestampUrl = "http://timestamp.digicert.com"
+          $conf | ConvertTo-Json -Depth 20 | Set-Content $confPath
+          Write-Host "Code signing configured (thumbprint: $thumbprint)"
+
+      - name: Build Vite frontend
+        run: npm run build
+      - name: Build Tauri app (Windows)
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: 1-Apps/optalocal/1P-Opta-Code-Universal
+          tauriScript: npx tauri
+      - name: Upload Windows installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-windows-installer
+          path: |
+            1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target/release/bundle/msi/*.msi
+            1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target/release/bundle/nsis/*.exe
+            1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target/release/opta-code.exe
+          if-no-files-found: error
+          retention-days: 30
+
+  # Smoke test — verify installer artifacts + packaged app startup (main only)
+  windows-smoke:
+    name: Windows smoke test
+    runs-on: windows-latest
+    needs: windows-build
+    if: github.event_name == 'pull_request' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/')))
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: opta-code-windows-installer
+          path: dist-artifacts
+      - name: Verify installer artifact exists
+        shell: pwsh
+        working-directory: .
+        run: |
+          $msiArtifacts = @(Get-ChildItem -Recurse dist-artifacts -Filter *.msi)
+          $nsisArtifacts = @(Get-ChildItem -Recurse dist-artifacts -Filter *.exe | Where-Object {
+            $_.FullName -match '[\\/]bundle[\\/]nsis[\\/]' -or $_.Name -match '(?i)(setup|installer|nsis)'
+          })
+          $installerArtifacts = @($msiArtifacts + $nsisArtifacts)
+          if ($installerArtifacts.Count -eq 0) { Write-Error "No installer artifacts (.msi/.nsis) found"; exit 1 }
+          Write-Host "Installer artifacts:"; $installerArtifacts | ForEach-Object { Write-Host "  $_" }
+      - name: Smoke test packaged app startup
+        shell: pwsh
+        working-directory: .
+        run: |
+          .\1-Apps\optalocal\1P-Opta-Code-Universal\tests\windows\packaged-smoke.ps1 -ArtifactsPath dist-artifacts -LogFile dist-artifacts\windows-smoke.log
+      - name: Upload Windows smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-windows-smoke-logs
+          path: dist-artifacts/windows-smoke.log
+          if-no-files-found: error
+
+  # Full NSIS install/liveness/uninstall smoke — release-candidate + nightly gate (slow, ~5 min)
+  windows-installer-smoke:
+    name: Windows installer smoke (install/uninstall)
+    runs-on: windows-latest
+    needs: windows-build
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: opta-code-windows-installer
+          path: dist-artifacts
+      - name: Run NSIS install, liveness, and uninstall smoke
+        shell: pwsh
+        working-directory: .
+        run: |
+          .\1-Apps\optalocal\1P-Opta-Code-Universal\tests\windows\installer-smoke.ps1 `
+            -ArtifactsPath dist-artifacts `
+            -MinAliveSeconds 5 `
+            -LogFile dist-artifacts\installer-smoke.log
+      - name: Upload installer smoke logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-installer-smoke-logs
+          path: dist-artifacts/installer-smoke.log
+          if-no-files-found: ignore
+
+  # Aggregate release-readiness summary and enforce required gates.
+  windows-release-readiness:
+    name: Windows release readiness summary
+    runs-on: ubuntu-latest
+    needs: [unit-tests, windows-build, windows-smoke, windows-installer-smoke]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish readiness summary
+        env:
+          UNIT_RESULT: ${{ needs.unit-tests.result }}
+          BUILD_RESULT: ${{ needs.windows-build.result }}
+          SMOKE_RESULT: ${{ needs.windows-smoke.result }}
+          INSTALLER_SMOKE_RESULT: ${{ needs.windows-installer-smoke.result }}
+          REQUIRE_INSTALLER_SMOKE: ${{ github.event_name == 'workflow_dispatch' || github.event_name == 'schedule' || startsWith(github.ref, 'refs/tags/') }}
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref }}
+        run: |
+          {
+            echo "## Windows Release Readiness"
+            echo ""
+            echo "| Gate | Result |"
+            echo "| --- | --- |"
+            echo "| unit-tests | ${UNIT_RESULT} |"
+            echo "| windows-build | ${BUILD_RESULT} |"
+            echo "| windows-smoke | ${SMOKE_RESULT} |"
+            echo "| windows-installer-smoke | ${INSTALLER_SMOKE_RESULT} |"
+            echo ""
+            echo "Event: ${EVENT_NAME}"
+            echo "Ref: ${REF_NAME}"
+            echo "Require installer smoke: ${REQUIRE_INSTALLER_SMOKE}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${UNIT_RESULT}" != "success" ]; then
+            echo "unit-tests gate failed (${UNIT_RESULT})"
+            exit 1
+          fi
+
+          if [ "${BUILD_RESULT}" != "success" ]; then
+            echo "windows-build gate failed (${BUILD_RESULT})"
+            exit 1
+          fi
+
+          if [ "${SMOKE_RESULT}" != "success" ]; then
+            echo "windows-smoke gate failed (${SMOKE_RESULT})"
+            exit 1
+          fi
+
+          if [ "${REQUIRE_INSTALLER_SMOKE}" = "true" ] && [ "${INSTALLER_SMOKE_RESULT}" != "success" ]; then
+            echo "windows-installer-smoke gate failed (${INSTALLER_SMOKE_RESULT})"
+            exit 1
+          fi

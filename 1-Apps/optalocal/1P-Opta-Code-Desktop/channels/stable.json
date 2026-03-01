@@ -1,7 +1,0 @@
-{
-  "channel": "stable",
-  "appId": "1P-Opta-Code-Desktop",
-  "desktopAppId": "com.opta.code.desktop",
-  "stateRoot": "~/Library/Application Support/OptaCode",
-  "daemonUrl": "http://127.0.0.1:9999"
-}

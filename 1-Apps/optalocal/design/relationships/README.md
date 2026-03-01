@@ -24,7 +24,7 @@ These are the core applications within the Opta Local sub-ecosystem. They are th
     *   **Role:** The terminal-native command-line interface.
     *   **Relationships:** Communicates with Opta LMX for executing commands, checking status, and managing local deployments directly from the terminal.
 
-*   **Opta Code Desktop (1P-Opta-Code-Desktop)**
+*   **Opta Code Desktop (1P-Opta-Code-Universal)**
     *   **Role:** A desktop application designed for AI-assisted coding.
     *   **Relationships:** Consumes Opta LMX's local API for deep integration with codebases without sending data externally.
 

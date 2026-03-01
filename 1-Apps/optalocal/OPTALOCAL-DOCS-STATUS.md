@@ -5,10 +5,10 @@ Scope: `1-Apps/optalocal/*`
 
 ## Canonical apps
 - `1D-Opta-CLI-TS` — runtime/TUI/daemon
-- `1L-Opta-Local` — LMX dashboard (lmx.optalocal.com)
+- `1L-Opta-Local` — deprecated duplicate client (retired/deleted from workspace)
 - `1M-Opta-LMX` — inference service (Mono512 host)
 - `1O-Opta-Init` — project/init system
-- `1P-Opta-Code-Desktop` — desktop client for Opta CLI daemon
+- `1P-Opta-Code-Universal` — desktop client for Opta CLI daemon
 - `1R-Opta-Accounts` — auth/accounts portal
 - `1T-Opta-Home` — brand homepage (optalocal.com root) — **live 2026-03-01**
 
@@ -18,7 +18,7 @@ Scope: `1-Apps/optalocal/*`
 |--------|-----|----------------|--------|
 | `optalocal.com` | 1T-Opta-Home | `web` (prj_LUQzl1HQ...) | ✅ Live — brand homepage |
 | `www.optalocal.com` | 1T-Opta-Home | `web` | ✅ Live |
-| `lmx.optalocal.com` | 1L-Opta-Local | `opta-lmx-dashboard` (prj_VbWNtBjU...) | ✅ Live — LMX dashboard |
+| `lmx.optalocal.com` | 1L-Opta-Local (legacy) | `opta-lmx-dashboard` (prj_VbWNtBjU...) | ✅ Live (frozen legacy deploy) |
 | `init.optalocal.com` | 1O-Opta-Init | `opta-init` | ✅ Live |
 | `accounts.optalocal.com` | 1R-Opta-Accounts | `accounts` | ✅ Live — SSO portal |
 | `status.optalocal.com` | 1S-Opta-Status | `status` | ✅ Live |
@@ -34,7 +34,7 @@ Scope: `1-Apps/optalocal/*`
 
 ### lmx.optalocal.com (LMX dashboard — `opta-lmx-dashboard` project)
 - Deploy from: `/Users/Shared/312/Opta/` (monorepo root)
-- rootDirectory: `1-Apps/optalocal/1L-Opta-Local/web`
+- rootDirectory (historical): `1-Apps/optalocal/1L-Opta-Local/web` (path removed from workspace)
 - installCommand: `cd ../../../.. && pnpm install --no-frozen-lockfile`
 - `.vercel/project.json` at monorepo root points to `prj_VbWNtBjUrPUpzZMW6QFhn86KTYsJ`
 - `.vercelignore` at monorepo root whitelists: 1L web, 1D CLI packages, 6D-UI

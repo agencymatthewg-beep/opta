@@ -1,9 +1,0 @@
-{
-  "channel": "beta",
-  "appId": "1L-Opta-Local",
-  "web": {
-    "siteUrl": "https://beta.local.optalocal.com",
-    "defaultTunnel": "https://beta-lmx.optalocal.com",
-    "storageNamespace": "opta-local:beta"
-  }
-}

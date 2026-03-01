@@ -1,6 +1,6 @@
 # Opta Code Desktop Features
 
-Opta Code Desktop (`1P-Opta-Code-Desktop`) is a native-feeling desktop client for the Opta CLI daemon.
+Opta Code Desktop (`1P-Opta-Code-Universal`) is a native-feeling desktop client for the Opta CLI daemon.
 
 ## Session Management
 

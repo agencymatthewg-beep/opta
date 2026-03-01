@@ -151,9 +151,10 @@ Loaded Models (GPU memory)`}
           <CodeBlock
             language="bash"
             filename="Terminal"
-            code={`cd optalocal/1L-Opta-Local/web
+            code={`cd optalocal/1P-Opta-Code-Universal
 npm install
-npm run dev    # starts on http://localhost:3004`}
+npm run dev    # starts on http://localhost:5173
+npm run dev:native   # launches the Tauri desktop shell`}
           />
 
           <p>
