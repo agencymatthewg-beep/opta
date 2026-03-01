@@ -1,0 +1,1024 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta Account Sync — Remaining Limitations & Implementation Plan</title>
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --glass-blur: blur(16px);
+    --glass-bg: rgba(24, 24, 27, 0.7);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-border-top: rgba(255,255,255,0.14);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+    padding: 32px 24px 80px;
+    overflow-x: hidden;
+  }
+
+  /* Ambient bg particles */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(139,92,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59,130,246,0.05) 0%, transparent 55%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .page-wrap { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+
+  /* ── Header ── */
+  .page-header { text-align: center; margin-bottom: 56px; }
+  .page-header .tag {
+    display: inline-block;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    border: 1px solid rgba(139,92,246,0.35);
+    border-radius: 20px;
+    padding: 4px 14px;
+    margin-bottom: 20px;
+    background: rgba(139,92,246,0.07);
+  }
+  .page-header h1 {
+    font-size: clamp(28px, 4vw, 44px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #fafafa 0%, #d4d4d8 40%, var(--primary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.15;
+    margin-bottom: 16px;
+  }
+  .page-header .subtitle {
+    color: var(--text-secondary);
+    font-size: 16px;
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Section headers ── */
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .section-head .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--primary);
+    font-weight: 600;
+  }
+  .section-head .line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.5) 0%, rgba(139,92,246,0.05) 100%);
+    box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+
+  .section { margin-bottom: 56px; }
+
+  /* ── Glass card ── */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border-radius: 16px;
+    border: 1px solid var(--glass-border);
+    border-top-color: var(--glass-border-top);
+    box-shadow:
+      0 8px 32px rgba(0,0,0,0.35),
+      inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass-subtle {
+    background: rgba(18,18,20,0.5);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+  }
+
+  .card { padding: 24px; }
+  .card-sm { padding: 16px 20px; }
+
+  /* ── Limitation cards ── */
+  .limitations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(480px, 1fr));
+    gap: 16px;
+  }
+
+  .limit-card {
+    padding: 20px 22px;
+  }
+
+  .limit-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+
+  .severity-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .sev-critical { background: rgba(239,68,68,0.18); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.3); }
+  .sev-high     { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+  .sev-medium   { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+  .sev-low      { background: rgba(100,116,139,0.15); color: #94a3b8; border: 1px solid rgba(100,116,139,0.2); }
+
+  .limit-title { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.3; }
+  .limit-location {
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 10px;
+    color: var(--primary);
+    margin-top: 3px;
+  }
+
+  .limit-body { font-size: 13px; color: var(--text-secondary); line-height: 1.65; }
+
+  .impact-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+  .impact-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .impact-text { font-size: 12px; color: var(--text-secondary); }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    padding: 28px 32px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.9;
+    color: var(--text-secondary);
+  }
+
+  .arch-row { display: flex; align-items: center; gap: 8px; }
+  .arch-node {
+    padding: 4px 12px;
+    border-radius: 6px;
+    border: 1px solid;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .node-cli   { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.1); color: var(--primary); }
+  .node-http  { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.1); color: var(--neon-blue); }
+  .node-db    { border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); color: var(--neon-green); }
+  .node-miss  { border-color: rgba(239,68,68,0.4); background: rgba(239,68,68,0.08); color: var(--neon-red); border-style: dashed; }
+  .node-gray  { border-color: rgba(100,116,139,0.3); background: rgba(100,116,139,0.08); color: #94a3b8; }
+
+  .arrow-ok   { color: var(--neon-green); font-size: 14px; }
+  .arrow-miss { color: var(--neon-red); font-size: 14px; }
+  .arch-note  { font-size: 11px; color: var(--text-muted); margin-left: 8px; }
+
+  .arch-divider {
+    margin: 16px 0;
+    height: 1px;
+    background: rgba(255,255,255,0.04);
+  }
+
+  /* ── Plan phases ── */
+  .phase-list { display: flex; flex-direction: column; gap: 20px; }
+
+  .phase-card { padding: 24px 26px; }
+
+  .phase-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.35);
+    color: var(--primary);
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .phase-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .phase-title { font-size: 16px; font-weight: 600; }
+  .phase-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+  .phase-effort {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    text-align: right;
+    flex-shrink: 0;
+  }
+  .phase-effort strong { color: var(--primary); font-weight: 600; }
+
+  .task-list { display: flex; flex-direction: column; gap: 8px; }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .task-check {
+    width: 16px; height: 16px;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.12);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .task-content { flex: 1; }
+  .task-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+  .task-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 3px;
+  }
+
+  /* ── Code snippet ── */
+  .code-block {
+    background: rgba(9,9,11,0.8);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.07);
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.8;
+    color: #c4b5fd;
+    overflow-x: auto;
+    margin-top: 12px;
+  }
+  .code-block .cm { color: var(--text-muted); }
+  .code-block .kw { color: #a78bfa; }
+  .code-block .fn { color: #60a5fa; }
+  .code-block .st { color: #86efac; }
+  .code-block .ty { color: #f9a8d4; }
+  .code-block .nu { color: #fca5a5; }
+
+  /* ── Options comparison ── */
+  .options-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+  }
+  @media(max-width: 800px) {
+    .options-grid { grid-template-columns: 1fr; }
+    .limitations-grid { grid-template-columns: 1fr; }
+  }
+
+  .option-card { padding: 20px; }
+  .option-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+  }
+  .option-tag {
+    display: inline-block;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .tag-rec { background: rgba(139,92,246,0.15); color: var(--primary); border: 1px solid rgba(139,92,246,0.3); }
+  .tag-alt { background: rgba(100,116,139,0.12); color: #94a3b8; border: 1px solid rgba(100,116,139,0.2); }
+  .tag-avoid { background: rgba(239,68,68,0.1); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.2); }
+
+  .pro-con-list { list-style: none; font-size: 12px; line-height: 1.7; }
+  .pro-con-list li::before { margin-right: 6px; }
+  .pro-con-list .pro::before { content: '+'; color: var(--neon-green); }
+  .pro-con-list .con::before { content: '−'; color: var(--neon-red); }
+  .pro-con-list li { color: var(--text-secondary); }
+
+  /* ── Summary stats ── */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+  @media(max-width: 700px) { .stats-row { grid-template-columns: repeat(2,1fr); } }
+
+  .stat-card {
+    padding: 18px 16px;
+    text-align: center;
+  }
+  .stat-num {
+    font-size: 32px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--primary), var(--primary-glow));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  /* ── Severity legend ── */
+  .legend-row {
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-secondary); }
+
+  /* ── Flow arrow ── */
+  .flow { color: var(--text-muted); }
+  .ok { color: var(--neon-green); }
+  .bad { color: var(--neon-red); }
+  .warn { color: var(--neon-amber); }
+
+  .badge-phase {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 2px 10px;
+    border-radius: 10px;
+  }
+  .bp1 { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+  .bp2 { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.2); }
+  .bp3 { background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.2); }
+
+  .resolved-chip {
+    font-size: 10px;
+    color: var(--neon-green);
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.25);
+    border-radius: 8px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+</head>
+<body>
+<div class="page-wrap">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="tag">Atpo Analysis · Account Sync Audit · 2026-03-01</div>
+    <h1>Remaining Limitations & Implementation Plan<br />Opta CLI — Account + Cloud API Key Sync</h1>
+    <p class="subtitle">
+      Three session gaps were fixed earlier (Anthropic cloud key fallback, session heartbeat, comment accuracy).
+      This guide covers the <strong>six remaining limitations</strong> — analysed, researched, and prioritised
+      into a phased implementation plan.
+    </p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="glass stat-card">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Fixed this session</div>
+    </div>
+    <div class="glass stat-card">
+      <div class="stat-num">6</div>
+      <div class="stat-label">Remaining gaps</div>
+    </div>
+    <div class="glass stat-card">
+      <div class="stat-num">2</div>
+      <div class="stat-label">Critical severity</div>
+    </div>
+    <div class="glass stat-card">
+      <div class="stat-num">3</div>
+      <div class="stat-label">Implementation phases</div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 1: Atpo Analysis ── -->
+  <div class="section">
+    <div class="section-head">
+      <span class="label">§1 · Atpo Analysis — Remaining Limitations</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="legend-row">
+      <div class="legend-item"><span class="severity-badge sev-critical" style="width:14px;height:14px;border-radius:3px;font-size:0">C</span> Critical — blocks functionality</div>
+      <div class="legend-item"><span class="severity-badge sev-high" style="width:14px;height:14px;border-radius:3px;font-size:0">H</span> High — significant gap</div>
+      <div class="legend-item"><span class="severity-badge sev-medium" style="width:14px;height:14px;border-radius:3px;font-size:0">M</span> Medium — DX improvement</div>
+      <div class="legend-item"><span class="severity-badge sev-low" style="width:14px;height:14px;border-radius:3px;font-size:0">L</span> Low — polish</div>
+    </div>
+
+    <div class="limitations-grid">
+
+      <!-- L1 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-critical">C</div>
+          <div>
+            <div class="limit-title">No write path for cloud API keys from CLI</div>
+            <div class="limit-location">accounts/cloud.ts → 1R-Opta-Accounts/api/keys/route.ts</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          The <code style="font-size:11px;color:var(--primary)">GET /api/keys</code> endpoint exists and works.
+          But <strong>no POST endpoint</strong> exists — all mutations (<code style="font-size:11px;color:var(--primary)">upsertApiKey()</code>)
+          are <code style="font-size:11px;color:var(--primary)">'use server'</code> Next.js functions calling Supabase
+          directly. The CLI cannot store a key to the cloud. The resolution chain only reads — it can never write
+          back a key a user has locally to their cloud account.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Cloud key storage is read-only from CLI — no sync-up possible without manual portal visit</div>
+        </div>
+      </div>
+
+      <!-- L2 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-critical">C</div>
+          <div>
+            <div class="limit-title">No delete path for cloud API keys from CLI</div>
+            <div class="limit-location">accounts/cloud.ts → 1R-Opta-Accounts/api/keys/[id]/route.ts</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          Mirrors L1 — <code style="font-size:11px;color:var(--primary)">deleteApiKey(id)</code> is a
+          server-side-only function. No <code style="font-size:11px;color:var(--primary)">DELETE /api/keys/:id</code>
+          HTTP route exists. A user running <code style="font-size:11px;color:var(--primary)">opta keychain</code>
+          commands cannot remove stale cloud keys without opening the Opta Accounts web portal.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Cannot revoke/rotate cloud keys from CLI — security hygiene requires portal access</div>
+        </div>
+      </div>
+
+      <!-- L3 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-high">H</div>
+          <div>
+            <div class="limit-title">resolveCloudApiKey() returns only the first key</div>
+            <div class="limit-location">src/accounts/cloud.ts:65</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          The Supabase query fetches up to 5 keys (per-provider limit), but resolution consumes only
+          <code style="font-size:11px;color:var(--primary)">payload?.keys?.[0]?.keyValue</code>.
+          If a user has multiple Anthropic keys (e.g., one for dev, one for prod), the inactive
+          or wrong one may be picked. There's no label-aware or
+          <code style="font-size:11px;color:var(--primary)">is_active</code> priority selection.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Wrong key selected when multiple cloud keys exist for the same provider</div>
+        </div>
+      </div>
+
+      <!-- L4 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-high">H</div>
+          <div>
+            <div class="limit-title">opta chat has no capability gate</div>
+            <div class="limit-location">src/commands/chat.ts (vs do.ts which has evaluateCapability)</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          <code style="font-size:11px;color:var(--primary)">opta do</code> checks
+          <code style="font-size:11px;color:var(--primary)">evaluateCapability(state, 'cli.run')</code>
+          before executing. <code style="font-size:11px;color:var(--primary)">opta chat</code> has no
+          corresponding <code style="font-size:11px;color:var(--primary)">cli.chat</code> gate.
+          This means subscription/plan enforcement cannot distinguish chat-only vs full-execution tiers —
+          a missing hook in the billing/gating architecture.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Plan-based access control cannot restrict chat independently from do/execution</div>
+        </div>
+      </div>
+
+      <!-- L5 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-medium">M</div>
+          <div>
+            <div class="limit-title">DeviceId lost on re-login after account.json deletion</div>
+            <div class="limit-location">src/accounts/storage.ts + src/commands/login.ts</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          <code style="font-size:11px;color:var(--primary)">registerCliDevice()</code> is called on
+          first login and the returned deviceId saved to <code style="font-size:11px;color:var(--primary)">account.json</code>.
+          If this file is deleted (manual reset, migration), re-login registers a <em>new</em> device
+          rather than reconciling via fingerprint. Cloud-side device records accumulate. The fingerprint
+          hash (<code style="font-size:11px;color:var(--primary)">sha256(hostname|platform|arch|user|uid)</code>)
+          could be used to look up the existing device ID instead of always creating a new one.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Orphaned device records; fingerprint-based trust not fully utilised</div>
+        </div>
+      </div>
+
+      <!-- L6 -->
+      <div class="glass limit-card">
+        <div class="limit-header">
+          <div class="severity-badge sev-low">L</div>
+          <div>
+            <div class="limit-title">Lua false-positive diagnostics from Python venv</div>
+            <div class="limit-location">1M-Opta-LMX/.venv/**/sliding_window.lua</div>
+          </div>
+        </div>
+        <div class="limit-body">
+          The Lua LSP (luacheck/sumneko) flags <code style="font-size:11px;color:var(--primary)">KEYS</code>
+          and <code style="font-size:11px;color:var(--primary)">redis</code> as undefined globals in
+          <code style="font-size:11px;color:var(--primary)">sliding_window.lua</code> inside the Python venv.
+          These are valid Redis Lua script execution-context globals — not CLI code. The Lua LSP has no
+          way to know this is a Redis Lua script vs a standalone Lua file without configuration.
+        </div>
+        <div class="impact-row">
+          <div class="impact-label">Impact</div>
+          <div class="impact-text">Noisy IDE diagnostics; wastes developer attention on false positives</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 2: Architecture Research ── -->
+  <div class="section">
+    <div class="section-head">
+      <span class="label">§2 · Backend Architecture Research Findings</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass card" style="margin-bottom:16px">
+      <div style="margin-bottom:20px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:6px">Current key flow — READ path (works)</div>
+        <div style="font-size:12px;color:var(--text-muted)">CLI → HTTP GET /api/keys → Supabase RLS read → key returned</div>
+      </div>
+      <div class="arch-diagram">
+        <div class="arch-row" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="arch-node node-cli">CLI (cloud.ts)</div>
+          <span class="ok">──GET──▶</span>
+          <div class="arch-node node-http">GET /api/keys<br/><span style="font-size:9px;opacity:0.7">route.ts</span></div>
+          <span class="ok">──▶</span>
+          <div class="arch-node node-db">Supabase RLS<br/><span style="font-size:9px;opacity:0.7">api_keys table</span></div>
+          <span class="ok">◀── key returned ──</span>
+        </div>
+        <div class="arch-divider"></div>
+        <div style="margin-bottom:10px;font-size:12px;font-weight:600;color:var(--neon-red)">
+          Current WRITE path — MISSING HTTP surface
+        </div>
+        <div class="arch-row" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="arch-node node-cli">CLI</div>
+          <span class="bad">──POST──✗</span>
+          <div class="arch-node node-miss">POST /api/keys<br/><span style="font-size:9px;opacity:0.7">DOES NOT EXIST</span></div>
+          <span class="bad">✗</span>
+          <div class="arch-node node-gray" style="opacity:0.5">Supabase</div>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--text-muted)">
+          key-actions.ts → upsertApiKey() is 'use server' only — called from Next.js form actions, not reachable via HTTP
+        </div>
+        <div class="arch-divider"></div>
+        <div style="margin-bottom:10px;font-size:12px;font-weight:600;color:var(--neon-amber)">
+          After fix — Target write path
+        </div>
+        <div class="arch-row" style="gap:10px;flex-wrap:wrap;align-items:center">
+          <div class="arch-node node-cli">CLI (cloud.ts)</div>
+          <span class="ok">──POST──▶</span>
+          <div class="arch-node node-http">POST /api/keys<br/><span style="font-size:9px;opacity:0.7">NEW route</span></div>
+          <span class="ok">──▶</span>
+          <div class="arch-node node-db">upsertApiKey()<br/><span style="font-size:9px;opacity:0.7">via key-actions.ts</span></div>
+        </div>
+        <div class="arch-row" style="gap:10px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <div class="arch-node node-cli">CLI (cloud.ts)</div>
+          <span class="ok">──DELETE──▶</span>
+          <div class="arch-node node-http">DELETE /api/keys/[id]<br/><span style="font-size:9px;opacity:0.7">NEW route</span></div>
+          <span class="ok">──▶</span>
+          <div class="arch-node node-db">deleteApiKey(id)<br/><span style="font-size:9px;opacity:0.7">via key-actions.ts</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:16px">Key schema in Supabase — <code style="font-size:12px;color:var(--primary)">api_keys</code> table</div>
+      <div class="code-block">
+<span class="cm">// Upsert constraint: (user_id, provider, label) — unique per provider+label pair</span>
+<span class="cm">// Supported providers: 'anthropic' | 'openai' | 'gemini' | 'tavily' | 'exa' | 'brave' | 'groq'</span>
+<span class="cm">// key_value: encrypted at Supabase layer via RLS policy</span>
+<span class="cm">// is_active: soft-delete flag (GET /api/keys filters to is_active=true only)</span>
+
+<span class="kw">interface</span> <span class="ty">ApiKeyRow</span> {
+  id:         <span class="ty">string</span>;      <span class="cm">// UUID primary key</span>
+  user_id:    <span class="ty">string</span>;      <span class="cm">// FK → auth.users</span>
+  provider:   <span class="ty">string</span>;      <span class="cm">// e.g. 'anthropic'</span>
+  label:      <span class="ty">string</span>;      <span class="cm">// default 'default'</span>
+  key_value:  <span class="ty">string</span>;      <span class="cm">// the actual key</span>
+  is_active:  <span class="ty">boolean</span>;     <span class="cm">// true = active</span>
+  updated_at: <span class="ty">string</span>;      <span class="cm">// ISO timestamp</span>
+}
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 3: Options Analysis ── -->
+  <div class="section">
+    <div class="section-head">
+      <span class="label">§3 · Approach Options — L1/L2 Write Path</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="options-grid">
+      <div class="glass option-card">
+        <div class="option-title">Add POST/DELETE HTTP routes to Accounts</div>
+        <div><span class="option-tag tag-rec">Recommended</span></div>
+        <ul class="pro-con-list">
+          <li class="pro">Minimal surface — mirrors existing GET pattern exactly</li>
+          <li class="pro">Auth via Bearer token (same as GET) — no new auth mechanism</li>
+          <li class="pro">RLS still enforces user isolation at DB layer</li>
+          <li class="pro">key-actions.ts already has upsertApiKey/deleteApiKey</li>
+          <li class="pro">CLI callers call accounts URL they already know</li>
+          <li class="con">Requires deploying Accounts (Next.js) — not just CLI</li>
+          <li class="con">Two-repo change (Accounts + CLI)</li>
+        </ul>
+      </div>
+      <div class="glass option-card">
+        <div class="option-title">CLI writes directly to Supabase REST</div>
+        <div><span class="option-tag tag-alt">Alternative</span></div>
+        <ul class="pro-con-list">
+          <li class="pro">No Accounts backend deploy needed</li>
+          <li class="pro">CLI already has anon key + user access token</li>
+          <li class="con">Supabase REST URL in CLI (tight coupling)</li>
+          <li class="con">Bypasses business-logic layer (validation, encryption)</li>
+          <li class="con">RLS policy must be maintained separately</li>
+          <li class="con">Key stored unencrypted at Supabase column level</li>
+          <li class="con">Breaks abstraction — Accounts owns key storage</li>
+        </ul>
+      </div>
+      <div class="glass option-card">
+        <div class="option-title">Add a dedicated /api/cli REST API in Accounts</div>
+        <div><span class="option-tag tag-avoid">Over-engineered</span></div>
+        <ul class="pro-con-list">
+          <li class="pro">Clean versioned API surface</li>
+          <li class="pro">Could add CLI-specific features later</li>
+          <li class="con">Major scope creep for 2 endpoints</li>
+          <li class="con">Extra routing, middleware, versioning complexity</li>
+          <li class="con">Delay: much more code to write</li>
+          <li class="con">Existing GET /api/keys works fine as the pattern</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SECTION 4: Implementation Plan ── -->
+  <div class="section">
+    <div class="section-head">
+      <span class="label">§4 · Implementation Plan — 3 Phases</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="phase-list">
+
+      <!-- Phase 1 -->
+      <div class="glass phase-card">
+        <div class="phase-header">
+          <div class="phase-num">1</div>
+          <div>
+            <div class="phase-title">Cloud Key Write Path <span class="badge-phase bp1" style="margin-left:8px">Critical</span></div>
+            <div class="phase-subtitle">Add POST + DELETE HTTP routes to Accounts; add storeCloudApiKey / deleteCloudApiKey to CLI</div>
+          </div>
+          <div class="phase-effort">Touches<br/><strong>2 repos</strong></div>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add POST /api/keys route to Opta Accounts</div>
+              <div class="task-file">1R-Opta-Accounts/src/app/api/keys/route.ts — add export async function POST()</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add DELETE /api/keys/[id] route to Opta Accounts</div>
+              <div class="task-file">1R-Opta-Accounts/src/app/api/keys/[id]/route.ts — new file, export async function DELETE()</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add storeCloudApiKey() to CLI cloud module</div>
+              <div class="task-file">src/accounts/cloud.ts — POST { provider, keyValue, label? }</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add deleteCloudApiKey(id) to CLI cloud module</div>
+              <div class="task-file">src/accounts/cloud.ts — DELETE /api/keys/{id}</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add listCloudApiKeys() to CLI cloud module</div>
+              <div class="task-file">src/accounts/cloud.ts — returns all active keys (not just first per provider)</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add opta account key-push command</div>
+              <div class="task-file">src/commands/account.ts — push local keychain key to cloud for a provider</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add cloud key list to opta keychain status</div>
+              <div class="task-file">src/commands/keychain.ts — show both local + cloud keys in status output</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="code-block" style="margin-top:16px">
+<span class="cm">// NEW: 1R-Opta-Accounts/src/app/api/keys/route.ts — POST handler</span>
+<span class="kw">export async function</span> <span class="fn">POST</span>(request: Request) {
+  <span class="kw">const</span> supabase = <span class="kw">await</span> <span class="fn">createClient</span>();
+  <span class="kw">const</span> { data: { user } } = <span class="kw">await</span> supabase.auth.<span class="fn">getUser</span>();
+  <span class="kw">if</span> (!user) <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ error: <span class="st">'Unauthorized'</span> }, { status: <span class="nu">401</span> });
+
+  <span class="kw">const</span> { provider, keyValue, label = <span class="st">'default'</span> } = <span class="kw">await</span> request.<span class="fn">json</span>();
+  <span class="kw">if</span> (!provider || !keyValue) <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ error: <span class="st">'provider and keyValue required'</span> }, { status: <span class="nu">400</span> });
+
+  <span class="kw">await</span> <span class="fn">upsertApiKey</span>(provider, keyValue, label);  <span class="cm">// re-uses existing server action</span>
+  <span class="kw">return</span> NextResponse.<span class="fn">json</span>({ ok: <span class="kw">true</span> }, { status: <span class="nu">201</span> });
+}
+        </div>
+        <div class="code-block" style="margin-top:10px">
+<span class="cm">// NEW: src/accounts/cloud.ts — storeCloudApiKey()</span>
+<span class="kw">export async function</span> <span class="fn">storeCloudApiKey</span>(
+  state: <span class="ty">AccountState | null</span>, provider: <span class="ty">string</span>, keyValue: <span class="ty">string</span>, label = <span class="st">'default'</span>
+): <span class="ty">Promise</span>&lt;<span class="ty">boolean</span>&gt; {
+  <span class="kw">const</span> accessToken = state?.session?.access_token?.trim();
+  <span class="kw">if</span> (!accessToken) <span class="kw">return false</span>;
+  <span class="kw">const</span> url = <span class="kw">new</span> <span class="fn">URL</span>(<span class="st">'/api/keys'</span>, <span class="fn">accountsBaseUrl</span>());
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(url.toString(), {
+    method: <span class="st">'POST'</span>,
+    headers: { <span class="st">'content-type'</span>: <span class="st">'application/json'</span>, ...<span class="fn">authHeaders</span>(accessToken) },
+    body: <span class="fn">JSON.stringify</span>({ provider: <span class="fn">normalizeProvider</span>(provider), keyValue, label }),
+  });
+  <span class="kw">return</span> res.ok;
+}
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="glass phase-card">
+        <div class="phase-header">
+          <div class="phase-num">2</div>
+          <div>
+            <div class="phase-title">Multi-key Resolution + Capability Gate <span class="badge-phase bp2" style="margin-left:8px">High</span></div>
+            <div class="phase-subtitle">Fix first-key-only resolution; add cli.chat capability check to opta chat</div>
+          </div>
+          <div class="phase-effort">CLI only<br/><strong>1 repo</strong></div>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Fix resolveCloudApiKey() to prefer active + most-recent key</div>
+              <div class="task-file">src/accounts/cloud.ts:65 — use find() over first-element assumption; filter is_active=true already done by GET route, but sort by updated_at DESC and pick [0] explicitly</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add optional label parameter to resolveCloudApiKey()</div>
+              <div class="task-file">src/accounts/cloud.ts — allow callers to request 'default' or named key</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add cli.chat capability gate to opta chat command</div>
+              <div class="task-file">src/commands/chat.ts — call evaluateCapability(state, 'cli.chat') before starting session</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Graceful degradation when capability check fails</div>
+              <div class="task-file">src/commands/chat.ts — allow if evaluateCapability returns capability_check_unavailable (offline)</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="glass phase-card">
+        <div class="phase-header">
+          <div class="phase-num">3</div>
+          <div>
+            <div class="phase-title">DeviceId Reconciliation + Lua Fix <span class="badge-phase bp3" style="margin-left:8px">Medium/Low</span></div>
+            <div class="phase-subtitle">Fingerprint-based device lookup on re-login; silence Lua false positives</div>
+          </div>
+          <div class="phase-effort">CLI + LMX<br/><strong>2 repos</strong></div>
+        </div>
+        <div class="task-list">
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add GET /api/devices/fingerprint endpoint to Accounts</div>
+              <div class="task-file">1R-Opta-Accounts/src/app/api/devices/fingerprint/route.ts — lookup device by fingerprintHash, return deviceId if found</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Update login flow to reconcile fingerprint before registering</div>
+              <div class="task-file">src/accounts/cloud.ts — call fingerprint lookup, use existing deviceId if found instead of creating new</div>
+            </div>
+          </div>
+          <div class="task-item">
+            <div class="task-check"></div>
+            <div class="task-content">
+              <div class="task-name">Add .luarc.json to suppress Redis Lua global warnings</div>
+              <div class="task-file">1M-Opta-LMX/.luarc.json — define KEYS, redis, unpack as known globals; or add .luarc.json to venv path root</div>
+            </div>
+          </div>
+        </div>
+        <div class="code-block" style="margin-top:16px">
+<span class="cm">// 1M-Opta-LMX/.luarc.json — silence Redis Lua false positives</span>
+{
+  <span class="st">"globals"</span>: [<span class="st">"redis"</span>, <span class="st">"KEYS"</span>, <span class="st">"ARGV"</span>, <span class="st">"unpack"</span>],
+  <span class="st">"diagnostics"</span>: {
+    <span class="st">"globals"</span>: [<span class="st">"redis"</span>, <span class="st">"KEYS"</span>, <span class="st">"ARGV"</span>, <span class="st">"unpack"</span>]
+  }
+}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SECTION 5: Resolution Status ── -->
+  <div class="section">
+    <div class="section-head">
+      <span class="label">§5 · Full Resolution Status — All Findings</span>
+      <div class="line"></div>
+    </div>
+
+    <div class="glass card">
+      <div style="display:flex;flex-direction:column;gap:10px">
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span class="resolved-chip">✓ Fixed</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">Anthropic cloud key fallback missing</div>
+            <div style="font-size:11px;color:var(--text-muted)">src/providers/anthropic.ts — resolveApiKey() now checks cloud as step 4</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span class="resolved-chip">✓ Fixed</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">session last_seen_at never updated after login</div>
+            <div style="font-size:11px;color:var(--text-muted)">src/accounts/cloud.ts + useAppConfig.ts — 30-min touchSessionRecord heartbeat added</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <span class="resolved-chip">✓ Fixed</span>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">resolveApiKey() comment said 4 steps, code had 5</div>
+            <div style="font-size:11px;color:var(--text-muted)">src/lmx/api-key.ts — comment updated to document all 5 steps accurately</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <div style="width:60px;flex-shrink:0">
+            <span class="badge-phase bp1" style="font-size:9px">Phase 1</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">No write/delete path for cloud API keys from CLI</div>
+            <div style="font-size:11px;color:var(--text-muted)">Needs POST + DELETE routes in Accounts + storeCloudApiKey/deleteCloudApiKey in CLI</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <div style="width:60px;flex-shrink:0">
+            <span class="badge-phase bp2" style="font-size:9px">Phase 2</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">resolveCloudApiKey() returns only first key — no multi-key awareness</div>
+            <div style="font-size:11px;color:var(--text-muted)">Sort by updated_at, add optional label param, prefer active+recent</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <div style="width:60px;flex-shrink:0">
+            <span class="badge-phase bp2" style="font-size:9px">Phase 2</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">opta chat has no cli.chat capability gate</div>
+            <div style="font-size:11px;color:var(--text-muted)">Add evaluateCapability('cli.chat') to chat command with offline graceful degradation</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.05)">
+          <div style="width:60px;flex-shrink:0">
+            <span class="badge-phase bp3" style="font-size:9px">Phase 3</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">DeviceId lost on re-login — fingerprint not used for reconciliation</div>
+            <div style="font-size:11px;color:var(--text-muted)">Add GET /api/devices/fingerprint endpoint; lookup before register</div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0">
+          <div style="width:60px;flex-shrink:0">
+            <span class="badge-phase bp3" style="font-size:9px">Phase 3</span>
+          </div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:500">Lua false-positive diagnostics from Python venv</div>
+            <div style="font-size:11px;color:var(--text-muted)">Add .luarc.json to 1M-Opta-LMX with redis/KEYS/ARGV globals declared</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div style="text-align:center;color:var(--text-muted);font-size:12px;padding-top:32px;border-top:1px solid rgba(255,255,255,0.05)">
+    Atpo Analysis + Opta Implementation Plan · Generated 2026-03-01 · Opta CLI 1D-Opta-CLI-TS
+  </div>
+
+</div>
+</body>
+</html>
