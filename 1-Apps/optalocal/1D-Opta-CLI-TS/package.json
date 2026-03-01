@@ -1,5 +1,5 @@
 {
-  "name": "opta-cli",
+  "name": "@opta/opta-cli",
   "version": "0.5.0-alpha.1",
   "description": "Agentic AI coding CLI powered by local LLMs",
   "author": "Opta Operations <matthew@optamize.biz>",
@@ -42,8 +42,8 @@
     "dev:chat": "node_modules/.bin/tsx src/index.ts chat",
     "dev:chat:watch": "node_modules/.bin/tsx watch src/index.ts chat",
     "prepare": "npm run build",
-    "check-dist": "node -e \"const fs=require('fs');const s=fs.statSync('dist/index.js');if(s.size===0)throw new Error('dist/index.js is empty — run npm run build')\"",
-    "postbuild": "node --eval \"const s=require('fs').statSync('dist/index.js');if(s.size===0){console.error('FATAL: dist/index.js is empty — tsup --clean was interrupted');process.exit(1)}\"",
+    "check-dist": "node -e \"const fs=require('fs');const s=fs.statSync('dist/index.js');if(s.size===0)throw new Error('dist/index.js is empty \u2014 run npm run build')\"",
+    "postbuild": "node --eval \"const s=require('fs').statSync('dist/index.js');if(s.size===0){console.error('FATAL: dist/index.js is empty \u2014 tsup --clean was interrupted');process.exit(1)}\"",
     "test:contract": "vitest run tests/protocol/operations-contract.test.ts tests/daemon/http-server.test.ts tests/daemon/client-contract.test.ts",
     "plan-state:check": "node scripts/plan-state/sync.mjs",
     "plan-state:sync": "node scripts/plan-state/sync.mjs --write",
@@ -104,5 +104,8 @@
     "claude",
     "local",
     "opta"
-  ]
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
 }
