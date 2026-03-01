@@ -57,18 +57,6 @@ function normalizeList(values: string[] | undefined): string[] {
 }
 
 /**
- * Resolve the path to the compiled chrome-overlay.js file.
- *
- * After tsup build, chrome-overlay.js sits next to mcp-bootstrap.js in dist/.
- * In dev (tsx), the TypeScript source is alongside this file.
- */
-function resolveOverlaySourcePath(): string {
-  const thisDir = dirname(fileURLToPath(import.meta.url));
-  // Prefer compiled .js (production), fall back to .ts (dev with tsx)
-  return join(thisDir, 'chrome-overlay.js');
-}
-
-/**
  * Read the chrome overlay script source code.
  *
  * Tries the compiled .js first, then the .ts source (stripping type annotations).
@@ -161,10 +149,13 @@ export async function ensureBrowserConfigFiles(
 }
 
 /**
- * Build CLI flags for the old approach (no config file).
- * Used as fallback when config file generation fails.
+ * Build CLI flags for network policy and navigation options.
+ *
+ * These flags (--allowed-hosts, --blocked-origins, --start-url) are CLI-only
+ * and are NOT part of the @playwright/mcp config file schema. They are always
+ * appended as CLI args regardless of whether a config file is generated.
  */
-function buildLegacyArgs(options: PlaywrightMcpBootstrapOptions): string[] {
+function buildNetworkPolicyArgs(options: PlaywrightMcpBootstrapOptions): string[] {
   const args: string[] = [];
 
   const allowedHosts = normalizeList(options.allowedHosts);
@@ -190,9 +181,12 @@ function buildLegacyArgs(options: PlaywrightMcpBootstrapOptions): string[] {
  *
  * Generates a JSON config file on disk with browser context options
  * (reducedMotion, colorScheme) and initScript (chrome overlay), then
- * passes `--config <path>` to the subprocess.
+ * passes `--config <path>` to the subprocess alongside the standard
+ * CLI flags for network policy and navigation.
  *
- * Falls back to individual CLI flags if config file generation fails.
+ * If config file generation fails (e.g. permission error), the function
+ * logs a warning and continues with CLI flags only. The contextOptions
+ * and initScript features will be unavailable in that case.
  */
 export async function createPlaywrightMcpServerConfig(
   options: PlaywrightMcpBootstrapOptions = {},
@@ -204,9 +198,8 @@ export async function createPlaywrightMcpServerConfig(
     args.push('--isolated');
   }
 
-  // Try config-file approach first
+  // Try config-file approach for contextOptions + initScript
   const configDir = options.configDir ?? getDaemonDir();
-  let configGenerated = false;
 
   try {
     const configPath = await ensureBrowserConfigFiles(configDir, {
@@ -214,17 +207,14 @@ export async function createPlaywrightMcpServerConfig(
       reducedMotion: options.reducedMotion ?? 'no-preference',
     });
     args.push('--config', configPath);
-    configGenerated = true;
   } catch (err) {
-    // Config file generation failed — fall back to legacy CLI flags
+    // Config file generation failed — contextOptions/initScript unavailable
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`  browser config: falling back to CLI flags (${msg})`);
+    console.warn(`  browser config: config file generation failed (${msg})`);
   }
 
-  // If config generation failed, use legacy CLI arg approach
-  if (!configGenerated) {
-    args.push(...buildLegacyArgs(options));
-  }
+  // Network policy and navigation flags are always CLI args
+  args.push(...buildNetworkPolicyArgs(options));
 
   return {
     transport: 'stdio',

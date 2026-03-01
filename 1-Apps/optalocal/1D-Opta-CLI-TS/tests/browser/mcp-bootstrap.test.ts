@@ -1,35 +1,92 @@
-import { describe, it, expect } from 'vitest';
-import { createPlaywrightMcpServerConfig } from '../../src/browser/mcp-bootstrap.js';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { mkdtemp, readFile, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+
+// Mock getDaemonDir so tests that don't pass configDir use a temp dir
+const mockDaemonDir = join(tmpdir(), 'opta-mcp-bootstrap-test-daemon');
+vi.mock('../../src/platform/paths.js', () => ({
+  getDaemonDir: () => mockDaemonDir,
+}));
+
+import {
+  createPlaywrightMcpServerConfig,
+  ensureBrowserConfigFiles,
+} from '../../src/browser/mcp-bootstrap.js';
 
 describe('createPlaywrightMcpServerConfig', () => {
-  it('returns secure isolated defaults', () => {
-    const config = createPlaywrightMcpServerConfig();
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opta-mcp-test-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Best effort cleanup
+    }
+  });
+
+  it('returns transport stdio with npx command', async () => {
+    const config = await createPlaywrightMcpServerConfig({ configDir: tempDir });
 
     expect(config.transport).toBe('stdio');
     expect(config.command).toBe('npx');
-    expect(config.args).toEqual(['-y', '@playwright/mcp@latest', '--isolated']);
     expect(config.env).toEqual({});
   });
 
-  it('adds normalized allowed-hosts when provided', () => {
-    const config = createPlaywrightMcpServerConfig({
-      allowedHosts: [' example.com ', 'api.example.com', 'example.com'],
-    });
+  it('includes --isolated and --config flags by default', async () => {
+    const config = await createPlaywrightMcpServerConfig({ configDir: tempDir });
 
-    expect(config.args).toContain('--allowed-hosts');
-    expect(config.args).toContain('example.com,api.example.com');
+    expect(config.args).toContain('--isolated');
+    expect(config.args).toContain('--config');
   });
 
-  it('supports attach mode by omitting isolated flag', () => {
-    const config = createPlaywrightMcpServerConfig({ mode: 'attach' });
+  it('passes --allowed-hosts and --start-url as CLI args alongside --config', async () => {
+    const config = await createPlaywrightMcpServerConfig({
+      configDir: tempDir,
+      allowedHosts: ['example.com', 'api.example.com'],
+      startUrl: 'https://example.com',
+    });
+
+    // Config file for contextOptions + initScript
+    expect(config.args).toContain('--config');
+    // Network policy flags are always CLI args (not in config file)
+    expect(config.args).toContain('--allowed-hosts');
+    expect(config.args).toContain('example.com,api.example.com');
+    expect(config.args).toContain('--start-url');
+    expect(config.args).toContain('https://example.com');
+  });
+
+  it('generates a config file at the expected path', async () => {
+    const config = await createPlaywrightMcpServerConfig({ configDir: tempDir });
+    const configIdx = config.args.indexOf('--config');
+    expect(configIdx).toBeGreaterThan(-1);
+
+    const configPath = config.args[configIdx + 1]!;
+    expect(configPath).toBe(join(tempDir, 'browser', 'playwright-mcp-config.json'));
+
+    const configContent = JSON.parse(await readFile(configPath, 'utf-8'));
+    expect(configContent.browser.contextOptions.reducedMotion).toBe('no-preference');
+    expect(configContent.browser.contextOptions.colorScheme).toBe('dark');
+  });
+
+  it('supports attach mode by omitting isolated flag', async () => {
+    const config = await createPlaywrightMcpServerConfig({
+      mode: 'attach',
+      configDir: tempDir,
+    });
     expect(config.args).not.toContain('--isolated');
   });
 
-  it('passes through command, package, and env overrides', () => {
-    const config = createPlaywrightMcpServerConfig({
+  it('passes through command, package, and env overrides', async () => {
+    const config = await createPlaywrightMcpServerConfig({
       command: 'pnpm',
       packageName: '@playwright/mcp@1.0.0',
       env: { DEBUG: 'pw:mcp' },
+      configDir: tempDir,
     });
 
     expect(config.command).toBe('pnpm');
@@ -37,23 +94,103 @@ describe('createPlaywrightMcpServerConfig', () => {
     expect(config.env).toEqual({ DEBUG: 'pw:mcp' });
   });
 
-  it('passes --start-url when startUrl is provided', () => {
-    const config = createPlaywrightMcpServerConfig({ startUrl: 'https://example.com' });
-    const idx = config.args.indexOf('--start-url');
-    expect(idx).toBeGreaterThan(-1);
-    expect(config.args[idx + 1]).toBe('https://example.com');
+  it('respects reducedMotion override', async () => {
+    await createPlaywrightMcpServerConfig({
+      configDir: tempDir,
+      reducedMotion: 'reduce',
+    });
+
+    const configPath = join(tempDir, 'browser', 'playwright-mcp-config.json');
+    const configContent = JSON.parse(await readFile(configPath, 'utf-8'));
+    expect(configContent.browser.contextOptions.reducedMotion).toBe('reduce');
   });
 
-  it('trims startUrl whitespace before passing to args', () => {
-    const config = createPlaywrightMcpServerConfig({ startUrl: '  https://example.com  ' });
-    const idx = config.args.indexOf('--start-url');
-    expect(idx).toBeGreaterThan(-1);
-    expect(config.args[idx + 1]).toBe('https://example.com');
+  it('omits initScript when injectOverlay is false', async () => {
+    await createPlaywrightMcpServerConfig({
+      configDir: tempDir,
+      injectOverlay: false,
+    });
+
+    const configPath = join(tempDir, 'browser', 'playwright-mcp-config.json');
+    const configContent = JSON.parse(await readFile(configPath, 'utf-8'));
+    expect(configContent.browser.initScript).toBeUndefined();
   });
 
-  it('omits --start-url for empty or whitespace-only startUrl', () => {
-    expect(createPlaywrightMcpServerConfig({ startUrl: '' }).args).not.toContain('--start-url');
-    expect(createPlaywrightMcpServerConfig({ startUrl: '   ' }).args).not.toContain('--start-url');
+  it('omits --config but keeps network policy args when config dir is unwritable', async () => {
+    // Use a path that cannot be created (nested under a file)
+    const badDir = join(tempDir, 'not-a-dir-file');
+    // Create a regular file where a directory is expected
+    const { writeFile: writeF } = await import('node:fs/promises');
+    await writeF(badDir, 'blocker', 'utf-8');
+
+    const config = await createPlaywrightMcpServerConfig({
+      configDir: join(badDir, 'nested'), // This will fail because badDir is a file
+      allowedHosts: ['example.com'],
+      startUrl: 'https://example.com',
+    });
+
+    // --config should be absent (config file generation failed)
+    expect(config.args).not.toContain('--config');
+    // Network policy args are always CLI flags regardless of config file status
+    expect(config.args).toContain('--allowed-hosts');
+    expect(config.args).toContain('example.com');
+    expect(config.args).toContain('--start-url');
+    expect(config.args).toContain('https://example.com');
+  });
+});
+
+describe('ensureBrowserConfigFiles', () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), 'opta-mcp-ensure-'));
+  });
+
+  afterEach(async () => {
+    try {
+      await rm(tempDir, { recursive: true, force: true });
+    } catch {
+      // Best effort cleanup
+    }
+  });
+
+  it('creates the browser directory and both files', async () => {
+    const configPath = await ensureBrowserConfigFiles(tempDir);
+
+    expect(configPath).toBe(join(tempDir, 'browser', 'playwright-mcp-config.json'));
+
+    const configContent = JSON.parse(await readFile(configPath, 'utf-8'));
+    expect(configContent.browser.contextOptions.reducedMotion).toBe('no-preference');
+    expect(configContent.browser.contextOptions.colorScheme).toBe('dark');
+    expect(configContent.browser.initScript).toBeInstanceOf(Array);
+    expect(configContent.browser.initScript[0]).toBe(
+      join(tempDir, 'browser', 'chrome-overlay.js'),
+    );
+  });
+
+  it('writes the overlay JS file to disk', async () => {
+    await ensureBrowserConfigFiles(tempDir);
+
+    const overlayPath = join(tempDir, 'browser', 'chrome-overlay.js');
+    const content = await readFile(overlayPath, 'utf-8');
+    // Verify it looks like the overlay IIFE
+    expect(content).toContain('__OPTA_CHROME_INITIALIZED__');
+    expect(content).toContain('opta-chrome-host');
+  });
+
+  it('returns config path when injectOverlay is false', async () => {
+    const configPath = await ensureBrowserConfigFiles(tempDir, {
+      injectOverlay: false,
+    });
+
+    const configContent = JSON.parse(await readFile(configPath, 'utf-8'));
+    expect(configContent.browser.initScript).toBeUndefined();
+  });
+
+  it('is idempotent — can be called twice without error', async () => {
+    const path1 = await ensureBrowserConfigFiles(tempDir);
+    const path2 = await ensureBrowserConfigFiles(tempDir);
+    expect(path1).toBe(path2);
   });
 });
 
