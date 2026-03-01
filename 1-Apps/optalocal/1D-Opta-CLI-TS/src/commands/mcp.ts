@@ -85,7 +85,7 @@ export async function mcpAdd(name: string, command: string, opts: { env?: string
 export async function mcpAddPlaywright(opts: McpAddPlaywrightOptions = {}): Promise<void> {
   const name = opts.name?.trim() || PLAYWRIGHT_MCP_SERVER_KEY;
   const env = parseEnvPairs(opts.env);
-  const serverConfig = createPlaywrightMcpServerConfig({
+  const serverConfig = await createPlaywrightMcpServerConfig({
     command: opts.command,
     packageName: opts.packageName,
     mode: opts.mode,

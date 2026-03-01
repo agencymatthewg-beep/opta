@@ -121,7 +121,7 @@ export async function buildToolRegistry(
     const allowedHosts = resolvePlaywrightAllowedHosts(browser);
     const blockedOrigins = resolvePlaywrightBlockedOrigins(browser);
 
-    mergedServers[PLAYWRIGHT_MCP_SERVER_KEY] = createPlaywrightMcpServerConfig({
+    mergedServers[PLAYWRIGHT_MCP_SERVER_KEY] = await createPlaywrightMcpServerConfig({
       command: browserMcp.command,
       packageName: browserMcp.package,
       mode: browserMode,
