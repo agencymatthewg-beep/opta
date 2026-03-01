@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Test CI gate
-        run: npm run test:ci
+      - name: Release quality gate
+        run: npm run typecheck && npm run build && npm run check-dist && npm run test:run
 
       - name: Test daemon parity suite
         run: npm run test:parity:ws9

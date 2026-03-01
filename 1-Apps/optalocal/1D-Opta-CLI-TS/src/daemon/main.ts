@@ -1,5 +1,4 @@
 import { nanoid } from 'nanoid';
-import { join } from 'node:path';
 import { getDaemonDir } from '../platform/paths.js';
 import { SessionManager } from './session-manager.js';
 import { startHttpServer } from './http-server.js';

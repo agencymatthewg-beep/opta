@@ -285,7 +285,7 @@ export class SessionManager {
     // attach a catch to prevent unhandled-rejection crashes if the outer async
     // scaffolding throws before reaching the internal try/catch (e.g. a config
     // load failure before getConfig() is awaited).
-    void this.processSessionQueue(sessionId).catch((err) => {
+    void this.processSessionQueue(sessionId).catch((err: unknown) => {
       void logDaemonEvent({
         level: 'error',
         daemonId: this.daemonId,

@@ -204,7 +204,7 @@ export class DaemonClient {
     });
 
     return new Promise((resolve, reject) => {
-      const { socket, close } = this.connectWebSocket(session.sessionId, 0, {
+      const { close } = this.connectWebSocket(session.sessionId, 0, {
         onEvent: (event) => {
           if (event.event === 'turn.done') {
             const payload = event.payload as { turnId?: string; stats?: LegacyChatStats };

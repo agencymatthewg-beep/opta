@@ -136,7 +136,7 @@ export class AtpoSupervisor {
    * Checks if Atpo should intervene in the current turn based on limits and thresholds.
    * Returns a boolean indicating if an intervention is required.
    */
-  public async checkThresholds(messages: AgentMessage[]): Promise<boolean> {
+  public async checkThresholds(_messages: AgentMessage[]): Promise<boolean> {
     if (!this.isEnabled || this.isIntervening) return false;
 
     const { errorCount, nToolsCount, milestoneFrequency } = this.config.atpo.thresholds;

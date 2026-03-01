@@ -1,5 +1,4 @@
 import chalk from 'chalk';
-import { join } from 'node:path';
 import { getConfigDir } from '../platform/paths.js';
 import { loadConfig, saveConfig } from '../core/config.js';
 import { agentLoop, buildSystemPrompt } from '../core/agent.js';
@@ -299,6 +298,28 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     console.error(chalk.dim('    4. Run diagnostics:      ') + chalk.cyan('opta doctor'));
     console.error('');
     throw new ExitError(EXIT.NO_CONNECTION);
+  }
+
+  // Capability gate — mirrors opta do's cli.run check for chat access control.
+  // Only applies when the user is authenticated; unauthenticated users are allowed
+  // through so local-only setups without an Opta Account are never blocked.
+  // Gracefully allows access when the capability check itself is unavailable (offline).
+  {
+    const { loadAccountState } = await import('../accounts/storage.js');
+    const { evaluateCapability } = await import('../accounts/cloud.js');
+    const accountState = await loadAccountState();
+    if (accountState?.session) {
+      const gate = await evaluateCapability(accountState, 'cli.chat', accountState.deviceId);
+      if (!gate.allow && gate.reason !== 'capability_check_unavailable') {
+        const message = `Capability denied for cli.chat${gate.reason ? ` (${gate.reason})` : ''}`;
+        if (jsonMode) {
+          console.log(JSON.stringify({ error: message, exit_code: EXIT.PERMISSION }));
+        } else {
+          console.error(chalk.red('✗') + ` ${message}`);
+        }
+        throw new ExitError(EXIT.PERMISSION);
+      }
+    }
   }
 
   // Create or resume session

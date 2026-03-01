@@ -3,7 +3,7 @@ import tsparser from "@typescript-eslint/parser";
 
 export default [
   {
-    ignores: ["dist/", "node_modules/"],
+    ignores: ["dist/", "node_modules/", "src/browser/chrome-overlay.ts"],
   },
   {
     files: ["src/**/*.ts"],

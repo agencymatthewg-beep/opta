@@ -134,12 +134,6 @@ function toPositiveInt(value: unknown, fallback: number): number {
   return Math.floor(parsed);
 }
 
-function toOptionalNumber(value: unknown): number | undefined {
-  if (value === undefined) return undefined;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return undefined;
-  return parsed;
-}
 
 function toStringArray(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -223,14 +217,6 @@ function compactText(value: string, maxChars: number): string {
   return `${normalized.slice(0, maxChars)}...`;
 }
 
-async function loadRuntimeConfigSafe(): Promise<OptaConfig | null> {
-  try {
-    const { loadConfig } = await import('../config.js');
-    return await loadConfig();
-  } catch {
-    return null;
-  }
-}
 
 export async function resetBrowserRuntimeForTests(): Promise<void> {
   await resetSharedBrowserRuntimeDaemonForTests();
