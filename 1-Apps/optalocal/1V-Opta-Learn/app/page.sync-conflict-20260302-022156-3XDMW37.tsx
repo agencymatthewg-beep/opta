@@ -1,8 +1,8 @@
 'use client';
 
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Nav } from '@/components/Nav';
+import { OptaRing } from '@/components/OptaRing';
 import { SearchBar } from '@/components/SearchBar';
 import { allGuides } from '@/content/guides';
 
@@ -43,14 +43,8 @@ export default function HomePage() {
         className="flex w-full max-w-4xl flex-col items-center"
       >
         <motion.div variants={itemVariants} className="mb-12 flex flex-col items-center gap-4">
-          <Image
-            src="/opta-learn-logo-final.png"
-            alt="Opta Learn"
-            width={88}
-            height={88}
-            priority
-          />
-          <div className="inline-flex items-center">
+          <OptaRing size={72} />
+          <div>
             <span className="font-sora text-sm font-semibold tracking-[0.25em] uppercase text-text-muted">
               opta local
             </span>
@@ -65,7 +59,7 @@ export default function HomePage() {
         </motion.div>
 
         <motion.p variants={itemVariants} className="mt-8 text-xs font-mono text-text-muted">
-          {allGuides.length} guides available · more added continuously
+          {allGuides.length} verified guide available
         </motion.p>
       </motion.div>
     </main>
