@@ -2,7 +2,7 @@
 
 > How to build, test, deploy, and delegate work on this project.
 
-Current focus: Web delivery and stabilization. iOS app was removed on 2026-02-28 by request.
+Current focus: Web delivery and stabilization. Secondary client scaffolding was removed on 2026-02-28 by request.
 
 ---
 

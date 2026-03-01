@@ -18,7 +18,7 @@
 8. docs/DECISIONS.md   ← Don't re-open settled decisions
 ```
 
-> iOS app removed on 2026-02-28 by request. This project is now web-only.
+> Secondary client scaffolding was removed on 2026-02-28. This project is web-only.
 
 ### Working on shared code/backend:
 ```

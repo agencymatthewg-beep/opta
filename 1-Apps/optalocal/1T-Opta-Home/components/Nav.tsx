@@ -47,6 +47,12 @@ export function Nav() {
           >
             Help
           </a>
+          <a
+            href="https://learn.optalocal.com"
+            className="text-text-muted hover:text-primary transition-colors text-xs font-medium"
+          >
+            Learn
+          </a>
         </div>
 
         {/* CTA */}

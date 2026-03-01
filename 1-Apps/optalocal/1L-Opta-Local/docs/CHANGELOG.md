@@ -1,9 +1,9 @@
 ## 2026-02-28
 
 ### [Shared]
-- Removed `ios/` application directory by explicit user request.
+- Removed secondary-client application scaffolding by explicit user request.
 - Normalized project metadata/docs/configs to web-only scope.
-- Removed iOS channel namespaces from release channel config.
+- Removed non-web channel namespaces from release channel config.
 
 # Opta Local — Changelog
 
@@ -68,7 +68,7 @@
 
 ### [Shared] 2026-02-18 — Project Initialization
 - OPIS v2.0 scaffold created (18 files)
-- Multi-platform Option D structure (Web + iOS)
+- Initial multi-surface scaffold
 - 13 features tracked as Active requirements
 - 9 initialization decisions recorded
 

@@ -26,6 +26,22 @@ Matthew describes change
 
 ---
 
+
+## Step 0 — Opta Max ⇄ Opta512 Collaboration Contract (new)
+
+Use this when Matthew wants one conversation with Opta Max but execution on Opta512.
+
+1. **Matthew briefs Opta Max** with UX/UI/aesthetic ask.
+2. **Opta Max converts brief** into a structured design prompt (using `OPTA-AESTHETIC-CONTEXT.md`).
+3. **Opta Max sends execution packet to Opta512** (Gemini 3.1 design/spec generation + implementation/deploy loop).
+4. **Opta512 returns artifacts**: design spec, changed files, build output, deploy URL.
+5. **Opta Max reports back** to Matthew with critique + next iteration options.
+
+### Image modifications/generation lane
+- Use Gemini-generated **visual direction + prompt packs** first (style-locked to Opta aesthetic).
+- Execute image generation/editing in the image-capable lane (Gemini image surface / Nano Banana flow), then commit assets under canonical Opta paths.
+- Never ship image assets without: (a) aesthetic compliance check, (b) dark-mode contrast check, (c) size/compression check.
+
 ## Step 1 — Describe the Change
 
 Matthew tells Opta512 what to change. Be specific about:
@@ -40,7 +56,7 @@ Matthew tells Opta512 what to change. Be specific about:
 Opta512 calls Gemini 3.1 Pro to generate a design spec.
 
 **Model:** `gemini-3.1-pro-preview`
-**API Key:** `AIzaSyBqy-fERXJJexQWJIja9HemZSHMa8vG6HA`
+**API Key:** use `GEMINI_API_KEY` environment variable (never hardcode in docs/scripts)
 
 **Prompt template:**
 
@@ -181,14 +197,14 @@ print(html[:500])
 
 ```bash
 curl -s --max-time 120 -X POST \
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=AIzaSyBqy-fERXJJexQWJIja9HemZSHMa8vG6HA" \
+  "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${GEMINI_API_KEY}" \
   -H "Content-Type: application/json" \
   -d '{"contents": [{"parts": [{"text": "YOUR_PROMPT"}]}]}'
 ```
 
 **Model confirmed working:** `gemini-3.1-pro-preview` (1M token context, thinking model)  
 **Do NOT use:** `gemini-2.0-flash`, `gemini-2.5-pro-preview-05-06` (wrong/unavailable models)  
-**List models:** `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=KEY" | python3 -c "import json,sys; [print(m['name'],'|',m.get('displayName')) for m in json.load(sys.stdin)['models']]"`
+**List models:** `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=KEY" | python3 -c "import json,sys; [print(m["name"],"|",m.get("displayName")) for m in json.load(sys.stdin)["models"]]"`
 
 ---
 

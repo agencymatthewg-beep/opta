@@ -34,7 +34,7 @@ export function Hero() {
         >
           <span className="text-white">The complete local</span>
           <br />
-          <span className="text-moonlight">AI stack for developers.</span>
+          <span className="text-white">AI stack for </span><span className="text-moonlight">developers.</span>
         </motion.h1>
 
         {/* Subhead */}
@@ -62,7 +62,7 @@ export function Hero() {
             Get Started
             <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
           </a>
-          <div className="inline-flex items-center gap-2 px-5 py-3.5 glass border border-primary/30 rounded-lg font-mono text-sm text-primary select-all cursor-text">
+          <div className="inline-flex items-center gap-2 px-5 py-3.5 glass border border-white/10 rounded-lg font-mono text-sm text-neon-cyan select-all cursor-text">
             curl -sL optalocal.com/install | bash
           </div>
         </motion.div>

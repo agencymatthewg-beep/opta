@@ -427,7 +427,11 @@ complete -c opta -n '__fish_use_subcommand' -a diff -d 'Show changes made in a s
 complete -c opta -n '__fish_use_subcommand' -a server -d 'Start HTTP API server'
 complete -c opta -n '__fish_use_subcommand' -a daemon -d 'Manage Opta daemon runtime'
 complete -c opta -n '__fish_use_subcommand' -a serve -d 'Manage remote Opta LMX server'
+complete -c opta -n '__fish_use_subcommand' -a account -d 'Manage Opta account auth'
+complete -c opta -n '__fish_use_subcommand' -a key -d 'Manage inference API keys'
+complete -c opta -n '__fish_use_subcommand' -a keychain -d 'Manage OS keychain API keys'
 complete -c opta -n '__fish_use_subcommand' -a update -d 'Update Opta components locally/remotely'
+complete -c opta -n '__fish_use_subcommand' -a version -d 'Show version with update check'
 complete -c opta -n '__fish_use_subcommand' -a completions -d 'Generate shell completions'
 
 # Global flags (including chat TUI options)
@@ -446,6 +450,16 @@ complete -c opta -l no-checkpoints -d 'Disable checkpoints'
 complete -c opta -l auto -s a -d 'Auto-accept file edits'
 complete -c opta -l dangerous -d 'Bypass permission prompts'
 complete -c opta -l yolo -d 'Alias for --dangerous'
+
+# chat flags
+complete -c opta -n '__fish_seen_subcommand_from chat' -l tui -d 'Full-screen TUI mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l plan -d 'Plan mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l review -d 'Code review mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l research -d 'Research mode'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l resume -s r -d 'Resume session' -x
+complete -c opta -n '__fish_seen_subcommand_from chat' -l model -s m -d 'Override model' -x
+complete -c opta -n '__fish_seen_subcommand_from chat' -l provider -d 'Override provider' -x -a 'lmx anthropic'
+complete -c opta -n '__fish_seen_subcommand_from chat' -l device -d 'Target LLM device' -x
 
 # do flags
 complete -c opta -n '__fish_seen_subcommand_from do' -l model -s m -d 'Use specific model' -x
@@ -539,6 +553,32 @@ complete -c opta -n '__fish_seen_subcommand_from update' -l no-build -d 'Skip bu
 complete -c opta -n '__fish_seen_subcommand_from update' -l no-pull -d 'Skip git fetch/pull steps'
 complete -c opta -n '__fish_seen_subcommand_from update' -l json -d 'Machine-readable output'
 
+# embed flags
+complete -c opta -n '__fish_seen_subcommand_from embed' -l model -s m -d 'Embedding model id' -x
+complete -c opta -n '__fish_seen_subcommand_from embed' -l device -d 'Target LLM device' -x
+complete -c opta -n '__fish_seen_subcommand_from embed' -l remote -d 'Use configured remote host'
+complete -c opta -n '__fish_seen_subcommand_from embed' -l json -d 'Machine-readable output'
+
+# rerank flags
+complete -c opta -n '__fish_seen_subcommand_from rerank' -l documents -s d -d 'Pipe-separated documents' -x
+complete -c opta -n '__fish_seen_subcommand_from rerank' -l model -s m -d 'Reranker model id' -x
+complete -c opta -n '__fish_seen_subcommand_from rerank' -l device -d 'Target LLM device' -x
+complete -c opta -n '__fish_seen_subcommand_from rerank' -l top-k -s k -d 'Return top N results' -x
+complete -c opta -n '__fish_seen_subcommand_from rerank' -l json -d 'Machine-readable output'
+
+# account subcommands
+complete -c opta -n '__fish_seen_subcommand_from account' -a 'signup login status keys logout' -d 'Action'
+
+# key subcommands
+complete -c opta -n '__fish_seen_subcommand_from key' -a 'create show copy' -d 'Action'
+
+# keychain subcommands
+complete -c opta -n '__fish_seen_subcommand_from keychain' -a 'status set-anthropic set-lmx delete-anthropic delete-lmx' -d 'Action'
+
+# version flags
+complete -c opta -n '__fish_seen_subcommand_from version' -l check -d 'Check for newer version on npm'
+
 # completions subcommands
-complete -c opta -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish' -d 'Shell'`;
+complete -c opta -n '__fish_seen_subcommand_from completions' -a 'bash zsh fish' -d 'Shell'
+complete -c opta -n '__fish_seen_subcommand_from completions' -l install -d 'Write to shell config location'`;
 }

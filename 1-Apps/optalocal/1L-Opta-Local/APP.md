@@ -69,7 +69,7 @@ Matthew Byrden (primary) — owner of Mac Studio M3 Ultra running Opta LMX. Powe
 
 ### Scenarios
 
-1. **Morning coffee check** — iPhone, see server status, continue yesterday's session
+1. **Morning coffee check** — phone browser, see server status, continue yesterday's session
 2. **On the train** — Chat with local AI over Cloudflare Tunnel, zero cloud costs
 3. **Model hot-swap** — Switch DeepSeek to Qwen via web dashboard in 15 seconds
 4. **First-time setup** — connect to your Mac Studio LAN target or tunnel URL
@@ -94,7 +94,7 @@ Premium, glass-panel aesthetic. Feels like a cockpit for your AI server — not 
 ### Philosophy
 
 - **Thin client** — all intelligence lives on the Mac Studio (LMX), clients just render
-- **Web-only** — this project is now web-only (iOS removed 2026-02-28)
+- **Web-only** — this project is web-only
 - **Premium UX** — Opta glass design system, never generic
 - **Zero-config** — LAN should just work, WAN should be wizard-guided
 
@@ -115,7 +115,7 @@ Premium, glass-panel aesthetic. Feels like a cockpit for your AI server — not 
 ### Components
 
 ```
-iPhone / Browser (Anywhere)
+Browser (Desktop/Mobile, Anywhere)
 ┌─────────────────────────────┐
 │  Opta Local App             │
 │  ┌───────────┐ ┌──────────┐ │
@@ -144,7 +144,7 @@ iPhone / Browser (Anywhere)
 ### Data Flow
 
 1. Client connects to server (LAN endpoint or Cloudflare Tunnel WAN)
-2. Client authenticates with admin key (stored in Keychain / localStorage)
+2. Client authenticates with admin key (stored in encrypted localStorage)
 3. Dashboard subscribes to `/admin/events` SSE stream
 4. Chat sends to `/v1/chat/completions` with `stream: true`
 5. Sessions stored on Mac Studio at `~/.config/opta/sessions/`

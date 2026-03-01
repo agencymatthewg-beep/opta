@@ -11,4 +11,4 @@ Opta Local dashboard and control plane for local/remote Opta services and device
 
 
 ## Status
-Web-only project as of 2026-02-28 (iOS app removed by request).
+Web-only project as of 2026-02-28.

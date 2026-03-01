@@ -62,6 +62,18 @@ export default function HomePage() {
                 >
                   CLI Reference
                 </Link>
+                <a
+                  href="https://learn.optalocal.com"
+                  className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-primary/10 border border-primary/20 text-primary hover:text-white rounded-lg font-medium transition-all"
+                >
+                  User Guide ↗
+                </a>
+                <a
+                  href="https://learn.optalocal.com"
+                  className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-muted hover:text-text-secondary rounded-lg font-medium transition-all text-sm"
+                >
+                  Don't understand?
+                </a>
               </div>
             </motion.div>
           </div>

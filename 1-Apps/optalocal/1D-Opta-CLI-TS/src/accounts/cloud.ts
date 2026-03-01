@@ -176,21 +176,35 @@ export async function registerCliDevice(state: AccountState): Promise<string | n
   const userId = state.user?.id?.trim();
   if (!accessToken || !userId) return null;
 
+  const fingerprintHash = buildDeviceFingerprint(userId);
+  const headers = { 'content-type': 'application/json', ...authHeaders(accessToken) };
+
+  // Check if a device with this fingerprint already exists (prevents duplicates
+  // when users re-login after deleting account.json).
+  try {
+    const fpUrl = new URL('/api/devices/fingerprint', accountsBaseUrl());
+    fpUrl.searchParams.set('hash', fingerprintHash);
+    const fpResponse = await fetch(fpUrl.toString(), { method: 'GET', headers: authHeaders(accessToken) });
+    if (fpResponse.ok) {
+      const fpBody = (await fpResponse.json().catch(() => null)) as { deviceId?: string | null } | null;
+      if (fpBody?.deviceId) return fpBody.deviceId;
+    }
+  } catch {
+    // Fingerprint lookup failed — fall through to registration.
+  }
+
   const url = new URL('/api/devices/register', accountsBaseUrl());
   const payload = {
     platform: platform(),
     deviceLabel: hostname(),
-    fingerprintHash: buildDeviceFingerprint(userId),
+    fingerprintHash,
     trustState: 'trusted',
   };
 
   try {
     const response = await fetch(url.toString(), {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        ...authHeaders(accessToken),
-      },
+      headers,
       body: JSON.stringify(payload),
     });
     if (!response.ok) return null;

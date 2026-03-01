@@ -23,7 +23,6 @@
 |-----|--------------|------|
 | **Opta LMX** | API endpoint design, SSE events format, admin API | `1-Apps/optalocal/1M-Opta-LMX/` |
 | **Opta CLI** | Session format, agent loop, model management commands | `1-Apps/optalocal/1D-Opta-CLI-TS/` |
-| **OptaPlus** | SwiftUI design patterns, Bonjour discovery, tunnel relay | `1-Apps/shared/1I-OptaPlus/` |
 | **AICompare Web** | Next.js 16 + React 19 project structure, @opta/ui usage | `1-Apps/shared/1A-AI-Components/aicompare-web/` |
 | **Opta Life Web** | Next.js app router patterns, Tailwind setup | `1-Apps/optamize/1F-Opta-Life-Web/` |
 | **Optamize MacOS** | Tauri + React glass UI, design system reference | `1-Apps/optamize/1J-Optamize-MacOS/` |
@@ -101,7 +100,6 @@
 |-------|--------|-------------|
 | Cloudflare Tunnel free tier limits | Cloudflare docs | 100 concurrent WebSocket connections, no bandwidth limit |
 | SSE vs WebSocket for dashboards | Web standards | SSE simpler for unidirectional server→client metrics, WebSocket for bidirectional |
-| Bonjour/mDNS in Swift | Apple Developer docs | `NWBrowser` in Network framework, requires Bonjour entitlement |
 | EventSource reconnection | MDN | Built-in reconnect with `retry` field, exponential backoff |
 
 ---

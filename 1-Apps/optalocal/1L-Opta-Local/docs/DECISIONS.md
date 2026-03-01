@@ -17,16 +17,16 @@
 
 | # | Date | Decision | Alternatives Considered | Reasoning |
 |---|------|----------|------------------------|-----------|
-| 1 | 2026-02-18 | Web first, iOS second | iOS first, both simultaneously | Web has faster iteration cycles (hot reload, no Xcode), validates API patterns that iOS inherits |
+| 1 | 2026-02-18 | Web-first execution | Parallel platform builds from day one | Faster iteration cycles and tighter feedback loops during early validation |
 | 2 | 2026-02-18 | Next.js 16 + React 19 for Web | SvelteKit, plain Vite React, Remix | Ecosystem consistency with other Opta web apps, @opta/ui is React-based |
-| 3 | 2026-02-18 | SwiftUI + Observation for iOS | UIKit, React Native, Flutter | Native performance, Bonjour integration, Opta design system compatibility |
+| 3 | 2026-02-18 | Maintain web-only delivery scope | Add parallel native app track | Keeps implementation effort focused on one production surface |
 | 4 | 2026-02-18 | Direct browser→LMX (no backend) | Add a proxy server, BFF pattern | Simpler architecture, LMX already serves HTTP, avoids extra deployment |
-| 5 | 2026-02-18 | Multi-platform Option D scaffold | Single scaffold, shared Platform.md | Web and iOS have >2x feature divergence (web = Command Center, iOS = Quick Draw) |
+| 5 | 2026-02-18 | Single-surface project scaffold | Split code/docs by multiple client surfaces | Reduced complexity and lower maintenance overhead |
 | 6 | 2026-02-18 | All 13 ideas as Active requirements | Shortlisted 5 only, all 22 from pipeline | Captures full vision while phased roadmap controls what gets built when |
 | 7 | 2026-02-18 | Cloudflare Tunnel for WAN access | Tailscale, WireGuard, port forwarding | Free tier, zero-config on client, E2E encrypted, proven in OptaPlus |
-| 8 | 2026-02-18 | `/frontend-design` skill mandatory for all UI | Optional, only for complex components | Ensures premium design consistency across both platforms |
+| 8 | 2026-02-18 | `/frontend-design` skill mandatory for all UI | Optional, only for complex components | Ensures premium design consistency across the web surface |
 | 9 | 2026-02-18 | Location: 1-Apps/1L-Opta-Local/ | Separate repo, inside Opta-LMX | Follows monorepo convention, shares @opta packages, next letter sequence |
-| 10 | 2026-02-20 | Temporarily defer iOS and focus on web hardening | Continue both tracks in parallel | Web has a working surface area already; stabilizing web quality gates, docs, and deployment first reduces coordination overhead and creates a reliable baseline for iOS to follow |
+| 10 | 2026-02-20 | Prioritize web hardening before scope expansion | Expand client-surface scope immediately | Stabilizing quality gates and deployment first reduced coordination overhead |
 | 11 | 2026-02-28 | Canonical path contract: use `1-Apps/optalocal/1L-Opta-Local/` in docs/tooling | Keep alias path (`1-Apps/1L-Opta-Local`) as canonical | `1-Apps/PATH-CONTRACT.md` defines domain-folder canonical paths; aliases are compatibility only and must not be the source of truth |
 
 ---
@@ -47,4 +47,4 @@
 
 *Updated — 2026-02-20*
 
-| 11 | 2026-02-28 | Remove Opta Local iOS app and standardize web-only scope | Keep deferred iOS track in-repo | User requested full deletion due non-functional one-prompt scaffold; reduces ambiguity and maintenance overhead |
+| 12 | 2026-02-28 | Remove unused secondary-client scaffolding and standardize web-only scope | Keep deferred secondary-client track in-repo | Reduces ambiguity and maintenance overhead |
