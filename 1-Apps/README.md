@@ -27,10 +27,10 @@ All Opta applications, divided by domain.
 | ID | App | Platform | Description |
 |----|-----|----------|-------------|
 | 1D | Opta CLI | CLI/TUI (TypeScript) | Agentic coding CLI + daemon |
-| 1L | Opta Local | Web + iOS (Next.js 16) | Local AI dashboard |
+| 1L | Opta Local | Retired | Deprecated duplicate client removed from `1-Apps` (backup retained in `/tmp`) |
 | 1M | Opta LMX | macOS service (Python + MLX) | MLX inference server — live Mono512:1234 |
 | 1O | Opta Init | Web (Next.js 15) | Download/setup landing — init.optalocal.com |
-| 1P | Opta Code Desktop | Electron/Vite (TypeScript) | Desktop app for Opta Code UX (built on Opta CLI daemon) → symlink to 1P-Opta-Code-Desktop |
+| 1P | Opta Code Desktop (Universal) | Tauri v2 + React/Vite (TypeScript) | Unified 1-app client (web + native shell) built on Opta CLI daemon |
 
 ## shared/
 

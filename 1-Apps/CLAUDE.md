@@ -21,10 +21,10 @@ Apps are organized into three domain folders. **Each app with a `CLAUDE.md` has 
 | Prefix | App | Canonical Path | Platform | Has own CLAUDE.md |
 |--------|-----|----------------|----------|-------------------|
 | 1D | Opta CLI TS | `optalocal/1D-Opta-CLI-TS` | CLI/TUI/Daemon | ✓ (comprehensive) |
-| 1L | Opta Local | `optalocal/1L-Opta-Local` | Web + iOS (LMX dashboard/chat) | ✓ |
+| 1L | Opta Local | Retired (removed from `1-Apps`) | Deprecated duplicate client | — |
 | 1M | Opta LMX | `optalocal/1M-Opta-LMX` | Python (MLX inference server) | ✓ |
 | 1O | Opta Init | `optalocal/1O-Opta-Init` | Web (Next.js 15, download/setup landing) | ✓ |
-| 1P | Opta Code Desktop | `optalocal/1P-Opta-Code-Desktop` | Electron/Vite (TypeScript) | ✓ |
+| 1P | Opta Code Desktop (Universal) | `optalocal/1P-Opta-Code-Universal` | Tauri v2 + React/Vite (TypeScript) | ✓ |
 | 1S | Opta Status | `optalocal/1S-Opta-Status` | Web (Next.js 16, status.optalocal.com) | — |
 | 1T | Opta Home | `optalocal/1T-Opta-Home` | Web (Next.js 16, optalocal.com landing) | — |
 | 1U | Opta Help | `optalocal/1U-Opta-Help` | Web (Next.js 16, help.optalocal.com docs) | ✓ |
@@ -57,12 +57,14 @@ opta daemon  127.0.0.1:9999            (1D-Opta-CLI-TS/src/daemon/)
         │   HTTP v3 REST + WS streaming
 Opta LMX  192.168.188.11:1234          (1M-Opta-LMX)
         │   OpenAI-compatible /v1/chat/completions
-Opta Local Web  localhost:3004         (1L-Opta-Local/web/)
+Opta Code Desktop (Universal)          (1P-Opta-Code-Universal)
+  - web runtime: http://localhost:5173
+  - native runtime: Tauri shell + src/
 ```
 
 **CLI Daemon** owns session orchestration, permission gating, and event persistence. It proxies requests to LMX.
 **LMX** is Apple Silicon only (MLX), OpenAI API-compatible, and must never crash on OOM — unload and degrade instead.
-**Opta Local Web** is a React dashboard that connects directly to LMX (no intermediate backend). It runs in two modes: LAN (no auth) and Cloud (Supabase auth via Cloudflare Tunnel).
+**Opta Code Desktop (Universal)** is the consolidated client. It connects to the daemon over HTTP/WS in web mode and uses native IPC/OS features in Tauri mode.
 
 **Opta48 policy: never host local models.** Use Mono512 as inference host.
 
@@ -74,8 +76,11 @@ cd optalocal/1D-Opta-CLI-TS && npm run dev -- daemon start
 # LMX inference server (Mono512 only; never host on Opta48)
 # Operate remotely on Mono512 or consume via LAN endpoint 192.168.188.11:1234
 
-# Web dashboard
-cd optalocal/1L-Opta-Local/web && npm run dev   # http://localhost:3004
+# Unified client (web)
+cd optalocal/1P-Opta-Code-Universal && npm run dev   # http://localhost:5173
+
+# Unified client (native)
+cd optalocal/1P-Opta-Code-Universal && npm run dev:native
 ```
 
 ---

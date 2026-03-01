@@ -8,10 +8,10 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 
 ## Canonical App Paths
 - `optalocal/1D-Opta-CLI-TS` — Opta CLI (runtime/TUI/daemon)
-- `optalocal/1L-Opta-Local` — Opta Local web/iOS dashboard
+- `1L-Opta-Local` — retired/deleted duplicate client (backup tar retained in `/tmp`)
 - `optalocal/1M-Opta-LMX` — Opta LMX inference service
 - `optalocal/1O-Opta-Init` — Opta Init
-- `optalocal/1P-Opta-Code-Desktop` — Opta Code Desktop (UI client for Opta CLI daemon)
+- `optalocal/1P-Opta-Code-Universal` — Opta Code Desktop (UI client for Opta CLI daemon)
 - `optalocal/1R-Opta-Accounts` — Opta Accounts (SSO/accounts portal)
 - `optalocal/1S-Opta-Status` — Opta Status (status and health dashboard)
 - `optalocal/1T-Opta-Home` — Opta Home (optalocal.com landing)

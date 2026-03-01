@@ -8,7 +8,7 @@
 |---|---|---|
 | Opta CLI | `1D-Opta-CLI-TS/` | TUI + daemon runtime (`opta chat`, `opta do`, `opta daemon`) |
 | Opta LMX | `1M-Opta-LMX/` | Local inference server (`/v1/chat/completions`, `/v1/chat/stream`) |
-| Opta Local Web | `1L-Opta-Local/web/` | Browser client + dashboard, now with daemon connector support |
+| Opta Code Desktop (Universal) | `1P-Opta-Code-Universal/` | Unified web + native client for daemon sessions and operations |
 
 ## Current Architecture (Level 3)
 
@@ -32,8 +32,9 @@ Opta LMX (192.168.188.11:1234 default)
 
 - CLI daemon owns session orchestration, queueing, permissions, and event persistence.
 - LMX remains the inference backend; daemon now prefers WS streaming where available.
-- Web app now includes daemon client transport scaffold at:
-  - `1L-Opta-Local/web/src/lib/opta-daemon-client.ts`
+- Universal app includes daemon transport and runtime detection in:
+  - `1P-Opta-Code-Universal/src/lib/daemonClient.ts`
+  - `1P-Opta-Code-Universal/src/lib/runtime.ts`
 
 ## Runtime Defaults
 
@@ -51,9 +52,13 @@ npm run dev -- daemon start
 npm run dev -- daemon status
 npm run dev -- chat --tui
 
-# Web
-cd ~/Synced/Opta/1-Apps/optalocal/1L-Opta-Local/web
+# Unified app (web mode)
+cd ~/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal
+npm install
 npm run dev
+
+# Unified app (native mode)
+npm run dev:native
 ```
 
 ## Host Policy (Critical)
