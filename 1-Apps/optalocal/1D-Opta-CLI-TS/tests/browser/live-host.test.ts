@@ -188,4 +188,40 @@ describe('browser live host security and screen controls', () => {
       maxSessionSlots: 5,
     })).rejects.toThrow('Screen streaming is disabled');
   });
+
+  it('targets browser app when foreground control is enabled', async () => {
+    const config = structuredClone(baseConfig);
+    config.computerControl.foreground.enabled = true;
+    config.computerControl.foreground.allowScreenActions = true;
+
+    const started = await startBrowserLiveHost({
+      config,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      portRangeStart: 56_600,
+      portRangeEnd: 56_800,
+      includePeekabooScreen: true,
+    });
+    const screenHtml = await (await fetch(`http://${started.host}:${started.controlPort}/screen`)).text();
+    const token = screenHtml.match(/const screenToken = "([^"]+)"/)?.[1] ?? '';
+
+    await fetch(`http://${started.host}:${started.controlPort}/api/screen/frame?token=${encodeURIComponent(token)}`);
+    expect(capturePeekabooScreenPngMock).toHaveBeenCalledWith('Chromium');
+  });
+
+  it('captures full screen when foreground control is disabled', async () => {
+    const started = await startBrowserLiveHost({
+      config: structuredClone(baseConfig),
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      portRangeStart: 56_850,
+      portRangeEnd: 57_050,
+      includePeekabooScreen: true,
+    });
+    const screenHtml = await (await fetch(`http://${started.host}:${started.controlPort}/screen`)).text();
+    const token = screenHtml.match(/const screenToken = "([^"]+)"/)?.[1] ?? '';
+
+    await fetch(`http://${started.host}:${started.controlPort}/api/screen/frame?token=${encodeURIComponent(token)}`);
+    expect(capturePeekabooScreenPngMock).toHaveBeenCalledWith(undefined);
+  });
 });

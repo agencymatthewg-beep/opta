@@ -19,6 +19,9 @@ import {
 
 const LOCALHOST_BIND = '127.0.0.1';
 const DEFAULT_PORT_RANGE_START = 46_000;
+// macOS app name for the Playwright-launched Chromium browser.
+// Peekaboo's --app flag captures from this app's window buffer regardless of focus.
+const PLAYWRIGHT_BROWSER_APP_NAME = 'Chromium';
 const DEFAULT_PORT_RANGE_END = 47_000;
 const DEFAULT_REQUIRED_PORT_COUNT = 6;
 const DEFAULT_MAX_SESSION_SLOTS = 5;
@@ -712,7 +715,12 @@ async function getPeekabooFrame(runtime: BrowserLiveHostRuntime): Promise<Buffer
     return cached.image;
   }
 
-  const image = await enqueuePeekabooJob(runtime, async () => capturePeekabooScreenPng());
+  // When foreground computer control is active the browser runs as a visible window.
+  // Target it by name so Peekaboo always captures the browser regardless of user focus.
+  const appName = runtime.config.computerControl.foreground.enabled
+    ? PLAYWRIGHT_BROWSER_APP_NAME
+    : undefined;
+  const image = await enqueuePeekabooJob(runtime, () => capturePeekabooScreenPng(appName));
   runtime.peekabooFrameCache = {
     capturedAtMs: now,
     image,

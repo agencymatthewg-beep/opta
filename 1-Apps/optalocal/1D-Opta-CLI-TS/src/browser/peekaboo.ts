@@ -67,12 +67,15 @@ export async function isPeekabooAvailable(): Promise<boolean> {
   }
 }
 
-export async function capturePeekabooScreenPng(): Promise<Buffer> {
+export async function capturePeekabooScreenPng(appName?: string): Promise<Buffer> {
   const dir = await mkdtemp(join(tmpdir(), 'opta-peekaboo-'));
   const imagePath = join(dir, 'screen.png');
 
   try {
-    await runPeekaboo(['image', '--path', imagePath, '--format', 'png'], 15_000);
+    const args: string[] = ['image'];
+    if (appName) args.push('--app', appName);
+    args.push('--path', imagePath, '--format', 'png');
+    await runPeekaboo(args, 15_000);
     return await readFile(imagePath);
   } finally {
     await rm(dir, { recursive: true, force: true });
