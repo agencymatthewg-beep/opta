@@ -72,7 +72,7 @@ export default function HomePage() {
                   href="https://learn.optalocal.com"
                   className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-muted hover:text-text-secondary rounded-lg font-medium transition-all text-sm"
                 >
-                  Don't understand?
+                  Don&apos;t understand?
                 </a>
               </div>
             </motion.div>
