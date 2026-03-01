@@ -246,7 +246,7 @@ exports[`OptaMenuOverlay visual snapshots > renders operations page after naviga
 │  —— Operations ——                                                                        │
 │   ▶ Status Check              │ Run /status for 192.168.188.11:1234                      │
 │                                                                                          │
-│     Doctor Check              │ Run diagnostics and quick fixes                          │
+│     Doctor Check + Fix        │ Run diagnostics and auto-remediate fixable issues        │
 │     LMX Scan                  │ Refresh model inventory, aliases, and loaded state       │
 │     Update Local              │ Update local CLI/build only                              │
 │     Settings                 │Edit connection, model, safety, paths and advanced         │

@@ -201,13 +201,13 @@ export function OptaMenuOverlay({
       },
       {
         action: 'run-slash',
-        label: 'Doctor Check',
-        description: 'Run diagnostics and quick fixes',
-        command: '/doctor',
+        label: 'Doctor Check + Fix',
+        description: 'Run diagnostics and auto-remediate fixable issues',
+        command: '/doctor --fix',
         color: '#10b981',
         recommended: isStudioDown,
-        infoTitle: 'Run guided diagnostics',
-        infoBody: 'Doctor verifies configuration, host health, and common failure modes so benchmarking and execution stay reliable.',
+        infoTitle: 'Run guided diagnostics with auto-fix',
+        infoBody: 'Doctor verifies configuration, host health, and common failure modes — then applies auto-fixes for daemon restart, missing config dirs, and other remediable issues.',
         learnMoreCommand: '/doctor',
       },
       {
@@ -846,11 +846,9 @@ export function OptaMenuOverlay({
       if (key.return) {
         const command = buildGuidedCommand(guidedFlow.kind, guidedFlow.value);
         if (!command) {
-          const hint = guidedFlow.kind.includes('rag')
-            ? 'Expected format: collection | query-text'
-            : guidedFlow.kind.includes('skill')
-              ? 'Expected format: skill-name | argument'
-              : 'Input is incomplete — check the required format';
+          const hint = guidedFlow.value.trim()
+            ? promptMeta.placeholder
+            : 'Input cannot be empty';
           setGuidedFlow((prev) => prev ? { ...prev, error: hint } : prev);
           return;
         }

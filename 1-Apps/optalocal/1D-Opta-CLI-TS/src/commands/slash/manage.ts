@@ -29,15 +29,21 @@ const CONFIG_SECTION_COLORS: Record<string, string> = {
 
 function isSensitiveConfigKey(key: string): boolean {
   const k = key.toLowerCase();
-  return k.includes('apikey') || k.includes('api_key') ||
-    k.includes('token') || k.includes('secret') || k.includes('password') ||
-    k.endsWith('.key') || k.includes('adminkey');
+  return (
+    k.includes('apikey') ||
+    k.includes('api_key') ||
+    k.includes('token') ||
+    k.includes('secret') ||
+    k.includes('password') ||
+    k.endsWith('.key') ||
+    k.includes('adminkey')
+  );
 }
 
 function formatConfigValueForDisplay(value: unknown, key = ''): string {
   if (value === undefined || value === null) return chalk.dim('(unset)');
   if (key && isSensitiveConfigKey(key)) {
-    const raw = String(value);
+    const raw = typeof value === 'string' ? value : JSON.stringify(value);
     if (!raw) return chalk.dim('(none)');
     return '(set)';
   }
@@ -45,7 +51,8 @@ function formatConfigValueForDisplay(value: unknown, key = ''): string {
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   if (Array.isArray(value)) return JSON.stringify(value);
   if (typeof value === 'object') return chalk.dim('{...}');
-  return String(value);
+  // At this point value is number | boolean | bigint | symbol | undefined (non-object, non-string, non-null handled above)
+  return String(value as number | boolean | bigint | symbol | undefined);
 }
 
 function summarizeConfigValue(value: unknown, maxWidth = 40, key = ''): string {
@@ -57,7 +64,8 @@ function summarizeConfigValue(value: unknown, maxWidth = 40, key = ''): string {
 
 function parseSlashArgs(raw: string): string[] {
   const tokens: string[] = [];
-  const pattern = /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
+  const pattern =
+    /"([^"\\]*(?:\\.[^"\\]*)*)"|'([^'\\]*(?:\\.[^'\\]*)*)'|`([^`\\]*(?:\\.[^`\\]*)*)`|([^\s]+)/g;
   let match: RegExpExecArray | null;
 
   while ((match = pattern.exec(raw)) !== null) {
@@ -71,8 +79,14 @@ function parseSlashArgs(raw: string): string[] {
 function printMcpUsage(): void {
   console.log(chalk.dim('  Usage: /mcp [list|add|add-playwright|remove|test]'));
   console.log(chalk.dim('    /mcp list'));
-  console.log(chalk.dim('    /mcp add myserver "npx @modelcontextprotocol/server-filesystem /tmp" --env FOO=bar'));
-  console.log(chalk.dim('    /mcp add-playwright --mode attach --allowed-hosts localhost,127.0.0.1'));
+  console.log(
+    chalk.dim(
+      '    /mcp add myserver "npx @modelcontextprotocol/server-filesystem /tmp" --env FOO=bar'
+    )
+  );
+  console.log(
+    chalk.dim('    /mcp add-playwright --mode attach --allowed-hosts localhost,127.0.0.1')
+  );
   console.log(chalk.dim('    /mcp remove myserver'));
   console.log(chalk.dim('    /mcp test myserver'));
 }
@@ -100,7 +114,9 @@ function printKeyUsage(): void {
 }
 
 function printServerUsage(): void {
-  console.log(chalk.dim('  Usage: /server [start|stop|status|logs] [--host <host>] [--port <port>] [--json]'));
+  console.log(
+    chalk.dim('  Usage: /server [start|stop|status|logs] [--host <host>] [--port <port>] [--json]')
+  );
   console.log(chalk.dim('  Notes: /server is chat-safe and maps to daemon lifecycle commands.'));
 }
 
@@ -166,26 +182,36 @@ async function interactiveConfigMenu(ctx: SlashContext): Promise<boolean> {
     const selectedKey = selection.itemId;
     const currentValue = getNestedValue(latest as Record<string, unknown>, selectedKey);
 
-    console.log('\n' + box(`Config ${chalk.cyan(selectedKey)}`, [
-      kv('Key', selectedKey, 16),
-      kv('Value', formatConfigValueForDisplay(currentValue, selectedKey), 16),
-      kv('Type', currentValue === null ? 'null' : typeof currentValue, 16),
-      '',
-      chalk.dim(`Set with: /config set ${selectedKey} <value>`),
-    ]) + '\n');
+    console.log(
+      '\n' +
+        box(`Config ${chalk.cyan(selectedKey)}`, [
+          kv('Key', selectedKey, 16),
+          kv('Value', formatConfigValueForDisplay(currentValue, selectedKey), 16),
+          kv('Type', currentValue === null ? 'null' : typeof currentValue, 16),
+          '',
+          chalk.dim(`Set with: /config set ${selectedKey} <value>`),
+        ]) +
+        '\n'
+    );
 
     let action: 'back' | 'set' | 'clear' | 'exit';
     try {
-      const picked = await runMenuPrompt((context) =>
-        select<'back' | 'set' | 'clear' | 'exit'>({
-          message: chalk.dim('Next'),
-          choices: [
-            { name: 'Back to config navigator', value: 'back' },
-            { name: `Set ${selectedKey}`, value: 'set' },
-            { name: `Reset ${selectedKey} to default`, value: 'clear' },
-            { name: 'Exit config menu', value: 'exit' },
-          ],
-        }, context), 'select');
+      const picked = await runMenuPrompt(
+        (context) =>
+          select<'back' | 'set' | 'clear' | 'exit'>(
+            {
+              message: chalk.dim('Next'),
+              choices: [
+                { name: 'Back to config navigator', value: 'back' },
+                { name: `Set ${selectedKey}`, value: 'set' },
+                { name: `Reset ${selectedKey} to default`, value: 'clear' },
+                { name: 'Exit config menu', value: 'exit' },
+              ],
+            },
+            context
+          ),
+        'select'
+      );
       if (!picked) continue;
       action = picked;
     } catch {
@@ -196,7 +222,12 @@ async function interactiveConfigMenu(ctx: SlashContext): Promise<boolean> {
     if (action === 'back') continue;
 
     if (action === 'set') {
-      const defaultValue = currentValue === undefined ? '' : String(currentValue);
+      const defaultValue =
+        currentValue === undefined
+          ? ''
+          : typeof currentValue === 'object'
+            ? JSON.stringify(currentValue)
+            : String(currentValue as string | number | boolean | bigint);
       let valueInput = '';
       try {
         valueInput = await input({
@@ -255,7 +286,11 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       kv('contextLimit', String(ctx.config.model.contextLimit), 20),
       '',
       chalk.dim('Autonomy'),
-      kv('level', `${ctx.config.autonomy.level} ${formatAutonomySlider(ctx.config.autonomy.level)}`, 20),
+      kv(
+        'level',
+        `${ctx.config.autonomy.level} ${formatAutonomySlider(ctx.config.autonomy.level)}`,
+        20
+      ),
       kv('mode', ctx.config.autonomy.mode, 20),
       kv('enforceProfile', String(ctx.config.autonomy.enforceProfile), 20),
       kv('objectiveReassessment', String(ctx.config.autonomy.objectiveReassessment), 20),
@@ -264,17 +299,41 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       '',
       chalk.dim('Provider'),
       kv('active', ctx.config.provider.active, 20),
-      kv('anthropic.apiKey', ctx.config.provider.anthropic.apiKey ? '(set)' : chalk.dim('(none)'), 20),
+      kv(
+        'anthropic.apiKey',
+        ctx.config.provider.anthropic.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
       '',
       chalk.dim('Research'),
       kv('enabled', String(ctx.config.research.enabled), 20),
       kv('defaultProvider', ctx.config.research.defaultProvider, 20),
       kv('alwaysIncludeDocs', String(ctx.config.research.alwaysIncludeDocumentation), 20),
-      kv('tavily.apiKey', ctx.config.research.providers.tavily.apiKey ? '(set)' : chalk.dim('(none)'), 20),
-      kv('gemini.apiKey', ctx.config.research.providers.gemini.apiKey ? '(set)' : chalk.dim('(none)'), 20),
-      kv('exa.apiKey', ctx.config.research.providers.exa.apiKey ? '(set)' : chalk.dim('(none)'), 20),
-      kv('brave.apiKey', ctx.config.research.providers.brave.apiKey ? '(set)' : chalk.dim('(none)'), 20),
-      kv('groq.apiKey', ctx.config.research.providers.groq.apiKey ? '(set)' : chalk.dim('(none)'), 20),
+      kv(
+        'tavily.apiKey',
+        ctx.config.research.providers.tavily.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
+      kv(
+        'gemini.apiKey',
+        ctx.config.research.providers.gemini.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
+      kv(
+        'exa.apiKey',
+        ctx.config.research.providers.exa.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
+      kv(
+        'brave.apiKey',
+        ctx.config.research.providers.brave.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
+      kv(
+        'groq.apiKey',
+        ctx.config.research.providers.groq.apiKey ? '(set)' : chalk.dim('(none)'),
+        20
+      ),
       '',
       chalk.dim('Browser'),
       kv('enabled', String(ctx.config.browser.enabled), 20),
@@ -316,7 +375,9 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
       const { loadConfig } = await import('../../core/config.js');
       const config = await loadConfig();
       const val = getNestedValue(config, key);
-      console.log(`  ${chalk.dim(key + ':')} ${val !== undefined ? String(val) : chalk.dim('(not set)')}`);
+      console.log(
+        `  ${chalk.dim(key + ':')} ${val !== undefined ? (typeof val === 'object' ? JSON.stringify(val) : String(val as string | number | boolean | bigint)) : chalk.dim('(not set)')}`
+      );
     } catch (err) {
       console.error(chalk.red('\u2717') + ` ${errorMessage(err)}`);
     }
@@ -361,8 +422,7 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
     const { loadConfig } = await import('../../core/config.js');
     const config = await loadConfig();
     const pattern = key.toLowerCase();
-    const matches = flattenConfig(config)
-      .filter(([k]) => k.toLowerCase().includes(pattern));
+    const matches = flattenConfig(config).filter(([k]) => k.toLowerCase().includes(pattern));
 
     if (matches.length === 0) {
       console.log(chalk.dim(`  No config keys matching "${key}"`));
@@ -378,10 +438,12 @@ const configHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
   return 'handled';
 };
 
-const doctorHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
+const doctorHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const fix = tokens.includes('--fix');
   try {
     const { runDoctor } = await import('../doctor.js');
-    await runDoctor({});
+    await runDoctor({ fix });
   } catch (err) {
     console.error(chalk.red('\u2717') + ` Doctor failed: ${errorMessage(err)}`);
   }
@@ -393,13 +455,7 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
   const action = (tokens[0] ?? 'list').toLowerCase();
 
   try {
-    const {
-      mcpList,
-      mcpAdd,
-      mcpAddPlaywright,
-      mcpRemove,
-      mcpTest,
-    } = await import('../mcp.js');
+    const { mcpList, mcpAdd, mcpAddPlaywright, mcpRemove, mcpTest } = await import('../mcp.js');
 
     if (action === '--help' || action === '-h' || action === 'help') {
       printMcpUsage();
@@ -428,9 +484,7 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
         }
       }
 
-      const commandTokens = envIndex === -1
-        ? tokens.slice(2)
-        : tokens.slice(2, envIndex);
+      const commandTokens = envIndex === -1 ? tokens.slice(2) : tokens.slice(2, envIndex);
 
       if (commandTokens.length === 0) {
         console.log(chalk.dim('  Usage: /mcp add <name> <command> [--env KEY=VAL,...]'));
@@ -508,7 +562,10 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
         }
         if (token === '--allowed-hosts') {
           const raw = tokens[i + 1];
-          opts.allowedHosts = raw?.split(',').map((v) => v.trim()).filter(Boolean);
+          opts.allowedHosts = raw
+            ?.split(',')
+            .map((v) => v.trim())
+            .filter(Boolean);
           i += 1;
           continue;
         }
@@ -522,7 +579,10 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
         }
         if (token === '--blocked-origins') {
           const raw = tokens[i + 1];
-          opts.blockedOrigins = raw?.split(',').map((v) => v.trim()).filter(Boolean);
+          opts.blockedOrigins = raw
+            ?.split(',')
+            .map((v) => v.trim())
+            .filter(Boolean);
           i += 1;
           continue;
         }
@@ -754,7 +814,8 @@ const serverHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
   }
 
   try {
-    const { daemonStart, daemonStop, daemonStatusCommand, daemonLogs } = await import('../daemon.js');
+    const { daemonStart, daemonStop, daemonStatusCommand, daemonLogs } =
+      await import('../daemon.js');
     if (action === 'start') await daemonStart(daemonOpts);
     else if (action === 'stop') await daemonStop(daemonOpts);
     else if (action === 'logs') await daemonLogs(daemonOpts);
@@ -842,13 +903,8 @@ const daemonHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
   }
 
   try {
-    const {
-      daemonStart,
-      daemonRun,
-      daemonStop,
-      daemonStatusCommand,
-      daemonLogs,
-    } = await import('../daemon.js');
+    const { daemonStart, daemonRun, daemonStop, daemonStatusCommand, daemonLogs } =
+      await import('../daemon.js');
 
     if (action === 'start') {
       await daemonStart(daemonOpts);
@@ -890,7 +946,7 @@ const completionsHandler = async (args: string, _ctx: SlashContext): Promise<Sla
 
   try {
     const { completions } = await import('../completions.js');
-    await completions(shell);
+    completions(shell);
   } catch (err) {
     console.error(chalk.red('\u2717') + ` Completions failed: ${errorMessage(err)}`);
   }
@@ -908,14 +964,12 @@ const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<Slash
       return 'handled';
     }
 
-    const fixed = issues.filter(i => i.autoFixed);
-    const manual = issues.filter(i => !i.autoFixed);
+    const fixed = issues.filter((i) => i.autoFixed);
+    const manual = issues.filter((i) => !i.autoFixed);
 
     const lines: string[] = [];
     for (const issue of issues) {
-      const icon = issue.autoFixed
-        ? chalk.green('\u2713')
-        : chalk.yellow('\u26a0');
+      const icon = issue.autoFixed ? chalk.green('\u2713') : chalk.yellow('\u26a0');
       const status = issue.autoFixed
         ? chalk.dim('(auto-fixed)')
         : chalk.yellow('(manual fix needed)');
@@ -929,15 +983,13 @@ const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<Slash
     console.log('\n' + box('Config Health', lines));
     console.log(
       `  Fixed ${chalk.green(String(fixed.length))} issue${fixed.length === 1 ? '' : 's'}` +
-      (manual.length > 0
-        ? `, ${chalk.yellow(String(manual.length))} require${manual.length === 1 ? 's' : ''} manual attention`
-        : '') +
-      '\n',
+        (manual.length > 0
+          ? `, ${chalk.yellow(String(manual.length))} require${manual.length === 1 ? 's' : ''} manual attention`
+          : '') +
+        '\n'
     );
   } catch (err) {
-    console.error(
-      chalk.red('\u2717') + ` Quickfix failed: ${errorMessage(err)}`,
-    );
+    console.error(chalk.red('\u2717') + ` Quickfix failed: ${errorMessage(err)}`);
   }
   return 'handled';
 };
@@ -1050,14 +1102,20 @@ const permissionsHandler = async (args: string, ctx: SlashContext): Promise<Slas
     // List all tool permissions
     const perms = ctx.config.permissions || {};
     const defaults: Record<string, string> = {
-      read_file: 'allow', write_file: 'ask', edit_file: 'ask',
-      run_command: 'ask', ask_user: 'allow', list_dir: 'allow',
-      search_files: 'allow', find_files: 'allow',
+      read_file: 'allow',
+      write_file: 'ask',
+      edit_file: 'ask',
+      run_command: 'ask',
+      ask_user: 'allow',
+      list_dir: 'allow',
+      search_files: 'allow',
+      find_files: 'allow',
     };
     const lines: string[] = [];
     for (const [tool, defaultVal] of Object.entries(defaults)) {
       const current = (perms as Record<string, string>)[tool] || defaultVal;
-      const color = current === 'allow' ? chalk.green : current === 'deny' ? chalk.red : chalk.yellow;
+      const color =
+        current === 'allow' ? chalk.green : current === 'deny' ? chalk.red : chalk.yellow;
       lines.push(`  ${chalk.dim(tool.padEnd(16))} ${color(current)}`);
     }
     console.log('\n' + box('Tool Permissions', lines));
@@ -1081,40 +1139,46 @@ const permissionsHandler = async (args: string, ctx: SlashContext): Promise<Slas
   return 'handled';
 };
 
-
-
 const skillsHandler = async (_args: string, _ctx: SlashContext): Promise<SlashResult> => {
   try {
     const { TOOL_SCHEMAS } = await import('../../core/tools/schemas.js');
     const { getAllCommands } = await import('./index.js');
 
-    const tools = TOOL_SCHEMAS.map(t => t.function.name).sort();
-    const slash = getAllCommands().map(c => `/${c.command}`).sort();
+    const tools = TOOL_SCHEMAS.map((t) => t.function.name).sort();
+    const slash = getAllCommands()
+      .map((c) => `/${c.command}`)
+      .sort();
 
     const lines: string[] = [
       chalk.dim('Tool Skills'),
-      ...tools.map(t => `  ${chalk.cyan(t)}`),
+      ...tools.map((t) => `  ${chalk.cyan(t)}`),
       '',
       chalk.dim(`Slash Commands (${slash.length})`),
-      ...slash.slice(0, 20).map(c => `  ${chalk.green(c)}`),
+      ...slash.slice(0, 20).map((c) => `  ${chalk.green(c)}`),
     ];
     if (slash.length > 20) lines.push(chalk.dim(`  ... ${slash.length - 20} more`));
 
-    console.log("\n" + box("Skills", lines));
+    console.log('\n' + box('Skills', lines));
   } catch (err) {
     console.error(chalk.red('✗') + ` ${errorMessage(err)}`);
   }
   return 'handled';
 };
 
-const keysHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
+const keysHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const mask = (v?: string) => {
     if (!v) return chalk.dim('(missing)');
     if (v.length <= 10) return chalk.yellow(v);
     return chalk.yellow(`${v.slice(0, 6)}...${v.slice(-4)}`);
   };
-  const env = (ctx.config as Record<string, any>).env || {};
-  const tg = (ctx.config as Record<string, any>).channels?.telegram?.botToken;
+  const env = ((ctx.config as Record<string, unknown>).env ?? {}) as Record<
+    string,
+    string | undefined
+  >;
+  const tgChannels = (ctx.config as Record<string, unknown>).channels as
+    | { telegram?: { botToken?: string } }
+    | undefined;
+  const tg = tgChannels?.telegram?.botToken;
 
   const rows: string[] = [
     kv('OPTA_API_KEY(env)', mask(process.env['OPTA_API_KEY']), 24),
@@ -1127,9 +1191,9 @@ const keysHandler = async (_args: string, ctx: SlashContext): Promise<SlashResul
     kv('TELEGRAM_BOT_TOKEN', mask(tg), 24),
   ];
 
-  console.log("\n" + box("Key Status (masked)", rows));
+  console.log('\n' + box('Key Status (masked)', rows));
   console.log(chalk.dim('  Tip: /key create|show|copy manages Opta inference API keys.\n'));
-  return 'handled';
+  return Promise.resolve('handled');
 };
 
 // --- Helpers ---
@@ -1185,15 +1249,22 @@ export const manageCommands: SlashCommandDef[] = [
     handler: configHandler,
     category: 'tools',
     usage: '/config [list|get|set|reset|search|menu] [key] [value]',
-    examples: ['/config', '/config menu', '/config get connection.host', '/config set connection.port 1234', '/config reset', '/config search git'],
+    examples: [
+      '/config',
+      '/config menu',
+      '/config get connection.host',
+      '/config set connection.port 1234',
+      '/config reset',
+      '/config search git',
+    ],
   },
   {
     command: 'doctor',
-    description: 'Environment health check',
+    description: 'Environment health check and auto-remediation',
     handler: doctorHandler,
     category: 'info',
-    usage: '/doctor',
-    examples: ['/doctor'],
+    usage: '/doctor [--fix]',
+    examples: ['/doctor', '/doctor --fix'],
   },
   {
     command: 'mcp',
@@ -1202,7 +1273,11 @@ export const manageCommands: SlashCommandDef[] = [
     handler: mcpHandler,
     category: 'tools',
     usage: '/mcp [list|add|add-playwright|remove|test] ...',
-    examples: ['/mcp', '/mcp add docs "npx @modelcontextprotocol/server-filesystem ."', '/mcp test docs'],
+    examples: [
+      '/mcp',
+      '/mcp add docs "npx @modelcontextprotocol/server-filesystem ."',
+      '/mcp test docs',
+    ],
   },
   {
     command: 'update',
