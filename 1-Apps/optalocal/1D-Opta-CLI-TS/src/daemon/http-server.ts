@@ -362,11 +362,13 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     const params = SessionParamsSchema.safeParse(req.params);
     if (!params.success) return reply.status(400).send({ error: 'Invalid session id' });
     const body = req.body as { turnId?: string; writerId?: string } | undefined;
-    const cancelled = await opts.sessionManager.cancelSessionTurns(params.data.sessionId, {
+    const session = await opts.sessionManager.getSession(params.data.sessionId);
+    if (!session) return reply.status(404).send({ error: 'Session not found' });
+    const result = await opts.sessionManager.cancelSessionTurns(params.data.sessionId, {
       turnId: body?.turnId,
       writerId: body?.writerId,
     });
-    return { cancelled };
+    return { ok: true, cancelledQueued: result.cancelledQueued, cancelledActive: result.cancelledActive };
   });
 
   app.post('/v3/sessions/:sessionId/permissions/:requestId', async (req, reply) => {

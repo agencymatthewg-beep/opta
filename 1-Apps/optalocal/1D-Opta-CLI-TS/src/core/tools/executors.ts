@@ -304,7 +304,7 @@ export async function executeTool(name: string, argsJson: string): Promise<strin
           const daemon = await getSharedBrowserRuntimeDaemon({ cwd: process.cwd() });
           const result = await daemon.openSession({
             sessionId,
-            mode: mode as 'isolated' | 'attach',
+            mode: mode,
             wsEndpoint: mode === 'attach' ? wsEndpoint : undefined,
           });
           if (!result.ok) {

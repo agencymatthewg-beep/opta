@@ -462,7 +462,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     const journal = config.journal;
     // loadConfig returns defaults in production, but treat missing journal config
     // as enabled to preserve backward-compatible session logging in partial test stubs.
-    if ((journal?.enabled ?? true) === false) return null;
+    if (!(journal?.enabled ?? true)) return null;
 
     try {
       const written = await writeSessionLog(session, {

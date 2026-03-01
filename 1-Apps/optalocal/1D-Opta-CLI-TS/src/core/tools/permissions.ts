@@ -138,7 +138,7 @@ export function resolvePermission(
 
   // If the user explicitly set a per-tool override different from defaults, use it
   if (configPerm && configPerm !== defaultPerm) {
-    resolved = configPerm as 'allow' | 'ask' | 'deny';
+    resolved = configPerm;
   } else {
     // Mode-level permissions (mode handles CI via the 'ci' mode)
     const mode = config.defaultMode ?? 'safe';
@@ -149,10 +149,10 @@ export function resolvePermission(
       // Custom tools (custom__*) execute shell commands, so they inherit
       // run_command's mode-level permissions when no explicit override exists.
       const customModePerm = MODE_PERMISSIONS[mode]?.['run_command'];
-      resolved = (customModePerm ?? configPerm ?? 'ask') as 'allow' | 'ask' | 'deny';
+      resolved = (customModePerm ?? configPerm ?? 'ask');
     } else {
       // Fall back to config permission or default
-      resolved = (configPerm ?? defaultPerm ?? 'ask') as 'allow' | 'ask' | 'deny';
+      resolved = (configPerm ?? defaultPerm ?? 'ask');
     }
   }
 

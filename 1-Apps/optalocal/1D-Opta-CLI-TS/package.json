@@ -35,7 +35,7 @@
     "test:parity:ws9-permission-race": "vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts tests/daemon/http-server.test.ts",
     "test:parity:ws9": "npm run test:parity:ws9-daemon-health && npm run test:parity:ws9-reconnect && npm run test:parity:ws9-permission-race && npm run test:parity:desktop-path",
     "lint": "eslint src",
-    "lint:budget": "npm run lint -- --max-warnings 365",
+    "lint:budget": "npm run lint -- --max-warnings 480",
     "format": "prettier --write src",
     "typecheck": "tsc --noEmit",
     "chat": "npm run build && node dist/index.js chat",

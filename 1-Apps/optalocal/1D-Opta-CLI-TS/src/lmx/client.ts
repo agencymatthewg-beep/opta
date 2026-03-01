@@ -283,7 +283,7 @@ export class LmxClient {
       init?.headers instanceof Headers
         ? Object.fromEntries(init.headers.entries())
         : Array.isArray(init?.headers)
-          ? Object.fromEntries(init.headers as string[][])
+          ? Object.fromEntries(init.headers)
           : ((init?.headers as Record<string, string> | undefined) ?? {});
     const headers = { ...this.headers, ...initHeaders };
     const hostFailures: HostAttemptFailure[] = [];

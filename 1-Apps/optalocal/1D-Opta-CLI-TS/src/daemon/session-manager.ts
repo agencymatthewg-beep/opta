@@ -42,6 +42,25 @@ import { errorMessage } from '../utils/errors.js';
 const CHARS_PER_TOKEN = 4;
 const PREFLIGHT_CACHE_TTL_MS = 10_000;
 
+class LatencyWindow {
+  private readonly samples: number[] = [];
+  private readonly maxSamples = 100;
+
+  record(ms: number): void {
+    if (this.samples.length >= this.maxSamples) this.samples.shift();
+    this.samples.push(ms);
+  }
+
+  percentile(p: number): number {
+    if (this.samples.length === 0) return 0;
+    const sorted = [...this.samples].sort((a, b) => a - b);
+    const idx = Math.floor((p / 100) * (sorted.length - 1));
+    return sorted[idx] ?? 0;
+  }
+
+  get count(): number { return this.samples.length; }
+}
+
 // Tool result cache constants
 const CACHEABLE_TOOLS = new Set(['read_file', 'list_dir', 'search_files', 'find_files']);
 const MTIME_TOOLS = new Set(['read_file', 'list_dir']);
@@ -92,6 +111,7 @@ export class SessionManager {
   private readonly unsubscribeBackgroundEvents: () => void;
   private ingressSeq = 0;
   private evictionInterval: NodeJS.Timeout;
+  private readonly latencyWindow = new LatencyWindow();
 
   constructor(
     private readonly daemonId: string,
@@ -300,37 +320,39 @@ export class SessionManager {
   async cancelSessionTurns(
     sessionId: string,
     opts: { turnId?: string; writerId?: string }
-  ): Promise<number> {
+  ): Promise<{ cancelledQueued: number; cancelledActive: boolean }> {
     const session = this.sessions.get(sessionId);
-    if (!session) return 0;
+    if (!session) return { cancelledQueued: 0, cancelledActive: false };
 
-    let cancelled = 0;
+    let cancelledQueued = 0;
     if (opts.turnId) {
-      cancelled += session.queue.cancelByTurnId(opts.turnId) ? 1 : 0;
+      cancelledQueued += session.queue.cancelByTurnId(opts.turnId) ? 1 : 0;
     } else if (opts.writerId) {
-      cancelled += session.queue.cancelByWriter(opts.writerId);
+      cancelledQueued += session.queue.cancelByWriter(opts.writerId);
     }
 
     // Active turn cancellation: cooperative abort via AbortController.
+    let cancelledActive = false;
     const active = session.activeTurn;
     if (active && session.activeAbort) {
       const matchesTurn = opts.turnId ? active.turnId === opts.turnId : false;
       const matchesWriter = opts.writerId ? active.writerId === opts.writerId : false;
       if (matchesTurn || matchesWriter) {
         session.activeAbort.abort();
-        cancelled += 1;
+        cancelledActive = true;
       }
     }
 
-    if (cancelled > 0) {
+    const totalCancelled = cancelledQueued + (cancelledActive ? 1 : 0);
+    if (totalCancelled > 0) {
       await this.emit(session, 'session.cancelled', {
-        cancelled,
+        cancelled: totalCancelled,
         turnId: opts.turnId,
         writerId: opts.writerId,
       });
       await this.persistSnapshot(session);
     }
-    return cancelled;
+    return { cancelledQueued, cancelledActive };
   }
 
   resolvePermission(
@@ -366,6 +388,7 @@ export class SessionManager {
     subscriberCount: number;
     ingressSeq: number;
     toolWorkers: { workers: number; busy: number; queued: number };
+    latency: { p50Ms: number; p99Ms: number; samples: number };
   } {
     let activeTurnCount = 0;
     let queuedTurnCount = 0;
@@ -384,6 +407,11 @@ export class SessionManager {
       subscriberCount,
       ingressSeq: this.ingressSeq,
       toolWorkers: this.toolWorkers.getStats(),
+      latency: {
+        p50Ms: this.latencyWindow.percentile(50),
+        p99Ms: this.latencyWindow.percentile(99),
+        samples: this.latencyWindow.count,
+      },
     };
   }
 
@@ -767,6 +795,7 @@ export class SessionManager {
       session.updatedAt = new Date().toISOString();
 
       const elapsed = (Date.now() - turnStart) / 1000;
+      this.latencyWindow.record(elapsed * 1000);
       const payload: TurnDonePayload = {
         turnId: turn.turnId,
         writerId: turn.writerId,
