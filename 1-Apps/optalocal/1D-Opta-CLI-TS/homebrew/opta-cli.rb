@@ -6,12 +6,12 @@
 #   brew install opta-cli
 #
 # To update the sha256 after cutting a release:
-#   shasum -a 256 opta-cli-0.5.0.tar.gz
+#   Run: shasum -a 256 opta-cli-npm.tgz after creating the GitHub release
 
 class OptaCli < Formula
   desc "Agentic AI coding CLI powered by local LLMs"
   homepage "https://github.com/optaops/opta-cli"
-  url "https://github.com/optaops/opta-cli/releases/download/v0.5.0/opta-cli-0.5.0.tar.gz"
+  url "https://github.com/optaops/opta-cli/releases/download/v0.5.0-alpha.1/opta-cli-0.5.0-alpha.1.tar.gz"
   sha256 "PLACEHOLDER_SHA256_REPLACE_AFTER_RELEASE"
   license "MIT"
 
