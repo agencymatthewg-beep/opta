@@ -4,7 +4,7 @@ _Last updated: 2026-03-01 (Australia/Melbourne)_
 
 ## 1) Objective
 Ship Opta CLI publicly with two install paths:
-1. `npm install -g opta-cli`
+1. `npm i -g @opta/opta-cli`
 2. `brew install opta-cli` via dedicated tap
 
 ## 2) Current Execution State
@@ -61,7 +61,7 @@ Ship Opta CLI publicly with two install paths:
 ### Step 3 — post-publish verification
 1. Confirm package exists on npm.
 2. Verify global install:
-   - `npm i -g opta-cli`
+   - `npm i -g @opta/opta-cli`
    - `opta --version`
 
 ### Step 4 — Homebrew finalize

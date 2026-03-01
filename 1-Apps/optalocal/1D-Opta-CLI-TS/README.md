@@ -7,7 +7,7 @@ A local-first agentic coding assistant powered by Apple Silicon LLM inference. Y
 ## Install
 
 ```bash
-npm install -g opta-cli
+npm i -g @opta/opta-cli
 ```
 
 Run the guided setup wizard:

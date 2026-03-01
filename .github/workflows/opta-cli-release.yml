@@ -50,7 +50,15 @@ jobs:
         run: npm install
 
       - name: Publish to npm
-        run: npm publish --access public
+        run: |
+          VERSION="$(node -p "require('./package.json').version")"
+          if [[ "$VERSION" == *"-alpha"* ]]; then
+            echo "Publishing alpha version $VERSION with dist-tag alpha"
+            npm publish --tag alpha --access public
+          else
+            echo "Publishing stable version $VERSION with dist-tag latest"
+            npm publish --access public
+          fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
