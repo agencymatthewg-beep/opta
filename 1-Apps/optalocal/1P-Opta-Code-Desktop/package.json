@@ -1,10 +1,13 @@
 {
-  "name": "opta-code-desktop",
+  "name": "opta-code-desktop-universal",
   "private": true,
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "npm run dev:web",
+    "dev:web": "vite",
+    "dev:native": "tauri dev",
+    "tauri": "tauri",
     "tauri:dev": "tauri dev",
     "tauri:build": "tauri build",
     "typecheck": "tsc --noEmit",

@@ -1,20 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FileText, RefreshCw, Search } from "lucide-react";
-
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: { invoke?: TauriInvoke };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
-}
+import { getTauriInvoke, isNativeDesktop } from "../lib/runtime";
 
 interface LogEntry {
   raw: string;
@@ -53,6 +39,7 @@ function parseLine(line: string): LogEntry {
 }
 
 export function DaemonLogsPage() {
+  const nativeDesktop = isNativeDesktop();
   const [entries, setEntries] = useState<LogEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -82,11 +69,12 @@ export function DaemonLogsPage() {
 
   useEffect(() => {
     void refresh();
+    if (!nativeDesktop) return;
     pollRef.current = window.setInterval(() => void refresh(), 2000);
     return () => {
       if (pollRef.current !== null) window.clearInterval(pollRef.current);
     };
-  }, [refresh]);
+  }, [nativeDesktop, refresh]);
 
   useEffect(() => {
     logEndRef.current?.scrollIntoView({ behavior: "smooth" });

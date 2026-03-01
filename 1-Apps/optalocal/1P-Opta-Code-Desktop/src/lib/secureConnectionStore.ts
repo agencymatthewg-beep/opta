@@ -1,22 +1,7 @@
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: {
-    invoke?: TauriInvoke;
-  };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const maybeBridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const maybeInvoke = maybeBridge?.core?.invoke;
-  return typeof maybeInvoke === "function" ? maybeInvoke : null;
-}
+import { getTauriInvoke, isNativeDesktop } from "./runtime";
 
 export function isSecureConnectionStoreAvailable(): boolean {
-  return getTauriInvoke() !== null;
+  return isNativeDesktop();
 }
 
 export async function loadToken(host: string, port: number): Promise<string> {

@@ -1,6 +1,6 @@
 # Opta Software State Registry (Long-Term)
 
-_Last updated: 2026-03-01 (Australia/Melbourne)_
+_Last updated: 2026-03-01 20:15 AEDT (Australia/Melbourne)_
 
 Purpose: single source of truth for external software/services Opta depends on, including ownership, auth state, current usage, risk posture, and next action.
 
@@ -26,6 +26,13 @@ Purpose: single source of truth for external software/services Opta depends on, 
 - **State:** Active (domains linked and routing managed)
 - **Recent outcome:** `help.optalocal.com` live; old `opta-help.vercel.app` redirects 308
 - **Next action:** maintain domain mapping in canonical SOT docs
+
+### Learn experience (new)
+- **Planned domain:** `learn.optalocal.com`
+- **Intent:** central searchable guide hub for Opta Local app/features/issues (visual + explanatory guides)
+- **Navigation plan:** add CTA buttons on `optalocal.com` and `help.optalocal.com` ("Learn More", "Users Guide", "Don’t understand?") redirecting to `learn.optalocal.com`
+- **Execution owner:** Opta512 (frontend design skill + Gemini workflow)
+- **State:** Planned / in-progress handoff
 
 ---
 

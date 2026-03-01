@@ -7,6 +7,7 @@ import {
   loadToken,
   saveToken,
 } from "../lib/secureConnectionStore";
+import { getTauriInvoke } from "../lib/runtime";
 import type { V3Envelope } from "../lib/daemonClient";
 import type {
   DaemonConnectionOptions,
@@ -220,22 +221,6 @@ function eventsToTimelineItems(
 
   flushText();
   return items;
-}
-
-// ── Tauri invoke bridge for session persistence ────────────────────────────
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: { invoke?: TauriInvoke };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
 }
 
 // ── WS handle kept per session in a stable ref map ─────────────────────────

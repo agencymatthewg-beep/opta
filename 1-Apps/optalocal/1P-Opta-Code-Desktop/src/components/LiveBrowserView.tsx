@@ -1,20 +1,25 @@
 import { useEffect, useState, useRef } from "react";
 import type { BrowserLiveHostSlot } from "../lib/browserLiveHostClient";
+import { isNativeDesktop } from "../lib/runtime";
 
 interface LiveBrowserViewProps {
     slot?: BrowserLiveHostSlot;
     className?: string;
     refreshRateMs?: number;
+    showNativeControls?: boolean;
 }
 
 export function LiveBrowserView({
     slot,
     className = "",
     refreshRateMs = 800,
+    showNativeControls,
 }: LiveBrowserViewProps) {
     const [frameUrl, setFrameUrl] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [errorCount, setErrorCount] = useState(0);
+    const nativeControls =
+        showNativeControls === undefined ? isNativeDesktop() : showNativeControls;
 
     useEffect(() => {
         let active = true;
@@ -74,11 +79,13 @@ export function LiveBrowserView({
     return (
         <div className={`live-browser-view glass-panel ${className}`} ref={containerRef}>
             <div className="browser-header glass-subtle">
-                <div className="browser-traffic-lights">
-                    <span className="light light-close" />
-                    <span className="light light-min" />
-                    <span className="light light-max" />
-                </div>
+                {nativeControls ? (
+                    <div className="browser-traffic-lights">
+                        <span className="light light-close" />
+                        <span className="light light-min" />
+                        <span className="light light-max" />
+                    </div>
+                ) : null}
                 <div className="browser-url-bar">
                     <span className="truncate">{slot?.currentUrl || (slot ? 'about:blank' : 'Offline')}</span>
                 </div>

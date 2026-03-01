@@ -25,35 +25,18 @@ import {
   deriveBrowserVisualState,
   type BrowserVisualSummary,
 } from "./lib/browserVisualState";
+import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import type { PaletteCommand } from "./types";
 import "./opta.css";
 
 type AppPage = "sessions" | "models" | "operations" | "jobs" | "logs";
 const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
 
-// ---------------------------------------------------------------------------
-// Tauri invoke bridge — same pattern as secureConnectionStore.ts
-// ---------------------------------------------------------------------------
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: { invoke?: TauriInvoke };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
-}
-
-// ---------------------------------------------------------------------------
-
 export type BrowserViewMode = "default" | "expanded" | "minimized";
 
 function App() {
+  const nativeDesktop = isNativeDesktop();
+
   // null = loading (show blank), true = first run (show wizard), false = normal app
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -640,9 +623,12 @@ function App() {
                   </div>
                   <div className="browser-module">
                     {activeBrowserSlot ? (
-                      <LiveBrowserView slot={activeBrowserSlot} />
+                      <LiveBrowserView
+                        slot={activeBrowserSlot}
+                        showNativeControls={nativeDesktop}
+                      />
                     ) : (
-                      <LiveBrowserView />
+                      <LiveBrowserView showNativeControls={nativeDesktop} />
                     )}
                   </div>
                 </div>
@@ -695,7 +681,10 @@ function App() {
                 <button type="button" onClick={() => void refreshNow()}>
                   Refresh Now
                 </button>
-                <DaemonPanel connectionState={connectionState} />
+                <DaemonPanel
+                  connection={connection}
+                  connectionState={connectionState}
+                />
               </aside>
             ) : null}
           </main>

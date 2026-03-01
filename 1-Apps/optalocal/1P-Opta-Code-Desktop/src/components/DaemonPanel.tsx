@@ -1,32 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, RefreshCw, Square } from "lucide-react";
-
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: { invoke?: TauriInvoke };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
-}
+import type { DaemonConnectionOptions } from "../types";
+import { probeDaemonConnection } from "../lib/connectionProbe";
+import { getTauriInvoke, isNativeDesktop } from "../lib/runtime";
 
 interface DaemonState {
   pid?: number;
   startedAt?: string;
   status?: string;
+  endpoint?: string;
+  diagnostic?: string;
+  mode?: "native" | "lan" | "wan" | "offline";
 }
 
 interface DaemonPanelProps {
+  connection: DaemonConnectionOptions;
   connectionState: "connected" | "connecting" | "disconnected";
 }
 
-export function DaemonPanel({ connectionState }: DaemonPanelProps) {
+export function DaemonPanel({ connection, connectionState }: DaemonPanelProps) {
+  const nativeDesktop = isNativeDesktop();
   const [state, setState] = useState<DaemonState | null>(null);
   const [loading, setLoading] = useState(false);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
@@ -44,17 +37,37 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
 
   const fetchStatus = useCallback(async () => {
     const invoke = getTauriInvoke();
-    if (!invoke) return;
+    if (!invoke) {
+      const probe = await probeDaemonConnection(connection).catch(() => null);
+      if (!probe) {
+        setState({
+          status: "disconnected",
+          mode: "offline",
+          diagnostic: "UNKNOWN",
+        });
+        return;
+      }
+      setState({
+        status:
+          probe.diagnostic === "OK" || probe.diagnostic === "UNAUTHORIZED"
+            ? "reachable"
+            : "disconnected",
+        endpoint: probe.url,
+        diagnostic: probe.diagnostic,
+        mode: probe.type,
+      });
+      return;
+    }
     try {
       const raw = (await invoke("daemon_action", {
         action: "status",
       })) as string;
       const parsed = JSON.parse(raw) as DaemonState;
-      setState(parsed);
+      setState({ ...parsed, mode: "native" });
     } catch {
       setState(null);
     }
-  }, []);
+  }, [connection]);
 
   const handleAction = useCallback(
     async (action: "restart" | "stop") => {
@@ -63,6 +76,10 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
           "Stop the Opta daemon? Active sessions will be interrupted.",
         );
         if (!confirmed) return;
+      }
+      if (!nativeDesktop) {
+        showNotice("Daemon control actions require native desktop mode");
+        return;
       }
       const invoke = getTauriInvoke();
       if (!invoke) {
@@ -83,7 +100,7 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
         setLoading(false);
       }
     },
-    [fetchStatus, showNotice],
+    [fetchStatus, nativeDesktop, showNotice],
   );
 
   useEffect(() => {
@@ -117,6 +134,12 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
             {state?.status || connectionState}
           </dd>
         </div>
+        {!nativeDesktop && state?.mode ? (
+          <div>
+            <dt>Mode</dt>
+            <dd>{state.mode}</dd>
+          </div>
+        ) : null}
         {state?.pid != null && (
           <div>
             <dt>PID</dt>
@@ -129,6 +152,12 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
             <dd>{uptime}</dd>
           </div>
         )}
+        {!nativeDesktop && state?.diagnostic ? (
+          <div>
+            <dt>Probe</dt>
+            <dd>{state.diagnostic.toLowerCase()}</dd>
+          </div>
+        ) : null}
       </dl>
 
       {actionNotice ? (
@@ -137,32 +166,38 @@ export function DaemonPanel({ connectionState }: DaemonPanelProps) {
         </div>
       ) : null}
 
-      <div className="daemon-panel-actions">
-        <button
-          type="button"
-          className="daemon-action-btn"
-          onClick={() => void handleAction("restart")}
-          disabled={loading}
-          title="Restart daemon"
-        >
-          <RefreshCw
-            size={12}
-            className={loading ? "spin" : ""}
-            aria-hidden="true"
-          />
-          Restart
-        </button>
-        <button
-          type="button"
-          className="daemon-action-btn daemon-action-stop"
-          onClick={() => void handleAction("stop")}
-          disabled={loading}
-          title="Stop daemon"
-        >
-          <Square size={12} aria-hidden="true" />
-          Stop
-        </button>
-      </div>
+      {nativeDesktop ? (
+        <div className="daemon-panel-actions">
+          <button
+            type="button"
+            className="daemon-action-btn"
+            onClick={() => void handleAction("restart")}
+            disabled={loading}
+            title="Restart daemon"
+          >
+            <RefreshCw
+              size={12}
+              className={loading ? "spin" : ""}
+              aria-hidden="true"
+            />
+            Restart
+          </button>
+          <button
+            type="button"
+            className="daemon-action-btn daemon-action-stop"
+            onClick={() => void handleAction("stop")}
+            disabled={loading}
+            title="Stop daemon"
+          >
+            <Square size={12} aria-hidden="true" />
+            Stop
+          </button>
+        </div>
+      ) : (
+        <p className="text-secondary" style={{ marginTop: 12, fontSize: 12 }}>
+          Web runtime: daemon control actions are unavailable; HTTP/WS client mode is active.
+        </p>
+      )}
     </div>
   );
 }

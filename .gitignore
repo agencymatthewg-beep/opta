@@ -179,3 +179,4 @@ __pycache__/
 # Screenshots / generated captures in root apps index area
 1-Apps/*.png
 1-Apps/*.html
+_archived/

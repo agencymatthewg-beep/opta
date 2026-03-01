@@ -1,7 +1,7 @@
 [package]
 name = "opta-code"
 version = "0.1.0"
-description = "Opta Code Desktop — local-first AI coding assistant"
+description = "Opta Code Desktop (Universal) — one codebase for web and native runtimes"
 authors = ["Opta Operations <hello@optamize.biz>"]
 license = "Proprietary"
 repository = "https://github.com/opta-operations/opta"

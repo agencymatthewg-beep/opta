@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Opta Code",
+  "productName": "Opta Code Desktop (Universal)",
   "version": "0.1.0",
   "identifier": "com.opta.code",
   "build": {
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Opta Code",
+        "title": "Opta Code Desktop (Universal)",
         "width": 1280,
         "height": 800,
         "minWidth": 900,

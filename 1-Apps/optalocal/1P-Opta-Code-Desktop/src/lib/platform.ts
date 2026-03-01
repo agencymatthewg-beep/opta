@@ -1,17 +1,8 @@
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (
-    globalThis as { __TAURI__?: { core?: { invoke?: TauriInvoke } } }
-  ).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
-}
+import { getTauriInvoke, isNativeDesktop } from "./runtime";
 
 export type Platform = "macos" | "windows" | "linux";
+
+export { isNativeDesktop };
 
 export async function getPlatform(): Promise<Platform> {
   const invoke = getTauriInvoke();

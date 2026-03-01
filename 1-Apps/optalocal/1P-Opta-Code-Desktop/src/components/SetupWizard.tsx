@@ -1,31 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { usePlatform, type Platform } from "../hooks/usePlatform.js";
+import { invokeNative, isNativeDesktop } from "../lib/runtime";
 
 // ---------------------------------------------------------------------------
 // Tauri invoke bridge — same pattern used by secureConnectionStore.ts
 // ---------------------------------------------------------------------------
-type TauriInvoke = (
-  command: string,
-  args?: Record<string, unknown>,
-) => Promise<unknown>;
-
-interface TauriBridge {
-  core?: { invoke?: TauriInvoke };
-}
-
-function getTauriInvoke(): TauriInvoke | null {
-  const bridge = (globalThis as { __TAURI__?: TauriBridge }).__TAURI__;
-  const fn_ = bridge?.core?.invoke;
-  return typeof fn_ === "function" ? fn_ : null;
-}
-
 async function tauriInvoke<T>(
   command: string,
   args?: Record<string, unknown>,
 ): Promise<T> {
-  const invoke = getTauriInvoke();
-  if (!invoke) throw new Error("Tauri invoke not available");
-  return invoke(command, args) as Promise<T>;
+  return invokeNative<T>(command, args);
 }
 
 // ---------------------------------------------------------------------------
@@ -786,6 +770,35 @@ function StepPreferences({
   platform: Platform | null;
 }) {
   const configDirRowRef = useRef<HTMLDivElement>(null);
+  const nativeDesktop = isNativeDesktop();
+
+  const focusConfigInput = () => {
+    const input =
+      configDirRowRef.current?.querySelector<HTMLInputElement>("input");
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  };
+
+  const openBrowserFolderPicker = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.multiple = true;
+    (input as HTMLInputElement & { webkitdirectory?: boolean }).webkitdirectory =
+      true;
+    input.onchange = () => {
+      const firstFile = input.files?.[0];
+      const relativePath = firstFile?.webkitRelativePath;
+      const folderName = relativePath?.split("/")[0];
+      if (folderName) {
+        setForm((f) => ({ ...f, configDir: `~/${folderName}` }));
+        return;
+      }
+      focusConfigInput();
+    };
+    input.click();
+  };
 
   const prefGroup = (children: React.ReactNode) => (
     <div style={{ marginBottom: 20 }}>{children}</div>
@@ -812,17 +825,24 @@ function StepPreferences({
             <button
               type="button"
               onClick={async () => {
-                try {
-                  const chosen = await tauriInvoke<string | null>("pick_folder");
-                  if (chosen) {
-                    setForm((f) => ({ ...f, configDir: chosen }));
-                    return;
+                if (nativeDesktop) {
+                  try {
+                    const chosen = await tauriInvoke<string | null>(
+                      "pick_folder",
+                    );
+                    if (chosen) {
+                      setForm((f) => ({ ...f, configDir: chosen }));
+                      return;
+                    }
+                  } catch {
+                    // Native dialog unavailable — fall through to text input.
                   }
-                } catch {
-                  // Tauri not available or dialog cancelled — fall through to focus
                 }
-                const input = configDirRowRef.current?.querySelector<HTMLInputElement>("input");
-                if (input) { input.focus(); input.select(); }
+                if (!nativeDesktop) {
+                  openBrowserFolderPicker();
+                  return;
+                }
+                focusConfigInput();
               }}
               style={{
                 fontFamily: "'Bricolage Grotesque', sans-serif",
