@@ -67,7 +67,7 @@ Context:
 - Site: optalocal.com — brand homepage for a local AI infrastructure stack
 - Stack: Mac Studio M3 Ultra 512GB, MLX inference, 836GB models, 22.2 tok/s
 - Brand: precision engineering, not generic AI SaaS. Dark void aesthetic, Electric Violet (#a855f7), grid textures, JetBrains Mono for stats.
-- Current sections: Nav, Hero (technical diagram), Benchmark Strip, Ecosystem (4 apps), Arch Diagram, Model Grid, CLI Preview, Feature Trio, CTA, Footer
+- Current sections: Nav, Hero (technical diagram), Benchmark Strip, Ecosystem (main local apps + management websites), Arch Diagram, Model Grid, CLI Preview, Feature Trio, CTA, Footer
 - Design rules: no blobs, no gradients-on-white, real data as texture, violet used sparingly
 
 Change requested: [DESCRIBE THE CHANGE]
@@ -204,7 +204,7 @@ curl -s --max-time 120 -X POST \
 
 **Model confirmed working:** `gemini-3.1-pro-preview` (1M token context, thinking model)  
 **Do NOT use:** `gemini-2.0-flash`, `gemini-2.5-pro-preview-05-06` (wrong/unavailable models)  
-**List models:** `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=KEY" | python3 -c "import json,sys; [print(m["name"],"|",m.get("displayName")) for m in json.load(sys.stdin)["models"]]"`
+**List models:** `curl -s "https://generativelanguage.googleapis.com/v1beta/models?key=${GEMINI_API_KEY}" | python3 -c 'import json,sys; [print(m["name"],"|",m.get("displayName")) for m in json.load(sys.stdin)["models"]]'`
 
 ---
 

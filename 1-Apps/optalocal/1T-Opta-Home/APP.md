@@ -85,7 +85,7 @@ The optalocal.com root domain currently serves the Opta Local dashboard — wron
 |---|-----------|-----|
 | 1 | Links to all 4 sub-apps (init, lmx, CLI, accounts) | Ecosystem navigation |
 | 2 | Hero section with core value prop | First impression |
-| 3 | Ecosystem bento grid (4 apps explained) | Orientation |
+| 3 | Ecosystem bento grid (core apps + management websites split) | Orientation |
 | 4 | Static export (no backend) | Performance + reliability |
 | 5 | Mobile responsive | Basics |
 | 6 | Init design system parity | Brand cohesion |
@@ -114,7 +114,7 @@ optalocal.com (Vercel CDN, static export)
     ├── Nav (sticky glass + OptaRing logo)
     ├── Hero (split layout — headline + technical flow diagram, Mac Studio→LMX→Apps)
     ├── Benchmark Strip (full-width: 512GB · 22.2 tok/s · 836GB · 0 cloud · <200ms)
-    ├── Ecosystem (4-app obsidian bento grid: Init · LMX · CLI · Accounts)
+    ├── Ecosystem (split view: Main Local Apps + Management Websites)
     ├── Arch Diagram (Local active vs Cloud crossed out, side-by-side)
     ├── Model Grid (compatibility table: Kimi K2.5 · MiniMax · Qwen · Llama · DeepSeek)
     ├── CLI Preview (typewriter terminal animation)
@@ -183,4 +183,4 @@ Also connects to:
 | LOW | Changelog/blog section | Community building |
 | LOW | Status page integration | Link to status.optalocal.com |
 
-Canonical taxonomy: `../docs/PRODUCT-MODEL.md` (Opta Local = 3 core apps; websites are surfaces).
+Canonical taxonomy: `../docs/PRODUCT-MODEL.md` (Opta Local = 4 main local apps; management websites are separate support layer).
