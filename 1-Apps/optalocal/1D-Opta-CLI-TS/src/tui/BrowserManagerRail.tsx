@@ -106,8 +106,7 @@ export function BrowserManagerRail({
     return (
       <Box flexDirection="column" paddingX={1}>
         <Text color={visualState.color}>
-          {visualGlyph} Browser controls: Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh
-          {visualState.activeTool ? <Text> · {visualState.reason}</Text> : null}
+          {`${visualGlyph} Browser controls: Ctrl+P pause/resume · Ctrl+X kill · Ctrl+R refresh${visualState.activeTool ? ` · ${visualState.reason}` : ''}`}
         </Text>
         <Text dimColor wrap="truncate-end">
           state={visualState.label}

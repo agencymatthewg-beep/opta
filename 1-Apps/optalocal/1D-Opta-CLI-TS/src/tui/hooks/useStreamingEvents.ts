@@ -144,6 +144,8 @@ export interface UseStreamingEventsOptions {
   setMessages: React.Dispatch<React.SetStateAction<TuiMessage[]>>;
   setActiveAgents: React.Dispatch<React.SetStateAction<SubAgentDisplayState[]>>;
   setShowAgentPanel: React.Dispatch<React.SetStateAction<boolean>>;
+  /** Tracks the Playwright tool name currently executing for the browser active-state indicator. */
+  setActiveBrowserTool: React.Dispatch<React.SetStateAction<string | undefined>>;
 
   // State setters for UI chrome
   setStreamingLabel: (v: string) => void;
@@ -214,6 +216,7 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
     setMessages,
     setActiveAgents,
     setShowAgentPanel,
+    setActiveBrowserTool,
     setStreamingLabel,
     setStatusActionLabel,
     setStatusActionIcon,
@@ -266,6 +269,7 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
 
     const onToolStart = (name: string, id: string, argsJson: string) => {
       flushStreamingTextNow();
+      if (name.startsWith('browser_')) setActiveBrowserTool(name);
       setStreamingLabel(`running ${name}`);
       setTurnPhase('tool-call');
       let parsedArgs: Record<string, unknown> | undefined;
@@ -294,6 +298,7 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
 
     const onToolEnd = (name: string, id: string, result: string) => {
       flushStreamingTextNow();
+      if (name.startsWith('browser_')) setActiveBrowserTool(undefined);
       setStreamingLabel('thinking');
       setTurnPhase('streaming');
       const failed = result.toLowerCase().includes('error') || result.toLowerCase().includes('failed');
@@ -333,6 +338,7 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
 
     const onTurnStart = () => {
       setIsLoading(true);
+      setActiveBrowserTool(undefined);
       liveActivityRef.current = [];
       setLiveActivity([]);
       currentStreamingTextRef.current = '';
@@ -681,5 +687,5 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
       emitter.off('subagent:progress', onSubAgentProgress);
       emitter.off('subagent:done', onSubAgentDone);
     };
-  }, [emitter, flushStreamingTextNow, scheduleTokenFlush, appendAction, summarizeToolArgs, browserPolicyConfig, responseIntentTone, setActiveAgents]);
+  }, [emitter, flushStreamingTextNow, scheduleTokenFlush, appendAction, summarizeToolArgs, browserPolicyConfig, responseIntentTone, setActiveAgents, setActiveBrowserTool]);
 }

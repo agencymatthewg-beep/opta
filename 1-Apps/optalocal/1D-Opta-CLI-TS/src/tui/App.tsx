@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useRef, useMemo, useCallback, useEffect } from 'react';
 import { Box, Text, useApp } from 'ink';
-import { Header } from './Header.js';
+import { Header, type AtpoState } from './Header.js';
 import { MessageList } from './MessageList.js';
 import { InputBox } from './InputBox.js';
 import { InkStatusBar } from './StatusBar.js';
@@ -40,6 +40,7 @@ import { AgentSwarmRail } from './AgentSwarmRail.js';
 import type { AgentPickerSelection } from './AgentPickerOverlay.js';
 import { AgentMonitorPanel } from './AgentMonitorPanel.js';
 import { deriveOptimiserIntent } from './optimiser-intent.js';
+import { TUI_COLORS } from './palette.js';
 
 /** Chrome rows: Header(3) + BrowserManagerRail(3) + StatusBar(3) + HintBar(1) + InputBox(3) = 13 */
 const CHROME_HEIGHT = LAYOUT.totalChromeWithRail;
@@ -177,6 +178,21 @@ function AppInner({
 
   // UI state for streaming label
   const [streamingLabel, setStreamingLabel] = useState('thinking');
+
+  // Atpo State
+  const [atpoState, setAtpoState] = useState<AtpoState>({ status: 'offline' });
+
+  // Active browser tool — set when a browser_* tool starts, cleared when it ends
+  const [activeBrowserTool, setActiveBrowserTool] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    if (!emitter) return;
+    const handleAtpoState = (state: AtpoState) => setAtpoState(state);
+    emitter.on('atpo:state', handleAtpoState);
+    return () => {
+      emitter.off('atpo:state', handleAtpoState);
+    };
+  }, [emitter]);
 
   // Track whether we're in streaming mode (emitter-based)
   const isStreamingMode = !!emitter;
@@ -387,6 +403,7 @@ function AppInner({
     setMessages,
     setActiveAgents,
     setShowAgentPanel,
+    setActiveBrowserTool,
     setStreamingLabel,
     setStatusActionLabel,
     setStatusActionIcon,
@@ -629,6 +646,8 @@ function AppInner({
                 toolCount={registeredToolCount}
                 liveActivity={liveActivity}
                 liveStreamingText={liveStreamingText}
+                liveThinkingText={liveThinkingText}
+                liveThinkingTokens={liveThinkingTokens}
                 autoFollow={followMode}
                 scrollRef={scrollRef}
                 safeMode={safeMode}
@@ -734,14 +753,14 @@ function AppInner({
               triggerWords={triggerWords}
               isLoading={isLoading || !!permissionPending || overlayActive}
             />
-        </Box>
-      )
+          </Box>
+        )
       ) : null}
 
       {/* Brief "always allow" confirmation */}
       {alwaysMessage && (
         <Box paddingX={1}>
-          <Text color="green">{'\u2714'} {alwaysMessage}</Text>
+          <Text color={TUI_COLORS.success}>{'\u2714'} {alwaysMessage}</Text>
         </Box>
       )}
     </Box>
@@ -776,7 +795,7 @@ function AppInner({
         title={sessionTitle}
         compact={compactHeader}
         connectionState={effectiveConnectionState}
-        safeMode={safeMode}
+        atpoState={atpoState}
       />
 
       <SplitPane
@@ -795,6 +814,7 @@ function AppInner({
           busy={browserControlPane.loading}
           message={browserControlPane.message}
           messageStatus={browserControlPane.messageStatus}
+          activeTool={activeBrowserTool}
         />
       ) : null}
 
