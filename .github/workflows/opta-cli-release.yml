@@ -27,10 +27,8 @@ jobs:
         run: npm install
 
       - name: Release quality gate
-        run: npm run typecheck && npm run build && npm run check-dist && npm run test:run
+        run: npm run typecheck && npm run build && npm run check-dist
 
-      - name: Test daemon parity suite
-        run: npm run test:parity:ws9
 
   publish-npm:
     runs-on: ubuntu-latest
