@@ -1,4 +1,21 @@
  
+/**
+ * Deduplicate and trim a string array, preserving insertion order.
+ * Used by MCP bootstrap, registry, and policy normalization.
+ */
+export function normalizeStringList(values: string[] | undefined): string[] {
+  if (!values || values.length === 0) return [];
+  const seen = new Set<string>();
+  const normalized: string[] = [];
+  for (const value of values) {
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) continue;
+    seen.add(trimmed);
+    normalized.push(trimmed);
+  }
+  return normalized;
+}
+
 const ANSI_ESCAPE_RE = /\x1B(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1B\\))/g;
 
 /**

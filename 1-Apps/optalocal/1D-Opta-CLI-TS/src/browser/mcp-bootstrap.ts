@@ -1,8 +1,10 @@
-import { mkdir, writeFile, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { BrowserMode } from './types.js';
 import { getDaemonDir } from '../platform/paths.js';
+import { normalizeStringList } from '../utils/text.js';
+import { debug } from '../core/debug.js';
 
 export interface PlaywrightMcpServerConfig {
   transport: 'stdio';
@@ -40,33 +42,24 @@ interface PlaywrightMcpConfigFile {
   };
 }
 
-function normalizeList(values: string[] | undefined): string[] {
-  if (!values || values.length === 0) return [];
-
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-
-  for (const value of values) {
-    const trimmed = value.trim();
-    if (!trimmed || seen.has(trimmed)) continue;
-    seen.add(trimmed);
-    normalized.push(trimmed);
-  }
-
-  return normalized;
-}
-
 /**
  * Read the chrome overlay script source code.
  *
- * Tries the compiled .js first, then the .ts source (stripping type annotations).
+ * Resolution order:
+ *   1. Compiled .js co-located with this module (production build via tsup)
+ *   2. TypeScript source in src/browser/ (dev mode, stripped of type annotations)
+ *
+ * The paths are relative to `import.meta.url` which resolves to either
+ * `dist/browser/` (after tsup build) or `src/browser/` (when running via tsx).
+ * Both layouts co-locate chrome-overlay alongside mcp-bootstrap.
  */
 async function readOverlayScript(): Promise<string> {
   const thisDir = dirname(fileURLToPath(import.meta.url));
 
   // Try compiled JS first (production build via tsup)
+  const jsPath = join(thisDir, 'chrome-overlay.js');
   try {
-    const jsPath = join(thisDir, 'chrome-overlay.js');
+    await access(jsPath);
     return await readFile(jsPath, 'utf-8');
   } catch {
     // Fall through to TS source
@@ -74,6 +67,14 @@ async function readOverlayScript(): Promise<string> {
 
   // Fall back to TypeScript source and strip type annotations
   const tsPath = join(thisDir, 'chrome-overlay.ts');
+  try {
+    await access(tsPath);
+  } catch {
+    throw new Error(
+      `chrome-overlay not found at ${jsPath} or ${tsPath}. ` +
+        'Run `npm run build` to generate the compiled overlay.',
+    );
+  }
   const source = await readFile(tsPath, 'utf-8');
   return stripTypeAnnotations(source);
 }
@@ -81,11 +82,17 @@ async function readOverlayScript(): Promise<string> {
 /**
  * Minimal TypeScript → JavaScript stripping for the chrome overlay IIFE.
  *
- * Handles the specific patterns used in chrome-overlay.ts:
+ * IMPORTANT: This is tightly coupled to the specific TypeScript patterns used
+ * in chrome-overlay.ts. If new TS features are added to the overlay (generics,
+ * interface declarations, enum, etc.), this function MUST be updated or the
+ * dev-mode fallback will produce invalid JS. The production path (compiled .js)
+ * does not use this function.
+ *
+ * Handles these specific patterns:
  * - `type Foo = ...;` declarations
  * - `as SomeType` casts
- * - `: type` parameter annotations
- * - `((e: CustomEvent) => {` parameter types
+ * - `: type` parameter annotations (number, string, boolean, DOMRect, CustomEvent, EventListener)
+ * - `): void {` return type annotations
  */
 function stripTypeAnnotations(source: string): string {
   return source
@@ -158,12 +165,12 @@ export async function ensureBrowserConfigFiles(
 function buildNetworkPolicyArgs(options: PlaywrightMcpBootstrapOptions): string[] {
   const args: string[] = [];
 
-  const allowedHosts = normalizeList(options.allowedHosts);
+  const allowedHosts = normalizeStringList(options.allowedHosts);
   if (allowedHosts.length > 0) {
     args.push('--allowed-hosts', allowedHosts.join(','));
   }
 
-  const blockedOrigins = normalizeList(options.blockedOrigins);
+  const blockedOrigins = normalizeStringList(options.blockedOrigins);
   if (blockedOrigins.length > 0) {
     args.push('--blocked-origins', blockedOrigins.join(','));
   }
@@ -210,7 +217,7 @@ export async function createPlaywrightMcpServerConfig(
   } catch (err) {
     // Config file generation failed — contextOptions/initScript unavailable
     const msg = err instanceof Error ? err.message : String(err);
-    console.warn(`  browser config: config file generation failed (${msg})`);
+    debug(`browser config: config file generation failed (${msg})`);
   }
 
   // Network policy and navigation flags are always CLI args

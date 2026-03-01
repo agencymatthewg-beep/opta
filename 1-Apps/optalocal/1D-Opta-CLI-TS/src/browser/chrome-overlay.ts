@@ -38,6 +38,21 @@
 
   let currentState = 'idle';
 
+  // Track active timers for cleanup on page unload
+  const activeTimers = new Set<ReturnType<typeof setTimeout>>();
+  function trackTimer(id: ReturnType<typeof setTimeout>): ReturnType<typeof setTimeout> {
+    activeTimers.add(id);
+    return id;
+  }
+  function clearTrackedTimer(id: ReturnType<typeof setTimeout>): void {
+    clearTimeout(id);
+    activeTimers.delete(id);
+  }
+  window.addEventListener('beforeunload', () => {
+    for (const id of activeTimers) clearTimeout(id);
+    activeTimers.clear();
+  });
+
   // --- Build overlay host + Shadow DOM ---
   function createOverlay(): { shadow: ShadowRoot; host: HTMLDivElement } {
     const overlayHost = document.createElement('div');
@@ -434,9 +449,10 @@
 
   function flashStateAndReturn(flashState: string, durationMs: number) {
     applyState(flashState);
-    setTimeout(() => {
+    const id = trackTimer(setTimeout(() => {
+      activeTimers.delete(id);
       applyState('idle');
-    }, durationMs);
+    }, durationMs));
   }
 
   // --- Shimmer ---
@@ -447,9 +463,10 @@
     void infoBar.offsetWidth;
     infoBar.classList.add('shimmer');
 
-    setTimeout(() => {
+    const id = trackTimer(setTimeout(() => {
+      activeTimers.delete(id);
       infoBar.classList.remove('shimmer');
-    }, 850);
+    }, 850));
   }
 
   // --- Policy Flash ---
@@ -473,11 +490,12 @@
     void border.offsetWidth;
     border.classList.add('policy-flash');
 
-    setTimeout(() => {
+    const id = trackTimer(setTimeout(() => {
+      activeTimers.delete(id);
       border.classList.remove('policy-flash');
       // Restore to current state
       applyState(currentState);
-    }, 600);
+    }, 600));
   }
 
   // --- Event Listeners ---
@@ -573,11 +591,12 @@
 
     shadow.appendChild(ripple);
 
-    setTimeout(() => {
+    const id = trackTimer(setTimeout(() => {
+      activeTimers.delete(id);
       if (ripple.parentNode === shadow) {
         shadow.removeChild(ripple);
       }
-    }, 600);
+    }, 600));
   }
 
   function createHighlight(rect: DOMRect) {
@@ -592,11 +611,12 @@
 
     shadow.appendChild(hl);
 
-    setTimeout(() => {
+    const id = trackTimer(setTimeout(() => {
+      activeTimers.delete(id);
       if (hl.parentNode === shadow) {
         shadow.removeChild(hl);
       }
-    }, 800);
+    }, 800));
   }
 
   // --- Initialize to idle state ---

@@ -10,6 +10,7 @@ import { LspManager } from '../lsp/manager.js';
 import { resolve } from 'node:path';
 import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } from '../core/tools/custom.js';
 import { createPlaywrightMcpServerConfig } from '../browser/mcp-bootstrap.js';
+import { normalizeStringList } from '../utils/text.js';
 import * as lmxApiKey from '../lmx/api-key.js';
 
 interface ToolSchema {
@@ -64,19 +65,6 @@ function dispatchOverlayEvent(
   const detailJson = JSON.stringify(detail);
   const expression = `window.dispatchEvent(new CustomEvent(${JSON.stringify(eventName)}, { detail: ${detailJson} }))`;
   void mcpConn.call('browser_evaluate', { expression }).catch(() => {});
-}
-
-function normalizeStringList(values: string[] | undefined): string[] {
-  if (!values || values.length === 0) return [];
-  const seen = new Set<string>();
-  const normalized: string[] = [];
-  for (const value of values) {
-    const candidate = value.trim();
-    if (!candidate || seen.has(candidate)) continue;
-    seen.add(candidate);
-    normalized.push(candidate);
-  }
-  return normalized;
 }
 
 function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser']): string[] {
