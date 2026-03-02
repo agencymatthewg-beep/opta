@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import shutil
 import sys
@@ -31,18 +32,35 @@ def _sync_quantize(spec: QuantizeSpec) -> int:
         raise FileExistsError(f"Output path already exists: {spec.output_path}")
 
     out.parent.mkdir(parents=True, exist_ok=True)
+    stage_root = out.parent / ".opta-lmx-quantize-staging"
+    stage_root.mkdir(parents=True, exist_ok=True)
+    safe_job_id = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in spec.job_id)
+    stage_path = stage_root / f"{out.name}.{safe_job_id}.tmp"
+    if stage_path.exists():
+        shutil.rmtree(stage_path, ignore_errors=True)
 
     from mlx_lm import convert
 
-    convert(
-        hf_path=spec.source_model,
-        mlx_path=str(out),
-        quantize=True,
-        q_bits=bits,
-        q_group_size=group_size,
-        q_mode=mode,
-    )
-    return sum(f.stat().st_size for f in out.rglob("*") if f.is_file())
+    try:
+        convert(
+            hf_path=spec.source_model,
+            mlx_path=str(stage_path),
+            quantize=True,
+            q_bits=bits,
+            q_group_size=group_size,
+            q_mode=mode,
+        )
+        if out.exists():
+            raise FileExistsError(f"Output path already exists: {spec.output_path}")
+        stage_path.replace(out)
+        return sum(f.stat().st_size for f in out.rglob("*") if f.is_file())
+    except Exception:
+        if stage_path.exists():
+            shutil.rmtree(stage_path, ignore_errors=True)
+        raise
+    finally:
+        with contextlib.suppress(OSError):
+            stage_root.rmdir()
 
 
 async def _default_quantize_impl(spec: QuantizeSpec) -> int:

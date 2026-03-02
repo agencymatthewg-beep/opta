@@ -72,6 +72,37 @@ Update both release-control contracts whenever a new release ships:
 
 Commit + push -> Vercel auto-deploys.
 
+## Automated Desktop Manager Release
+
+Use GitHub Actions workflow:
+- `.github/workflows/opta-init-desktop-manager-release.yml`
+
+Trigger options:
+1. Push tag:
+   - `opta-init-manager-stable-v<version>`
+   - `opta-init-manager-beta-v<version>`
+2. Manual dispatch:
+   - set `channel`, optional `version`, optional `notes_url`
+   - choose `publish_metadata`, `strict_link_check`, `dry_run`
+
+The workflow:
+1. Verifies desktop-manager version consistency.
+2. Builds signed updater artifacts for:
+   - `darwin-aarch64`
+   - `darwin-x86_64`
+   - `windows-x86_64`
+3. Publishes artifacts to GitHub Releases.
+4. Generates and validates `channels/manager-updates/<channel>.json`.
+5. Syncs `public/desktop-updates/<channel>.json`.
+6. Optionally commits metadata updates back to the repo.
+7. Uses canonical manager artifact URLs:
+   - `https://init.optalocal.com/desktop-updates/manager/<channel>/<version>/<asset>`
+   with Vercel redirects to GitHub release assets.
+8. Enforces platform signing secrets on tag-triggered releases:
+   - macOS: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`
+   - Windows: `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`
+   - updater signing: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+
 ## Lighthouse Audit
 
 ```bash

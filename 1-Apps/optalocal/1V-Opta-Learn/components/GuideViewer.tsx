@@ -150,7 +150,7 @@ export function GuideViewer({ guide }: { guide: Guide }) {
                   HTML content for <span class="text-opta"> and inline <a class="app-link link-*"> 
                 */}
                 <div
-                  className="text-text-secondary leading-relaxed text-lg flex flex-col gap-6 [&_code]:text-[#06b6d4] [&_code]:bg-white/5 [&_code]:rounded [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:inline-block [&_code]:mx-1"
+                  className="text-text-secondary leading-relaxed text-lg [&_code]:text-[#06b6d4] [&_code]:bg-white/5 [&_code]:rounded [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:mx-0.5"
                   dangerouslySetInnerHTML={{ __html: processBody(section.body) }}
                 />
 
