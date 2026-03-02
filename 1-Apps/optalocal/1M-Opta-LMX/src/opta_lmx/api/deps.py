@@ -10,7 +10,7 @@ from __future__ import annotations
 import secrets
 from typing import Annotated
 
-from fastapi import Depends, Header, HTTPException, Request
+from fastapi import Depends, Header, HTTPException, Query, Request
 
 from opta_lmx.helpers.client import HelperNodeClient
 from opta_lmx.inference.embedding_engine import EmbeddingEngine
@@ -99,11 +99,19 @@ def get_reranker_engine(request: Request) -> object | None:
     return getattr(request.app.state, "reranker_engine", None)
 
 
-def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -> None:
+def verify_admin_key(
+    request: Request,
+    x_admin_key: str | None = Header(None),
+    sse_admin_key: str | None = Query(None, alias="admin_key"),
+) -> None:
     """Verify X-Admin-Key header if admin_key is configured.
 
     If security.admin_key is null in config, authentication is disabled
     (LAN-only trust model). If set, the header must match exactly.
+
+    Browser EventSource cannot send custom headers; for that single case we
+    allow a query-param fallback (`admin_key`) only on GET /admin/events.
+    All other admin routes still require X-Admin-Key header auth.
     """
     path = getattr(getattr(request, "url", None), "path", "")
     method = str(getattr(request, "method", ""))
@@ -113,7 +121,12 @@ def verify_admin_key(request: Request, x_admin_key: str | None = Header(None)) -
     config_key: str | None = getattr(request.app.state, "admin_key", None)
     if config_key is None:
         return  # No auth configured — trust LAN
-    if x_admin_key is None or not secrets.compare_digest(x_admin_key, config_key):
+
+    candidate_key = x_admin_key
+    if candidate_key is None and method.upper() == "GET" and path == "/admin/events":
+        candidate_key = sse_admin_key
+
+    if candidate_key is None or not secrets.compare_digest(candidate_key, config_key):
         raise HTTPException(status_code=403, detail="Invalid or missing admin key")
 
 

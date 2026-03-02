@@ -479,9 +479,16 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
     await waitFor(() => expect(result.current.connectionState).toBe("connected"));
 
-    await expect(
-      result.current.submitMessage("hello world", "chat"),
-    ).rejects.toThrow("Validation failed");
+    let thrown: unknown;
+    await act(async () => {
+      try {
+        await result.current.submitMessage("hello world", "chat");
+      } catch (error) {
+        thrown = error;
+      }
+    });
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toContain("Validation failed");
     expect(result.current.connectionState).toBe("connected");
   });
 
@@ -496,9 +503,16 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
     await waitFor(() => expect(result.current.connectionState).toBe("connected"));
 
-    await expect(
-      result.current.submitMessage("hello world", "chat"),
-    ).rejects.toThrow("ECONNREFUSED");
+    let thrown: unknown;
+    await act(async () => {
+      try {
+        await result.current.submitMessage("hello world", "chat");
+      } catch (error) {
+        thrown = error;
+      }
+    });
+    expect(thrown).toBeInstanceOf(Error);
+    expect((thrown as Error).message).toContain("ECONNREFUSED");
     await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
   });
 });

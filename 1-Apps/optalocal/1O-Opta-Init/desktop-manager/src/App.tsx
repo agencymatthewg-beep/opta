@@ -222,8 +222,14 @@ export function App() {
     void refreshData();
   }, [refreshData]);
 
-  const runAppAction = async (app: ManifestApp, action: "install" | "update" | "launch") => {
+  const runAppAction = useCallback(async (app: ManifestApp, action: "install" | "update" | "launch" | "verify" | "open_folder") => {
     if (!tauriAvailable) return;
+    if (action === "verify" || action === "open_folder") {
+      console.log(`Action ${action} requested for ${app.name}`);
+      // In the future, map these to real Tauri commands like invoke("verify_app")
+      return;
+    }
+    
     setPendingKey(`${action}:${app.id}`);
     try {
       const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
@@ -236,7 +242,31 @@ export function App() {
     } finally {
       setPendingKey(null);
     }
-  };
+  }, [channel, tauriAvailable]);
+
+  useEffect(() => {
+    if (!hoveredApp || pendingKey !== null) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const isInstalled = installedIndex.has(hoveredApp.id);
+      
+      if (key === 'u' && isInstalled) {
+        void runAppAction(hoveredApp, "update");
+      } else if (key === 'l' && isInstalled) {
+        void runAppAction(hoveredApp, "launch");
+      } else if (key === 'd' && !isInstalled) {
+        void runAppAction(hoveredApp, "install");
+      } else if (key === 'v') {
+        void runAppAction(hoveredApp, "verify");
+      } else if (key === 'f') {
+        void runAppAction(hoveredApp, "open_folder");
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hoveredApp, installedIndex, pendingKey, runAppAction]);
 
   const runDaemonAction = async (action: "start" | "stop") => {
     if (!tauriAvailable) return;
@@ -253,13 +283,17 @@ export function App() {
 
   const apps = manifestResp?.manifest.apps ?? [];
   
+  // Extract top apps
+  const topLocal = apps.find(a => a.id === "opta-local");
+  const topDaemon = apps.find(a => a.id === "opta-daemon");
+
   // Extract core apps
   const coreCli = apps.find(a => a.id === "opta-cli");
   const coreLmx = apps.find(a => a.id === "opta-lmx");
   const coreCode = apps.find(a => a.id === "opta-code-universal");
   
-  // Extract support apps
-  const supportApps = apps.filter(a => !["opta-cli", "opta-lmx", "opta-code-universal"].includes(a.id));
+  // Extract bottom apps
+  const bottomApps = apps.filter(a => !["opta-local", "opta-daemon", "opta-cli", "opta-lmx", "opta-code-universal"].includes(a.id));
 
   const displayApp = hoveredApp;
   const isInstalled = displayApp ? installedIndex.has(displayApp.id) : false;
@@ -282,7 +316,23 @@ export function App() {
         onMouseEnter={() => setHoveredApp(app)}
         onMouseLeave={() => setHoveredApp(null)}
       >
-        <div className="tooltip">{app.name}</div>
+        <div className="tooltip">
+          <div className="tooltip-title">{app.name}</div>
+          {hoveredApp?.id === app.id && app.id !== "opta-daemon" && (
+            <div className="tooltip-shortcuts">
+              {isAppInstalled ? (
+                <>
+                  <span><kbd>L</kbd> Launch</span>
+                  <span><kbd>U</kbd> Update</span>
+                  <span><kbd>V</kbd> Verify</span>
+                  <span><kbd>F</kbd> Folder</span>
+                </>
+              ) : (
+                <span><kbd>D</kbd> Download</span>
+              )}
+            </div>
+          )}
+        </div>
         <div className="purple-circle"></div>
         <img 
           src={logoPath} 
@@ -312,6 +362,12 @@ export function App() {
       </div>
       
       <div className="cluster-container">
+        {/* TOP ROW: Local & Daemon */}
+        <div className="top-row">
+          {topLocal && renderAppNode(topLocal, "top-item", 3)}
+          {topDaemon && renderAppNode(topDaemon, "top-item", 4)}
+        </div>
+
         {/* CORE ROW: CLI - LMX - CODE */}
         <div className="core-row">
           {coreCli && renderAppNode(coreCli, "", 0)}
@@ -319,9 +375,12 @@ export function App() {
           {coreCode && renderAppNode(coreCode, "", 2)}
         </div>
         
-        {/* SUPPORT ROW */}
-        <div className="support-row">
-          {supportApps.map((app, i) => renderAppNode(app, "support-item", i + 3))}
+        {/* BOTTOM ROW */}
+        <div className="bottom-row">
+          {bottomApps.map((app, i) => {
+            const isMiddle = bottomApps.length === 4 && (i === 1 || i === 2);
+            return renderAppNode(app, `support-item ${isMiddle ? 'bottom-middle-item' : ''}`, i + 5);
+          })}
         </div>
       </div>
 

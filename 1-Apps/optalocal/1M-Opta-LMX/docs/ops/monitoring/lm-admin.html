@@ -453,10 +453,14 @@
             const baseUrl = ui.apiUrl.value.replace(/\/$/, '');
             let sseUrl = `${baseUrl}/admin/events`;
             
-            // Note: EventSource doesn't support custom headers (like Authorization) natively in standard browsers.
-            // If auth is required, it must be passed via query string if the backend supports it, or we rely on the
-            // periodic fetchState polling.
-            // For now, we attempt standard connection.
+            // EventSource cannot set custom headers. We only place the admin key
+            // in query params for this SSE route when necessary; all other admin
+            // requests keep using X-Admin-Key headers via fetch().
+            if (ui.apiKey.value) {
+                const encodedKey = encodeURIComponent(ui.apiKey.value);
+                sseUrl = `${sseUrl}?admin_key=${encodedKey}`;
+            }
+
             eventSource = new EventSource(sseUrl);
             
             eventSource.onopen = () => {
@@ -464,22 +468,58 @@
                 updateConnectionState(true);
                 fetchState(); // Initial sync
             };
-            
-            eventSource.onmessage = (e) => {
+
+            const handleSseEvent = (eventType, rawData) => {
                 try {
-                    const data = JSON.parse(e.data);
-                    // The feed sends various events
-                    addLog(data.event || 'event', JSON.stringify(data.payload || data));
-                    
-                    if (data.event === 'model_loaded' || data.event === 'model_unloaded') {
+                    const payload = rawData ? JSON.parse(rawData) : {};
+                    const printable = (payload && typeof payload === 'object')
+                        ? JSON.stringify(payload)
+                        : String(payload);
+                    addLog(eventType, printable);
+
+                    if (
+                        eventType === 'model_loaded'
+                        || eventType === 'model_unloaded'
+                        || eventType === 'config_reloaded'
+                    ) {
                         fetchState();
                     }
-                    if (data.event === 'download_progress' || data.event === 'quantize_progress') {
-                        renderTask(data.event, data.payload);
+                    if (
+                        (eventType === 'download_progress' || eventType === 'quantize_progress')
+                        && payload
+                        && typeof payload === 'object'
+                    ) {
+                        renderTask(eventType, payload);
                     }
-                } catch(err) {
-                    addLog('raw', e.data);
+                } catch (err) {
+                    addLog(eventType, String(rawData || ''));
                 }
+            };
+
+            // Back-end uses named SSE events (event: <name>, data: <json payload>).
+            // Register listeners for known event types and keep onmessage fallback.
+            const namedEvents = [
+                'heartbeat',
+                'model_loaded',
+                'model_unloaded',
+                'download_progress',
+                'download_completed',
+                'download_failed',
+                'quantize_progress',
+                'quantize_completed',
+                'quantize_failed',
+                'request_completed',
+                'memory_warning',
+                'config_reloaded',
+                'model_compatibility_recorded'
+            ];
+            for (const eventType of namedEvents) {
+                eventSource.addEventListener(eventType, (e) => {
+                    handleSseEvent(eventType, e.data);
+                });
+            }
+            eventSource.onmessage = (e) => {
+                handleSseEvent('message', e.data);
             };
             
             eventSource.onerror = () => {

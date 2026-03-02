@@ -91,10 +91,17 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 40px;
+  gap: 30px;
   margin-top: 140px;
   flex: 1;
   justify-content: center;
+}
+
+.top-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 120px;
 }
 
 .core-row {
@@ -104,13 +111,17 @@ body {
   gap: 80px;
 }
 
-.support-row {
+.bottom-row {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 50px;
   flex-wrap: wrap;
   max-width: 800px;
+}
+
+.bottom-middle-item {
+  margin-top: 60px;
 }
 
 .app-item {
@@ -168,6 +179,9 @@ body {
 }
 
 /* Sizes */
+.top-item .purple-circle { width: 140px; height: 140px; }
+.top-item .app-logo { width: 110px; height: 110px; }
+
 .core-row .purple-circle { width: 140px; height: 140px; }
 .core-row .app-logo { width: 110px; height: 110px; }
 
@@ -208,22 +222,55 @@ body {
 /* Tooltip */
 .tooltip {
   position: absolute;
-  bottom: -40px;
+  bottom: -56px;
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
   color: #fff;
   padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 14px;
-  font-weight: 600;
+  border-radius: 12px;
   opacity: 0;
   transform: translateY(-10px);
   transition: all 0.3s;
   pointer-events: none;
   white-space: nowrap;
   z-index: 30;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
 }
+
+.tooltip-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.tooltip-shortcuts {
+  display: flex;
+  gap: 12px;
+  font-size: 10px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.tooltip-shortcuts span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tooltip-shortcuts kbd {
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+  padding: 2px 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: #fff;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
 .app-item:hover .tooltip {
   opacity: 1;
   transform: translateY(0);
