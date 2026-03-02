@@ -110,14 +110,15 @@ export function useKeyboardSetup(options: UseKeyboardSetupOptions): void {
   const hasActiveTurn = isLoading || turnPhase === 'waiting' || turnPhase === 'streaming' || turnPhase === 'tool-call' || turnPhase === 'connecting';
 
   const handleEscape = useCallback(() => {
+    // Let active overlays own Escape semantics (cancel edit, back out, etc.).
+    // Global Escape should only cancel an active turn when no overlay is mounted.
     if (overlayActive) {
-      closeOverlay();
       return;
     }
     if (hasActiveTurn && onCancelTurn) {
       onCancelTurn();
     }
-  }, [overlayActive, closeOverlay, hasActiveTurn, onCancelTurn]);
+  }, [overlayActive, hasActiveTurn, onCancelTurn]);
 
   const handleInterrupt = useCallback(() => {
     if (overlayActive) {

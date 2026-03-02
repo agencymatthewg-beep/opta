@@ -18,7 +18,7 @@ export interface InlineSelectProps {
 }
 
 /**
- * Arrow-key navigable inline select. Up/Down to move, Enter to confirm, Esc to cancel.
+ * Arrow-key navigable inline select. Up/Down/Left/Right to move, Enter to confirm, Esc to cancel.
  * Space also confirms for consistency with multi-select conventions.
  */
 export function InlineSelect({
@@ -54,6 +54,14 @@ export function InlineSelect({
       setCursor(prev => (prev + 1) % options.length);
       return;
     }
+    if (key.leftArrow || input === 'h') {
+      setCursor(prev => (prev - 1 + options.length) % options.length);
+      return;
+    }
+    if (key.rightArrow || input === 'l') {
+      setCursor(prev => (prev + 1) % options.length);
+      return;
+    }
   }, { isActive: focus });
 
   return (
@@ -74,7 +82,7 @@ export function InlineSelect({
         );
       })}
       <Box marginTop={1}>
-        <Text dimColor>↑/↓ navigate · Enter select · Esc cancel</Text>
+        <Text dimColor>←/→ or ↑/↓ navigate · Enter select · Esc cancel</Text>
       </Box>
     </Box>
   );

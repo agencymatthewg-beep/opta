@@ -1,0 +1,10 @@
+{
+  "success" : false,
+  "debug_logs" : [
+    "[2026-03-02T07:25:24.553Z] DEBUG: Runtime host: local (in-process)"
+  ],
+  "error" : {
+    "message" : "The application “Google Chrome.app” could not be launched because a miscellaneous error occurred.",
+    "code" : "INTERNAL_SWIFT_ERROR"
+  }
+}

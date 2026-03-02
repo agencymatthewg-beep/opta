@@ -1,0 +1,17 @@
+{
+  "data" : {
+    "target" : "http:\/\/localhost:1234\/readyz",
+    "action" : "open",
+    "pid" : 8201,
+    "is_ready" : true,
+    "focused" : true,
+    "handler_app" : "Google Chrome",
+    "resolved_target" : "http:\/\/localhost:1234\/readyz",
+    "bundle_id" : "com.google.Chrome",
+    "success" : true
+  },
+  "success" : true,
+  "debug_logs" : [
+    "[2026-03-02T07:25:09.195Z] DEBUG: Runtime host: local (in-process)"
+  ]
+}

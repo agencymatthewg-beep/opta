@@ -1,0 +1,20 @@
+{
+  "success" : true,
+  "data" : {
+    "files" : [
+      {
+        "mime_type" : "image\/png",
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/home-arc.png",
+        "window_title" : "",
+        "window_id" : 2684,
+        "item_label" : "frontmost",
+        "window_index" : 0
+      }
+    ]
+  },
+  "debug_logs" : [
+    "[2026-03-02T07:26:47.619Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:26:47.619Z] VERBOSE [Operation]: Starting operation {mode=frontmost, pid=0, app=none, hasAnalyzePrompt=false, operation=image_command}",
+    "[2026-03-02T07:26:47.619Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ]
+}

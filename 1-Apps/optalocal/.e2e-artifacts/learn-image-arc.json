@@ -1,0 +1,20 @@
+{
+  "success" : true,
+  "data" : {
+    "files" : [
+      {
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/learn-arc.png",
+        "item_label" : "frontmost",
+        "mime_type" : "image\/png",
+        "window_index" : 0,
+        "window_id" : 2686,
+        "window_title" : ""
+      }
+    ]
+  },
+  "debug_logs" : [
+    "[2026-03-02T07:27:00.099Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:27:00.099Z] VERBOSE [Operation]: Starting operation {pid=0, mode=frontmost, app=none, hasAnalyzePrompt=false, operation=image_command}",
+    "[2026-03-02T07:27:00.099Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ]
+}

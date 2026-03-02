@@ -733,7 +733,10 @@ function App() {
             className={`workspace-layout ${showTerminal ? "with-terminal" : "without-terminal"}`}
           >
             {activePage === "models" ? (
-              <ModelsPage connection={connection} />
+              <ModelsPage
+                connection={connection}
+                onOpenSettings={() => setIsSettingsOpen(true)}
+              />
             ) : activePage === "operations" ? (
               <OperationsPage connection={connection} />
             ) : activePage === "cli" ? (

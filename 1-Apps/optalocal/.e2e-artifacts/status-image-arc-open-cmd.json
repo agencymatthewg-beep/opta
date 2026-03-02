@@ -1,0 +1,20 @@
+{
+  "data" : {
+    "files" : [
+      {
+        "mime_type" : "image\/png",
+        "item_label" : "frontmost",
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/status-arc-open-cmd.png",
+        "window_title" : "API keys | Google AI Studio",
+        "window_id" : 673,
+        "window_index" : 5
+      }
+    ]
+  },
+  "success" : true,
+  "debug_logs" : [
+    "[2026-03-02T07:27:22.278Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:27:22.278Z] VERBOSE [Operation]: Starting operation {pid=0, hasAnalyzePrompt=false, operation=image_command, mode=frontmost, app=none}",
+    "[2026-03-02T07:27:22.278Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ]
+}

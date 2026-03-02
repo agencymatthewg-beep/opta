@@ -167,6 +167,31 @@ describe('SettingsOverlay', () => {
     expect(frame).toContain('navigate');
   });
 
+  it('uses arrows for select choices only after Enter activates editing', async () => {
+    const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
+    await flush();
+    stdin.write('3'); // Safety
+    await flush();
+    stdin.write(ARROW_DOWN); // Default Mode (select)
+    await flush();
+    stdin.write(ENTER); // enter edit mode
+    await flush();
+    expect(lastFrame()).toContain('Editing: Default Mode');
+    expect(lastFrame()).toMatch(/\[x\]\s*3\./);
+
+    stdin.write(ARROW_RIGHT); // move select cursor (Safe -> Auto)
+    await flush();
+    const editFrame = lastFrame() ?? '';
+    expect(editFrame).toContain('Balanced autonomy with guardrails');
+    expect(editFrame).toMatch(/\[x\]\s*3\./); // still on Safety page
+
+    stdin.write(ENTER); // confirm select
+    await flush();
+    stdin.write(ARROW_DOWN); // back to list navigation
+    await flush();
+    expect(lastFrame() ?? '').toMatch(/▶\s+Autonomy Mode/);
+  });
+
   it('shows slider when editing autonomy level', async () => {
     const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
     await flush();

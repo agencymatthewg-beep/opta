@@ -6,6 +6,7 @@ import {
   Download,
   HardDrive,
   RefreshCw,
+  Settings2,
   Trash2,
   Zap,
 } from "lucide-react";
@@ -48,6 +49,7 @@ function fmtCtx(ctx?: number): string {
 
 interface ModelsPageProps {
   connection: DaemonConnectionOptions | null;
+  onOpenSettings?: () => void;
 }
 
 interface TrackedLoadDownload {
@@ -126,7 +128,7 @@ function loadTrackedDownloadsFromStorage(
   return Object.fromEntries(entries);
 }
 
-export function ModelsPage({ connection }: ModelsPageProps) {
+export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
   const {
     lmxStatus,
     lmxEndpointCandidates,
@@ -570,6 +572,16 @@ export function ModelsPage({ connection }: ModelsPageProps) {
             <RefreshCw size={12} className={loading ? "spin" : ""} aria-hidden="true" />
             {loading ? "Refreshing…" : "Refresh"}
           </button>
+          {onOpenSettings ? (
+            <button
+              type="button"
+              className="refresh-btn"
+              onClick={onOpenSettings}
+            >
+              <Settings2 size={12} aria-hidden="true" />
+              LMX Settings
+            </button>
+          ) : null}
         </div>
 
         {lmxReachable && lmxStatus ? (

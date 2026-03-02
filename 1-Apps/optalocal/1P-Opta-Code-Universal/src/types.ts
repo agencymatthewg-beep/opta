@@ -6,6 +6,7 @@ export type {
   DaemonBackgroundStatusResponse,
   DaemonConnectionOptions,
   DaemonLmxAvailableModel,
+  DaemonLmxDiscoveryResponse,
   DaemonLmxLoadOptions,
   DaemonLmxMemoryResponse,
   DaemonLmxModelDetail,

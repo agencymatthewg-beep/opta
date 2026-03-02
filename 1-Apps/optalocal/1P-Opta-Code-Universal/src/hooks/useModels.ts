@@ -171,6 +171,8 @@ export function useModels(
       const anyReachable = Boolean(
         statusRes || discoveryRes || modelsRes || memoryRes || availableRes,
       );
+      const loadedFromStatus = statusRes?.models ?? [];
+      const nextLoadedModels = modelsRes?.models ?? loadedFromStatus;
 
       if (statusRes) {
         setLmxStatus(statusRes);
@@ -195,11 +197,17 @@ export function useModels(
       };
       setLmxTarget(nextTarget);
       setLmxReachable(anyReachable);
-      setError(anyReachable ? null : "LMX server unreachable");
+      if (!anyReachable) {
+        setError("LMX server unreachable");
+      } else if (!modelsRes) {
+        setError("LMX reachable, but model inventory endpoint is unavailable");
+      } else {
+        setError(null);
+      }
 
-      if (modelsRes) setLoadedModels(modelsRes.models);
-      if (memoryRes) setMemory(memoryRes);
-      if (availableRes) setAvailableModels(availableRes);
+      setLoadedModels(nextLoadedModels);
+      setMemory(memoryRes ?? null);
+      setAvailableModels(availableRes ?? []);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       if (!mountedRef.current || epoch !== refreshEpochRef.current) {

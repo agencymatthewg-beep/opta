@@ -1,0 +1,20 @@
+{
+  "data" : {
+    "files" : [
+      {
+        "window_title" : "Untitled",
+        "item_label" : "frontmost",
+        "window_index" : 0,
+        "mime_type" : "image\/png",
+        "window_id" : 2745,
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/lmx-ready-safari.png"
+      }
+    ]
+  },
+  "success" : true,
+  "debug_logs" : [
+    "[2026-03-02T07:28:45.881Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:28:45.881Z] VERBOSE [Operation]: Starting operation {mode=frontmost, pid=0, app=none, hasAnalyzePrompt=false, operation=image_command}",
+    "[2026-03-02T07:28:45.881Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ]
+}

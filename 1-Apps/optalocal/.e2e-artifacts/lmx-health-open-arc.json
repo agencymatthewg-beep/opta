@@ -1,0 +1,17 @@
+{
+  "debug_logs" : [
+    "[2026-03-02T07:26:42.386Z] DEBUG: Runtime host: local (in-process)"
+  ],
+  "success" : true,
+  "data" : {
+    "target" : "http:\/\/localhost:1234\/healthz",
+    "handler_app" : "Arc",
+    "resolved_target" : "http:\/\/localhost:1234\/healthz",
+    "success" : true,
+    "is_ready" : true,
+    "action" : "open",
+    "bundle_id" : "company.thebrowser.Browser",
+    "pid" : 9573,
+    "focused" : true
+  }
+}

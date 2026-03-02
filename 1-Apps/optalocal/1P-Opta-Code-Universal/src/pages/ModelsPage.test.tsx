@@ -29,6 +29,9 @@ function createUseModelsState(
 ): UseModelsResult {
   return {
     lmxStatus: null,
+    lmxDiscovery: null,
+    lmxEndpointCandidates: [],
+    lmxTarget: null,
     loadedModels: [],
     availableModels: [{ model_id: modelId, size_bytes: 1024 }],
     memory: null,
@@ -42,6 +45,7 @@ function createUseModelsState(
     unloadModel: vi.fn().mockResolvedValue(undefined),
     deleteModel: vi.fn().mockResolvedValue(undefined),
     downloadModel: vi.fn().mockResolvedValue(null),
+    saveLmxTarget: vi.fn().mockResolvedValue(false),
     refreshLmx: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   };

@@ -1,0 +1,10 @@
+{
+  "debug_logs" : [
+    "[2026-03-02T07:26:07.538Z] DEBUG: Runtime host: local (in-process)"
+  ],
+  "error" : {
+    "code" : "INTERNAL_SWIFT_ERROR",
+    "message" : "The file couldn’t be opened."
+  },
+  "success" : false
+}

@@ -1,0 +1,14 @@
+{
+  "success" : true,
+  "data" : {
+    "app_name" : "Safari",
+    "action" : "launch",
+    "bundle_id" : "com.apple.Safari",
+    "pid" : 29578,
+    "is_ready" : true
+  },
+  "debug_logs" : [
+    "[2026-03-02T07:28:47.410Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:28:47.410Z] VERBOSE: Launching application: Safari"
+  ]
+}

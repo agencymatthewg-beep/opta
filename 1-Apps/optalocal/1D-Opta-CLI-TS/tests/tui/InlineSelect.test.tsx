@@ -92,6 +92,24 @@ describe('InlineSelect', () => {
     expect(lastFrame()).toContain('Conservative mode');
   });
 
+  it('navigates horizontally with left/right arrows', async () => {
+    const { stdin, lastFrame } = render(
+      <InlineSelect
+        options={sampleOptions}
+        value="safe"
+        onSelect={vi.fn()}
+        onCancel={vi.fn()}
+      />
+    );
+    await flush();
+    stdin.write(ARROW_RIGHT);
+    await flush();
+    expect(lastFrame()).toContain('Balanced mode');
+    stdin.write(ARROW_LEFT);
+    await flush();
+    expect(lastFrame()).toContain('Conservative mode');
+  });
+
   it('wraps around when navigating past end', async () => {
     const { stdin, lastFrame } = render(
       <InlineSelect

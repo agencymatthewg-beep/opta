@@ -1,0 +1,20 @@
+{
+  "debug_logs" : [
+    "[2026-03-02T07:26:14.650Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:26:14.651Z] VERBOSE [Operation]: Starting operation {app=none, mode=frontmost, hasAnalyzePrompt=false, operation=image_command, pid=0}",
+    "[2026-03-02T07:26:14.651Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ],
+  "success" : true,
+  "data" : {
+    "files" : [
+      {
+        "item_label" : "frontmost",
+        "window_index" : 0,
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/learn-default.png",
+        "mime_type" : "image\/png",
+        "window_title" : "",
+        "window_id" : 2684
+      }
+    ]
+  }
+}

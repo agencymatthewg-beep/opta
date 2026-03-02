@@ -1,0 +1,10 @@
+{
+  "success" : false,
+  "debug_logs" : [
+    "[2026-03-02T07:27:00.418Z] DEBUG: Runtime host: local (in-process)"
+  ],
+  "error" : {
+    "message" : "The application “Arc.app” could not be launched because a miscellaneous error occurred.",
+    "code" : "INTERNAL_SWIFT_ERROR"
+  }
+}

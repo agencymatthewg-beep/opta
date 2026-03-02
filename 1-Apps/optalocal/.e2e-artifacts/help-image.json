@@ -1,0 +1,20 @@
+{
+  "data" : {
+    "files" : [
+      {
+        "window_title" : "",
+        "window_id" : 1973,
+        "path" : "\/Users\/matthewbyrden\/Synced\/Opta\/1-Apps\/optalocal\/.e2e-artifacts\/help.png",
+        "item_label" : "frontmost",
+        "window_index" : 0,
+        "mime_type" : "image\/png"
+      }
+    ]
+  },
+  "success" : true,
+  "debug_logs" : [
+    "[2026-03-02T07:25:21.789Z] DEBUG: Runtime host: local (in-process)",
+    "[2026-03-02T07:25:21.789Z] VERBOSE [Operation]: Starting operation {mode=frontmost, pid=0, app=none, operation=image_command, hasAnalyzePrompt=false}",
+    "[2026-03-02T07:25:21.789Z] VERBOSE [Performance]: Starting timer 'image_command'"
+  ]
+}

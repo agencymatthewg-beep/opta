@@ -4112,8 +4112,71 @@ button.active,
   width: 100%;
 }
 
-.settings-form input:focus {
+.settings-form select {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  background: var(--bg-0);
+  color: var(--text);
+  padding: 0.6rem 1rem;
+  outline: none;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  width: 100%;
+}
+
+.settings-form input:focus,
+.settings-form select:focus {
   border-color: var(--accent);
+}
+
+.settings-inline-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.settings-inline-message {
+  font-size: 0.74rem;
+  color: var(--text-soft);
+}
+
+.settings-endpoint-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.settings-endpoint-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 4px;
+  border: 1px solid var(--line);
+  background: var(--bg-0);
+}
+
+.settings-endpoint-item > div {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.settings-endpoint-item > div strong {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.76rem;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-endpoint-item > div span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--text-soft);
 }
 
 .settings-actions {
