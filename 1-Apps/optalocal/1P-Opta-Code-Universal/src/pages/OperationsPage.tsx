@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { OPERATION_IDS } from "@opta/protocol-shared";
 import { OperationRunner } from "../components/OperationRunner";
 import { useOperations, type OperationDefinition } from "../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../types";
@@ -15,6 +16,7 @@ type OperationScopeMatcher = string | RegExp;
 
 const DEFAULT_TITLE = "Operations Console";
 const DEFAULT_SUBTITLE = "Full CLI command-family access via daemon API.";
+const ALL_CLI_OPERATION_IDS = OPERATION_IDS as readonly string[];
 
 function groupByFamily(
   operations: OperationDefinition[],
@@ -123,6 +125,17 @@ export function OperationsPage({
     [filtered],
   );
 
+  const parity = useMemo(() => {
+    if (scopeMatchers) return null;
+    const available = new Set(scopedOperations.map((operation) => operation.id));
+    const missing = ALL_CLI_OPERATION_IDS.filter((id) => !available.has(id));
+    return {
+      total: ALL_CLI_OPERATION_IDS.length,
+      available: ALL_CLI_OPERATION_IDS.length - missing.length,
+      missing,
+    };
+  }, [scopeMatchers, scopedOperations]);
+
   const selectedOperation =
     scopedOperations.find((op) => op.id === selectedId) ?? null;
 
@@ -179,6 +192,25 @@ export function OperationsPage({
           </button>
         </div>
       </header>
+
+      {!scopeMatchers && !loading && !error && parity ? (
+        <div
+          className={`operations-parity ${parity.missing.length === 0 ? "ok" : "warn"}`}
+          role="status"
+        >
+          <p>
+            <strong>CLI parity:</strong> {parity.available}/{parity.total} operations available.
+          </p>
+          {parity.missing.length === 0 ? (
+            <p>All Opta CLI daemon operations are available.</p>
+          ) : (
+            <p>
+              Missing: {parity.missing.slice(0, 6).join(", ")}
+              {parity.missing.length > 6 ? ` +${parity.missing.length - 6} more` : ""}
+            </p>
+          )}
+        </div>
+      ) : null}
 
       {error ? (
         <div className="operations-error" role="alert">

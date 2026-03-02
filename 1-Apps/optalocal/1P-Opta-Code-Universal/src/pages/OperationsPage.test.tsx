@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { OPERATION_IDS } from "@opta/protocol-shared";
 import { OperationsPage } from "./OperationsPage";
 import { useOperations, type UseOperationsState } from "../hooks/useOperations";
 
@@ -60,6 +61,34 @@ describe("OperationsPage", () => {
     expect(screen.getByRole("button", { name: "write (1)" })).toBeInTheDocument();
   });
 
+  it("shows a parity warning when daemon operations are missing", () => {
+    render(<OperationsPage connection={connection} />);
+
+    expect(screen.getByText(/CLI parity:/)).toBeInTheDocument();
+    expect(screen.getByText(/Missing:/)).toBeInTheDocument();
+  });
+
+  it("shows full parity when all Opta CLI operation IDs are available", () => {
+    vi.mocked(useOperations).mockReturnValue({
+      ...baseState,
+      operations: OPERATION_IDS.map((id) => ({
+        id,
+        title: id,
+        description: `${id} operation`,
+        safety: "read",
+      })),
+    });
+
+    render(<OperationsPage connection={connection} />);
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      `CLI parity: ${OPERATION_IDS.length}/${OPERATION_IDS.length} operations available.`,
+    );
+    expect(
+      screen.getByText("All Opta CLI daemon operations are available."),
+    ).toBeInTheDocument();
+  });
+
   it("filters operations by search query", () => {
     render(<OperationsPage connection={connection} />);
 
@@ -91,5 +120,6 @@ describe("OperationsPage", () => {
     expect(screen.getByRole("button", { name: "all (2)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "read (1)" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "write (1)" })).toBeInTheDocument();
+    expect(screen.queryByText(/CLI parity:/)).not.toBeInTheDocument();
   });
 });

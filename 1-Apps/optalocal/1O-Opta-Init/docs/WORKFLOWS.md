@@ -84,6 +84,7 @@ Trigger options:
 2. Manual dispatch:
    - set `channel`, optional `version`, optional `notes_url`
    - choose `publish_metadata`, `strict_link_check`, `dry_run`
+   - workflow creates release tag automatically if missing
 
 The workflow:
 1. Verifies desktop-manager version consistency.

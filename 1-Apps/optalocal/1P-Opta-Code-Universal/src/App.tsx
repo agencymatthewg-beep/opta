@@ -593,27 +593,12 @@ function App() {
               )}
             </div>
 
-            <div
-              style={{
-                position: "absolute",
-                left: "50%",
-                transform: "translateX(-50%)",
-                top: "1rem",
-                pointerEvents: "none",
-                display: "flex",
-                justifyContent: "center",
-                zIndex: 10
-              }}
-            >
-              <pre className="app-logo-ascii" style={{ color: "var(--primary-glow)", textShadow: "0 0 12px rgba(168, 85, 247, 0.6)", lineHeight: "1.1", fontSize: "12px", margin: 0 }}>
-                {`
-   .·:·.    ██████╗  ██████╗  ████████╗ █████╗ 
-  :  O  :  ██╔═══██╗ ██╔══██╗ ╚══██╔══╝██╔══██╗
-   '·:·'   ██║   ██║ ██████╔╝    ██║   ███████║
-           ╚██████╔╝ ██╔═══╝     ██║   ██║  ██║
-            ╚═════╝  ╚═╝         ╚═╝   ╚═╝  ╚═╝
-`}
-              </pre>
+            <div className="app-logo-anchor" aria-hidden="true">
+              <img
+                src="/opta-code-mark.svg"
+                className="app-logo-mark"
+                alt=""
+              />
             </div>
 
             <div className="top-actions" style={{ alignItems: "center" }}>
