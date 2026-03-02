@@ -374,18 +374,18 @@ export default function Home() {
     }
     if (managerUpdatePending) return;
     
-    if (action === "verify" || action === "open_folder") {
-      console.log(`Action ${action} requested for ${app.name}`);
-      // In the future, map these to real Tauri commands like invoke("verify_app")
-      return;
-    }
-    
     setPendingKey(`${action}:${app.id}`);
     try {
-      const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
-      await invoke(command, action === "launch" ? { appId: app.id } : { appId: app.id, channel });
-      if (action !== "launch") {
-        setInstalledApps(await invoke("list_installed_apps") as InstalledApp[]);
+      if (action === "verify") {
+        await invoke("verify_app", { appId: app.id });
+      } else if (action === "open_folder") {
+        await invoke("open_app_folder", { appId: app.id });
+      } else {
+        const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
+        await invoke(command, action === "launch" ? { appId: app.id } : { appId: app.id, channel });
+        if (action !== "launch") {
+          setInstalledApps(await invoke("list_installed_apps") as InstalledApp[]);
+        }
       }
     } catch (e) {
       console.error(e);

@@ -1708,6 +1708,78 @@ async fn install_manager_update(
     outcome
 }
 
+#[tauri::command]
+async fn verify_app(app_id: String) -> Result<CommandOutcome, String> {
+    let variants = vec![
+        vec!["apps".to_string(), "verify".to_string(), app_id.clone()],
+        vec!["app".to_string(), "verify".to_string(), app_id.clone()],
+    ];
+    execute_variants(variants)
+        .await
+        .map_err(|error| format!("Verify failed: {}", error))
+}
+
+#[tauri::command]
+async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
+    let apps = list_installed_apps().await?;
+    if let Some(app) = apps.into_iter().find(|a| a.id == app_id) {
+        #[cfg(target_os = "macos")]
+        {
+            let output = tokio::process::Command::new("open")
+                .arg(&app.path)
+                .output()
+                .await
+                .map_err(|e| format!("Failed to open folder: {}", e))?;
+            
+            return Ok(CommandOutcome {
+                ok: output.status.success(),
+                command: format!("open {}", app.path),
+                exit_code: output.status.code(),
+                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
+                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
+            });
+        }
+        
+        #[cfg(target_os = "windows")]
+        {
+            let output = tokio::process::Command::new("explorer")
+                .arg(&app.path)
+                .output()
+                .await
+                .map_err(|e| format!("Failed to open folder: {}", e))?;
+            
+            return Ok(CommandOutcome {
+                ok: output.status.success(),
+                command: format!("explorer {}", app.path),
+                exit_code: output.status.code(),
+                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
+                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
+            });
+        }
+        
+        #[cfg(target_os = "linux")]
+        {
+            let output = tokio::process::Command::new("xdg-open")
+                .arg(&app.path)
+                .output()
+                .await
+                .map_err(|e| format!("Failed to open folder: {}", e))?;
+            
+            return Ok(CommandOutcome {
+                ok: output.status.success(),
+                command: format!("xdg-open {}", app.path),
+                exit_code: output.status.code(),
+                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
+                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
+            });
+        }
+    }
+    Err(format!("App {} not found or not installed", app_id))
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
@@ -1718,6 +1790,8 @@ fn main() {
             install_app,
             update_app,
             launch_app,
+            verify_app,
+            open_app_folder,
             daemon_status,
             daemon_start,
             daemon_stop,
