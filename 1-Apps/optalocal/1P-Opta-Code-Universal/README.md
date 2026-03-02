@@ -90,7 +90,7 @@ src-tauri/            Tauri v2 Rust shell
 
 ## Daemon Connection
 
-The frontend connects to the Opta CLI daemon at `http://127.0.0.1:9999` by default. Start the daemon before launching the desktop app:
+The frontend resolves the daemon endpoint from runtime bootstrap metadata and stored connection settings (with a local fallback for browser/dev mode). Start the daemon before launching the desktop app:
 
 ```bash
 cd ../1D-Opta-CLI-TS

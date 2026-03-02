@@ -23,6 +23,7 @@ dependencies = [
     "huggingface-hub>=0.25",
     "structlog>=25.0",
     "tqdm>=4.60",
+    "zeroconf>=0.133.0",
 ]
 
 [project.optional-dependencies]

@@ -699,6 +699,16 @@ fn manifest_url_for(channel: &str, custom: Option<String>) -> String {
         }
     }
 
+    if let Ok(base_url) = std::env::var("OPTA_INIT_MANIFEST_BASE_URL") {
+        let base = base_url.trim().trim_end_matches('/');
+        if !base.is_empty() {
+            return match channel {
+                "beta" => format!("{}/desktop/manifest-beta.json", base),
+                _ => format!("{}/desktop/manifest-stable.json", base),
+            };
+        }
+    }
+
     match channel {
         "beta" => "https://init.optalocal.com/desktop/manifest-beta.json".to_string(),
         _ => "https://init.optalocal.com/desktop/manifest-stable.json".to_string(),

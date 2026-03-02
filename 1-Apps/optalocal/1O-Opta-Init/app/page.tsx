@@ -376,7 +376,7 @@ export default function Home() {
                 step: "02",
                 title: "Opta CLI Daemon",
                 icon: <Layers className="w-5 h-5" />,
-                port: "127.0.0.1:9999",
+                port: "Managed endpoint (auto-discovered)",
                 desc: "Session orchestration and runtime services managed by Opta Init for health checks, restarts, and recovery."
               },
               {

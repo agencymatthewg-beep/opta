@@ -127,11 +127,17 @@ def build_discovery_document(
     preferred_host = _pick_preferred_host(hosts)
     base_urls = [_to_http_url(host, config.server.port) for host in hosts]
     preferred_base_url = _to_http_url(preferred_host, config.server.port)
+    instance_id = f"{socket.gethostname() or 'unknown'}:{config.server.port}"
     expose_model_ids = config.security.profile == "lan"
     inference_auth_required = (
         config.security.inference_api_key is not None or config.security.supabase_jwt_require
     )
     return {
+        "schema_version": "2026-03-02",
+        "instance_id": instance_id,
+        "continuity": {
+            "event_resume_supported": True,
+        },
         "service": "opta-lmx",
         "version": version,
         "security_profile": config.security.profile,

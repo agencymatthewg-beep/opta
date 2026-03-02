@@ -38,6 +38,18 @@ class ServerConfig(BaseModel):
     )
 
 
+class DiscoveryConfig(BaseModel):
+    """Discovery and local network advertisement settings."""
+
+    mdns_enabled: bool = Field(
+        True, description="Advertise Opta-LMX via mDNS for zero-config pairing",
+    )
+    mdns_service_name: str = Field(
+        "_opta-lmx._tcp.local",
+        description="mDNS service type used by discovery consumers",
+    )
+
+
 class ModelsConfig(BaseModel):
     """Model loading and directory settings."""
 
@@ -578,6 +590,7 @@ class LMXConfig(BaseSettings):
     )
 
     server: ServerConfig = Field(default_factory=ServerConfig)  # type: ignore[arg-type]
+    discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)  # type: ignore[arg-type]
     models: ModelsConfig = Field(default_factory=ModelsConfig)  # type: ignore[arg-type]
     memory: MemoryConfig = Field(default_factory=MemoryConfig)  # type: ignore[arg-type]
     logging: LoggingConfig = Field(default_factory=LoggingConfig)  # type: ignore[arg-type]

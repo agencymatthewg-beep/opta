@@ -1,6 +1,8 @@
 import type { LmxConnectionState } from './connection.js';
 import { probeLmxConnection } from './connection.js';
 import { discoverLmxHosts } from './mdns-discovery.js';
+import { prioritizeHostsByProfile, recordEndpointProbeOutcome } from './endpoint-profile.js';
+import { rankHostsByProfile, recordEndpointProbe } from './endpoint-profile.js';
 
 export interface LmxEndpointConfig {
   host: string;
@@ -126,6 +128,16 @@ export async function resolveLmxEndpoint(
       });
     } catch { /* discovery is best-effort */ }
   }
+
+  if (candidates.length > 1) {
+    try {
+      candidates = await rankHostsByProfile(candidates);
+    } catch {
+      // Profile ranking is best-effort.
+    }
+  }
+
+  candidates = await prioritizeHostsByProfile(candidates);
 
   const primaryHost = candidates[0] ?? (normalizedPrimary.length > 0 ? normalizedPrimary : 'localhost');
   const cacheKey = makeCacheKey(config.port, candidates);
@@ -267,8 +279,13 @@ export async function resolveLmxEndpoint(
     const handleOutcome = (outcome: ProbeOutcome) => {
       if (settled) return;
 
+      void recordEndpointProbeOutcome(outcome.host, outcome.state !== 'disconnected').catch(() => {
+        // Endpoint profile updates are best-effort and never block resolution.
+      });
+
       outcomes.set(outcome.index, outcome);
       remaining -= 1;
+      void recordEndpointProbe(outcome.host, outcome.state !== 'disconnected').catch(() => {});
 
       const primaryOutcome = getPrimaryOutcome();
 
@@ -326,7 +343,7 @@ export async function resolveLmxEndpoint(
           source,
           state: probe.state,
           completionOrder: completionOrder++,
-          wsUrl: probe.discovery?.endpoints.websocket_url,
+          wsUrl: probe.discovery?.endpoints?.websocket_url,
         });
       }).catch(() => {
         handleOutcome({

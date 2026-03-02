@@ -499,6 +499,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         health_task = asyncio.create_task(health_check_loop(health_clients, interval_sec=30.0))
         logger.info("health_check_loop_started")
 
+    mdns_advertiser = None
+    if config.discovery.mdns_enabled:
+        try:
+            from opta_lmx.discovery_mdns import MdnsAdvertiser
+
+            mdns_advertiser = MdnsAdvertiser(
+                host=config.server.host,
+                port=config.server.port,
+                service_name=config.discovery.mdns_service_name,
+            )
+            mdns_advertiser.start()
+        except Exception:
+            logger.warning("mdns_advertisement_init_failed", exc_info=True)
+            mdns_advertiser = None
+    app.state.mdns_advertiser = mdns_advertiser
+
     logger.info("server_starting")
 
     # Auto-load configured models + preset auto_load models (deduplicated)
@@ -647,6 +663,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         health_task.cancel()
         with contextlib.suppress(asyncio.CancelledError):
             await health_task
+
+    # Cleanup: stop mDNS advertisement
+    if mdns_advertiser is not None:
+        with contextlib.suppress(Exception):
+            mdns_advertiser.stop()
 
     # Cleanup: stop agents runtime
     await agent_runtime.stop()

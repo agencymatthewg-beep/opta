@@ -149,3 +149,14 @@ class TestDiscovery:
         """Discovery remains available when admin auth is enabled."""
         response = await client_with_auth.get("/v1/discovery")
         assert response.status_code == 200
+
+    @pytest.mark.asyncio
+    async def test_discovery_contract_v2_fields(self, client: AsyncClient) -> None:
+        """Discovery payload includes additive contract-v2 continuity metadata."""
+        response = await client.get("/.well-known/opta-lmx")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["schema_version"] == "2026-03-02"
+        assert "instance_id" in data
+        assert "continuity" in data
+        assert data["continuity"]["event_resume_supported"] is True

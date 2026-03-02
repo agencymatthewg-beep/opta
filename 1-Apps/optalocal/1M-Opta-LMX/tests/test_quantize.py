@@ -14,10 +14,31 @@ from opta_lmx.manager.quantize import (
     _do_quantize,
     _jobs,
     _run_quantize,
+    cancel_quantize,
     get_job,
     list_jobs,
     start_quantize,
 )
+
+
+class _NoopTask:
+    def add_done_callback(self, _cb: object) -> None:  # pragma: no cover - no-op for tests
+        return None
+
+    def done(self) -> bool:
+        return False
+
+    def cancel(self) -> None:
+        return None
+
+
+def _stub_create_task(coro: object) -> _NoopTask:
+    # start_quantize schedules background work; tests patch create_task to avoid execution.
+    close = getattr(coro, "close", None)
+    if callable(close):
+        close()
+    return _NoopTask()
+
 
 # ─── QuantizeJob dataclass ────────────────────────────────────────────────────
 
@@ -196,29 +217,29 @@ class TestStartQuantize:
         _jobs.clear()
 
     @pytest.mark.asyncio
-    async def test_creates_job_with_running_status(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+    async def test_creates_job_with_queued_status(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task):
             job = await start_quantize("org/model", "/tmp/out")
-        assert job.status == "running"
+        assert job.status == "queued"
         assert job.source_model == "org/model"
         assert job.output_path == "/tmp/out"
         assert job.started_at > 0
 
     @pytest.mark.asyncio
     async def test_registers_job(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+        with patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task):
             job = await start_quantize("org/model", "/tmp/out")
         assert get_job(job.job_id) is job
 
     @pytest.mark.asyncio
     async def test_auto_generates_output_path(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+        with patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task):
             job = await start_quantize("org/my-model")
         assert "org--my-model-4bit" in job.output_path
 
     @pytest.mark.asyncio
     async def test_custom_bits_and_group_size(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+        with patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task):
             job = await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp8")
         assert job.bits == 8
         assert job.group_size == 32
@@ -226,7 +247,7 @@ class TestStartQuantize:
 
     @pytest.mark.asyncio
     async def test_unique_job_ids(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+        with patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task):
             j1 = await start_quantize("m", "/tmp/o1")
             j2 = await start_quantize("m", "/tmp/o2")
         assert j1.job_id != j2.job_id
@@ -234,7 +255,7 @@ class TestStartQuantize:
     @pytest.mark.asyncio
     async def test_rejects_unsupported_bits_for_mode(self) -> None:
         with (
-            patch("opta_lmx.manager.quantize.asyncio.create_task"),
+            patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task),
             pytest.raises(ValueError, match="bits=8 is not supported for mode='mxfp4'"),
         ):
             await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp4")
@@ -242,7 +263,7 @@ class TestStartQuantize:
     @pytest.mark.asyncio
     async def test_rejects_unsupported_group_size_for_mode(self) -> None:
         with (
-            patch("opta_lmx.manager.quantize.asyncio.create_task"),
+            patch("opta_lmx.manager.quantize.asyncio.create_task", side_effect=_stub_create_task),
             pytest.raises(
                 ValueError,
                 match="group_size=64 is not supported for mode='nvfp4'",
@@ -321,13 +342,15 @@ class _EventBusSpy:
         self.publish = _PublishSpy()
 
 
-def _extract_event(call: tuple[tuple[object, ...], dict[str, object]]) -> tuple[str, dict[str, object]]:
+def _extract_event(
+    call: tuple[tuple[object, ...], dict[str, object]],
+) -> tuple[str, dict[str, object]]:
     args, kwargs = call
     assert kwargs == {}
     if len(args) == 1 and hasattr(args[0], "event_type") and hasattr(args[0], "data"):
         event = args[0]
-        event_type = getattr(event, "event_type")
-        data = getattr(event, "data")
+        event_type = event.event_type  # type: ignore[attr-defined]
+        data = event.data  # type: ignore[attr-defined]
         assert isinstance(event_type, str)
         assert isinstance(data, dict)
         return event_type, data
@@ -425,3 +448,81 @@ class TestRunQuantize:
         assert isinstance(events[1][1]["status"], str)
         assert "failed:" in str(events[1][1]["status"])
         assert "boom" in str(events[1][1]["status"])
+
+
+class _FakeTask:
+    def __init__(self) -> None:
+        self._done = False
+        self.cancelled = False
+
+    def add_done_callback(self, _cb: object) -> None:  # pragma: no cover - no-op for tests
+        return None
+
+    def done(self) -> bool:
+        return self._done
+
+    def cancel(self) -> None:
+        self.cancelled = True
+
+
+class TestCancelQuantize:
+    def setup_method(self) -> None:
+        _jobs.clear()
+
+    def teardown_method(self) -> None:
+        _jobs.clear()
+
+    @pytest.mark.asyncio
+    async def test_cancel_unknown_job_returns_not_found(self) -> None:
+        cancelled, reason, job = await cancel_quantize("missing")
+        assert cancelled is False
+        assert reason == "not_found"
+        assert job is None
+
+    @pytest.mark.asyncio
+    async def test_cancel_running_job_sets_cancel_requested(self) -> None:
+        job = QuantizeJob(
+            job_id="run-1",
+            source_model="org/model",
+            output_path="/tmp/out",
+            status="running",
+            started_at=1.0,
+        )
+        _jobs[job.job_id] = job
+        cancelled, reason, returned = await cancel_quantize(job.job_id)
+        assert cancelled is False
+        assert reason == "running_cannot_cancel"
+        assert returned is job
+        assert job.cancel_requested is True
+        assert job.status == "running"
+
+    @pytest.mark.asyncio
+    async def test_cancel_queued_job_marks_cancelled(self) -> None:
+        fake_task = _FakeTask()
+        def _create_task_and_close(coro: object) -> _FakeTask:
+            close = getattr(coro, "close", None)
+            if callable(close):
+                close()
+            return fake_task
+
+        with patch(
+            "opta_lmx.manager.quantize.asyncio.create_task",
+            side_effect=_create_task_and_close,
+        ):
+            job = await start_quantize("org/model", "/tmp/out")
+
+        event_bus = _EventBusSpy()
+        cancelled, reason, returned = await cancel_quantize(job.job_id, event_bus=event_bus)
+        assert cancelled is True
+        assert reason == "cancelled"
+        assert returned is job
+        assert job.status == "cancelled"
+        assert job.cancel_requested is True
+        assert "Cancelled by user" in str(job.error)
+        assert fake_task.cancelled is True
+
+        events = [_extract_event(call) for call in event_bus.publish.calls]
+        assert events[-1] == (
+            "quantize_progress",
+            {"model_id": "org/model", "status": "cancelled", "percent": 0},
+        )

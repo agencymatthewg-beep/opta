@@ -105,6 +105,7 @@ import {
   parseApiErrorMessage,
   RETRYABLE_HTTP_STATUS,
 } from './helpers.js';
+import { recordEndpointProbe } from './endpoint-profile.js';
 
 // Re-export everything from submodules for backward compatibility.
 export * from './types.js';
@@ -336,6 +337,7 @@ export class LmxClient {
 
         const data: unknown = await response.json();
         this.clearHostCooldown(host);
+        void recordEndpointProbe(host, true).catch(() => {});
         this.setActiveHost(host);
         if (validator) return validator.parse(data);
         return data as T;
@@ -343,6 +345,7 @@ export class LmxClient {
 
       if (hostFailure) {
         this.markHostFailure(host);
+        void recordEndpointProbe(host, false).catch(() => {});
         hostFailures.push({ host, detail: hostFailure });
       }
     }

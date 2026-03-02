@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 15: Hive Grid</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .window { width: 1000px; height: 650px; background: radial-gradient(ellipse at center, #0d0c14 0%, #09090b 70%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.9); display: flex; }
+    #void-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    
+    .left-panel { width: 350px; padding: 60px 40px; display: flex; flex-direction: column; justify-content: center; z-index: 10; border-right: 1px solid rgba(255,255,255,0.05); }
+    .right-grid { flex: 1; display: flex; align-items: center; justify-content: center; z-index: 10; position: relative; }
+    
+    .hex-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; position: relative; }
+    .hex-grid > :nth-child(even) { transform: translateY(45px); }
+    
+    .app-item { position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 100px; height: 100px; }
+    
+    .purple-circle {
+      position: absolute; width: 90px; height: 90px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(168,85,247,0.9) 0%, rgba(168,85,247,0.2) 70%, transparent 100%);
+      opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 30px rgba(168,85,247,0.6); pointer-events: none; z-index: 1;
+    }
+    
+    .app-logo { width: 72px; height: 72px; border-radius: 50%; object-fit: contain; z-index: 2; transition: all 0.3s; mix-blend-mode: screen; }
+    
+    .app-item:hover .purple-circle { opacity: 1; transform: scale(1.5); }
+    .app-item:hover .app-logo { transform: scale(1.15); filter: drop-shadow(0 0 10px rgba(168,85,247,0.5)); }
+    .app-item:hover { z-index: 20; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <canvas id="void-canvas"></canvas>
+    
+    <div class="left-panel">
+      <div class="text-xs font-mono text-gray-500 tracking-widest mb-4">OPTA LOCAL</div>
+      <h1 class="text-5xl font-bold mb-4" id="info-title">Ecosystem</h1>
+      <p class="text-gray-400 mb-8 text-lg" id="info-desc">Explore the entire Opta Local suite of tools, dashboards, and orchestration layers.</p>
+      <div id="btn-container">
+        <button class="bg-purple-500 text-white font-bold px-8 py-3 rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.4)] opacity-0 pointer-events-none transition-opacity" id="action-btn">Launch</button>
+      </div>
+    </div>
+    
+    <div class="right-grid">
+      <div class="hex-grid">
+        <div class="app-item" onmouseenter="setInfo('Opta LMX', 'The core local inference engine.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Local', 'Web management dashboard.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Local/opta-local-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta CLI', 'Command-line orchestration.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-CLI/opta-cli-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Accounts', 'Manage local identity.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Status', 'System health monitoring.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Status/opta-status-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Code', 'Desktop IDE surface.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Help', 'Technical reference docs.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Help/opta-help-logo-final.png" class="app-logo"></div>
+        <div class="app-item" onmouseenter="setInfo('Opta Learn', 'Discovery and guide portal.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Learn/opta-learn-logo-final.png" class="app-logo"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const titleEl = document.getElementById('info-title');
+    const descEl = document.getElementById('info-desc');
+    const btnEl = document.getElementById('action-btn');
+
+    function setInfo(title, desc) {
+      titleEl.innerText = title;
+      descEl.innerText = desc;
+      btnEl.classList.remove('opacity-0', 'pointer-events-none');
+    }
+
+    function resetInfo() {
+      // Intentionally leaving the last hovered state, or could reset it. Let's leave it for stability.
+    }
+
+    // Canvas Background
+    const c = document.getElementById('void-canvas');
+    const ctx = c.getContext('2d');
+    c.width = 1000; c.height = 650;
+    const cx = 700, cy = 325;
+    const particles = [];
+    for (let i = 0; i < 150; i++) {
+      particles.push({
+        angle: Math.random() * Math.PI * 2,
+        r: Math.random() * 300,
+        size: Math.random() * 1.5,
+        speed: (Math.random() * 0.01 - 0.005)
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, 1000, 650);
+      particles.forEach(p => {
+        p.angle += p.speed;
+        const x = cx + Math.cos(p.angle) * p.r;
+        const y = cy + Math.sin(p.angle) * p.r;
+        ctx.beginPath(); ctx.arc(x, y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,0.4)`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>

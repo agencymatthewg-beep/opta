@@ -1,11 +1,21 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { mkdtemp, rm } from 'node:fs/promises';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-const { probeSpy } = vi.hoisted(() => ({
+const { probeSpy, prioritizeSpy, recordOutcomeSpy } = vi.hoisted(() => ({
   probeSpy: vi.fn(),
+  prioritizeSpy: vi.fn(async (hosts: string[]) => hosts),
+  recordOutcomeSpy: vi.fn(async () => undefined),
 }));
 
 vi.mock('../../src/lmx/connection.js', () => ({
   probeLmxConnection: probeSpy,
+}));
+
+vi.mock('../../src/lmx/endpoint-profile.js', () => ({
+  prioritizeHostsByProfile: prioritizeSpy,
+  recordEndpointProbeOutcome: recordOutcomeSpy,
 }));
 
 import {
@@ -13,6 +23,7 @@ import {
   listCandidateHosts,
   resolveLmxEndpoint,
 } from '../../src/lmx/endpoints.js';
+import { recordEndpointProbe } from '../../src/lmx/endpoint-profile.js';
 
 function createDeferred<T>() {
   let resolve: (value: T | PromiseLike<T>) => void = () => {};
@@ -25,9 +36,29 @@ function createDeferred<T>() {
 }
 
 describe('lmx endpoint resolution', () => {
+  let profileTempDir = '';
+  let profilePath = '';
+
   beforeEach(() => {
     probeSpy.mockReset();
+    prioritizeSpy.mockReset();
+    prioritizeSpy.mockImplementation(async (hosts: string[]) => hosts);
+    recordOutcomeSpy.mockReset();
+    recordOutcomeSpy.mockResolvedValue(undefined);
     clearLmxEndpointCache();
+  });
+
+  beforeEach(async () => {
+    profileTempDir = await mkdtemp(join(tmpdir(), 'opta-endpoint-profile-endpoints-'));
+    profilePath = join(profileTempDir, 'lmx-endpoints.json');
+    process.env['OPTA_LMX_ENDPOINT_PROFILE_PATH'] = profilePath;
+  });
+
+  afterEach(async () => {
+    delete process.env['OPTA_LMX_ENDPOINT_PROFILE_PATH'];
+    if (profileTempDir) {
+      await rm(profileTempDir, { recursive: true, force: true });
+    }
   });
 
   it('deduplicates candidate hosts preserving order', () => {
@@ -87,6 +118,29 @@ describe('lmx endpoint resolution', () => {
     expect(endpoint.source).toBe('primary');
   });
 
+  it('honors profile-prioritized ordering when selecting candidates', async () => {
+    prioritizeSpy.mockResolvedValueOnce(['192.168.188.11', 'mono512']);
+    probeSpy
+      .mockResolvedValueOnce({
+        state: 'connected',
+        latencyMs: 12,
+      })
+      .mockResolvedValueOnce({
+        state: 'connected',
+        latencyMs: 25,
+      });
+
+    const endpoint = await resolveLmxEndpoint({
+      host: 'mono512',
+      fallbackHosts: ['192.168.188.11'],
+      port: 1234,
+    });
+
+    expect(endpoint.host).toBe('192.168.188.11');
+    expect(probeSpy.mock.calls[0]?.[0]).toBe('192.168.188.11');
+    expect(prioritizeSpy).toHaveBeenCalledWith(['mono512', '192.168.188.11']);
+  });
+
   it('caches a resolved endpoint for repeated lookups', async () => {
     probeSpy.mockResolvedValue({
       state: 'connected',
@@ -105,6 +159,25 @@ describe('lmx endpoint resolution', () => {
     });
 
     expect(probeSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('prefers host with recent successful probes', async () => {
+    await recordEndpointProbe('mono512', false);
+    await recordEndpointProbe('192.168.188.11', true);
+    await recordEndpointProbe('192.168.188.11', true);
+
+    probeSpy.mockResolvedValue({
+      state: 'connected',
+      latencyMs: 9,
+    });
+
+    const endpoint = await resolveLmxEndpoint({
+      host: 'mono512',
+      fallbackHosts: ['192.168.188.11'],
+      port: 1234,
+    });
+
+    expect(endpoint.host).toBe('192.168.188.11');
   });
 
   it('returns earliest connected fallback when primary remains in-flight past grace window', async () => {

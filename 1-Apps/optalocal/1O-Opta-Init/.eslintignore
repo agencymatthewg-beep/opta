@@ -2,5 +2,6 @@
 out/
 node_modules/
 desktop-manager/dist/
+desktop-manager/src/
 desktop-manager/src-tauri/target/
 desktop-manager/src-tauri/gen/

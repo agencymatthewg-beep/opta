@@ -355,7 +355,7 @@ describe('probeProvider — explicit Anthropic config skips LMX probe', () => {
 });
 
 describe('probeProvider — LMX unreachable + no API key', () => {
-  it('throws a descriptive error when LMX is unreachable and no ANTHROPIC_API_KEY is set', async () => {
+  it('throws structured remediation metadata when LMX is unreachable and no ANTHROPIC_API_KEY is set', async () => {
     delete process.env['ANTHROPIC_API_KEY'];
     const probeMock = await getProbeMock();
     probeMock.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000 });
@@ -365,10 +365,21 @@ describe('probeProvider — LMX unreachable + no API key', () => {
       connection: { ...DEFAULT_CONFIG.connection, host: 'localhost', port: 1234 },
     });
 
-    await expect(probeProvider(config)).rejects.toThrow(/LMX unreachable/);
+    await expect(probeProvider(config)).rejects.toSatisfy((err: unknown) => {
+      if (!(err instanceof Error)) return false;
+      const payload = JSON.parse(err.message) as {
+        code?: string;
+        autoActions?: string[];
+      };
+      return (
+        payload.code === 'lmx_unreachable'
+        && Array.isArray(payload.autoActions)
+        && payload.autoActions.includes('launch_onboarding')
+      );
+    });
   });
 
-  it('error message mentions the host:port that was probed', async () => {
+  it('includes probed host:port in structured payload', async () => {
     delete process.env['ANTHROPIC_API_KEY'];
     const probeMock = await getProbeMock();
     probeMock.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000 });
@@ -378,6 +389,10 @@ describe('probeProvider — LMX unreachable + no API key', () => {
       connection: { ...DEFAULT_CONFIG.connection, host: 'localhost', port: 1234 },
     });
 
-    await expect(probeProvider(config)).rejects.toThrow(/localhost:1234/);
+    await expect(probeProvider(config)).rejects.toSatisfy((err: unknown) => {
+      if (!(err instanceof Error)) return false;
+      const payload = JSON.parse(err.message) as { attemptedSummary?: string };
+      return payload.attemptedSummary === 'localhost:1234';
+    });
   });
 });

@@ -190,23 +190,54 @@ export function useDaemonSessions() {
     secureStoreQueueRef.current = secureStoreQueueRef.current
       .catch(() => undefined)
       .then(async () => {
+        let resolvedHost = host;
+        let resolvedPort = port;
+
         if (localEndpoint) {
           try {
-            await bootstrapDaemonConnection(true);
+            const bootstrapMetadata = await bootstrapDaemonConnection(true);
+            if (
+              bootstrapMetadata?.host?.trim() &&
+              Number.isFinite(bootstrapMetadata.port) &&
+              bootstrapMetadata.port > 0 &&
+              bootstrapMetadata.port <= 65_535
+            ) {
+              resolvedHost = bootstrapMetadata.host.trim();
+              resolvedPort = Math.trunc(bootstrapMetadata.port);
+            }
           } catch {
             // Bootstrap is best-effort; keep existing secure-store flow.
           }
         }
+
+        if (
+          !cancelled &&
+          (resolvedHost !== host || resolvedPort !== port)
+        ) {
+          setConnectionRaw((current) =>
+            current.host === host && current.port === port
+              ? { ...current, host: resolvedHost, port: resolvedPort }
+              : current,
+          );
+        }
+
         const legacyToken = connectionRef.current.token.trim();
         if (legacyToken) {
-          await saveToken(host, port, legacyToken);
+          await saveToken(resolvedHost, resolvedPort, legacyToken);
         }
-        saveConnection(connectionRef.current, false);
-        const storedToken = await loadToken(host, port);
+        saveConnection(
+          {
+            ...connectionRef.current,
+            host: resolvedHost,
+            port: resolvedPort,
+          },
+          false,
+        );
+        const storedToken = await loadToken(resolvedHost, resolvedPort);
         if (cancelled) return;
         if (!storedToken || storedToken === connectionRef.current.token) return;
         setConnectionRaw((current) =>
-          current.host === host && current.port === port
+          current.host === resolvedHost && current.port === resolvedPort
             ? { ...current, token: storedToken }
             : current,
         );

@@ -12,7 +12,7 @@ Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal
 `learn.optalocal.com` is classified as a **Management Website**. 
 - **Tone:** Calm authority, approachable, highly discoverable. No generic AI fluff.
 - **Typography:** **Sora** for body, prose, and headings. **JetBrains Mono** strictly for quantitative data, code, terminal commands, and configuration keys.
-- **Visuals:** Obsidian interactive cards, glass search bars, `.bg-dot-subtle` backgrounds.
+- **Visuals:** Guides MUST include educational, inline HTML/Tailwind/SVG visuals using the `visual` field to aid visual learners. Use Obsidian interactive cards, glass search bars, `.bg-dot-subtle` backgrounds, and canonical brand colors.
 - **Colors:** Mixed per-app (`#a855f7` for LMX, `#22c55e` for CLI, `#3b82f6` for Accounts, `#f59e0b` for Init, `#a1a1aa` for General).
 
 ## 3. Guide Data Structure
@@ -37,6 +37,7 @@ export interface GuideSection {
   body: string;             // Primary text (Sora). Rendered as HTML.
   note?: string;            // Renders as an Amber callout. Rendered as HTML.
   code?: string;            // Renders in a JetBrains Mono dark block.
+  visual?: string;          // HTML string utilizing Tailwind/SVG for inline visuals.
 }
 ```
 

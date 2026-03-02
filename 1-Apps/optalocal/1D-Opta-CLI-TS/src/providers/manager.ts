@@ -160,23 +160,22 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
     return new AnthropicProvider(config);
   }
 
-  // No fallback available — throw a clear, actionable error.
+  // No fallback available — throw machine-readable remediation metadata.
   const attemptedSummary =
     attemptedEndpoints.length > 0 ? attemptedEndpoints.join(', ') : `${primaryHost}:${port}`;
-  const failureSummary = probeFailures.length > 0 ? `\nProbe failures: ${probeFailures.join('; ')}` : '';
-  const fallbackTip =
-    probeTargets.length > 1
-      ? '\n  4. Promote reachable host:   opta config set connection.host <fallback-host>'
-      : '\n  4. Configure fallback hosts: opta config set connection.fallbackHosts hostA,hostB';
-
   throw new Error(
-    `LMX unreachable at ${primaryHost}:${port} (probed: ${attemptedSummary}) and no ANTHROPIC_API_KEY set.\n` +
-      failureSummary +
-      '\n\nFix options:\n' +
-      '  1. Start LMX server:         opta lmx start\n' +
-      '  2. Use Anthropic cloud:      export ANTHROPIC_API_KEY=sk-ant-...\n' +
-      '  3. Configure a different host: opta config set connection.host <host>' +
-      fallbackTip
+    JSON.stringify({
+      code: 'lmx_unreachable',
+      attemptedEndpoints,
+      attemptedSummary,
+      probeFailures,
+      autoActions: ['discover_hosts', 'try_fallback', 'launch_onboarding'],
+      humanHint: 'Run opta onboard to repair connection automatically.',
+      noCloudFallbackConfigured: true,
+      cloudFallbackEnvVar: 'ANTHROPIC_API_KEY',
+      target: `${primaryHost}:${port}`,
+      fallbackHostsConfigured: probeTargets.length > 1,
+    })
   );
 }
 

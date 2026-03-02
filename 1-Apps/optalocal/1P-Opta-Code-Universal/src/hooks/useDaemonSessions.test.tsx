@@ -124,6 +124,42 @@ describe("useDaemonSessions secure connection persistence", () => {
     expect(stored.token).toBeUndefined();
   });
 
+  it("adopts bootstrap daemon endpoint metadata when available", async () => {
+    setStoredConnection({
+      host: "127.0.0.1",
+      port: 9999,
+      token: "",
+    });
+    const invoke = vi.fn(async (command: string, args?: Record<string, unknown>) => {
+      if (command === "bootstrap_daemon_connection") {
+        return { host: "127.0.0.1", port: 10999 };
+      }
+      if (
+        command === "get_connection_secret" &&
+        args?.host === "127.0.0.1" &&
+        args?.port === 10999
+      ) {
+        return "bootstrap-token";
+      }
+      return "";
+    });
+    (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
+      core: { invoke },
+    };
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await waitFor(() => expect(result.current.connection.port).toBe(10999));
+    await waitFor(() => expect(result.current.connection.token).toBe("bootstrap-token"));
+    expect(invoke).toHaveBeenCalledWith("bootstrap_daemon_connection", {
+      startIfNeeded: true,
+    });
+    expect(invoke).toHaveBeenCalledWith("get_connection_secret", {
+      host: "127.0.0.1",
+      port: 10999,
+    });
+  });
+
   it("keeps browser fallback behavior when Tauri bridge is unavailable", async () => {
     setStoredConnection({
       host: "127.0.0.1",

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 16: Bottom Arc</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .window { width: 1000px; height: 650px; background: radial-gradient(ellipse at center, #0d0c14 0%, #09090b 70%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.9); }
+    #void-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    
+    .top-panel { position: absolute; top: 100px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; z-index: 10; text-align: center; }
+    
+    /* Bottom Arc Container */
+    .arc-dock { position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%); width: 800px; height: 150px; z-index: 10; display: flex; justify-content: center; }
+    
+    .app-item { position: absolute; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    
+    .purple-circle {
+      position: absolute; width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(168,85,247,0.9) 0%, rgba(168,85,247,0.2) 70%, transparent 100%);
+      opacity: 0; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 30px rgba(168,85,247,0.6); pointer-events: none; z-index: 1;
+      top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
+    }
+    
+    .app-logo { width: 60px; height: 60px; border-radius: 50%; object-fit: contain; z-index: 2; transition: all 0.3s; mix-blend-mode: screen; }
+    
+    .app-item:hover .purple-circle { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+    .app-item:hover .app-logo { transform: scale(1.2); filter: drop-shadow(0 0 10px rgba(168,85,247,0.5)); }
+
+    /* Parabolic arc positions */
+    .pos-1 { left: 5%; bottom: 60px; }
+    .pos-2 { left: 18%; bottom: 30px; }
+    .pos-3 { left: 31%; bottom: 10px; }
+    .pos-4 { left: 44%; bottom: 0px; }
+    .pos-5 { left: 56%; bottom: 0px; }
+    .pos-6 { left: 69%; bottom: 10px; }
+    .pos-7 { left: 82%; bottom: 30px; }
+    .pos-8 { left: 95%; bottom: 60px; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <canvas id="void-canvas"></canvas>
+    
+    <div class="top-panel">
+      <div class="text-xs font-mono text-purple-400 tracking-widest mb-4 border border-purple-500/30 bg-purple-500/10 px-3 py-1 rounded-full">OPTA LOCAL</div>
+      <h1 class="text-5xl font-bold mb-4" id="info-title">Global Control</h1>
+      <p class="text-gray-400 mb-8 text-lg" id="info-desc">Select any Opta app below to interact with it.</p>
+    </div>
+    
+    <div class="arc-dock">
+      <div class="app-item pos-1" onmouseenter="setInfo('Opta LMX', 'The core local inference engine.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-2" onmouseenter="setInfo('Opta CLI', 'Command-line orchestration.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-CLI/opta-cli-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-3" onmouseenter="setInfo('Opta Code', 'Desktop IDE surface.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-4" onmouseenter="setInfo('Opta Local', 'Web management dashboard.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Local/opta-local-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-5" onmouseenter="setInfo('Opta Accounts', 'Manage local identity.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-6" onmouseenter="setInfo('Opta Status', 'System health monitoring.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Status/opta-status-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-7" onmouseenter="setInfo('Opta Help', 'Technical reference docs.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Help/opta-help-logo-final.png" class="app-logo"></div>
+      <div class="app-item pos-8" onmouseenter="setInfo('Opta Learn', 'Discovery and guide portal.')"><div class="purple-circle"></div><img src="../../design/logos/Opta-Learn/opta-learn-logo-final.png" class="app-logo"></div>
+    </div>
+  </div>
+
+  <script>
+    const titleEl = document.getElementById('info-title');
+    const descEl = document.getElementById('info-desc');
+
+    function setInfo(title, desc) {
+      titleEl.innerText = title;
+      descEl.innerText = desc;
+    }
+
+    // Canvas Background
+    const c = document.getElementById('void-canvas');
+    const ctx = c.getContext('2d');
+    c.width = 1000; c.height = 650;
+    const cx = 500, cy = 600; // Emit particles from the bottom
+    const particles = [];
+    for (let i = 0; i < 150; i++) {
+      particles.push({
+        x: Math.random() * 1000,
+        y: Math.random() * 650,
+        size: Math.random() * 2,
+        speedY: -(Math.random() * 0.5 + 0.1)
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, 1000, 650);
+      
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 300);
+      glow.addColorStop(0, 'rgba(168,85,247,0.1)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0,0,1000,650);
+
+      particles.forEach(p => {
+        p.y += p.speedY;
+        if(p.y < 0) p.y = 650;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,0.3)`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>

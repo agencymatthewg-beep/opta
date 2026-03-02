@@ -7,6 +7,10 @@ server:
   workers: 1
   timeout_sec: 300
 
+discovery:
+  mdns_enabled: true
+  mdns_service_name: "_opta-lmx._tcp.local"
+
 models:
   default_model: null
   # models_directory: "~/.opta-lmx/models"  # Defaults to ~/.opta-lmx/models; override here if needed

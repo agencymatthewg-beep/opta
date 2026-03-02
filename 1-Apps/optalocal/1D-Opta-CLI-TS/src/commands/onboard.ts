@@ -8,6 +8,7 @@ import type { OptaConfig } from '../core/config.js';
 import { isKeychainAvailable } from '../keychain/index.js';
 import { storeAnthropicKey } from '../keychain/api-keys.js';
 import { getConfigDir } from '../platform/paths.js';
+import { discoverLmxHosts } from '../lmx/mdns-discovery.js';
 
 // ── Onboard marker (first-run detection) ────────────────────────────────────
 
@@ -69,6 +70,32 @@ function normalizePort(port: number): number {
   return intPort;
 }
 
+async function resolveDefaultLmxConnection(
+  existing: OptaConfig | null
+): Promise<{ host: string; port: number }> {
+  if (existing?.connection?.host?.trim()) {
+    return {
+      host: existing.connection.host.trim(),
+      port: normalizePort(existing.connection.port),
+    };
+  }
+
+  try {
+    const discovered = await discoverLmxHosts(1200);
+    const first = discovered[0];
+    if (first?.host?.trim()) {
+      return {
+        host: first.host.trim(),
+        port: normalizePort(first.port),
+      };
+    }
+  } catch {
+    // Discovery is best effort.
+  }
+
+  return { host: 'localhost', port: 1234 };
+}
+
 export async function applyOnboardingProfile(
   input: OnboardingProfileInput = {}
 ): Promise<OnboardingProfileResult> {
@@ -77,8 +104,9 @@ export async function applyOnboardingProfile(
   const provider: OnboardingProvider = normalizeOnboardingProvider(
     input.provider ?? existing?.provider?.active
   );
-  const lmxHost = input.lmxHost?.trim() || existing?.connection?.host || '192.168.188.11';
-  const lmxPort = normalizePort(input.lmxPort ?? existing?.connection?.port ?? 1234);
+  const defaultLmxConnection = await resolveDefaultLmxConnection(existing);
+  const lmxHost = input.lmxHost?.trim() || defaultLmxConnection.host;
+  const lmxPort = normalizePort(input.lmxPort ?? defaultLmxConnection.port);
   const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
   const tuiDefault = input.tuiDefault ?? existing?.tui?.default ?? false;
   const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider?.anthropic?.apiKey ?? '').trim();
@@ -188,7 +216,7 @@ export async function runOnboarding(): Promise<void> {
 
     const provider: OnboardingProvider = providerChoice === 0 ? 'lmx' : 'anthropic';
 
-    let lmxHost = '192.168.188.11';
+    let lmxHost = 'localhost';
     let lmxPort = 1234;
     let anthropicKey = '';
     let anthropicKeyForConfig = '';
@@ -228,7 +256,7 @@ export async function runOnboarding(): Promise<void> {
           lmxHost = discoveredHosts[0]!.host;
           lmxPort = discoveredHosts[0]!.port;
         } else {
-          lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || '192.168.188.11');
+          lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || 'localhost');
           const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
           lmxPort = parseInt(portStr, 10) || 1234;
         }
@@ -236,7 +264,7 @@ export async function runOnboarding(): Promise<void> {
         process.stdout.write(
           '\r' + chalk.dim('  No LMX servers found on LAN — enter address manually') + '         \n'
         );
-        lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || '192.168.188.11');
+        lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || 'localhost');
         const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
         lmxPort = parseInt(portStr, 10) || 1234;
       }

@@ -79,7 +79,7 @@ export const SHOWCASE_CONTENT = {
       },
       {
         role: "assistant" as const,
-        text: "Update workflow started.\n\n1. Updated Opta Code Desktop to latest stable\n2. Restarted daemon at 127.0.0.1:9999\n3. Health check passed and sessions reattached",
+        text: "Update workflow started.\n\n1. Updated Opta Code Desktop to latest stable\n2. Restarted daemon at configured endpoint (auto-discovered)\n3. Health check passed and sessions reattached",
       },
     ],
   },

@@ -16,7 +16,7 @@ Target runtime:
 | Capability | macOS status | Notes |
 | --- | --- | --- |
 | Desktop shell launch (`.app` bundle / DMG) | Supported | Verified by DMG smoke test in CI. Binary launched directly from `Contents/MacOS/`. |
-| Daemon connection (host/port/token) | Supported | Defaults to `127.0.0.1:9999`; editable in app header form. |
+| Daemon connection (host/port/token) | Supported | Endpoint is bootstrapped from native daemon metadata and secure-store state; editable in app header form. |
 | Session cockpit (create/track/stream/cancel) | Supported | Uses daemon v3 stream/events endpoints. |
 | Operations page | Supported | Daemon-backed operation endpoints only. |
 | Background jobs page | Supported | Daemon-backed job listing/control only. |

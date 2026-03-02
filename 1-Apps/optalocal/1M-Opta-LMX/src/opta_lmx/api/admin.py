@@ -457,8 +457,11 @@ async def start_quantize(
         "source_model": job.source_model,
         "output_path": job.output_path,
         "bits": job.bits,
+        "group_size": job.group_size,
         "mode": job.mode,
         "status": job.status,
+        "queue_position": job.queue_position,
+        "cancel_requested": job.cancel_requested,
     })
 
 
@@ -483,6 +486,9 @@ async def get_quantize_job(
         "mode": job.mode,
         "status": job.status,
         "started_at": job.started_at,
+        "queue_position": job.queue_position,
+        "cancel_requested": job.cancel_requested,
+        "updated_at": job.updated_at,
     }
     if job.completed_at:
         result["completed_at"] = job.completed_at
@@ -493,6 +499,40 @@ async def get_quantize_job(
     if job.error:
         result["error"] = job.error
     return result
+
+
+@router.post("/admin/quantize/{job_id}/cancel", response_model=None)
+async def cancel_quantize_job(
+    request: Request,
+    job_id: str,
+    _auth: AdminAuth,
+) -> Response:
+    """Cancel a queued quantization job."""
+    from opta_lmx.manager.quantize import cancel_quantize
+
+    event_bus = getattr(request.app.state, "event_bus", None)
+    cancelled, reason, job = await cancel_quantize(job_id, event_bus=event_bus)
+
+    if job is None:
+        return JSONResponse(
+            status_code=404,
+            content={"error": "Job not found", "job_id": job_id, "cancelled": False},
+        )
+
+    status_code = 200
+    if reason == "running_cannot_cancel":
+        status_code = 409
+
+    return JSONResponse(
+        status_code=status_code,
+        content={
+            "job_id": job.job_id,
+            "status": job.status,
+            "reason": reason,
+            "cancelled": cancelled,
+            "cancel_requested": job.cancel_requested,
+        },
+    )
 
 
 @router.get("/admin/quantize")
@@ -509,8 +549,12 @@ async def list_quantize_jobs(
                 "job_id": j.job_id,
                 "source_model": j.source_model,
                 "bits": j.bits,
+                "group_size": j.group_size,
+                "mode": j.mode,
                 "status": j.status,
                 "started_at": j.started_at,
+                "queue_position": j.queue_position,
+                "cancel_requested": j.cancel_requested,
             }
             for j in jobs
         ],

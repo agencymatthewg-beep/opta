@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Local Visual Variant 3</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+    body { font-family: 'Sora', sans-serif; background-color: #09090b; color: #a1a1aa; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    .bg-void { background-color: #000000; }
+  </style>
+</head>
+<body class="p-12 flex flex-col gap-12 max-w-4xl mx-auto">
+  <h1 class="text-3xl font-bold text-white mb-4">Variant 3: Permission Gateway</h1>
+  <p class="text-lg leading-relaxed">This UI mock goes in the "Working with Tools" section to show exactly how the daemon routes and gates dangerous tool calls vs safe ones.</p>
+
+  <div class="border border-[#f59e0b]/30 bg-[#f59e0b]/5 rounded-xl p-8 relative">
+    <div class="absolute top-0 right-0 px-4 py-1.5 bg-[#f59e0b]/20 text-[#f59e0b] font-mono text-xs rounded-bl-lg rounded-tr-xl font-bold tracking-wider">Permission Gateway</div>
+    <h3 class="text-white text-lg font-semibold mb-6">Tool Execution Engine</h3>
+    <div class="flex flex-col gap-4 font-mono text-sm">
+      <div class="flex items-center gap-4 bg-void p-3 rounded-lg border border-[#22c55e]/30">
+         <div class="w-2.5 h-2.5 rounded-full bg-[#22c55e] animate-pulse"></div>
+         <span class="text-white">read_file</span>
+         <span class="ml-auto text-xs text-[#22c55e]">Auto-approved</span>
+      </div>
+      <div class="flex items-center gap-4 bg-void p-3 rounded-lg border border-[#f59e0b]/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] relative overflow-hidden">
+         <div class="absolute left-0 top-0 bottom-0 w-1 bg-[#f59e0b]"></div>
+         <div class="w-2.5 h-2.5 rounded-full bg-[#f59e0b] ml-1"></div>
+         <span class="text-white">run_shell_command</span>
+         <span class="ml-auto text-xs text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-1 rounded">Requires Approval</span>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

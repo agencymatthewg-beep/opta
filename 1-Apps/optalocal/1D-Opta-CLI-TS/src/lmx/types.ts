@@ -743,24 +743,37 @@ export interface LmxDeviceIdentity {
 // ─── Zero-Config Discovery ─────────────────────────────────────────────────
 
 export interface LmxDiscoveryEndpoints {
-  preferred_base_url: string;
-  base_urls: string[];
-  openai_base_url: string;
-  admin_base_url: string;
-  websocket_url: string;
+  preferred_base_url?: string;
+  base_urls?: string[];
+  openai_base_url?: string;
+  admin_base_url?: string;
+  websocket_url?: string;
+  [key: string]: unknown;
+}
+
+export interface LmxDiscoveryContinuity {
+  event_resume_supported?: boolean;
+  session_log_api?: string;
+  [key: string]: unknown;
 }
 
 export interface LmxDiscoveryDoc {
-  service: string;           // "opta-lmx"
-  version: string;
-  security_profile: string;  // "open" | "local-key" | "jwt"
-  ready: boolean;
-  loaded_models: string[];
-  auth: {
-    admin_key_required: boolean;
-    inference_key_required: boolean;
-    supabase_jwt_enabled: boolean;
+  service?: string;           // "opta-lmx"
+  version?: string;
+  schema_version?: string;
+  instance_id?: string;
+  security_profile?: string;  // "open" | "local-key" | "jwt"
+  ready?: boolean;
+  loaded_models?: string[];
+  loaded_model_count?: number;
+  continuity?: LmxDiscoveryContinuity;
+  auth?: {
+    admin_key_required?: boolean;
+    inference_key_required?: boolean;
+    supabase_jwt_enabled?: boolean;
+    [key: string]: unknown;
   };
-  endpoints: LmxDiscoveryEndpoints;
-  client_probe_order: string[];
+  endpoints?: LmxDiscoveryEndpoints;
+  client_probe_order?: string[];
+  [key: string]: unknown;
 }

@@ -156,6 +156,43 @@ describe('probeLmxConnection', () => {
     expect(result.discovery).toBeUndefined();
   });
 
+  it('falls back to /v1/discovery when /.well-known/opta-lmx is unavailable', async () => {
+    const discoveryDoc = {
+      service: 'opta-lmx',
+      version: '0.9.1',
+      ready: true,
+      auth: {
+        admin_key_required: false,
+        inference_key_required: false,
+        supabase_jwt_enabled: false,
+      },
+      endpoints: {
+        preferred_base_url: 'http://mono512.local:1234',
+        base_urls: ['http://mono512.local:1234'],
+        openai_base_url: 'http://mono512.local:1234/v1',
+        admin_base_url: 'http://mono512.local:1234/admin',
+      },
+      client_probe_order: ['/.well-known/opta-lmx', '/v1/discovery', '/healthz'],
+    };
+
+    globalThis.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true }) // healthz
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ models_loaded: 1 }),
+      }) // readyz
+      .mockResolvedValueOnce({ ok: false, status: 404 }) // /.well-known/opta-lmx
+      .mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve(discoveryDoc),
+      }) as unknown as typeof fetch; // /v1/discovery
+
+    const result = await probeLmxConnection('localhost', 1234, { timeoutMs: 1000 });
+    expect(result.state).toBe('connected');
+    expect(result.discovery).toEqual(discoveryDoc);
+  });
+
   it('detects abort-style errors', () => {
     const err = new Error('request aborted by user');
     err.name = 'AbortError';

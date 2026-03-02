@@ -56,6 +56,8 @@ cargo check
 - Manager fetches channel manifests from:
   - `https://init.optalocal.com/desktop/manifest-stable.json`
   - `https://init.optalocal.com/desktop/manifest-beta.json`
+- Optional override for staging/dev:
+  - set `OPTA_INIT_MANIFEST_BASE_URL` (for example `http://localhost:3000`) to resolve manifests from `<base>/desktop/manifest-*.json`
 - Source channel manifests are synced to `public/desktop/*` via:
   - `npm run sync:desktop-manifests`
 - Manifest fetch falls back to an embedded manifest if remote fetch/parsing fails.

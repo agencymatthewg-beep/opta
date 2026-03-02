@@ -349,15 +349,19 @@ async function fetchLmxDiscovery(
   port: number,
   timeoutMs: number
 ): Promise<LmxDiscoveryDoc | null> {
-  try {
-    const res = await fetch(`http://${host}:${port}/.well-known/opta-lmx`, {
-      signal: AbortSignal.timeout(timeoutMs),
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as LmxDiscoveryDoc;
-  } catch {
-    return null;
+  const paths = ['/.well-known/opta-lmx', '/v1/discovery'];
+  for (const path of paths) {
+    try {
+      const res = await fetch(`http://${host}:${port}${path}`, {
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+      if (!res.ok) continue;
+      return (await res.json()) as LmxDiscoveryDoc;
+    } catch {
+      // Continue to next discovery path.
+    }
   }
+  return null;
 }
 
 /**
