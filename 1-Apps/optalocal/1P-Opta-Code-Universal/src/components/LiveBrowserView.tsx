@@ -18,6 +18,7 @@ export function LiveBrowserView({
     const [frameUrl, setFrameUrl] = useState<string | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [errorCount, setErrorCount] = useState(0);
+    const errorCountRef = useRef(0);
     const nativeControls =
         showNativeControls === undefined ? isNativeDesktop() : showNativeControls;
 
@@ -28,16 +29,34 @@ export function LiveBrowserView({
         let currentObjectUrl: string | null = null;
         let previousObjectUrl: string | null = null;
 
+        if (!slot) {
+            setFrameUrl(null);
+            setErrorCount(0);
+            errorCountRef.current = 0;
+            return;
+        }
+        const activeSlot = slot;
+
         async function loadFrame() {
-            if (!active || !slot) return;
+            if (!active) return;
+            let nextDelay = refreshRateMs;
             try {
-                const response = await fetch(`http://127.0.0.1:${slot.port}/frame`, {
-                    cache: "no-store",
-                    headers: {
-                        "Accept": "image/jpeg,image/avif,image/webp,*/*",
-                        "Cache-Control": "no-cache",
+                const controller = new AbortController();
+                const timeoutHandle = window.setTimeout(() => controller.abort(), 2500);
+                const response = await (async () => {
+                    try {
+                        return await fetch(`http://127.0.0.1:${activeSlot.port}/frame`, {
+                            cache: "no-store",
+                            signal: controller.signal,
+                            headers: {
+                                "Accept": "image/jpeg,image/avif,image/webp,*/*",
+                                "Cache-Control": "no-cache",
+                            }
+                        });
+                    } finally {
+                        window.clearTimeout(timeoutHandle);
                     }
-                });
+                })();
 
                 if (response.ok) {
                     const blob = await response.blob();
@@ -50,18 +69,25 @@ export function LiveBrowserView({
 
                     currentObjectUrl = URL.createObjectURL(blob);
                     setFrameUrl(currentObjectUrl);
+                    errorCountRef.current = 0;
                     setErrorCount(0);
                 } else {
-                    setErrorCount(prev => prev + 1);
+                    errorCountRef.current += 1;
+                    setErrorCount(errorCountRef.current);
                 }
-            } catch (e) {
-                if (active) setErrorCount(prev => prev + 1);
+            } catch {
+                if (active) {
+                    errorCountRef.current += 1;
+                    setErrorCount(errorCountRef.current);
+                }
             }
 
             if (active) {
-                // Backoff if failing repeatedly
-                const backoff = errorCount > 5 ? Math.min(5000, refreshRateMs * errorCount) : refreshRateMs;
-                timeoutId = window.setTimeout(loadFrame, backoff);
+                // Backoff if failing repeatedly.
+                if (errorCountRef.current > 0) {
+                    nextDelay = Math.min(5000, refreshRateMs * Math.max(1, errorCountRef.current));
+                }
+                timeoutId = window.setTimeout(loadFrame, nextDelay);
             }
         }
 
@@ -74,7 +100,7 @@ export function LiveBrowserView({
             if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
             if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
         };
-    }, [slot?.port, refreshRateMs, errorCount]);
+    }, [slot?.port, slot?.sessionId, refreshRateMs]);
 
     return (
         <div className={`live-browser-view glass-panel ${className}`} ref={containerRef}>

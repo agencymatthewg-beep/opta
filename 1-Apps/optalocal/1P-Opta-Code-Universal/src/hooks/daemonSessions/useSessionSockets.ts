@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import type { Dispatch, MutableRefObject, SetStateAction } from "react";
 import { daemonClient, type V3Envelope } from "../../lib/daemonClient";
 import { getTauriInvoke } from "../../lib/runtime";
@@ -8,6 +8,8 @@ import type {
   TimelineItem,
 } from "../../types";
 import { STOP_EVENT_KINDS, eventsToTimelineItems } from "./timeline";
+
+const TOKEN_FLUSH_MS = 40;
 
 export interface WsHandle {
   close: () => void;
@@ -25,10 +27,6 @@ interface UseSessionSocketsArgs {
   setPendingPermissionsBySession: Dispatch<
     SetStateAction<Record<string, PermissionRequest[]>>
   >;
-  setConnectionState?: Dispatch<
-    SetStateAction<"connected" | "connecting" | "disconnected">
-  >;
-  setConnectionError?: Dispatch<SetStateAction<string | null>>;
 }
 
 export function useSessionSockets({
@@ -40,12 +38,80 @@ export function useSessionSockets({
   setTimelineBySession,
   setStreamingBySession,
   setPendingPermissionsBySession,
-  setConnectionState,
-  setConnectionError,
 }: UseSessionSocketsArgs) {
   const sessionIdsKey = sessionIds.join(",");
+  const connectionIdentityRef = useRef<string | null>(null);
+  const tokenBufferRef = useRef<Record<string, string>>({});
+  const tokenFlushTimerRef = useRef<Map<string, number>>(new Map());
+
+  const clearTokenFlushTimer = (sessionId: string) => {
+    const timer = tokenFlushTimerRef.current.get(sessionId);
+    if (timer !== undefined) {
+      window.clearTimeout(timer);
+      tokenFlushTimerRef.current.delete(sessionId);
+    }
+  };
+
+  const flushTokenBuffer = (sessionId: string) => {
+    clearTokenFlushTimer(sessionId);
+    const chunk = tokenBufferRef.current[sessionId] ?? "";
+    if (!chunk) return;
+    delete tokenBufferRef.current[sessionId];
+    if (!mountedRef.current) return;
+
+    setTimelineBySession((prev) => {
+      const existing = prev[sessionId] ?? [];
+      if (existing.length > 0 && existing[existing.length - 1].kind === "assistant") {
+        const last = existing[existing.length - 1];
+        const merged = { ...last, body: (last.body ?? "") + chunk };
+        return { ...prev, [sessionId]: [...existing.slice(0, -1), merged] };
+      }
+      return {
+        ...prev,
+        [sessionId]: [
+          ...existing,
+          {
+            id: `${sessionId}-text-${Date.now()}-${Math.random()
+              .toString(36)
+              .slice(2, 6)}`,
+            kind: "assistant",
+            title: "Assistant",
+            body: chunk,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+      };
+    });
+  };
+
+  const scheduleTokenFlush = (sessionId: string) => {
+    if (tokenFlushTimerRef.current.has(sessionId)) return;
+    const timer = window.setTimeout(() => {
+      tokenFlushTimerRef.current.delete(sessionId);
+      flushTokenBuffer(sessionId);
+    }, TOKEN_FLUSH_MS);
+    tokenFlushTimerRef.current.set(sessionId, timer);
+  };
 
   useEffect(() => {
+    const connectionIdentity = [
+      connection.protocol ?? "http",
+      connection.host,
+      connection.port,
+      connection.token,
+    ].join("|");
+    const connectionChanged =
+      connectionIdentityRef.current !== null &&
+      connectionIdentityRef.current !== connectionIdentity;
+    connectionIdentityRef.current = connectionIdentity;
+
+    if (connectionChanged) {
+      for (const handle of wsHandlesRef.current.values()) {
+        handle.close();
+      }
+      wsHandlesRef.current.clear();
+    }
+
     const conn = connection;
     const currentSessionIds = new Set(
       sessionIdsKey ? sessionIdsKey.split(",") : [],
@@ -53,6 +119,7 @@ export function useSessionSockets({
 
     for (const [id, handle] of wsHandlesRef.current) {
       if (!currentSessionIds.has(id)) {
+        flushTokenBuffer(id);
         handle.close();
         wsHandlesRef.current.delete(id);
         setStreamingBySession((prev) => {
@@ -98,6 +165,22 @@ export function useSessionSockets({
 
         const kind = String(envelope.event ?? "");
         const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+
+        if (kind === "turn.token") {
+          const token =
+            (payload.token as string) ||
+            (payload.content as string) ||
+            (payload.delta as string) ||
+            (payload.text as string) ||
+            "";
+          if (!token) return;
+          tokenBufferRef.current[sessionId] =
+            (tokenBufferRef.current[sessionId] ?? "") + token;
+          scheduleTokenFlush(sessionId);
+          return;
+        }
+
+        flushTokenBuffer(sessionId);
 
         if (kind === "permission.request") {
           const requestId = String(payload.requestId ?? payload.request_id ?? "");
@@ -178,8 +261,6 @@ export function useSessionSockets({
         innerHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
           onOpen: () => {
             attempts = 0;
-            setConnectionState?.("connected");
-            setConnectionError?.(null);
           },
           onEvent: (envelope) => {
             if (!mountedRef.current) return;
@@ -189,8 +270,6 @@ export function useSessionSockets({
             innerHandle = null;
             if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
             if (code !== 1000) {
-              setConnectionState?.("disconnected");
-              setConnectionError?.("Lost daemon stream connection. Reconnecting...");
               const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
               attempts = Math.min(attempts + 1, 10);
               reconnectTimer = window.setTimeout(open, delay);
@@ -202,11 +281,12 @@ export function useSessionSockets({
         });
       };
 
-      const handle: WsHandle = {
-        close: () => {
-          if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
-          innerHandle?.close();
-          innerHandle = null;
+        const handle: WsHandle = {
+          close: () => {
+            flushTokenBuffer(sessionId);
+            if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
+            innerHandle?.close();
+            innerHandle = null;
           wsHandlesRef.current.delete(sessionId);
         },
         send: (msg) => innerHandle?.send(msg),
@@ -215,23 +295,29 @@ export function useSessionSockets({
       wsHandlesRef.current.set(sessionId, handle);
       open();
     }
-
-    return () => {
-      for (const handle of wsHandlesRef.current.values()) {
-        handle.close();
-      }
-      wsHandlesRef.current.clear();
-    };
   }, [
     connection,
     mountedRef,
     seqCursorRef,
     sessionIdsKey,
-    setConnectionError,
-    setConnectionState,
     setPendingPermissionsBySession,
     setStreamingBySession,
     setTimelineBySession,
     wsHandlesRef,
   ]);
+
+  useEffect(
+    () => () => {
+      for (const handle of wsHandlesRef.current.values()) {
+        handle.close();
+      }
+      wsHandlesRef.current.clear();
+      for (const timer of tokenFlushTimerRef.current.values()) {
+        window.clearTimeout(timer);
+      }
+      tokenFlushTimerRef.current.clear();
+      tokenBufferRef.current = {};
+    },
+    [wsHandlesRef, tokenFlushTimerRef, tokenBufferRef],
+  );
 }

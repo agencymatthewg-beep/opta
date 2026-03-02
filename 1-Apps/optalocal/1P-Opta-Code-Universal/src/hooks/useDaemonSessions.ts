@@ -33,6 +33,8 @@ import {
 } from "./daemonSessions/useSessionSockets";
 
 const RUNTIME_POLL_MS = 4000;
+const RUNTIME_POLL_MAX_MS = 30000;
+const AUTH_REPAIR_COOLDOWN_MS = 30000;
 
 function isLocalEndpointHost(host: string): boolean {
   const normalized = host.trim().toLowerCase();
@@ -138,6 +140,9 @@ export function useDaemonSessions() {
   >({});
 
   const mountedRef = useRef(true);
+  const refreshInFlightRef = useRef<Promise<void> | null>(null);
+  const runtimePollDelayRef = useRef(RUNTIME_POLL_MS);
+  const lastAuthRepairAtRef = useRef(0);
   // Per-session event sequence cursor — advances as events arrive over WS
   const seqCursorRef = useRef<Record<string, number>>({});
   // Stable client ID for multi-writer protocol identification
@@ -207,8 +212,6 @@ export function useDaemonSessions() {
     setTimelineBySession,
     setStreamingBySession,
     setPendingPermissionsBySession,
-    setConnectionState,
-    setConnectionError,
   });
 
   // ── Runtime metrics poll (4s) ───────────────────────────────────────────────
@@ -224,92 +227,125 @@ export function useDaemonSessions() {
   }, [runtimeOverride, sessions.length, streamingBySession]);
 
   const refreshNow = useCallback(async () => {
-    setConnectionState("connecting");
-    try {
-      const runHealthCheck = async (conn: DaemonConnectionOptions) => {
-        const [health, metrics] = await Promise.all([
-          daemonClient.health(conn),
-          daemonClient.metrics(conn).catch(() => null),
-        ]);
-        return { health, metrics };
-      };
+    if (refreshInFlightRef.current) {
+      return refreshInFlightRef.current;
+    }
 
-      let activeConnection = connection;
-      let result: Awaited<ReturnType<typeof runHealthCheck>> | null = null;
-
+    const runRefresh = (async () => {
+      setConnectionState((prev) => (prev === "connected" ? prev : "connecting"));
       try {
-        const checked = await runHealthCheck(activeConnection);
-        result = checked;
-      } catch (error) {
-        const canRepairAuth =
-          isSecureConnectionStoreAvailable() &&
-          isLocalEndpointHost(activeConnection.host) &&
-          isAuthFailure(error);
-        if (!canRepairAuth) {
-          throw error;
-        }
+        const runHealthCheck = async (conn: DaemonConnectionOptions) => {
+          const [health, metrics] = await Promise.all([
+            daemonClient.health(conn),
+            daemonClient.metrics(conn).catch(() => null),
+          ]);
+          return { health, metrics };
+        };
+
+        let activeConnection = connection;
+        let result: Awaited<ReturnType<typeof runHealthCheck>> | null = null;
 
         try {
-          await bootstrapDaemonConnection(true);
-        } catch {
-          // Keep retry path best-effort and continue with stored token load.
+          const checked = await runHealthCheck(activeConnection);
+          result = checked;
+        } catch (error) {
+          const canRepairAuth =
+            isSecureConnectionStoreAvailable() &&
+            isLocalEndpointHost(activeConnection.host) &&
+            isAuthFailure(error);
+          if (!canRepairAuth) {
+            throw error;
+          }
+
+          const now = Date.now();
+          const canAttemptBootstrap =
+            now - lastAuthRepairAtRef.current >= AUTH_REPAIR_COOLDOWN_MS;
+          if (canAttemptBootstrap) {
+            lastAuthRepairAtRef.current = now;
+            try {
+              await bootstrapDaemonConnection(true);
+            } catch {
+              // Keep retry path best-effort and continue with stored token load.
+            }
+          }
+
+          const repairedToken = (await loadToken(
+            activeConnection.host,
+            activeConnection.port,
+          ))?.trim();
+          if (repairedToken && repairedToken !== activeConnection.token) {
+            activeConnection = { ...activeConnection, token: repairedToken };
+            setConnectionRaw((current) =>
+              current.host === connection.host && current.port === connection.port
+                ? { ...current, token: repairedToken }
+                : current,
+            );
+          }
+
+          const checked = await runHealthCheck(activeConnection);
+          result = checked;
         }
 
-        const repairedToken = (await loadToken(
-          activeConnection.host,
-          activeConnection.port,
-        ))?.trim();
-        if (repairedToken && repairedToken !== activeConnection.token) {
-          activeConnection = { ...activeConnection, token: repairedToken };
-          setConnectionRaw((current) =>
-            current.host === connection.host && current.port === connection.port
-              ? { ...current, token: repairedToken }
-              : current,
-          );
+        if (!mountedRef.current) return;
+
+        runtimePollDelayRef.current = RUNTIME_POLL_MS;
+        if (result?.health.status) {
+          setConnectionState("connected");
+          setConnectionError(null);
         }
 
-        const checked = await runHealthCheck(activeConnection);
-        result = checked;
-      }
-
-      if (!mountedRef.current) return;
-
-      if (result?.health.status) {
-        setConnectionState("connected");
-        setConnectionError(null);
-      }
-
-      const runtimeMetrics = result?.metrics?.runtime;
-      if (runtimeMetrics) {
-        setRuntimeOverride({
-          sessionCount: runtimeMetrics.sessionCount ?? sessions.length,
-          activeTurnCount: runtimeMetrics.activeTurnCount ?? 0,
-          queuedTurnCount: runtimeMetrics.queuedTurnCount ?? 0,
-          subscriberCount: runtimeMetrics.subscriberCount ?? 0,
+        const runtimeMetrics = result?.metrics?.runtime;
+        if (runtimeMetrics) {
+          setRuntimeOverride({
+            sessionCount: runtimeMetrics.sessionCount ?? sessions.length,
+            activeTurnCount: runtimeMetrics.activeTurnCount ?? 0,
+            queuedTurnCount: runtimeMetrics.queuedTurnCount ?? 0,
+            subscriberCount: runtimeMetrics.subscriberCount ?? 0,
+          });
+        }
+      } catch (error) {
+        if (!mountedRef.current) return;
+        runtimePollDelayRef.current = Math.min(
+          RUNTIME_POLL_MAX_MS,
+          Math.max(RUNTIME_POLL_MS, runtimePollDelayRef.current * 2),
+        );
+        setConnectionState("disconnected");
+        setConnectionError(
+          error instanceof Error ? error.message : String(error),
+        );
+        setRuntimeOverride(null);
+        // Daemon is unreachable — any in-progress turns will never send turn.done.
+        // Clear streaming indicators so the UI doesn't show perpetual spinners.
+        setStreamingBySession((prev) => {
+          if (Object.values(prev).every((v) => !v)) return prev;
+          return Object.fromEntries(Object.keys(prev).map((k) => [k, false]));
         });
       }
-    } catch (error) {
-      if (!mountedRef.current) return;
-      setConnectionState("disconnected");
-      setConnectionError(
-        error instanceof Error ? error.message : String(error),
-      );
-      setRuntimeOverride(null);
-      // Daemon is unreachable — any in-progress turns will never send turn.done.
-      // Clear streaming indicators so the UI doesn't show perpetual spinners.
-      setStreamingBySession((prev) => {
-        if (Object.values(prev).every((v) => !v)) return prev;
-        return Object.fromEntries(Object.keys(prev).map((k) => [k, false]));
-      });
-    }
+    })();
+
+    refreshInFlightRef.current = runRefresh.finally(() => {
+      refreshInFlightRef.current = null;
+    });
+    return refreshInFlightRef.current;
   }, [connection, sessions.length]);
 
   useEffect(() => {
-    refreshNow().finally(() => setInitialCheckDone(true));
-    const timer = window.setInterval(() => {
-      void refreshNow();
-    }, RUNTIME_POLL_MS);
-    return () => window.clearInterval(timer);
+    let cancelled = false;
+    let timeoutId: number | null = null;
+
+    const loop = async () => {
+      await refreshNow().finally(() => setInitialCheckDone(true));
+      if (cancelled) return;
+      timeoutId = window.setTimeout(loop, runtimePollDelayRef.current);
+    };
+
+    void loop();
+    return () => {
+      cancelled = true;
+      if (timeoutId !== null) {
+        window.clearTimeout(timeoutId);
+      }
+    };
   }, [refreshNow]);
 
   const createSession = useCallback(

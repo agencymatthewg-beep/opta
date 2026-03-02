@@ -1,5 +1,12 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import App from "./App";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 
@@ -88,17 +95,10 @@ vi.mock("./pages/DaemonLogsPage", () => ({
 }));
 
 describe("App account controls wiring", () => {
-  beforeEach(() => {
-    Object.defineProperty(window, "localStorage", {
-      configurable: true,
-      value: {
-        getItem: vi.fn().mockReturnValue(null),
-        setItem: vi.fn(),
-        removeItem: vi.fn(),
-      },
-    });
-
-    vi.mocked(useDaemonSessions).mockReturnValue({
+  const makeDaemonState = (
+    overrides: Partial<ReturnType<typeof useDaemonSessions>>,
+  ) =>
+    ({
       activeSessionId: null,
       cancelActiveTurn: vi.fn().mockResolvedValue(undefined),
       connection: { host: "127.0.0.1", port: 9999, token: "token" },
@@ -120,7 +120,24 @@ describe("App account controls wiring", () => {
       createSession: vi.fn().mockResolvedValue("sess_1"),
       removeSession: vi.fn(),
       initialCheckDone: true,
-    } as never);
+      ...overrides,
+    }) as never;
+
+  beforeEach(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: {
+        getItem: vi.fn().mockReturnValue(null),
+        setItem: vi.fn(),
+        removeItem: vi.fn(),
+      },
+    });
+
+    vi.mocked(useDaemonSessions).mockReturnValue(makeDaemonState({}));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("renders Account tab and switches to AccountControlPage", async () => {
@@ -171,5 +188,86 @@ describe("App account controls wiring", () => {
     const mcpTab = screen.getByRole("button", { name: "MCP" });
     fireEvent.click(mcpTab);
     expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
+  });
+
+  it("shows reconnect overlay after losing connection from a previously connected state", async () => {
+    const stateRef = {
+      current: makeDaemonState({ connectionState: "connected" }),
+    };
+    vi.mocked(useDaemonSessions).mockImplementation(
+      () => stateRef.current as never,
+    );
+
+    const view = render(<App />);
+    await waitFor(() => expect(screen.getByText("Live")).toBeInTheDocument());
+
+    stateRef.current = makeDaemonState({
+      connectionState: "disconnected",
+      connectionError: "daemon unreachable",
+    });
+    view.rerender(<App />);
+    await act(async () => {});
+    expect(screen.getByText("Daemon connection lost")).toBeInTheDocument();
+  });
+
+  it("renders reconnect diagnostics endpoint and offline duration", async () => {
+    vi.useFakeTimers();
+    const stateRef = {
+      current: makeDaemonState({ connectionState: "connected" }),
+    };
+    vi.mocked(useDaemonSessions).mockImplementation(
+      () => stateRef.current as never,
+    );
+
+    const view = render(<App />);
+    await act(async () => {});
+    stateRef.current = makeDaemonState({
+      connectionState: "disconnected",
+      connectionError: "daemon unreachable",
+    });
+    view.rerender(<App />);
+    await act(async () => {});
+    expect(screen.getByText("Daemon connection lost")).toBeInTheDocument();
+    expect(screen.getByText(/Endpoint:/i)).toBeInTheDocument();
+    expect(screen.getByText("http://127.0.0.1:9999")).toBeInTheDocument();
+    expect(screen.getByText(/health checks retry every 4s/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(2_000);
+    });
+
+    expect(screen.getByText(/Offline for [12]s\./i)).toBeInTheDocument();
+    vi.useRealTimers();
+  });
+
+  it("copies reconnect diagnostics to clipboard", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const stateRef = {
+      current: makeDaemonState({ connectionState: "connected" }),
+    };
+    vi.mocked(useDaemonSessions).mockImplementation(
+      () => stateRef.current as never,
+    );
+
+    const view = render(<App />);
+    await waitFor(() => expect(screen.getByText("Live")).toBeInTheDocument());
+    stateRef.current = makeDaemonState({
+      connectionState: "disconnected",
+      connectionError: "daemon unreachable",
+    });
+    view.rerender(<App />);
+
+    expect(await screen.findByText("Daemon connection lost")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /copy diagnostics/i }));
+
+    await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));
+    expect(writeText.mock.calls[0]?.[0]).toContain(
+      "endpoint=http://127.0.0.1:9999",
+    );
   });
 });

@@ -30,13 +30,6 @@ export function GuideViewer({ guide }: { guide: Guide }) {
 
   // Format title to ensure "Opta" is styled
   const renderTitle = (title: string) => {
-    if (title.includes('Opta')) {
-      return (
-        <>
-          <span className="text-opta">Opta</span> {title.replace('Opta ', '')}
-        </>
-      );
-    }
     return title;
   };
 
@@ -114,6 +107,15 @@ export function GuideViewer({ guide }: { guide: Guide }) {
         <main className="flex-1 lg:ml-72 p-8 md:p-12 lg:p-24 max-w-4xl flex flex-col gap-24 relative">
           
           <section id="overview" className="flex flex-col gap-6 pt-8">
+            <div className="flex flex-col mb-4 items-start relative overflow-hidden" style={{marginLeft: '-1rem'}}>
+              <pre className="font-mono font-bold" style={{ color: "var(--opta-primary-glow, #a855f7)", textShadow: "0 0 12px rgba(168, 85, 247, 0.6)", lineHeight: "1.1", fontSize: "14px", margin: 0 }}>
+                {`   .·:·.    ██████╗  ██████╗  ████████╗ █████╗ 
+  :  O  :  ██╔═══██╗ ██╔══██╗ ╚══██╔══╝██╔══██╗
+   '·:·'   ██║   ██║ ██████╔╝    ██║   ███████║
+           ╚██████╔╝ ██╔═══╝     ██║   ██║  ██║
+            ╚═════╝  ╚═╝         ╚═╝   ╚═╝  ╚═╝`}
+              </pre>
+            </div>
             <div 
               className="inline-flex items-center gap-2 w-max px-3 py-1 text-xs font-mono border rounded uppercase tracking-wider" 
               style={{ 

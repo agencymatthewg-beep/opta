@@ -61,6 +61,7 @@ describe("useDaemonSessions secure connection persistence", () => {
   });
 
   afterEach(() => {
+    vi.useRealTimers();
     Object.defineProperty(globalThis, "localStorage", {
       value: originalLocalStorage,
       configurable: true,
@@ -96,10 +97,10 @@ describe("useDaemonSessions secure connection persistence", () => {
       port: 9999,
       token: "legacy-token",
     });
-    const invoke = vi
-      .fn()
-      .mockResolvedValueOnce(undefined)
-      .mockResolvedValueOnce("secure-token");
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "get_connection_secret") return "secure-token";
+      return undefined;
+    });
     (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
       core: { invoke },
     };
@@ -210,11 +211,12 @@ describe("useDaemonSessions secure connection persistence", () => {
     await act(async () => {
       await result.current.trackSession("sess-b");
     });
-
-    await waitFor(() => {
-      expect(connectCalls.filter((id) => id === "sess-a")).toHaveLength(1);
-      expect(connectCalls.filter((id) => id === "sess-b")).toHaveLength(1);
+    await act(async () => {
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
     });
+
+    expect(connectCalls.filter((id) => id === "sess-a")).toHaveLength(1);
+    expect(connectCalls.filter((id) => id === "sess-b")).toHaveLength(1);
   });
 
   it("does not mark global connection disconnected on per-session websocket close", async () => {
@@ -240,5 +242,80 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
 
     await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+  });
+
+  it("coalesces rapid token events into one assistant chunk", async () => {
+    vi.useFakeTimers();
+    const onEventBySession = new Map<string, (envelope: unknown) => void>();
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, sessionId, _afterSeq, handlers) => {
+        onEventBySession.set(sessionId, handlers.onEvent as (envelope: unknown) => void);
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-tokens");
+    });
+
+    const emit = onEventBySession.get("sess-tokens");
+    expect(emit).toBeDefined();
+
+    act(() => {
+      emit?.({ event: "turn.token", seq: 1, payload: { token: "Hel" } });
+      emit?.({ event: "turn.token", seq: 2, payload: { token: "lo" } });
+      emit?.({ event: "turn.token", seq: 3, payload: { token: "!" } });
+    });
+
+    let items = result.current.timelineBySession["sess-tokens"] ?? [];
+    expect(items.some((item) => item.kind === "assistant")).toBe(false);
+
+    act(() => {
+      vi.advanceTimersByTime(41);
+    });
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const assistantItems = (
+      result.current.timelineBySession["sess-tokens"] ?? []
+    ).filter((item) => item.kind === "assistant");
+    expect(assistantItems).toHaveLength(1);
+    expect(assistantItems[0]?.body).toBe("Hello!");
+  });
+
+  it("flushes buffered tokens before stop events", async () => {
+    const onEventBySession = new Map<string, (envelope: unknown) => void>();
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, sessionId, _afterSeq, handlers) => {
+        onEventBySession.set(sessionId, handlers.onEvent as (envelope: unknown) => void);
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-stop");
+    });
+
+    const emit = onEventBySession.get("sess-stop");
+    expect(emit).toBeDefined();
+
+    act(() => {
+      emit?.({ event: "turn.token", seq: 1, payload: { token: "Hi" } });
+      emit?.({ event: "turn.done", seq: 2, payload: {} });
+    });
+
+    await waitFor(() => {
+      const items = result.current.timelineBySession["sess-stop"] ?? [];
+      const assistants = items.filter((item) => item.kind === "assistant");
+      const systems = items.filter((item) => item.kind === "system");
+      expect(assistants).toHaveLength(1);
+      expect(assistants[0]?.body).toBe("Hi");
+      expect(systems.some((item) => item.title === "Turn complete")).toBe(true);
+    });
   });
 });

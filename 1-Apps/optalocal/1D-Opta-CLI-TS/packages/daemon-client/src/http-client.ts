@@ -38,6 +38,8 @@ function baseUrl(connection: DaemonConnectionOptions): string {
   return `${protocol}://${connection.host}:${connection.port}`;
 }
 
+const REQUEST_TIMEOUT_MS = 8000;
+
 export class DaemonHttpClient implements DaemonHttpApi {
   constructor(
     private readonly connection: DaemonConnectionOptions,
@@ -53,10 +55,41 @@ export class DaemonHttpClient implements DaemonHttpApi {
       headers.set('Content-Type', 'application/json');
     }
 
-    const response = await this.fetchImpl(`${baseUrl(this.connection)}${path}`, {
-      ...init,
-      headers,
-    });
+    const controller = new AbortController();
+    const upstreamSignal = init.signal;
+    let timedOut = false;
+    let onAbort: (() => void) | undefined;
+    if (upstreamSignal) {
+      if (upstreamSignal.aborted) {
+        controller.abort();
+      } else {
+        onAbort = () => controller.abort();
+        upstreamSignal.addEventListener('abort', onAbort, { once: true });
+      }
+    }
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, REQUEST_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await this.fetchImpl(`${baseUrl(this.connection)}${path}`, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (timedOut) {
+        throw new Error(`Daemon request timed out (${REQUEST_TIMEOUT_MS}ms): ${path}`);
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+      if (upstreamSignal && onAbort) {
+        upstreamSignal.removeEventListener('abort', onAbort);
+      }
+    }
 
     if (!response.ok) {
       const message = await response.text().catch(() => '');

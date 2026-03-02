@@ -2,7 +2,7 @@ import type { Guide } from './index';
 
 export const cliMasterclass: Guide = {
   slug: 'cli-masterclass',
-  title: 'Opta CLI Masterclass',
+  title: 'CLI Masterclass',
   app: 'cli',
   category: 'reference',
   summary: 'A comprehensive deep dive into the Opta CLI. Master interactive chat, autonomous task execution, and local daemon orchestration right from your terminal.',

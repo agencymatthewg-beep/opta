@@ -32,7 +32,6 @@ import {
 } from "./lib/browserVisualState";
 import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import type { PaletteCommand } from "./types";
-import "./opta.css";
 
 type AppPage =
   | "sessions"
@@ -75,6 +74,10 @@ function App() {
   const [activePage, setActivePage] = useState<AppPage>("sessions");
   const [showToken, setShowToken] = useState(false);
   const [hasEverConnected, setHasEverConnected] = useState(false);
+  const [disconnectedSinceMs, setDisconnectedSinceMs] = useState<number | null>(
+    null,
+  );
+  const [offlineSeconds, setOfflineSeconds] = useState(0);
   const [browserViewMode, setBrowserViewMode] = useState<BrowserViewMode>("default");
 
   const {
@@ -235,6 +238,25 @@ function App() {
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
   }, [connectionState]);
+
+  useEffect(() => {
+    if (connectionState === "disconnected" && hasEverConnected) {
+      setDisconnectedSinceMs((current) => current ?? Date.now());
+      return;
+    }
+    setDisconnectedSinceMs(null);
+    setOfflineSeconds(0);
+  }, [connectionState, hasEverConnected]);
+
+  useEffect(() => {
+    if (disconnectedSinceMs === null) return;
+    const updateOfflineSeconds = () => {
+      setOfflineSeconds(Math.max(0, Math.floor((Date.now() - disconnectedSinceMs) / 1000)));
+    };
+    updateOfflineSeconds();
+    const timer = window.setInterval(updateOfflineSeconds, 1000);
+    return () => window.clearInterval(timer);
+  }, [disconnectedSinceMs]);
 
   useEffect(() => {
     const onOpenSetupWizard = () => setFirstRun(true);
@@ -454,6 +476,35 @@ function App() {
       setNotice(error instanceof Error ? error.message : String(error));
     }
   }, [activeSessionId, composerDraft, submitMessage, submissionMode]);
+
+  const reconnectEndpoint = `${connection.protocol ?? "http"}://${connection.host}:${connection.port}`;
+  const copyReconnectDiagnostics = useCallback(async () => {
+    const diagnostics = [
+      `timestamp=${new Date().toISOString()}`,
+      `endpoint=${reconnectEndpoint}`,
+      `state=${connectionState}`,
+      `offline_seconds=${offlineSeconds}`,
+      `active_session=${activeSessionId ?? "none"}`,
+      `tracked_sessions=${sessionCount}`,
+      `error=${connectionError ?? "none"}`,
+    ].join(" | ");
+    try {
+      if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard unavailable");
+      }
+      await navigator.clipboard.writeText(diagnostics);
+      setNotice("Reconnect diagnostics copied");
+    } catch {
+      setNotice("Could not copy reconnect diagnostics");
+    }
+  }, [
+    activeSessionId,
+    connectionError,
+    connectionState,
+    offlineSeconds,
+    reconnectEndpoint,
+    sessionCount,
+  ]);
 
   // Setup wizard gate — renders before anything else
   if (firstRun === null) {
@@ -849,10 +900,19 @@ function App() {
                   Opta is retrying automatically. The session view unlocks as soon
                   as the daemon is back online.
                 </p>
+                <p className="daemon-reconnect-overlay__meta">
+                  Endpoint: <code>{reconnectEndpoint}</code>
+                </p>
+                <p className="daemon-reconnect-overlay__meta">
+                  Offline for {offlineSeconds}s. Health checks retry every 4s.
+                </p>
                 {connectionError ? (
                   <p className="daemon-reconnect-overlay__error">{connectionError}</p>
                 ) : null}
                 <div className="daemon-reconnect-overlay__actions">
+                  <button type="button" onClick={() => void copyReconnectDiagnostics()}>
+                    Copy diagnostics
+                  </button>
                   <button type="button" onClick={() => void refreshNow()}>
                     Retry now
                   </button>

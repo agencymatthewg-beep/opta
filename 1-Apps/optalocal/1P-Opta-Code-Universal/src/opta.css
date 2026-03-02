@@ -124,7 +124,7 @@ h6 {
   margin: 1.25rem auto;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: transparent;
+  background: rgba(0, 0, 0, 0.78);
   box-shadow: var(--shadow);
   position: relative;
   overflow: hidden;
@@ -4766,6 +4766,19 @@ button.active,
   line-height: 1.45;
 }
 
+.daemon-reconnect-overlay__meta {
+  margin: 0 0 0.45rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.74rem;
+  color: var(--opta-text-muted);
+}
+
+.daemon-reconnect-overlay__meta code {
+  font-family: inherit;
+  font-size: inherit;
+  color: var(--opta-text-primary);
+}
+
 .daemon-reconnect-overlay__error {
   font-family: "JetBrains Mono", monospace;
   font-size: 0.78rem;
@@ -4776,6 +4789,7 @@ button.active,
   display: flex;
   gap: 0.6rem;
   justify-content: flex-end;
+  flex-wrap: wrap;
 }
 
 .daemon-reconnect-overlay__actions button {

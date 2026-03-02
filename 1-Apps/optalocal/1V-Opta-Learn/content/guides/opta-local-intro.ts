@@ -2,7 +2,7 @@ import type { Guide } from './index';
 
 export const optaLocalIntro: Guide = {
   slug: 'opta-local-intro',
-  title: 'Introduction to Opta Local',
+  title: 'Introduction to Local',
   app: 'general',
   category: 'getting-started',
   summary: 'A private, local-first AI stack designed for developers running Apple Silicon. No cloud dependencies, no data leakage, zero monthly fees.',
