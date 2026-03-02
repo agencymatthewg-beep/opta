@@ -5,7 +5,11 @@ import chalk from 'chalk';
 import { VERSION } from './core/version.js';
 import { EXIT, ExitError } from './core/errors.js';
 import { setVerbose, setDebug } from './core/debug.js';
-import { parseProviderOverride, type ProviderOverrideName } from './utils/config-helpers.js';
+import {
+  parseProviderOverride,
+  PROVIDER_OVERRIDE_NAMES,
+  type ProviderOverrideName,
+} from './utils/config-helpers.js';
 import type { UpdateTargetMode } from './commands/update.js';
 
 // --- SIGINT handler ---
@@ -71,7 +75,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -108,7 +112,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -130,7 +134,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -347,7 +351,7 @@ function parseProviderOption(value: string): ProviderOverrideName {
     const message =
       error instanceof Error
         ? error.message
-        : `Invalid provider "${value}". Expected one of: lmx, anthropic.`;
+        : `Invalid provider "${value}". Expected one of: ${PROVIDER_OVERRIDE_NAMES.join(', ')}.`;
     throw new InvalidArgumentError(message);
   }
 }
@@ -386,7 +390,7 @@ program
   .command('do <task...>')
   .description('Execute a coding task using the agent loop')
   .option('-m, --model <name>', 'use specific model for this task')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('-q, --quiet', 'suppress output (exit code only, errors to stderr)')
@@ -577,7 +581,7 @@ program
   .option('--port <port>', 'override connection port when saving')
   .option('--admin-key <key>', 'override connection admin key when saving (empty string clears)')
   .option('--model <id>', 'override default model when saving')
-  .option('--provider <name>', 'provider for profile (lmx|anthropic)')
+  .option('--provider <name>', 'provider for profile (lmx|anthropic|gemini|openai|opencode_zen)')
   .option('--mode <name>', 'default mode (safe|auto|plan|review|research|dangerous|ci)')
   .option('--json', 'machine-readable output')
   .addHelpText(

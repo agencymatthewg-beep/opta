@@ -58,6 +58,22 @@ function isAuthFailure(error: unknown): boolean {
   return false;
 }
 
+function isTransportFailure(error: unknown): boolean {
+  if (isAuthFailure(error)) return true;
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase();
+    return /(connection|network|socket|refused|econn|enotfound|fetch failed|timeout|timed out|unreachable)/.test(
+      message,
+    );
+  }
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const status = Number((error as { status?: unknown }).status ?? NaN);
+    if (!Number.isFinite(status)) return false;
+    return status === 0 || status === 401 || status === 403 || status >= 500;
+  }
+  return false;
+}
+
 export function useDaemonSessions() {
   const [connection, setConnectionRaw] =
     useState<DaemonConnectionOptions>(loadStoredConnection);
@@ -243,7 +259,7 @@ export function useDaemonSessions() {
           return { health, metrics };
         };
 
-        let activeConnection = connection;
+        let activeConnection = connectionRef.current;
         let result: Awaited<ReturnType<typeof runHealthCheck>> | null = null;
 
         try {
@@ -277,7 +293,8 @@ export function useDaemonSessions() {
           if (repairedToken && repairedToken !== activeConnection.token) {
             activeConnection = { ...activeConnection, token: repairedToken };
             setConnectionRaw((current) =>
-              current.host === connection.host && current.port === connection.port
+              current.host === activeConnection.host &&
+              current.port === activeConnection.port
                 ? { ...current, token: repairedToken }
                 : current,
             );
@@ -331,7 +348,7 @@ export function useDaemonSessions() {
       refreshInFlightRef.current = null;
     });
     return refreshInFlightRef.current;
-  }, [connection, sessions.length]);
+  }, [sessions.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -426,23 +443,11 @@ export function useDaemonSessions() {
 
   const trackSession = useCallback(
     async (sessionId: string, workspace?: string) => {
-      setSessions((prev) => {
-        if (prev.some((session) => session.sessionId === sessionId))
-          return prev;
-        return [
-          {
-            sessionId,
-            title: `Tracked ${sessionId.slice(0, 7)}`,
-            workspace: workspace || "Tracked",
-            updatedAt: nowIso(),
-          },
-          ...prev,
-        ];
-      });
-      setActiveSessionId(sessionId);
-      setConnectionError(null);
+      let persistedItems: TimelineItem[] = [];
+      let persistedMaxSeq = seqCursorRef.current[sessionId] ?? 0;
 
-      // Load persisted events from disk (Stream F)
+      // Load persisted events from disk (Stream F) before opening WS so we can
+      // seed the sequence cursor and avoid replaying already-persisted events.
       const invoke = getTauriInvoke();
       if (invoke) {
         try {
@@ -458,23 +463,48 @@ export function useDaemonSessions() {
                 if (typeof env.seq === "number") {
                   if (seenSeqs.has(env.seq)) continue;
                   seenSeqs.add(env.seq);
+                  if (env.seq > persistedMaxSeq) persistedMaxSeq = env.seq;
                 }
                 envelopes.push(env);
               } catch {
-                // skip malformed lines
+                // Skip malformed lines.
               }
             }
-            const items = eventsToTimelineItems(envelopes, sessionId);
-            if (items.length > 0) {
-              setTimelineBySession((prev) => ({
-                ...prev,
-                [sessionId]: items,
-              }));
-            }
+            persistedItems = eventsToTimelineItems(envelopes, sessionId);
           }
         } catch {
           // persistence unavailable, continue without
         }
+      }
+
+      if (persistedMaxSeq > (seqCursorRef.current[sessionId] ?? 0)) {
+        seqCursorRef.current[sessionId] = persistedMaxSeq;
+      }
+
+      setSessions((prev) => {
+        if (prev.some((session) => session.sessionId === sessionId))
+          return prev;
+        return [
+          {
+            sessionId,
+            title: `Tracked ${sessionId.slice(0, 7)}`,
+            workspace: workspace || "Tracked",
+            updatedAt: nowIso(),
+          },
+          ...prev,
+        ];
+      });
+      setActiveSessionId(sessionId);
+      setConnectionError(null);
+      if (persistedItems.length > 0) {
+        setTimelineBySession((prev) => {
+          const existing = prev[sessionId] ?? [];
+          if (existing.length > 0) return prev;
+          return {
+            ...prev,
+            [sessionId]: persistedItems,
+          };
+        });
       }
     },
     [],
@@ -531,7 +561,10 @@ export function useDaemonSessions() {
             ],
           };
         });
-        setConnectionState("disconnected");
+        if (isTransportFailure(error)) {
+          setConnectionState("disconnected");
+          setConnectionError(error instanceof Error ? error.message : String(error));
+        }
         throw error;
       }
     },

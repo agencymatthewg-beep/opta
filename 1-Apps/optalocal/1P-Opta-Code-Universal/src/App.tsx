@@ -241,12 +241,20 @@ function App() {
   }, [connectionState]);
 
   useEffect(() => {
-    if (connectionState === "disconnected" && hasEverConnected) {
+    if (!hasEverConnected) {
+      setDisconnectedSinceMs(null);
+      setOfflineSeconds(0);
+      return;
+    }
+    if (connectionState === "connected") {
+      setDisconnectedSinceMs(null);
+      setOfflineSeconds(0);
+      return;
+    }
+    if (connectionState === "disconnected" || connectionState === "connecting") {
       setDisconnectedSinceMs((current) => current ?? Date.now());
       return;
     }
-    setDisconnectedSinceMs(null);
-    setOfflineSeconds(0);
   }, [connectionState, hasEverConnected]);
 
   useEffect(() => {

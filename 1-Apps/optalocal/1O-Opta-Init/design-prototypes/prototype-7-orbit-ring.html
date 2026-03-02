@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 7: Orbit Ring Launcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #09090b; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; overflow: hidden; }
+    .window { width: 1000px; height: 650px; background: rgba(12,12,18,0.8); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; backdrop-filter: blur(20px); position: relative; box-shadow: 0 30px 60px rgba(0,0,0,0.8); display: flex; flex-direction: column; overflow: hidden; }
+    .header { padding: 20px 30px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; justify-content: space-between; align-items: center; }
+    
+    .orbit-container { flex: 1; position: relative; display: flex; justify-content: center; align-items: center; }
+    
+    /* Central Info Area */
+    .center-info { position: absolute; text-align: center; width: 300px; z-index: 10; pointer-events: none; opacity: 0; transition: opacity 0.3s; }
+    .center-info.active { opacity: 1; }
+    
+    /* Orbit Ring Layout */
+    .app-node { position: absolute; cursor: pointer; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); display: flex; justify-content: center; align-items: center; z-index: 20; }
+    
+    /* The Purple Circle Interaction */
+    .purple-circle {
+      position: absolute; width: 80px; height: 80px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(168,85,247,0.8) 0%, rgba(168,85,247,0.2) 60%, transparent 100%);
+      opacity: 0; transform: scale(0.5); transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 30px rgba(168,85,247,0.5); z-index: 1;
+    }
+    .app-logo { width: 64px; height: 64px; border-radius: 50%; object-fit: contain; z-index: 2; transition: transform 0.3s; position: relative; }
+    
+    .app-node:hover .purple-circle { opacity: 1; transform: scale(1.6); }
+    .app-node:hover .app-logo { transform: scale(1.1); }
+    .app-node:hover { z-index: 30; }
+
+    /* Positioning logic (Static for prototype) */
+    .pos-1 { top: 10%; left: 50%; transform: translateX(-50%); }
+    .pos-2 { top: 30%; right: 20%; }
+    .pos-3 { bottom: 30%; right: 20%; }
+    .pos-4 { bottom: 10%; left: 50%; transform: translateX(-50%); }
+    .pos-5 { bottom: 30%; left: 20%; }
+    .pos-6 { top: 30%; left: 20%; }
+
+    .orbit-line { position: absolute; width: 450px; height: 450px; border-radius: 50%; border: 1px dashed rgba(255,255,255,0.05); pointer-events: none; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="header">
+      <div class="font-bold tracking-widest text-gray-400">INIT<span class="text-white">MANAGER</span></div>
+      <div class="text-xs font-mono text-green-400 flex items-center gap-2 bg-green-400/10 px-3 py-1 rounded-full border border-green-400/20">
+        <div class="w-2 h-2 bg-green-400 rounded-full"></div> All Systems Operational
+      </div>
+    </div>
+    
+    <div class="orbit-container">
+      <div class="orbit-line"></div>
+      
+      <!-- Central Info display changes via JS on hover -->
+      <div class="center-info active" id="info-default">
+        <h2 class="text-3xl font-bold mb-2">Opta Local Stack</h2>
+        <p class="text-gray-400">Select an application to launch or manage.</p>
+      </div>
+      
+      <!-- App 1: LMX -->
+      <div class="app-node pos-1" onmouseenter="showInfo('LMX')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.png" class="app-logo" alt="Opta LMX">
+      </div>
+      <!-- App 2: CLI -->
+      <div class="app-node pos-2" onmouseenter="showInfo('CLI')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-CLI/opta-cli-logo-final.png" class="app-logo" alt="Opta CLI">
+      </div>
+      <!-- App 3: Code Desktop -->
+      <div class="app-node pos-3" onmouseenter="showInfo('Code')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.png" class="app-logo" alt="Opta Code">
+      </div>
+      <!-- App 4: Accounts -->
+      <div class="app-node pos-4" onmouseenter="showInfo('Accounts')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.png" class="app-logo" alt="Opta Accounts">
+      </div>
+      <!-- App 5: Local -->
+      <div class="app-node pos-5" onmouseenter="showInfo('Local')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Local/opta-local-logo-final.png" class="app-logo" alt="Opta Local">
+      </div>
+      <!-- App 6: Init itself / Main Logo -->
+      <div class="app-node pos-6" onmouseenter="showInfo('Init')" onmouseleave="hideInfo()">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta/opta-logo.png" class="app-logo" alt="Opta Settings">
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const defaultInfo = document.getElementById('info-default');
+    function showInfo(app) {
+      defaultInfo.innerHTML = `<h2 class="text-4xl font-bold mb-2 text-purple-400">Opta ${app}</h2><p class="text-gray-400 mb-6">Click to launch application.</p><button class="bg-purple-500 hover:bg-purple-400 text-white px-8 py-2 rounded-lg font-bold transition">Launch</button>`;
+    }
+    function hideInfo() {
+      defaultInfo.innerHTML = `<h2 class="text-3xl font-bold mb-2">Opta Local Stack</h2><p class="text-gray-400">Select an application to launch or manage.</p>`;
+    }
+  </script>
+</body>
+</html>

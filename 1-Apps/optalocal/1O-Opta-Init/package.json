@@ -5,6 +5,9 @@
   "scripts": {
     "dev": "npm run sync:desktop-manifests && next dev",
     "sync:desktop-manifests": "node scripts/sync-desktop-manifests.mjs",
+    "validate:release-manifests": "node scripts/validate-release-manifests.mjs",
+    "validate:manifest-links": "node scripts/validate-manifest-links.mjs",
+    "validate:release-contract": "npm run validate:release-manifests && npm run validate:manifest-links",
     "prebuild": "npm run sync:desktop-manifests",
     "build": "next build --webpack",
     "start": "node scripts/start-static.mjs",

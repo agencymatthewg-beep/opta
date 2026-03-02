@@ -644,7 +644,7 @@ class QuantizeRequest(BaseModel):
         return normalized
 
     @model_validator(mode="after")
-    def _validate_mode_specific_constraints(self) -> "QuantizeRequest":
+    def _validate_mode_specific_constraints(self) -> QuantizeRequest:
         bits, group_size, mode = validate_quantize_settings(
             bits=self.bits,
             group_size=self.group_size,

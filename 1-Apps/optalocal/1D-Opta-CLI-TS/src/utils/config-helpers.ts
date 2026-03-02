@@ -16,14 +16,26 @@ export interface ConfigOverrideFlags {
   plan?: boolean;
 }
 
-export type ProviderOverrideName = 'lmx' | 'anthropic';
+export const PROVIDER_OVERRIDE_NAMES = [
+  'lmx',
+  'anthropic',
+  'gemini',
+  'openai',
+  'opencode_zen',
+] as const;
+
+export type ProviderOverrideName = (typeof PROVIDER_OVERRIDE_NAMES)[number];
 
 export function parseProviderOverride(input: string): ProviderOverrideName {
   const normalized = input.trim().toLowerCase();
-  if (normalized === 'lmx' || normalized === 'anthropic') {
-    return normalized;
+  if (
+    PROVIDER_OVERRIDE_NAMES.includes(normalized as ProviderOverrideName)
+  ) {
+    return normalized as ProviderOverrideName;
   }
-  throw new Error(`Invalid provider "${input}". Expected one of: lmx, anthropic.`);
+  throw new Error(
+    `Invalid provider "${input}". Expected one of: ${PROVIDER_OVERRIDE_NAMES.join(', ')}.`
+  );
 }
 
 export function buildConfigOverrides(opts: ConfigOverrideFlags): Record<string, unknown> {

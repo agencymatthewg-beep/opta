@@ -2,22 +2,22 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type {
   Channel,
-  CommandOutcome,
   DaemonStatus,
   ManifestPayload,
   InstalledApp,
   ManifestApp,
   ManifestResponse,
 } from "./types";
+import "./app.css";
 
-const EXTERNAL_LINKS = [
-  { label: "Init Site", url: "https://init.optalocal.com" },
-  { label: "LMX", url: "https://lmx.optalocal.com" },
-  { label: "Accounts", url: "https://accounts.optalocal.com" },
-  { label: "Docs", url: "https://docs.optalocal.com" },
-] as const;
-
-type AppAction = "install" | "update" | "launch";
+// App Logo mapping
+const LOGOS: Record<string, string> = {
+  "opta-lmx": "/logos/opta-lmx-logo-final.png",
+  "opta-cli": "/logos/opta-cli-logo-final.png",
+  "opta-code-universal": "/logos/opta-code-logo-final.png",
+  "opta-daemon": "/logos/opta-status-logo-final.png", // Using status logo for daemon for now
+  "default": "/logos/opta-logo.png",
+};
 
 const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
   stable: {
@@ -25,30 +25,30 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
     updatedAt: "preview",
     apps: [
       {
-        id: "opta-cli",
-        name: "Opta CLI",
-        description: "Command-line interface for install/update and workflow orchestration.",
-        version: "stable-preview",
-        website: "https://init.optalocal.com/downloads/cli",
-      },
-      {
         id: "opta-lmx",
-        name: "Opta LMX Runtime",
+        name: "Opta LMX",
         description: "Model exchange and artifact orchestration runtime.",
         version: "stable-preview",
         website: "https://lmx.optalocal.com",
       },
       {
+        id: "opta-cli",
+        name: "Opta CLI",
+        description: "Command-line interface for orchestration.",
+        version: "stable-preview",
+        website: "https://init.optalocal.com/downloads/cli",
+      },
+      {
         id: "opta-code-universal",
-        name: "Opta Code Universal",
-        description: "Desktop coding surface for Opta operator workflows.",
+        name: "Opta Code",
+        description: "Desktop coding surface for Opta operators.",
         version: "stable-preview",
         website: "https://init.optalocal.com/apps/opta-code",
       },
       {
         id: "opta-daemon",
-        name: "Opta Daemon Service",
-        description: "Background daemon required for local runtime services.",
+        name: "Opta Daemon",
+        description: "Background daemon for local runtime services.",
         version: "stable-preview",
         website: "https://docs.optalocal.com/daemon",
       },
@@ -57,51 +57,40 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
   beta: {
     channel: "beta",
     updatedAt: "preview",
-    apps: [
-      {
-        id: "opta-cli",
-        name: "Opta CLI",
-        description: "Beta channel CLI with upcoming app and runtime features.",
-        version: "beta-preview",
-        website: "https://init.optalocal.com/downloads/cli",
-      },
-      {
-        id: "opta-lmx",
-        name: "Opta LMX Runtime",
-        description: "Beta model exchange runtime for pre-release validation.",
-        version: "beta-preview",
-        website: "https://lmx.optalocal.com",
-      },
-      {
-        id: "opta-code-universal",
-        name: "Opta Code Universal",
-        description: "Preview builds of Opta Code Universal desktop.",
-        version: "beta-preview",
-        website: "https://init.optalocal.com/apps/opta-code",
-      },
-      {
-        id: "opta-daemon",
-        name: "Opta Daemon Service",
-        description: "Pre-release daemon service package for validation rings.",
-        version: "beta-preview",
-        website: "https://docs.optalocal.com/daemon",
-      },
-    ],
+    apps: [],
   },
+};
+
+// Calculate coordinates for N apps on an ellipse/circle
+const calculateOrbitPositions = (count: number) => {
+  const positions = [];
+  for (let i = 0; i < count; i++) {
+    // Start at top (270 degrees)
+    const angle = (i * (360 / count) - 90) * (Math.PI / 180);
+    // Orbit size (radius)
+    const rx = 240; 
+    const ry = 240;
+    
+    // We use percentages for absolute positioning
+    const x = 50 + (Math.cos(angle) * rx) / 5; // scaled for CSS %
+    const y = 50 + (Math.sin(angle) * ry) / 5; // scaled for CSS %
+    
+    positions.push({ left: `${x}%`, top: `${y}%` });
+  }
+  return positions;
 };
 
 export function App() {
   const tauriAvailable =
     typeof window !== "undefined" &&
     Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
-  const [channel, setChannel] = useState<Channel>("stable");
-  const [loading, setLoading] = useState(false);
+  const [channel] = useState<Channel>("stable");
   const [manifestResp, setManifestResp] = useState<ManifestResponse | null>(null);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [daemon, setDaemon] = useState<DaemonStatus | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
-  const [warning, setWarning] = useState<string | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  
+  const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
 
   const installedIndex = useMemo(() => {
     const map = new Map<string, InstalledApp>();
@@ -114,25 +103,13 @@ export function App() {
   }, [installedApps]);
 
   const refreshData = useCallback(async () => {
-    setLoading(true);
-    setWarning(null);
-    setNotice(null);
-
     if (!tauriAvailable) {
       setManifestResp({
         manifest: BROWSER_PREVIEW_MANIFEST[channel],
         source: "browser-preview",
-        warning:
-          "Browser preview mode: install/update/launch and daemon controls require the packaged Opta Init desktop app.",
       });
       setInstalledApps([]);
-      setDaemon({
-        running: false,
-        message: "browser preview mode",
-        rawOutput: "Tauri bridge unavailable in browser-only mode.",
-        checkedAt: new Date().toISOString(),
-      });
-      setLoading(false);
+      setDaemon({ running: false, message: "browser mode", rawOutput: "", checkedAt: "" });
       return;
     }
 
@@ -142,17 +119,11 @@ export function App() {
         invoke<InstalledApp[]>("list_installed_apps"),
         invoke<DaemonStatus>("daemon_status"),
       ]);
-
       setManifestResp(manifestResult);
       setInstalledApps(installedResult);
       setDaemon(daemonResult);
-      if (manifestResult.warning) {
-        setWarning(manifestResult.warning);
-      }
-    } catch (error) {
-      setNotice(`Refresh failed: ${String(error)}`);
-    } finally {
-      setLoading(false);
+    } catch (e) {
+      console.error("Refresh failed:", e);
     }
   }, [channel, tauriAvailable]);
 
@@ -160,203 +131,124 @@ export function App() {
     void refreshData();
   }, [refreshData]);
 
-  const openExternal = useCallback(async (url: string) => {
-    if (!tauriAvailable) {
-      window.open(url, "_blank", "noopener,noreferrer");
-      return;
-    }
-
+  const runAppAction = async (app: ManifestApp, action: "install" | "update" | "launch") => {
+    if (!tauriAvailable) return;
+    setPendingKey(`${action}:${app.id}`);
     try {
-      await invoke("open_url", { url });
-    } catch (error) {
-      setNotice(`Could not open URL: ${String(error)}`);
-    }
-  }, [tauriAvailable]);
-
-  const runAppAction = useCallback(
-    async (app: ManifestApp, action: AppAction) => {
-      if (!tauriAvailable) {
-        setNotice("Run this inside the Opta Init desktop shell to execute install/update/launch actions.");
-        return;
+      const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
+      await invoke(command, action === "launch" ? { appId: app.id } : { appId: app.id, channel });
+      if (action !== "launch") {
+        setInstalledApps(await invoke<InstalledApp[]>("list_installed_apps"));
       }
-
-      const key = `${action}:${app.id}`;
-      setPendingKey(key);
-      setNotice(null);
-      try {
-        const command =
-          action === "install"
-            ? "install_app"
-            : action === "update"
-              ? "update_app"
-              : "launch_app";
-
-        const payload =
-          action === "launch"
-            ? { appId: app.id }
-            : { appId: app.id, channel };
-
-        const outcome = await invoke<CommandOutcome>(command, payload);
-        setNotice(outcome.message || `${action} complete for ${app.name}`);
-        if (action !== "launch") {
-          const nextInstalled = await invoke<InstalledApp[]>("list_installed_apps");
-          setInstalledApps(nextInstalled);
-        }
-      } catch (error) {
-        setNotice(`${action} failed for ${app.name}: ${String(error)}`);
-      } finally {
-        setPendingKey(null);
-      }
-    },
-    [channel, tauriAvailable],
-  );
-
-  const runDaemonAction = useCallback(async (action: "start" | "stop") => {
-    if (!tauriAvailable) {
-      setNotice("Run this inside the Opta Init desktop shell to control daemon lifecycle.");
-      return;
-    }
-
-    setPendingKey(`daemon:${action}`);
-    setNotice(null);
-    try {
-      const command = action === "start" ? "daemon_start" : "daemon_stop";
-      const outcome = await invoke<CommandOutcome>(command);
-      setNotice(outcome.message);
-      const status = await invoke<DaemonStatus>("daemon_status");
-      setDaemon(status);
-    } catch (error) {
-      setNotice(`Daemon ${action} failed: ${String(error)}`);
+    } catch (e) {
+      console.error(e);
     } finally {
       setPendingKey(null);
     }
-  }, [tauriAvailable]);
+  };
+
+  const runDaemonAction = async (action: "start" | "stop") => {
+    if (!tauriAvailable) return;
+    setPendingKey(`daemon:${action}`);
+    try {
+      await invoke(action === "start" ? "daemon_start" : "daemon_stop");
+      setDaemon(await invoke<DaemonStatus>("daemon_status"));
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPendingKey(null);
+    }
+  };
 
   const apps = manifestResp?.manifest.apps ?? [];
+  const positions = calculateOrbitPositions(apps.length);
+
+  // Fallback to central generic view if no app is hovered
+  const displayApp = hoveredApp;
+  const isInstalled = displayApp ? installedIndex.has(displayApp.id) : false;
+  const isPending = displayApp ? pendingKey?.includes(displayApp.id) : false;
 
   return (
-    <div className="shell">
-      <aside className="rail">
-        <h2 className="brand">Opta Init</h2>
-        <p className="brand-sub">Desktop Manager</p>
-        <div className="rail-links">
-          {EXTERNAL_LINKS.map((link) => (
-            <button key={link.label} type="button" onClick={() => void openExternal(link.url)}>
-              {link.label}
-            </button>
-          ))}
+    <div className="window-app">
+      <div className="header">
+        <div className="logo-text">INIT<span>MANAGER</span></div>
+        <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
+          <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
+          {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
+          {pendingKey?.includes('daemon') && " (Working...)"}
         </div>
-      </aside>
-
-      <main className="main">
-        <div className="toolbar">
-          <div>
-            <h1>App Manager</h1>
-            <p>Manifest-driven install, update, launch, and daemon controls.</p>
-          </div>
-          <div className="controls">
-            <label htmlFor="channel-select">Channel</label>
-            <select
-              id="channel-select"
-              value={channel}
-              onChange={(event) => setChannel(event.target.value as Channel)}
-            >
-              <option value="stable">stable</option>
-              <option value="beta">beta</option>
-            </select>
-            <button type="button" onClick={() => void refreshData()} disabled={loading}>
-              {loading ? "Refreshing..." : "Refresh"}
-            </button>
-          </div>
-        </div>
-
-        {notice ? <div className="notice">{notice}</div> : null}
-        {warning ? <div className="notice warn">{warning}</div> : null}
-
-        <section className="grid">
-          <article className="card daemon">
-            <h3>Daemon</h3>
-            <p>Manage the local Opta daemon used by desktop-integrated commands.</p>
-            <div className="meta">
-              <span className={`pill ${daemon?.running ? "ok" : "off"}`}>
-                {daemon?.running ? "running" : "stopped"}
-              </span>
-              <span className="pill">{daemon?.message ?? "unknown"}</span>
-            </div>
-            <div className="row">
-              <button
-                type="button"
-                onClick={() => void runDaemonAction("start")}
-                disabled={pendingKey !== null || !tauriAvailable}
-              >
-                Start daemon
-              </button>
-              <button
-                type="button"
-                onClick={() => void runDaemonAction("stop")}
-                disabled={pendingKey !== null || !tauriAvailable}
-              >
-                Stop daemon
-              </button>
-              <button type="button" onClick={() => void refreshData()} disabled={loading}>
-                Refresh status
-              </button>
-            </div>
-            {daemon?.rawOutput ? <pre className="raw">{daemon.rawOutput}</pre> : null}
-          </article>
-
-          {apps.map((app) => {
-            const installed = installedIndex.get(app.id);
-            const runningInstall = pendingKey === `install:${app.id}`;
-            const runningUpdate = pendingKey === `update:${app.id}`;
-            const runningLaunch = pendingKey === `launch:${app.id}`;
-
-            return (
-              <article key={app.id} className="card">
-                <h2>{app.name}</h2>
-                <p>{app.description}</p>
-                <div className="meta">
-                  <span className="pill">id: {app.id}</span>
-                  <span className="pill">manifest: {app.version}</span>
-                  {installed ? (
-                    <span className="pill ok">installed ({installed.source})</span>
-                  ) : (
-                    <span className="pill off">not installed</span>
-                  )}
-                </div>
-                <div className="row">
-                  <button
-                    type="button"
-                    onClick={() => void runAppAction(app, "install")}
-                    disabled={pendingKey !== null || !tauriAvailable}
+      </div>
+      
+      <div className="orbit-container">
+        <div className="orbit-line"></div>
+        
+        {/* Central Information Hub */}
+        <div className="center-info">
+          {displayApp ? (
+            <div className="fade-in">
+              <h2 className="app-title">{displayApp.name}</h2>
+              <p className="app-desc">{displayApp.description}</p>
+              
+              <div className="action-buttons">
+                {displayApp.id === "opta-daemon" ? (
+                  <button 
+                    className="btn primary" 
+                    disabled={pendingKey !== null}
+                    onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
                   >
-                    {runningInstall ? "Installing..." : "Install"}
+                    {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => void runAppAction(app, "update")}
-                    disabled={pendingKey !== null || !tauriAvailable}
-                  >
-                    {runningUpdate ? "Updating..." : "Update"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void runAppAction(app, "launch")}
-                    disabled={pendingKey !== null || !tauriAvailable}
-                  >
-                    {runningLaunch ? "Launching..." : "Launch"}
-                  </button>
-                  {app.website ? (
-                    <button type="button" onClick={() => void openExternal(app.website as string)}>
-                      Website
+                ) : isInstalled ? (
+                  <>
+                    <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "launch")}>
+                      {isPending ? "Working..." : "Launch App"}
                     </button>
-                  ) : null}
-                </div>
-              </article>
-            );
-          })}
-        </section>
-      </main>
+                    <button className="btn secondary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "update")}>
+                      Update
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "install")}>
+                    {isPending ? "Installing..." : "Install App"}
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="fade-in">
+              <h2 className="app-title default-title">Opta Local Stack</h2>
+              <p className="app-desc">Hover over an application in the orbit ring to manage or launch it.</p>
+            </div>
+          )}
+        </div>
+
+        {/* Orbiting App Nodes */}
+        {apps.map((app, i) => {
+          const pos = positions[i] || { left: '50%', top: '50%' };
+          const logoPath = LOGOS[app.id] || LOGOS["default"];
+          
+          return (
+            <div 
+              key={app.id} 
+              className="app-node" 
+              style={{ left: pos.left, top: pos.top, transform: 'translate(-50%, -50%)' }}
+              onMouseEnter={() => setHoveredApp(app)}
+              onMouseLeave={() => setHoveredApp(null)}
+            >
+              <div className="purple-circle"></div>
+              {/* Note: since logos have black backgrounds, they will blend perfectly into the void background of this app */}
+              <img src={logoPath} className="app-logo" alt={app.name} onError={(e) => { e.currentTarget.src = LOGOS["default"]; }} />
+              
+              {/* Status indicator pip */}
+              {app.id === "opta-daemon" ? (
+                <div className={`app-status-pip ${daemon?.running ? 'active' : ''}`}></div>
+              ) : (
+                installedIndex.has(app.id) && <div className="app-status-pip active"></div>
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

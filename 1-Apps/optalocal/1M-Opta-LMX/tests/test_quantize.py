@@ -233,18 +233,22 @@ class TestStartQuantize:
 
     @pytest.mark.asyncio
     async def test_rejects_unsupported_bits_for_mode(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
-            with pytest.raises(ValueError, match="bits=8 is not supported for mode='mxfp4'"):
-                await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp4")
+        with (
+            patch("opta_lmx.manager.quantize.asyncio.create_task"),
+            pytest.raises(ValueError, match="bits=8 is not supported for mode='mxfp4'"),
+        ):
+            await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp4")
 
     @pytest.mark.asyncio
     async def test_rejects_unsupported_group_size_for_mode(self) -> None:
-        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
-            with pytest.raises(
+        with (
+            patch("opta_lmx.manager.quantize.asyncio.create_task"),
+            pytest.raises(
                 ValueError,
                 match="group_size=64 is not supported for mode='nvfp4'",
-            ):
-                await start_quantize("m", "/tmp/o", bits=4, group_size=64, mode="nvfp4")
+            ),
+        ):
+            await start_quantize("m", "/tmp/o", bits=4, group_size=64, mode="nvfp4")
 
 
 class TestQuantizeRequestValidation:
@@ -343,8 +347,8 @@ class TestRunQuantize:
             source_model="org/model",
             output_path="/tmp/out",
             bits=8,
-            group_size=128,
-            mode="symmetric",
+            group_size=32,
+            mode="mxfp8",
             status="running",
             started_at=10.0,
         )
@@ -369,8 +373,8 @@ class TestRunQuantize:
             "org/model",
             "/tmp/out",
             8,
-            128,
-            "symmetric",
+            32,
+            "mxfp8",
         )
 
         events = [_extract_event(call) for call in event_bus.publish.calls]

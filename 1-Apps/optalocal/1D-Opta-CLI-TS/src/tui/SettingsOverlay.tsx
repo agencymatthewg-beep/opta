@@ -175,7 +175,40 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
         { label: 'OpenCode Zen',   value: 'opencode_zen', description: 'OpenCode Zen Cloud' },
       ],
     },
-    { label: 'Fallback on Failure', configKey: 'provider.fallbackOnFailure',   defaultValue: 'false',               description: 'Auto-fallback to secondary if main fails',
+    { label: 'Anthropic Key',       configKey: 'provider.anthropic.apiKey',    defaultValue: '', sensitive: true,    description: 'Anthropic API key',                                       hint: 'console.anthropic.com' },
+    { label: 'Anthropic Model',     configKey: 'provider.anthropic.model',     defaultValue: 'claude-3-7-sonnet-latest', description: 'Anthropic model for fallback or primary',
+      inputType: 'select', options: [
+        { label: 'Claude 3.7 Sonnet',  value: 'claude-3-7-sonnet-latest',     description: 'Current top generation' },
+        { label: 'Claude 3.5 Sonnet',  value: 'claude-3-5-sonnet-latest',     description: 'Previous top generation' },
+        { label: 'Claude Opus 4.6',    value: 'claude-opus-4-6',              description: 'Most capable, slower' },
+        { label: 'Claude Sonnet 4.6',  value: 'claude-sonnet-4-6',            description: 'Balanced speed/quality' },
+        { label: 'Claude Sonnet 4.5',  value: 'claude-sonnet-4-5-20250929',   description: 'Previous generation' },
+        { label: 'Claude Haiku 4.5',   value: 'claude-haiku-4-5-20251001',    description: 'Fast, lightweight' },
+      ],
+    },
+    { label: 'Gemini API Key',      configKey: 'provider.gemini.apiKey',       defaultValue: '', sensitive: true,    description: 'Google Gemini API key',                                   hint: 'aistudio.google.com' },
+    { label: 'Gemini Model',        configKey: 'provider.gemini.model',        defaultValue: 'gemini-2.5-pro',       description: 'Gemini model for primary provider',
+      inputType: 'select', options: [
+        { label: 'Gemini 2.5 Pro',    value: 'gemini-2.5-pro',    description: 'Latest advanced model' },
+        { label: 'Gemini 2.5 Flash',  value: 'gemini-2.5-flash',  description: 'Fast and lightweight' },
+        { label: 'Gemini 2.0 Pro',    value: 'gemini-2.0-pro-exp',description: 'Previous generation pro' },
+      ],
+    },
+    { label: 'OpenAI API Key',      configKey: 'provider.openai.apiKey',       defaultValue: '', sensitive: true,    description: 'OpenAI API key',                                          hint: 'platform.openai.com' },
+    { label: 'OpenAI Model',        configKey: 'provider.openai.model',        defaultValue: 'gpt-4o',               description: 'OpenAI model for primary provider',
+      inputType: 'select', options: [
+        { label: 'GPT-4o',           value: 'gpt-4o',           description: 'Flagship model' },
+        { label: 'GPT-4o Mini',      value: 'gpt-4o-mini',      description: 'Fast and affordable' },
+        { label: 'o3-mini',          value: 'o3-mini',          description: 'Reasoning model' },
+      ],
+    },
+    { label: 'OpenCode Zen Key',    configKey: 'provider.opencode_zen.apiKey', defaultValue: '', sensitive: true,    description: 'OpenCode Zen API key',                                    hint: 'opencodezen.com' },
+    { label: 'OpenCode Zen Model',  configKey: 'provider.opencode_zen.model',  defaultValue: 'opencode-zen-1',       description: 'OpenCode Zen model',
+      inputType: 'select', options: [
+        { label: 'OpenCode Zen 1',   value: 'opencode-zen-1',   description: 'Primary model' },
+      ],
+    },
+    { label: 'Fallback on Failure', configKey: 'provider.fallbackOnFailure',   defaultValue: 'false',               description: 'Auto-fallback to Anthropic if main fails',
       inputType: 'toggle', options: [
         { label: 'Enabled',  value: 'true',  description: 'Auto-switch when provider fails' },
         { label: 'Disabled', value: 'false', description: 'Stay on provider even if it fails' },
@@ -739,7 +772,26 @@ export function SettingsOverlay({
   }, [selectedPage, runAccountOauthSignIn]);
 
   const items = useMemo(() => {
-    const baseItems = filterItemsForDisplayProfile(PAGE_ITEMS[selectedPage], displayProfile);
+    let baseItems = filterItemsForDisplayProfile(PAGE_ITEMS[selectedPage], displayProfile);
+
+    // Conditionally filter cloud provider keys to avoid UI clutter
+    if (selectedPage === 'models') {
+      const activeProvider = String(changes['provider.active'] ?? getConfigValue(config, 'provider.active', 'lmx'));
+      const fallbackEnabled = String(changes['provider.fallbackOnFailure'] ?? getConfigValue(config, 'provider.fallbackOnFailure', 'false')) === 'true';
+      
+      baseItems = baseItems.filter(item => {
+        if (item.configKey.startsWith('provider.') && !['provider.active', 'provider.fallbackOnFailure'].includes(item.configKey)) {
+          const providerName = item.configKey.split('.')[1];
+          // Show the fields if it's the currently active provider.
+          if (providerName === activeProvider) return true;
+          // Fallback is hardcoded to Anthropic currently, so always show Anthropic if fallback is enabled.
+          if (fallbackEnabled && providerName === 'anthropic') return true;
+          return false;
+        }
+        return true;
+      });
+    }
+
     return baseItems.map(item => {
       if (dynamicOptions[item.configKey]) {
         return {
@@ -750,7 +802,7 @@ export function SettingsOverlay({
       }
       return item;
     });
-  }, [selectedPage, displayProfile, dynamicOptions]);
+  }, [selectedPage, displayProfile, dynamicOptions, changes, config]);
 
   const pageMeta = PAGES.find(p => p.id === selectedPage);
   const pageColor = pageMeta?.color ?? '#0ea5e9';
@@ -859,9 +911,11 @@ export function SettingsOverlay({
     }
 
     if (key.upArrow || input === 'k' || input === 'w') {
+      if (items.length === 0) return;
       setSelectedIndex(prev => (prev - 1 + items.length) % items.length); return;
     }
     if (key.downArrow || input === 'j' || input === 's') {
+      if (items.length === 0) return;
       setSelectedIndex(prev => (prev + 1) % items.length); return;
     }
 
@@ -961,7 +1015,7 @@ export function SettingsOverlay({
         <>
           {/* HINT */}
           <Box marginTop={1}>
-            <Text dimColor>{`←/→ switch page · ↑/↓ navigate · Enter/Space edit · 1-${PAGES.length} jump · Shift+Tab view`}</Text>
+            <Text dimColor>{`←/→ switch page or adjust value · ↑/↓ navigate · Enter/Space edit · 1-${PAGES.length} jump · Shift+Tab view`}</Text>
           </Box>
           <Box>
             <Text dimColor>View: </Text>

@@ -23,6 +23,7 @@ export interface EnvProfile {
     host: string;
     port: number;
     adminKey?: string;
+    apiKey?: string;
     protocol?: 'http';
   };
   modelDefault: string;
@@ -101,6 +102,10 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
       typeof obj.connection === 'object' && obj.connection !== null
         ? (obj.connection as Record<string, unknown>).adminKey
         : undefined;
+    const apiKey =
+      typeof obj.connection === 'object' && obj.connection !== null
+        ? (obj.connection as Record<string, unknown>).apiKey
+        : undefined;
     const modelDefault = obj.modelDefault;
     const providerRaw = obj.provider;
     const defaultMode = obj.defaultMode;
@@ -123,6 +128,7 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
         host: host.trim(),
         port: Math.max(1, Math.floor(port)),
         ...(typeof adminKey === 'string' && adminKey.length > 0 ? { adminKey } : {}),
+        ...(typeof apiKey === 'string' && apiKey.length > 0 ? { apiKey } : {}),
       },
       modelDefault: normalizedModelDefault,
       provider,
@@ -208,7 +214,8 @@ async function listProfiles(opts: EnvCommandOptions): Promise<void> {
     const active = current === profile.name;
     const dot = active ? chalk.green('●') : chalk.dim('○');
     const activeTag = active ? chalk.green(' active') : '';
-    const admin = profile.connection.adminKey ? 'admin-key' : 'no-admin-key';
+    const keyConfigured = Boolean(profile.connection.apiKey || profile.connection.adminKey);
+    const admin = keyConfigured ? 'key-set' : 'no-key';
     console.log(
       `  ${dot} ${chalk.bold(profile.name)}${activeTag} ` +
         chalk.dim(
@@ -245,9 +252,7 @@ async function showProfile(name: string | undefined, opts: EnvCommandOptions): P
   console.log(chalk.bold(`Environment · ${profile.name}\n`));
   console.log(`  Host:        ${profile.connection.host}`);
   console.log(`  Port:        ${profile.connection.port}`);
-  console.log(
-    `  Admin key:   ${profile.connection.adminKey ? chalk.green('set') : chalk.dim('not set')}`
-  );
+  console.log(`  LMX key:     ${profile.connection.apiKey || profile.connection.adminKey ? chalk.green('set') : chalk.dim('not set')}`);
   console.log(`  Provider:    ${profile.provider}`);
   console.log(`  Mode:        ${profile.defaultMode}`);
   console.log(`  Model:       ${profile.modelDefault || chalk.dim('(empty)')}`);
@@ -278,10 +283,13 @@ async function saveProfile(name: string | undefined, opts: EnvCommandOptions): P
       port: parsePort(opts.port, config.connection.port),
       ...(opts.adminKey !== undefined
         ? opts.adminKey.trim()
-          ? { adminKey: opts.adminKey.trim() }
+          ? { adminKey: opts.adminKey.trim(), apiKey: opts.adminKey.trim() }
           : {}
-        : config.connection.adminKey
-          ? { adminKey: config.connection.adminKey }
+        : config.connection.adminKey || config.connection.apiKey
+          ? {
+            ...(config.connection.adminKey ? { adminKey: config.connection.adminKey } : {}),
+            ...(config.connection.apiKey ? { apiKey: config.connection.apiKey } : {}),
+          }
           : {}),
     },
     modelDefault: normalizeConfiguredModelId(opts.model?.trim() ?? config.model.default),
@@ -334,10 +342,13 @@ async function useProfile(name: string | undefined, opts: EnvCommandOptions): Pr
 
   await saveConfig(updates);
   const store = await getConfigStore();
-  if (profile.connection.adminKey) {
-    store.set('connection.adminKey', profile.connection.adminKey);
+  const effectiveKey = profile.connection.apiKey ?? profile.connection.adminKey;
+  if (effectiveKey) {
+    store.set('connection.adminKey', profile.connection.adminKey ?? effectiveKey);
+    store.set('connection.apiKey', effectiveKey);
   } else {
     store.delete('connection.adminKey');
+    store.delete('connection.apiKey');
   }
   await setCurrentProfileName(profile.name);
 

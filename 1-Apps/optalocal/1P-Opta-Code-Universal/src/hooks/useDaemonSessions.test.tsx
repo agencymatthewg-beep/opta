@@ -318,4 +318,71 @@ describe("useDaemonSessions secure connection persistence", () => {
       expect(systems.some((item) => item.title === "Turn complete")).toBe(true);
     });
   });
+
+  it("reconnects when server closes websocket cleanly", async () => {
+    const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+    const onCloseBySession = new Map<string, (code: number) => void>();
+    const connectCalls: string[] = [];
+
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, sessionId, _afterSeq, handlers) => {
+        connectCalls.push(sessionId);
+        onCloseBySession.set(sessionId, handlers.onClose ?? (() => undefined));
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+    await act(async () => {
+      await result.current.trackSession("sess-reconnect");
+    });
+    await waitFor(() =>
+      expect(connectCalls.filter((id) => id === "sess-reconnect")).toHaveLength(1),
+    );
+
+    act(() => {
+      onCloseBySession.get("sess-reconnect")?.(1000);
+    });
+
+    await waitFor(
+      () =>
+        expect(connectCalls.filter((id) => id === "sess-reconnect")).toHaveLength(2),
+      { timeout: 2_500 },
+    );
+    randomSpy.mockRestore();
+  });
+
+  it("keeps global connection live on non-transport submit errors", async () => {
+    vi.mocked(daemonClient.submitTurn).mockRejectedValue(
+      new Error("Validation failed"),
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+    await act(async () => {
+      await result.current.trackSession("sess-submit");
+    });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    await expect(
+      result.current.submitMessage("hello world", "chat"),
+    ).rejects.toThrow("Validation failed");
+    expect(result.current.connectionState).toBe("connected");
+  });
+
+  it("marks connection disconnected on transport submit errors", async () => {
+    vi.mocked(daemonClient.submitTurn).mockRejectedValue(
+      new Error("ECONNREFUSED 127.0.0.1:9999"),
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+    await act(async () => {
+      await result.current.trackSession("sess-transport-error");
+    });
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+
+    await expect(
+      result.current.submitMessage("hello world", "chat"),
+    ).rejects.toThrow("ECONNREFUSED");
+    await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
+  });
 });

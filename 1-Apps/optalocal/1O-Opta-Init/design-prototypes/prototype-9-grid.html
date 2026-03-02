@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 9: Grid Launcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #0c0c12; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .window { width: 1050px; height: 700px; background: #09090b; border: 1px solid #1a1a24; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; }
+    .header { padding: 30px 40px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #1a1a24; }
+    
+    .grid-container { padding: 40px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; overflow-y: auto; flex: 1; }
+    
+    .app-card { background: rgba(12,12,18,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; padding: 40px 20px; text-align: center; position: relative; overflow: hidden; cursor: pointer; transition: all 0.3s; }
+    
+    /* Circle Interaction */
+    .purple-circle {
+      position: absolute; top: 35%; left: 50%; transform: translate(-50%, -50%) scale(0);
+      width: 140px; height: 140px; border-radius: 50%;
+      background: #a855f7;
+      opacity: 0; transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 50px rgba(168,85,247,0.8);
+      z-index: 1;
+    }
+    
+    .app-logo { width: 80px; height: 80px; margin: 0 auto 20px; position: relative; z-index: 2; transition: transform 0.4s; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.5)); }
+    .app-title { font-size: 20px; font-weight: 700; position: relative; z-index: 2; transition: transform 0.3s; }
+    .app-status { font-size: 12px; color: #a1a1aa; margin-top: 5px; position: relative; z-index: 2; transition: opacity 0.3s; }
+    
+    .launch-btn { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0; background: #fff; color: #000; font-weight: 700; padding: 10px 30px; border-radius: 8px; z-index: 10; transition: all 0.3s; }
+
+    .app-card:hover { border-color: rgba(168,85,247,0.4); transform: translateY(-5px); box-shadow: 0 20px 40px rgba(0,0,0,0.4); }
+    .app-card:hover .purple-circle { opacity: 0.15; transform: translate(-50%, -50%) scale(1.5); }
+    .app-card:hover .app-logo { transform: scale(1.15) translateY(-5px); filter: drop-shadow(0 0 15px rgba(168,85,247,0.8)); }
+    .app-card:hover .app-title { transform: translateY(-10px); }
+    .app-card:hover .app-status { opacity: 0; }
+    .app-card:hover .launch-btn { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="header">
+      <div>
+        <h1 class="text-3xl font-bold mb-1">Opta Desktop Manager</h1>
+        <p class="text-gray-400 text-sm">Your installed ecosystem applications.</p>
+      </div>
+      <div class="bg-surface border border-white/5 p-2 rounded-lg flex gap-2">
+        <button class="bg-white/10 px-4 py-2 rounded text-sm font-semibold">Installed</button>
+        <button class="text-gray-400 px-4 py-2 rounded text-sm font-semibold hover:bg-white/5">Store</button>
+      </div>
+    </div>
+    
+    <div class="grid-container">
+      <div class="app-card">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.png" class="app-logo">
+        <div class="app-title">Opta LMX</div>
+        <div class="app-status">v2.4.0 • Running</div>
+        <button class="launch-btn">Launch App</button>
+      </div>
+      
+      <div class="app-card">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-CLI/opta-cli-logo-final.png" class="app-logo">
+        <div class="app-title">Opta CLI</div>
+        <div class="app-status">v1.2.0 • Installed</div>
+        <button class="launch-btn">Open Terminal</button>
+      </div>
+      
+      <div class="app-card">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.png" class="app-logo">
+        <div class="app-title">Opta Code</div>
+        <div class="app-status">Beta Channel</div>
+        <button class="launch-btn">Launch App</button>
+      </div>
+
+      <div class="app-card">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Local/opta-local-logo-final.png" class="app-logo">
+        <div class="app-title">Opta Local</div>
+        <div class="app-status">Web Interface</div>
+        <button class="launch-btn">Open Browser</button>
+      </div>
+
+      <div class="app-card" style="opacity: 0.6;">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.png" class="app-logo">
+        <div class="app-title">Opta Accounts</div>
+        <div class="app-status text-amber-500">Update Available</div>
+        <button class="launch-btn" style="background: #f59e0b; color: #000;">Update Now</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

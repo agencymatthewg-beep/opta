@@ -29,9 +29,14 @@ export async function markOnboarded(): Promise<void> {
 }
 
 type ProviderName = OptaConfig['provider']['active'];
+type OnboardingProvider = Extract<ProviderName, 'lmx' | 'anthropic'>;
+
+function normalizeOnboardingProvider(input: string | undefined): OnboardingProvider {
+  return input === 'anthropic' ? 'anthropic' : 'lmx';
+}
 
 export interface OnboardingProfileInput {
-  provider?: ProviderName;
+  provider?: OnboardingProvider;
   lmxHost?: string;
   lmxPort?: number;
   anthropicApiKey?: string;
@@ -41,7 +46,7 @@ export interface OnboardingProfileInput {
 
 export interface OnboardingProfileResult {
   ok: true;
-  provider: ProviderName;
+  provider: OnboardingProvider;
   connection: {
     host: string;
     port: number;
@@ -69,7 +74,9 @@ export async function applyOnboardingProfile(
 ): Promise<OnboardingProfileResult> {
   const existing = await loadConfig().catch(() => null);
 
-  const provider: ProviderName = input.provider ?? existing?.provider?.active ?? 'lmx';
+  const provider: OnboardingProvider = normalizeOnboardingProvider(
+    input.provider ?? existing?.provider?.active
+  );
   const lmxHost = input.lmxHost?.trim() || existing?.connection?.host || '192.168.188.11';
   const lmxPort = normalizePort(input.lmxPort ?? existing?.connection?.port ?? 1234);
   const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
@@ -176,10 +183,10 @@ export async function runOnboarding(): Promise<void> {
         'Local LMX  ' + chalk.dim('— Mac Studio inference server (recommended)'),
         'Anthropic  ' + chalk.dim('— Cloud API with your API key'),
       ],
-      existing?.provider?.active === 'anthropic' ? 1 : 0
+      normalizeOnboardingProvider(existing?.provider?.active) === 'anthropic' ? 1 : 0
     );
 
-    const provider: ProviderName = providerChoice === 0 ? 'lmx' : 'anthropic';
+    const provider: OnboardingProvider = providerChoice === 0 ? 'lmx' : 'anthropic';
 
     let lmxHost = '192.168.188.11';
     let lmxPort = 1234;

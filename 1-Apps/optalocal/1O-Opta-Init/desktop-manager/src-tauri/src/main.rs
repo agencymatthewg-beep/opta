@@ -1,15 +1,14 @@
 use reqwest::Url;
+use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{
-    collections::HashSet,
-    fs,
-    path::PathBuf,
-    process::Stdio,
-    time::Duration,
-};
+use std::{collections::HashSet, fs, path::PathBuf, process::Stdio, time::Duration};
 use thiserror::Error;
-use tokio::process::Command;
+use tokio::{io::AsyncReadExt, process::Command, time::timeout};
+
+const CLI_COMMAND_TIMEOUT_SECS: u64 = 20;
+const CLI_DISCOVERY_TIMEOUT_SECS: u64 = 5;
+const MANAGER_VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug, Error)]
 enum ManagerError {
@@ -23,6 +22,14 @@ enum ManagerError {
         code: Option<i32>,
         stderr: String,
     },
+    #[error("command `{command}` timed out after {seconds}s")]
+    CommandTimedOut { command: String, seconds: u64 },
+    #[error("network request failed: {0}")]
+    Network(String),
+    #[error("failed to open URL: {0}")]
+    UrlOpen(String),
+    #[error("{0}")]
+    PolicyViolation(String),
     #[error("invalid URL: {0}")]
     InvalidUrl(String),
 }
@@ -63,6 +70,8 @@ struct ManifestApp {
     description: String,
     version: String,
     website: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_manager_version: Option<String>,
     commands: Option<AppCommands>,
 }
 
@@ -71,6 +80,10 @@ struct ManifestApp {
 struct ManifestPayload {
     channel: String,
     updated_at: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    release_min_manager_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    release_notes_url: Option<String>,
     apps: Vec<ManifestApp>,
 }
 
@@ -79,6 +92,7 @@ struct ManifestPayload {
 struct ReleaseControlManifest {
     channel: String,
     published_at: Option<String>,
+    release: Option<ReleaseControlRelease>,
     components: Vec<ReleaseControlComponent>,
 }
 
@@ -88,6 +102,32 @@ struct ReleaseControlComponent {
     id: String,
     display_name: Option<String>,
     version: String,
+    min_manager_version: Option<String>,
+    artifacts: Option<ReleaseControlArtifacts>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseControlRelease {
+    id: String,
+    notes_url: Option<String>,
+    min_manager_version: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseControlArtifacts {
+    macos: Option<Vec<ReleaseControlArtifact>>,
+    windows: Option<Vec<ReleaseControlArtifact>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ReleaseControlArtifact {
+    platform: String,
+    arch: String,
+    package_type: String,
+    url: String,
 }
 
 #[derive(Debug, Serialize, Clone)]
@@ -135,34 +175,81 @@ fn command_preview(program: &str, args: &[String]) -> String {
 }
 
 async fn is_command_available(program: &str) -> bool {
-    Command::new(program)
-        .arg("--version")
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status()
-        .await
-        .is_ok()
+    let status_result = timeout(
+        Duration::from_secs(CLI_DISCOVERY_TIMEOUT_SECS),
+        Command::new(program)
+            .arg("--version")
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status(),
+    )
+    .await;
+
+    matches!(status_result, Ok(Ok(status)) if status.success())
 }
 
-async fn run_command_capture(program: &str, args: &[String]) -> Result<CapturedOutput, ManagerError> {
+async fn run_command_capture(
+    program: &str,
+    args: &[String],
+) -> Result<CapturedOutput, ManagerError> {
     let cmd_preview = command_preview(program, args);
-    let output = Command::new(program)
+    let mut child = Command::new(program)
         .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
-        .output()
-        .await
+        .spawn()
         .map_err(|error| ManagerError::Spawn {
             command: cmd_preview.clone(),
             detail: error.to_string(),
         })?;
 
+    let stdout_reader = child.stdout.take().map(|mut stdout| {
+        tokio::spawn(async move {
+            let mut buf = Vec::new();
+            let _ = stdout.read_to_end(&mut buf).await;
+            buf
+        })
+    });
+
+    let stderr_reader = child.stderr.take().map(|mut stderr| {
+        tokio::spawn(async move {
+            let mut buf = Vec::new();
+            let _ = stderr.read_to_end(&mut buf).await;
+            buf
+        })
+    });
+
+    let status = match timeout(Duration::from_secs(CLI_COMMAND_TIMEOUT_SECS), child.wait()).await {
+        Ok(result) => result.map_err(|error| ManagerError::Spawn {
+            command: cmd_preview.clone(),
+            detail: error.to_string(),
+        })?,
+        Err(_) => {
+            let _ = child.start_kill();
+            let _ = child.wait().await;
+            return Err(ManagerError::CommandTimedOut {
+                command: cmd_preview,
+                seconds: CLI_COMMAND_TIMEOUT_SECS,
+            });
+        }
+    };
+
+    let stdout_bytes = match stdout_reader {
+        Some(handle) => handle.await.unwrap_or_default(),
+        None => Vec::new(),
+    };
+
+    let stderr_bytes = match stderr_reader {
+        Some(handle) => handle.await.unwrap_or_default(),
+        None => Vec::new(),
+    };
+
     Ok(CapturedOutput {
         command: cmd_preview,
-        exit_code: output.status.code(),
-        success: output.status.success(),
-        stdout: String::from_utf8_lossy(&output.stdout).trim().to_string(),
-        stderr: String::from_utf8_lossy(&output.stderr).trim().to_string(),
+        exit_code: status.code(),
+        success: status.success(),
+        stdout: String::from_utf8_lossy(&stdout_bytes).trim().to_string(),
+        stderr: String::from_utf8_lossy(&stderr_bytes).trim().to_string(),
     })
 }
 
@@ -189,41 +276,120 @@ fn default_manifest(channel: &str) -> ManifestPayload {
     ManifestPayload {
         channel: channel.to_string(),
         updated_at: Some(current_timestamp()),
+        release_min_manager_version: None,
+        release_notes_url: None,
         apps: vec![
             ManifestApp {
-                id: "opta-code-desktop".to_string(),
-                name: "Opta Code Desktop".to_string(),
-                description: "Desktop runtime for local agent workflows.".to_string(),
-                version: "0.1.0".to_string(),
-                website: Some("https://init.optalocal.com/apps/opta-code-desktop".to_string()),
+                id: "opta-cli".to_string(),
+                name: "Opta CLI".to_string(),
+                description: "Command-line interface for install/update and workflow orchestration."
+                    .to_string(),
+                version: "fallback".to_string(),
+                website: Some("https://init.optalocal.com/downloads/cli".to_string()),
+                min_manager_version: None,
                 commands: Some(AppCommands {
-                    install: Some(vec!["opta".to_string(), "apps".to_string(), "install".to_string(), "opta-code-desktop".to_string()]),
-                    update: Some(vec!["opta".to_string(), "apps".to_string(), "update".to_string(), "opta-code-desktop".to_string()]),
-                    launch: Some(vec!["opta".to_string(), "apps".to_string(), "launch".to_string(), "opta-code-desktop".to_string()]),
-                }),
-            },
-            ManifestApp {
-                id: "opta-init".to_string(),
-                name: "Opta Init".to_string(),
-                description: "App bootstrapper and channel manager.".to_string(),
-                version: "0.1.0".to_string(),
-                website: Some("https://init.optalocal.com".to_string()),
-                commands: Some(AppCommands {
-                    install: Some(vec!["opta".to_string(), "apps".to_string(), "install".to_string(), "opta-init".to_string()]),
-                    update: Some(vec!["opta".to_string(), "apps".to_string(), "update".to_string(), "opta-init".to_string()]),
-                    launch: Some(vec!["opta".to_string(), "apps".to_string(), "launch".to_string(), "opta-init".to_string()]),
+                    install: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "install".to_string(),
+                        "opta-cli".to_string(),
+                    ]),
+                    update: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "update".to_string(),
+                        "opta-cli".to_string(),
+                    ]),
+                    launch: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "launch".to_string(),
+                        "opta-cli".to_string(),
+                    ]),
                 }),
             },
             ManifestApp {
                 id: "opta-lmx".to_string(),
-                name: "Opta LMX".to_string(),
-                description: "Model exchange and artifact orchestration tools.".to_string(),
-                version: "0.1.0".to_string(),
+                name: "Opta LMX Runtime".to_string(),
+                description: "Model exchange and artifact orchestration runtime.".to_string(),
+                version: "fallback".to_string(),
                 website: Some("https://lmx.optalocal.com".to_string()),
+                min_manager_version: None,
                 commands: Some(AppCommands {
-                    install: Some(vec!["opta".to_string(), "apps".to_string(), "install".to_string(), "opta-lmx".to_string()]),
-                    update: Some(vec!["opta".to_string(), "apps".to_string(), "update".to_string(), "opta-lmx".to_string()]),
-                    launch: Some(vec!["opta".to_string(), "apps".to_string(), "launch".to_string(), "opta-lmx".to_string()]),
+                    install: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "install".to_string(),
+                        "opta-lmx".to_string(),
+                    ]),
+                    update: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "update".to_string(),
+                        "opta-lmx".to_string(),
+                    ]),
+                    launch: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "launch".to_string(),
+                        "opta-lmx".to_string(),
+                    ]),
+                }),
+            },
+            ManifestApp {
+                id: "opta-code-universal".to_string(),
+                name: "Opta Code Universal".to_string(),
+                description: "Desktop coding surface for Opta operator workflows.".to_string(),
+                version: "fallback".to_string(),
+                website: Some("https://init.optalocal.com/apps/opta-code".to_string()),
+                min_manager_version: None,
+                commands: Some(AppCommands {
+                    install: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "install".to_string(),
+                        "opta-code-universal".to_string(),
+                    ]),
+                    update: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "update".to_string(),
+                        "opta-code-universal".to_string(),
+                    ]),
+                    launch: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "launch".to_string(),
+                        "opta-code-universal".to_string(),
+                    ]),
+                }),
+            },
+            ManifestApp {
+                id: "opta-daemon".to_string(),
+                name: "Opta Daemon Service".to_string(),
+                description: "Background daemon required for local runtime services.".to_string(),
+                version: "fallback".to_string(),
+                website: Some("https://docs.optalocal.com/daemon".to_string()),
+                min_manager_version: None,
+                commands: Some(AppCommands {
+                    install: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "install".to_string(),
+                        "opta-daemon".to_string(),
+                    ]),
+                    update: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "update".to_string(),
+                        "opta-daemon".to_string(),
+                    ]),
+                    launch: Some(vec![
+                        "opta".to_string(),
+                        "apps".to_string(),
+                        "launch".to_string(),
+                        "opta-daemon".to_string(),
+                    ]),
                 }),
             },
         ],
@@ -242,7 +408,9 @@ fn release_component_name(id: &str) -> String {
 
 fn release_component_description(id: &str) -> String {
     match id {
-        "opta-cli" => "Command-line interface for install/update and workflow orchestration.".to_string(),
+        "opta-cli" => {
+            "Command-line interface for install/update and workflow orchestration.".to_string()
+        }
         "opta-lmx" => "Model exchange and artifact orchestration runtime.".to_string(),
         "opta-code-universal" => "Desktop coding surface for Opta operator workflows.".to_string(),
         "opta-daemon" => "Background daemon required for local runtime services.".to_string(),
@@ -291,6 +459,15 @@ fn release_manifest_to_manager_manifest(
         release_manifest.channel = fallback_channel.to_string();
     }
 
+    let release_min_manager_version = release_manifest
+        .release
+        .as_ref()
+        .and_then(|release| release.min_manager_version.clone());
+    let release_notes_url = release_manifest
+        .release
+        .as_ref()
+        .and_then(|release| release.notes_url.clone());
+
     let apps = release_manifest
         .components
         .into_iter()
@@ -307,6 +484,7 @@ fn release_manifest_to_manager_manifest(
                 description: release_component_description(&component.id),
                 version: component.version,
                 website: release_component_website(&component.id),
+                min_manager_version: component.min_manager_version,
                 commands: Some(release_component_commands(&component.id)),
             }
         })
@@ -315,8 +493,163 @@ fn release_manifest_to_manager_manifest(
     ManifestPayload {
         channel: release_manifest.channel,
         updated_at: release_manifest.published_at,
+        release_min_manager_version,
+        release_notes_url,
         apps,
     }
+}
+
+fn normalize_release_manifest(
+    value: Value,
+    fallback_channel: &str,
+) -> Option<ReleaseControlManifest> {
+    if let Ok(mut release_manifest) =
+        serde_json::from_value::<ReleaseControlManifest>(value.clone())
+    {
+        if release_manifest.channel.is_empty() {
+            release_manifest.channel = fallback_channel.to_string();
+        }
+        return Some(release_manifest);
+    }
+
+    if let Some(manifest_value) = value.get("manifest") {
+        if let Ok(mut release_manifest) =
+            serde_json::from_value::<ReleaseControlManifest>(manifest_value.clone())
+        {
+            if release_manifest.channel.is_empty() {
+                release_manifest.channel = fallback_channel.to_string();
+            }
+            return Some(release_manifest);
+        }
+    }
+
+    None
+}
+
+fn parse_manager_version() -> Result<Version, ManagerError> {
+    Version::parse(MANAGER_VERSION).map_err(|error| {
+        ManagerError::PolicyViolation(format!(
+            "Manager version `{}` is not valid semver: {}",
+            MANAGER_VERSION, error
+        ))
+    })
+}
+
+fn evaluate_manifest_policy(manifest: &ManifestPayload) -> Result<Option<String>, ManagerError> {
+    let manager_version = parse_manager_version()?;
+    let mut warnings: Vec<String> = Vec::new();
+
+    if let Some(release_min) = manifest.release_min_manager_version.as_deref() {
+        match Version::parse(release_min) {
+            Ok(required_version) => {
+                if manager_version < required_version {
+                    let mut details = format!(
+                        "Opta Init manager v{} is below required release minimum v{}. Update the desktop manager and retry.",
+                        MANAGER_VERSION, required_version
+                    );
+                    if let Some(notes_url) = manifest.release_notes_url.as_deref() {
+                        details.push_str(&format!(" Release notes: {}", notes_url));
+                    }
+                    return Err(ManagerError::PolicyViolation(details));
+                }
+            }
+            Err(error) => warnings.push(format!(
+                "Manifest release minimum manager version `{}` is invalid ({}).",
+                release_min, error
+            )),
+        }
+    }
+
+    let mut blocked_components: Vec<String> = Vec::new();
+    for app in &manifest.apps {
+        let Some(component_min) = app.min_manager_version.as_deref() else {
+            continue;
+        };
+
+        match Version::parse(component_min) {
+            Ok(required_version) => {
+                if manager_version < required_version {
+                    blocked_components.push(format!(
+                        "{} (`{}`) requires manager >= {}",
+                        app.name, app.id, required_version
+                    ));
+                }
+            }
+            Err(error) => warnings.push(format!(
+                "Component `{}` has invalid minManagerVersion `{}` ({}).",
+                app.id, component_min, error
+            )),
+        }
+    }
+
+    if !blocked_components.is_empty() {
+        warnings.push(format!(
+            "Manager v{} is older than component requirements. Blocked components: {}. Update Opta Init to unlock these installs/updates.",
+            MANAGER_VERSION,
+            blocked_components.join("; ")
+        ));
+    }
+
+    if warnings.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(warnings.join(" ")))
+    }
+}
+
+async fn enforce_component_policy_if_available(
+    channel: &str,
+    app_id: &str,
+) -> Result<(), ManagerError> {
+    let release_manifest = match fetch_release_manifest_for_channel(channel).await {
+        Ok(manifest) => manifest,
+        Err(_) => return Ok(()),
+    };
+
+    let manifest = release_manifest_to_manager_manifest(release_manifest, channel);
+    let manager_version = parse_manager_version()?;
+
+    if let Some(release_min) = manifest.release_min_manager_version.as_deref() {
+        let required_version = Version::parse(release_min).map_err(|error| {
+            ManagerError::PolicyViolation(format!(
+                "Release minimum manager version `{}` is invalid: {}",
+                release_min, error
+            ))
+        })?;
+        if manager_version < required_version {
+            let mut details = format!(
+                "Opta Init manager v{} is below required release minimum v{}. Update the desktop manager and retry.",
+                MANAGER_VERSION, required_version
+            );
+            if let Some(notes_url) = manifest.release_notes_url.as_deref() {
+                details.push_str(&format!(" Release notes: {}", notes_url));
+            }
+            return Err(ManagerError::PolicyViolation(details));
+        }
+    }
+
+    if let Some(component) = manifest
+        .apps
+        .iter()
+        .find(|component| component.id == app_id)
+    {
+        if let Some(component_min) = component.min_manager_version.as_deref() {
+            let required_version = Version::parse(component_min).map_err(|error| {
+                ManagerError::PolicyViolation(format!(
+                    "Component `{}` minManagerVersion `{}` is invalid: {}",
+                    component.id, component_min, error
+                ))
+            })?;
+            if manager_version < required_version {
+                return Err(ManagerError::PolicyViolation(format!(
+                    "Component `{}` requires manager >= {} (current {}). Update Opta Init and retry.",
+                    component.id, required_version, MANAGER_VERSION
+                )));
+            }
+        }
+    }
+
+    Ok(())
 }
 
 fn normalize_manifest_payload(value: Value, fallback_channel: &str) -> Option<ManifestPayload> {
@@ -328,7 +661,8 @@ fn normalize_manifest_payload(value: Value, fallback_channel: &str) -> Option<Ma
     }
 
     if let Some(manifest_value) = value.get("manifest") {
-        if let Ok(mut manifest) = serde_json::from_value::<ManifestPayload>(manifest_value.clone()) {
+        if let Ok(mut manifest) = serde_json::from_value::<ManifestPayload>(manifest_value.clone())
+        {
             if manifest.channel.is_empty() {
                 manifest.channel = fallback_channel.to_string();
             }
@@ -371,20 +705,176 @@ fn manifest_url_for(channel: &str, custom: Option<String>) -> String {
     }
 }
 
+fn parse_http_url(url: &str) -> Result<Url, ManagerError> {
+    let parsed_url =
+        Url::parse(url.trim()).map_err(|error| ManagerError::InvalidUrl(error.to_string()))?;
+    if parsed_url.scheme() != "http" && parsed_url.scheme() != "https" {
+        return Err(ManagerError::InvalidUrl(
+            "Only http/https URLs are allowed".to_string(),
+        ));
+    }
+    Ok(parsed_url)
+}
+
+fn manager_http_client() -> Result<reqwest::Client, ManagerError> {
+    reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|error| ManagerError::Network(error.to_string()))
+}
+
+async fn fetch_manifest_value(url: &str) -> Result<Value, ManagerError> {
+    let parsed_url = parse_http_url(url)?;
+    let client = manager_http_client()?;
+    let response = client
+        .get(parsed_url)
+        .send()
+        .await
+        .map_err(|error| ManagerError::Network(error.to_string()))?;
+
+    if !response.status().is_success() {
+        return Err(ManagerError::Network(format!(
+            "manifest request returned HTTP {}",
+            response.status()
+        )));
+    }
+
+    let body = response
+        .text()
+        .await
+        .map_err(|error| ManagerError::Network(error.to_string()))?;
+    serde_json::from_str::<Value>(&body)
+        .map_err(|error| ManagerError::Network(format!("manifest JSON parse failed: {}", error)))
+}
+
+async fn fetch_release_manifest_for_channel(
+    channel: &str,
+) -> Result<ReleaseControlManifest, ManagerError> {
+    let manifest_value = fetch_manifest_value(&manifest_url_for(channel, None)).await?;
+    normalize_release_manifest(manifest_value, channel).ok_or_else(|| {
+        ManagerError::Network("release manifest payload did not match expected schema".to_string())
+    })
+}
+
+fn current_platform_key() -> Option<&'static str> {
+    #[cfg(target_os = "macos")]
+    {
+        return Some("macos");
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return Some("windows");
+    }
+
+    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
+    {
+        None
+    }
+}
+
+fn current_arch_key() -> &'static str {
+    match std::env::consts::ARCH {
+        "x86_64" => "x64",
+        "aarch64" => "arm64",
+        other => other,
+    }
+}
+
+fn select_installer_url(component: &ReleaseControlComponent) -> Option<String> {
+    let platform_key = current_platform_key()?;
+    let artifacts = component.artifacts.as_ref()?;
+    let platform_artifacts = match platform_key {
+        "macos" => artifacts.macos.as_ref(),
+        "windows" => artifacts.windows.as_ref(),
+        _ => None,
+    }?;
+
+    let arch_key = current_arch_key();
+    let selected = platform_artifacts
+        .iter()
+        .find(|artifact| artifact.arch.eq_ignore_ascii_case(arch_key))
+        .or_else(|| {
+            platform_artifacts
+                .iter()
+                .find(|artifact| artifact.arch.eq_ignore_ascii_case("universal"))
+        })
+        .or_else(|| {
+            platform_artifacts
+                .iter()
+                .find(|artifact| !artifact.url.trim().is_empty())
+        })?;
+
+    parse_http_url(selected.url.as_str()).ok()?;
+    Some(selected.url.clone())
+}
+
+fn open_http_url(url: &str) -> Result<(), ManagerError> {
+    let parsed = parse_http_url(url)?;
+    webbrowser::open(parsed.as_str()).map_err(|error| ManagerError::UrlOpen(error.to_string()))?;
+    Ok(())
+}
+
+async fn bootstrap_opta_cli_install(channel: &str) -> Result<CommandOutcome, ManagerError> {
+    let release_manifest = match fetch_release_manifest_for_channel(channel).await {
+        Ok(manifest) => manifest,
+        Err(_) => {
+            let fallback_url = "https://init.optalocal.com/downloads/cli";
+            open_http_url(fallback_url)?;
+            return Ok(CommandOutcome {
+                ok: true,
+                command: format!("open {}", fallback_url),
+                exit_code: None,
+                stdout: String::new(),
+                stderr: String::new(),
+                message: "Opta CLI is missing. Opened generic download page because release manifest was unavailable."
+                    .to_string(),
+            });
+        }
+    };
+    let Some(component) = release_manifest
+        .components
+        .iter()
+        .find(|component| component.id == "opta-cli")
+    else {
+        return Err(ManagerError::PolicyViolation(
+            "Release manifest does not contain component `opta-cli`. Download Opta CLI manually from https://init.optalocal.com/downloads/cli.".to_string(),
+        ));
+    };
+
+    let Some(installer_url) = select_installer_url(component) else {
+        let platform_label = current_platform_key().unwrap_or(std::env::consts::OS);
+        return Err(ManagerError::PolicyViolation(format!(
+            "No installer artifact for `opta-cli` on platform `{}`. Download manually from https://init.optalocal.com/downloads/cli.",
+            platform_label
+        )));
+    };
+
+    open_http_url(installer_url.as_str())?;
+
+    Ok(CommandOutcome {
+        ok: true,
+        command: format!("open {}", installer_url),
+        exit_code: None,
+        stdout: String::new(),
+        stderr: String::new(),
+        message: format!(
+            "Opta CLI is missing. Opened installer URL: {}. Complete installation, then retry the install action.",
+            installer_url
+        ),
+    })
+}
+
 #[tauri::command]
-async fn fetch_manifest(channel: String, manifest_url: Option<String>) -> Result<ManifestResponse, String> {
+async fn fetch_manifest(
+    channel: String,
+    manifest_url: Option<String>,
+) -> Result<ManifestResponse, String> {
     let normalized_channel = normalize_channel(&channel);
     let url = manifest_url_for(&normalized_channel, manifest_url);
 
-    let parsed_url = Url::parse(&url).map_err(|error| ManagerError::InvalidUrl(error.to_string()).to_string())?;
-    if parsed_url.scheme() != "http" && parsed_url.scheme() != "https" {
-        return Err(ManagerError::InvalidUrl("Only http/https URLs are allowed".to_string()).to_string());
-    }
-
-    let client = reqwest::Client::builder()
-        .timeout(Duration::from_secs(10))
-        .build()
-        .map_err(|error| error.to_string())?;
+    let parsed_url = parse_http_url(&url).map_err(|error| error.to_string())?;
+    let client = manager_http_client().map_err(|error| error.to_string())?;
 
     let response = client.get(parsed_url).send().await;
 
@@ -405,23 +895,31 @@ async fn fetch_manifest(channel: String, manifest_url: Option<String>) -> Result
             let value = serde_json::from_str::<Value>(&body).unwrap_or(Value::Null);
             if let Some(mut manifest) = normalize_manifest_payload(value, &normalized_channel) {
                 manifest.channel = normalized_channel;
+                let policy_warning =
+                    evaluate_manifest_policy(&manifest).map_err(|error| error.to_string())?;
                 Ok(ManifestResponse {
                     manifest,
                     source: url,
-                    warning: None,
+                    warning: policy_warning,
                 })
             } else {
                 Ok(ManifestResponse {
                     manifest: default_manifest(&normalized_channel),
                     source: "embedded-fallback".to_string(),
-                    warning: Some("Manifest payload could not be parsed. Using fallback manifest.".to_string()),
+                    warning: Some(
+                        "Manifest payload could not be parsed. Using fallback manifest."
+                            .to_string(),
+                    ),
                 })
             }
         }
         Err(error) => Ok(ManifestResponse {
             manifest: default_manifest(&normalized_channel),
             source: "embedded-fallback".to_string(),
-            warning: Some(format!("Manifest fetch failed: {}. Using fallback manifest.", error)),
+            warning: Some(format!(
+                "Manifest fetch failed: {}. Using fallback manifest.",
+                error
+            )),
         }),
     }
 }
@@ -494,9 +992,17 @@ fn list_installed_from_filesystem() -> Vec<InstalledApp> {
 
     #[cfg(target_os = "macos")]
     {
-        collect_app_dirs(PathBuf::from("/Applications"), "filesystem:/Applications", &mut apps);
+        collect_app_dirs(
+            PathBuf::from("/Applications"),
+            "filesystem:/Applications",
+            &mut apps,
+        );
         if let Some(home) = dirs::home_dir() {
-            collect_app_dirs(home.join("Applications"), "filesystem:~/Applications", &mut apps);
+            collect_app_dirs(
+                home.join("Applications"),
+                "filesystem:~/Applications",
+                &mut apps,
+            );
         }
     }
 
@@ -652,6 +1158,15 @@ async fn execute_variants(
 #[tauri::command]
 async fn install_app(app_id: String, channel: String) -> Result<CommandOutcome, String> {
     let normalized_channel = normalize_channel(&channel);
+    if app_id.eq_ignore_ascii_case("opta-cli") && !is_command_available("opta").await {
+        return bootstrap_opta_cli_install(&normalized_channel)
+            .await
+            .map_err(|error| format!("Install failed. {}", error));
+    }
+    enforce_component_policy_if_available(&normalized_channel, &app_id)
+        .await
+        .map_err(|error| format!("Install failed. {}", error))?;
+
     let variants = vec![
         vec![
             "apps".to_string(),
@@ -677,6 +1192,10 @@ async fn install_app(app_id: String, channel: String) -> Result<CommandOutcome, 
 #[tauri::command]
 async fn update_app(app_id: String, channel: String) -> Result<CommandOutcome, String> {
     let normalized_channel = normalize_channel(&channel);
+    enforce_component_policy_if_available(&normalized_channel, &app_id)
+        .await
+        .map_err(|error| format!("Update failed. {}", error))?;
+
     let variants = vec![
         vec![
             "apps".to_string(),
@@ -772,6 +1291,77 @@ fn parse_daemon_json(value: &Value) -> Option<DaemonStatus> {
     })
 }
 
+fn merge_output_streams(output: &CapturedOutput) -> String {
+    if output.stderr.is_empty() {
+        output.stdout.clone()
+    } else if output.stdout.is_empty() {
+        output.stderr.clone()
+    } else {
+        format!("{}\n{}", output.stdout, output.stderr)
+    }
+}
+
+fn normalize_status_text(input: &str) -> String {
+    input
+        .to_ascii_lowercase()
+        .chars()
+        .map(|ch| if ch.is_ascii_alphanumeric() { ch } else { ' ' })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<_>>()
+        .join(" ")
+}
+
+fn contains_status_phrase(normalized: &str, phrase: &str) -> bool {
+    let haystack = format!(" {} ", normalized);
+    let needle = format!(" {} ", phrase);
+    haystack.contains(&needle)
+}
+
+fn daemon_running_from_text(raw_output: &str, command_success: bool) -> bool {
+    let normalized = normalize_status_text(raw_output);
+
+    let negative_signals = [
+        "not running",
+        "not active",
+        "not online",
+        "stopped",
+        "inactive",
+        "offline",
+        "unreachable",
+        "failed",
+        "error",
+        "running false",
+        "running 0",
+        "status stopped",
+    ];
+
+    if negative_signals
+        .iter()
+        .any(|phrase| contains_status_phrase(&normalized, phrase))
+    {
+        return false;
+    }
+
+    if !command_success {
+        return false;
+    }
+
+    let positive_signals = [
+        "running true",
+        "running 1",
+        "status running",
+        "daemon running",
+        "online",
+        "active",
+        "running",
+    ];
+
+    positive_signals
+        .iter()
+        .any(|phrase| contains_status_phrase(&normalized, phrase))
+}
+
 #[tauri::command]
 async fn daemon_status() -> Result<DaemonStatus, String> {
     if !is_command_available("opta").await {
@@ -783,7 +1373,11 @@ async fn daemon_status() -> Result<DaemonStatus, String> {
         });
     }
 
-    let json_args = vec!["daemon".to_string(), "status".to_string(), "--json".to_string()];
+    let json_args = vec![
+        "daemon".to_string(),
+        "status".to_string(),
+        "--json".to_string(),
+    ];
     if let Ok(output) = run_command_capture("opta", &json_args).await {
         if output.success {
             if let Ok(value) = serde_json::from_str::<Value>(&output.stdout) {
@@ -799,17 +1393,8 @@ async fn daemon_status() -> Result<DaemonStatus, String> {
         .await
         .map_err(|error| error.to_string())?;
 
-    let merged = if output.stderr.is_empty() {
-        output.stdout.clone()
-    } else if output.stdout.is_empty() {
-        output.stderr.clone()
-    } else {
-        format!("{}\n{}", output.stdout, output.stderr)
-    };
-
-    let lower = merged.to_ascii_lowercase();
-    let running = output.success
-        && (lower.contains("running") || lower.contains("online") || lower.contains("active"));
+    let merged = merge_output_streams(&output);
+    let running = daemon_running_from_text(&merged, output.success);
 
     Ok(DaemonStatus {
         running,
@@ -841,13 +1426,7 @@ async fn daemon_stop() -> Result<CommandOutcome, String> {
 
 #[tauri::command]
 async fn open_url(url: String) -> Result<(), String> {
-    let parsed = Url::parse(url.trim()).map_err(|error| ManagerError::InvalidUrl(error.to_string()).to_string())?;
-    if parsed.scheme() != "http" && parsed.scheme() != "https" {
-        return Err(ManagerError::InvalidUrl("Only http/https URLs are allowed".to_string()).to_string());
-    }
-
-    webbrowser::open(parsed.as_str()).map_err(|error| format!("Failed to open URL: {}", error))?;
-    Ok(())
+    open_http_url(&url).map_err(|error| error.to_string())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

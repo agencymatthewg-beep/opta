@@ -41,6 +41,7 @@ export function useSessionSockets({
 }: UseSessionSocketsArgs) {
   const sessionIdsKey = sessionIds.join(",");
   const connectionIdentityRef = useRef<string | null>(null);
+  const sessionGenerationRef = useRef<Record<string, number>>({});
   const tokenBufferRef = useRef<Record<string, string>>({});
   const tokenFlushTimerRef = useRef<Map<string, number>>(new Map());
 
@@ -122,6 +123,7 @@ export function useSessionSockets({
         flushTokenBuffer(id);
         handle.close();
         wsHandlesRef.current.delete(id);
+        delete sessionGenerationRef.current[id];
         setStreamingBySession((prev) => {
           if (!(id in prev)) return prev;
           const next = { ...prev };
@@ -142,12 +144,17 @@ export function useSessionSockets({
 
       let reconnectTimer: number | null = null;
       let attempts = 0;
+      let closeRequestedLocally = false;
       let innerHandle: ReturnType<typeof daemonClient.connectWebSocket> | null =
         null;
       const cursor = { seq: seqCursorRef.current[sessionId] ?? 0 };
+      const generation = (sessionGenerationRef.current[sessionId] ?? 0) + 1;
+      sessionGenerationRef.current[sessionId] = generation;
+      const isCurrentGeneration = () =>
+        sessionGenerationRef.current[sessionId] === generation;
 
       const handleEnvelope = (envelope: V3Envelope) => {
-        if (!mountedRef.current) return;
+        if (!mountedRef.current || !isCurrentGeneration()) return;
         if (typeof envelope.seq === "number") {
           cursor.seq = envelope.seq;
           seqCursorRef.current[sessionId] = envelope.seq;
@@ -256,29 +263,49 @@ export function useSessionSockets({
       };
 
       const open = () => {
-        if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
+        if (
+          !mountedRef.current ||
+          !wsHandlesRef.current.has(sessionId) ||
+          !isCurrentGeneration()
+        ) {
+          return;
+        }
 
         innerHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
           onOpen: () => {
+            if (!isCurrentGeneration()) return;
             attempts = 0;
           },
           onEvent: (envelope) => {
-            if (!mountedRef.current) return;
+            if (!mountedRef.current || !isCurrentGeneration()) return;
             handleEnvelope(envelope);
           },
-          onClose: (code) => {
+          onClose: (_code) => {
             innerHandle = null;
-            if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
-            if (code !== 1000) {
-              flushTokenBuffer(sessionId);
-              setStreamingBySession((prev) => {
-                if (!prev[sessionId]) return prev;
-                return { ...prev, [sessionId]: false };
-              });
-              const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
-              attempts = Math.min(attempts + 1, 10);
-              reconnectTimer = window.setTimeout(open, delay);
+            if (!isCurrentGeneration()) return;
+
+            flushTokenBuffer(sessionId);
+            setStreamingBySession((prev) => {
+              if (!prev[sessionId]) return prev;
+              return { ...prev, [sessionId]: false };
+            });
+
+            if (
+              !mountedRef.current ||
+              !wsHandlesRef.current.has(sessionId) ||
+              closeRequestedLocally
+            ) {
+              return;
             }
+
+            const baseDelay = Math.min(1000 * Math.pow(2, attempts), 10_000);
+            const jitter = Math.floor(baseDelay * 0.2 * Math.random());
+            const delay = Math.min(10_000, baseDelay + jitter);
+            attempts = Math.min(attempts + 1, 10);
+            reconnectTimer = window.setTimeout(() => {
+              if (!isCurrentGeneration()) return;
+              open();
+            }, delay);
           },
           onError: () => {
             // onClose handles recovery path.
@@ -286,12 +313,19 @@ export function useSessionSockets({
         });
       };
 
-        const handle: WsHandle = {
-          close: () => {
-            flushTokenBuffer(sessionId);
-            if (reconnectTimer !== null) window.clearTimeout(reconnectTimer);
-            innerHandle?.close();
-            innerHandle = null;
+      const handle: WsHandle = {
+        close: () => {
+          closeRequestedLocally = true;
+          flushTokenBuffer(sessionId);
+          if (reconnectTimer !== null) {
+            window.clearTimeout(reconnectTimer);
+            reconnectTimer = null;
+          }
+          innerHandle?.close();
+          innerHandle = null;
+          if (sessionGenerationRef.current[sessionId] === generation) {
+            sessionGenerationRef.current[sessionId] = generation + 1;
+          }
           wsHandlesRef.current.delete(sessionId);
         },
         send: (msg) => innerHandle?.send(msg),
@@ -322,7 +356,8 @@ export function useSessionSockets({
       }
       tokenFlushTimerRef.current.clear();
       tokenBufferRef.current = {};
+      sessionGenerationRef.current = {};
     },
-    [wsHandlesRef, tokenFlushTimerRef, tokenBufferRef],
+    [wsHandlesRef, tokenFlushTimerRef, tokenBufferRef, sessionGenerationRef],
   );
 }

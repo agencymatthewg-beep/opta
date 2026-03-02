@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 600px;
+    height: 600px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    position: relative;
+  }
+  .logo {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* Wordmark removed for transparent logo mark variant */
+</style>
+</head>
+<body>
+<div class="logo">
+  <!-- HD polished ring mark -->
+  <svg width="210" height="210" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="starBloom" x="-200%" y="-200%" width="500%" height="500%">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="orbitGlow" x="-20%" y="-60%" width="140%" height="220%">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <!-- Ensure the void fill inside the ring has some opacity so it looks good on both light and dark backgrounds, or make it completely void black -->
+      <radialGradient id="voidFill" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#100e18" stop-opacity="0.9"/>
+        <stop offset="60%"  stop-color="#0c0a14" stop-opacity="0.95"/>
+        <stop offset="100%" stop-color="#09090b" stop-opacity="1"/>
+      </radialGradient>
+      <linearGradient id="ringHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#c084fc" stop-opacity="0.9"/>
+        <stop offset="25%"  stop-color="#a855f7" stop-opacity="0.7"/>
+        <stop offset="55%"  stop-color="#7c3aed" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#4c1d95" stop-opacity="0.15"/>
+      </linearGradient>
+      <linearGradient id="orbitGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#c084fc" stop-opacity="0.8"/>
+        <stop offset="40%"  stop-color="#a855f7" stop-opacity="0.55"/>
+        <stop offset="100%" stop-color="#7c3aed" stop-opacity="0.2"/>
+      </linearGradient>
+      <radialGradient id="centreBloom" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#f5d0fe" stop-opacity="1"/>
+        <stop offset="30%"  stop-color="#e879f9" stop-opacity="0.6"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="70%"  stop-color="#a855f7" stop-opacity="0"/>
+        <stop offset="85%"  stop-color="#a855f7" stop-opacity="0.06"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Scale up slightly to fill 600x600 when saved with playwright? The SVG is 210x210. 
+         For a transparent icon, we usually want it to fill the canvas. We can scale it later. -->
+    <g transform="scale(2.5) translate(-10, -10)">
+        <circle cx="105" cy="105" r="100" fill="url(#outerGlow)"/>
+        <circle cx="105" cy="105" r="88" fill="url(#voidFill)"/>
+        <circle cx="105" cy="105" r="96" stroke="#a855f7" stroke-width="6" stroke-opacity="0.06" fill="none"/>
+        <circle cx="105" cy="105" r="93" stroke="#a855f7" stroke-width="3" stroke-opacity="0.10" fill="none"/>
+        <circle cx="105" cy="105" r="90" stroke="url(#ringHighlight)" stroke-width="1.6" fill="none" filter="url(#ringGlow)"/>
+        <circle cx="105" cy="105" r="87" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.12" fill="none"/>
+
+        <!-- === INNER MARK GOES HERE === -->
+        <ellipse cx="105" cy="105" rx="52" ry="23" stroke="url(#orbitGrad)" stroke-width="1.4" fill="none" transform="rotate(-30 105 105)" filter="url(#orbitGlow)"/>
+        <ellipse cx="105" cy="105" rx="52" ry="23" stroke="#c084fc" stroke-width="0.5" stroke-opacity="0.3" fill="none" transform="rotate(-30 105 105)"/>
+        <g transform="rotate(-30 105 105)">
+          <circle cx="53" cy="105" r="2.2" fill="#c084fc" fill-opacity="0.7"/>
+          <circle cx="53" cy="105" r="4"   fill="#a855f7" fill-opacity="0.2"/>
+          <circle cx="157" cy="105" r="2.2" fill="#a855f7" fill-opacity="0.5"/>
+          <circle cx="157" cy="105" r="3.5" fill="#a855f7" fill-opacity="0.12"/>
+        </g>
+        <!-- === END INNER MARK === -->
+
+        <circle cx="105" cy="105" r="20" fill="url(#centreBloom)" fill-opacity="0.18"/>
+        <circle cx="105" cy="105" r="7" fill="#a855f7" fill-opacity="0.25" filter="url(#starBloom)"/>
+        <circle cx="105" cy="105" r="3.2" fill="#f5d0fe" fill-opacity="1"/>
+        <circle cx="103.5" cy="103.5" r="1.2" fill="#ffffff" fill-opacity="0.95"/>
+    </g>
+  </svg>
+</div>
+</body>
+</html>

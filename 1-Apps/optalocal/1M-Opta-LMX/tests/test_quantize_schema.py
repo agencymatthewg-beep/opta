@@ -17,16 +17,26 @@ def test_quantize_request_defaults_are_stable() -> None:
     assert req.mode == "affine"
 
 
-@pytest.mark.parametrize("bits", [0, 2, 16, -4])
+@pytest.mark.parametrize("bits", [0, 7, 16, -4])
 def test_quantize_request_rejects_invalid_bits(bits: int) -> None:
-    with pytest.raises(ValidationError, match="bits must be 4 or 8"):
+    with pytest.raises(ValidationError, match="bits must be one of"):
         QuantizeRequest(source_model="org/model", bits=bits)
 
 
-def test_quantize_request_rejects_invalid_mode() -> None:
-    with pytest.raises(ValidationError) as exc:
-        QuantizeRequest(source_model="org/model", mode="mxfp4")
+def test_quantize_request_accepts_supported_mode() -> None:
+    req = QuantizeRequest(
+        source_model="org/model",
+        bits=4,
+        group_size=32,
+        mode="mxfp4",
+    )
+    assert req.mode == "mxfp4"
+    assert req.group_size == 32
 
+
+def test_quantize_request_rejects_unknown_mode() -> None:
+    with pytest.raises(ValidationError) as exc:
+        QuantizeRequest(source_model="org/model", mode="symmetric")
     errors = exc.value.errors()
     assert errors
     assert errors[0]["loc"] == ("mode",)
@@ -39,3 +49,13 @@ def test_quantize_request_rejects_non_positive_group_size() -> None:
     errors = exc.value.errors()
     assert errors
     assert errors[0]["loc"] == ("group_size",)
+
+
+def test_quantize_request_rejects_mode_specific_group_size() -> None:
+    with pytest.raises(ValidationError, match="group_size=64 is not supported for mode='nvfp4'"):
+        QuantizeRequest(
+            source_model="org/model",
+            bits=4,
+            group_size=64,
+            mode="nvfp4",
+        )

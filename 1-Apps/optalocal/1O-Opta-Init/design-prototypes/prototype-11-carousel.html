@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 11: Carousel</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .window { width: 1000px; height: 600px; background: #09090b; border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; display: flex; flex-direction: column; overflow: hidden; position: relative; }
+    
+    .bg-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px); background-size: 40px 40px; pointer-events: none; z-index: 0; }
+    
+    .header { padding: 30px; position: relative; z-index: 10; display: flex; justify-content: space-between; }
+    
+    .carousel { flex: 1; display: flex; align-items: center; justify-content: center; gap: 40px; position: relative; z-index: 10; }
+    
+    .app-item { position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    
+    .purple-circle {
+      position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.5);
+      width: 120px; height: 120px; border-radius: 50%;
+      background: rgba(168,85,247,0.7);
+      opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 50px rgba(168,85,247,0.5);
+      z-index: 1; pointer-events: none; filter: blur(4px);
+    }
+    
+    .app-logo { width: 80px; height: 80px; border-radius: 50%; z-index: 2; transition: all 0.4s; background: #09090b; border: 1px solid rgba(255,255,255,0.05); }
+    
+    .app-label { margin-top: 20px; opacity: 0; transform: translateY(10px); transition: all 0.3s; font-weight: 600; text-align: center; }
+
+    /* Hover states */
+    .app-item:hover .purple-circle { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    .app-item:hover .app-logo { transform: scale(1.3); border-color: rgba(168,85,247,0.5); }
+    .app-item:hover .app-label { opacity: 1; transform: translateY(0); }
+    
+    /* Inactive items scale down slightly */
+    .carousel:hover .app-item:not(:hover) { opacity: 0.5; transform: scale(0.9); filter: grayscale(100%); }
+
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="bg-grid"></div>
+    <div class="header">
+      <div class="text-xl font-bold tracking-widest text-purple-400">OPTA <span class="text-white">INIT</span></div>
+      <div class="text-sm text-gray-400 font-mono">v1.0.0</div>
+    </div>
+    
+    <div class="carousel">
+      <div class="app-item">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.png" class="app-logo">
+        <div class="app-label">Opta LMX<br><span class="text-xs text-gray-400 font-normal">Launch Daemon</span></div>
+      </div>
+      <div class="app-item">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-CLI/opta-cli-logo-final.png" class="app-logo">
+        <div class="app-label">Opta CLI<br><span class="text-xs text-gray-400 font-normal">Open Terminal</span></div>
+      </div>
+      <div class="app-item">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.png" class="app-logo">
+        <div class="app-label">Opta Code<br><span class="text-xs text-gray-400 font-normal">IDE Surface</span></div>
+      </div>
+      <div class="app-item">
+        <div class="purple-circle"></div>
+        <img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.png" class="app-logo">
+        <div class="app-label">Opta Accounts<br><span class="text-xs text-gray-400 font-normal">Manage Identity</span></div>
+      </div>
+    </div>
+    
+    <div class="absolute bottom-8 left-0 right-0 text-center z-10 text-gray-500 text-sm">
+      Scroll to browse ecosystem apps
+    </div>
+  </div>
+</body>
+</html>
