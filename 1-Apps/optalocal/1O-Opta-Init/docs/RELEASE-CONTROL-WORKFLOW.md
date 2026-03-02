@@ -17,6 +17,7 @@ This document defines the internal release-control contract for Opta Init channe
 - Validators:
   - `scripts/validate-release-manifests.mjs`
   - `scripts/validate-manager-update-metadata.mjs`
+  - `scripts/validate-manager-update-links.mjs`
 - Link reachability validator:
   - `scripts/validate-manifest-links.mjs`
 - Publish sync:
@@ -80,6 +81,10 @@ This document defines the internal release-control contract for Opta Init channe
   - `pub_date`
   - `platforms` (`{ target: { url, signature } }`)
 - Tauri updater selects the local target from `platforms` and performs version comparison client-side.
+- `validate-manager-update-links` gate:
+  - checks manager artifact URL reachability when `manifest.version` is newer than local manager version
+  - skips by default when no update is being advertised (`manifest.version <= local manager`)
+  - supports strict mode: `npm run validate:manager-update-links -- --strict`
 - During gateway mode, unresolved package URLs may temporarily route to channel release notes while packaging/signing completes.
 
 ## Required Signing Variables (Manager Updater)
@@ -124,6 +129,7 @@ If either variable is missing, do not publish manager updater metadata.
 5. Ensure each changed target has correct `url`, `signature`, `version`, `notes`, and `date`.
 6. Validate manager metadata:
    - `npm run validate:manager-update-metadata -- channels/manager-updates/beta.json channels/manager-updates/stable.json`
+   - `npm run validate:manager-update-links`
 7. Sync public updater metadata:
    - `npm run sync:manager-updates`
 8. Run the combined contract gate:

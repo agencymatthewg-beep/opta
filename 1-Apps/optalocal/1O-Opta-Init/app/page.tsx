@@ -1,545 +1,701 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, type Variants } from "framer-motion";
-import { ArrowRight, Box, Cpu, Shield, Database, Terminal, ChevronRight, Layers, Zap, Code2, Lock, Activity, Plug, Layout, Download, ArrowUpRight, CheckCircle2 } from "lucide-react";
-import {
-  FEATURES,
-  SHOWCASE_CONTENT,
-  DASHBOARD_URL,
-  ACCOUNTS_URL,
-  PLATFORM_URL,
-} from "@/lib/constants";
-import { DOWNLOAD_TARGETS, resolveDownloadAvailability, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
-import { OptaRing } from "@/components/OptaRing";
+import { useCallback, useEffect, useMemo, useState, useRef } from "react";
+import { Settings } from "lucide-react";
+import type {
+  Channel,
+  DaemonStatus,
+  ManifestPayload,
+  InstalledApp,
+  ManifestApp,
+  ManifestResponse,
+  ManagerUpdateCheckResult,
+  ManagerUpdateInstallResult,
+  ManagerUpdateState,
+} from "./types";
 
-// Icon mapper for features
-const getIcon = (name: string) => {
-  switch (name) {
-    case 'shield': return <Shield className="w-5 h-5" />;
-    case 'layout': return <Layout className="w-5 h-5" />;
-    case 'layers': return <Layers className="w-5 h-5" />;
-    case 'activity': return <Activity className="w-5 h-5" />;
-    case 'cpu': return <Cpu className="w-5 h-5" />;
-    case 'plug': return <Plug className="w-5 h-5" />;
-    default: return <Box className="w-5 h-5" />;
-  }
+// App Logo mapping (Strictly Opta Local Logos only, pure SVGs)
+const LOGOS: Record<string, string> = {
+  "opta-lmx": "/logos/opta-lmx-mark.svg",
+  "opta-cli": "/logos/opta-cli-mark.svg",
+  "opta-code-universal": "/logos/opta-code-mark.svg",
+  "opta-local": "/logos/opta-local-mark.svg",
+  "opta-accounts": "/logos/opta-accounts-mark.svg",
+  "opta-status": "/logos/opta-status-mark.svg",
+  "opta-learn": "/logos/opta-learn-mark.svg",
+  "opta-help": "/logos/opta-help-mark.svg",
+  "opta-daemon": "/logos/opta-status-mark.svg", // Using status logo for daemon
+  "default": "/logos/opta-local-mark.svg",
 };
 
-export default function Home() {
-  const [downloadState, setDownloadState] = useState<DownloadAvailabilityMap | null>(null);
+const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
+  stable: {
+    channel: "stable",
+    updatedAt: "preview",
+    apps: [
+      {
+        id: "opta-cli",
+        name: "Opta CLI",
+        description: "Command-line interface for local orchestration, model downloading, and stack management.",
+        version: "stable-preview",
+        website: "https://init.optalocal.com/downloads/cli",
+      },
+      {
+        id: "opta-lmx",
+        name: "Opta LMX",
+        description: "The core local inference engine. Manage your models, endpoints, and local API traffic.",
+        version: "stable-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
+        id: "opta-code-universal",
+        name: "Opta Code",
+        description: "Desktop IDE surface powered by your local LMX endpoints.",
+        version: "stable-preview",
+        website: "https://init.optalocal.com/apps/opta-code",
+      },
+      {
+        id: "opta-local",
+        name: "Opta Local",
+        description: "Web management dashboard for the Opta ecosystem.",
+        version: "stable-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
+        id: "opta-accounts",
+        name: "Opta Accounts",
+        description: "Manage your local identity, sync preferences, and cloud backups.",
+        version: "stable-preview",
+        website: "https://accounts.optalocal.com",
+      },
+      {
+        id: "opta-status",
+        name: "Opta Status",
+        description: "System health monitoring and service status.",
+        version: "stable-preview",
+        website: "https://status.optalocal.com",
+      },
+      {
+        id: "opta-learn",
+        name: "Opta Learn",
+        description: "Discovery and guide portal.",
+        version: "stable-preview",
+        website: "https://learn.optalocal.com",
+      },
+      {
+        id: "opta-help",
+        name: "Opta Help",
+        description: "Technical reference documentation.",
+        version: "stable-preview",
+        website: "https://help.optalocal.com",
+      },
+      {
+        id: "opta-daemon",
+        name: "Opta Daemon",
+        description: "Background daemon service required for continuous local runtime orchestration.",
+        version: "stable-preview",
+        website: "https://docs.optalocal.com/daemon",
+      },
+    ],
+  },
+  beta: {
+    channel: "beta",
+    updatedAt: "preview",
+    apps: [],
+  },
+};
+
+const MANAGER_UPDATE_LABELS: Record<ManagerUpdateState, string> = {
+  up_to_date: "Up to date",
+  update_available: "Update available",
+  error: "Error",
+};
+
+function parseManagerUpdateCheck(
+  payload: ManagerUpdateCheckResult | boolean,
+): { status: ManagerUpdateState; warning?: string } {
+  if (typeof payload === "boolean") {
+    return { status: payload ? "update_available" : "up_to_date" };
+  }
+
+  const statusText = typeof payload.status === "string" ? payload.status.toLowerCase() : "";
+  const warningFromWarnings =
+    Array.isArray(payload.warnings) &&
+    typeof payload.warnings[0] === "string" &&
+    payload.warnings[0].trim().length > 0
+      ? payload.warnings[0]
+      : undefined;
+  const explicitWarning =
+    typeof payload.error === "string" && payload.error.trim().length > 0
+      ? payload.error
+      : typeof payload.message === "string" && payload.message.trim().length > 0
+        ? payload.message
+        : warningFromWarnings;
+  const detectedAvailability = [
+    payload.available,
+    payload.updateAvailable,
+    payload.update_available,
+    payload.hasUpdate,
+    payload.has_update,
+  ].find((value): value is boolean => typeof value === "boolean");
+
+  if (statusText.includes("error") || statusText.includes("fail")) {
+    return {
+      status: "error",
+      warning: explicitWarning ?? "Manager update check failed.",
+    };
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+    return { status: "error", warning: payload.error };
+  }
+
+  if (typeof detectedAvailability === "boolean") {
+    return {
+      status: detectedAvailability ? "update_available" : "up_to_date",
+      warning: warningFromWarnings,
+    };
+  }
+
+  if (
+    statusText.includes("up_to_date")
+    || statusText.includes("up-to-date")
+    || statusText.includes("uptodate")
+    || statusText.includes("latest")
+    || statusText.includes("no_update")
+  ) {
+    return { status: "up_to_date", warning: warningFromWarnings };
+  }
+
+  if (statusText.includes("available") || statusText === "update_available" || statusText === "update") {
+    return { status: "update_available", warning: warningFromWarnings };
+  }
+
+  return { status: "up_to_date", warning: warningFromWarnings };
+}
+
+function ParticleBackground() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let mounted = true;
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    if (!ctx) return;
 
-    const detectAssets = async () => {
-      try {
-        const result = await resolveDownloadAvailability();
-        if (mounted) setDownloadState(result);
-      } catch (e) {
-        console.error("Failed to detect assets", e);
+    let animationFrameId: number;
+
+    const resize = () => {
+      const parent = c.parentElement;
+      if (parent) {
+        c.width = parent.clientWidth;
+        c.height = parent.clientHeight;
       }
     };
+    resize();
+    window.addEventListener("resize", resize);
 
-    void detectAssets();
+    const cx = c.width / 2; 
+    const cy = c.height / 2;
+
+    const particles: any[] = [];
+    for (let i = 0; i < 200; i++) {
+      particles.push({
+        x: Math.random() * c.width,
+        y: Math.random() * c.height,
+        size: Math.random() * 2,
+        speedY: -(Math.random() * 0.3 + 0.05),
+        speedX: (Math.random() - 0.5) * 0.2
+      });
+    }
+
+    const draw = () => {
+      ctx.clearRect(0, 0, c.width, c.height);
+
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 400);
+      glow.addColorStop(0, "rgba(168,85,247,0.12)");
+      glow.addColorStop(1, "transparent");
+      ctx.fillStyle = glow;
+      ctx.fillRect(0, 0, c.width, c.height);
+
+      particles.forEach((p) => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+        if (p.y < 0) p.y = c.height;
+        if (p.x < 0) p.x = c.width;
+        if (p.x > c.width) p.x = 0;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,0.4)`;
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
     return () => {
-      mounted = false;
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animationFrameId);
     };
   }, []);
 
-  const downloads = downloadState ?? Object.fromEntries(
-    Object.entries(DOWNLOAD_TARGETS).map(([key, target]) => [
-      key,
-      {
-        name: target.name,
-        description: target.description,
-        macos: {
-          url: target.platforms.macos?.fallbackUrl ?? null,
-          available: Boolean(target.platforms.macos?.fallbackUrl),
-          label: target.platforms.macos?.fallbackUrl ? "Package Ready" : "Coming Soon",
-          source: target.platforms.macos?.fallbackUrl ? "fallback" : "none",
-        },
-        windows: { url: null, available: false, label: "Coming Soon", source: "none" },
-      },
-    ])
-  ) as DownloadAvailabilityMap;
-  const lineRevealX: Variants = {
-    hidden: { scaleX: 0, originX: 0 },
-    show: { scaleX: 1, transition: { duration: 1.5, ease: [0.77, 0, 0.175, 1] } }
+  return <canvas ref={canvasRef} className="void-canvas" />;
+}
+
+export default function Home() {
+  const tauriAvailable =
+    typeof window !== "undefined" &&
+    Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
+  
+  // Safe dynamic invoke for Next.js to avoid breaking SSR
+  const invoke = async (cmd: string, args: any = {}) => {
+    if (tauriAvailable) {
+      const tauri = await import("@tauri-apps/api/core");
+      return tauri.invoke(cmd, args);
+    }
+    throw new Error("Tauri not available");
   };
 
-  const lineRevealY: Variants = {
-    hidden: { scaleY: 0, originY: 0 },
-    show: { scaleY: 1, transition: { duration: 1.5, ease: [0.77, 0, 0.175, 1] } }
+  const [channel] = useState<Channel>("stable");
+  const [manifestResp, setManifestResp] = useState<ManifestResponse | null>(null);
+  const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
+  const [daemon, setDaemon] = useState<DaemonStatus | null>(null);
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [managerUpdateState, setManagerUpdateState] = useState<ManagerUpdateState>("up_to_date");
+  const [managerUpdateWarning, setManagerUpdateWarning] = useState<string | null>(null);
+  const [managerUpdatePending, setManagerUpdatePending] = useState(false);
+  
+  const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
+  const [showScanPrompt, setShowScanPrompt] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const installedIndex = useMemo(() => {
+    const map = new Map<string, InstalledApp>();
+    for (const app of installedApps) {
+      if (!map.has(app.id)) {
+        map.set(app.id, app);
+      }
+    }
+    return map;
+  }, [installedApps]);
+
+  const refreshData = useCallback(async () => {
+    if (!tauriAvailable) {
+      setManifestResp({
+        manifest: BROWSER_PREVIEW_MANIFEST[channel],
+        source: "browser-preview",
+      });
+      setInstalledApps([]);
+      setDaemon({ running: false, message: "browser mode", rawOutput: "", checkedAt: "" });
+      return;
+    }
+
+    try {
+      const [manifestResult, installedResult, daemonResult] = await Promise.all([
+        invoke("fetch_manifest", { channel }) as Promise<ManifestResponse>,
+        invoke("list_installed_apps") as Promise<InstalledApp[]>,
+        invoke("daemon_status") as Promise<DaemonStatus>,
+      ]);
+      setManifestResp(manifestResult);
+      setInstalledApps(installedResult);
+      setDaemon(daemonResult);
+    } catch (e) {
+      console.error("Refresh failed:", e);
+    }
+  }, [channel, tauriAvailable]);
+
+  useEffect(() => {
+    void refreshData();
+  }, [refreshData]);
+
+  const checkManagerUpdate = useCallback(async () => {
+    if (!tauriAvailable) {
+      setManagerUpdateState("up_to_date");
+      setManagerUpdateWarning(null);
+      return;
+    }
+
+    try {
+      const result = await invoke("check_manager_update", { channel }) as ManagerUpdateCheckResult | boolean;
+      const parsed = parseManagerUpdateCheck(result);
+      setManagerUpdateState(parsed.status);
+      setManagerUpdateWarning(parsed.warning ?? null);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setManagerUpdateState("error");
+      setManagerUpdateWarning(`Manager update check failed: ${message}`);
+    }
+  }, [channel, tauriAvailable]);
+
+  useEffect(() => {
+    void checkManagerUpdate();
+  }, [checkManagerUpdate]);
+
+  const installManagerUpdate = useCallback(async () => {
+    if (!tauriAvailable || managerUpdatePending) {
+      if (!tauriAvailable) {
+        window.open("https://github.com/agencymatthewg-beep/opta/releases", "_blank");
+      }
+      return;
+    }
+    setManagerUpdatePending(true);
+    try {
+      const result = await invoke("install_manager_update", { channel }) as ManagerUpdateInstallResult;
+      if (result?.ok === false) {
+        setManagerUpdateState("error");
+        setManagerUpdateWarning(
+          result.message
+          ?? result.error
+          ?? "Manager update failed. Please retry in a moment.",
+        );
+        return;
+      }
+      if (typeof result?.message === "string" && result.message.trim().length > 0) {
+        setManagerUpdateWarning(result.message);
+      }
+      await checkManagerUpdate();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setManagerUpdateState("error");
+      setManagerUpdateWarning(`Manager update failed: ${message}`);
+    } finally {
+      setManagerUpdatePending(false);
+    }
+  }, [channel, checkManagerUpdate, managerUpdatePending, tauriAvailable]);
+
+  const runAppAction = useCallback(async (app: ManifestApp, action: "install" | "update" | "launch" | "verify" | "open_folder") => {
+    if (!tauriAvailable) {
+      if (action === "install" && app.website) {
+        window.open(app.website, "_blank");
+      }
+      return;
+    }
+    if (managerUpdatePending) return;
+    
+    if (action === "verify" || action === "open_folder") {
+      console.log(`Action ${action} requested for ${app.name}`);
+      // In the future, map these to real Tauri commands like invoke("verify_app")
+      return;
+    }
+    
+    setPendingKey(`${action}:${app.id}`);
+    try {
+      const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
+      await invoke(command, action === "launch" ? { appId: app.id } : { appId: app.id, channel });
+      if (action !== "launch") {
+        setInstalledApps(await invoke("list_installed_apps") as InstalledApp[]);
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPendingKey(null);
+    }
+  }, [channel, managerUpdatePending, tauriAvailable]);
+
+  // Global Keydown for Scan
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (showScanPrompt) {
+        if (e.key === 'Escape') setShowScanPrompt(false);
+        if (e.key === 'Enter') {
+          console.log("Scanning PC for Opta Apps...");
+          setShowScanPrompt(false);
+        }
+        return;
+      }
+      
+      if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !hoveredApp && !managerUpdatePending && !showSettings) {
+        setShowScanPrompt(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [showScanPrompt, hoveredApp, managerUpdatePending, showSettings]);
+
+  useEffect(() => {
+    if (!hoveredApp || pendingKey !== null || managerUpdatePending || showScanPrompt || showSettings) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const isInstalled = installedIndex.has(hoveredApp.id);
+      
+      if (key === 'u' && isInstalled) {
+        void runAppAction(hoveredApp, "update");
+      } else if (key === 'l' && isInstalled) {
+        void runAppAction(hoveredApp, "launch");
+      } else if (key === 'd' && !isInstalled) {
+        void runAppAction(hoveredApp, "install");
+      } else if (key === 'v') {
+        void runAppAction(hoveredApp, "verify");
+      } else if (key === 'f') {
+        void runAppAction(hoveredApp, "open_folder");
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [hoveredApp, installedIndex, managerUpdatePending, pendingKey, runAppAction, showScanPrompt, showSettings]);
+
+  const runDaemonAction = async (action: "start" | "stop") => {
+    if (!tauriAvailable || managerUpdatePending) return;
+    setPendingKey(`daemon:${action}`);
+    try {
+      await invoke(action === "start" ? "daemon_start" : "daemon_stop");
+      setDaemon(await invoke("daemon_status") as DaemonStatus);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setPendingKey(null);
+    }
   };
 
-  const textUp: Variants = {
-    hidden: { y: "100%", opacity: 0 },
-    show: { y: "0%", opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
-  };
+  const apps = manifestResp?.manifest.apps ?? [];
+  
+  // Extract top apps
+  const topLocal = apps.find(a => a.id === "opta-local");
+  const topDaemon = apps.find(a => a.id === "opta-daemon");
 
-  const fadeUp: Variants = {
-    hidden: { y: 40, opacity: 0 },
-    show: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100, damping: 20 } }
+  // Extract core apps
+  const coreCli = apps.find(a => a.id === "opta-cli");
+  const coreLmx = apps.find(a => a.id === "opta-lmx");
+  const coreCode = apps.find(a => a.id === "opta-code-universal");
+  
+  // Extract bottom apps
+  const bottomApps = apps.filter(a => !["opta-local", "opta-daemon", "opta-cli", "opta-lmx", "opta-code-universal"].includes(a.id));
+
+  const displayApp = hoveredApp;
+  const isInstalled = displayApp ? installedIndex.has(displayApp.id) : false;
+  const isPending = displayApp ? pendingKey?.includes(displayApp.id) : false;
+  const controlsDisabled = pendingKey !== null || managerUpdatePending;
+  const managerUpdateChipClass =
+    managerUpdateState === "update_available"
+      ? "update-available"
+      : managerUpdateState === "error"
+        ? "error"
+        : "up-to-date";
+
+  // Floating animation delays
+  const getFloatingClass = (index: number) => `floating-${(index % 5) + 1}`;
+
+  const renderAppNode = (app: ManifestApp, customClass: string = "", animIndex: number) => {
+    if (!app) return null;
+    const logoPath = LOGOS[app.id] || LOGOS["default"];
+    const isAppInstalled = installedIndex.has(app.id);
+    const isDaemon = app.id === "opta-daemon";
+    const isActive = isDaemon ? daemon?.running : isAppInstalled;
+    
+    return (
+      <div 
+        key={app.id} 
+        className={`app-item ${customClass} ${getFloatingClass(animIndex)}`} 
+        onMouseEnter={() => setHoveredApp(app)}
+        onMouseLeave={() => setHoveredApp(null)}
+      >
+        <div className="tooltip">
+          <div className="tooltip-title">{app.name}</div>
+          {hoveredApp?.id === app.id && app.id !== "opta-daemon" && (
+            <div className="tooltip-shortcuts">
+              {isAppInstalled ? (
+                <>
+                  <span><kbd>L</kbd> Launch</span>
+                  <span><kbd>U</kbd> Update</span>
+                  <span><kbd>V</kbd> Verify</span>
+                  <span><kbd>F</kbd> Folder</span>
+                </>
+              ) : (
+                <span><kbd>D</kbd> Download</span>
+              )}
+            </div>
+          )}
+        </div>
+        <div className="purple-circle"></div>
+        <img 
+          src={logoPath} 
+          className="app-logo" 
+          alt={app.name} 
+          onError={(e) => { 
+            if (e.currentTarget.src !== LOGOS["default"]) {
+              e.currentTarget.src = LOGOS["default"]; 
+            }
+          }} 
+        />
+        {isActive && <div className="app-status-pip active"></div>}
+      </div>
+    );
   };
 
   return (
-    <div className="min-h-screen bg-void text-text-primary font-sans overflow-x-hidden selection:bg-primary/30 selection:text-white">
-      <div className="film-grain"></div>
+    <div className="window-app">
+      <ParticleBackground />
 
-      {/* Opta Atmospheric Fog */}
-      <div className="fixed inset-0 z-0 opacity-20 bg-[radial-gradient(circle_at_50%_0%,rgba(139,92,246,0.5)_0%,transparent_50%)] pointer-events-none"></div>
-      <div className="fixed bottom-[-20%] left-[-10%] w-[600px] h-[600px] z-0 opacity-10 bg-[radial-gradient(circle,rgba(59,130,246,0.5)_0%,transparent_60%)] blur-3xl pointer-events-none"></div>
-
-      {/* Structural HUD Grid Lines (Persistent Overlay) */}
-      <motion.div initial="hidden" animate="show" variants={lineRevealY} className="fixed inset-y-0 left-[8%] w-px bg-gradient-to-b from-primary/50 via-neon-blue/20 to-transparent z-0 hidden md:block pointer-events-none" />
-      <motion.div initial="hidden" animate="show" variants={lineRevealY} className="fixed inset-y-0 right-[8%] w-px bg-gradient-to-b from-primary/50 via-neon-blue/20 to-transparent z-0 hidden md:block pointer-events-none" />
-      <motion.div initial="hidden" animate="show" variants={lineRevealX} className="fixed inset-x-0 top-[12%] h-px bg-gradient-to-r from-transparent via-primary/40 to-transparent z-0 hidden md:block pointer-events-none" />
-
-      {/* HEADER */}
-      <header className="fixed top-0 inset-x-0 z-50 backdrop-blur-md bg-void/50 border-b border-white/5">
-        <div className="flex items-center justify-between px-[8%] py-6">
-          <div className="font-bold text-lg tracking-tighter uppercase flex items-center gap-3">
-            <OptaRing size={48} className="shrink-0 pointer-events-none" />
-            OPTA_INIT
-          </div>
-          <nav className="hidden md:flex gap-10 text-xs tracking-[0.2em] uppercase font-medium text-text-secondary">
-            <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#showcase" className="hover:text-primary transition-colors">CLI</a>
-            <a href="#install" className="hover:text-primary transition-colors">Install</a>
-            <a href="#downloads" className="hover:text-primary transition-colors text-primary">Download</a>
-            <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
-          </nav>
+      <div className="header" style={{ position: 'absolute', top: '40px', textAlign: 'center', zIndex: 10, width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div className="sidebar-text">INIT MANAGER</div>
+        <h1 className="main-title">{displayApp ? displayApp.name : "Select Environment"}</h1>
+        {displayApp && (
+          <p className="app-desc-text fade-in">{displayApp.description}</p>
+        )}
+      </div>
+      
+      <div className="cluster-container">
+        {/* TOP ROW: Local & Daemon */}
+        <div className="top-row">
+          {topLocal && renderAppNode(topLocal, "top-item", 3)}
+          {topDaemon && renderAppNode(topDaemon, "top-item", 4)}
         </div>
-      </header>
 
-      <main className="relative z-10 pt-40 pb-32">
-        {/* --- HERO SECTION --- */}
-        <motion.section
-          initial="hidden"
-          animate="show"
-          transition={{ staggerChildren: 0.1 }}
-          className="px-[8%] grid grid-cols-1 md:grid-cols-12 gap-x-8 mb-40"
-        >
-          {/* Typographic Hero */}
-          <div className="md:col-span-12 mb-20 relative">
-            <div className="absolute -top-10 left-1/4 w-1 h-1 bg-white/40 rounded-full animate-[ping_4s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
-            <div className="absolute top-20 right-1/3 w-1.5 h-1.5 bg-primary/40 rounded-full animate-[ping_6s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
+        {/* CORE ROW: CLI - LMX - CODE */}
+        <div className="core-row">
+          {coreCli && renderAppNode(coreCli, "", 0)}
+          {coreLmx && renderAppNode(coreLmx, "lmx-item", 1)}
+          {coreCode && renderAppNode(coreCode, "", 2)}
+        </div>
+        
+        {/* BOTTOM ROW */}
+        <div className="bottom-row">
+          {bottomApps.map((app, i) => {
+            const isMiddle = bottomApps.length === 4 && (i === 1 || i === 2);
+            return renderAppNode(app, `support-item ${isMiddle ? 'bottom-middle-item' : ''}`, i + 5);
+          })}
+        </div>
+      </div>
 
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs text-primary uppercase tracking-widest mb-8">
-              <Zap className="w-3 h-3" /> Opta Init App Manager
+      <div className="bottom-panel">
+        <div className="centered-bottom-group">
+          <div className="status-row">
+            <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
+              <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
+              {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
+              {pendingKey?.includes('daemon') && " (Working...)"}
             </div>
-
-            <h1 className="text-[10vw] leading-[0.9] font-bold tracking-tighter uppercase">
-              <div className="overflow-hidden pb-4">
-                <motion.div variants={textUp} className="text-moonlight">Manage</motion.div>
-              </div>
-              <div className="overflow-hidden pb-4 ml-[8vw]">
-                <motion.div variants={textUp}>
-                  <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(168,85,247,0.6)' }}>Opta Apps</span>
-                </motion.div>
-              </div>
-              <div className="overflow-hidden pb-4">
-                <motion.div variants={textUp} className="text-moonlight">and Daemon.</motion.div>
-              </div>
-            </h1>
+            <div className={`manager-update-chip ${managerUpdateChipClass}`}>
+              <span className="manager-update-chip-title">Manager</span>
+              <span>{MANAGER_UPDATE_LABELS[managerUpdateState]}</span>
+            </div>
+            <div className="scan-hint" onClick={() => setShowScanPrompt(true)} title="Scan system for Opta apps">
+              Scan <kbd>S</kbd>
+            </div>
           </div>
-
-          <div className="md:col-span-4 md:col-start-2">
-            <motion.div variants={lineRevealX} className="h-px bg-white/10 w-full mb-8" />
-            <motion.p variants={textUp} className="text-lg font-light leading-relaxed text-text-secondary">
-              Opta Init is the manager, updater, and launcher for your Opta Local stack. Install apps, roll updates safely, and control daemon lifecycle from one native surface.
-            </motion.p>
-
-            <motion.a href="#install" variants={textUp} className="mt-12 group cursor-pointer inline-flex items-center gap-4 obsidian-interactive p-3 rounded-full pr-8 border border-white/10">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]">
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
-              </div>
-              <span className="text-sm uppercase tracking-widest font-medium text-text-primary">
-                Open Manager Flow
-              </span>
-            </motion.a>
-            <motion.a
-              href={PLATFORM_URL}
-              variants={textUp}
-              className="mt-4 inline-flex items-center gap-2 text-sm uppercase tracking-widest text-neon-blue hover:text-primary transition-colors"
-            >
-              Open Opta Local Platform <ArrowUpRight className="w-4 h-4" />
-            </motion.a>
-          </div>
-        </motion.section>
-
-        {/* --- APP SHOWCASE (CLI UI Mockups) --- */}
-        <motion.section
-          id="showcase"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%] mb-40 relative z-20"
-        >
-          <motion.div variants={fadeUp} className="mb-16 text-center">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Manager Interface</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Visual Operations Surface.</h3>
-            <p className="mt-6 text-lg text-text-secondary font-light max-w-2xl mx-auto">
-              Opta Init coordinates stack operations with guided menus for app launch, update workflows, and daemon controls.
+          {managerUpdateWarning && (
+            <p className="manager-update-warning" title={managerUpdateWarning}>
+              {managerUpdateWarning}
             </p>
-          </motion.div>
+          )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Welcome Screen Mockup */}
-            <motion.div variants={fadeUp} className="flex flex-col">
-              <div className="glass-strong rounded-xl border border-white/10 overflow-hidden h-[300px] flex flex-col group">
-                <div className="h-8 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/20"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/20"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/20"></div>
-                </div>
-                <div className="p-6 font-mono text-xs flex-1 bg-[#0a0a0c] flex flex-col items-center justify-center relative">
-                  <div className="text-primary mb-6 whitespace-pre leading-[1.2] text-[8px] sm:text-[10px] opacity-80 group-hover:opacity-100 transition-opacity">
-                    {SHOWCASE_CONTENT.welcome.logo.join('\n')}
-                  </div>
-                  <div className="w-[180px] space-y-1">
-                    <div className="text-[10px] uppercase tracking-widest text-text-muted mb-2">Quick Start</div>
-                    {SHOWCASE_CONTENT.welcome.menuItems.map((item, i) => (
-                      <div key={i} className={`flex justify-between px-2 py-1.5 rounded ${i === 0 ? 'bg-primary/20 text-primary' : 'text-text-secondary'}`}>
-                        <span>{item.label}</span>
-                        <span className="text-text-muted opacity-50">{item.shortcut}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 text-center">
-                <h4 className="font-semibold text-text-primary">{SHOWCASE_CONTENT.welcome.heading}</h4>
-                <p className="text-sm text-text-muted mt-2 leading-relaxed">{SHOWCASE_CONTENT.welcome.caption}</p>
-              </div>
-            </motion.div>
-
-            {/* Chat Mockup */}
-            <motion.div variants={fadeUp} className="flex flex-col">
-              <div className="glass-strong rounded-xl border border-white/10 overflow-hidden h-[300px] flex flex-col">
-                <div className="h-8 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
-                  <span className="ml-auto text-[10px] text-text-muted font-mono">Opta — Chat</span>
-                </div>
-                <div className="p-6 font-mono text-[11px] flex-1 bg-[#0a0a0c] flex flex-col">
-                  <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/10 px-2 py-0.5 text-primary self-start mb-6">
-                    <span className="w-1.5 h-1.5 rounded-full bg-neon-green shadow-[0_0_5px_#22c55e]" /> {SHOWCASE_CONTENT.chat.model}
-                  </div>
-                  <div className="space-y-4">
-                    {SHOWCASE_CONTENT.chat.messages.map((msg, i) => (
-                      <div key={i}>
-                        <div className={`mb-1 font-medium ${msg.role === 'user' ? 'text-neon-blue' : 'text-primary'}`}>
-                          {msg.role === 'user' ? 'You' : 'Opta'}
-                        </div>
-                        <div className={`p-3 rounded-lg leading-relaxed ${msg.role === 'user' ? 'bg-white/5 text-text-primary' : 'bg-primary/5 text-text-secondary border border-primary/10'}`}>
-                          {msg.text.split('\n').map((line, j) => <div key={j}>{line || <br />}</div>)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 text-center">
-                <h4 className="font-semibold text-text-primary">{SHOWCASE_CONTENT.chat.heading}</h4>
-                <p className="text-sm text-text-muted mt-2 leading-relaxed">{SHOWCASE_CONTENT.chat.caption}</p>
-              </div>
-            </motion.div>
-
-            {/* Menu Mockup */}
-            <motion.div variants={fadeUp} className="flex flex-col">
-              <div className="glass-strong rounded-xl border border-white/10 overflow-hidden h-[300px] flex flex-col">
-                <div className="h-8 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f57]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#febc2e]"></div>
-                  <div className="w-2.5 h-2.5 rounded-full bg-[#28c840]"></div>
-                </div>
-                <div className="p-6 font-mono text-[11px] flex-1 bg-[#0a0a0c] flex items-center justify-center">
-                  <div className="w-full max-w-[220px] rounded-lg border border-white/10 bg-[#141419] p-3 shadow-2xl">
-                    <div className="mb-3 text-[10px] uppercase tracking-widest text-text-muted">Select Model</div>
-                    <div className="space-y-1">
-                      {SHOWCASE_CONTENT.menu.items.map((item, i) => (
-                        <div key={i} className={`flex items-center gap-2 rounded px-2 py-1.5 ${item.active ? 'bg-primary/20 text-primary' : 'text-text-secondary'}`}>
-                          <div className={`w-1.5 h-1.5 rounded-full ${item.active ? 'bg-primary' : 'bg-transparent'}`} />
-                          {item.label}
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-white/5 text-[9px] text-text-muted text-center opacity-70">
-                      {SHOWCASE_CONTENT.menu.hint}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-6 text-center">
-                <h4 className="font-semibold text-text-primary">{SHOWCASE_CONTENT.menu.heading}</h4>
-                <p className="text-sm text-text-muted mt-2 leading-relaxed">{SHOWCASE_CONTENT.menu.caption}</p>
-              </div>
-            </motion.div>
-          </div>
-        </motion.section>
-
-        {/* --- INSTALLATION SECTION --- */}
-        <motion.section
-          id="install"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%] mb-40 relative z-20"
-        >
-          <motion.div variants={fadeUp} className="obsidian rounded-2xl border border-white/10 overflow-hidden relative">
-            <div className="momentum-border rounded-2xl absolute inset-0 opacity-50 pointer-events-none"></div>
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              <div className="p-12 lg:p-16 flex flex-col justify-center relative z-10">
-                <div className="inline-flex items-center gap-2 text-neon-blue mb-6">
-                  <Terminal className="w-5 h-5" />
-                  <span className="text-sm font-mono uppercase tracking-widest">Bootstrap Command</span>
-                </div>
-                <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br />Full Stack.</h2>
-                <p className="text-text-secondary mb-10 font-light leading-relaxed">
-                  Run bootstrap once, then Opta Init takes over as your lifecycle manager. It installs stack components, tracks versions, and keeps app + daemon state synchronized.
-                </p>
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3 text-sm text-text-muted">
-                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> Requires macOS 13.0+
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-text-muted">
-                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> M1/M2/M3/M4 Apple Silicon
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-text-muted">
-                    <CheckCircle2 className="w-4 h-4 text-neon-amber" /> 16GB Unified Memory minimum
-                  </div>
-                </div>
-              </div>
-              <div className="bg-[#05030a] p-8 lg:p-16 border-l border-white/5 flex flex-col justify-center font-mono">
-                <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0c] shadow-2xl overflow-hidden relative group">
-                  <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                  {/* Mac Window Controls */}
-                  <div className="h-10 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
-                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
-                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
-                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
-                    <div className="ml-auto text-[10px] text-text-muted">~ / opta-init</div>
-                  </div>
-                  <div className="p-6 text-sm text-text-secondary space-y-3 relative z-10">
-                    <p className="flex items-center gap-3">
-                      <span className="text-primary">❯</span>
-                      <span className="text-white">curl -fsSL https://optalocal.com/init | bash</span>
-                    </p>
-                    <div className="pt-4 space-y-1 opacity-70">
-                      <p className="text-neon-blue">==&gt; Starting Opta Init manager...</p>
-                      <p>==&gt; Checking hardware: <span className="text-neon-green">Apple M3 Max (128GB)</span></p>
-                      <p>==&gt; Installing Opta app manager + launcher</p>
-                      <p>==&gt; Registering installed apps and update channels</p>
-                      <p>==&gt; Verifying daemon service + auth recovery hooks</p>
-                      <p>==&gt; Syncing runtime status with Opta Local platform</p>
-                      <p className="text-neon-green mt-2">✔ Manager ready. Apps, updates, and daemon are now coordinated.</p>
-                      <p className="text-text-muted mt-2">Run `opta init` any time to launch manager workflows.</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </motion.section>
-
-        {/* --- ARCHITECTURE SECTION --- */}
-        <motion.section
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%] mb-40"
-        >
-          <motion.div variants={fadeUp} className="mb-16">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Control Topology</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Manager vs Platform Roles</h3>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-            {/* Connecting line for desktop */}
-            <div className="hidden md:block absolute top-[4.5rem] left-[16%] right-[16%] h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent z-0"></div>
-
-            {[
-              {
-                step: "01",
-                title: "Opta Init Manager",
-                icon: <Code2 className="w-5 h-5" />,
-                port: "Local App Layer",
-                desc: "Owns app launch, updater policies, daemon actions, and recovery workflows for the local stack."
-              },
-              {
-                step: "02",
-                title: "Opta CLI Daemon",
-                icon: <Layers className="w-5 h-5" />,
-                port: "Managed endpoint (auto-discovered)",
-                desc: "Session orchestration and runtime services managed by Opta Init for health checks, restarts, and recovery."
-              },
-              {
-                step: "03",
-                title: "Opta Local Platform",
-                icon: <Box className="w-5 h-5" />,
-                port: "optalocal.com + apps",
-                desc: "The application experience for models and workflows. Opta Init manages the stack; Opta Local delivers daily usage."
-              }
-            ].map((node, i) => (
-              <motion.div key={i} variants={fadeUp} className="relative z-10">
-                <div className="obsidian p-8 rounded-2xl h-full border border-white/5 hover:border-primary/30 transition-colors group">
-                  <div className="flex justify-between items-start mb-8">
-                    <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center text-text-secondary group-hover:text-primary group-hover:shadow-[0_0_15px_rgba(168,85,247,0.3)] transition-all">
-                      {node.icon}
-                    </div>
-                    <span className="text-xs font-mono text-text-muted">{node.step}</span>
-                  </div>
-                  <h4 className="text-xl font-bold mb-3 text-text-primary">{node.title}</h4>
-                  <div className="inline-block px-2 py-1 bg-white/5 rounded text-xs font-mono text-neon-blue mb-4 border border-neon-blue/10">
-                    {node.port}
-                  </div>
-                  <p className="text-sm text-text-secondary font-light leading-relaxed">
-                    {node.desc}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* --- FEATURES GRID --- */}
-        <motion.section
-          id="features"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%] mb-40"
-        >
-          <motion.div variants={fadeUp} className="mb-16">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Capabilities</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Built to Manage the Stack</h3>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {FEATURES.map((feature, i) => (
-              <motion.div key={i} variants={fadeUp}>
-                <div className="glass-subtle p-8 rounded-2xl h-full border border-white/5 hover:border-primary/20 transition-colors group">
-                  <div className="w-12 h-12 rounded-xl bg-surface border border-white/10 flex items-center justify-center text-text-secondary mb-6 group-hover:text-primary group-hover:shadow-[0_0_15px_rgba(168,85,247,0.2)] transition-all">
-                    {getIcon(feature.icon)}
-                  </div>
-                  <h4 className="text-lg font-bold mb-3 text-text-primary">{feature.title}</h4>
-                  <p className="text-sm text-text-secondary font-light leading-relaxed">
-                    {feature.description}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* --- DOWNLOADS SECTION --- */}
-        <motion.section
-          id="downloads"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%] mb-40"
-        >
-          <motion.div variants={fadeUp} className="text-center mb-16">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Direct Access</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Download Manager Packages</h3>
-            <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the latest Opta Init manager packages below.</p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {Object.entries(downloads).map(([key, data]) => (
-              <motion.div key={key} variants={fadeUp} className="obsidian p-8 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors flex flex-col group">
-                <div className="mb-6 flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary font-mono text-xl font-bold flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-                    {key === 'cli' ? '>' : '~'}
-                  </div>
-                  <h3 className="text-2xl font-bold text-text-primary">{data.name}</h3>
-                </div>
-                <p className="text-text-secondary font-light leading-relaxed mb-8 flex-1">
-                  {data.description}
-                </p>
-
-                {data.macos.available && data.macos.url ? (
-                  <a href={data.macos.url} className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors">
-                    <Download className="w-4 h-4" />
-                    {data.macos.label === "Installer Ready" ? "Open macOS Installer" : "Download for macOS"}
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full h-12 rounded-lg bg-surface text-text-muted font-semibold flex items-center justify-center gap-2 border border-white/10 cursor-not-allowed"
+          <div className="action-buttons centered-actions">
+            {managerUpdateState === "update_available" && (
+              <button
+                className="btn secondary manager-update-button"
+                disabled={controlsDisabled}
+                onClick={() => void installManagerUpdate()}
+              >
+                {managerUpdatePending ? "Updating Manager..." : "Update Manager"}
+              </button>
+            )}
+            {displayApp ? (
+              <div className="fade-in">
+                {displayApp.id === "opta-daemon" ? (
+                  <button 
+                    className="btn primary" 
+                    disabled={controlsDisabled}
+                    onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
                   >
-                    <Download className="w-4 h-4" /> macOS — {data.macos.label}
+                    {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
+                  </button>
+                ) : isInstalled ? (
+                  <>
+                    <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "launch")}>
+                      {isPending ? "Working..." : "Launch App"}
+                    </button>
+                    <button className="btn secondary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "update")}>
+                      Update
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "install")}>
+                    {isPending ? "Installing..." : "Install App"}
                   </button>
                 )}
-                <div className="text-center mt-4 text-xs text-text-muted uppercase tracking-widest">
-                  Windows — {data.windows.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </motion.section>
-
-        {/* --- DASHBOARD CTA --- */}
-        <motion.section
-          id="dashboard"
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={{ show: { transition: { staggerChildren: 0.1 } } }}
-          className="px-[8%]"
-        >
-          <motion.div variants={fadeUp}>
-            <div className="glass-strong border border-white/20 rounded-3xl p-16 text-center relative overflow-hidden group">
-              <div className="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity duration-1000"></div>
-              {/* Internal glow */}
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none"></div>
-
-              <div className="relative z-10">
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-moonlight">Manage apps, updates, and daemon from one surface.</h2>
-                <p className="text-lg text-text-secondary font-light max-w-xl mx-auto mb-10">
-                  Opta Init is your lifecycle manager and launcher. Use Opta Local platform for product workflows, with daemon state kept healthy underneath.
-                </p>
-                <div className="flex flex-col items-center gap-4">
-                  <a href={PLATFORM_URL} className="inline-flex h-14 px-8 items-center justify-center gap-2 rounded-xl bg-white text-void font-bold text-lg hover:bg-white/90 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                    Open Opta Local Platform <ArrowUpRight className="w-5 h-5" />
-                  </a>
-                  <a href={DASHBOARD_URL} className="inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
-                    Open Web Dashboard <ArrowUpRight className="w-4 h-4" />
-                  </a>
-                  <a href={ACCOUNTS_URL} className="inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
-                    Manage Account <ArrowUpRight className="w-4 h-4" />
-                  </a>
-                </div>
               </div>
-            </div>
-          </motion.div>
-        </motion.section>
-
-      </main>
-
-      <footer className="border-t border-white/5 bg-[#05030a] mt-24 relative z-20">
-        <div className="max-w-7xl mx-auto px-[8%] py-12 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 text-text-muted">
-            <Lock className="w-4 h-4" />
-            <span className="text-sm font-light">Opta Operations © 2026. Secure by design.</span>
+            ) : (
+              <div className="fade-in">
+                <button className="btn primary" onClick={() => void refreshData()} disabled={controlsDisabled}>
+                  Refresh Stack
+                </button>
+              </div>
+            )}
           </div>
-          <div className="flex gap-8 text-sm font-medium tracking-wide text-text-secondary">
-            <a href={PLATFORM_URL} className="hover:text-primary transition-colors">Opta Local</a>
-            <a href={DASHBOARD_URL} className="hover:text-primary transition-colors">Dashboard</a>
-            <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
+          
+          <button className="settings-cog" onClick={() => setShowSettings(true)} title="Settings">
+            <Settings size={20} />
+          </button>
+        </div>
+      </div>
+
+      {showScanPrompt && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowScanPrompt(false); }}>
+          <div className="modal-content fade-in">
+            <h2 className="modal-title">System Scan</h2>
+            <p className="modal-desc">Are you sure you want to scan your entire PC for installed Opta applications? This will ensure Opta Init is fully up to date.</p>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => setShowScanPrompt(false)}>Cancel</button>
+              <button className="btn primary" onClick={() => {
+                console.log("Scanning PC for Opta Apps...");
+                setShowScanPrompt(false);
+                // Future: invoke("scan_system")
+              }}>Confirm Scan</button>
+            </div>
           </div>
         </div>
-      </footer>
+      )}
+
+      {showSettings && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
+          <div className="settings-modal fade-in">
+            <h2 className="modal-title" style={{ textAlign: 'left', marginBottom: '8px' }}>Opta Init Settings</h2>
+            
+            <div className="settings-section">
+              <h3>Opta Account</h3>
+              <div className="settings-row">
+                <div className="settings-info">
+                  <div className="settings-label">Not Linked</div>
+                  <div className="settings-sub">Sync your preferences and cloud backups.</div>
+                </div>
+                <button className="btn secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Link Account</button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h3>System Components</h3>
+              <div className="settings-row">
+                <div className="settings-info">
+                  <div className="settings-label">Opta Init Manager</div>
+                  <div className="settings-sub">/Applications/OptaInit.app</div>
+                </div>
+                <div className="settings-value">v1.0.0</div>
+              </div>
+              {apps.map(app => (
+                <div key={app.id} className="settings-row">
+                  <div className="settings-info">
+                    <div className="settings-label">{app.name}</div>
+                    <div className="settings-sub">
+                      {installedIndex.has(app.id) ? `/Users/Shared/OptaLocal/${app.id}` : "Not Installed"}
+                    </div>
+                  </div>
+                  <div className="settings-value">
+                    {installedIndex.has(app.id) ? installedIndex.get(app.id)!.version : app.version}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '32px', justifyContent: 'flex-end' }}>
+              <button className="btn secondary" onClick={() => setShowSettings(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
