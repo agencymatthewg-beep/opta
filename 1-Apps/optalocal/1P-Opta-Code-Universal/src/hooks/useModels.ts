@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   DaemonConnectionOptions,
   DaemonLmxAvailableModel,
+  DaemonLmxLoadOptions,
   DaemonLmxMemoryResponse,
   DaemonLmxModelDetail,
   DaemonLmxStatusResponse,
@@ -20,7 +21,7 @@ export interface UseModelsResult {
   error: string | null;
   loadModel: (
     modelId: string,
-    opts?: { backend?: string; autoDownload?: boolean },
+    opts?: DaemonLmxLoadOptions,
   ) => Promise<void>;
   unloadModel: (modelId: string) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
@@ -102,10 +103,7 @@ export function useModels(
   }, [connection]);
 
   const loadModel = useCallback(
-    async (
-      modelId: string,
-      opts?: { backend?: string; autoDownload?: boolean },
-    ) => {
+    async (modelId: string, opts?: DaemonLmxLoadOptions) => {
       if (!connection) return;
       try {
         await daemonClient.lmxLoad(connection, modelId, opts);

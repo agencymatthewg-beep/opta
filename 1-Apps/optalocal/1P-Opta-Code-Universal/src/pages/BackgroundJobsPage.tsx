@@ -1,16 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Play, RefreshCw, Square, Terminal } from "lucide-react";
 import { daemonClient } from "../lib/daemonClient";
-import type { DaemonConnectionOptions } from "../types";
+import type {
+  DaemonBackgroundOutputResponse,
+  DaemonBackgroundStatusResponse,
+  DaemonConnectionOptions,
+} from "../types";
 
-interface BackgroundJob {
-  processId: string;
-  sessionId?: string;
-  command?: string;
-  status?: string;
-  startedAt?: string;
-  exitCode?: number | null;
-}
+type BackgroundJob = DaemonBackgroundStatusResponse["process"];
 
 interface BackgroundJobOutput {
   processId: string;
@@ -19,9 +16,13 @@ interface BackgroundJobOutput {
 
 interface BackgroundJobsPageProps {
   connection: DaemonConnectionOptions;
+  defaultSessionId?: string | null;
 }
 
-export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
+export function BackgroundJobsPage({
+  connection,
+  defaultSessionId,
+}: BackgroundJobsPageProps) {
   const [jobs, setJobs] = useState<BackgroundJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +34,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
   // Start shell form state
   const [startCmd, setStartCmd] = useState("");
   const [startCwd, setStartCwd] = useState("");
+  const [startSessionId, setStartSessionId] = useState(defaultSessionId ?? "");
   const [starting, setStarting] = useState(false);
 
   const refreshTimerRef = useRef<number | null>(null);
@@ -44,24 +46,30 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
     noticeTimerRef.current = window.setTimeout(() => setActionNotice(null), 3000);
   }, []);
 
+  useEffect(() => {
+    if (!defaultSessionId) return;
+    setStartSessionId((prev) => prev || defaultSessionId);
+  }, [defaultSessionId]);
+
   const refresh = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await daemonClient.listBackground(connection);
-      setJobs((response.processes ?? []) as BackgroundJob[]);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    } finally {
-      setLoading(false);
-    }
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await daemonClient.listBackground(connection);
+        setJobs((response.processes ?? []) as BackgroundJob[]);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setLoading(false);
+      }
   }, [connection]);
 
   const fetchOutput = useCallback(
     async (processId: string) => {
       setOutputLoading(true);
       try {
-        const response = await daemonClient.backgroundOutput(connection, processId, {
+        const response: DaemonBackgroundOutputResponse =
+          await daemonClient.backgroundOutput(connection, processId, {
           limit: 200,
         });
         const lines = response.chunks.map((c) => c.text).filter(Boolean);
@@ -111,13 +119,19 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
     async (event: React.FormEvent) => {
       event.preventDefault();
       const cmd = startCmd.trim();
+      const sessionId = startSessionId.trim();
       if (!cmd) return;
+      if (!sessionId) {
+        showNotice("Session ID is required to launch a background job");
+        return;
+      }
       setStarting(true);
       try {
         const result = await daemonClient.startBackground(connection, {
+          sessionId,
           command: cmd,
           cwd: startCwd.trim() || undefined,
-        } as Parameters<typeof daemonClient.startBackground>[1]);
+        });
         const pid = result.process.processId;
         showNotice(`Started: ${pid}`);
         setStartCmd("");
@@ -131,7 +145,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
         setStarting(false);
       }
     },
-    [connection, refresh, showNotice, startCmd, startCwd],
+    [connection, refresh, showNotice, startCmd, startCwd, startSessionId],
   );
 
   useEffect(() => {
@@ -180,6 +194,15 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
         </h3>
         <div className="start-shell-fields">
           <input
+            className="start-shell-input start-shell-cwd"
+            type="text"
+            placeholder="Session ID (required)"
+            value={startSessionId}
+            onChange={(e) => setStartSessionId(e.target.value)}
+            aria-label="Session ID"
+            required
+          />
+          <input
             className="start-shell-input"
             type="text"
             placeholder="Command (e.g. npm run build)"
@@ -199,7 +222,7 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
           <button
             type="submit"
             className="start-shell-btn"
-            disabled={starting || !startCmd.trim()}
+            disabled={starting || !startCmd.trim() || !startSessionId.trim()}
           >
             <Play size={12} aria-hidden="true" />
             {starting ? "Launching…" : "Launch"}
@@ -241,9 +264,9 @@ export function BackgroundJobsPage({ connection }: BackgroundJobsPageProps) {
                 >
                   <span className="job-id">{job.processId}</span>
                   <span
-                    className={`job-status status-${job.status ?? "unknown"}`}
+                    className={`job-status status-${job.state ?? "unknown"}`}
                   >
-                    {job.status ?? "unknown"}
+                    {job.state ?? "unknown"}
                   </span>
                   {job.command ? (
                     <span className="job-command">{job.command}</span>

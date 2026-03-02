@@ -63,7 +63,7 @@ async def format_sse_stream(
     Yields:
         SSE-formatted strings.
     """
-    from opta_lmx.api.inference import _StreamEndMarker
+    from opta_lmx.api.stream_handlers import _StreamEndMarker
 
     if created is None:
         created = int(time.time())
@@ -236,7 +236,7 @@ async def format_sse_tool_stream(
     Yields:
         SSE-formatted strings.
     """
-    from opta_lmx.api.inference import _StreamEndMarker
+    from opta_lmx.api.stream_handlers import _StreamEndMarker
 
     if created is None:
         created = int(time.time())

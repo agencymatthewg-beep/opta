@@ -15,6 +15,8 @@ from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
+from opta_lmx.monitoring.events import EventBus
+
 logger = logging.getLogger(__name__)
 
 # Single-threaded executor for quantization (one job at a time)
@@ -82,6 +84,7 @@ async def start_quantize(
     bits: int = 4,
     group_size: int = 64,
     mode: str = "affine",
+    event_bus: EventBus | None = None,
 ) -> QuantizeJob:
     """Start an async quantization job.
 
@@ -91,6 +94,7 @@ async def start_quantize(
         bits: Quantization bits (2, 4, or 8).
         group_size: Quantization group size.
         mode: Quantization mode (affine, mxfp4, nvfp4, mxfp8).
+        event_bus: Optional event bus to emit progress events to.
 
     Returns:
         QuantizeJob with tracking info.
@@ -126,15 +130,21 @@ async def start_quantize(
     })
 
     # Run in background thread — strong reference prevents GC
-    task = asyncio.create_task(_run_quantize(job))
+    task = asyncio.create_task(_run_quantize(job, event_bus))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
 
     return job
 
 
-async def _run_quantize(job: QuantizeJob) -> None:
+async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> None:
     """Run quantization in executor and update job status."""
+    if event_bus:
+        event_bus.publish("quantize_progress", {
+            "model_id": job.source_model,
+            "status": "quantizing",
+            "percent": 0,
+        })
     try:
         loop = asyncio.get_running_loop()
         size_bytes = await loop.run_in_executor(
@@ -150,6 +160,12 @@ async def _run_quantize(job: QuantizeJob) -> None:
         job.completed_at = time.time()
         job.output_size_bytes = size_bytes
         elapsed = job.completed_at - job.started_at
+        if event_bus:
+            event_bus.publish("quantize_progress", {
+                "model_id": job.source_model,
+                "status": "completed",
+                "percent": 100,
+            })
         logger.info("quantize_completed", extra={
             "job_id": job.job_id,
             "source": job.source_model,
@@ -161,6 +177,12 @@ async def _run_quantize(job: QuantizeJob) -> None:
         job.status = "failed"
         job.completed_at = time.time()
         job.error = str(e)
+        if event_bus:
+            event_bus.publish("quantize_progress", {
+                "model_id": job.source_model,
+                "status": f"failed: {e}",
+                "percent": 0,
+            })
         logger.error("quantize_failed", extra={
             "job_id": job.job_id,
             "source": job.source_model,

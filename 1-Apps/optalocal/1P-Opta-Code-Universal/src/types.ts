@@ -1,3 +1,17 @@
+export type {
+  DaemonBackgroundListResponse,
+  DaemonBackgroundOutputOptions,
+  DaemonBackgroundOutputResponse,
+  DaemonBackgroundStartRequest,
+  DaemonBackgroundStatusResponse,
+  DaemonConnectionOptions,
+  DaemonLmxAvailableModel,
+  DaemonLmxLoadOptions,
+  DaemonLmxMemoryResponse,
+  DaemonLmxModelDetail,
+  DaemonLmxStatusResponse,
+} from "@opta/daemon-client/types";
+
 export interface PaletteCommand {
   id: string;
   title: string;
@@ -5,13 +19,6 @@ export interface PaletteCommand {
   keywords?: string[];
   requiresQuery?: boolean;
   run: (query: string) => Promise<void> | void;
-}
-
-export interface DaemonConnectionOptions {
-  host: string;
-  port: number;
-  token: string;
-  protocol?: "http" | "https";
 }
 
 export interface DaemonSessionSummary {
@@ -52,34 +59,4 @@ export interface RuntimeSnapshot {
   activeTurnCount: number;
   queuedTurnCount: number;
   subscriberCount: number;
-}
-
-export interface DaemonLmxModelDetail {
-  model_id: string;
-  status: string;
-  memory_bytes?: number;
-  context_length?: number;
-  loaded_at?: string;
-  request_count?: number;
-}
-
-export interface DaemonLmxStatusResponse {
-  status: string;
-  version?: string;
-  uptime_seconds?: number;
-  models: DaemonLmxModelDetail[];
-}
-
-export interface DaemonLmxMemoryResponse {
-  total_unified_memory_gb: number;
-  used_gb: number;
-  available_gb: number;
-  models: Record<string, { memory_gb: number; loaded: boolean }>;
-}
-
-export interface DaemonLmxAvailableModel {
-  model_id: string;
-  size_bytes?: number;
-  quantization?: string;
-  modified_at?: string;
 }

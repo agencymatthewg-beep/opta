@@ -1,5 +1,7 @@
 import { Component, type ReactNode } from "react";
 
+export const OPEN_SETUP_WIZARD_EVENT = "opta:open-setup-wizard";
+
 interface ErrorBoundaryProps {
   children: ReactNode;
   /** Custom fallback UI. Receives the caught error and a reset callback. */
@@ -39,11 +41,26 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="error-boundary">
           <div className="error-boundary__panel">
-            <h2 className="error-boundary__title">Something went wrong</h2>
-            <p className="error-boundary__message">{error.message}</p>
-            <button className="error-boundary__reset" onClick={this.reset}>
-              Try again
-            </button>
+            <h2 className="error-boundary__title">Opta encountered a runtime error</h2>
+            <p className="error-boundary__message">
+              The UI crashed while rendering. If daemon state changed underneath
+              the app, reopening setup usually restores a clean state.
+            </p>
+            <p className="error-boundary__detail">{error.message}</p>
+            <div className="error-boundary__actions">
+              <button className="error-boundary__reset" onClick={this.reset}>
+                Try again
+              </button>
+              <button
+                className="error-boundary__secondary"
+                onClick={() => {
+                  window.dispatchEvent(new Event(OPEN_SETUP_WIZARD_EVENT));
+                  this.reset();
+                }}
+              >
+                Open setup wizard
+              </button>
+            </div>
           </div>
         </div>
       );

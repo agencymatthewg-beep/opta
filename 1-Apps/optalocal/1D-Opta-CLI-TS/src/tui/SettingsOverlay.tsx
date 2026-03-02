@@ -553,12 +553,61 @@ export function SettingsOverlay({
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [changes, setChanges] = useState<Record<string, unknown>>({});
+  const [dynamicOptions, setDynamicOptions] = useState<Record<string, SelectOption[]>>({});
 
   // Account page state
   const [accountState, setAccountState] = useState<AccountState | null | 'loading'>('loading');
   const [accountSyncStatus, setAccountSyncStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle');
   const [accountSyncMessage, setAccountSyncMessage] = useState<string | null>(null);
   const accountSignInInFlightRef = useRef(false);
+
+  useEffect(() => {
+    if (selectedPage !== 'models') return;
+    let cancelled = false;
+    
+    const fetchModels = async () => {
+      try {
+        const { LmxClient } = await import('../lmx/client.js');
+        const lmx = new LmxClient({
+          host: getConfigValue(config, 'connection.host', 'localhost'),
+          port: Number(getConfigValue(config, 'connection.port', '1234')),
+          adminKey: getConfigValue(config, 'connection.apiKey', ''),
+          timeoutMs: 3000,
+          maxRetries: 0,
+        });
+        
+        const [loadedRes, availableRes] = await Promise.all([
+          lmx.models().catch(() => ({ models: [] })),
+          lmx.available().catch(() => []),
+        ]);
+        
+        if (cancelled) return;
+        
+        const options: SelectOption[] = [];
+        const seen = new Set<string>();
+        
+        for (const m of loadedRes.models) {
+          options.push({ label: m.model_id, value: m.model_id, description: 'Loaded' });
+          seen.add(m.model_id);
+        }
+        for (const m of availableRes) {
+          if (!seen.has(m.repo_id)) {
+            options.push({ label: m.repo_id, value: m.repo_id, description: 'On disk' });
+            seen.add(m.repo_id);
+          }
+        }
+        
+        if (options.length > 0) {
+          setDynamicOptions(prev => ({ ...prev, 'model.default': options }));
+        }
+      } catch (err) {
+        // ignore
+      }
+    };
+    
+    void fetchModels();
+    return () => { cancelled = true; };
+  }, [selectedPage, config]);
 
   const runAccountOauthSignIn = useCallback(async (trigger: 'auto' | 'manual') => {
     if (accountSignInInFlightRef.current) return;
@@ -638,10 +687,20 @@ export function SettingsOverlay({
     };
   }, [selectedPage, runAccountOauthSignIn]);
 
-  const items = useMemo(
-    () => filterItemsForDisplayProfile(PAGE_ITEMS[selectedPage], displayProfile),
-    [selectedPage, displayProfile],
-  );
+  const items = useMemo(() => {
+    const baseItems = filterItemsForDisplayProfile(PAGE_ITEMS[selectedPage], displayProfile);
+    return baseItems.map(item => {
+      if (dynamicOptions[item.configKey]) {
+        return {
+          ...item,
+          inputType: 'select',
+          options: dynamicOptions[item.configKey],
+        } as SettingsItem;
+      }
+      return item;
+    });
+  }, [selectedPage, displayProfile, dynamicOptions]);
+
   const pageMeta = PAGES.find(p => p.id === selectedPage);
   const pageColor = pageMeta?.color ?? '#0ea5e9';
 

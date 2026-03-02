@@ -4,9 +4,37 @@ use std::path::PathBuf;
 
 // ── Session persistence (Stream F) ──────────────────────────────────────────
 
+fn user_home_dir() -> Result<PathBuf, String> {
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(profile) = std::env::var("USERPROFILE") {
+            return Ok(PathBuf::from(profile));
+        }
+    }
+    std::env::var("HOME")
+        .map(PathBuf::from)
+        .map_err(|_| "HOME not set".to_string())
+}
+
+fn config_root_dir() -> Result<PathBuf, String> {
+    if let Ok(xdg) = std::env::var("XDG_CONFIG_HOME") {
+        return Ok(PathBuf::from(xdg));
+    }
+    #[cfg(target_os = "windows")]
+    {
+        if let Ok(appdata) = std::env::var("APPDATA") {
+            return Ok(PathBuf::from(appdata));
+        }
+    }
+    Ok(user_home_dir()?.join(".config"))
+}
+
+fn opta_config_dir() -> Result<PathBuf, String> {
+    Ok(config_root_dir()?.join("opta"))
+}
+
 fn sessions_dir() -> Result<PathBuf, String> {
-    let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
-    Ok(PathBuf::from(home).join(".opta").join("sessions"))
+    Ok(opta_config_dir()?.join("sessions"))
 }
 
 #[tauri::command]
@@ -38,10 +66,7 @@ pub async fn load_session_events(session_id: String) -> Result<Vec<String>, Stri
 // ── Daemon lifecycle (Stream H) ─────────────────────────────────────────────
 
 fn daemon_dir() -> Result<PathBuf, String> {
-    let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
-    // The CLI always uses ~/.config/opta/daemon on every platform.
-    let xdg = std::env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| format!("{}/.config", home));
-    Ok(PathBuf::from(xdg).join("opta").join("daemon"))
+    Ok(opta_config_dir()?.join("daemon"))
 }
 
 fn daemon_state_path() -> Result<PathBuf, String> {

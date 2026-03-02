@@ -527,7 +527,7 @@ async def wrap_stream_with_tool_parsing(
         StreamChunk objects with either content or tool call data.
         May also yield _StreamEndMarker from the input stream.
     """
-    from opta_lmx.api.inference import _StreamEndMarker
+    from opta_lmx.api.stream_handlers import _StreamEndMarker
 
     parser = StreamingToolParser(tools=tools)
 

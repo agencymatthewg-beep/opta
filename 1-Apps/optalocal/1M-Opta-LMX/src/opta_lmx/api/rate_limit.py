@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import contextvars
 
+from starlette.requests import Request
+
 request_ctx: contextvars.ContextVar[Request] = contextvars.ContextVar("request_ctx")
 
 try:
@@ -32,9 +34,6 @@ except ImportError:  # pragma: no cover
     Limiter = _NoOpLimiter  # type: ignore[misc,assignment]
     get_remote_address = lambda request: "127.0.0.1"  # type: ignore[assignment]  # noqa: E731
     SLOWAPI_AVAILABLE = False
-
-from starlette.requests import Request
-
 
 def _key_func(request: Request) -> str:
     """Wrapper around get_remote_address that stores the request in context."""

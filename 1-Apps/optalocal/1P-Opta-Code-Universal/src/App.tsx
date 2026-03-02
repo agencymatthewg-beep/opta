@@ -23,6 +23,7 @@ import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import { OptaRing } from "./components/OptaRing";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
 import { LiveBrowserView } from "./components/LiveBrowserView";
+import { OPEN_SETUP_WIZARD_EVENT } from "./components/ErrorBoundary";
 import {
   deriveBrowserVisualState,
   type BrowserVisualSummary,
@@ -220,6 +221,13 @@ function App() {
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
   }, [connectionState]);
+
+  useEffect(() => {
+    const onOpenSetupWizard = () => setFirstRun(true);
+    window.addEventListener(OPEN_SETUP_WIZARD_EVENT, onOpenSetupWizard);
+    return () =>
+      window.removeEventListener(OPEN_SETUP_WIZARD_EVENT, onOpenSetupWizard);
+  }, []);
 
   useEffect(() => {
     if (selectedWorkspace === "all") return;
@@ -428,6 +436,9 @@ function App() {
     return <SetupWizard onComplete={() => setFirstRun(false)} />;
   }
 
+  const showReconnectOverlay =
+    initialCheckDone && connectionState === "disconnected" && hasEverConnected;
+
   return (
     <>
       <div className="bg-singularity-anim" aria-hidden="true" />
@@ -617,7 +628,10 @@ function App() {
             ) : activePage === "account" ? (
               <AccountControlPage connection={connection} />
             ) : activePage === "jobs" ? (
-              <BackgroundJobsPage connection={connection} />
+              <BackgroundJobsPage
+                connection={connection}
+                defaultSessionId={activeSessionId}
+              />
             ) : activePage === "logs" ? (
               <DaemonLogsPage />
             ) : (
@@ -780,6 +794,29 @@ function App() {
               void refreshNow();
             }}
           />
+
+          {showReconnectOverlay ? (
+            <div className="daemon-reconnect-overlay" role="status" aria-live="assertive">
+              <div className="daemon-reconnect-overlay__panel">
+                <h2>Daemon connection lost</h2>
+                <p>
+                  Opta is retrying automatically. The session view unlocks as soon
+                  as the daemon is back online.
+                </p>
+                {connectionError ? (
+                  <p className="daemon-reconnect-overlay__error">{connectionError}</p>
+                ) : null}
+                <div className="daemon-reconnect-overlay__actions">
+                  <button type="button" onClick={() => void refreshNow()}>
+                    Retry now
+                  </button>
+                  <button type="button" onClick={() => setFirstRun(true)}>
+                    Open setup wizard
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </div >
 
         <CommandPalette

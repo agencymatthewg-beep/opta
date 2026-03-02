@@ -76,8 +76,8 @@ async def device_identity(
     Returns chip, memory, hostname, and operator-configured name/purpose/role.
     Cached — safe to poll frequently.
     """
-    from opta_lmx.hardware_probe import probe
     from opta_lmx.config import LMXConfig
+    from opta_lmx.hardware_probe import probe
 
     hw = await asyncio.to_thread(probe)
     config: LMXConfig = request.app.state.config
@@ -424,6 +424,7 @@ async def stack_status(
 
 @router.post("/admin/quantize", response_model=None)
 async def start_quantize(
+    request: Request,
     body: QuantizeRequest,
     _auth: AdminAuth,
 ) -> Response:
@@ -434,12 +435,15 @@ async def start_quantize(
     """
     from opta_lmx.manager.quantize import start_quantize as _start_quantize
 
+    event_bus = getattr(request.app.state, "event_bus", None)
+
     job = await _start_quantize(
         source_model=body.source_model,
         output_path=body.output_path,
         bits=body.bits,
         group_size=body.group_size,
         mode=body.mode,
+        event_bus=event_bus,
     )
 
     return JSONResponse(content={

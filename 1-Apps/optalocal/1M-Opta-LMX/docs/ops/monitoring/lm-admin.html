@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta LMX Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #0d0d0d;
+            --surface-color: #1a1a1a;
+            --surface-border: #333;
+            --text-primary: #f0f0f0;
+            --text-secondary: #a0a0a0;
+            --accent-color: #00ff88;
+            --accent-glow: rgba(0, 255, 136, 0.2);
+            --danger-color: #ff3366;
+            --warning-color: #ffcc00;
+            --font-family: ui-monospace, SFPro-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            font-family: var(--font-family);
+            line-height: 1.5;
+            padding: 2rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--surface-border);
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background-color: var(--danger-color);
+            box-shadow: 0 0 8px var(--danger-color);
+        }
+        
+        .status-indicator.connected {
+            background-color: var(--accent-color);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .card {
+            background-color: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card h2 {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+        }
+
+        .value {
+            font-size: 2rem;
+            font-weight: 300;
+            margin-bottom: 0.5rem;
+        }
+
+        .sub-value {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .progress-bar-bg {
+            background-color: #2a2a2a;
+            height: 6px;
+            border-radius: 3px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            background-color: var(--accent-color);
+            height: 100%;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-bar-fill.warning {
+            background-color: var(--warning-color);
+        }
+
+        .progress-bar-fill.danger {
+            background-color: var(--danger-color);
+        }
+
+        .log-container {
+            background-color: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            border-radius: 8px;
+            padding: 1rem;
+            height: 300px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+        }
+
+        .log-entry {
+            margin-bottom: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px dashed #2a2a2a;
+            display: flex;
+            gap: 1rem;
+        }
+
+        .log-time {
+            color: var(--text-secondary);
+            white-space: nowrap;
+        }
+
+        .log-message {
+            color: var(--text-primary);
+            word-break: break-all;
+        }
+
+        .event-type {
+            color: var(--accent-color);
+            font-weight: 600;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        input[type="text"] {
+            background-color: var(--surface-color);
+            border: 1px solid var(--surface-border);
+            color: var(--text-primary);
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            font-family: inherit;
+            width: 300px;
+        }
+        
+        button {
+            background-color: #333;
+            color: #fff;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: background-color 0.2s;
+        }
+        
+        button:hover {
+            background-color: #444;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1><div id="status-dot" class="status-indicator"></div> Opta LMX Void</h1>
+        <div id="connection-status" style="color: var(--text-secondary); font-size: 0.9rem;">Disconnected</div>
+    </header>
+    
+    <div class="controls">
+        <input type="text" id="api-url" value="http://127.0.0.1:1234" placeholder="LMX API URL">
+        <input type="text" id="api-key" value="" placeholder="Admin API Key (Optional)">
+        <button id="connect-btn">Connect</button>
+    </div>
+
+    <div class="grid">
+        <div class="card">
+            <h2>Loaded Model</h2>
+            <div id="model-name" class="value" style="font-size: 1.2rem; word-break: break-all;">None</div>
+            <div id="model-status" class="sub-value">No model loaded in memory</div>
+        </div>
+
+        <div class="card">
+            <h2>Unified Memory (RAM)</h2>
+            <div id="ram-value" class="value">0 GB</div>
+            <div id="ram-sub" class="sub-value">0% utilized</div>
+            <div class="progress-bar-bg">
+                <div id="ram-bar" class="progress-bar-fill"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>Throughput</h2>
+            <div id="rps-value" class="value">0.0</div>
+            <div class="sub-value">Requests per second (live)</div>
+        </div>
+    </div>
+
+    <div class="card" style="margin-bottom: 1.5rem;">
+        <h2>Active Tasks (Quantization / Downloads)</h2>
+        <div id="tasks-container" style="font-size: 0.9rem; color: var(--text-secondary);">
+            No background tasks active.
+        </div>
+    </div>
+
+    <h2>Event Stream</h2>
+    <div class="log-container" id="log-container">
+        <!-- Logs injected here -->
+    </div>
+
+    <script>
+        let eventSource = null;
+        let pollInterval = null;
+        
+        const ui = {
+            statusDot: document.getElementById('status-dot'),
+            connStatus: document.getElementById('connection-status'),
+            modelName: document.getElementById('model-name'),
+            modelStatus: document.getElementById('model-status'),
+            ramValue: document.getElementById('ram-value'),
+            ramSub: document.getElementById('ram-sub'),
+            ramBar: document.getElementById('ram-bar'),
+            rpsValue: document.getElementById('rps-value'),
+            logContainer: document.getElementById('log-container'),
+            apiUrl: document.getElementById('api-url'),
+            apiKey: document.getElementById('api-key'),
+            connectBtn: document.getElementById('connect-btn'),
+            tasksContainer: document.getElementById('tasks-container')
+        };
+
+        function addLog(type, message) {
+            const el = document.createElement('div');
+            el.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            el.innerHTML = `
+                <div class="log-time">[${time}]</div>
+                <div class="log-message"><span class="event-type">${type}</span>: ${message}</div>
+            `;
+            ui.logContainer.prepend(el);
+            if (ui.logContainer.children.length > 100) {
+                ui.logContainer.lastChild.remove();
+            }
+        }
+
+        function updateConnectionState(connected) {
+            if (connected) {
+                ui.statusDot.classList.add('connected');
+                ui.connStatus.textContent = 'Connected';
+            } else {
+                ui.statusDot.classList.remove('connected');
+                ui.connStatus.textContent = 'Disconnected';
+                ui.modelName.textContent = 'Unknown';
+                ui.ramValue.textContent = '0 GB';
+                ui.ramBar.style.width = '0%';
+            }
+        }
+
+        async function fetchState() {
+            const baseUrl = ui.apiUrl.value.replace(/\/$/, '');
+            const headers = {};
+            if (ui.apiKey.value) headers['Authorization'] = `Bearer ${ui.apiKey.value}`;
+
+            try {
+                // Fetch Memory
+                const memRes = await fetch(`${baseUrl}/admin/memory`, { headers });
+                if (memRes.ok) {
+                    const mem = await memRes.json();
+                    const gb = (mem.mlx_allocated_bytes / 1024 / 1024 / 1024).toFixed(1);
+                    const percent = mem.memory_percent.toFixed(1);
+                    ui.ramValue.textContent = `${gb} GB`;
+                    ui.ramSub.textContent = `${percent}% MLX allocated`;
+                    ui.ramBar.style.width = `${Math.min(100, percent)}%`;
+                    
+                    if (percent > 90) ui.ramBar.className = 'progress-bar-fill danger';
+                    else if (percent > 75) ui.ramBar.className = 'progress-bar-fill warning';
+                    else ui.ramBar.className = 'progress-bar-fill';
+                    
+                    updateConnectionState(true);
+                } else if (memRes.status === 401 || memRes.status === 403) {
+                    addLog('auth_error', 'Invalid or missing API key.');
+                    disconnect();
+                    return;
+                }
+
+                // Fetch Model
+                const modelRes = await fetch(`${baseUrl}/v1/models`, { headers });
+                if (modelRes.ok) {
+                    const models = await modelRes.json();
+                    if (models.data && models.data.length > 0) {
+                        ui.modelName.textContent = models.data[0].id;
+                        ui.modelStatus.textContent = 'Active & Ready';
+                    } else {
+                        ui.modelName.textContent = 'None';
+                        ui.modelStatus.textContent = 'Awaiting load trigger';
+                    }
+                }
+                
+                // Fetch Metrics for RPS
+                const metricsRes = await fetch(`${baseUrl}/admin/metrics/json`, { headers });
+                if (metricsRes.ok) {
+                    const metrics = await metricsRes.json();
+                    if (metrics.requests && metrics.requests.throughput_1m !== undefined) {
+                        ui.rpsValue.textContent = metrics.requests.throughput_1m.toFixed(2);
+                    }
+                }
+            } catch (err) {
+                updateConnectionState(false);
+            }
+        }
+
+        function connect() {
+            disconnect();
+            
+            const baseUrl = ui.apiUrl.value.replace(/\/$/, '');
+            let sseUrl = `${baseUrl}/admin/events`;
+            
+            // Note: EventSource doesn't support custom headers (like Authorization) natively in standard browsers.
+            // If auth is required, it must be passed via query string if the backend supports it, or we rely on the
+            // periodic fetchState polling.
+            // For now, we attempt standard connection.
+            eventSource = new EventSource(sseUrl);
+            
+            eventSource.onopen = () => {
+                addLog('system', 'SSE connection established');
+                updateConnectionState(true);
+                fetchState(); // Initial sync
+            };
+            
+            eventSource.onmessage = (e) => {
+                try {
+                    const data = JSON.parse(e.data);
+                    // The feed sends various events
+                    addLog(data.event || 'event', JSON.stringify(data.payload || data));
+                    
+                    if (data.event === 'model_loaded' || data.event === 'model_unloaded') {
+                        fetchState();
+                    }
+                    if (data.event === 'download_progress' || data.event === 'quantize_progress') {
+                        renderTask(data.event, data.payload);
+                    }
+                } catch(err) {
+                    addLog('raw', e.data);
+                }
+            };
+            
+            eventSource.onerror = () => {
+                updateConnectionState(false);
+            };
+
+            pollInterval = setInterval(fetchState, 3000);
+            ui.connectBtn.textContent = 'Disconnect';
+        }
+
+        function disconnect() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            updateConnectionState(false);
+            ui.connectBtn.textContent = 'Connect';
+            ui.tasksContainer.innerHTML = 'No background tasks active.';
+        }
+
+        function renderTask(type, payload) {
+            // Very simple rendering for background jobs
+            ui.tasksContainer.innerHTML = `
+                <div style="margin-bottom: 0.5rem;">
+                    <strong>${type}:</strong> ${payload.model_id || 'Unknown'}
+                </div>
+                <div class="progress-bar-bg" style="margin-top: 0.5rem; height: 12px;">
+                    <div class="progress-bar-fill" style="width: ${payload.progress || payload.percent || 100}%;"></div>
+                </div>
+                <div style="font-size: 0.8rem; margin-top: 0.25rem;">${payload.status || 'Processing...'}</div>
+            `;
+        }
+
+        ui.connectBtn.addEventListener('click', () => {
+            if (eventSource) {
+                disconnect();
+            } else {
+                connect();
+            }
+        });
+        
+        // Auto-connect on load
+        connect();
+    </script>
+</body>
+</html>

@@ -22,14 +22,18 @@ export interface Guide {
 
 import { lmxOverview } from './lmx-overview';
 import { optaLocalIntro } from './opta-local-intro';
-import { cliSetup } from './cli-setup';
+import { cliMasterclass } from './cli-masterclass';
 import { accountsSync } from './accounts-sync';
+import { browserAutomationGuide } from './browser-automation';
+import { codeDesktopOverview } from './code-desktop-overview';
 
 export const allGuides: Guide[] = [
-  { ...optaLocalIntro, status: "draft" },
-  { ...lmxOverview, status: "verified" },
-  { ...cliSetup, status: "draft" },
-  { ...accountsSync, status: "draft" },
+  { ...optaLocalIntro, status: 'verified' },
+  { ...lmxOverview, status: 'verified' },
+  { ...cliMasterclass, status: 'verified' },
+  { ...browserAutomationGuide, status: 'verified' },
+  { ...codeDesktopOverview, status: 'verified' },
+  { ...accountsSync, status: 'verified' },
 ];
 
 export function getGuide(slug: string): Guide | undefined {
