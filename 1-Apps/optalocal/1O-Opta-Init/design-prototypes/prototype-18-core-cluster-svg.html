@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Init - Prototype 18: Core Cluster SVG</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Sora', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+    .window { width: 1100px; height: 750px; background: radial-gradient(ellipse at center, #0d0c14 0%, #09090b 70%); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; position: relative; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #void-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
+    
+    .header { position: absolute; top: 40px; text-align: center; z-index: 10; width: 100%; }
+    
+    /* Core Cluster */
+    .cluster-container { position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; gap: 60px; margin-top: 80px; }
+    
+    .core-row { display: flex; justify-content: center; align-items: center; gap: 80px; }
+    .support-row { display: flex; justify-content: center; align-items: center; gap: 50px; }
+    
+    .app-item { position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    
+    /* Floating Animation for all items */
+    .floating-1 { animation: float 6s ease-in-out infinite; }
+    .floating-2 { animation: float 7s ease-in-out infinite 1s; }
+    .floating-3 { animation: float 5.5s ease-in-out infinite 2s; }
+    .floating-4 { animation: float 6.5s ease-in-out infinite 0.5s; }
+    .floating-5 { animation: float 8s ease-in-out infinite 1.5s; }
+    
+    @keyframes float {
+      0% { transform: translateY(0px); }
+      50% { transform: translateY(-15px); }
+      100% { transform: translateY(0px); }
+    }
+
+    .purple-circle {
+      position: absolute; border-radius: 50%;
+      background: radial-gradient(circle, rgba(168,85,247,0.9) 0%, rgba(168,85,247,0.2) 70%, transparent 100%);
+      opacity: 0; transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 40px rgba(168,85,247,0.6); pointer-events: none; z-index: 1;
+      top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.6);
+    }
+    
+    .app-logo { border-radius: 50%; object-fit: contain; z-index: 2; transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1); position: relative; }
+    
+    /* Sizes */
+    .core-row .purple-circle { width: 160px; height: 160px; }
+    .core-row .app-logo { width: 140px; height: 140px; }
+    
+    .support-row .purple-circle { width: 110px; height: 110px; }
+    .support-row .app-logo { width: 90px; height: 90px; }
+    
+    /* LMX Middle is even larger */
+    .lmx-item .purple-circle { width: 220px; height: 220px; }
+    .lmx-item .app-logo { width: 190px; height: 190px; }
+
+    .app-item:hover .purple-circle { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    .app-item:hover .app-logo { transform: scale(1.15); filter: drop-shadow(0 0 20px rgba(168,85,247,0.6)); }
+
+    /* Tooltip */
+    .tooltip {
+      position: absolute; bottom: -40px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px);
+      color: #fff; padding: 6px 16px; border-radius: 999px; font-size: 14px; font-weight: 600; opacity: 0; transform: translateY(-10px); transition: all 0.3s; pointer-events: none; white-space: nowrap; z-index: 30;
+    }
+    .app-item:hover .tooltip { opacity: 1; transform: translateY(0); }
+
+  </style>
+</head>
+<body>
+  <div class="window">
+    <canvas id="void-canvas"></canvas>
+    
+    <div class="header">
+      <div class="text-xs font-mono text-purple-400 tracking-widest mb-4 border border-purple-500/30 bg-purple-500/10 px-4 py-1.5 rounded-full inline-block">INIT MANAGER</div>
+      <h1 class="text-4xl font-bold" id="main-title">Select Environment</h1>
+    </div>
+    
+    <div class="cluster-container">
+      <!-- CORE ROW: CLI - LMX - CODE -->
+      <div class="core-row">
+        <div class="app-item floating-1" onmouseenter="document.getElementById('main-title').innerText='Opta CLI'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Opta CLI</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-CLI/opta-cli-logo-final.svg" class="app-logo">
+        </div>
+        
+        <div class="app-item lmx-item floating-2" onmouseenter="document.getElementById('main-title').innerText='Opta LMX'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip" style="bottom: -50px; font-size: 16px;">Opta LMX</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-LMX/opta-lmx-logo-final.svg" class="app-logo">
+        </div>
+        
+        <div class="app-item floating-3" onmouseenter="document.getElementById('main-title').innerText='Opta Code'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Opta Code</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Code-Desktop/opta-code-logo-final.svg" class="app-logo">
+        </div>
+      </div>
+      
+      <!-- SUPPORT ROW: 5 Apps -->
+      <div class="support-row">
+        <div class="app-item floating-4" onmouseenter="document.getElementById('main-title').innerText='Opta Local'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Opta Local</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Local/opta-local-logo-final.svg" class="app-logo">
+        </div>
+        
+        <div class="app-item floating-5" onmouseenter="document.getElementById('main-title').innerText='Opta Accounts'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Accounts</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Accounts/opta-accounts-logo-final.svg" class="app-logo">
+        </div>
+        
+        <div class="app-item floating-1" onmouseenter="document.getElementById('main-title').innerText='Opta Status'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Status</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Status/opta-status-logo-final.svg" class="app-logo">
+        </div>
+        
+        <div class="app-item floating-2" onmouseenter="document.getElementById('main-title').innerText='Opta Learn'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Learn</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Learn/opta-learn-logo-final.svg" class="app-logo">
+        </div>
+
+        <div class="app-item floating-3" onmouseenter="document.getElementById('main-title').innerText='Opta Help'" onmouseleave="document.getElementById('main-title').innerText='Select Environment'">
+          <div class="tooltip">Help</div>
+          <div class="purple-circle"></div><img src="../../design/logos/Opta-Help/opta-help-logo-final.svg" class="app-logo">
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Canvas Background
+    const c = document.getElementById('void-canvas');
+    const ctx = c.getContext('2d');
+    c.width = 1100; c.height = 750;
+    const cx = 550, cy = 375; 
+    const particles = [];
+    for (let i = 0; i < 200; i++) {
+      particles.push({
+        x: Math.random() * 1100,
+        y: Math.random() * 750,
+        size: Math.random() * 2,
+        speedY: -(Math.random() * 0.3 + 0.05),
+        speedX: (Math.random() - 0.5) * 0.2
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, 1100, 750);
+      
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 400);
+      glow.addColorStop(0, 'rgba(168,85,247,0.12)');
+      glow.addColorStop(1, 'transparent');
+      ctx.fillStyle = glow;
+      ctx.fillRect(0,0,1100,750);
+
+      particles.forEach(p => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+        if(p.y < 0) p.y = 750;
+        if(p.x < 0) p.x = 1100;
+        if(p.x > 1100) p.x = 0;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,0.4)`; ctx.fill();
+      });
+      requestAnimationFrame(draw);
+    }
+    draw();
+  </script>
+</body>
+</html>

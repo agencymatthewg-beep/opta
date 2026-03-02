@@ -45,13 +45,16 @@ For this project:
 
 ## Updating Download URLs
 
-Edit `lib/constants.ts` when new releases ship:
-```ts
-export const DOWNLOADS = {
-  cli: { macos: '...', windows: '...' },
-  lmx: { macos: '...', windows: '...' },
-}
-```
+Update release-control manifests when new releases ship:
+
+1. Edit `channels/stable.json` and/or `channels/beta.json`
+2. Keep artifact URLs in the canonical namespace:
+   - `https://init.optalocal.com/downloads/...`
+3. Sync deploy manifests:
+   - `npm run sync:desktop-manifests`
+4. Validate:
+   - `npm run validate:release-manifests -- channels/stable.json channels/beta.json`
+   - `npm run validate:manifest-links -- channels/stable.json channels/beta.json`
 
 Commit + push -> Vercel auto-deploys.
 

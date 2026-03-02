@@ -15,6 +15,11 @@ const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
 
   const lmxClientInstance = {
     status: vi.fn(async () => ({ status: 'ok', version: 'test', models: [] })),
+    discovery: vi.fn(async () => ({
+      service: 'opta-lmx',
+      version: '0.1.0',
+      endpoints: { preferred_base_url: 'http://127.0.0.1:1234' },
+    })),
     models: vi.fn(async () => ({ models: [] })),
     memory: vi.fn(async () => ({
       total_unified_memory_gb: 64,
@@ -316,6 +321,18 @@ describe('daemon http-server telemetry and routes', () => {
     });
     expect(statusRes.statusCode).toBe(200);
     expect(lmxClientInstance.status).toHaveBeenCalled();
+
+    const discoveryRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/discovery',
+      headers: { authorization: 'Bearer secret-token' },
+    });
+    expect(discoveryRes.statusCode).toBe(200);
+    expect(discoveryRes.json()).toMatchObject({
+      service: 'opta-lmx',
+      endpoints: { preferred_base_url: 'http://127.0.0.1:1234' },
+    });
+    expect(lmxClientInstance.discovery).toHaveBeenCalled();
 
     const loadRes = await running.app.inject({
       method: 'POST',

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { daemonClient } from "../lib/daemonClient";
 import { usePlatform } from "../hooks/usePlatform.js";
 import { StepConnection } from "./setup/StepConnection";
 import { StepPreferences } from "./setup/StepPreferences";
@@ -6,6 +7,7 @@ import { StepReady } from "./setup/StepReady";
 import { StepWelcome } from "./setup/StepWelcome";
 import { StepDots } from "./setup/controls";
 import { DEFAULT_FORM, wizardInvoke, WIZARD_THEME } from "./setup/shared";
+import type { DaemonConnectionOptions } from "../types";
 
 export interface SetupWizardProps {
   onComplete: () => void;
@@ -41,6 +43,57 @@ function injectKeyframes() {
 const TOTAL_STEPS = 4;
 const NEXT_LABELS = ["Get Started", "Next", "Review Setup", ""];
 
+interface BootstrapMetadata {
+  host?: string;
+  port?: number;
+}
+
+function parseDiscoveryConnection(
+  discovery: unknown,
+  fallbackHost: string,
+  fallbackPort: number,
+): { host: string; port: number } {
+  const endpoints =
+    typeof discovery === "object" &&
+    discovery !== null &&
+    "endpoints" in discovery &&
+    typeof (discovery as { endpoints?: unknown }).endpoints === "object"
+      ? ((discovery as { endpoints?: Record<string, unknown> }).endpoints ?? {})
+      : {};
+
+  const candidates: string[] = [];
+  const preferred = endpoints.preferred_base_url;
+  const openAi = endpoints.openai_base_url;
+  const baseUrls = endpoints.base_urls;
+  if (typeof preferred === "string") candidates.push(preferred);
+  if (typeof openAi === "string") candidates.push(openAi);
+  if (Array.isArray(baseUrls)) {
+    for (const value of baseUrls) {
+      if (typeof value === "string") candidates.push(value);
+    }
+  }
+
+  for (const urlString of candidates) {
+    try {
+      const parsed = new URL(urlString);
+      const parsedHost = parsed.hostname.trim();
+      if (!parsedHost) continue;
+      const port =
+        parsed.port.trim().length > 0
+          ? Number.parseInt(parsed.port, 10)
+          : parsed.protocol === "https:"
+            ? 443
+            : 80;
+      if (!Number.isFinite(port) || port <= 0 || port > 65_535) continue;
+      return { host: parsedHost, port };
+    } catch {
+      // Ignore malformed discovery URL entries.
+    }
+  }
+
+  return { host: fallbackHost, port: fallbackPort };
+}
+
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(DEFAULT_FORM);
@@ -62,6 +115,50 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
       .catch(() => {
         // Non-Tauri env fallback.
       });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const prefillFromDiscovery = async () => {
+      try {
+        const bootstrap = await wizardInvoke<BootstrapMetadata>(
+          "bootstrap_daemon_connection",
+          { startIfNeeded: true },
+        );
+        const host = bootstrap?.host?.trim();
+        const port = Math.trunc(Number(bootstrap?.port));
+        if (!host || !Number.isFinite(port) || port <= 0 || port > 65_535) {
+          return;
+        }
+
+        const token = await wizardInvoke<string>("get_connection_secret", {
+          host,
+          port,
+        }).catch(() => "");
+        const connection: DaemonConnectionOptions = {
+          host,
+          port,
+          token: typeof token === "string" ? token : "",
+        };
+        const discovery = await daemonClient.lmxDiscovery(connection);
+        const resolved = parseDiscoveryConnection(discovery, host, port);
+
+        if (cancelled) return;
+        setForm((prev) => ({
+          ...prev,
+          lmxHost: resolved.host,
+          lmxPort: resolved.port,
+        }));
+      } catch {
+        // Discovery prefill is best-effort; keep local defaults otherwise.
+      }
+    };
+
+    void prefillFromDiscovery();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

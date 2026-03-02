@@ -196,6 +196,19 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     return status;
   });
 
+  app.get('/v3/lmx/discovery', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const discovery = await lmx.discovery();
+    return discovery;
+  });
+
   app.get('/v3/lmx/models', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const config = await loadConfig();

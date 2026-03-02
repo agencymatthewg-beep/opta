@@ -381,6 +381,15 @@ export function useDaemonSessions() {
     return refreshInFlightRef.current;
   }, [sessions.length]);
 
+  const repairConnection = useCallback(async () => {
+    try {
+      await bootstrapDaemonConnection(true);
+    } catch {
+      // Best-effort bootstrap; refresh call still surfaces current state.
+    }
+    await refreshNow();
+  }, [refreshNow]);
+
   useEffect(() => {
     let cancelled = false;
     let timeoutId: number | null = null;
@@ -475,6 +484,7 @@ export function useDaemonSessions() {
   const trackSession = useCallback(
     async (sessionId: string, workspace?: string) => {
       let persistedItems: TimelineItem[] = [];
+      const persistedSeqs = new Set<number>();
       let persistedMaxSeq = seqCursorRef.current[sessionId] ?? 0;
 
       // Load persisted events from disk (Stream F) before opening WS so we can
@@ -494,6 +504,7 @@ export function useDaemonSessions() {
                 if (typeof env.seq === "number") {
                   if (seenSeqs.has(env.seq)) continue;
                   seenSeqs.add(env.seq);
+                  persistedSeqs.add(env.seq);
                   if (env.seq > persistedMaxSeq) persistedMaxSeq = env.seq;
                 }
                 envelopes.push(env);
@@ -512,6 +523,34 @@ export function useDaemonSessions() {
         seqCursorRef.current[sessionId] = persistedMaxSeq;
       }
 
+      let recoveredGapItems: TimelineItem[] = [];
+      if (persistedMaxSeq > 0) {
+        try {
+          const gap = await daemonClient.sessionEvents(
+            connectionRef.current,
+            sessionId,
+            persistedMaxSeq,
+          );
+          const freshGapEvents = gap.events.filter((event) => {
+            if (typeof event.seq !== "number") return true;
+            return !persistedSeqs.has(event.seq);
+          });
+          if (freshGapEvents.length > 0) {
+            recoveredGapItems = eventsToTimelineItems(freshGapEvents, sessionId);
+            for (const event of freshGapEvents) {
+              if (
+                typeof event.seq === "number" &&
+                event.seq > (seqCursorRef.current[sessionId] ?? 0)
+              ) {
+                seqCursorRef.current[sessionId] = event.seq;
+              }
+            }
+          }
+        } catch {
+          // Gap recovery is best-effort; websocket stream remains primary source.
+        }
+      }
+
       setSessions((prev) => {
         if (prev.some((session) => session.sessionId === sessionId))
           return prev;
@@ -527,13 +566,13 @@ export function useDaemonSessions() {
       });
       setActiveSessionId(sessionId);
       setConnectionError(null);
-      if (persistedItems.length > 0) {
+      if (persistedItems.length > 0 || recoveredGapItems.length > 0) {
         setTimelineBySession((prev) => {
           const existing = prev[sessionId] ?? [];
           if (existing.length > 0) return prev;
           return {
             ...prev,
-            [sessionId]: persistedItems,
+            [sessionId]: [...persistedItems, ...recoveredGapItems],
           };
         });
       }
@@ -678,6 +717,7 @@ export function useDaemonSessions() {
     streamingBySession,
     pendingPermissionsBySession,
     refreshNow,
+    repairConnection,
     removeSession,
     resolvePermission,
     runtime,

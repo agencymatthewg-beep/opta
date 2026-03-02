@@ -4,10 +4,17 @@ import { SetupWizard } from "./SetupWizard";
 
 const invokeNative = vi.fn();
 const runtimeState = { native: false };
+const lmxDiscovery = vi.fn();
 
 vi.mock("../lib/runtime", () => ({
   invokeNative: (...args: unknown[]) => invokeNative(...args),
   isNativeDesktop: () => runtimeState.native,
+}));
+
+vi.mock("../lib/daemonClient", () => ({
+  daemonClient: {
+    lmxDiscovery: (...args: unknown[]) => lmxDiscovery(...args),
+  },
 }));
 
 vi.mock("../hooks/usePlatform.js", () => ({
@@ -19,6 +26,8 @@ describe("SetupWizard", () => {
     runtimeState.native = false;
     invokeNative.mockReset();
     invokeNative.mockRejectedValue(new Error("not available"));
+    lmxDiscovery.mockReset();
+    lmxDiscovery.mockRejectedValue(new Error("discovery unavailable"));
   });
 
   it("walks through steps and completes launch", async () => {
@@ -75,6 +84,33 @@ describe("SetupWizard", () => {
         expect.any(Object),
       );
     });
-    expect(invokeNative).toHaveBeenCalledTimes(3);
+    expect(invokeNative.mock.calls.length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("prefills connection using daemon lmx discovery instead of static 192.168.x.x", async () => {
+    runtimeState.native = true;
+    invokeNative.mockImplementation((command: string) => {
+      if (command === "get_config_dir") return Promise.resolve("/tmp/opta");
+      if (command === "bootstrap_daemon_connection") {
+        return Promise.resolve({ host: "127.0.0.1", port: 10999 });
+      }
+      if (command === "get_connection_secret") {
+        return Promise.resolve("daemon-token");
+      }
+      return Promise.reject(new Error(`unexpected command: ${command}`));
+    });
+    lmxDiscovery.mockResolvedValue({
+      endpoints: {
+        preferred_base_url: "http://10.10.10.22:1234/v1",
+      },
+    });
+
+    render(<SetupWizard onComplete={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: /get started/i }));
+
+    await waitFor(() => {
+      expect(screen.getByDisplayValue("10.10.10.22:1234")).toBeInTheDocument();
+    });
   });
 });

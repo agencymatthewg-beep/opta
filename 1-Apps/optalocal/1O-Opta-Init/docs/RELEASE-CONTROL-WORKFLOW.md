@@ -34,6 +34,16 @@ This document defines the internal release-control contract for Opta Init manage
   - SHA-256 checksum
   - signature metadata
 
+## Artifact URL Policy
+
+- Canonical artifact URL namespace in manifests is:
+  - `https://init.optalocal.com/downloads/...`
+- During gateway mode, these URLs may redirect to:
+  - direct package assets (for published artifacts), or
+  - the release notes page for the active channel while packaging/signing is still in progress.
+- Once dedicated release storage is ready (for example `downloads.optalocal.com`), switch routing under
+  `init.optalocal.com/downloads/...` without changing manifest URLs.
+
 ## Publish Procedure (Beta)
 
 1. Build and package all component artifacts for macOS and Windows.
@@ -44,7 +54,9 @@ This document defines the internal release-control contract for Opta Init manage
    - macOS packages/bundles: code signing/notarization
    - Windows installers: Authenticode
    - Runtime bundles (optional): Cosign/Sigstore
-4. Upload artifacts and detached signatures to release storage/CDN.
+4. Publish artifact routes for every manifest URL:
+   - preferred: upload artifacts/signatures to release storage/CDN and route `/downloads/...` to them
+   - temporary gateway mode: route unresolved artifacts to channel release notes
 5. Update `channels/beta.json` with new versions, URLs, checksums, signatures, and rollout values.
 6. Validate:
    - `npm run validate:release-manifests -- channels/beta.json`

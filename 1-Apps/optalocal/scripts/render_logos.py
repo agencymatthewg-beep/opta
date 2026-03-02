@@ -7,14 +7,17 @@ apps = {
     'LMX': {'slug': 'lmx', 'text': 'lmx'},
     'Accounts': {'slug': 'accounts', 'text': 'accounts'},
     'CLI': {'slug': 'cli', 'text': 'cli'},
-    'Code-Desktop': {'slug': 'code', 'text': 'code'}
+    'Code-Desktop': {'slug': 'code', 'text': 'code'},
+    'Learn': {'slug': 'learn', 'text': 'learn'},
+    'Help': {'slug': 'help', 'text': 'help'},
+    'Status': {'slug': 'status', 'text': 'status'}
 }
 
 with open('design/logos/opta-logo-template.html', 'r', encoding='utf-8') as f:
     template = f.read()
 
 for app_name, info in apps.items():
-    svg_path = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-logo-final.svg'
+    svg_path = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-mark.svg'
     if not os.path.exists(svg_path):
         print(f"Skipping {app_name}, SVG not found.")
         continue
@@ -29,8 +32,8 @@ for app_name, info in apps.items():
     # Update the text
     html_out = re.sub(r'<span class="learn-text">learn</span>', f'<span class="learn-text">{info["text"]}</span>', html_out)
 
-    out_html = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-logo.html'
-    out_png = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-logo.png'
+    out_html = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-full.html'
+    out_png = f'design/logos/Opta-{app_name}/opta-{info["slug"]}-full.png'
     
     # Create dir if not exists
     os.makedirs(f'design/logos/Opta-{app_name}', exist_ok=True)
@@ -50,7 +53,7 @@ for app_name, info in apps.items():
     subprocess.run(cmd, check=True)
     
     # Open the generated image and HTML for the user to review
-    subprocess.run(["open", out_html])
-    subprocess.run(["open", out_png])
+    subprocess.run(["open", "-a", "Google Chrome", out_html])
+    subprocess.run(["open", "-a", "Google Chrome", out_png])
 
 print("Done rendering logos.")

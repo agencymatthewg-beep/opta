@@ -9,6 +9,7 @@ import type {
   DaemonBackgroundKillResponse,
   DaemonBackgroundListResponse,
   DaemonLmxAvailableModel,
+  DaemonLmxDiscoveryResponse,
   DaemonLmxDownloadResponse,
   DaemonLmxLoadOptions,
   DaemonLmxMemoryResponse,
@@ -280,6 +281,10 @@ export class DaemonHttpClient implements DaemonHttpApi {
 
   lmxStatus(): Promise<DaemonLmxStatusResponse> {
     return this.request('/v3/lmx/status', {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
+  }
+
+  lmxDiscovery(): Promise<DaemonLmxDiscoveryResponse> {
+    return this.request('/v3/lmx/discovery', {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
   }
 
   lmxModels(): Promise<{ models: DaemonLmxModelDetail[] }> {

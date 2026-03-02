@@ -204,6 +204,16 @@ export function StepConnection({
           "Mac Studio inference - private, near-zero latency",
           <div>
             <MonoLabel>Host : Port</MonoLabel>
+            <p
+              style={{
+                marginTop: 0,
+                marginBottom: 8,
+                fontSize: 11,
+                color: WIZARD_THEME.text3,
+              }}
+            >
+              Auto-detected from daemon discovery when available.
+            </p>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <TextInput
                 value={`${form.lmxHost}:${form.lmxPort}`}

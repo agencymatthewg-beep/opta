@@ -17,7 +17,7 @@ Browser renders page (no hydration needed for content)
         |
 Framer Motion mounts spring animations client-side
         |
-User clicks download -> GitHub Releases direct link
+User clicks download -> init.optalocal.com/downloads gateway (redirects to package or release notes)
 User clicks Open Web Dashboard -> https://lmx.optalocal.com
 User clicks Manage Account -> https://accounts.optalocal.com
 ```

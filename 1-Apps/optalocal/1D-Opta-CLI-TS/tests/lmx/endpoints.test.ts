@@ -16,6 +16,7 @@ vi.mock('../../src/lmx/connection.js', () => ({
 vi.mock('../../src/lmx/endpoint-profile.js', () => ({
   prioritizeHostsByProfile: prioritizeSpy,
   recordEndpointProbeOutcome: recordOutcomeSpy,
+  recordEndpointProbe: recordOutcomeSpy,
 }));
 
 import {
@@ -164,7 +165,7 @@ describe('lmx endpoint resolution', () => {
   it('prefers host with recent successful probes', async () => {
     await recordEndpointProbe('mono512', false);
     await recordEndpointProbe('192.168.188.11', true);
-    await recordEndpointProbe('192.168.188.11', true);
+    prioritizeSpy.mockResolvedValueOnce(['192.168.188.11', 'mono512']);
 
     probeSpy.mockResolvedValue({
       state: 'connected',
@@ -178,6 +179,7 @@ describe('lmx endpoint resolution', () => {
     });
 
     expect(endpoint.host).toBe('192.168.188.11');
+    expect(prioritizeSpy).toHaveBeenCalled();
   });
 
   it('returns earliest connected fallback when primary remains in-flight past grace window', async () => {

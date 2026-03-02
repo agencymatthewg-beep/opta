@@ -6,6 +6,7 @@ import type {
   DaemonBackgroundStartRequest,
   DaemonBackgroundStatusResponse,
   DaemonLmxLoadOptions,
+  DaemonLmxDiscoveryResponse,
   DaemonListOperationsResponse,
   DaemonLmxAvailableModel,
   DaemonLmxMemoryResponse,
@@ -236,6 +237,12 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
   ): Promise<DaemonLmxStatusResponse> {
     return httpClient(connection).lmxStatus();
+  },
+
+  async lmxDiscovery(
+    connection: DaemonConnectionOptions,
+  ): Promise<DaemonLmxDiscoveryResponse> {
+    return httpClient(connection).lmxDiscovery();
   },
 
   async lmxModels(

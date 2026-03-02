@@ -108,6 +108,38 @@ export interface DaemonLmxStatusResponse {
   models: DaemonLmxModelDetail[];
 }
 
+export interface DaemonLmxDiscoveryResponse {
+  service?: string;
+  version?: string;
+  schema_version?: string;
+  instance_id?: string;
+  security_profile?: string;
+  ready?: boolean;
+  loaded_models?: string[];
+  loaded_model_count?: number;
+  continuity?: {
+    event_resume_supported?: boolean;
+    session_log_api?: string;
+    [key: string]: unknown;
+  };
+  auth?: {
+    admin_key_required?: boolean;
+    inference_key_required?: boolean;
+    supabase_jwt_enabled?: boolean;
+    [key: string]: unknown;
+  };
+  endpoints?: {
+    preferred_base_url?: string;
+    base_urls?: string[];
+    openai_base_url?: string;
+    admin_base_url?: string;
+    websocket_url?: string;
+    [key: string]: unknown;
+  };
+  client_probe_order?: string[];
+  [key: string]: unknown;
+}
+
 export interface DaemonLmxMemoryResponse {
   total_unified_memory_gb: number;
   used_gb: number;
@@ -210,6 +242,7 @@ export interface DaemonHttpApi {
     signal?: BackgroundSignal
   ): Promise<DaemonBackgroundKillResponse>;
   lmxStatus(): Promise<DaemonLmxStatusResponse>;
+  lmxDiscovery(): Promise<DaemonLmxDiscoveryResponse>;
   lmxModels(): Promise<{ models: DaemonLmxModelDetail[] }>;
   lmxMemory(): Promise<DaemonLmxMemoryResponse>;
   lmxAvailable(): Promise<DaemonLmxAvailableModel[]>;

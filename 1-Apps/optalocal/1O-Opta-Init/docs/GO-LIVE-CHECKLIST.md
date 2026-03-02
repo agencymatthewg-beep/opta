@@ -17,6 +17,7 @@
 | Gate                                                          | Owner         | Status |
 | ------------------------------------------------------------- | ------------- | ------ |
 | Real CLI package URL returns `200`                            | 1D            | [x]    |
+| Manifest artifact URLs under `init.optalocal.com/downloads/...` resolve (redirect or file) | 1O + Infra | [x] |
 | Real LMX macOS package URL returns `200`                      | 1M            | [ ]    |
 | Bootstrap endpoint `https://optalocal.com/init` returns `200` | Infra + 1D/1M | [ ]    |
 | Init site points only to valid links                          | 1O            | [x]    |
@@ -86,6 +87,7 @@ curl -I "https://lmx.optalocal.com"
 
 - [ ] Host bootstrap script at `https://optalocal.com/init` and return `200`.
 - [ ] Keep `init.optalocal.com` CNAME and TLS stable.
+- [x] Keep release artifact gateway stable at `https://init.optalocal.com/downloads/...`.
 - [x] Confirm cache headers are safe for static HTML + immutable static assets.
 - [ ] Verify rollback path (previous deploy) for both Init and bootstrap script.
 
@@ -115,6 +117,7 @@ Pass criteria:
 
 - [x] `init.optalocal.com` is live.
 - [x] Current CLI release asset URL returns `200`.
+- [x] Manifest artifacts now resolve through `init.optalocal.com/downloads/...` gateway.
 - [ ] LMX package artifact still pending in release feed (UI auto-falls back to unavailable state).
 - [ ] `https://optalocal.com/init` returns `404`.
 - [x] `https://lmx.optalocal.com` returns `200`.

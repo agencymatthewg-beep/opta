@@ -90,6 +90,7 @@ function App() {
     pendingPermissions,
     streamingBySession,
     pendingPermissionsBySession,
+    repairConnection,
     refreshNow,
     resolvePermission,
     runtime,
@@ -583,7 +584,10 @@ function App() {
               </div>
               {connectionState === "disconnected" && (
                 <div className="daemon-offline-hint">
-                  <p>Run <code>opta daemon start</code> to connect</p>
+                  <p>Daemon offline. Run auto-repair to restart and reconnect.</p>
+                  <button type="button" onClick={() => void repairConnection()}>
+                    Repair daemon connection
+                  </button>
                   {connectionError ? <p className="daemon-offline-hint-error">{connectionError}</p> : null}
                 </div>
               )}
@@ -923,8 +927,8 @@ function App() {
                   <button type="button" onClick={() => void copyReconnectDiagnostics()}>
                     Copy diagnostics
                   </button>
-                  <button type="button" onClick={() => void refreshNow()}>
-                    Retry now
+                  <button type="button" onClick={() => void repairConnection()}>
+                    Repair daemon connection
                   </button>
                   <button type="button" onClick={() => setFirstRun(true)}>
                     Open setup wizard

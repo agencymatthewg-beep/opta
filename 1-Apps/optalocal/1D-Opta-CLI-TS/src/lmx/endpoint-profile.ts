@@ -14,6 +14,13 @@ interface EndpointProfileFile {
   endpoints: EndpointScore[];
 }
 
+function resolveProfilePath(path?: string): string {
+  if (path && path.trim().length > 0) return path;
+  const fromEnv = process.env['OPTA_LMX_ENDPOINT_PROFILE_PATH'];
+  if (fromEnv && fromEnv.trim().length > 0) return fromEnv;
+  return profilePath();
+}
+
 function profilePath(): string {
   return join(getConfigDir(), 'lmx-endpoints.json');
 }
@@ -55,8 +62,9 @@ export function rankHostsByProfile(
 }
 
 export async function loadEndpointProfile(path = profilePath()): Promise<EndpointScore[]> {
+  const resolvedPath = resolveProfilePath(path);
   try {
-    const raw = await readFile(path, 'utf-8');
+    const raw = await readFile(resolvedPath, 'utf-8');
     const parsed = JSON.parse(raw) as EndpointProfileFile;
     if (!parsed || parsed.version !== 1 || !Array.isArray(parsed.endpoints)) {
       return [];
@@ -74,19 +82,20 @@ export async function loadEndpointProfile(path = profilePath()): Promise<Endpoin
 }
 
 async function saveEndpointProfile(entries: readonly EndpointScore[], path = profilePath()): Promise<void> {
-  await mkdir(dirname(path), { recursive: true });
+  const resolvedPath = resolveProfilePath(path);
+  await mkdir(dirname(resolvedPath), { recursive: true });
   const payload: EndpointProfileFile = {
     version: 1,
     endpoints: [...entries],
   };
-  await writeFile(path, JSON.stringify(payload, null, 2), 'utf-8');
+  await writeFile(resolvedPath, JSON.stringify(payload, null, 2), 'utf-8');
 }
 
 export async function prioritizeHostsByProfile(
   hosts: readonly string[],
   path = profilePath()
 ): Promise<string[]> {
-  const entries = await loadEndpointProfile(path);
+  const entries = await loadEndpointProfile(resolveProfilePath(path));
   return rankHostsByProfile(hosts, entries);
 }
 
@@ -98,7 +107,8 @@ export async function recordEndpointProbeOutcome(
 ): Promise<void> {
   if (!host.trim()) return;
   const normalized = normalizeHost(host);
-  const existing = await loadEndpointProfile(path);
+  const resolvedPath = resolveProfilePath(path);
+  const existing = await loadEndpointProfile(resolvedPath);
   const byHost = new Map(existing.map((entry) => [normalizeHost(entry.host), entry] as const));
   const current = byHost.get(normalized) ?? {
     host,
@@ -115,6 +125,15 @@ export async function recordEndpointProbeOutcome(
   };
   byHost.set(normalized, updated);
 
-  await saveEndpointProfile([...byHost.values()], path);
+  await saveEndpointProfile([...byHost.values()], resolvedPath);
 }
 
+// Backward-compatible alias used by some callers/tests.
+export async function recordEndpointProbe(
+  host: string,
+  success: boolean,
+  path = profilePath(),
+  now = new Date()
+): Promise<void> {
+  await recordEndpointProbeOutcome(host, success, path, now);
+}

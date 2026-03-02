@@ -108,6 +108,7 @@ describe("App account controls wiring", () => {
       pendingPermissions: [],
       streamingBySession: {},
       pendingPermissionsBySession: {},
+      repairConnection: vi.fn().mockResolvedValue(undefined),
       refreshNow: vi.fn().mockResolvedValue(undefined),
       resolvePermission: vi.fn().mockResolvedValue(undefined),
       runtime: null,
@@ -209,6 +210,31 @@ describe("App account controls wiring", () => {
     view.rerender(<App />);
     await act(async () => {});
     expect(screen.getByText("Daemon connection lost")).toBeInTheDocument();
+  });
+
+  it("shows auto-repair action instead of command-only daemon instructions", async () => {
+    const repairConnection = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useDaemonSessions).mockReturnValue(
+      makeDaemonState({
+        connectionState: "disconnected",
+        connectionError: "daemon unreachable",
+        repairConnection,
+      }),
+    );
+
+    render(<App />);
+
+    expect(
+      await screen.findByText(/Daemon offline\. Run auto-repair/i),
+    ).toBeInTheDocument();
+    const repairButton = screen.getByRole("button", {
+      name: /Repair daemon connection/i,
+    });
+    expect(repairButton).toBeInTheDocument();
+    expect(screen.queryByText(/opta daemon start/i)).not.toBeInTheDocument();
+
+    fireEvent.click(repairButton);
+    expect(repairConnection).toHaveBeenCalledTimes(1);
   });
 
   it("renders reconnect diagnostics endpoint and offline duration", async () => {

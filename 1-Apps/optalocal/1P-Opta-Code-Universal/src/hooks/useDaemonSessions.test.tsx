@@ -12,6 +12,7 @@ vi.mock("../lib/daemonClient", () => ({
     health: vi.fn(),
     metrics: vi.fn(),
     createSession: vi.fn(),
+    sessionEvents: vi.fn(),
     submitTurn: vi.fn(),
     resolvePermission: vi.fn(),
     cancel: vi.fn(),
@@ -58,6 +59,7 @@ describe("useDaemonSessions secure connection persistence", () => {
     delete (globalThis as { __TAURI__?: unknown }).__TAURI__;
     vi.mocked(daemonClient.health).mockResolvedValue({ status: "ok" } as never);
     vi.mocked(daemonClient.metrics).mockResolvedValue(null as never);
+    vi.mocked(daemonClient.sessionEvents).mockResolvedValue({ events: [] } as never);
   });
 
   afterEach(() => {
@@ -278,6 +280,84 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
 
     await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+  });
+
+  it("resumes websocket from max persisted seq after restart", async () => {
+    const connectAfterSeq: number[] = [];
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, _sessionId, afterSeq) => {
+        connectAfterSeq.push(afterSeq);
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "load_session_events") {
+        return [
+          JSON.stringify({ event: "turn.token", seq: 38, payload: { token: "A" } }),
+          JSON.stringify({ event: "turn.done", seq: 40, payload: {} }),
+        ];
+      }
+      if (command === "bootstrap_daemon_connection") {
+        return { host: "127.0.0.1", port: 9999 };
+      }
+      return "";
+    });
+    (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
+      core: { invoke },
+    };
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-resume");
+    });
+
+    await waitFor(() => expect(connectAfterSeq.length).toBeGreaterThan(0));
+    expect(connectAfterSeq[0]).toBe(40);
+  });
+
+  it("fetches and merges gap events after persisted cursor", async () => {
+    vi.mocked(daemonClient.sessionEvents).mockResolvedValue({
+      events: [{ event: "turn.done", seq: 3, payload: {} }],
+    } as never);
+    const connectAfterSeq: number[] = [];
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, _sessionId, afterSeq) => {
+        connectAfterSeq.push(afterSeq);
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const invoke = vi.fn(async (command: string) => {
+      if (command === "load_session_events") {
+        return [JSON.stringify({ event: "turn.start", seq: 2, payload: {} })];
+      }
+      if (command === "bootstrap_daemon_connection") {
+        return { host: "127.0.0.1", port: 9999 };
+      }
+      return "";
+    });
+    (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
+      core: { invoke },
+    };
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-gap");
+    });
+
+    expect(daemonClient.sessionEvents).toHaveBeenCalledWith(
+      expect.objectContaining({ host: "127.0.0.1", port: 9999 }),
+      "sess-gap",
+      2,
+    );
+    await waitFor(() => expect(connectAfterSeq[0]).toBe(3));
+    await waitFor(() => {
+      const timeline = result.current.timelineBySession["sess-gap"] ?? [];
+      expect(timeline.some((item) => item.title === "Turn complete")).toBe(true);
+    });
   });
 
   it("coalesces rapid token events into one assistant chunk", async () => {

@@ -1,0 +1,80 @@
+<svg width="210" height="210" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+        <feGaussianBlur stdDeviation="3.5" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="violetBloom" x="-200%" y="-200%" width="500%" height="500%">
+        <feGaussianBlur stdDeviation="5" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <filter id="violetGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <feGaussianBlur stdDeviation="2" result="blur"/>
+        <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+      </filter>
+      <radialGradient id="voidFill" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#100e18"/>
+        <stop offset="60%"  stop-color="#0c0a14"/>
+        <stop offset="100%" stop-color="#09090b"/>
+      </radialGradient>
+      <linearGradient id="ringHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%"   stop-color="#c084fc" stop-opacity="0.9"/>
+        <stop offset="25%"  stop-color="#a855f7" stop-opacity="0.7"/>
+        <stop offset="55%"  stop-color="#7c3aed" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#4c1d95" stop-opacity="0.15"/>
+      </linearGradient>
+      <radialGradient id="centreBloom" cx="50%" cy="50%" r="50%">
+        <stop offset="0%"   stop-color="#d8b4fe" stop-opacity="0.8"/>
+        <stop offset="40%"  stop-color="#a855f7" stop-opacity="0.4"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+      <radialGradient id="outerGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="70%"  stop-color="#a855f7" stop-opacity="0"/>
+        <stop offset="85%"  stop-color="#a855f7" stop-opacity="0.05"/>
+        <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+
+    <circle cx="105" cy="105" r="100" fill="url(#outerGlow)"/>
+    <circle cx="105" cy="105" r="88" fill="url(#voidFill)"/>
+    <circle cx="105" cy="105" r="96" stroke="#a855f7" stroke-width="6" stroke-opacity="0.06" fill="none"/>
+    <circle cx="105" cy="105" r="93" stroke="#a855f7" stroke-width="3" stroke-opacity="0.10" fill="none"/>
+    <circle cx="105" cy="105" r="90" stroke="url(#ringHighlight)" stroke-width="1.6" fill="none" filter="url(#ringGlow)"/>
+    <circle cx="105" cy="105" r="87" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.12" fill="none"/>
+
+    <g transform="translate(105, 105)">
+      <!-- === BACKGROUND MARK: Tensor / Parameter Grid === -->
+      <g filter="url(#ringGlow)">
+        <!-- Complex technical framework representing neural network layers -->
+        <polygon points="0,-48 41.5,-24 41.5,24 0,48 -41.5,24 -41.5,-24" fill="none" stroke="#a855f7" stroke-width="0.5" stroke-opacity="0.2"/>
+        <polygon points="0,-32 27.7,-16 27.7,16 0,32 -27.7,16 -27.7,-16" fill="none" stroke="#a855f7" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="2 4"/>
+        
+        <!-- Connecting nodes -->
+        <circle cx="0" cy="-48" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+        <circle cx="41.5" cy="-24" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+        <circle cx="41.5" cy="24" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+        <circle cx="0" cy="48" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+        <circle cx="-41.5" cy="24" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+        <circle cx="-41.5" cy="-24" r="1.5" fill="#a855f7" fill-opacity="0.6"/>
+      </g>
+
+      <!-- === FOREGROUND MARK: The CPU/Engine Core === -->
+      <!-- Central processing unit (Square diamond / Octahedron) -->
+      <path d="M0 -18 L18 0 L0 18 L-18 0 Z" fill="none" stroke="#a855f7" stroke-width="3" filter="url(#violetBloom)" stroke-linejoin="round" opacity="0.9"/>
+      <path d="M0 -18 L18 0 L0 18 L-18 0 Z" fill="none" stroke="#fff" stroke-width="1" stroke-linejoin="round" opacity="0.6"/>
+      
+      <!-- Inner core data flow -->
+      <path d="M-8 0 L8 0 M0 -8 L0 8" stroke="#a855f7" stroke-width="2" filter="url(#violetGlow)" stroke-linecap="round" opacity="0.8"/>
+      <circle cx="0" cy="0" r="3" fill="#ffffff" filter="url(#violetBloom)" opacity="0.9"/>
+      
+      <!-- Peripheral "Pins" connecting to the neural grid -->
+      <line x1="22" y1="0" x2="32" y2="0" stroke="#a855f7" stroke-width="2" filter="url(#violetGlow)" stroke-linecap="round"/>
+      <line x1="-22" y1="0" x2="-32" y2="0" stroke="#a855f7" stroke-width="2" filter="url(#violetGlow)" stroke-linecap="round"/>
+      <line x1="0" y1="22" x2="0" y2="32" stroke="#a855f7" stroke-width="2" filter="url(#violetGlow)" stroke-linecap="round"/>
+      <line x1="0" y1="-22" x2="0" y2="-32" stroke="#a855f7" stroke-width="2" filter="url(#violetGlow)" stroke-linecap="round"/>
+
+    </g>
+
+    <circle cx="105" cy="105" r="32" fill="url(#centreBloom)" fill-opacity="0.2"/>
+
+  </svg>

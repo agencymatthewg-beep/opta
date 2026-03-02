@@ -10,13 +10,18 @@ import type {
 } from "./types";
 import "./app.css";
 
-// App Logo mapping (Strictly Opta Local Logos only)
+// App Logo mapping (Strictly Opta Local Logos only, pure SVGs)
 const LOGOS: Record<string, string> = {
-  "opta-lmx": "/logos/opta-lmx-logo-final.png",
-  "opta-cli": "/logos/opta-cli-logo-final.png",
-  "opta-code-universal": "/logos/opta-code-logo-final.png",
-  "opta-daemon": "/logos/opta-status-logo-final.png", 
-  "default": "/logos/opta-local-logo-final.png", // Fallback to Local dashboard logo
+  "opta-lmx": "/logos/opta-lmx-mark.svg",
+  "opta-cli": "/logos/opta-cli-mark.svg",
+  "opta-code-universal": "/logos/opta-code-mark.svg",
+  "opta-local": "/logos/opta-local-mark.svg",
+  "opta-accounts": "/logos/opta-accounts-mark.svg",
+  "opta-status": "/logos/opta-status-mark.svg",
+  "opta-learn": "/logos/opta-learn-mark.svg",
+  "opta-help": "/logos/opta-help-mark.svg",
+  "opta-daemon": "/logos/opta-status-mark.svg", // Using status logo for daemon
+  "default": "/logos/opta-local-mark.svg",
 };
 
 const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
@@ -25,13 +30,6 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
     updatedAt: "preview",
     apps: [
       {
-        id: "opta-lmx",
-        name: "Opta LMX",
-        description: "The core local inference engine. Manage your models, endpoints, and local API traffic.",
-        version: "stable-preview",
-        website: "https://lmx.optalocal.com",
-      },
-      {
         id: "opta-cli",
         name: "Opta CLI",
         description: "Command-line interface for local orchestration, model downloading, and stack management.",
@@ -39,11 +37,53 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
         website: "https://init.optalocal.com/downloads/cli",
       },
       {
+        id: "opta-lmx",
+        name: "Opta LMX",
+        description: "The core local inference engine. Manage your models, endpoints, and local API traffic.",
+        version: "stable-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
         id: "opta-code-universal",
         name: "Opta Code",
         description: "Desktop IDE surface powered by your local LMX endpoints.",
         version: "stable-preview",
         website: "https://init.optalocal.com/apps/opta-code",
+      },
+      {
+        id: "opta-local",
+        name: "Opta Local",
+        description: "Web management dashboard for the Opta ecosystem.",
+        version: "stable-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
+        id: "opta-accounts",
+        name: "Opta Accounts",
+        description: "Manage your local identity, sync preferences, and cloud backups.",
+        version: "stable-preview",
+        website: "https://accounts.optalocal.com",
+      },
+      {
+        id: "opta-status",
+        name: "Opta Status",
+        description: "System health monitoring and service status.",
+        version: "stable-preview",
+        website: "https://status.optalocal.com",
+      },
+      {
+        id: "opta-learn",
+        name: "Opta Learn",
+        description: "Discovery and guide portal.",
+        version: "stable-preview",
+        website: "https://learn.optalocal.com",
+      },
+      {
+        id: "opta-help",
+        name: "Opta Help",
+        description: "Technical reference documentation.",
+        version: "stable-preview",
+        website: "https://help.optalocal.com",
       },
       {
         id: "opta-daemon",
@@ -61,30 +101,6 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
   },
 };
 
-// Calculate fixed arc positions along the left side
-const calculateArcPositions = (count: number) => {
-  const positions = [];
-  // For 4 items, position them nicely along a curve.
-  const spread = 80; // percentage height spread
-  const startY = 10; 
-  
-  for (let i = 0; i < count; i++) {
-    const progress = count > 1 ? i / (count - 1) : 0.5; // 0 to 1
-    
-    // y goes from 10% to 90%
-    const y = startY + progress * spread;
-    
-    // x curves outward in the middle. Max X at progress = 0.5
-    // Parabola equation: x = a * (progress - 0.5)^2 + k
-    // Let max x (k) be 80px, and at progress 0/1 x = 0px
-    // 0 = a * (0.5)^2 + 80 -> a = -80 / 0.25 = -320
-    const x = -320 * Math.pow(progress - 0.5, 2) + 80;
-
-    positions.push({ left: `${x}px`, top: `${y}%` });
-  }
-  return positions;
-};
-
 function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -97,7 +113,6 @@ function ParticleBackground() {
     let animationFrameId: number;
 
     const resize = () => {
-      // The canvas sits inside a flex container, so we read its parent dimensions or use absolute inset
       const parent = c.parentElement;
       if (parent) {
         c.width = parent.clientWidth;
@@ -107,87 +122,38 @@ function ParticleBackground() {
     resize();
     window.addEventListener("resize", resize);
 
-    const cx = c.width * 0.35; // Focus point on the left where the arc is
+    const cx = c.width / 2; 
     const cy = c.height / 2;
 
     const particles: any[] = [];
-    const N = 150;
-    for (let i = 0; i < N; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const t = Math.pow(Math.random(), 2.2);
-      const r = 30 + t * 400; 
-      const distFactor = 1 - (r / 500);
-      const violet = Math.random() > 0.35;
+    for (let i = 0; i < 200; i++) {
       particles.push({
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-        r: (0.4 + Math.random() * 1.6) * (0.4 + Math.max(0, distFactor) * 0.8),
-        alpha: (0.06 + Math.random() * 0.25) * (0.3 + Math.max(0, distFactor) * 0.9),
-        violet,
-        speed: (Math.random() * 0.2 + 0.05) * (Math.random() > 0.5 ? 1 : -1)
+        x: Math.random() * c.width,
+        y: Math.random() * c.height,
+        size: Math.random() * 2,
+        speedY: -(Math.random() * 0.3 + 0.05),
+        speedX: (Math.random() - 0.5) * 0.2
       });
     }
 
-    const sparks: any[] = [];
-    for (let i = 0; i < 40; i++) {
-      const angle = Math.random() * Math.PI * 2;
-      const t = Math.pow(Math.random(), 3.0);
-      const r = 55 + t * 200;
-      const nearness = 1 - (r / 300);
-      sparks.push({
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r,
-        r: (0.6 + Math.random() * 1.0) * (0.5 + Math.max(0, nearness)),
-        alpha: (0.4 + Math.random() * 0.6) * (0.4 + Math.max(0, nearness) * 0.7),
-        violet: Math.random() > 0.25,
-        speed: (Math.random() * 0.5 + 0.1) * (Math.random() > 0.5 ? 1 : -1)
-      });
-    }
-
-    let time = 0;
     const draw = () => {
       ctx.clearRect(0, 0, c.width, c.height);
-      time += 0.01;
 
-      // Glow behind the arc
-      const core = ctx.createRadialGradient(cx, cy, 0, cx, cy, 250);
-      core.addColorStop(0, "rgba(168,85,247,0.08)");
-      core.addColorStop(0.4, "rgba(168,85,247,0.04)");
-      core.addColorStop(1, "rgba(168,85,247,0.00)");
-      ctx.fillStyle = core;
+      const glow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 400);
+      glow.addColorStop(0, "rgba(168,85,247,0.12)");
+      glow.addColorStop(1, "transparent");
+      ctx.fillStyle = glow;
       ctx.fillRect(0, 0, c.width, c.height);
 
       particles.forEach((p) => {
-        const dx = p.x - cx;
-        const dy = p.y - cy;
-        const angle = Math.atan2(dy, dx) + p.speed * 0.01;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        p.x = cx + Math.cos(angle) * dist;
-        p.y = cy + Math.sin(angle) * dist;
-
+        p.y += p.speedY;
+        p.x += p.speedX;
+        if (p.y < 0) p.y = c.height;
+        if (p.x < 0) p.x = c.width;
+        if (p.x > c.width) p.x = 0;
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.violet
-          ? `rgba(168,85,247,${p.alpha})`
-          : `rgba(250,250,250,${p.alpha * 0.6})`;
-        ctx.fill();
-      });
-
-      sparks.forEach((p) => {
-        const dx = p.x - cx;
-        const dy = p.y - cy;
-        const angle = Math.atan2(dy, dx) + p.speed * 0.015;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        p.x = cx + Math.cos(angle) * dist;
-        p.y = cy + Math.sin(angle) * dist;
-
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = p.violet
-          ? `rgba(192,132,252,${p.alpha})`
-          : `rgba(255,255,255,${p.alpha * 0.7})`;
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(168,85,247,0.4)`;
         ctx.fill();
       });
 
@@ -286,97 +252,119 @@ export function App() {
   };
 
   const apps = manifestResp?.manifest.apps ?? [];
-  const positions = calculateArcPositions(apps.length);
+  
+  // Extract core apps
+  const coreCli = apps.find(a => a.id === "opta-cli");
+  const coreLmx = apps.find(a => a.id === "opta-lmx");
+  const coreCode = apps.find(a => a.id === "opta-code-universal");
+  
+  // Extract support apps
+  const supportApps = apps.filter(a => !["opta-cli", "opta-lmx", "opta-code-universal"].includes(a.id));
 
   const displayApp = hoveredApp;
   const isInstalled = displayApp ? installedIndex.has(displayApp.id) : false;
   const isPending = displayApp ? pendingKey?.includes(displayApp.id) : false;
 
+  // Floating animation delays
+  const getFloatingClass = (index: number) => `floating-${(index % 5) + 1}`;
+
+  const renderAppNode = (app: ManifestApp, customClass: string = "", animIndex: number) => {
+    if (!app) return null;
+    const logoPath = LOGOS[app.id] || LOGOS["default"];
+    const isAppInstalled = installedIndex.has(app.id);
+    const isDaemon = app.id === "opta-daemon";
+    const isActive = isDaemon ? daemon?.running : isAppInstalled;
+    
+    return (
+      <div 
+        key={app.id} 
+        className={`app-item ${customClass} ${getFloatingClass(animIndex)}`} 
+        onMouseEnter={() => setHoveredApp(app)}
+        onMouseLeave={() => setHoveredApp(null)}
+      >
+        <div className="tooltip">{app.name}</div>
+        <div className="purple-circle"></div>
+        <img 
+          src={logoPath} 
+          className="app-logo" 
+          alt={app.name} 
+          onError={(e) => { 
+            if (e.currentTarget.src !== LOGOS["default"]) {
+              e.currentTarget.src = LOGOS["default"]; 
+            }
+          }} 
+        />
+        {isActive && <div className="app-status-pip active"></div>}
+      </div>
+    );
+  };
+
   return (
     <div className="window-app">
       <ParticleBackground />
 
-      <div className="sidebar">
-        <div className="sidebar-logo"></div>
-        <div className="sidebar-text">OPTA INIT</div>
+      <div className="header">
+        <div className="sidebar-text">INIT MANAGER</div>
+        <h1 className="main-title">{displayApp ? displayApp.name : "Select Environment"}</h1>
+        {displayApp && (
+          <p className="app-desc-text fade-in">{displayApp.description}</p>
+        )}
       </div>
       
-      <div className="arc-container">
-        {apps.map((app, i) => {
-          const pos = positions[i] || { left: '0px', top: '50%' };
-          const logoPath = LOGOS[app.id] || LOGOS["default"];
-          const isAppInstalled = installedIndex.has(app.id);
-          const isDaemon = app.id === "opta-daemon";
-          const isActive = isDaemon ? daemon?.running : isAppInstalled;
-          
-          return (
-            <div 
-              key={app.id} 
-              className="app-item" 
-              style={{ left: pos.left, top: pos.top }}
-              onMouseEnter={() => setHoveredApp(app)}
-              onMouseLeave={() => setHoveredApp(null)}
-            >
-              <div className="purple-circle"></div>
-              <img src={logoPath} className="app-logo" alt={app.name} onError={(e) => { e.currentTarget.src = LOGOS["default"]; }} />
-              
-              {isActive && <div className="app-status-pip active"></div>}
-            </div>
-          );
-        })}
+      <div className="cluster-container">
+        {/* CORE ROW: CLI - LMX - CODE */}
+        <div className="core-row">
+          {coreCli && renderAppNode(coreCli, "", 0)}
+          {coreLmx && renderAppNode(coreLmx, "lmx-item", 1)}
+          {coreCode && renderAppNode(coreCode, "", 2)}
+        </div>
+        
+        {/* SUPPORT ROW */}
+        <div className="support-row">
+          {supportApps.map((app, i) => renderAppNode(app, "support-item", i + 3))}
+        </div>
       </div>
 
-      <div className="main-area">
-        <div className="info-panel">
-          <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
-            <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
-            {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
-            {pendingKey?.includes('daemon') && " (Working...)"}
-          </div>
-          
-          <div className="info-content">
-            {displayApp ? (
-              <div className="fade-in">
-                <h1 className="app-title">{displayApp.name}</h1>
-                <p className="app-desc">{displayApp.description}</p>
-                
-                <div className="action-buttons">
-                  {displayApp.id === "opta-daemon" ? (
-                    <button 
-                      className="btn primary" 
-                      disabled={pendingKey !== null}
-                      onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
-                    >
-                      {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
-                    </button>
-                  ) : isInstalled ? (
-                    <>
-                      <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "launch")}>
-                        {isPending ? "Working..." : "Launch App"}
-                      </button>
-                      <button className="btn secondary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "update")}>
-                        Update
-                      </button>
-                    </>
-                  ) : (
-                    <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "install")}>
-                      {isPending ? "Installing..." : "Install App"}
-                    </button>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="fade-in">
-                <h1 className="app-title default-title">Opta Stack</h1>
-                <p className="app-desc">Hover over the orbital arc to interact with your installed tools and runtimes.</p>
-                <div className="action-buttons">
-                  <button className="btn primary" onClick={() => void refreshData()} disabled={pendingKey !== null}>
-                    Refresh Stack
+      <div className="bottom-panel">
+        <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
+          <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
+          {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
+          {pendingKey?.includes('daemon') && " (Working...)"}
+        </div>
+        
+        <div className="action-buttons">
+          {displayApp ? (
+            <div className="fade-in">
+              {displayApp.id === "opta-daemon" ? (
+                <button 
+                  className="btn primary" 
+                  disabled={pendingKey !== null}
+                  onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
+                >
+                  {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
+                </button>
+              ) : isInstalled ? (
+                <>
+                  <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "launch")}>
+                    {isPending ? "Working..." : "Launch App"}
                   </button>
-                </div>
-              </div>
-            )}
-          </div>
+                  <button className="btn secondary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "update")}>
+                    Update
+                  </button>
+                </>
+              ) : (
+                <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "install")}>
+                  {isPending ? "Installing..." : "Install App"}
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="fade-in">
+              <button className="btn primary" onClick={() => void refreshData()} disabled={pendingKey !== null}>
+                Refresh Stack
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

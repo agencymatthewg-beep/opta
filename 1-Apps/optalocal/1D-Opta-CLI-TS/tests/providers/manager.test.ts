@@ -8,36 +8,51 @@ import { DEFAULT_CONFIG } from '../../src/core/config.js';
 // ---------------------------------------------------------------------------
 
 vi.mock('../../src/providers/lmx.js', () => ({
-  LmxProvider: vi.fn().mockImplementation((config: OptaConfig) => ({
-    name: 'lmx',
-    config,
-    getClient: vi.fn().mockResolvedValue({}),
-    listModels: vi.fn().mockResolvedValue([{ id: 'test-model', name: 'Test Model' }]),
-    health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 }),
-  })),
+  LmxProvider: class MockLmxProvider {
+    readonly name = 'lmx';
+    readonly config: OptaConfig;
+    readonly getClient = vi.fn().mockResolvedValue({});
+    readonly listModels = vi
+      .fn()
+      .mockResolvedValue([{ id: 'test-model', name: 'Test Model' }]);
+    readonly health = vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 });
+
+    constructor(config: OptaConfig) {
+      this.config = config;
+    }
+  },
 }));
 
 vi.mock('../../src/providers/anthropic.js', () => ({
-  AnthropicProvider: vi.fn().mockImplementation((config: OptaConfig) => ({
-    name: 'anthropic',
-    config,
-    getClient: vi.fn().mockResolvedValue({}),
-    listModels: vi.fn().mockResolvedValue([
+  AnthropicProvider: class MockAnthropicProvider {
+    readonly name = 'anthropic';
+    readonly config: OptaConfig;
+    readonly getClient = vi.fn().mockResolvedValue({});
+    readonly listModels = vi.fn().mockResolvedValue([
       { id: 'claude-opus-4-6', name: 'Claude Opus 4.6', contextLength: 200000 },
-    ]),
-    health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 50 }),
-  })),
+    ]);
+    readonly health = vi.fn().mockResolvedValue({ ok: true, latencyMs: 50 });
+
+    constructor(config: OptaConfig) {
+      this.config = config;
+    }
+  },
 }));
 
 vi.mock('../../src/providers/fallback.js', () => ({
-  FallbackProvider: vi.fn().mockImplementation((primary: unknown, config: OptaConfig) => ({
-    name: 'lmx+fallback',
-    primary,
-    config,
-    getClient: vi.fn().mockResolvedValue({}),
-    listModels: vi.fn().mockResolvedValue([]),
-    health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 }),
-  })),
+  FallbackProvider: class MockFallbackProvider {
+    readonly name = 'lmx+fallback';
+    readonly primary: unknown;
+    readonly config: OptaConfig;
+    readonly getClient = vi.fn().mockResolvedValue({});
+    readonly listModels = vi.fn().mockResolvedValue([]);
+    readonly health = vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 });
+
+    constructor(primary: unknown, config: OptaConfig) {
+      this.primary = primary;
+      this.config = config;
+    }
+  },
 }));
 
 vi.mock('../../src/lmx/api-key.js', () => ({

@@ -33,7 +33,7 @@
             "platform": "macos",
             "arch": "universal",
             "packageType": "pkg",
-            "url": "https://downloads.optalocal.com/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-macos-universal.pkg",
+            "url": "https://init.optalocal.com/downloads/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-macos-universal.pkg",
             "sizeBytes": 90591232,
             "checksum": {
               "algorithm": "sha256",
@@ -41,7 +41,7 @@
             },
             "signature": {
               "type": "codesign",
-              "url": "https://downloads.optalocal.com/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-macos-universal.pkg.sig",
+              "url": "https://init.optalocal.com/downloads/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-macos-universal.pkg.sig",
               "certificate": "Developer ID Installer: Opta Local Pty Ltd (ABCD123456)"
             }
           }
@@ -51,7 +51,7 @@
             "platform": "windows",
             "arch": "x64",
             "packageType": "msi",
-            "url": "https://downloads.optalocal.com/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-windows-x64.msi",
+            "url": "https://init.optalocal.com/downloads/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-windows-x64.msi",
             "sizeBytes": 92766208,
             "checksum": {
               "algorithm": "sha256",
@@ -59,7 +59,7 @@
             },
             "signature": {
               "type": "authenticode",
-              "url": "https://downloads.optalocal.com/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-windows-x64.msi.sig",
+              "url": "https://init.optalocal.com/downloads/opta-cli/v0.7.0-beta.2/opta-cli-0.7.0-beta.2-windows-x64.msi.sig",
               "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
             }
           }
@@ -82,7 +82,7 @@
             "platform": "macos",
             "arch": "arm64",
             "packageType": "tar.gz",
-            "url": "https://downloads.optalocal.com/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-macos-arm64.tar.gz",
+            "url": "https://init.optalocal.com/downloads/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-macos-arm64.tar.gz",
             "sizeBytes": 223470592,
             "checksum": {
               "algorithm": "sha256",
@@ -90,7 +90,7 @@
             },
             "signature": {
               "type": "cosign",
-              "url": "https://downloads.optalocal.com/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-macos-arm64.tar.gz.sig",
+              "url": "https://init.optalocal.com/downloads/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-macos-arm64.tar.gz.sig",
               "keyId": "cosign/opta-lmx-beta"
             }
           }
@@ -100,7 +100,7 @@
             "platform": "windows",
             "arch": "x64",
             "packageType": "zip",
-            "url": "https://downloads.optalocal.com/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-windows-x64.zip",
+            "url": "https://init.optalocal.com/downloads/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-windows-x64.zip",
             "sizeBytes": 237449216,
             "checksum": {
               "algorithm": "sha256",
@@ -108,7 +108,7 @@
             },
             "signature": {
               "type": "cosign",
-              "url": "https://downloads.optalocal.com/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-windows-x64.zip.sig",
+              "url": "https://init.optalocal.com/downloads/opta-lmx/v0.7.0-beta.2/opta-lmx-0.7.0-beta.2-windows-x64.zip.sig",
               "keyId": "cosign/opta-lmx-beta"
             }
           }
@@ -131,7 +131,7 @@
             "platform": "macos",
             "arch": "universal",
             "packageType": "dmg",
-            "url": "https://downloads.optalocal.com/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-macos-universal.dmg",
+            "url": "https://init.optalocal.com/downloads/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-macos-universal.dmg",
             "sizeBytes": 178335744,
             "checksum": {
               "algorithm": "sha256",
@@ -139,7 +139,7 @@
             },
             "signature": {
               "type": "codesign",
-              "url": "https://downloads.optalocal.com/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-macos-universal.dmg.sig",
+              "url": "https://init.optalocal.com/downloads/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-macos-universal.dmg.sig",
               "certificate": "Developer ID Application: Opta Local Pty Ltd (ABCD123456)"
             }
           }
@@ -149,7 +149,7 @@
             "platform": "windows",
             "arch": "x64",
             "packageType": "exe",
-            "url": "https://downloads.optalocal.com/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-windows-x64.exe",
+            "url": "https://init.optalocal.com/downloads/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-windows-x64.exe",
             "sizeBytes": 186703872,
             "checksum": {
               "algorithm": "sha256",
@@ -157,7 +157,7 @@
             },
             "signature": {
               "type": "authenticode",
-              "url": "https://downloads.optalocal.com/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-windows-x64.exe.sig",
+              "url": "https://init.optalocal.com/downloads/opta-code-universal/v0.6.0-beta.1/opta-code-universal-0.6.0-beta.1-windows-x64.exe.sig",
               "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
             }
           }
@@ -180,7 +180,7 @@
             "platform": "macos",
             "arch": "universal",
             "packageType": "pkg",
-            "url": "https://downloads.optalocal.com/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-macos-universal.pkg",
+            "url": "https://init.optalocal.com/downloads/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-macos-universal.pkg",
             "sizeBytes": 43810816,
             "checksum": {
               "algorithm": "sha256",
@@ -188,7 +188,7 @@
             },
             "signature": {
               "type": "codesign",
-              "url": "https://downloads.optalocal.com/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-macos-universal.pkg.sig",
+              "url": "https://init.optalocal.com/downloads/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-macos-universal.pkg.sig",
               "certificate": "Developer ID Installer: Opta Local Pty Ltd (ABCD123456)"
             }
           }
@@ -198,7 +198,7 @@
             "platform": "windows",
             "arch": "x64",
             "packageType": "msi",
-            "url": "https://downloads.optalocal.com/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-windows-x64.msi",
+            "url": "https://init.optalocal.com/downloads/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-windows-x64.msi",
             "sizeBytes": 40566784,
             "checksum": {
               "algorithm": "sha256",
@@ -206,7 +206,7 @@
             },
             "signature": {
               "type": "authenticode",
-              "url": "https://downloads.optalocal.com/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-windows-x64.msi.sig",
+              "url": "https://init.optalocal.com/downloads/opta-daemon/v0.5.0-beta.1/opta-daemon-0.5.0-beta.1-windows-x64.msi.sig",
               "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
             }
           }

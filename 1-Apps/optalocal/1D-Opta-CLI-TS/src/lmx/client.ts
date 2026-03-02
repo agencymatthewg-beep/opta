@@ -16,6 +16,7 @@ import type {
   LmxBenchmarkResultsOptions,
   LmxConfigReloadResult,
   LmxDeleteResponse,
+  LmxDiscoveryDoc,
   LmxDownloadProgress,
   LmxDownloadResponse,
   LmxEmbeddingsRequest,
@@ -105,7 +106,7 @@ import {
   parseApiErrorMessage,
   RETRYABLE_HTTP_STATUS,
 } from './helpers.js';
-import { recordEndpointProbe } from './endpoint-profile.js';
+import { recordEndpointProbeOutcome } from './endpoint-profile.js';
 
 // Re-export everything from submodules for backward compatibility.
 export * from './types.js';
@@ -337,7 +338,7 @@ export class LmxClient {
 
         const data: unknown = await response.json();
         this.clearHostCooldown(host);
-        void recordEndpointProbe(host, true).catch(() => {});
+        void recordEndpointProbeOutcome(host, true).catch(() => {});
         this.setActiveHost(host);
         if (validator) return validator.parse(data);
         return data as T;
@@ -345,7 +346,7 @@ export class LmxClient {
 
       if (hostFailure) {
         this.markHostFailure(host);
-        void recordEndpointProbe(host, false).catch(() => {});
+        void recordEndpointProbeOutcome(host, false).catch(() => {});
         hostFailures.push({ host, detail: hostFailure });
       }
     }
@@ -363,6 +364,17 @@ export class LmxClient {
 
   async health(opts?: LmxRequestOptions): Promise<LmxHealthResponse> {
     return this.fetch<LmxHealthResponse>('/healthz', undefined, undefined, opts);
+  }
+
+  async discovery(opts?: LmxRequestOptions): Promise<LmxDiscoveryDoc> {
+    try {
+      return await this.fetch<LmxDiscoveryDoc>('/.well-known/opta-lmx', undefined, undefined, opts);
+    } catch (err) {
+      if (err instanceof LmxApiError && err.status === 404) {
+        return this.fetch<LmxDiscoveryDoc>('/v1/discovery', undefined, undefined, opts);
+      }
+      throw err;
+    }
   }
 
   async status(opts?: LmxRequestOptions): Promise<LmxStatusResponse> {

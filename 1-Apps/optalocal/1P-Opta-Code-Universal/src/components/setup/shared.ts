@@ -54,7 +54,7 @@ export const WIZARD_THEME = {
 
 export const DEFAULT_FORM: WizardFormData = {
   provider: "lmx",
-  lmxHost: "192.168.188.11",
+  lmxHost: "127.0.0.1",
   lmxPort: 1234,
   anthropicKey: "",
   configDir: "~/.config/opta",

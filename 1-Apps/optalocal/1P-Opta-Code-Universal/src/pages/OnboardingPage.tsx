@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Terminal, WifiOff, Copy, Check, ChevronDown, ChevronRight } from "lucide-react";
+import { Wrench, WifiOff, ChevronDown, ChevronRight } from "lucide-react";
 import { usePlatform } from "../hooks/usePlatform.js";
 
 interface Props {
@@ -9,25 +9,9 @@ interface Props {
   onDismiss: () => void;
 }
 
-const INSTALL_CMD = "npm install -g @opta/cli";
-const DAEMON_CMD = "opta daemon start";
-const DAEMON_BG_CMD = "opta daemon start --background";
-
 export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
-  const [copied, setCopied] = useState<string | null>(null);
   const [showRemote, setShowRemote] = useState(false);
   const platform = usePlatform();
-  const terminalName = platform === "windows" ? "PowerShell" : "Terminal";
-
-  const copy = async (text: string, key: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(key);
-      window.setTimeout(() => setCopied(null), 2000);
-    } catch {
-      // Clipboard unavailable — silently ignore
-    }
-  };
 
   return (
     <div className="onboarding-overlay">
@@ -47,8 +31,8 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
           </div>
           <h2>Daemon not detected</h2>
           <p>
-            Opta Code connects to the Opta CLI daemon running on your machine.
-            Follow the steps below to get started.
+            Opta Code can repair the local daemon automatically. Start with the
+            guided repair action below.
           </p>
         </div>
 
@@ -56,40 +40,28 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
           <li>
             <span className="step-number">1</span>
             <div className="step-body">
-              <strong>Install the Opta CLI</strong>
-              <p>Skip this step if you already have it installed.</p>
-              <div className="onboarding-command">
-                <code>{INSTALL_CMD}</code>
-                <button
-                  type="button"
-                  onClick={() => void copy(INSTALL_CMD, "install")}
-                  aria-label="Copy install command"
-                >
-                  {copied === "install" ? <Check size={13} /> : <Copy size={13} />}
-                </button>
-              </div>
+              <strong>Run automatic repair</strong>
+              <p>
+                This attempts to bootstrap the daemon and refresh the connection
+                state without manual terminal commands.
+              </p>
             </div>
           </li>
 
           <li>
             <span className="step-number">2</span>
             <div className="step-body">
-              <strong>Start the daemon</strong>
-              <p>Run this in {terminalName}, then come back here:</p>
-              <div className="onboarding-command">
-                <code>{DAEMON_CMD}</code>
-                <button
-                  type="button"
-                  onClick={() => void copy(DAEMON_CMD, "daemon")}
-                  aria-label="Copy daemon command"
-                >
-                  {copied === "daemon" ? <Check size={13} /> : <Copy size={13} />}
-                </button>
-              </div>
+              <strong>Repair connection</strong>
+              <button
+                type="button"
+                className="onboarding-connect"
+                onClick={onRetry}
+              >
+                <Wrench size={15} />
+                Repair daemon connection
+              </button>
               <p className="step-note">
-                Keep {terminalName} open, or run{" "}
-                <code>{DAEMON_BG_CMD}</code> to detach it.
-                Listens on port <code>{port}</code> by default.
+                Opta is currently targeting <code>{host}:{port}</code>.
               </p>
             </div>
           </li>
@@ -97,15 +69,11 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
           <li>
             <span className="step-number">3</span>
             <div className="step-body">
-              <strong>Connect</strong>
-              <button
-                type="button"
-                className="onboarding-connect"
-                onClick={onRetry}
-              >
-                <Terminal size={15} />
-                Try connecting to {host}:{port}
-              </button>
+              <strong>If repair fails</strong>
+              <p>
+                Open Setup Wizard to re-detect your daemon endpoint and verify
+                connection settings.
+              </p>
             </div>
           </li>
         </ol>

@@ -271,6 +271,11 @@ export function useSessionSockets({
           return;
         }
 
+        const persistedCursor = seqCursorRef.current[sessionId] ?? 0;
+        if (persistedCursor > cursor.seq) {
+          cursor.seq = persistedCursor;
+        }
+
         innerHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
           onOpen: () => {
             if (!isCurrentGeneration()) return;
