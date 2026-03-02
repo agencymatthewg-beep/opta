@@ -5,6 +5,7 @@ export const browserAutomationGuide: Guide = {
   title: 'Browser Automation Deep Dive',
   app: 'general',
   category: 'feature',
+  template: 'feature-deep-dive',
   summary: 'Understand how the Opta agent navigates the web, executes JavaScript, and interacts with UI elements using Playwright-based browser automation.',
   tags: ['browser', 'playwright', 'automation', 'mcp', 'agent'],
   updatedAt: '2026-03-02',

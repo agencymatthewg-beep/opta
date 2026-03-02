@@ -3,8 +3,8 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import { Search, ChevronLeft, Info } from 'lucide-react';
-import type { AppSlug, Category, Guide, GuideSection } from '@/content/guides';
-import { appColors, appLabels } from '@/content/guides';
+import type { Guide } from '@/content/guides';
+import { appColors } from '@/content/guides';
 
 export function GuideViewer({ guide }: { guide: Guide }) {
   useEffect(() => {

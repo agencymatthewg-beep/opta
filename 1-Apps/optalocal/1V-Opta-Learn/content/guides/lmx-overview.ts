@@ -5,6 +5,7 @@ export const lmxOverview: Guide = {
   title: 'Getting Started with LMX',
   app: 'lmx',
   category: 'getting-started',
+  template: 'process-workflow',
   summary:
     'Learn how to use the LMX dashboard to load models, run inference, and manage your local AI server.',
   tags: ['lmx', 'dashboard', 'inference', 'models', 'server', 'getting started'],

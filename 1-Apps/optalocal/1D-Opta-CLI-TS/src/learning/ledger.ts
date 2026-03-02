@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, readFile, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   LearningLedgerEntrySchema,
@@ -100,6 +100,17 @@ async function readLedgerFile(path: string): Promise<string> {
   }
 }
 
+async function appendLedgerLine(path: string, line: string): Promise<void> {
+  const handle = await open(path, 'a');
+  try {
+    await handle.writeFile(line, 'utf-8');
+    // Ensure the append is durable before releasing the inter-process lock.
+    await handle.sync();
+  } finally {
+    await handle.close().catch(() => {});
+  }
+}
+
 export async function appendLedgerEntry(
   entry: LearningLedgerEntry,
   options: LedgerStoreOptions = {},
@@ -114,17 +125,10 @@ export async function appendLedgerEntry(
 
   await mkdir(ledgerDir, { recursive: true });
   const lockHandle = await acquireLock(lockPath, lockTimeoutMs, lockRetryMs);
-  let tempPath = '';
 
   try {
-    const current = await readLedgerFile(ledgerPath);
-    tempPath = `${ledgerPath}.${process.pid}.${Date.now()}.tmp`;
-    await writeFile(tempPath, `${current}${JSON.stringify(parsed)}\n`, 'utf-8');
-    await rename(tempPath, ledgerPath);
+    await appendLedgerLine(ledgerPath, `${JSON.stringify(parsed)}\n`);
   } finally {
-    if (tempPath) {
-      await unlink(tempPath).catch(() => {});
-    }
     await lockHandle.close().catch(() => {});
     await unlink(lockPath).catch(() => {});
   }

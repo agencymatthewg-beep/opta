@@ -5,6 +5,7 @@ export const lmxOverview: Guide = {
   title: 'LMX Masterclass',
   app: 'lmx',
   category: 'reference',
+  template: 'holistic-whole-app',
   summary:
     'The comprehensive, objective guide to the Local Model eXecution engine. Understand its architecture, performance benchmarks, tradeoffs, and workflows.',
   tags: ['lmx', 'daemon', 'inference', 'models', 'server', 'masterclass', 'architecture', 'benchmarks'],

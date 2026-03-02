@@ -5,6 +5,7 @@ export const optaLocalIntro: Guide = {
   title: 'Introduction to Local',
   app: 'general',
   category: 'getting-started',
+  template: 'holistic-whole-app',
   summary: 'A private, local-first AI stack designed for developers running Apple Silicon. No cloud dependencies, no data leakage, zero monthly fees.',
   tags: ['opta local', 'intro', 'architecture', 'privacy', 'local-first'],
   updatedAt: '2026-03-02',

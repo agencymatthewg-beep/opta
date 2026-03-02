@@ -1,10 +1,11 @@
 import type { Guide } from './index';
 
 export const accountsSync: Guide = {
-  slug: 'accounts-sync',
+  slug: 'accounts',
   title: 'Accounts Local Sync',
   app: 'accounts',
   category: 'feature',
+  template: 'setting-configuration',
   summary: 'Understand how Opta Accounts securely syncs your preferences and metadata without exposing your local data to the cloud.',
   tags: ['accounts', 'sync', 'security', 'preferences'],
   updatedAt: '2026-03-02',

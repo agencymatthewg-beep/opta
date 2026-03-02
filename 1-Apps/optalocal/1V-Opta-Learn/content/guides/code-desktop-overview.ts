@@ -5,6 +5,7 @@ export const codeDesktopOverview: Guide = {
   title: 'Code Desktop Overview',
   app: 'general',
   category: 'feature',
+  template: 'feature-deep-dive',
   summary: 'Discover the Opta Code Desktop, a graphical interface for monitoring daemon activity, managing sessions, and controlling local intelligence.',
   tags: ['code desktop', 'gui', 'daemon', 'monitoring', 'sessions'],
   updatedAt: '2026-03-02',

@@ -101,6 +101,14 @@ opta doctor
 opta status --full
 ```
 
+## Dev Launch Troubleshooting
+
+If `npm run -s start` exits during startup, the usual cause is: no reachable LMX host and no Anthropic fallback key configured.
+
+- Prefer `opta tui` (or `npm run dev -- tui`) for interactive local testing.
+- Configure LMX endpoint(s): `connection.host` and optional `connection.fallbackHosts`.
+- If you want cloud fallback when LMX is unavailable, set `ANTHROPIC_API_KEY`.
+
 ## Features
 
 ### Local LLM Inference

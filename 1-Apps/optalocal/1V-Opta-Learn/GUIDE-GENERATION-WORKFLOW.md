@@ -25,6 +25,7 @@ export interface Guide {
   title: string;            // Concise, action-oriented or descriptive
   app: AppSlug;             // 'lmx' | 'cli' | 'accounts' | 'init' | 'general'
   category: Category;       // 'getting-started' | 'feature' | 'troubleshooting' | 'reference'
+  template: GuideTemplateId;// Approved template ID (required)
   summary: string;          // 1-2 sentences
   tags: string[];           // For search discoverability
   sections: GuideSection[]; // The content payload
@@ -46,16 +47,27 @@ Because the `body` and `note` fields are parsed via `dangerouslySetInnerHTML` in
 This creates a cohesive, Wikipedia-style interconnected learning network. Use the following syntax:
 
 - `<a href="/guides/cli" class="app-link link-cli">Opta CLI</a>`
-- `<a href="/guides/init" class="app-link link-init">Opta Init</a>`
 - `<a href="/guides/lmx" class="app-link link-lmx">Opta LMX</a>`
 - `<a href="/guides/accounts" class="app-link link-accounts">Opta Accounts</a>`
-- `<a href="/guides/dashboard" class="app-link link-dashboard">Opta Local Dashboard</a>`
+- `<a href="/guides/code-desktop" class="app-link link-general">Opta Code Desktop</a>`
+- `<a href="/guides/browser-automation" class="app-link link-general">Browser Automation</a>`
 
 *Note: The frontend will automatically wrap naked plain-text "Opta" mentions in the brand purple, but generating the specific `<a>` links when cross-referencing apps is a hard requirement for all guide generation.*
 
 ## 4. Types of Guides
 
 Guides must be structured based on their scope and purpose. Use the following archetypes when generating `sections`:
+
+### 4.1 Approved Template IDs (Hard Requirement)
+
+Every new guide must use one and only one approved template ID:
+
+1. `holistic-whole-app` — **L4 Masterclass extent** (widest and deepest)
+2. `feature-deep-dive` — **L3 Deep-Dive extent**
+3. `process-workflow` — **L2 Operational extent**
+4. `setting-configuration` — **L1 Reference extent** (narrowest and most precise)
+
+These four templates are the only approved structures for preserving Opta Learn aesthetic, format, and rendering behavior.
 
 ### A. Holistic Whole App Guide
 **Purpose:** An extensive, masterclass-level deep dive into a primary application (e.g., LMX Masterclass). Guides are automatically injected into an interactive sticky TOC.
@@ -103,4 +115,7 @@ When instructed to create a new guide:
 5. **Export & Register:** 
    - Create the new file in `1V-Opta-Learn/content/guides/<slug>.ts`.
    - Update `1V-Opta-Learn/content/guides/index.ts` to import the new guide and add it to the `allGuides` array.
-6. **Verify:** Check that no forbidden visual descriptors or generic AI language were used in the content strings.
+6. **Verify:** 
+   - Run `npm run guides:validate` to enforce template structure, explanation extent constraints, and internal guide-link integrity.
+   - Run `npm run lint` and ensure it passes.
+   - Check that no forbidden visual descriptors or generic AI language were used in the content strings.

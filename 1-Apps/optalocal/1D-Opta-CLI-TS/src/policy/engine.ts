@@ -1,4 +1,4 @@
-import { mkdir, open, readFile, rename, unlink, writeFile } from 'node:fs/promises';
+import { mkdir, open, unlink } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import {
   PolicyConfigSchema,
@@ -80,15 +80,14 @@ async function acquireLock(lockPath: string, timeoutMs: number, retryMs: number)
   }
 }
 
-async function readAuditFile(path: string): Promise<string> {
+async function appendAuditLine(path: string, line: string): Promise<void> {
+  const handle = await open(path, 'a');
   try {
-    return await readFile(path, 'utf-8');
-  } catch (error) {
-    const err = error as NodeJS.ErrnoException;
-    if (err.code === 'ENOENT') {
-      return '';
-    }
-    throw err;
+    await handle.writeFile(line, 'utf-8');
+    // Keep ordering + durability guarantees while lock is held.
+    await handle.sync();
+  } finally {
+    await handle.close().catch(() => {});
   }
 }
 
@@ -105,17 +104,10 @@ async function appendAuditEntryAtomic(
 
   await mkdir(auditDir, { recursive: true });
   const lockHandle = await acquireLock(lockPath, timeoutMs, retryMs);
-  let tempPath = '';
 
   try {
-    const current = await readAuditFile(auditPath);
-    tempPath = `${auditPath}.${process.pid}.${Date.now()}.tmp`;
-    await writeFile(tempPath, `${current}${JSON.stringify(entry)}\n`, 'utf-8');
-    await rename(tempPath, auditPath);
+    await appendAuditLine(auditPath, `${JSON.stringify(entry)}\n`);
   } finally {
-    if (tempPath) {
-      await unlink(tempPath).catch(() => {});
-    }
     await lockHandle.close().catch(() => {});
     await unlink(lockPath).catch(() => {});
   }

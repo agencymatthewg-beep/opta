@@ -1,10 +1,11 @@
 import type { Guide } from './index';
 
 export const cliMasterclass: Guide = {
-  slug: 'cli-masterclass',
+  slug: 'cli',
   title: 'CLI Masterclass',
   app: 'cli',
   category: 'reference',
+  template: 'holistic-whole-app',
   summary: 'A comprehensive deep dive into the Opta CLI. Master interactive chat, autonomous task execution, and local daemon orchestration right from your terminal.',
   tags: ['cli', 'terminal', 'chat', 'do', 'daemon', 'tools', 'masterclass'],
   updatedAt: '2026-03-02',

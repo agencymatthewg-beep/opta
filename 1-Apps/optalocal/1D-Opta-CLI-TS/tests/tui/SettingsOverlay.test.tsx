@@ -27,14 +27,16 @@ describe('SettingsOverlay', () => {
     expect(lastFrame()).toContain('Connection');
   });
 
-  it('shows all 5 page tabs', () => {
+  it('shows all page tabs', () => {
     const { lastFrame } = render(<SettingsOverlay {...baseProps} />);
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Connection');
     expect(frame).toContain('Models');
     expect(frame).toContain('Safety');
-    expect(frame).toContain('Paths');
+    expect(frame).toContain('System');
     expect(frame).toContain('Advanced');
+    expect(frame).toContain('Atpo');
+    expect(frame).toContain('Account');
   });
 
   it('shows current value for host setting', () => {
@@ -67,6 +69,9 @@ describe('SettingsOverlay', () => {
     await flush();
     stdin.write('5');
     await flush();
+    expect(lastFrame()).not.toContain('Response Intent Tone');
+    stdin.write(SHIFT_TAB);
+    await flush();
     expect(lastFrame()).toContain('Response Intent Tone');
   });
 
@@ -91,16 +96,21 @@ describe('SettingsOverlay', () => {
 
     stdin.write('5');
     await flush();
-    expect(lastFrame()).toContain('Response Intent Tone');
+    const optaFrame = lastFrame() ?? '';
+    expect(optaFrame).toContain('Browser Enable');
+    expect(optaFrame).not.toContain('Response Intent Tone');
+    expect(optaFrame).not.toContain('Gemini API Key');
 
     stdin.write(SHIFT_TAB);
     await flush();
-    expect(lastFrame()).toContain('Gemini API Key');
+    const advancedFrame = lastFrame() ?? '';
+    expect(advancedFrame).toContain('Response Intent Tone');
+    expect(advancedFrame).toContain('Gemini API Key');
 
     stdin.write(SHIFT_TAB);
     await flush();
     const compactFrame = lastFrame() ?? '';
-    expect(compactFrame).toContain('Browser Enabled');
+    expect(compactFrame).toContain('Browser Enable');
     expect(compactFrame).not.toContain('Response Intent Tone');
     expect(compactFrame).not.toContain('Gemini API Key');
   });

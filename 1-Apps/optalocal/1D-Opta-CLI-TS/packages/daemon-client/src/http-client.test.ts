@@ -92,4 +92,31 @@ describe('DaemonHttpClient operations APIs', () => {
     const [url] = call;
     expect(url).toBe('http://daemon.local:4317/v3/health');
   });
+
+  it('aborts long-running requests at the timeout window', async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi.fn<typeof fetch>((_input, init) => {
+        const signal = init?.signal;
+        return new Promise<Response>((_resolve, reject) => {
+          if (!signal) return;
+          if (signal.aborted) {
+            reject(new Error('aborted'));
+            return;
+          }
+          signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true });
+        });
+      });
+      const client = new DaemonHttpClient(connection, fetchImpl as unknown as typeof fetch);
+
+      const pending = expect(client.health()).rejects.toThrow(
+        'Daemon request timed out (8000ms): /v3/health'
+      );
+      await vi.advanceTimersByTimeAsync(8_000);
+      await pending;
+      expect(fetchImpl).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

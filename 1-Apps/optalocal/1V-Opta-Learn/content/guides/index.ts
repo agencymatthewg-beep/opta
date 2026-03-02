@@ -1,6 +1,13 @@
 export type AppSlug = 'lmx' | 'cli' | 'accounts' | 'init' | 'general';
 export type Category = 'getting-started' | 'feature' | 'troubleshooting' | 'reference';
 
+import {
+  type ExplanationExtent,
+  type GuideTemplateId,
+  getTemplateDefinition,
+  validateGuideByTemplate,
+} from './templates';
+
 export interface GuideSection {
   heading: string;
   body: string;
@@ -13,6 +20,7 @@ export interface Guide {
   title: string;
   app: AppSlug;
   category: Category;
+  template: GuideTemplateId;
   summary: string;
   tags: string[];
   sections: GuideSection[];
@@ -36,12 +44,63 @@ export const allGuides: Guide[] = [
   { ...accountsSync, status: 'verified' },
 ];
 
+function extractGuideLinks(content: string): string[] {
+  const matches = content.matchAll(/href=["']\/guides\/([a-z0-9-]+)["']/gi);
+  return Array.from(matches, (match) => match[1].toLowerCase());
+}
+
+function validateGuideSet(guides: Guide[]): string[] {
+  const errors: string[] = [];
+
+  const slugSet = new Set<string>();
+  for (const guide of guides) {
+    if (slugSet.has(guide.slug)) {
+      errors.push(`Duplicate guide slug '${guide.slug}'.`);
+    }
+    slugSet.add(guide.slug);
+  }
+
+  for (const guide of guides) {
+    const templateErrors = validateGuideByTemplate(guide);
+    for (const error of templateErrors) {
+      errors.push(`[${guide.slug}] ${error}`);
+    }
+
+    for (const section of guide.sections) {
+      const links = [
+        ...extractGuideLinks(section.body),
+        ...(section.note ? extractGuideLinks(section.note) : []),
+      ];
+      for (const linkedSlug of links) {
+        if (!slugSet.has(linkedSlug)) {
+          errors.push(
+            `[${guide.slug}] broken internal guide link '/guides/${linkedSlug}'.`,
+          );
+        }
+      }
+    }
+  }
+
+  return errors;
+}
+
+const guideValidationErrors = validateGuideSet(allGuides);
+if (guideValidationErrors.length > 0) {
+  throw new Error(
+    `Guide validation failed:\n- ${guideValidationErrors.join('\n- ')}`,
+  );
+}
+
 export function getGuide(slug: string): Guide | undefined {
   return getPublishedGuides().find((g) => g.slug === slug);
 }
 
 export function getPublishedGuides(): Guide[] {
   return allGuides.filter((g) => g.status === 'verified');
+}
+
+export function getExplanationExtent(guide: Guide): ExplanationExtent {
+  return getTemplateDefinition(guide.template).explanationExtent;
 }
 
 export const appColors: Record<AppSlug, string> = {

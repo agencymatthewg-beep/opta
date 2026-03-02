@@ -597,6 +597,9 @@ export function SettingsOverlay({
   const [accountSyncStatus, setAccountSyncStatus] = useState<'idle' | 'running' | 'success' | 'error'>('idle');
   const [accountSyncMessage, setAccountSyncMessage] = useState<string | null>(null);
   const accountSignInInFlightRef = useRef(false);
+  const lmxHostForModelFetch = getConfigValue(config, 'connection.host', 'localhost');
+  const lmxPortForModelFetch = Number(getConfigValue(config, 'connection.port', '1234'));
+  const lmxApiKeyForModelFetch = getConfigValue(config, 'connection.apiKey', '');
 
   useEffect(() => {
     if (selectedPage !== 'models') return;
@@ -606,9 +609,9 @@ export function SettingsOverlay({
       try {
         const { LmxClient } = await import('../lmx/client.js');
         const lmx = new LmxClient({
-          host: getConfigValue(config, 'connection.host', 'localhost'),
-          port: Number(getConfigValue(config, 'connection.port', '1234')),
-          adminKey: getConfigValue(config, 'connection.apiKey', ''),
+          host: lmxHostForModelFetch,
+          port: lmxPortForModelFetch,
+          adminKey: lmxApiKeyForModelFetch,
           timeoutMs: 3000,
           maxRetries: 0,
         });
@@ -644,7 +647,7 @@ export function SettingsOverlay({
     
     void fetchModels();
     return () => { cancelled = true; };
-  }, [selectedPage, config]);
+  }, [selectedPage, lmxHostForModelFetch, lmxPortForModelFetch, lmxApiKeyForModelFetch]);
 
   const runAccountOauthSignIn = useCallback(async (trigger: 'auto' | 'manual') => {
     if (accountSignInInFlightRef.current) return;

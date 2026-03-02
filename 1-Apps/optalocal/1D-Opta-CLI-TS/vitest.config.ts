@@ -5,7 +5,11 @@ export default defineConfig({
   cacheDir: 'node_modules/.vitest',
   test: {
     environment: 'node',
-    include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
+    include: [
+      'tests/**/*.test.ts',
+      'tests/**/*.test.tsx',
+      'packages/daemon-client/src/**/*.test.ts',
+    ],
     // Kill any test that hangs for more than 10s (prevents agent/LSP/LMX socket hangs)
     testTimeout: 10000,
     hookTimeout: 5000,

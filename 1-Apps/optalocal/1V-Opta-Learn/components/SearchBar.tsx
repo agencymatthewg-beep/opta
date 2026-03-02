@@ -54,7 +54,7 @@ export function SearchBar({ guides }: SearchBarProps) {
         >
           {results.length === 0 ? (
             <div className="obsidian rounded-xl border border-white/5 px-5 py-4">
-              <p className="text-sm text-text-secondary">No guides found for '{query}'</p>
+              <p className="text-sm text-text-secondary">{`No guides found for '${query}'`}</p>
             </div>
           ) : (
             results.map((guide) => <GuideCard key={guide.slug} guide={guide} compact />)
