@@ -38,6 +38,7 @@ function createUseModelsState(
     loadModel: vi.fn().mockResolvedValue(null),
     confirmLoad: vi.fn().mockResolvedValue(null),
     downloadProgress: vi.fn().mockResolvedValue(null),
+    listDownloads: vi.fn().mockResolvedValue([]),
     unloadModel: vi.fn().mockResolvedValue(undefined),
     deleteModel: vi.fn().mockResolvedValue(undefined),
     downloadModel: vi.fn().mockResolvedValue(null),
@@ -203,5 +204,130 @@ describe("ModelsPage", () => {
       expect(window.localStorage.getItem(trackedDownloadsStorage)).toBe("{}");
     });
     expect(refreshLmx).toHaveBeenCalled();
+  });
+
+  it("merges server active downloads with local tracked state and prefers server values", async () => {
+    window.localStorage.setItem(
+      trackedDownloadsStorage,
+      JSON.stringify({
+        "download-conflict": {
+          download_id: "download-conflict",
+          model_id: modelId,
+          repo_id: modelId,
+          status: "pending",
+          progress_percent: 10,
+          downloaded_bytes: 100,
+          total_bytes: 1000,
+          files_completed: 1,
+          files_total: 10,
+        },
+        "download-local-only": {
+          download_id: "download-local-only",
+          model_id: "mlx-community/local-only",
+          repo_id: "mlx-community/local-only",
+          status: "downloading",
+          progress_percent: 21,
+          downloaded_bytes: 210,
+          total_bytes: 1000,
+          files_completed: 2,
+          files_total: 10,
+        },
+      }),
+    );
+
+    const listDownloads = vi.fn().mockResolvedValue([
+      {
+        download_id: "download-conflict",
+        repo_id: modelId,
+        status: "downloading",
+        progress_percent: 68,
+        downloaded_bytes: 680,
+        total_bytes: 1000,
+        files_completed: 7,
+        files_total: 10,
+      },
+      {
+        download_id: "download-server-only",
+        repo_id: "mlx-community/server-only",
+        status: "downloading",
+        progress_percent: 15,
+        downloaded_bytes: 150,
+        total_bytes: 1000,
+        files_completed: 1,
+        files_total: 10,
+      },
+    ]);
+    const downloadProgress = vi.fn().mockImplementation(async (downloadId: string) => {
+      if (downloadId === "download-conflict") {
+        return {
+          download_id: "download-conflict",
+          repo_id: modelId,
+          status: "downloading",
+          progress_percent: 68,
+          downloaded_bytes: 680,
+          total_bytes: 1000,
+          files_completed: 7,
+          files_total: 10,
+        };
+      }
+      if (downloadId === "download-server-only") {
+        return {
+          download_id: "download-server-only",
+          repo_id: "mlx-community/server-only",
+          status: "downloading",
+          progress_percent: 15,
+          downloaded_bytes: 150,
+          total_bytes: 1000,
+          files_completed: 1,
+          files_total: 10,
+        };
+      }
+      if (downloadId === "download-local-only") {
+        return {
+          download_id: "download-local-only",
+          repo_id: "mlx-community/local-only",
+          status: "downloading",
+          progress_percent: 21,
+          downloaded_bytes: 210,
+          total_bytes: 1000,
+          files_completed: 2,
+          files_total: 10,
+        };
+      }
+      return null;
+    });
+
+    vi.mocked(useModels).mockReturnValue(
+      createUseModelsState({
+        availableModels: [],
+        listDownloads,
+        downloadProgress,
+      }),
+    );
+
+    render(<ModelsPage connection={connection} />);
+
+    await waitFor(() => {
+      expect(listDownloads).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      const tracked = JSON.parse(
+        window.localStorage.getItem(trackedDownloadsStorage) ?? "{}",
+      ) as Record<string, { progress_percent: number; status: string }>;
+      expect(Object.keys(tracked)).toEqual(
+        expect.arrayContaining([
+          "download-conflict",
+          "download-local-only",
+          "download-server-only",
+        ]),
+      );
+      expect(tracked["download-conflict"].progress_percent).toBe(68);
+      expect(tracked["download-conflict"].status).toBe("downloading");
+    });
+    await waitFor(() => {
+      expect(downloadProgress).toHaveBeenCalledWith("download-conflict");
+      expect(downloadProgress).toHaveBeenCalledWith("download-local-only");
+      expect(downloadProgress).toHaveBeenCalledWith("download-server-only");
+    });
   });
 });

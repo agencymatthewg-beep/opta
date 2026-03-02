@@ -1,6 +1,6 @@
 # Opta Ecosystem Aesthetics
 
-This document outlines how the core **Opta Design System** (defined in `OPTA-AESTHETIC-CONTEXT.md`) adapts to individual apps within the business, specifically focusing on the **Opta Local** sub-ecosystem and its supporting management websites.
+This document outlines how the core **Opta Design System** (defined in `/docs/reports/OPTA-AESTHETIC-CONTEXT.md`) adapts to individual apps within the business, specifically focusing on the **Opta Local** sub-ecosystem and its supporting management websites.
 
 ## 1. Shared Foundation (Opta / Opta AI)
 All Opta applications (including the Opta Local sub-ecosystem and other optimization apps like Life Manager) share the following baseline aesthetic:
@@ -55,9 +55,11 @@ All Opta Local app logos — across both Main Local Apps and Management Websites
 ### Current Status
 | App | Status |
 |-----|--------|
-| Opta Learn | ✅ Canonical (template source) — `/design/logos/Opta-Learn/opta-learn-logo.png` |
-| Opta Help | ⬜ Pending inner mark design |
-| Opta Local (dashboard) | ⬜ Pending inner mark design |
-| Opta Status | ⬜ Pending inner mark design |
-| Opta Accounts | ⬜ Pending inner mark design |
-| Opta LMX | ⬜ Pending inner mark design |
+| Opta Learn | ✅ Canonical (template source) — `/design/logos/Opta-Learn/opta-learn-full.png` + `/design/logos/Opta-Learn/opta-learn-mark.svg` |
+| Opta Help | ✅ Rendered — `/design/logos/Opta-Help/opta-help-full.png` + `/design/logos/Opta-Help/opta-help-mark.svg` |
+| Opta Local (dashboard) | ✅ Rendered — `/design/logos/Opta-Local/opta-local-full.png` + `/design/logos/Opta-Local/opta-local-mark.svg` |
+| Opta Status | ✅ Rendered — `/design/logos/Opta-Status/opta-status-full.png` + `/design/logos/Opta-Status/opta-status-mark.svg` |
+| Opta Accounts | ✅ Rendered — `/design/logos/Opta-Accounts/opta-accounts-full.png` + `/design/logos/Opta-Accounts/opta-accounts-mark.svg` |
+| Opta LMX | ✅ Rendered — `/design/logos/Opta-LMX/opta-lmx-full.png` + `/design/logos/Opta-LMX/opta-lmx-mark.svg` |
+| Opta CLI | ✅ Rendered — `/design/logos/Opta-CLI/opta-cli-full.png` + `/design/logos/Opta-CLI/opta-cli-mark.svg` |
+| Opta Code | ✅ Rendered — `/design/logos/Opta-Code-Desktop/opta-code-full.png` + `/design/logos/Opta-Code-Desktop/opta-code-mark.svg` |

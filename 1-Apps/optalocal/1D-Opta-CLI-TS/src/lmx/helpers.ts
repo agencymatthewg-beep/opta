@@ -78,6 +78,31 @@ export interface RawDownloadResponse {
   status: string;
 }
 
+export interface RawDownloadTask {
+  download_id: string;
+  repo_id: string;
+  revision?: string | null;
+  status: string;
+  progress_percent: number;
+  downloaded_bytes: number;
+  total_bytes: number;
+  files_completed: number;
+  files_total: number;
+  error?: string | null;
+  error_code?: string | null;
+  local_path?: string | null;
+  started_at?: number;
+  completed_at?: number | null;
+}
+
+export type RawDownloadsResponse =
+  | RawDownloadTask[]
+  | {
+      downloads: RawDownloadTask[];
+      count?: number;
+      include_inactive?: boolean;
+    };
+
 export interface RawDownloadProgressResponse {
   download_id: string;
   repo_id: string;

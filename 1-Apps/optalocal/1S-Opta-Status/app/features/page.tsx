@@ -12,8 +12,8 @@ import { ArrowLeft } from 'lucide-react'
 const APPS = [
   { id: 'cli', label: 'CLI', name: 'Opta CLI', subtitle: '1D — Terminal & Daemon' },
   { id: 'lmx', label: 'LMX', name: 'Opta LMX', subtitle: '1M — MLX Inference' },
-  { id: 'code-desktop', label: 'Code', name: 'Opta Code Desktop', subtitle: '1P — Desktop Client' },
-  { id: 'local-web', label: 'OptaLocal', name: 'OptaLocal.com', subtitle: '1L — Management Website' },
+  { id: 'code-desktop', label: 'Code Desktop', name: 'Opta Code Desktop', subtitle: '1P — Desktop Client' },
+  { id: 'local-web', label: 'Opta Local', name: 'Opta Local', subtitle: '1L — Management Website' },
   { id: 'accounts', label: 'Accounts', name: 'Opta Accounts', subtitle: '1R — Identity & SSO' },
   { id: 'init', label: 'Init', name: 'Opta Init', subtitle: '1O — Setup Portal' },
   { id: 'status', label: 'Status', name: 'Opta Status', subtitle: '1S — Ecosystem Health' },
@@ -87,7 +87,7 @@ export default async function FeaturesPage({
   return (
     <div className="min-h-screen bg-void text-text-primary">
       {/* Header */}
-      <header className="border-b border-[var(--color-border)]">
+      <header className="border-b border-[var(--opta-border)]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link
             href="/"
@@ -118,7 +118,7 @@ export default async function FeaturesPage({
               className="h-full rounded-full transition-all duration-700"
               style={{
                 width: `${allPct}%`,
-                background: 'linear-gradient(90deg, var(--color-primary), var(--color-primary-glow))',
+                background: 'linear-gradient(90deg, var(--opta-primary), var(--opta-primary-glow))',
               }}
             />
           </div>
@@ -130,7 +130,7 @@ export default async function FeaturesPage({
 
       {/* App tabs */}
       <div className="max-w-4xl mx-auto px-6">
-        <div className="flex items-center gap-0.5 overflow-x-auto border-b border-[var(--color-border)]">
+        <div className="flex items-center gap-0.5 overflow-x-auto border-b border-[var(--opta-border)]">
           {APPS.map((a) => {
             const isActive = a.id === activeApp.id
             let appStats = { total: 0, complete: 0 }
@@ -171,7 +171,7 @@ export default async function FeaturesPage({
       <div className="max-w-4xl mx-auto px-6 py-8 pb-20">
         <div className="glass rounded-xl p-6 sm:p-8">
           {/* App header */}
-          <div className="flex items-start justify-between gap-4 mb-6 pb-5 border-b border-[var(--color-border)]">
+          <div className="flex items-start justify-between gap-4 mb-6 pb-5 border-b border-[var(--opta-border)]">
             <div>
               <h2 className="text-lg font-semibold font-sora">{activeApp.name}</h2>
               <div className="text-xs text-text-muted mt-0.5 font-mono">{activeApp.subtitle}</div>
@@ -184,7 +184,7 @@ export default async function FeaturesPage({
                 <div className="w-20 h-1 rounded-full overflow-hidden bg-elevated">
                   <div
                     className="h-full rounded-full"
-                    style={{ width: `${appPct}%`, backgroundColor: 'var(--color-primary)' }}
+                    style={{ width: `${appPct}%`, backgroundColor: 'var(--opta-primary)' }}
                   />
                 </div>
               </div>

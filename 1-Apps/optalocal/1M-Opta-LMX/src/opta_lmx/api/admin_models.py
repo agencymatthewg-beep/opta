@@ -57,7 +57,9 @@ from opta_lmx.inference.schema import (
     AvailableModel,
     BenchmarkRequest,
     ConfirmLoadRequest,
+    DownloadListResponse,
     DownloadProgressResponse,
+    DownloadTaskSnapshotResponse,
     ErrorResponse,
 )
 from opta_lmx.model_safety import AdmissionFailure, ErrorCodes, validate_architecture
@@ -1104,6 +1106,39 @@ async def start_download(
         repo_id=task.repo_id,
         estimated_size_bytes=task.total_bytes if task.total_bytes > 0 else None,
         status=task.status,
+    )
+
+
+@admin_models_router.get("/admin/models/downloads", responses={403: {"model": ErrorResponse}})
+async def list_downloads(
+    _auth: AdminAuth,
+    manager: Manager,
+    include_inactive: bool = False,
+) -> DownloadListResponse:
+    """List tracked downloads for client reconciliation.
+
+    Defaults to active downloads only. Set include_inactive=true to include
+    completed, failed, and cancelled tasks.
+    """
+    tasks = manager.list_downloads(include_inactive=include_inactive)
+    return DownloadListResponse(
+        downloads=[
+            DownloadTaskSnapshotResponse(
+                download_id=task.download_id,
+                repo_id=task.repo_id,
+                status=task.status,
+                progress_percent=task.progress_percent,
+                downloaded_bytes=task.downloaded_bytes,
+                total_bytes=task.total_bytes,
+                files_completed=task.files_completed,
+                files_total=task.files_total,
+                error=task.error,
+                error_code=task.error_code,
+                started_at=task.started_at,
+                completed_at=task.completed_at,
+            )
+            for task in tasks
+        ]
     )
 
 

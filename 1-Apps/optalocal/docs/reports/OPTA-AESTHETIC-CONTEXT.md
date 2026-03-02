@@ -277,4 +277,4 @@ All Opta Local app logos share a single locked template. Only two elements vary.
 
 Template source: `/design/logos/opta-logo-template.html`
 Full spec: `/design/logos/LOGO-SYSTEM.md`
-Canonical render (Opta Learn): `/design/logos/Opta-Learn/opta-learn-logo.png`
+Canonical render (Opta Learn): `/design/logos/Opta-Learn/opta-learn-full.png`

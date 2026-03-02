@@ -75,7 +75,7 @@ Commit + push -> Vercel auto-deploys.
 ## Automated Desktop Manager Release
 
 Use GitHub Actions workflow:
-- `.github/workflows/opta-init-desktop-manager-release.yml`
+- `1-Apps/../.github/workflows/opta-init-desktop-manager-release.yml` (repo root `.github/workflows`)
 
 Trigger options:
 1. Push tag:
@@ -99,6 +99,8 @@ The workflow:
 7. Uses canonical manager artifact URLs:
    - `https://init.optalocal.com/desktop-updates/manager/<channel>/<version>/<asset>`
    with Vercel redirects to GitHub release assets.
+8. CLI package alias endpoint:
+   - `https://init.optalocal.com/downloads/opta-cli/latest`
 8. Enforces platform signing secrets on tag-triggered releases:
    - macOS: `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`
    - Windows: `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`

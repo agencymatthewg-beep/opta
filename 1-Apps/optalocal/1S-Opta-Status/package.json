@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start --port 3005",
     "lint": "eslint .",
-    "release-notes:generate": "node scripts/generate-release-notes.mjs"
+    "typecheck": "tsc --noEmit",
+    "release-notes:generate": "node scripts/generate-release-notes.mjs",
+    "check": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

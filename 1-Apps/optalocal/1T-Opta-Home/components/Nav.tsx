@@ -1,14 +1,13 @@
 "use client";
 
-import { OptaRing } from "./OptaRing";
-
 export function Nav() {
   return (
     <nav className="fixed top-0 inset-x-0 z-50 glass-subtle border-b border-white/5">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <div className="flex items-center gap-3">
-          <OptaRing size={24} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/logos/opta-local-mark.svg" alt="Opta Local" className="w-6 h-6" />
           <span className="text-sm font-bold tracking-[0.1em] text-moonlight">
             OPTA LOCAL
           </span>

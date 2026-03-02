@@ -132,6 +132,7 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     loadModel,
     confirmLoad,
     downloadProgress,
+    listDownloads,
     unloadModel,
     deleteModel,
     downloadModel,
@@ -323,6 +324,67 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     setTrackedDownloads(loadTrackedDownloadsFromStorage(trackedDownloadsStorage));
     downloadPollMissesRef.current = {};
   }, [trackedDownloadsStorage]);
+
+  useEffect(() => {
+    if (!connection) return;
+
+    let cancelled = false;
+    const reconcileWithServer = async () => {
+      const serverDownloads = await listDownloads();
+      if (cancelled || serverDownloads.length === 0) return;
+
+      setTrackedDownloads((previous) => {
+        const next = { ...previous };
+
+        for (const download of serverDownloads) {
+          const downloadId = download.download_id;
+          if (!downloadId) continue;
+
+          const existing = next[downloadId];
+          const resolvedModelId =
+            download.repo_id || existing?.model_id || downloadId;
+
+          next[downloadId] = {
+            download_id: downloadId,
+            model_id: resolvedModelId,
+            repo_id: download.repo_id || existing?.repo_id || resolvedModelId,
+            status: download.status || existing?.status || "pending",
+            progress_percent:
+              typeof download.progress_percent === "number"
+                ? download.progress_percent
+                : existing?.progress_percent ?? 0,
+            downloaded_bytes:
+              typeof download.downloaded_bytes === "number"
+                ? download.downloaded_bytes
+                : existing?.downloaded_bytes ?? 0,
+            total_bytes:
+              typeof download.total_bytes === "number"
+                ? download.total_bytes
+                : existing?.total_bytes ?? 0,
+            files_completed:
+              typeof download.files_completed === "number"
+                ? download.files_completed
+                : existing?.files_completed ?? 0,
+            files_total:
+              typeof download.files_total === "number"
+                ? download.files_total
+                : existing?.files_total ?? 0,
+            error:
+              typeof download.error === "string"
+                ? download.error
+                : existing?.error,
+          };
+          downloadPollMissesRef.current[downloadId] = 0;
+        }
+        return next;
+      });
+    };
+
+    void reconcileWithServer();
+    return () => {
+      cancelled = true;
+    };
+  }, [connection, listDownloads]);
 
   useEffect(() => {
     if (!trackedDownloadsStorage) return;

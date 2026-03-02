@@ -502,6 +502,19 @@ class DownloadProgressResponse(BaseModel):
     error_code: str | None = None
 
 
+class DownloadTaskSnapshotResponse(DownloadProgressResponse):
+    """Full download task snapshot for reconciliation endpoints."""
+
+    started_at: float = 0.0
+    completed_at: float | None = None
+
+
+class DownloadListResponse(BaseModel):
+    """List wrapper for download task snapshots."""
+
+    downloads: list[DownloadTaskSnapshotResponse] = Field(default_factory=list)
+
+
 class AdminDeleteResponse(BaseModel):
     """Response after deleting a model from disk."""
 

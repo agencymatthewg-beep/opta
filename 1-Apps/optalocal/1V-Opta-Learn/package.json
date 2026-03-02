@@ -5,10 +5,12 @@
   "scripts": {
     "dev": "next dev -p 3007",
     "build": "next build --webpack",
+    "start": "next start --port 3007",
     "guide:new": "node ./scripts/new-guide.mjs",
     "guides:validate": "node ./scripts/validate-guides.mjs",
+    "typecheck": "tsc --noEmit",
     "lint": "npm run guides:validate && eslint .",
-    "check": "npm run lint && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "clsx": "^2",

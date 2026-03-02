@@ -2,26 +2,49 @@
 
 Canonical path: `1-Apps/optalocal/1O-Opta-Init`
 
-## Purpose
-Opta Init is the core entry point and lifecycle manager for the Opta Local stack. It consists of two tightly coupled components:
+## What It Is
 
-1. **Opta Init Web Landing Page** (`/app`, `/lib`, `/public`): A highly optimized, statically exported Next.js website deployed to `init.optalocal.com`. It serves strictly as the download and discovery portal for the desktop manager.
-2. **Opta Init Desktop Manager** (`/desktop-manager`): A Tauri-based native application that acts as the "Core Cluster" for your local AI stack. It orchestrates downloading, updating, verifying, launching, and managing the daemon for all Opta Local apps (LMX, CLI, Code, Accounts, Status, Learn, Help).
+Opta Init is the Opta Local distribution and update control plane.
 
-## Architecture & Relationship
+- **Web app** (Next.js, static export) published at `init.optalocal.com`
+- **Desktop Manager** (Tauri) in `desktop-manager/` for install/update/launch orchestration across Opta Local apps
 
-- The **Web Landing Page** (`init.optalocal.com`) is the distribution mechanism. It restricts downloads exclusively to the Opta Init Manager.
-- The **Desktop Manager** (Tauri app) is the actual orchestration tool that users install on their machines. It reads release manifests published by the web layer and executes native terminal commands to manage the other applications.
-- **Shared Code**: They share aesthetic principles and the core `React` component structures (e.g., the `OptaRing` or unified layouts) but act as entirely separate build targets. The web app builds via Next.js for Vercel, and the desktop manager builds via Vite/Tauri for macOS/Windows.
+## Local Development
 
-## Key relations
-- Feeds consistent structure into the Opta app ecosystem.
-- Orchestrates the lifecycle of `1D-Opta-CLI-TS` and `1M-Opta-LMX`.
-- Serves as the primary onboarding funnel for operators.
-- Should follow canonical path contract from `1-Apps/PATH-CONTRACT.md`.
+```bash
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init
+npm install
+npm run dev
+```
 
-## Location + File Contract
+## Validation and Build
 
-For the exact location split, required files, and purpose boundaries between the website and desktop app, see:
+```bash
+npm run check
+npm run build
+npm run start
+```
 
-- `docs/COMPONENT-LOCATION-CONTRACT.md`
+## Release Contract + Sync
+
+```bash
+npm run validate:release-contract
+npm run sync:desktop-manifests
+npm run sync:manager-updates
+npm run sync:vercel-redirects
+```
+
+## Desktop Manager
+
+```bash
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init/desktop-manager
+npm install
+npm run typecheck
+npm run build
+```
+
+## Key Docs
+
+- `ARCHITECTURE.md`
+- `docs/RELEASE-CONTROL-WORKFLOW.md`
+- `docs/WORKFLOWS.md`

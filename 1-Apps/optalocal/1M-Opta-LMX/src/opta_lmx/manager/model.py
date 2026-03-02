@@ -320,6 +320,35 @@ class ModelManager:
         """
         return self._downloads.get(download_id)
 
+    @staticmethod
+    def _is_task_active(task: DownloadTask) -> bool:
+        """Return True when a download task is actively running."""
+        if task.status != "downloading":
+            return False
+        if task.task is not None and task.task.done():
+            return False
+        return True
+
+    def list_downloads(self, include_inactive: bool = False) -> list[DownloadTask]:
+        """List known download tasks.
+
+        Args:
+            include_inactive: When False (default), only active downloads are
+                returned. When True, returns active plus completed/failed/cancelled.
+
+        Returns:
+            Deterministically ordered list of DownloadTask records.
+        """
+        tasks = list(self._downloads.values())
+        if not include_inactive:
+            tasks = [task for task in tasks if self._is_task_active(task)]
+        # Deterministic ordering for client reconciliation: most recent first.
+        return sorted(
+            tasks,
+            key=lambda task: (task.started_at, task.download_id),
+            reverse=True,
+        )
+
     async def is_model_available(self, model_id: str) -> bool:
         """Check if a model exists in HF cache or as a local file.
 
@@ -470,11 +499,8 @@ class ModelManager:
         for task in self._downloads.values():
             if task.repo_id != repo_id:
                 continue
-            if task.status != "downloading":
-                continue
-            if task.task is not None and task.task.done():
-                continue
-            return True
+            if self._is_task_active(task):
+                return True
         return False
 
     async def cancel_active_downloads(self) -> None:

@@ -1,12 +1,18 @@
 import './globals.css'
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { OptaRing } from '@/components/OptaRing'
 
 export const metadata: Metadata = {
   title: 'Opta Status — Opta Local ecosystem health',
-  description: 'Live status for the Opta Local ecosystem: Opta CLI, Opta Code, Opta LMX, and Opta management websites.',
-  keywords: 'optalocal, status, uptime, LMX, Opta CLI, Opta Code, local AI',
+  description: 'Live status for the Opta Local ecosystem: Opta CLI, Opta Code Desktop, Opta LMX, and Opta management websites.',
+  keywords: 'optalocal, status, uptime, LMX, Opta CLI, Opta Code Desktop, local AI',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Opta Status',
     description: 'Live health and feature registry for the Opta Local ecosystem.',
@@ -19,20 +25,30 @@ export const metadata: Metadata = {
 
 function NavBar() {
   return (
-    <nav className="sticky top-0 z-50 border-b border-[var(--color-border)] glass-subtle">
+    <nav className="sticky top-0 z-50 border-b border-[var(--opta-border)] glass-subtle">
       <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2.5 group">
+          <span className="h-8 w-8 rounded-md overflow-hidden border border-border/60 bg-surface/70 flex items-center justify-center">
+            <Image
+              src="/opta-status-mark.svg"
+              alt="Opta Status mark"
+              width={24}
+              height={24}
+              className="h-6 w-6"
+              priority
+            />
+          </span>
           <span
-            className="text-sm font-bold tracking-widest uppercase font-sora"
+            className="text-sm font-semibold tracking-wide font-sora"
             style={{
-              background: 'linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-glow) 100%)',
+              background: 'linear-gradient(135deg, var(--opta-primary) 0%, var(--opta-primary-glow) 100%)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
             }}
           >
-            OPTA STATUS
+            Opta Status
           </span>
         </Link>
 

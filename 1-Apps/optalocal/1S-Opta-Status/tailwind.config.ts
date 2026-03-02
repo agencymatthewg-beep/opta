@@ -9,27 +9,27 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        void: 'var(--color-void)',
-        surface: 'var(--color-surface)',
-        elevated: 'var(--color-elevated)',
-        border: 'var(--color-border)',
+        void: 'var(--opta-bg)',
+        surface: 'var(--opta-surface)',
+        elevated: 'var(--opta-elevated)',
+        border: 'var(--opta-border)',
         text: {
-          primary: 'var(--color-text-primary)',
-          secondary: 'var(--color-text-secondary)',
-          muted: 'var(--color-text-muted)',
+          primary: 'var(--opta-text-primary)',
+          secondary: 'var(--opta-text-secondary)',
+          muted: 'var(--opta-text-muted)',
         },
         primary: {
-          DEFAULT: 'var(--color-primary)',
-          glow: 'var(--color-primary-glow)',
+          DEFAULT: 'var(--opta-primary)',
+          glow: 'var(--opta-primary-glow)',
         },
-        secondary: 'var(--color-secondary)',
+        secondary: 'var(--opta-secondary)',
         neon: {
-          purple: 'var(--color-neon-purple)',
-          blue: 'var(--color-neon-blue)',
-          green: 'var(--color-neon-green)',
-          amber: 'var(--color-neon-amber)',
-          red: 'var(--color-neon-red)',
-          cyan: 'var(--color-neon-cyan)',
+          purple: 'var(--opta-neon-purple)',
+          blue: 'var(--opta-neon-blue)',
+          green: 'var(--opta-neon-green)',
+          amber: 'var(--opta-neon-amber)',
+          red: 'var(--opta-neon-red)',
+          cyan: 'var(--opta-neon-cyan)',
         },
       },
       fontFamily: {

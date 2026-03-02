@@ -246,6 +246,34 @@ function normalizeLmxDownloadProgress(
   };
 }
 
+function normalizeLmxDownloadsList(raw: unknown): DaemonLmxDownloadProgress[] {
+  const parsed = asRecord(raw);
+  const list = Array.isArray(raw)
+    ? raw
+    : Array.isArray(parsed?.downloads)
+      ? parsed.downloads
+      : Array.isArray(parsed?.active_downloads)
+        ? parsed.active_downloads
+        : [];
+
+  return list
+    .map((item) => {
+      const record = asRecord(item);
+      const downloadId =
+        typeof record?.download_id === "string"
+          ? record.download_id
+          : typeof record?.downloadId === "string"
+            ? record.downloadId
+            : "";
+      if (!downloadId) return null;
+      return normalizeLmxDownloadProgress(item, downloadId);
+    })
+    .filter(
+      (item): item is DaemonLmxDownloadProgress =>
+        Boolean(item && item.download_id),
+    );
+}
+
 function httpClient(connection: DaemonConnectionOptions): DaemonHttpClient {
   return new DaemonHttpClient(connection);
 }
@@ -518,5 +546,17 @@ export const daemonClient = {
     repoId: string,
   ): Promise<{ download_id: string }> {
     return httpClient(connection).lmxDownload(repoId);
+  },
+
+  async lmxDownloads(
+    connection: DaemonConnectionOptions,
+  ): Promise<DaemonLmxDownloadProgress[]> {
+    const raw = await daemonRequest<unknown>(
+      connection,
+      "/v3/lmx/models/downloads",
+      {},
+      LMX_READ_TIMEOUT_MS,
+    );
+    return normalizeLmxDownloadsList(raw);
   },
 };

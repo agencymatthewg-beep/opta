@@ -5,14 +5,19 @@ import subprocess
 with open('design/logos/opta-logo-template.html', 'r', encoding='utf-8') as f:
     template = f.read()
 
-with open('design/logos/Opta-Status/opta-status-logo-final.svg', 'r', encoding='utf-8') as f:
+with open('design/logos/Opta-Status/opta-status-mark.svg', 'r', encoding='utf-8') as f:
     svg_content = f.read()
 
 html_out = re.sub(r'<svg width="210".*?</svg>', svg_content, template, flags=re.DOTALL)
-html_out = re.sub(r'<span class="learn-text">learn</span>', '<span class="learn-text">status</span>', html_out)
+html_out = re.sub(
+    r'<span class="learn-text">[^<]+</span>',
+    '<span class="learn-text">status</span>',
+    html_out,
+    count=1,
+)
 
-out_html = 'design/logos/Opta-Status/opta-status-logo.html'
-out_png = 'design/logos/Opta-Status/opta-status-logo-final.png'
+out_html = 'design/logos/Opta-Status/opta-status-full.html'
+out_png = 'design/logos/Opta-Status/opta-status-full.png'
 
 with open(out_html, 'w', encoding='utf-8') as f:
     f.write(html_out)
@@ -26,4 +31,3 @@ cmd = [
     f"file://{os.path.abspath(out_html)}"
 ]
 subprocess.run(cmd, check=True)
-subprocess.run(["open", out_png])

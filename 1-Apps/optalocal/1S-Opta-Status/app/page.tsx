@@ -59,15 +59,15 @@ const SERVICES: ServiceDef[] = [
   },
   {
     id: 'code',
-    name: 'Opta Code',
+    name: 'Opta Code Desktop',
     subtitle: 'Desktop AI editor',
     icon: Terminal, // Using Terminal as placeholder, or maybe Code/Monitor? Let's use Server or Terminal. Server is used for local. Let's use Terminal.
     docs: 'https://optalocal.com',
   },
   {
     id: 'local',
-    name: 'OptaLocal.com',
-    subtitle: 'Opta Local management website',
+    name: 'Opta Local',
+    subtitle: 'Management website (optalocal.com)',
     icon: Server,
     docs: 'https://optalocal.com',
   },
@@ -95,11 +95,11 @@ const SERVICES: ServiceDef[] = [
 ]
 
 const BORDER_COLOR: Record<ServiceStatus, string> = {
-  online: 'var(--color-neon-green)',
-  degraded: 'var(--color-neon-amber)',
-  offline: 'var(--color-neon-red)',
-  checking: 'var(--color-primary)',
-  unconfigured: 'var(--color-text-muted)',
+  online: 'var(--opta-neon-green)',
+  degraded: 'var(--opta-neon-amber)',
+  offline: 'var(--opta-neon-red)',
+  checking: 'var(--opta-primary)',
+  unconfigured: 'var(--opta-text-muted)',
 }
 
 const BADGE: Record<ServiceStatus, { bg: string; text: string; dot: string }> = {
@@ -170,15 +170,15 @@ export default function StatusPage() {
   const anyChecking = statuses.some((s) => s === 'checking')
 
   const overallColor = anyOffline
-    ? 'var(--color-neon-red)'
+    ? 'var(--opta-neon-red)'
     : allOnline
-    ? 'var(--color-neon-green)'
-    : 'var(--color-neon-amber)'
+    ? 'var(--opta-neon-green)'
+    : 'var(--opta-neon-amber)'
 
   return (
     <div className="min-h-screen bg-void text-text-primary">
       {/* Header bar */}
-      <header className="border-b border-[var(--color-border)]">
+      <header className="border-b border-[var(--opta-border)]">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <OptaRing size={48} className="shrink-0 scale-[0.6] origin-center -ml-2" paused={!allOnline || anyOffline} />
@@ -433,7 +433,7 @@ export default function StatusPage() {
 
         {/* Footer nav */}
         <motion.div
-          className="mt-14 pt-8 border-t border-[var(--color-border)] flex items-center justify-between"
+          className="mt-14 pt-8 border-t border-[var(--opta-border)] flex items-center justify-between"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}

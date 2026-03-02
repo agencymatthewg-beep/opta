@@ -16,6 +16,7 @@ import type {
   LmxBenchmarkResultsOptions,
   LmxConfigReloadResult,
   LmxDeleteResponse,
+  LmxDownloadsResponse,
   LmxDiscoveryDoc,
   LmxDownloadProgress,
   LmxDownloadResponse,
@@ -87,6 +88,8 @@ import type {
   RawAdminUnloadResponse,
   RawBenchmarkResponse,
   RawDeleteResponse,
+  RawDownloadsResponse,
+  RawDownloadTask,
   RawDownloadProgressResponse,
   RawDownloadResponse,
   RawModelPerformanceResponse,
@@ -555,6 +558,50 @@ export class LmxClient {
       repoId: raw.repo_id,
       estimatedSizeBytes: raw.estimated_size_bytes,
       status: raw.status,
+    };
+  }
+
+  private mapDownloadTask(raw: RawDownloadTask) {
+    return {
+      downloadId: raw.download_id,
+      repoId: raw.repo_id,
+      revision: raw.revision ?? undefined,
+      status: raw.status as
+        | 'pending'
+        | 'downloading'
+        | 'completed'
+        | 'failed'
+        | 'cancelled',
+      progressPercent: raw.progress_percent,
+      downloadedBytes: raw.downloaded_bytes,
+      totalBytes: raw.total_bytes,
+      filesCompleted: raw.files_completed,
+      filesTotal: raw.files_total,
+      error: raw.error ?? undefined,
+      errorCode: raw.error_code ?? undefined,
+      localPath: raw.local_path ?? undefined,
+      startedAt: raw.started_at,
+      completedAt: raw.completed_at ?? undefined,
+    };
+  }
+
+  async downloads(opts?: { includeInactive?: boolean }): Promise<LmxDownloadsResponse> {
+    const raw = await this.fetch<RawDownloadsResponse>(
+      `/admin/models/downloads${buildQueryString({ include_inactive: opts?.includeInactive })}`
+    );
+    if (Array.isArray(raw)) {
+      const downloads = raw.map((task) => this.mapDownloadTask(task));
+      return {
+        downloads,
+        count: downloads.length,
+        includeInactive: opts?.includeInactive ?? false,
+      };
+    }
+    const downloads = (raw.downloads ?? []).map((task) => this.mapDownloadTask(task));
+    return {
+      downloads,
+      count: raw.count ?? downloads.length,
+      includeInactive: raw.include_inactive ?? (opts?.includeInactive ?? false),
     };
   }
 

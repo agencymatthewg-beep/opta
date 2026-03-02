@@ -7,7 +7,7 @@
 ## ✅ The Canonical Logo (Template Source)
 
 **File:** `/design/logos/opta-logo-template.html`
-**Rendered reference:** `/design/logos/Opta-Learn/opta-learn-logo.png` (Opta Learn — first full-quality render)
+**Rendered reference:** `/design/logos/Opta-Learn/opta-learn-full.png` (Opta Learn — first full-quality render)
 
 ---
 
@@ -73,5 +73,5 @@ All other elements — ring, background, particles, glow, typography style, colo
 
 1. Open `opta-logo-template.html` (for standard logo) or `opta-logo-transparent-template.html` (for app icons).
 2. Change the wordmark app name text (single word after the divider) in the standard template. For both templates, replace the inner SVG mark within the outer ring with the app-specific glyph.
-3. Run the automated script `node render.js` (requires Playwright) which will automatically output both the `-final.png` and `-transparent.png` variants to the app's folder. Alternatively, you can use the Chromium headless shell manually at `device_scale_factor=4.0`, `600×600` viewport.
+3. Run the automated script `node render.js` (requires Playwright) or a Chromium headless capture at `device_scale_factor=4.0`, `600×600` viewport, and save outputs with canonical names in each app folder: `opta-<app>-full.png`, `opta-<app>-short.png`, `opta-<app>-transparent.png`, and `opta-<app>-mark.svg`.
 4. Verify the output in `/design/logos/<App-Name>/`.

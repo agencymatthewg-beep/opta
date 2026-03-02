@@ -118,6 +118,29 @@ export interface LmxDownloadResponse {
   status: string;
 }
 
+export interface LmxDownloadTask {
+  downloadId: string;
+  repoId: string;
+  revision?: string;
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+  progressPercent: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  filesCompleted: number;
+  filesTotal: number;
+  error?: string;
+  errorCode?: string;
+  localPath?: string;
+  startedAt?: number;
+  completedAt?: number;
+}
+
+export interface LmxDownloadsResponse {
+  downloads: LmxDownloadTask[];
+  count: number;
+  includeInactive: boolean;
+}
+
 export interface LmxDownloadProgress {
   downloadId: string;
   repoId: string;

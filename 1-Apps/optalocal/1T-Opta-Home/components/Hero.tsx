@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const coreApps = [
-  { name: "Opta LMX", role: "Inference Engine", icon: "/icons/icon-lmx.svg" },
-  { name: "Opta CLI", role: "Control Plane",    icon: "/icons/icon-cli.svg" },
-  { name: "Opta Code", role: "IDE Assistant",   icon: "/icons/icon-code.svg" },
+  { name: "Opta LMX", role: "Inference Engine", icon: "/logos/opta-lmx-mark.svg" },
+  { name: "Opta CLI", role: "Control Plane",    icon: "/logos/opta-cli-mark.svg" },
+  { name: "Opta Code", role: "IDE Assistant",   icon: "/logos/opta-code-mark.svg" },
 ];
 
 export function Hero() {
@@ -78,16 +78,24 @@ export function Hero() {
             <div key={app.name} className="flex items-center">
               {/* App node */}
               <motion.div
-                className="obsidian border border-primary/30 rounded-xl px-6 py-4 flex flex-col items-center gap-2 min-w-[140px]"
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ borderColor: "rgba(168,85,247,0.6)", y: -2 }}
+                className="relative group obsidian border border-primary/30 rounded-xl px-6 py-4 flex flex-col items-center gap-2 min-w-[140px] cursor-pointer"
+                initial={{ opacity: 0, scale: 0.9, y: 0 }}
+                animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
+                transition={{ 
+                  opacity: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
+                  scale: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
+                  y: { duration: 6 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: 1 + i * 0.2 }
+                }}
+                whileHover={{ borderColor: "rgba(168,85,247,0.6)" }}
               >
+                {/* Purple Glow Background */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-20 h-20 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.4)_0%,rgba(168,85,247,0.1)_50%,transparent_100%)] opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 ease-[0.16,1,0.3,1]" />
+                </div>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={app.icon} alt={app.name} className="w-7 h-7" />
-                <div className="text-center">
-                  <div className="text-sm font-bold text-white">{app.name}</div>
+                <img src={app.icon} alt={app.name} className="w-9 h-9 relative z-10 group-hover:scale-110 transition-transform duration-500 ease-[0.16,1,0.3,1] drop-shadow-[0_0_0px_rgba(168,85,247,0)] group-hover:drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]" />
+                <div className="text-center relative z-10">
+                  <div className="text-sm font-bold text-white transition-colors duration-300">{app.name}</div>
                   <div className="text-[10px] text-text-muted font-mono mt-0.5">{app.role}</div>
                 </div>
               </motion.div>

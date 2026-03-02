@@ -4,8 +4,26 @@ Canonical path: `1-Apps/optalocal/1R-Opta-Accounts`
 Legacy alias: `1-Apps/1P-Opta-Accounts`
 
 ## Purpose
-Accounts, identity, sessions, device-policy surface for Opta ecosystem.
 
-## Notes
-- This app owns account/device management UX.
-- Keep ID `1R` canonical to avoid collision with `1P` Opta Code.
+Accounts, identity, sessions, and device-policy UX for the Opta ecosystem.
+
+## Local Development
+
+```bash
+cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1R-Opta-Accounts
+npm install
+npm run dev
+```
+
+## Validation
+
+```bash
+npm run check
+```
+
+## Production Build
+
+```bash
+npm run build
+npm run start
+```

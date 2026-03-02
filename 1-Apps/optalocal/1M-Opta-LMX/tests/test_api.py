@@ -926,6 +926,88 @@ async def test_download_progress_returns_status(client: AsyncClient) -> None:
     assert data["status"] == "downloading"
 
 
+async def test_downloads_list_defaults_to_active_only(client: AsyncClient) -> None:
+    """GET /admin/models/downloads returns only active downloads by default."""
+    manager = client._transport.app.state.model_manager  # type: ignore[union-attr]
+    manager._downloads["active-1"] = DownloadTask(
+        download_id="active-1",
+        repo_id="mlx-community/active",
+        status="downloading",
+        progress_percent=12.5,
+        downloaded_bytes=125,
+        total_bytes=1000,
+        files_completed=1,
+        files_total=10,
+        started_at=100.0,
+    )
+    manager._downloads["done-1"] = DownloadTask(
+        download_id="done-1",
+        repo_id="mlx-community/done",
+        status="completed",
+        progress_percent=100.0,
+        downloaded_bytes=1000,
+        total_bytes=1000,
+        files_completed=10,
+        files_total=10,
+        started_at=90.0,
+        completed_at=91.0,
+    )
+
+    response = await client.get("/admin/models/downloads")
+    assert response.status_code == 200
+    data = response.json()
+    assert list(data.keys()) == ["downloads"]
+    assert len(data["downloads"]) == 1
+    assert data["downloads"][0]["download_id"] == "active-1"
+    assert data["downloads"][0]["status"] == "downloading"
+    assert data["downloads"][0]["started_at"] == 100.0
+    assert data["downloads"][0]["completed_at"] is None
+
+
+async def test_downloads_list_include_inactive_true_returns_all(client: AsyncClient) -> None:
+    """GET /admin/models/downloads?include_inactive=true includes inactive statuses."""
+    manager = client._transport.app.state.model_manager  # type: ignore[union-attr]
+    manager._downloads["active-2"] = DownloadTask(
+        download_id="active-2",
+        repo_id="mlx-community/active",
+        status="downloading",
+        started_at=400.0,
+    )
+    manager._downloads["done-2"] = DownloadTask(
+        download_id="done-2",
+        repo_id="mlx-community/done",
+        status="completed",
+        started_at=300.0,
+        completed_at=301.0,
+    )
+    manager._downloads["failed-2"] = DownloadTask(
+        download_id="failed-2",
+        repo_id="mlx-community/failed",
+        status="failed",
+        error="network timeout",
+        error_code="timeout",
+        started_at=200.0,
+        completed_at=201.0,
+    )
+    manager._downloads["cancelled-2"] = DownloadTask(
+        download_id="cancelled-2",
+        repo_id="mlx-community/cancelled",
+        status="cancelled",
+        error="cancelled by user",
+        error_code="download_cancelled",
+        started_at=100.0,
+        completed_at=101.0,
+    )
+
+    response = await client.get("/admin/models/downloads?include_inactive=true")
+    assert response.status_code == 200
+    data = response.json()
+    ids = [item["download_id"] for item in data["downloads"]]
+    statuses = {item["status"] for item in data["downloads"]}
+    assert ids == ["active-2", "done-2", "failed-2", "cancelled-2"]
+    assert statuses == {"downloading", "completed", "failed", "cancelled"}
+
+
 async def test_delete_404_for_missing_model(client: AsyncClient) -> None:
     """DELETE /admin/models/{id} returns 404 for unknown models."""
     with patch(
@@ -973,6 +1055,18 @@ async def test_download_requires_auth(client_with_auth: AsyncClient) -> None:
         json={"repo_id": "mlx-community/test-model"},
     )
     assert response.status_code == 403
+
+
+async def test_downloads_list_requires_auth(client_with_auth: AsyncClient) -> None:
+    """GET /admin/models/downloads keeps existing admin-key auth behavior."""
+    no_key = await client_with_auth.get("/admin/models/downloads")
+    assert no_key.status_code == 403
+
+    with_key = await client_with_auth.get(
+        "/admin/models/downloads",
+        headers={"X-Admin-Key": "test-secret-key"},
+    )
+    assert with_key.status_code == 200
 
 
 async def test_delete_requires_auth(client_with_auth: AsyncClient) -> None:

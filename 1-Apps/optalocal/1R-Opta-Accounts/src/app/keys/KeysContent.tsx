@@ -18,7 +18,7 @@ import {
 } from "@/lib/supabase/key-actions";
 import { KeyCard } from "@/components/KeyCard";
 import { AddKeySheet } from "@/components/AddKeySheet";
-import { OptaRing } from "@/components/OptaRing";
+import { OptaLogo } from "@/components/OptaLogo";
 
 interface KeysContentProps {
   initialKeys: ApiKey[];
@@ -102,7 +102,12 @@ export function KeysContent({ initialKeys }: KeysContentProps) {
       >
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <OptaRing size={48} className="mb-4" />
+          <OptaLogo
+            size={48}
+            showText={false}
+            logoSrc="/opta-accounts-mark.svg"
+            className="mb-4"
+          />
           <h1 className="text-xl font-semibold text-opta-text-primary">
             API Keys
           </h1>

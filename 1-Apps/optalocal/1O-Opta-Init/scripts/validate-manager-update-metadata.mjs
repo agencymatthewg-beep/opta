@@ -18,13 +18,17 @@ const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 const httpsRegex = /^https:\/\//;
 const platformKeyRegex = /^(darwin|windows|linux)-[A-Za-z0-9_-]+$/;
+const requiredPlatformKeys = new Set(['darwin-aarch64', 'darwin-x86_64', 'windows-x86_64']);
 
 function usage() {
   console.log(
     [
       'Usage:',
       '  node scripts/validate-manager-update-metadata.mjs',
-      '  node scripts/validate-manager-update-metadata.mjs <manifest-path> [more-manifests...]',
+      '  node scripts/validate-manager-update-metadata.mjs [options] <manifest-path> [more-manifests...]',
+      '',
+      'Options:',
+      '  --allow-partial-platforms   Allow manifests that do not include every required target',
       '',
       'Defaults to channels/manager-updates/stable.json and channels/manager-updates/beta.json.',
     ].join('\n')
@@ -61,7 +65,8 @@ function validatePlatformRelease(platformId, release, location, errors, allowedP
   }
 }
 
-function validateManifest(manifest, schema) {
+function validateManifest(manifest, schema, manifestPath, options = {}) {
+  const { allowPartialPlatforms = false } = options;
   const errors = [];
   const schemaVersion = schema?.properties?.schemaVersion?.const ?? '1.0.0';
   const manifestVersion = schema?.properties?.manifestVersion?.const ?? 1;
@@ -85,6 +90,16 @@ function validateManifest(manifest, schema) {
 
   if (!allowedChannels.has(manifest.channel)) {
     errors.push(`channel must be one of: ${[...allowedChannels].join(', ')}`);
+  }
+
+  const filename = path.basename(manifestPath);
+  const expectedChannelByFilename = new Map([
+    ['stable.json', 'stable'],
+    ['beta.json', 'beta'],
+  ]);
+  const expectedChannel = expectedChannelByFilename.get(filename);
+  if (expectedChannel && manifest.channel !== expectedChannel) {
+    errors.push(`channel must be "${expectedChannel}" for ${filename}`);
   }
 
   if (!isIsoDate(manifest.publishedAt)) {
@@ -128,6 +143,14 @@ function validateManifest(manifest, schema) {
     validatePlatformRelease(platformId, release, location, errors, allowedPlatforms);
   }
 
+  if (!allowPartialPlatforms) {
+    for (const requiredPlatform of requiredPlatformKeys) {
+      if (!(requiredPlatform in manifest.platforms)) {
+        errors.push(`platforms must include required target "${requiredPlatform}"`);
+      }
+    }
+  }
+
   return {
     errors,
     targetCount: platformEntries.length,
@@ -140,21 +163,32 @@ async function readJsonFile(filePath) {
 }
 
 async function main() {
-  const args = process.argv.slice(2);
-  if (args.includes('--help') || args.includes('-h')) {
+  const argv = process.argv.slice(2);
+  if (argv.includes('--help') || argv.includes('-h')) {
     usage();
     return;
   }
 
+  let allowPartialPlatforms = false;
+  const manifestInputs = [];
+  for (const arg of argv) {
+    if (arg === '--allow-partial-platforms') {
+      allowPartialPlatforms = true;
+      continue;
+    }
+    manifestInputs.push(arg);
+  }
+
   const schemaPath = defaultSchemaPath;
-  const manifestPaths = args.length > 0 ? args.map((input) => path.resolve(process.cwd(), input)) : defaultManifestPaths;
+  const manifestPaths =
+    manifestInputs.length > 0 ? manifestInputs.map((input) => path.resolve(process.cwd(), input)) : defaultManifestPaths;
   const schema = await readJsonFile(schemaPath);
 
   let hadErrors = false;
   for (const manifestPath of manifestPaths) {
     try {
       const manifest = await readJsonFile(manifestPath);
-      const { errors, targetCount } = validateManifest(manifest, schema);
+      const { errors, targetCount } = validateManifest(manifest, schema, manifestPath, { allowPartialPlatforms });
       if (errors.length > 0) {
         hadErrors = true;
         console.error(`FAIL ${path.relative(repoRoot, manifestPath)} (${errors.length} error${errors.length === 1 ? '' : 's'})`);

@@ -7,7 +7,7 @@ Opta Status (`1S-Opta-Status`) provides real-time health monitoring and feature 
 - [x] Service status overview — live operational state of apps
 - [x] LMX reference instance — live connection to reference tunnel
 - [x] Daemon reference instance — CLI orchestrator uptime metrics
-- [x] Management websites tracking — OptaLocal.com, Init, Accounts, and Help
+- [x] Management websites tracking — Opta Local (optalocal.com), Init, Accounts, and Help
 - [x] Auto-refresh — polling every 30 seconds for live updates
 - [x] Route caching — 30s revalidation to protect backend services
 

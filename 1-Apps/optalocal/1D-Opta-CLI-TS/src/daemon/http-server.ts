@@ -144,6 +144,15 @@ function mapLmxRouteError(err: unknown): { status: number; body: { error: string
   };
 }
 
+function parseBooleanQueryValue(raw: unknown): boolean | undefined {
+  if (typeof raw === 'boolean') return raw;
+  if (typeof raw !== 'string') return undefined;
+  const normalized = raw.trim().toLowerCase();
+  if (normalized === 'true' || normalized === '1') return true;
+  if (normalized === 'false' || normalized === '0') return false;
+  return undefined;
+}
+
 function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void {
   app.get('/health', () => ({
     status: 'ok',
@@ -419,6 +428,34 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     }
   });
 
+  app.get('/v3/lmx/models/downloads', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const query = req.query as
+      | { includeInactive?: string | boolean; include_inactive?: string | boolean }
+      | undefined;
+    const includeInactiveRaw = query?.includeInactive ?? query?.include_inactive;
+    const includeInactive =
+      includeInactiveRaw === undefined ? undefined : parseBooleanQueryValue(includeInactiveRaw);
+    if (includeInactiveRaw !== undefined && includeInactive === undefined) {
+      return reply.status(400).send({ error: 'Invalid includeInactive value (expected boolean)' });
+    }
+
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.downloads({ includeInactive });
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
+  });
+
   app.get('/v3/lmx/models/download/:downloadId/progress', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const params = req.params as { downloadId?: string };
@@ -435,7 +472,17 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         adminKey: config.connection.adminKey,
       });
       const result = await lmx.downloadProgress(params.downloadId);
-      return result;
+      return {
+        ...result,
+        download_id: result.downloadId,
+        repo_id: result.repoId,
+        progress_percent: result.progressPercent,
+        downloaded_bytes: result.downloadedBytes,
+        total_bytes: result.totalBytes,
+        files_completed: result.filesCompleted,
+        files_total: result.filesTotal,
+        error_code: result.errorCode,
+      };
     } catch (err) {
       const mapped = mapLmxRouteError(err);
       return reply.status(mapped.status).send(mapped.body);

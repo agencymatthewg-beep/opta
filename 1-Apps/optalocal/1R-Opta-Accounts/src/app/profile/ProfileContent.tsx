@@ -7,7 +7,7 @@ import { LogOut, Shield, Mail, Phone, ExternalLink, Key } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { signOut } from "@/lib/supabase/auth-actions";
-import { OptaRing } from "@/components/OptaRing";
+import { OptaLogo } from "@/components/OptaLogo";
 import { ActiveDevicesPanel } from "@/components/profile/ActiveDevicesPanel";
 import { SecurityApiHooks } from "@/components/profile/SecurityApiHooks";
 
@@ -76,7 +76,12 @@ export function ProfileContent({ user }: ProfileContentProps) {
       >
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
-          <OptaRing size={64} className="mb-6" />
+          <OptaLogo
+            size={64}
+            showText={false}
+            logoSrc="/opta-accounts-mark.svg"
+            className="mb-6"
+          />
           <h1 className="text-xl font-semibold text-opta-text-primary">
             Your Opta Account
           </h1>

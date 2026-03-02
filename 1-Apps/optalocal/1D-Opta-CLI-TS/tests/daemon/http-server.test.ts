@@ -41,6 +41,23 @@ const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
       repoId: 'demo/model',
       status: 'queued',
     })),
+    downloads: vi.fn(async (opts?: { includeInactive?: boolean }) => ({
+      downloads: [
+        {
+          downloadId: 'dl_123',
+          repoId: 'demo/model',
+          status: 'downloading',
+          progressPercent: 42,
+          downloadedBytes: 420,
+          totalBytes: 1000,
+          filesCompleted: 4,
+          filesTotal: 10,
+          startedAt: 1_700_000_000,
+        },
+      ],
+      count: 1,
+      includeInactive: opts?.includeInactive ?? false,
+    })),
     downloadProgress: vi.fn(async () => ({
       downloadId: 'dl_123',
       repoId: 'demo/model',
@@ -388,6 +405,33 @@ describe('daemon http-server telemetry and routes', () => {
       status: 'queued',
     });
 
+    const downloadsRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/models/downloads?includeInactive=true',
+      headers: { authorization: 'Bearer secret-token' },
+    });
+    expect(downloadsRes.statusCode).toBe(200);
+    expect(downloadsRes.json()).toMatchObject({
+      downloads: [
+        {
+          downloadId: 'dl_123',
+          repoId: 'demo/model',
+          status: 'downloading',
+          progressPercent: 42,
+        },
+      ],
+      count: 1,
+      includeInactive: true,
+    });
+    expect(lmxClientInstance.downloads).toHaveBeenCalledWith({ includeInactive: true });
+
+    const invalidDownloadsRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/models/downloads?includeInactive=maybe',
+      headers: { authorization: 'Bearer secret-token' },
+    });
+    expect(invalidDownloadsRes.statusCode).toBe(400);
+
     const progressRes = await running.app.inject({
       method: 'GET',
       url: '/v3/lmx/models/download/dl_123/progress',
@@ -399,6 +443,13 @@ describe('daemon http-server telemetry and routes', () => {
       repoId: 'demo/model',
       status: 'downloading',
       progressPercent: 42,
+      download_id: 'dl_123',
+      repo_id: 'demo/model',
+      progress_percent: 42,
+      downloaded_bytes: 420,
+      total_bytes: 1000,
+      files_completed: 4,
+      files_total: 10,
     });
     expect(lmxClientInstance.downloadProgress).toHaveBeenCalledWith('dl_123');
   });

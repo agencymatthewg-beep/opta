@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "npm run sync:desktop-manifests && npm run sync:manager-updates && npm run sync:vercel-redirects && next dev",
+    "dev": "npm run sync:desktop-manifests && npm run sync:manager-updates && npm run sync:vercel-redirects && next dev --port 3001",
     "sync:desktop-manifests": "node scripts/sync-desktop-manifests.mjs",
     "sync:manager-updates": "node scripts/sync-manager-updates.mjs",
     "sync:vercel-redirects": "node scripts/sync-vercel-redirects.mjs",
@@ -11,12 +11,16 @@
     "validate:release-manifests": "node scripts/validate-release-manifests.mjs",
     "validate:manager-update-metadata": "node scripts/validate-manager-update-metadata.mjs",
     "validate:manager-update-links": "node scripts/validate-manager-update-links.mjs",
+    "validate:manager-update-links:strict": "npm run validate:manager-update-links -- --strict",
     "validate:manifest-links": "node scripts/validate-manifest-links.mjs",
     "validate:release-contract": "npm run validate:release-manifests && npm run validate:manager-update-metadata && npm run validate:manager-update-links && npm run validate:manifest-links",
-    "prebuild": "npm run sync:desktop-manifests && npm run sync:manager-updates && npm run sync:vercel-redirects",
+    "validate:release-contract:strict": "npm run validate:release-manifests && npm run validate:manager-update-metadata && npm run validate:manager-update-links:strict && npm run validate:manifest-links",
+    "prebuild": "npm run validate:release-contract && npm run sync:desktop-manifests && npm run sync:manager-updates && npm run sync:vercel-redirects",
     "build": "next build --webpack",
-    "start": "node scripts/start-static.mjs",
-    "lint": "eslint ."
+    "start": "node scripts/start-static.mjs --port 3001",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run validate:release-contract"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",

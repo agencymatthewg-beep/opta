@@ -384,6 +384,16 @@ body {
   border-radius: 6px;
 }
 
+.settings-select {
+  font-size: 12px;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 6px 10px;
+  border-radius: 8px;
+}
+
 /* Modal */
 .status-stack {
   display: flex;

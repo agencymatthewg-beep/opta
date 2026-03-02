@@ -83,7 +83,7 @@ The optalocal.com root domain currently serves the Opta Local dashboard — wron
 
 | # | Capability | Why |
 |---|-----------|-----|
-| 1 | Links to all 4 sub-apps (init, lmx, CLI, accounts) | Ecosystem navigation |
+| 1 | Single primary CTA: download Opta Init Desktop Manager | One canonical install path |
 | 2 | Hero section with core value prop | First impression |
 | 3 | Ecosystem bento grid (core apps + management websites split) | Orientation |
 | 4 | Static export (no backend) | Performance + reliability |
@@ -133,7 +133,13 @@ No API routes. No server components requiring runtime. No authentication.
 
 ---
 
-## 7. Ecosystem Position
+## 7. Distribution Policy
+
+- `optalocal.com` should present **one install path only**: Opta Init Desktop Manager.
+- Do not present direct end-user downloads for CLI/LMX/Code on the website.
+- Route users to `init.optalocal.com` for installation and managed lifecycle.
+
+## 8. Ecosystem Position
 
 ```
 optalocal.com          ← THIS SITE (brand home, routing hub)
@@ -147,7 +153,7 @@ Also connects to:
 
 ---
 
-## 8. Development Rules
+## 9. Development Rules
 
 - Framework: Next.js 16, App Router, `output: 'export'`
 - Styling: Tailwind CSS v3 with CSS custom properties
@@ -159,7 +165,7 @@ Also connects to:
 
 ---
 
-## 9. Current Phase
+## 10. Current Phase
 
 **v1.0 Live (2026-03-01)** — Full production build deployed to `optalocal.com`. Replaces the LMX dashboard that was incorrectly serving from the root domain.
 
@@ -173,7 +179,7 @@ Also connects to:
 
 ---
 
-## 10. Future Enhancements
+## 11. Future Enhancements
 
 | Priority | Enhancement | Notes |
 |----------|-------------|-------|

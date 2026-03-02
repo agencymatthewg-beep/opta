@@ -21,10 +21,10 @@ The `optalocal/` directory is the Opta Local product family — a local-first AI
 
 | App | Dir | Domain | Stack |
 |-----|-----|--------|-------|
-| Opta Home | `1T-Opta-Home/` | optalocal.com | Next.js 16, static |
+| Opta Home | `1T-Opta-Home/` | optalocal.com | Next.js 16 |
 | Opta Init | `1O-Opta-Init/` | init.optalocal.com | Next.js 16, SSR |
 | Opta Help | `1U-Opta-Help/` | help.optalocal.com | Next.js 16, static export |
-| Opta Learn | `1V-Opta-Learn/` | learn.optalocal.com | Next.js 16, static export |
+| Opta Learn | `1V-Opta-Learn/` | learn.optalocal.com | Next.js 16 |
 | Opta Accounts | `1R-Opta-Accounts/` | accounts.optalocal.com | Next.js 16 + Supabase |
 | Opta Status | `1S-Opta-Status/` | status.optalocal.com | Next.js 16, SWR polling |
 
@@ -107,12 +107,12 @@ npm run lint
 
 | App | Port | Static Export | Special Commands |
 |-----|------|--------------|------------------|
-| 1O-Opta-Init | 3001 | No (SSR) | `npm run sync:desktop-manifests`, `npm run validate:release-manifests` |
+| 1O-Opta-Init | 3001 | Yes (`output: 'export'`) | `npm run sync:desktop-manifests`, `npm run validate:release-contract` |
 | 1R-Opta-Accounts | 3002 | No (SSR) | `npm run test` (Node test runner) |
 | 1S-Opta-Status | 3005 | No (needs API routes) | `npm run release-notes:generate` |
 | 1T-Opta-Home | 3000 | No (native Vercel) | — |
 | 1U-Opta-Help | 3006 | Yes (`output: 'export'`) | — |
-| 1V-Opta-Learn | 3007 | Yes (`output: 'export'`) | `npm run guides:validate`, `npm run guide:new` |
+| 1V-Opta-Learn | 3007 | No (SSR/native) | `npm run guides:validate`, `npm run guide:new` |
 
 ## Shared Design System (All Apps)
 
@@ -135,7 +135,7 @@ npm run lint
 | 1D, 1O, 1P, 1R, 1S, 1T, 1U, 1V | npm |
 | 1M | pip / uv (Python venv at `.venv/`) |
 
-The root `optalocal/` is NOT a monorepo workspace. Each app is independent.
+The root `optalocal/` now includes a lightweight command hub (`apps.registry.json`, `scripts/opta-local-workspace.mjs`) for cross-app orchestration. App dependency graphs remain independent.
 
 ## Support Directories
 

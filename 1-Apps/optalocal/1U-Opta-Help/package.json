@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev -p 3006",
     "build": "next build --webpack",
-    "start": "npx serve out",
-    "lint": "eslint ."
+    "start": "npx serve out -l 3006",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

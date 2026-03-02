@@ -10,7 +10,7 @@ const coreApps = [
     role: "Inference Engine",
     description:
       "High-performance local inference server and management dashboard. Load, quantize, and serve open weights with drop-in OpenAI API compatibility.",
-    icon: "/icons/icon-lmx.svg",
+    icon: "/logos/opta-lmx-mark.svg",
     href: "https://lmx.optalocal.com",
   },
   {
@@ -18,7 +18,7 @@ const coreApps = [
     role: "Control Plane",
     description:
       "A powerful terminal interface for your AI stack. Manage models, monitor resources, and orchestrate environments directly from your command line.",
-    icon: "/icons/icon-cli.svg",
+    icon: "/logos/opta-cli-mark.svg",
     href: "#cli",
   },
   {
@@ -26,7 +26,7 @@ const coreApps = [
     role: "IDE Assistant",
     description:
       "Your local coding co-pilot. Powered by your models, connected to your codebase, with zero telemetry and no API limits.",
-    icon: "/icons/icon-code.svg",
+    icon: "/logos/opta-code-mark.svg",
     href: "#code",
   },
 ];

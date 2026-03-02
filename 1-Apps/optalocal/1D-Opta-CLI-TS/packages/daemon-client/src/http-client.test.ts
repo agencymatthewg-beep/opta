@@ -130,6 +130,65 @@ describe('DaemonHttpClient operations APIs', () => {
     ]);
   });
 
+  it('requests active downloads from /v3/lmx/models/downloads with includeInactive query', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonOk({
+        downloads: [],
+        count: 0,
+        includeInactive: true,
+      })
+    );
+    const client = new DaemonHttpClient(connection, fetchImpl as unknown as typeof fetch);
+
+    const result = await client.lmxDownloads(true);
+
+    expect(result).toEqual({
+      downloads: [],
+      count: 0,
+      includeInactive: true,
+    });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const call = fetchImpl.mock.calls[0];
+    expect(call).toBeDefined();
+    if (!call) throw new Error('Expected fetch to be called');
+    const [url] = call;
+    expect(url).toBe('http://daemon.local:4317/v3/lmx/models/downloads?includeInactive=true');
+  });
+
+  it('preserves camelCase progress keys and snake_case aliases for compatibility', async () => {
+    const fetchImpl = vi.fn<typeof fetch>(async () =>
+      jsonOk({
+        downloadId: 'dl_123',
+        repoId: 'demo/model',
+        status: 'downloading',
+        progressPercent: 42,
+        downloadedBytes: 420,
+        totalBytes: 1000,
+        filesCompleted: 4,
+        filesTotal: 10,
+        download_id: 'dl_123',
+        repo_id: 'demo/model',
+        progress_percent: 42,
+        downloaded_bytes: 420,
+        total_bytes: 1000,
+        files_completed: 4,
+        files_total: 10,
+      })
+    );
+    const client = new DaemonHttpClient(connection, fetchImpl as unknown as typeof fetch);
+
+    const result = await client.lmxDownloadProgress('dl_123');
+
+    expect(result).toMatchObject({
+      downloadId: 'dl_123',
+      repoId: 'demo/model',
+      progressPercent: 42,
+      download_id: 'dl_123',
+      repo_id: 'demo/model',
+      progress_percent: 42,
+    });
+  });
+
   it('aborts long-running requests at the timeout window', async () => {
     vi.useFakeTimers();
     try {

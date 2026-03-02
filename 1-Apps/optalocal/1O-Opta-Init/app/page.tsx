@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, type Variants } from "framer-motion";
+import Image from "next/image";
 import { ArrowRight, Box, Cpu, Shield, Database, Terminal, ChevronRight, Layers, Zap, Code2, Lock, Activity, Plug, Layout, Download, ArrowUpRight, CheckCircle2 } from "lucide-react";
 import {
   FEATURES,
@@ -459,7 +460,7 @@ export default function Home() {
               <motion.div key={key} variants={fadeUp} className="obsidian p-8 rounded-2xl border border-white/10 hover:border-primary/40 transition-colors flex flex-col group">
                 <div className="mb-6 flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary font-mono text-xl font-bold flex items-center justify-center border border-primary/20 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
-                    <img src="/logos/opta-local-mark.svg" alt="Opta Init Manager" className="w-7 h-7" />
+                    <Image src="/logos/opta-local-mark.svg" alt="Opta Init Manager" width={28} height={28} className="w-7 h-7" />
                   </div>
                   <h3 className="text-2xl font-bold text-text-primary">{data.name}</h3>
                 </div>

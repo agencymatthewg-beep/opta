@@ -33,6 +33,7 @@ export interface UseModelsResult {
   downloadProgress: (
     downloadId: string,
   ) => Promise<DaemonLmxDownloadProgress | null>;
+  listDownloads: () => Promise<DaemonLmxDownloadProgress[]>;
   unloadModel: (modelId: string) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
   downloadModel: (repoId: string) => Promise<string | null>;
@@ -163,6 +164,17 @@ export function useModels(
     [connection],
   );
 
+  const listDownloads = useCallback(async (): Promise<
+    DaemonLmxDownloadProgress[]
+  > => {
+    if (!connection) return [];
+    try {
+      return await daemonClient.lmxDownloads(connection);
+    } catch {
+      return [];
+    }
+  }, [connection]);
+
   const unloadModel = useCallback(
     async (modelId: string) => {
       if (!connection) return;
@@ -221,6 +233,7 @@ export function useModels(
     loadModel,
     confirmLoad,
     downloadProgress,
+    listDownloads,
     unloadModel,
     deleteModel,
     downloadModel,

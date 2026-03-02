@@ -17,6 +17,7 @@
     "test:e2e": "node -e \"const { spawnSync } = require('node:child_process'); const command = process.platform === 'win32' ? 'npx.cmd' : 'npx'; const run = spawnSync(command, ['playwright', 'test'], { encoding: 'utf8' }); process.stdout.write(run.stdout || ''); process.stderr.write(run.stderr || ''); if (run.status === 0) process.exit(0); const output = (run.stdout || '') + (run.stderr || ''); const missingDeps = /Executable doesn't exist|Please run the following command to download new browsers|Host system is missing dependencies/i.test(output); if (missingDeps) { console.log('Skipping e2e: Playwright browser dependencies are unavailable.'); process.exit(0); } process.exit(run.status ?? 1);\"",
     "test:e2e:strict": "playwright test",
     "build": "tsc --noEmit && vite build",
+    "check": "npm run check:desktop",
     "check:desktop": "npm run typecheck && npm run test:run && npm run build",
     "preview": "vite preview",
     "deps:check": "npm outdated || true && npm audit",

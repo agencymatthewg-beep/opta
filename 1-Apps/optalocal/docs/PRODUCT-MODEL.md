@@ -7,10 +7,10 @@ Owner: Opta Local
 
 Opta Local consists of **4 main local apps**:
 
-1. **Opta LMX**
+1. **Opta Init Desktop Manager**
+   - The only end-user install target from OptaLocal websites; manages lifecycle of the rest of the stack.
+2. **Opta LMX**
    - Core local inference engine.
-2. **Opta Local**
-   - Web management dashboard for LMX.
 3. **Opta CLI**
    - Terminal-first control surface for local AI workflows.
 4. **Opta Code Desktop (macOS + Windows)**
@@ -21,7 +21,7 @@ Opta Local consists of **4 main local apps**:
 These are **management websites**, not main local apps:
 
 - **optalocal.com** (Opta Home): brand + ecosystem landing
-- **init.optalocal.com** (Opta Init): onboarding/install flow
+- **init.optalocal.com** (Opta Init Website): onboarding + distribution page for the desktop manager
 - **help.optalocal.com** (Opta Help): technical reference docs
 - **learn.optalocal.com** (Opta Learn): discovery + guide portal
 - **accounts.optalocal.com** (Opta Accounts): identity, keys, account settings
@@ -42,3 +42,12 @@ These are **management websites**, not main local apps:
 - **Opta LMX + Dashboard** — "Local inference engine with a real-time dashboard."
 - **Opta Code Desktop** — "Desktop app for Opta workflows on macOS and Windows."
 
+
+
+## Distribution Rule (Canonical)
+
+- The **only user-downloadable app on OptaLocal websites is Opta Init Desktop Manager**.
+- Opta Init Website and Opta Init Desktop Manager are separate surfaces:
+  - Website = onboarding/distribution/metadata
+  - Desktop app = installed control plane users run locally
+- Other apps (LMX/CLI/Code) are managed via Opta Init, not directly downloaded from marketing/onboarding pages.

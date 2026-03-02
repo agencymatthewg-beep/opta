@@ -38,7 +38,7 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
         name: "Opta CLI",
         description: "Command-line interface for local orchestration, model downloading, and stack management.",
         version: "stable-preview",
-        website: "https://init.optalocal.com/downloads/cli",
+        website: "https://init.optalocal.com/downloads/opta-cli/latest",
       },
       {
         id: "opta-lmx",
@@ -110,6 +110,26 @@ const MANAGER_UPDATE_LABELS: Record<ManagerUpdateState, string> = {
   update_available: "Update available",
   error: "Error",
 };
+
+const CHANNEL_STORAGE_KEY = "opta_init_manager_channel";
+
+function normalizeChannel(value: unknown): Channel {
+  return value === "beta" ? "beta" : "stable";
+}
+
+function resolveInitialChannel(): Channel {
+  const envChannel = normalizeChannel(import.meta.env.VITE_OPTA_MANAGER_CHANNEL);
+  if (typeof window === "undefined") {
+    return envChannel;
+  }
+
+  const stored = window.localStorage.getItem(CHANNEL_STORAGE_KEY);
+  if (stored === "stable" || stored === "beta") {
+    return stored;
+  }
+
+  return envChannel;
+}
 
 function parseManagerUpdateCheck(
   payload: ManagerUpdateCheckResult | boolean,
@@ -248,7 +268,7 @@ export function App() {
   const tauriAvailable =
     typeof window !== "undefined" &&
     Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
-  const [channel] = useState<Channel>("stable");
+  const [channel, setChannel] = useState<Channel>(resolveInitialChannel);
   const [manifestResp, setManifestResp] = useState<ManifestResponse | null>(null);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [daemon, setDaemon] = useState<DaemonStatus | null>(null);
@@ -322,6 +342,11 @@ export function App() {
   useEffect(() => {
     void checkManagerUpdate();
   }, [checkManagerUpdate]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(CHANNEL_STORAGE_KEY, channel);
+  }, [channel]);
 
   const installManagerUpdate = useCallback(async () => {
     if (!tauriAvailable || managerUpdatePending) return;
@@ -633,6 +658,25 @@ export function App() {
           <div className="settings-modal fade-in">
             <h2 className="modal-title" style={{ textAlign: 'left', marginBottom: '8px' }}>Opta Init Settings</h2>
             
+            <div className="settings-section">
+              <h3>Update Channel</h3>
+              <div className="settings-row">
+                <div className="settings-info">
+                  <div className="settings-label">Manager update track</div>
+                  <div className="settings-sub">Choose which release stream Opta Init Manager follows.</div>
+                </div>
+                <select
+                  aria-label="Manager update channel"
+                  className="settings-select"
+                  value={channel}
+                  onChange={(event) => setChannel(normalizeChannel(event.target.value))}
+                >
+                  <option value="stable">Stable</option>
+                  <option value="beta">Beta</option>
+                </select>
+              </div>
+            </div>
+
             <div className="settings-section">
               <h3>Opta Account</h3>
               <div className="settings-row">

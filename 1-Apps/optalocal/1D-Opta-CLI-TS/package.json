@@ -47,6 +47,7 @@
     "test:contract": "vitest run tests/protocol/operations-contract.test.ts tests/daemon/http-server.test.ts tests/daemon/client-contract.test.ts",
     "plan-state:check": "node scripts/plan-state/sync.mjs",
     "plan-state:sync": "node scripts/plan-state/sync.mjs --write",
+    "check": "npm run quality:gate",
     "quality:gate": "npm run plan-state:check && npm run typecheck && npm run test:contract && npm run test:parity:core-smoke",
     "smoke:features": "node scripts/feature-smoke-live.mjs",
     "deps:check": "pnpm --filter @opta/opta-cli outdated || true && npm audit",

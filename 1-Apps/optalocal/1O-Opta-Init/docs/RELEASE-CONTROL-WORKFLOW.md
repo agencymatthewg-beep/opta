@@ -123,7 +123,8 @@ If either variable is missing, do not publish manager updater metadata.
 ## Publish Procedure (Manager Updater Metadata)
 
 Preferred path: run the automated workflow
-`.github/workflows/opta-init-desktop-manager-release.yml`.
+at repo root:
+`../.github/workflows/opta-init-desktop-manager-release.yml`.
 It builds macOS + Windows updater artifacts, publishes release assets, generates
 `channels/manager-updates/<channel>.json`, syncs `public/desktop-updates/<channel>.json`,
 and runs contract validation gates.

@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
-import { OptaRing } from './OptaRing';
+import { OptaLogo } from './OptaLogo';
 
 /**
  * Shown after CLI browser auth completes.
@@ -18,7 +18,7 @@ export function SuccessScreen() {
         className="text-center max-w-sm"
       >
         <div className="flex justify-center mb-6">
-          <OptaRing size={64} />
+          <OptaLogo size={64} showText={false} logoSrc="/opta-accounts-mark.svg" />
         </div>
 
         <motion.div

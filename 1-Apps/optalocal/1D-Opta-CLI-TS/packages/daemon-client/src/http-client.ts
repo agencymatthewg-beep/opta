@@ -11,6 +11,7 @@ import type {
   DaemonLmxAvailableModel,
   DaemonLmxDiscoveryResponse,
   DaemonLmxDownloadResponse,
+  DaemonLmxDownloadsResponse,
   DaemonLmxDownloadProgressResponse,
   DaemonLmxLoadOptions,
   DaemonLmxLoadResponse,
@@ -314,6 +315,15 @@ export class DaemonHttpClient implements DaemonHttpApi {
       method: 'POST',
       body: JSON.stringify({ confirmationToken }),
     }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
+  }
+
+  lmxDownloads(includeInactive?: boolean): Promise<DaemonLmxDownloadsResponse> {
+    const query = new URLSearchParams();
+    if (includeInactive !== undefined) {
+      query.set('includeInactive', String(includeInactive));
+    }
+    const suffix = query.toString();
+    return this.request(`/v3/lmx/models/downloads${suffix ? `?${suffix}` : ''}`, {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
   }
 
   lmxDownloadProgress(downloadId: string): Promise<DaemonLmxDownloadProgressResponse> {

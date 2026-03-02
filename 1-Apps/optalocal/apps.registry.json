@@ -1,0 +1,127 @@
+[
+  {
+    "id": "1d",
+    "slug": "opta-cli",
+    "name": "Opta CLI",
+    "type": "node",
+    "path": "1D-Opta-CLI-TS",
+    "port": null,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1m",
+    "slug": "opta-lmx",
+    "name": "Opta LMX",
+    "type": "python",
+    "path": "1M-Opta-LMX",
+    "port": 1234,
+    "tasks": {
+      "dev": "uv run opta-lmx",
+      "check": "uv run pytest tests/ -q",
+      "start": "uv run opta-lmx"
+    }
+  },
+  {
+    "id": "1o",
+    "slug": "opta-init",
+    "name": "Opta Init",
+    "type": "node",
+    "path": "1O-Opta-Init",
+    "port": 3001,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1p",
+    "slug": "opta-code-universal",
+    "name": "Opta Code Universal",
+    "type": "node",
+    "path": "1P-Opta-Code-Universal",
+    "port": 5173,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "preview"
+    }
+  },
+  {
+    "id": "1r",
+    "slug": "opta-accounts",
+    "name": "Opta Accounts",
+    "type": "node",
+    "path": "1R-Opta-Accounts",
+    "port": 3002,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1s",
+    "slug": "opta-status",
+    "name": "Opta Status",
+    "type": "node",
+    "path": "1S-Opta-Status",
+    "port": 3005,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1t",
+    "slug": "opta-home",
+    "name": "Opta Home",
+    "type": "node",
+    "path": "1T-Opta-Home",
+    "port": 3000,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1u",
+    "slug": "opta-help",
+    "name": "Opta Help",
+    "type": "node",
+    "path": "1U-Opta-Help",
+    "port": 3006,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
+    "id": "1v",
+    "slug": "opta-learn",
+    "name": "Opta Learn",
+    "type": "node",
+    "path": "1V-Opta-Learn",
+    "port": 3007,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  }
+]

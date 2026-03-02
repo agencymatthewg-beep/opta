@@ -373,7 +373,7 @@ fn default_manifest(channel: &str) -> ManifestPayload {
                     "Command-line interface for install/update and workflow orchestration."
                         .to_string(),
                 version: "fallback".to_string(),
-                website: Some("https://init.optalocal.com/downloads/cli".to_string()),
+                website: Some("https://init.optalocal.com/downloads/opta-cli/latest".to_string()),
                 min_manager_version: None,
                 commands: Some(AppCommands {
                     install: Some(vec![
@@ -508,7 +508,7 @@ fn release_component_description(id: &str) -> String {
 
 fn release_component_website(id: &str) -> Option<String> {
     match id {
-        "opta-cli" => Some("https://init.optalocal.com/downloads/cli".to_string()),
+        "opta-cli" => Some("https://init.optalocal.com/downloads/opta-cli/latest".to_string()),
         "opta-lmx" => Some("https://lmx.optalocal.com".to_string()),
         "opta-code-universal" => Some("https://init.optalocal.com/apps/opta-code".to_string()),
         "opta-daemon" => Some("https://docs.optalocal.com/daemon".to_string()),
@@ -917,7 +917,7 @@ async fn bootstrap_opta_cli_install(channel: &str) -> Result<CommandOutcome, Man
     let release_manifest = match fetch_release_manifest_for_channel(channel).await {
         Ok(manifest) => manifest,
         Err(_) => {
-            let fallback_url = "https://init.optalocal.com/downloads/cli";
+            let fallback_url = "https://init.optalocal.com/downloads/opta-cli/latest";
             open_http_url(fallback_url)?;
             return Ok(CommandOutcome {
                 ok: true,
@@ -936,14 +936,14 @@ async fn bootstrap_opta_cli_install(channel: &str) -> Result<CommandOutcome, Man
         .find(|component| component.id == "opta-cli")
     else {
         return Err(ManagerError::PolicyViolation(
-            "Release manifest does not contain component `opta-cli`. Download Opta CLI manually from https://init.optalocal.com/downloads/cli.".to_string(),
+            "Release manifest does not contain component `opta-cli`. Download Opta CLI manually from https://init.optalocal.com/downloads/opta-cli/latest.".to_string(),
         ));
     };
 
     let Some(installer_url) = select_installer_url(component) else {
         let platform_label = current_platform_key().unwrap_or(std::env::consts::OS);
         return Err(ManagerError::PolicyViolation(format!(
-            "No installer artifact for `opta-cli` on platform `{}`. Download manually from https://init.optalocal.com/downloads/cli.",
+            "No installer artifact for `opta-cli` on platform `{}`. Download manually from https://init.optalocal.com/downloads/opta-cli/latest.",
             platform_label
         )));
     };
@@ -1714,7 +1714,7 @@ async fn verify_app(app_id: String) -> Result<CommandOutcome, String> {
         vec!["apps".to_string(), "verify".to_string(), app_id.clone()],
         vec!["app".to_string(), "verify".to_string(), app_id.clone()],
     ];
-    execute_variants(variants)
+    execute_variants("opta", &variants, "Verify completed.")
         .await
         .map_err(|error| format!("Verify failed: {}", error))
 }
@@ -1735,8 +1735,8 @@ async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
                 ok: output.status.success(),
                 command: format!("open {}", app.path),
                 exit_code: output.status.code(),
-                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
-                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
                 message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
             });
         }
@@ -1753,8 +1753,8 @@ async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
                 ok: output.status.success(),
                 command: format!("explorer {}", app.path),
                 exit_code: output.status.code(),
-                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
-                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
                 message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
             });
         }
@@ -1771,8 +1771,8 @@ async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
                 ok: output.status.success(),
                 command: format!("xdg-open {}", app.path),
                 exit_code: output.status.code(),
-                stdout: Some(String::from_utf8_lossy(&output.stdout).into_owned()),
-                stderr: Some(String::from_utf8_lossy(&output.stderr).into_owned()),
+                stdout: String::from_utf8_lossy(&output.stdout).into_owned(),
+                stderr: String::from_utf8_lossy(&output.stderr).into_owned(),
                 message: if output.status.success() { "Opened folder successfully".into() } else { "Failed to open folder".into() }
             });
         }

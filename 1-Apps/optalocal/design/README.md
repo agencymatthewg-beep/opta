@@ -30,4 +30,4 @@ These web properties and services exist to assist, distribute, and manage the ma
 *   **/aesthetics/**: Documentation breaking down how the Opta design system applies to different apps, highlighting shared traits and app-specific variations based on their role (Core App vs Management Website).
 *   **/relationships/**: Architectural and user-flow diagrams/documentation explaining how the different apps interact, and the hierarchy between Opta AI and Opta Local.
 
-> **Note:** The root `OPTA-AESTHETIC-CONTEXT.md` file provides the core Gemini injection document for the global design rules (colors, typography, spacing). The documents within this `/design` folder expand upon those rules to show cross-app implementation details within the business hierarchy.
+> **Note:** The canonical injection document is `/docs/reports/OPTA-AESTHETIC-CONTEXT.md`, which provides the global design rules (colors, typography, spacing). The documents within this `/design` folder expand upon those rules to show cross-app implementation details within the business hierarchy.

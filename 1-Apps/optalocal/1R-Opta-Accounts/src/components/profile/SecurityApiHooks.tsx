@@ -51,7 +51,7 @@ export function SecurityApiHooks() {
         </button>
       </div>
       {state && (
-        <p className={cn('mt-3 text-xs', state.type === 'ok' ? 'text-opta-green' : 'text-opta-neon-red')}>
+        <p className={cn('mt-3 text-xs', state.type === 'ok' ? 'text-opta-neon-green' : 'text-opta-neon-red')}>
           {state.message}
         </p>
       )}

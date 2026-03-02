@@ -149,6 +149,15 @@ function validateManifest(manifest, schema, manifestPath) {
   if (!allowedChannels.has(manifest.channel)) {
     errors.push(`channel must be one of: ${[...allowedChannels].join(', ')}`);
   }
+  const filename = path.basename(manifestPath);
+  const expectedChannelByFilename = new Map([
+    ['stable.json', 'stable'],
+    ['beta.json', 'beta'],
+  ]);
+  const expectedChannel = expectedChannelByFilename.get(filename);
+  if (expectedChannel && manifest.channel !== expectedChannel) {
+    errors.push(`channel must be "${expectedChannel}" for ${filename}`);
+  }
   if (!isIsoDate(manifest.publishedAt)) {
     errors.push('publishedAt must be an ISO-8601 UTC datetime');
   }

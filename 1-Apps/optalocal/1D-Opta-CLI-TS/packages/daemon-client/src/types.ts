@@ -188,6 +188,29 @@ export interface DaemonLmxDownloadResponse {
   status?: string;
 }
 
+export interface DaemonLmxDownloadTask {
+  downloadId: string;
+  repoId: string;
+  revision?: string;
+  status: 'pending' | 'downloading' | 'completed' | 'failed' | 'cancelled';
+  progressPercent: number;
+  downloadedBytes: number;
+  totalBytes: number;
+  filesCompleted: number;
+  filesTotal: number;
+  error?: string;
+  errorCode?: string;
+  localPath?: string;
+  startedAt?: number;
+  completedAt?: number;
+}
+
+export interface DaemonLmxDownloadsResponse {
+  downloads: DaemonLmxDownloadTask[];
+  count: number;
+  includeInactive: boolean;
+}
+
 export interface DaemonLmxDownloadProgressResponse {
   downloadId: string;
   repoId: string;
@@ -199,6 +222,14 @@ export interface DaemonLmxDownloadProgressResponse {
   filesTotal: number;
   error?: string;
   errorCode?: string;
+  download_id?: string;
+  repo_id?: string;
+  progress_percent?: number;
+  downloaded_bytes?: number;
+  total_bytes?: number;
+  files_completed?: number;
+  files_total?: number;
+  error_code?: string;
 }
 
 export type DaemonOperationSafetyClass = 'read' | 'write' | 'dangerous';
@@ -283,6 +314,7 @@ export interface DaemonHttpApi {
   lmxAvailable(): Promise<DaemonLmxAvailableModel[]>;
   lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<DaemonLmxLoadResponse>;
   lmxConfirmLoad(confirmationToken: string): Promise<DaemonLmxLoadResponse>;
+  lmxDownloads(includeInactive?: boolean): Promise<DaemonLmxDownloadsResponse>;
   lmxDownloadProgress(downloadId: string): Promise<DaemonLmxDownloadProgressResponse>;
   lmxUnload(modelId: string): Promise<unknown>;
   lmxDelete(modelId: string): Promise<unknown>;

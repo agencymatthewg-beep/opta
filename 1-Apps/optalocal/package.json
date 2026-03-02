@@ -1,0 +1,22 @@
+{
+  "name": "optalocal-workspace",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "apps:list": "node scripts/opta-local-workspace.mjs list",
+    "apps:verify": "node scripts/opta-local-workspace.mjs verify",
+    "check:all": "node scripts/opta-local-workspace.mjs run all check --continue-on-error",
+    "build:all": "node scripts/opta-local-workspace.mjs run all build --continue-on-error",
+    "dev:1d": "node scripts/opta-local-workspace.mjs run 1d dev",
+    "dev:1m": "node scripts/opta-local-workspace.mjs run 1m dev",
+    "dev:1o": "node scripts/opta-local-workspace.mjs run 1o dev",
+    "dev:1p": "node scripts/opta-local-workspace.mjs run 1p dev",
+    "dev:1r": "node scripts/opta-local-workspace.mjs run 1r dev",
+    "dev:1s": "node scripts/opta-local-workspace.mjs run 1s dev",
+    "dev:1t": "node scripts/opta-local-workspace.mjs run 1t dev",
+    "dev:1u": "node scripts/opta-local-workspace.mjs run 1u dev",
+    "dev:1v": "node scripts/opta-local-workspace.mjs run 1v dev",
+    "check:1o": "node scripts/opta-local-workspace.mjs run 1o check",
+    "release:opta-init:prepare": "npm --prefix 1O-Opta-Init run validate:release-contract && npm --prefix 1O-Opta-Init run sync:desktop-manifests && npm --prefix 1O-Opta-Init run sync:manager-updates && npm --prefix 1O-Opta-Init run sync:vercel-redirects"
+  }
+}

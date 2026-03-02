@@ -7,10 +7,13 @@ Scope: `1-Apps/optalocal/*`
 - `1D-Opta-CLI-TS` — runtime/TUI/daemon
 - `1L-Opta-Local` — deprecated duplicate client (retired/deleted from workspace)
 - `1M-Opta-LMX` — inference service (Mono512 host)
-- `1O-Opta-Init` — project/init system
+- `1O-Opta-Init` — Opta Init Website + Opta Init Desktop Manager (desktop manager is the only website download target)
 - `1P-Opta-Code-Universal` — desktop client for Opta CLI daemon
 - `1R-Opta-Accounts` — auth/accounts portal
+- `1S-Opta-Status` — status and incident visibility
 - `1T-Opta-Home` — brand homepage (optalocal.com root) — **live 2026-03-01**
+- `1U-Opta-Help` — help/docs website
+- `1V-Opta-Learn` — learn/guides website
 
 ## Domain Map (current, all live)
 
@@ -54,6 +57,11 @@ When a major architecture/path/policy change occurs, update:
 3. SOT project map (`AI26/1-SOT/PROJECTS.md`)
 
 ## Known gaps
-- `OPTA-LOCAL-STACK.md` at `1-Apps/optalocal/` is still empty — needs population
 - optamize.biz has no brand homepage (sister ecosystem — cross-brand path absent)
 - Real product screenshots not yet in `optalocal.com` Ecosystem section (using icon cards)
+
+## Canonical Distribution Policy
+
+- Opta Init Website (`init.optalocal.com`) and Opta Init Desktop Manager are separate components in the same app boundary.
+- Across OptaLocal websites, users should only download **Opta Init Desktop Manager**.
+- CLI/LMX/Code are lifecycle-managed from Opta Init Manager, not presented as direct website downloads.
