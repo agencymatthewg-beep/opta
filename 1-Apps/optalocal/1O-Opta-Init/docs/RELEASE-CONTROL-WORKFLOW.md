@@ -44,15 +44,18 @@ This document defines the internal release-control contract for Opta Init channe
 ## Manager Updater Metadata Contract Summary
 
 - Schema is versioned (`schemaVersion: "1.0.0"`, `manifestVersion: 1`).
-- Each channel file defines updater payloads under `targets`.
-- Every target entry must include:
-  - `platform`
-  - `url`
-  - `signature`
+- Each channel file is a Tauri-compatible static updater feed.
+- Feed-level fields:
   - `version`
   - `notes`
-  - `date`
-- Target keys must be platform-scoped (`darwin-*`, `windows-*`, `linux-*`) and must match `platform`.
+  - `pub_date`
+- Platform payloads are under `platforms` and keyed by target:
+  - `darwin-aarch64`
+  - `darwin-x86_64`
+  - `windows-x86_64`
+- Every platform entry must include:
+  - `url`
+  - `signature`
 
 ## URL Policy
 
@@ -60,9 +63,18 @@ This document defines the internal release-control contract for Opta Init channe
   - `https://init.optalocal.com/downloads/...`
 - Canonical manager updater artifact URL namespace:
   - `https://init.optalocal.com/desktop-updates/manager/...`
-- Published manager updater metadata paths:
+- Published manager updater feed endpoints consumed by desktop manager:
   - `https://init.optalocal.com/desktop-updates/stable.json`
   - `https://init.optalocal.com/desktop-updates/beta.json`
+
+## Manager Updater Endpoint Contract
+
+- `200` with static JSON feed containing:
+  - `version`
+  - `notes`
+  - `pub_date`
+  - `platforms` (`{ target: { url, signature } }`)
+- Tauri updater selects the local target from `platforms` and performs version comparison client-side.
 - During gateway mode, unresolved package URLs may temporarily route to channel release notes while packaging/signing completes.
 
 ## Required Signing Variables (Manager Updater)
@@ -117,7 +129,7 @@ If either variable is missing, do not publish manager updater metadata.
 
 1. Confirm beta meets release gates (smoke tests, crash rate, install success).
 2. Promote component manifest entries from `channels/beta.json` into `channels/stable.json`.
-3. Promote manager updater targets from `channels/manager-updates/beta.json` into `channels/manager-updates/stable.json`.
+3. Promote manager updater feed values (`version`, `notes`, `pub_date`, and `platforms`) from `channels/manager-updates/beta.json` into `channels/manager-updates/stable.json`.
 4. Validate:
    - `npm run validate:release-contract`
 5. Sync outputs:

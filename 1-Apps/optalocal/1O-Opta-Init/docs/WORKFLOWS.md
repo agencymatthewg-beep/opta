@@ -64,6 +64,9 @@ Update both release-control contracts whenever a new release ships:
    - `npm run sync:manager-updates`
 6. Validate contracts and links:
    - `npm run validate:release-contract`
+7. Smoke-check manager updater feed:
+   - `curl -s https://init.optalocal.com/desktop-updates/stable.json | jq '.version, .pub_date, .platforms | keys'`
+   - `curl -s https://init.optalocal.com/desktop-updates/beta.json | jq '.version, .pub_date, .platforms | keys'`
 
 Commit + push -> Vercel auto-deploys.
 

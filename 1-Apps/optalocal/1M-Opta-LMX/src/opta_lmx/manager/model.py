@@ -68,9 +68,15 @@ class ModelManager:
     ) -> None:
         self._hf_api = HfApi(token=hf_token)
         self._hf_token = hf_token
-        self._models_directory = models_directory
+        self._models_directory = (
+            models_directory.expanduser() if models_directory is not None else None
+        )
         self._downloads: dict[str, DownloadTask] = {}
         self._event_bus = event_bus
+
+    def _resolved_cache_dir(self) -> Path:
+        """Resolve effective HF cache directory used by manager operations."""
+        return self._models_directory or (Path.home() / ".cache" / "huggingface" / "hub")
 
     async def start_download(
         self,
@@ -100,7 +106,8 @@ class ModelManager:
         # Check disk space (require 10% margin over estimated size)
         if estimated_size > 0:
             try:
-                cache_dir = Path.home() / ".cache" / "huggingface" / "hub"
+                cache_dir = self._resolved_cache_dir()
+                cache_dir.mkdir(parents=True, exist_ok=True)
                 disk = shutil.disk_usage(cache_dir if cache_dir.exists() else Path.home())
                 required = int(estimated_size * 1.1)
                 if disk.free < required:
@@ -200,6 +207,7 @@ class ModelManager:
                     return snapshot_download(  # type: ignore[return-value]
                         repo_id=repo_id,
                         revision=revision,
+                        cache_dir=self._resolved_cache_dir(),
                         allow_patterns=allow_patterns,
                         ignore_patterns=ignore_patterns,
                         token=self._hf_token,
@@ -310,10 +318,13 @@ class ModelManager:
             return True
 
         try:
+            cache_dir = self._resolved_cache_dir()
+            cache_dir.mkdir(parents=True, exist_ok=True)
             await asyncio.to_thread(
                 snapshot_download,
                 repo_id=model_id,
                 revision=revision,
+                cache_dir=cache_dir,
                 token=self._hf_token,
                 local_files_only=True,
             )
@@ -332,7 +343,9 @@ class ModelManager:
             List of dicts with repo_id, local_path, size_bytes, last_modified.
         """
         try:
-            cache_info = await asyncio.to_thread(scan_cache_dir)
+            cache_dir = self._resolved_cache_dir()
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            cache_info = await asyncio.to_thread(scan_cache_dir, cache_dir=cache_dir)
         except Exception as e:
             logger.warning("cache_scan_failed", extra={"error": str(e)})
             return []
@@ -373,7 +386,9 @@ class ModelManager:
             KeyError: If model not found on disk.
         """
         try:
-            cache_info = await asyncio.to_thread(scan_cache_dir)
+            cache_dir = self._resolved_cache_dir()
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            cache_info = await asyncio.to_thread(scan_cache_dir, cache_dir=cache_dir)
         except Exception as e:
             raise RuntimeError(f"Failed to scan cache: {e}") from e
 

@@ -264,8 +264,23 @@ export function ModelsPage({ connection }: ModelsPageProps) {
 
       if (cancelled) return;
 
-      const completedModels: string[] = [];
-      const failedMessages: string[] = [];
+      const completedModels = results
+        .map(({ downloadId, progress }) => {
+          if (progress?.status !== "completed") return null;
+          return trackedDownloads[downloadId]?.model_id ?? null;
+        })
+        .filter((modelId): modelId is string => Boolean(modelId));
+
+      const failedMessages = results
+        .map(({ downloadId, progress }) => {
+          if (progress?.status !== "failed") return null;
+          const modelId = trackedDownloads[downloadId]?.model_id;
+          if (!modelId) return null;
+          return progress.error
+            ? `${modelId}: ${progress.error}`
+            : `${modelId}: download failed`;
+        })
+        .filter((message): message is string => Boolean(message));
 
       setTrackedDownloads((previous) => {
         const next = { ...previous };
@@ -283,17 +298,11 @@ export function ModelsPage({ connection }: ModelsPageProps) {
           next[downloadId] = updated;
 
           if (progress.status === "completed") {
-            completedModels.push(existing.model_id);
             delete next[downloadId];
             continue;
           }
 
           if (progress.status === "failed") {
-            failedMessages.push(
-              progress.error
-                ? `${existing.model_id}: ${progress.error}`
-                : `${existing.model_id}: download failed`,
-            );
             delete next[downloadId];
           }
         }

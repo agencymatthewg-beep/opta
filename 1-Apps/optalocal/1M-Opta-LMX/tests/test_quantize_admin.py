@@ -55,25 +55,27 @@ async def test_cancel_quantize_not_found_returns_404(client: AsyncClient) -> Non
 
 
 @pytest.mark.asyncio
-async def test_cancel_quantize_running_returns_409(client: AsyncClient) -> None:
+async def test_cancel_quantize_running_returns_202(client: AsyncClient) -> None:
     job = QuantizeJob(
         job_id="job-2",
         source_model="org/model",
         output_path="/tmp/out",
-        status="running",
+        status="cancelling",
         cancel_requested=True,
+        cancel_requested_at=1.0,
     )
 
     with patch(
         "opta_lmx.manager.quantize.cancel_quantize",
-        new=AsyncMock(return_value=(False, "running_cannot_cancel", job)),
+        new=AsyncMock(return_value=(False, "cancelling", job)),
     ):
         resp = await client.post("/admin/quantize/job-2/cancel")
 
-    assert resp.status_code == 409
+    assert resp.status_code == 202
     body = resp.json()
-    assert body["reason"] == "running_cannot_cancel"
+    assert body["reason"] == "cancelling"
     assert body["cancel_requested"] is True
+    assert body["cancel_requested_at"] == 1.0
 
 
 @pytest.mark.asyncio

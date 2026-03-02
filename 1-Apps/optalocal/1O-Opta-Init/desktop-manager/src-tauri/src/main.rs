@@ -13,9 +13,9 @@ const MANAGER_VERSION: &str = env!("CARGO_PKG_VERSION");
 const UPDATER_ENDPOINT_ENV_STABLE: &str = "OPTA_INIT_UPDATER_ENDPOINT_STABLE";
 const UPDATER_ENDPOINT_ENV_BETA: &str = "OPTA_INIT_UPDATER_ENDPOINT_BETA";
 const DEFAULT_UPDATER_ENDPOINT_STABLE: &str =
-    "https://init.optalocal.com/desktop/updater/stable/{{target}}/{{arch}}/{{current_version}}";
+    "https://init.optalocal.com/desktop-updates/stable.json";
 const DEFAULT_UPDATER_ENDPOINT_BETA: &str =
-    "https://init.optalocal.com/desktop/updater/beta/{{target}}/{{arch}}/{{current_version}}";
+    "https://init.optalocal.com/desktop-updates/beta.json";
 
 #[derive(Debug, Error)]
 enum ManagerError {

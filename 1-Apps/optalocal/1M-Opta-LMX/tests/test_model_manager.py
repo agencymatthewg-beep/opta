@@ -115,6 +115,19 @@ async def test_list_available_returns_cached_models(manager: ModelManager) -> No
     assert models[0]["size_bytes"] == 4_000_000_000
 
 
+async def test_list_available_scans_configured_cache_dir(tmp_path: Path) -> None:
+    """list_available scans the manager's configured cache directory."""
+    manager = ModelManager(models_directory=tmp_path / "hf-cache")
+    mock_cache = MagicMock()
+    mock_cache.repos = []
+
+    with patch("opta_lmx.manager.model.scan_cache_dir", return_value=mock_cache) as scan:
+        await manager.list_available()
+
+    assert scan.call_count == 1
+    assert scan.call_args.kwargs["cache_dir"] == tmp_path / "hf-cache"
+
+
 # --- delete_model ---
 
 
@@ -154,6 +167,22 @@ async def test_delete_model_returns_freed_bytes(manager: ModelManager) -> None:
     assert freed == 4_000_000_000
     mock_cache.delete_revisions.assert_called_once_with("abc123")
     mock_delete_strategy.execute.assert_called_once()
+
+
+async def test_delete_scans_configured_cache_dir(tmp_path: Path) -> None:
+    """delete_model scans configured cache dir before delete strategy."""
+    manager = ModelManager(models_directory=tmp_path / "hf-cache")
+    mock_cache = MagicMock()
+    mock_cache.repos = []
+
+    with (
+        patch("opta_lmx.manager.model.scan_cache_dir", return_value=mock_cache) as scan,
+        pytest.raises(KeyError),
+    ):
+        await manager.delete_model("nonexistent/model")
+
+    assert scan.call_count == 1
+    assert scan.call_args.kwargs["cache_dir"] == tmp_path / "hf-cache"
 
 
 # --- cancel_active_downloads ---

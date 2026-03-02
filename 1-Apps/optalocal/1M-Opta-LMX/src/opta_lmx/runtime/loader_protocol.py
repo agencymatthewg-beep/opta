@@ -100,3 +100,59 @@ class LoaderFailure:
             metadata=dict(payload.get("metadata", {})),
         )
 
+
+@dataclass(slots=True)
+class QuantizeSpec:
+    """Input payload sent from parent quantize manager to child worker."""
+
+    job_id: str
+    source_model: str
+    output_path: str
+    bits: int
+    group_size: int
+    mode: str
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "job_id": self.job_id,
+            "source_model": self.source_model,
+            "output_path": self.output_path,
+            "bits": self.bits,
+            "group_size": self.group_size,
+            "mode": self.mode,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> QuantizeSpec:
+        return cls(
+            job_id=str(payload["job_id"]),
+            source_model=str(payload["source_model"]),
+            output_path=str(payload["output_path"]),
+            bits=int(payload["bits"]),
+            group_size=int(payload["group_size"]),
+            mode=str(payload["mode"]),
+        )
+
+
+@dataclass(slots=True)
+class QuantizeResult:
+    """Outcome payload returned by child quantize worker on success."""
+
+    ok: bool
+    output_path: str
+    output_size_bytes: int
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "ok": self.ok,
+            "output_path": self.output_path,
+            "output_size_bytes": self.output_size_bytes,
+        }
+
+    @classmethod
+    def from_dict(cls, payload: dict[str, Any]) -> QuantizeResult:
+        return cls(
+            ok=bool(payload.get("ok", False)),
+            output_path=str(payload["output_path"]),
+            output_size_bytes=int(payload.get("output_size_bytes", 0)),
+        )

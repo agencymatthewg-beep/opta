@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { Settings } from "lucide-react";
 import type {
   Channel,
   DaemonStatus,
@@ -257,6 +258,8 @@ export function App() {
   const [managerUpdatePending, setManagerUpdatePending] = useState(false);
   
   const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
+  const [showScanPrompt, setShowScanPrompt] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const installedIndex = useMemo(() => {
     const map = new Map<string, InstalledApp>();
@@ -369,8 +372,28 @@ export function App() {
     }
   }, [channel, managerUpdatePending, tauriAvailable]);
 
+  // Global Keydown for Scan
   useEffect(() => {
-    if (!hoveredApp || pendingKey !== null || managerUpdatePending) return;
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (showScanPrompt) {
+        if (e.key === 'Escape') setShowScanPrompt(false);
+        if (e.key === 'Enter') {
+          console.log("Scanning PC for Opta Apps...");
+          setShowScanPrompt(false);
+        }
+        return;
+      }
+      
+      if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !hoveredApp && !managerUpdatePending) {
+        setShowScanPrompt(true);
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [showScanPrompt, hoveredApp, managerUpdatePending]);
+
+  useEffect(() => {
+    if (!hoveredApp || pendingKey !== null || managerUpdatePending || showScanPrompt) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
@@ -517,7 +540,7 @@ export function App() {
       </div>
 
       <div className="bottom-panel">
-        <div className="status-stack">
+        <div className="centered-bottom-group">
           <div className="status-row">
             <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
               <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
@@ -528,58 +551,129 @@ export function App() {
               <span className="manager-update-chip-title">Manager</span>
               <span>{MANAGER_UPDATE_LABELS[managerUpdateState]}</span>
             </div>
+            <div className="scan-hint" onClick={() => setShowScanPrompt(true)} title="Scan system for Opta apps">
+              Scan <kbd>S</kbd>
+            </div>
           </div>
           {managerUpdateWarning && (
             <p className="manager-update-warning" title={managerUpdateWarning}>
               {managerUpdateWarning}
             </p>
           )}
-        </div>
-        
-        <div className="action-buttons">
-          {managerUpdateState === "update_available" && (
-            <button
-              className="btn secondary manager-update-button"
-              disabled={controlsDisabled}
-              onClick={() => void installManagerUpdate()}
-            >
-              {managerUpdatePending ? "Updating Manager..." : "Update Manager"}
-            </button>
-          )}
-          {displayApp ? (
-            <div className="fade-in">
-              {displayApp.id === "opta-daemon" ? (
-                <button 
-                  className="btn primary" 
-                  disabled={controlsDisabled}
-                  onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
-                >
-                  {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
-                </button>
-              ) : isInstalled ? (
-                <>
-                  <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "launch")}>
-                    {isPending ? "Working..." : "Launch App"}
-                  </button>
-                  <button className="btn secondary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "update")}>
-                    Update
-                  </button>
-                </>
-              ) : (
-                <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "install")}>
-                  {isPending ? "Installing..." : "Install App"}
-                </button>
-              )}
-            </div>
-          ) : (
-            <div className="fade-in">
-              <button className="btn primary" onClick={() => void refreshData()} disabled={controlsDisabled}>
-                Refresh Stack
+
+          <div className="action-buttons centered-actions">
+            {managerUpdateState === "update_available" && (
+              <button
+                className="btn secondary manager-update-button"
+                disabled={controlsDisabled}
+                onClick={() => void installManagerUpdate()}
+              >
+                {managerUpdatePending ? "Updating Manager..." : "Update Manager"}
               </button>
-            </div>
-          )}
+            )}
+            {displayApp ? (
+              <div className="fade-in">
+                {displayApp.id === "opta-daemon" ? (
+                  <button 
+                    className="btn primary" 
+                    disabled={controlsDisabled}
+                    onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
+                  >
+                    {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
+                  </button>
+                ) : isInstalled ? (
+                  <>
+                    <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "launch")}>
+                      {isPending ? "Working..." : "Launch App"}
+                    </button>
+                    <button className="btn secondary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "update")}>
+                      Update
+                    </button>
+                  </>
+                ) : (
+                  <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "install")}>
+                    {isPending ? "Installing..." : "Install App"}
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="fade-in">
+                <button className="btn primary" onClick={() => void refreshData()} disabled={controlsDisabled}>
+                  Refresh Stack
+                </button>
+              </div>
+            )}
+          </div>
+          
+          <button className="settings-cog" onClick={() => setShowSettings(true)} title="Settings">
+            <Settings size={20} />
+          </button>
         </div>
       </div>
+
+      {showScanPrompt && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowScanPrompt(false); }}>
+          <div className="modal-content fade-in">
+            <h2 className="modal-title">System Scan</h2>
+            <p className="modal-desc">Are you sure you want to scan your entire PC for installed Opta applications? This will ensure Opta Init is fully up to date.</p>
+            <div className="modal-actions">
+              <button className="btn secondary" onClick={() => setShowScanPrompt(false)}>Cancel</button>
+              <button className="btn primary" onClick={() => {
+                console.log("Scanning PC for Opta Apps...");
+                setShowScanPrompt(false);
+                // Future: invoke("scan_system")
+              }}>Confirm Scan</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showSettings && (
+        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
+          <div className="settings-modal fade-in">
+            <h2 className="modal-title" style={{ textAlign: 'left', marginBottom: '8px' }}>Opta Init Settings</h2>
+            
+            <div className="settings-section">
+              <h3>Opta Account</h3>
+              <div className="settings-row">
+                <div className="settings-info">
+                  <div className="settings-label">Not Linked</div>
+                  <div className="settings-sub">Sync your preferences and cloud backups.</div>
+                </div>
+                <button className="btn secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Link Account</button>
+              </div>
+            </div>
+
+            <div className="settings-section">
+              <h3>System Components</h3>
+              <div className="settings-row">
+                <div className="settings-info">
+                  <div className="settings-label">Opta Init Manager</div>
+                  <div className="settings-sub">/Applications/OptaInit.app</div>
+                </div>
+                <div className="settings-value">v1.0.0</div>
+              </div>
+              {apps.map(app => (
+                <div key={app.id} className="settings-row">
+                  <div className="settings-info">
+                    <div className="settings-label">{app.name}</div>
+                    <div className="settings-sub">
+                      {installedIndex.has(app.id) ? `/Users/Shared/OptaLocal/${app.id}` : "Not Installed"}
+                    </div>
+                  </div>
+                  <div className="settings-value">
+                    {installedIndex.has(app.id) ? installedIndex.get(app.id)!.version : app.version}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="modal-actions" style={{ marginTop: '32px', justifyContent: 'flex-end' }}>
+              <button className="btn secondary" onClick={() => setShowSettings(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

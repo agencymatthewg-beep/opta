@@ -462,6 +462,11 @@ async def start_quantize(
         "status": job.status,
         "queue_position": job.queue_position,
         "cancel_requested": job.cancel_requested,
+        "cancel_requested_at": job.cancel_requested_at,
+        "failure_code": job.failure_code,
+        "exit_code": job.exit_code,
+        "signal": job.signal,
+        "worker_pid": job.worker_pid,
     })
 
 
@@ -488,11 +493,18 @@ async def get_quantize_job(
         "started_at": job.started_at,
         "queue_position": job.queue_position,
         "cancel_requested": job.cancel_requested,
+        "cancel_requested_at": job.cancel_requested_at,
         "updated_at": job.updated_at,
+        "failure_code": job.failure_code,
+        "exit_code": job.exit_code,
+        "signal": job.signal,
+        "worker_pid": job.worker_pid,
     }
     if job.completed_at:
         result["completed_at"] = job.completed_at
         result["duration_sec"] = round(job.completed_at - job.started_at, 1)
+    if job.cancelled_at is not None:
+        result["cancelled_at"] = job.cancelled_at
     if job.output_size_bytes:
         result["output_size_bytes"] = job.output_size_bytes
         result["output_size_gb"] = round(job.output_size_bytes / (1024**3), 2)
@@ -520,8 +532,8 @@ async def cancel_quantize_job(
         )
 
     status_code = 200
-    if reason == "running_cannot_cancel":
-        status_code = 409
+    if reason == "cancelling":
+        status_code = 202
 
     return JSONResponse(
         status_code=status_code,
@@ -531,6 +543,10 @@ async def cancel_quantize_job(
             "reason": reason,
             "cancelled": cancelled,
             "cancel_requested": job.cancel_requested,
+            "cancel_requested_at": job.cancel_requested_at,
+            "failure_code": job.failure_code,
+            "exit_code": job.exit_code,
+            "signal": job.signal,
         },
     )
 
@@ -555,6 +571,11 @@ async def list_quantize_jobs(
                 "started_at": j.started_at,
                 "queue_position": j.queue_position,
                 "cancel_requested": j.cancel_requested,
+                "cancel_requested_at": j.cancel_requested_at,
+                "failure_code": j.failure_code,
+                "exit_code": j.exit_code,
+                "signal": j.signal,
+                "worker_pid": j.worker_pid,
             }
             for j in jobs
         ],

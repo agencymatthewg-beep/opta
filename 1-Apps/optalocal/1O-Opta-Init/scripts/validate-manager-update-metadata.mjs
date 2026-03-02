@@ -17,7 +17,7 @@ const defaultManifestPaths = [
 const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 const httpsRegex = /^https:\/\//;
-const targetKeyRegex = /^(darwin|windows|linux)-[A-Za-z0-9_-]+$/;
+const platformKeyRegex = /^(darwin|windows|linux)-[A-Za-z0-9_-]+$/;
 
 function usage() {
   console.log(
@@ -39,41 +39,25 @@ function isIsoDate(value) {
   return typeof value === 'string' && isoDateRegex.test(value) && !Number.isNaN(Date.parse(value));
 }
 
-function validateTargetMetadata(targetId, target, location, errors, allowedPlatforms) {
-  if (!isObject(target)) {
+function validatePlatformRelease(platformId, release, location, errors, allowedPlatforms) {
+  if (!isObject(release)) {
     errors.push(`${location} must be an object`);
     return;
   }
 
-  const delimiterIndex = targetId.indexOf('-');
-  const platformFromTarget = delimiterIndex === -1 ? null : targetId.slice(0, delimiterIndex);
+  const delimiterIndex = platformId.indexOf('-');
+  const platformFromKey = delimiterIndex === -1 ? null : platformId.slice(0, delimiterIndex);
 
-  if (!allowedPlatforms.has(target.platform)) {
-    errors.push(`${location}.platform must be one of: ${[...allowedPlatforms].join(', ')}`);
+  if (platformFromKey && !allowedPlatforms.has(platformFromKey)) {
+    errors.push(`${location} key prefix must be one of: ${[...allowedPlatforms].join(', ')}`);
   }
 
-  if (platformFromTarget && target.platform !== platformFromTarget) {
-    errors.push(`${location}.platform must match target key prefix "${platformFromTarget}"`);
-  }
-
-  if (typeof target.url !== 'string' || !httpsRegex.test(target.url)) {
+  if (typeof release.url !== 'string' || !httpsRegex.test(release.url)) {
     errors.push(`${location}.url must be an https URL`);
   }
 
-  if (typeof target.signature !== 'string' || target.signature.trim().length < 16) {
+  if (typeof release.signature !== 'string' || release.signature.trim().length < 16) {
     errors.push(`${location}.signature must be a non-empty signature string`);
-  }
-
-  if (typeof target.version !== 'string' || !semverRegex.test(target.version)) {
-    errors.push(`${location}.version must be a semver string`);
-  }
-
-  if (typeof target.notes !== 'string' || target.notes.trim().length === 0) {
-    errors.push(`${location}.notes must be a non-empty string`);
-  }
-
-  if (!isIsoDate(target.date)) {
-    errors.push(`${location}.date must be an ISO-8601 UTC datetime`);
   }
 }
 
@@ -82,7 +66,7 @@ function validateManifest(manifest, schema) {
   const schemaVersion = schema?.properties?.schemaVersion?.const ?? '1.0.0';
   const manifestVersion = schema?.properties?.manifestVersion?.const ?? 1;
   const allowedChannels = new Set(schema?.properties?.channel?.enum ?? ['stable', 'beta']);
-  const allowedPlatforms = new Set(schema?.$defs?.targetMetadata?.properties?.platform?.enum ?? ['darwin', 'windows', 'linux']);
+  const allowedPlatforms = new Set(['darwin', 'windows', 'linux']);
 
   if (!isObject(manifest)) {
     return {
@@ -107,34 +91,46 @@ function validateManifest(manifest, schema) {
     errors.push('publishedAt must be an ISO-8601 UTC datetime');
   }
 
-  if (!isObject(manifest.targets)) {
-    errors.push('targets must be an object');
+  if (typeof manifest.version !== 'string' || !semverRegex.test(manifest.version)) {
+    errors.push('version must be a semver string');
+  }
+
+  if (typeof manifest.notes !== 'string' || manifest.notes.trim().length === 0) {
+    errors.push('notes must be a non-empty string');
+  }
+
+  if (!isIsoDate(manifest.pub_date)) {
+    errors.push('pub_date must be an ISO-8601 UTC datetime');
+  }
+
+  if (!isObject(manifest.platforms)) {
+    errors.push('platforms must be an object');
     return {
       errors,
       targetCount: 0,
     };
   }
 
-  const targetEntries = Object.entries(manifest.targets);
-  if (targetEntries.length === 0) {
-    errors.push('targets must contain at least one target entry');
+  const platformEntries = Object.entries(manifest.platforms);
+  if (platformEntries.length === 0) {
+    errors.push('platforms must contain at least one platform entry');
     return {
       errors,
       targetCount: 0,
     };
   }
 
-  for (const [targetId, target] of targetEntries) {
-    const location = `targets.${targetId}`;
-    if (!targetKeyRegex.test(targetId)) {
-      errors.push(`${location} target key must match ^(darwin|windows|linux)-[A-Za-z0-9_-]+$`);
+  for (const [platformId, release] of platformEntries) {
+    const location = `platforms.${platformId}`;
+    if (!platformKeyRegex.test(platformId)) {
+      errors.push(`${location} key must match ^(darwin|windows|linux)-[A-Za-z0-9_-]+$`);
     }
-    validateTargetMetadata(targetId, target, location, errors, allowedPlatforms);
+    validatePlatformRelease(platformId, release, location, errors, allowedPlatforms);
   }
 
   return {
     errors,
-    targetCount: targetEntries.length,
+    targetCount: platformEntries.length,
   };
 }
 
@@ -166,7 +162,7 @@ async function main() {
           console.error(`  - ${error}`);
         }
       } else {
-        console.log(`PASS ${path.relative(repoRoot, manifestPath)} (${targetCount} targets)`);
+        console.log(`PASS ${path.relative(repoRoot, manifestPath)} (${targetCount} platforms)`);
       }
     } catch (error) {
       hadErrors = true;

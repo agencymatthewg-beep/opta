@@ -865,12 +865,6 @@ export function SettingsOverlay({
     setEditingKey(null);
   }, []);
 
-  /** Immediately flips a boolean toggle without opening the inline editor. */
-  const handleToggleQuick = useCallback((toggleItem: SettingsItem) => {
-    const next = currentValue(toggleItem) === 'true' ? 'false' : 'true';
-    setChanges(prev => ({ ...prev, [toggleItem.configKey]: next }));
-  }, [currentValue]);
-
   useInput((input, key) => {
     // If editing a select/toggle/slider field, let the child component handle input
     if (editingKey && editingInputType !== 'text') {
@@ -919,49 +913,14 @@ export function SettingsOverlay({
       setSelectedIndex(prev => (prev + 1) % items.length); return;
     }
 
-    const currentItem = items[selectedIndex];
-    const isCycleable = currentItem?.inputType === 'select' || currentItem?.inputType === 'toggle' || currentItem?.inputType === 'slider';
-
     if (key.leftArrow || input === 'h' || input === 'a') {
-      if (isCycleable && currentItem) {
-        if (currentItem.inputType === 'toggle') {
-          handleToggleQuick(currentItem);
-        } else if (currentItem.inputType === 'select' && currentItem.options) {
-          const val = currentValue(currentItem);
-          const idx = currentItem.options.findIndex(o => o.value === val);
-          const nextIdx = (idx - 1 + currentItem.options.length) % currentItem.options.length;
-          setChanges(prev => ({ ...prev, [currentItem.configKey]: currentItem.options![nextIdx]!.value }));
-        } else if (currentItem.inputType === 'slider' && currentItem.min !== undefined && currentItem.max !== undefined) {
-          const val = parseInt(currentValue(currentItem), 10) || currentItem.min;
-          const nextVal = Math.max(currentItem.min, val - 1);
-          setChanges(prev => ({ ...prev, [currentItem.configKey]: String(nextVal) }));
-        }
-        return;
-      } else {
-        const prev = (PAGE_INDEX[selectedPage] + PAGES.length - 1) % PAGES.length;
-        setPage(PAGES[prev]!.id); return;
-      }
+      const prev = (PAGE_INDEX[selectedPage] + PAGES.length - 1) % PAGES.length;
+      setPage(PAGES[prev]!.id); return;
     }
 
     if (key.rightArrow || input === 'l' || input === 'd') {
-      if (isCycleable && currentItem) {
-        if (currentItem.inputType === 'toggle') {
-          handleToggleQuick(currentItem);
-        } else if (currentItem.inputType === 'select' && currentItem.options) {
-          const val = currentValue(currentItem);
-          const idx = currentItem.options.findIndex(o => o.value === val);
-          const nextIdx = (idx + 1) % currentItem.options.length;
-          setChanges(prev => ({ ...prev, [currentItem.configKey]: currentItem.options![nextIdx]!.value }));
-        } else if (currentItem.inputType === 'slider' && currentItem.min !== undefined && currentItem.max !== undefined) {
-          const val = parseInt(currentValue(currentItem), 10) || currentItem.min;
-          const nextVal = Math.min(currentItem.max, val + 1);
-          setChanges(prev => ({ ...prev, [currentItem.configKey]: String(nextVal) }));
-        }
-        return;
-      } else {
-        const next = (PAGE_INDEX[selectedPage] + 1) % PAGES.length;
-        setPage(PAGES[next]!.id); return;
-      }
+      const next = (PAGE_INDEX[selectedPage] + 1) % PAGES.length;
+      setPage(PAGES[next]!.id); return;
     }
 
     // Number shortcuts for pages
@@ -970,7 +929,7 @@ export function SettingsOverlay({
       setPage(PAGES[num - 1]!.id); return;
     }
 
-    // Enter / Space = activate action, quick-toggle, or open inline editor.
+    // Enter / Space = activate action or open inline editor.
     if (key.return || input === ' ') {
       const item = items[selectedIndex];
       if (!item) return;
@@ -980,10 +939,6 @@ export function SettingsOverlay({
         } else {
           void item.action?.();
         }
-        return;
-      }
-      if (item.inputType === 'toggle') {
-        handleToggleQuick(item);
         return;
       }
       setEditingKey(item.configKey);
@@ -1015,7 +970,7 @@ export function SettingsOverlay({
         <>
           {/* HINT */}
           <Box marginTop={1}>
-            <Text dimColor>{`←/→ switch page or adjust value · ↑/↓ navigate · Enter/Space edit · 1-${PAGES.length} jump · Shift+Tab view`}</Text>
+            <Text dimColor>{`←/→ switch page · ↑/↓ navigate · Enter/Space edit · 1-${PAGES.length} jump · Shift+Tab view`}</Text>
           </Box>
           <Box>
             <Text dimColor>View: </Text>
@@ -1042,7 +997,7 @@ export function SettingsOverlay({
           {editingKey && editingItem ? (
             <Box marginTop={1} flexDirection="column" borderStyle="round" borderColor={pageColor} paddingX={1}>
               <Text color={pageColor} bold>Editing: {editingItem.label}</Text>
-              {editingInputType === 'select' && editingItem.options ? (
+              {(editingInputType === 'select' || editingInputType === 'toggle') && editingItem.options ? (
                 <Box marginTop={1}>
                   <InlineSelect
                     options={editingItem.options}
@@ -1122,11 +1077,9 @@ export function SettingsOverlay({
                 // Keyboard hint shown next to the active item based on its input type.
                 const interactionHint = isSelected && isActionItem
                   ? 'Enter to open'
-                  : isSelected && item.inputType === 'toggle'
-                    ? 'Enter/Space toggle'
-                    : isSelected && (item.inputType === 'select' || item.inputType === 'slider')
-                      ? 'Enter to choose'
-                      : null;
+                  : isSelected && (item.inputType === 'select' || item.inputType === 'toggle' || item.inputType === 'slider')
+                    ? 'Enter to choose'
+                    : null;
 
                 return (
                   <Box key={item.configKey} flexDirection="column">

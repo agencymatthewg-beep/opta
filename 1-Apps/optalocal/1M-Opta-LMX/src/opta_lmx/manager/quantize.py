@@ -2,7 +2,8 @@
 
 Wraps mlx_lm.convert() in async-compatible background tasks for
 quantizing HuggingFace models to MLX format on Apple Silicon.
-The quantization is CPU/GPU-intensive and runs in a ThreadPoolExecutor.
+Quantization jobs are executed in isolated child processes so running
+jobs can be hard-cancelled (terminate -> kill escalation).
 """
 
 from __future__ import annotations
@@ -13,14 +14,16 @@ import json
 import logging
 import os
 import secrets
+import shutil
 import time
 from collections.abc import Awaitable
-from concurrent.futures import ThreadPoolExecutor
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, cast
 
 from opta_lmx.monitoring.events import EventBus, ServerEvent
+from opta_lmx.runtime.child_quantize_supervisor import QuantizeProcessHandle, spawn_quantize_process
+from opta_lmx.runtime.loader_protocol import LoaderFailure, QuantizeSpec
 
 logger = logging.getLogger(__name__)
 
@@ -51,6 +54,14 @@ SUPPORTED_QUANT_BITS: tuple[int, ...] = tuple(
 
 DEFAULT_JOBS_REGISTRY_PATH = Path.home() / ".opta-lmx" / "quantize-jobs.json"
 _TERMINAL_STATUSES = frozenset({"completed", "failed", "cancelled"})
+_QUEUED_STATUSES = frozenset({"pending", "queued"})
+
+_DEFAULT_CANCEL_GRACE_SEC = 5.0
+_DEFAULT_CANCEL_KILL_TIMEOUT_SEC = 2.0
+
+
+QUANTIZE_CANCELLED_BY_USER = "cancelled_by_user"
+QUANTIZE_INTERRUPTED_BY_RESTART = "interrupted_by_restart"
 
 
 def validate_quantize_settings(
@@ -84,8 +95,6 @@ def validate_quantize_settings(
     return bits, group_size, normalized_mode
 
 
-# Single-threaded executor for quantization (one job at a time)
-_executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="quantize")
 _quantize_slot = asyncio.Lock()
 
 # Strong references to background tasks to prevent GC during execution
@@ -102,25 +111,44 @@ class QuantizeJob:
     bits: int = 4
     group_size: int = 64
     mode: str = "affine"
-    status: str = "pending"  # pending, queued, running, completed, failed, cancelled
+    status: str = "pending"  # pending, queued, running, cancelling, completed, failed, cancelled
     started_at: float = 0.0
     completed_at: float = 0.0
     error: str | None = None
     output_size_bytes: int = 0
     cancel_requested: bool = False
+    cancel_requested_at: float | None = None
+    cancelled_at: float | None = None
     queue_position: int | None = None
     updated_at: float = 0.0
+    failure_code: str | None = None
+    exit_code: int | None = None
+    signal: int | None = None
+    worker_pid: int | None = None
 
 
 # Active and completed jobs (in-memory registry)
 _jobs: dict[str, QuantizeJob] = {}
 _job_tasks: dict[str, asyncio.Task[None]] = {}
+_process_handles: dict[str, QuantizeProcessHandle] = {}
 _registry_initialized = False
 
 
 def _jobs_registry_path() -> Path:
     custom = os.environ.get("OPTA_LMX_QUANTIZE_JOBS_PATH")
     return Path(custom).expanduser() if custom else DEFAULT_JOBS_REGISTRY_PATH
+
+
+def _quantize_worker_timeout_sec() -> float | None:
+    raw = os.environ.get("OPTA_LMX_QUANTIZE_WORKER_TIMEOUT_SEC")
+    if raw is None or raw.strip() == "":
+        return None
+    try:
+        value = float(raw)
+    except ValueError:
+        logger.warning("invalid_quantize_worker_timeout", extra={"raw": raw})
+        return None
+    return value if value > 0 else None
 
 
 def _should_persist_jobs() -> bool:
@@ -137,18 +165,28 @@ def _set_terminal(
     status: str,
     *,
     error: str | None = None,
+    failure_code: str | None = None,
+    exit_code: int | None = None,
+    signal: int | None = None,
 ) -> None:
+    now = time.time()
     job.status = status
     job.error = error
+    job.failure_code = failure_code
+    job.exit_code = exit_code
+    job.signal = signal
     if job.completed_at == 0.0:
-        job.completed_at = time.time()
+        job.completed_at = now
+    if status == "cancelled" and job.cancelled_at is None:
+        job.cancelled_at = now
     job.queue_position = None
+    job.worker_pid = None
     _touch(job)
 
 
 def _recompute_queue_positions() -> None:
     queued = sorted(
-        (job for job in _jobs.values() if job.status in {"pending", "queued"}),
+        (job for job in _jobs.values() if job.status in _QUEUED_STATUSES),
         key=lambda j: j.started_at,
     )
     for idx, job in enumerate(queued, start=1):
@@ -172,12 +210,28 @@ def _job_from_dict(raw: dict[str, Any]) -> QuantizeJob | None:
             error=(str(raw["error"]) if raw.get("error") is not None else None),
             output_size_bytes=int(raw.get("output_size_bytes", 0)),
             cancel_requested=bool(raw.get("cancel_requested", False)),
+            cancel_requested_at=(
+                float(raw["cancel_requested_at"])
+                if raw.get("cancel_requested_at") is not None
+                else None
+            ),
+            cancelled_at=(
+                float(raw["cancelled_at"]) if raw.get("cancelled_at") is not None else None
+            ),
             queue_position=(
                 int(raw["queue_position"])
                 if raw.get("queue_position") is not None
                 else None
             ),
             updated_at=float(raw.get("updated_at", 0.0)),
+            failure_code=(
+                str(raw["failure_code"]) if raw.get("failure_code") is not None else None
+            ),
+            exit_code=(int(raw["exit_code"]) if raw.get("exit_code") is not None else None),
+            signal=(int(raw["signal"]) if raw.get("signal") is not None else None),
+            worker_pid=(
+                int(raw["worker_pid"]) if raw.get("worker_pid") is not None else None
+            ),
         )
     except Exception:
         return None
@@ -191,7 +245,7 @@ def _persist_jobs() -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     ordered = sorted(_jobs.values(), key=lambda j: j.started_at, reverse=True)
     payload = {
-        "version": 1,
+        "version": 2,
         "saved_at": time.time(),
         "jobs": [asdict(job) for job in ordered],
     }
@@ -227,9 +281,14 @@ def _load_jobs_from_disk() -> None:
         if job is None:
             continue
 
-        if job.status in {"pending", "queued", "running"}:
+        if job.status in {"pending", "queued", "running", "cancelling"}:
             # Quantization isn't resumable mid-conversion; mark interrupted jobs as failed.
-            _set_terminal(job, "failed", error="Interrupted by process restart")
+            _set_terminal(
+                job,
+                "failed",
+                error="Interrupted by process restart",
+                failure_code=QUANTIZE_INTERRUPTED_BY_RESTART,
+            )
             recovered = True
 
         _jobs[job.job_id] = job
@@ -291,6 +350,29 @@ async def _safe_publish_event(
             )
 
 
+def _cleanup_partial_output(output_path: str) -> None:
+    out = Path(output_path)
+    if not out.exists():
+        return
+    try:
+        if out.is_dir():
+            shutil.rmtree(out, ignore_errors=True)
+        else:
+            out.unlink(missing_ok=True)
+    except Exception as exc:
+        logger.warning(
+            "quantize_output_cleanup_failed",
+            extra={"path": output_path, "error": str(exc)},
+        )
+
+
+async def _cancel_handle_task(handle: QuantizeProcessHandle) -> None:
+    await handle.cancel(
+        grace_sec=_DEFAULT_CANCEL_GRACE_SEC,
+        kill_timeout_sec=_DEFAULT_CANCEL_KILL_TIMEOUT_SEC,
+    )
+
+
 def _do_quantize(
     source_model: str,
     output_path: str,
@@ -298,7 +380,7 @@ def _do_quantize(
     group_size: int,
     mode: str,
 ) -> int:
-    """Synchronous quantization — runs in executor thread.
+    """Synchronous quantization helper used by CLI and worker process.
 
     Returns output directory size in bytes.
     """
@@ -399,7 +481,7 @@ async def start_quantize(
 
 
 async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> None:
-    """Run quantization in executor and update job status."""
+    """Run quantization in child process and update job status."""
     if job.status in _TERMINAL_STATUSES:
         return
 
@@ -407,7 +489,12 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
         async with _quantize_slot:
             if job.cancel_requested or job.status == "cancelled":
                 if job.status != "cancelled":
-                    _set_terminal(job, "cancelled", error="Cancelled before execution")
+                    _set_terminal(
+                        job,
+                        "cancelled",
+                        error="Cancelled before execution",
+                        failure_code=QUANTIZE_CANCELLED_BY_USER,
+                    )
                 _recompute_queue_positions()
                 _persist_jobs()
                 await _safe_publish_event(
@@ -423,6 +510,10 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
 
             job.status = "running"
             job.queue_position = 0
+            job.error = None
+            job.failure_code = None
+            job.exit_code = None
+            job.signal = None
             _touch(job)
             _recompute_queue_positions()
             _persist_jobs()
@@ -437,49 +528,138 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
                 },
             )
 
-            loop = asyncio.get_running_loop()
-            size_bytes = await loop.run_in_executor(
-                _executor,
-                _do_quantize,
-                job.source_model,
-                job.output_path,
-                job.bits,
-                job.group_size,
-                job.mode,
+            spec = QuantizeSpec(
+                job_id=job.job_id,
+                source_model=job.source_model,
+                output_path=job.output_path,
+                bits=job.bits,
+                group_size=job.group_size,
+                mode=job.mode,
             )
-
-            job.status = "completed"
-            job.completed_at = time.time()
-            job.output_size_bytes = size_bytes
-            job.queue_position = None
+            handle = await spawn_quantize_process(spec)
+            _process_handles[job.job_id] = handle
+            job.worker_pid = handle.pid
             _touch(job)
-            elapsed = job.completed_at - job.started_at
-            _recompute_queue_positions()
             _persist_jobs()
 
+            outcome = await handle.wait_outcome(timeout_sec=_quantize_worker_timeout_sec())
+            _process_handles.pop(job.job_id, None)
+            job.worker_pid = None
+
+            if outcome.ok and outcome.result is not None:
+                job.status = "completed"
+                job.completed_at = time.time()
+                job.output_size_bytes = outcome.result.output_size_bytes
+                job.queue_position = None
+                job.exit_code = 0
+                job.signal = None
+                _touch(job)
+                elapsed = job.completed_at - job.started_at
+                _recompute_queue_positions()
+                _persist_jobs()
+
+                await _safe_publish_event(
+                    event_bus,
+                    event_type="quantize_progress",
+                    data={
+                        "model_id": job.source_model,
+                        "status": "completed",
+                        "percent": 100,
+                    },
+                )
+                logger.info(
+                    "quantize_completed",
+                    extra={
+                        "job_id": job.job_id,
+                        "source": job.source_model,
+                        "output": job.output_path,
+                        "size_bytes": job.output_size_bytes,
+                        "duration_sec": round(elapsed, 1),
+                    },
+                )
+                return
+
+            failure = outcome.failure or LoaderFailure(
+                code="worker_exit_nonzero",
+                message="Quantize worker failed without structured payload",
+            )
+
+            if job.cancel_requested:
+                _set_terminal(
+                    job,
+                    "cancelled",
+                    error="Cancelled by user",
+                    failure_code=QUANTIZE_CANCELLED_BY_USER,
+                    exit_code=failure.exit_code,
+                    signal=failure.signal,
+                )
+                _cleanup_partial_output(job.output_path)
+                _recompute_queue_positions()
+                _persist_jobs()
+                await _safe_publish_event(
+                    event_bus,
+                    event_type="quantize_progress",
+                    data={
+                        "model_id": job.source_model,
+                        "status": "cancelled",
+                        "percent": 0,
+                    },
+                )
+                logger.info(
+                    "quantize_cancelled",
+                    extra={"job_id": job.job_id, "source": job.source_model},
+                )
+                return
+
+            _set_terminal(
+                job,
+                "failed",
+                error=failure.message,
+                failure_code=failure.code,
+                exit_code=failure.exit_code,
+                signal=failure.signal,
+            )
+            if failure.code != "output_path_exists":
+                _cleanup_partial_output(job.output_path)
+            _recompute_queue_positions()
+            _persist_jobs()
             await _safe_publish_event(
                 event_bus,
                 event_type="quantize_progress",
                 data={
                     "model_id": job.source_model,
-                    "status": "completed",
-                    "percent": 100,
+                    "status": f"failed: {failure.message}",
+                    "percent": 0,
                 },
             )
-            logger.info(
-                "quantize_completed",
+            logger.error(
+                "quantize_failed",
                 extra={
                     "job_id": job.job_id,
                     "source": job.source_model,
-                    "output": job.output_path,
-                    "size_bytes": size_bytes,
-                    "duration_sec": round(elapsed, 1),
+                    "error": failure.message,
+                    "failure_code": failure.code,
+                    "exit_code": failure.exit_code,
+                    "signal": failure.signal,
                 },
             )
 
     except asyncio.CancelledError:
-        if job.status not in _TERMINAL_STATUSES and job.status != "running":
-            _set_terminal(job, "cancelled", error="Cancelled before execution")
+        active_handle = _process_handles.get(job.job_id)
+        if active_handle is not None:
+            await active_handle.cancel(
+                grace_sec=_DEFAULT_CANCEL_GRACE_SEC,
+                kill_timeout_sec=_DEFAULT_CANCEL_KILL_TIMEOUT_SEC,
+            )
+            _process_handles.pop(job.job_id, None)
+
+        if job.status not in _TERMINAL_STATUSES:
+            _set_terminal(
+                job,
+                "cancelled",
+                error="Cancelled before execution",
+                failure_code=QUANTIZE_CANCELLED_BY_USER,
+            )
             _recompute_queue_positions()
             _persist_jobs()
             await _safe_publish_event(
@@ -493,7 +673,8 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
             )
         return
     except Exception as e:
-        _set_terminal(job, "failed", error=str(e))
+        _set_terminal(job, "failed", error=str(e), failure_code="quantize_failed")
+        _cleanup_partial_output(job.output_path)
         _recompute_queue_positions()
         _persist_jobs()
         await _safe_publish_event(
@@ -520,13 +701,12 @@ async def cancel_quantize(
     *,
     event_bus: EventBus | None = None,
 ) -> tuple[bool, str, QuantizeJob | None]:
-    """Cancel a queued quantization job.
+    """Cancel a quantization job.
 
     Returns:
         (cancelled, reason, job)
-        - cancelled: True when cancellation was applied or already terminal.
-        - reason: one of "not_found", "cancelled", "already_terminal",
-          "running_cannot_cancel".
+        - cancelled: True when cancellation is terminally applied.
+        - reason: one of "not_found", "cancelled", "already_terminal", "cancelling".
     """
     _ensure_registry_loaded()
     job = _jobs.get(job_id)
@@ -536,20 +716,45 @@ async def cancel_quantize(
     if job.status in _TERMINAL_STATUSES:
         return True, "already_terminal", job
 
-    if job.status == "running":
-        job.cancel_requested = True
+    now = time.time()
+    job.cancel_requested = True
+    if job.cancel_requested_at is None:
+        job.cancel_requested_at = now
+
+    if job.status in {"running", "cancelling"}:
+        job.status = "cancelling"
         _touch(job)
         _persist_jobs()
-        return False, "running_cannot_cancel", job
 
-    job.cancel_requested = True
-    _set_terminal(job, "cancelled", error="Cancelled by user")
+        handle = _process_handles.get(job_id)
+        if handle is not None:
+            cancel_task = asyncio.create_task(_cancel_handle_task(handle))
+            _background_tasks.add(cancel_task)
+            cancel_task.add_done_callback(_background_tasks.discard)
+
+        await _safe_publish_event(
+            event_bus,
+            event_type="quantize_progress",
+            data={
+                "model_id": job.source_model,
+                "status": "cancelling",
+                "percent": 0,
+            },
+        )
+        return False, "cancelling", job
+
+    _set_terminal(
+        job,
+        "cancelled",
+        error="Cancelled by user",
+        failure_code=QUANTIZE_CANCELLED_BY_USER,
+    )
     _recompute_queue_positions()
     _persist_jobs()
 
-    task = _job_tasks.get(job_id)
-    if task and not task.done():
-        task.cancel()
+    job_task = _job_tasks.get(job_id)
+    if job_task and not job_task.done():
+        job_task.cancel()
 
     await _safe_publish_event(
         event_bus,

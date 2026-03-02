@@ -7,6 +7,9 @@ import { OPTA_BRAND_GLYPH } from '../../src/ui/brand.js';
 
 const flush = (ms = 20) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 const SHIFT_TAB = '\u001B[Z';
+const ARROW_DOWN = '\u001B[B';
+const ARROW_RIGHT = '\u001B[C';
+const ENTER = '\r';
 
 const baseProps = {
   animationPhase: 'open' as const,
@@ -129,22 +132,20 @@ describe('SettingsOverlay', () => {
     expect(frame).toContain('[ ]');
   });
 
-  it('toggles boolean setting on Enter without opening editor', async () => {
-    const onSave = vi.fn();
-    const { stdin, lastFrame } = render(
-      <SettingsOverlay {...baseProps} onSave={onSave} />
-    );
+  it('uses left/right arrows for page navigation until a setting is activated', async () => {
+    const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
     await flush();
-    // Navigate to Advanced page
-    stdin.write('5');
+    stdin.write('5'); // Advanced
     await flush();
-    // First item on Advanced is Browser Enabled (toggle)
-    // Press Enter to toggle it
-    stdin.write('\r');
+    const advancedFrame = lastFrame() ?? '';
+    expect(advancedFrame).toMatch(/\[x\]\s*5\./);
+    expect(advancedFrame).toContain('\n│  Advanced');
+
+    stdin.write(ARROW_RIGHT);
     await flush();
-    // Should show [x] now (toggled from false to true)
-    const frame = lastFrame() ?? '';
-    expect(frame).toContain('[x]');
+    const atpoFrame = lastFrame() ?? '';
+    expect(atpoFrame).toMatch(/\[x\]\s*6\./);
+    expect(atpoFrame).toContain('\n│  Atpo');
   });
 
   it('shows select options when editing a select-type setting', async () => {
@@ -154,10 +155,10 @@ describe('SettingsOverlay', () => {
     stdin.write('3');
     await flush();
     // Skip first item (Autonomy Level - slider) to get to Default Mode (select)
-    stdin.write('\u001B[B'); // arrow down
+    stdin.write(ARROW_DOWN); // arrow down
     await flush();
     // Press Enter to open select for Default Mode
-    stdin.write('\r');
+    stdin.write(ENTER);
     await flush();
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Safe');
@@ -173,7 +174,7 @@ describe('SettingsOverlay', () => {
     stdin.write('3');
     await flush();
     // First item is Autonomy Level (slider)
-    stdin.write('\r');
+    stdin.write(ENTER);
     await flush();
     const frame = lastFrame() ?? '';
     expect(frame).toContain('Autonomy Level');
@@ -181,25 +182,24 @@ describe('SettingsOverlay', () => {
     expect(frame).toContain('/5');
   });
 
-  it('toggle items cycle value on Enter without opening editor', async () => {
-    // Browser Enabled toggles from [ ] to [x] and back
+  it('activates toggle editing on Enter and applies changes from arrow navigation', async () => {
     const { stdin, lastFrame } = render(
       <SettingsOverlay {...baseProps} maxWidth={140} />
     );
     await flush();
-    // Navigate to Advanced page
-    stdin.write('5');
+    stdin.write('5'); // Advanced
     await flush();
-    // First item: Browser Enabled (toggle, default 'false')
     expect(lastFrame()).toContain('[ ]');
-    // Press Enter to toggle to true
-    stdin.write('\r');
+
+    stdin.write(ENTER); // open inline selector
+    await flush();
+    expect(lastFrame()).toContain('Editing: Browser Enable');
+
+    stdin.write(ARROW_DOWN); // move selection to Enabled
+    await flush();
+    stdin.write(ENTER); // confirm
     await flush();
     expect(lastFrame()).toContain('[x]');
-    // Press Enter again to toggle back to false
-    stdin.write('\r');
-    await flush();
-    expect(lastFrame()).toContain('[ ]');
   });
 
   it('select-type settings show option labels instead of raw values', async () => {

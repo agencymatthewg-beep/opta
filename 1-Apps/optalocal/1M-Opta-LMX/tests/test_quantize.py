@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -13,12 +14,15 @@ from opta_lmx.manager.quantize import (
     QuantizeJob,
     _do_quantize,
     _jobs,
+    _process_handles,
     _run_quantize,
     cancel_quantize,
     get_job,
     list_jobs,
     start_quantize,
 )
+from opta_lmx.runtime.child_quantize_supervisor import QuantizeSupervisorOutcome
+from opta_lmx.runtime.loader_protocol import LoaderFailure, QuantizeResult
 
 
 class _NoopTask:
@@ -176,9 +180,11 @@ class TestDoQuantize:
 class TestJobRegistry:
     def setup_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     def teardown_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     def test_get_job_not_found(self) -> None:
         assert get_job("nonexistent") is None
@@ -212,9 +218,11 @@ class TestJobRegistry:
 class TestStartQuantize:
     def setup_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     def teardown_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     @pytest.mark.asyncio
     async def test_creates_job_with_queued_status(self) -> None:
@@ -372,15 +380,22 @@ class TestRunQuantize:
             bits=8,
             group_size=32,
             mode="mxfp8",
-            status="running",
+            status="queued",
             started_at=10.0,
         )
-        loop = MagicMock()
-        loop.run_in_executor = AsyncMock(return_value=321)
+        fake_handle = MagicMock()
+        fake_handle.pid = 1234
+        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
+            ok=True,
+            result=QuantizeResult(ok=True, output_path="/tmp/out", output_size_bytes=321),
+        ))
         event_bus = _EventBusSpy()
 
         with (
-            patch("opta_lmx.manager.quantize.asyncio.get_running_loop", return_value=loop),
+            patch(
+                "opta_lmx.manager.quantize.spawn_quantize_process",
+                new=AsyncMock(return_value=fake_handle),
+            ),
             patch("opta_lmx.manager.quantize.time.time", return_value=25.0),
         ):
             await _run_quantize(job, event_bus=event_bus)
@@ -389,16 +404,8 @@ class TestRunQuantize:
         assert job.output_size_bytes == 321
         assert job.completed_at == 25.0
         assert job.error is None
-
-        call_args = loop.run_in_executor.await_args.args
-        assert call_args[1:] == (
-            _do_quantize,
-            "org/model",
-            "/tmp/out",
-            8,
-            32,
-            "mxfp8",
-        )
+        assert job.failure_code is None
+        assert job.worker_pid is None
 
         events = [_extract_event(call) for call in event_bus.publish.calls]
         assert events == [
@@ -418,15 +425,22 @@ class TestRunQuantize:
             job_id="job-2",
             source_model="org/fail-model",
             output_path="/tmp/out-fail",
-            status="running",
+            status="queued",
             started_at=3.0,
         )
-        loop = MagicMock()
-        loop.run_in_executor = AsyncMock(side_effect=RuntimeError("boom"))
+        fake_handle = MagicMock()
+        fake_handle.pid = 777
+        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
+            ok=False,
+            failure=LoaderFailure(code="worker_exit_nonzero", message="boom", exit_code=1),
+        ))
         event_bus = _EventBusSpy()
 
         with (
-            patch("opta_lmx.manager.quantize.asyncio.get_running_loop", return_value=loop),
+            patch(
+                "opta_lmx.manager.quantize.spawn_quantize_process",
+                new=AsyncMock(return_value=fake_handle),
+            ),
             patch("opta_lmx.manager.quantize.time.time", return_value=9.5),
         ):
             await _run_quantize(job, event_bus=event_bus)
@@ -434,6 +448,8 @@ class TestRunQuantize:
         assert job.status == "failed"
         assert job.completed_at == 9.5
         assert job.error == "boom"
+        assert job.failure_code == "worker_exit_nonzero"
+        assert job.exit_code == 1
         assert job.output_size_bytes == 0
 
         events = [_extract_event(call) for call in event_bus.publish.calls]
@@ -468,9 +484,11 @@ class _FakeTask:
 class TestCancelQuantize:
     def setup_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     def teardown_method(self) -> None:
         _jobs.clear()
+        _process_handles.clear()
 
     @pytest.mark.asyncio
     async def test_cancel_unknown_job_returns_not_found(self) -> None:
@@ -489,12 +507,17 @@ class TestCancelQuantize:
             started_at=1.0,
         )
         _jobs[job.job_id] = job
+        fake_handle = MagicMock()
+        fake_handle.cancel = AsyncMock(return_value=True)
+        _process_handles[job.job_id] = fake_handle
         cancelled, reason, returned = await cancel_quantize(job.job_id)
+        await asyncio.sleep(0)
         assert cancelled is False
-        assert reason == "running_cannot_cancel"
+        assert reason == "cancelling"
         assert returned is job
         assert job.cancel_requested is True
-        assert job.status == "running"
+        assert job.status == "cancelling"
+        fake_handle.cancel.assert_awaited()
 
     @pytest.mark.asyncio
     async def test_cancel_queued_job_marks_cancelled(self) -> None:

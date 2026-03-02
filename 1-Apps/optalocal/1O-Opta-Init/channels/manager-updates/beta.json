@@ -3,31 +3,22 @@
   "schemaVersion": "1.0.0",
   "manifestVersion": 1,
   "channel": "beta",
-  "publishedAt": "2026-03-02T04:10:00Z",
-  "targets": {
+  "publishedAt": "2026-03-02T05:12:00Z",
+  "version": "0.6.1",
+  "notes": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+  "pub_date": "2026-03-02T05:12:00Z",
+  "platforms": {
     "darwin-aarch64": {
-      "platform": "darwin",
-      "url": "https://init.optalocal.com/desktop-updates/manager/beta/1.5.0-beta.1/Opta-Init-Manager_aarch64.app.tar.gz",
-      "signature": "MEUCICQvRHRoV0N3Q3dQSEY4eFhNQjRkSkxjSFZjc2h4NjhTRHBnL0d4MktTAiEA5a1hM3hRWWs4d2JkRlYxQjF6Ym0wUTB1Q3hkd1lMS1l6M2I5MUE9",
-      "version": "1.5.0-beta.1",
-      "notes": "https://init.optalocal.com/releases/manager-1-5-0-beta-1",
-      "date": "2026-03-02T04:10:00Z"
+      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_aarch64.app.tar.gz",
+      "signature": "MEUCICQvRHRoV0N3Q3dQSEY4eFhNQjRkSkxjSFZjc2h4NjhTRHBnL0d4MktTAiEA5a1hM3hRWWs4d2JkRlYxQjF6Ym0wUTB1Q3hkd1lMS1l6M2I5MUE9"
     },
     "darwin-x86_64": {
-      "platform": "darwin",
-      "url": "https://init.optalocal.com/desktop-updates/manager/beta/1.5.0-beta.1/Opta-Init-Manager_x64.app.tar.gz",
-      "signature": "MEYCIQDEcWk1UXE4Y2V0M2NvQmk5NkR1aVdEMmJVYkN2VnN2Q0M3RDd1Qjh1QQIhAKQ4aFY4Q1hmMGRIT0Q2K0JkRjR6M0N5dFJ0eDdObk4vNjhJST0",
-      "version": "1.5.0-beta.1",
-      "notes": "https://init.optalocal.com/releases/manager-1-5-0-beta-1",
-      "date": "2026-03-02T04:10:00Z"
+      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_x64.app.tar.gz",
+      "signature": "MEYCIQDEcWk1UXE4Y2V0M2NvQmk5NkR1aVdEMmJVYkN2VnN2Q0M3RDd1Qjh1QQIhAKQ4aFY4Q1hmMGRIT0Q2K0JkRjR6M0N5dFJ0eDdObk4vNjhJST0"
     },
     "windows-x86_64": {
-      "platform": "windows",
-      "url": "https://init.optalocal.com/desktop-updates/manager/beta/1.5.0-beta.1/Opta-Init-Manager_x64-setup.nsis.zip",
-      "signature": "MEUCIE4yQVVrV2V6SUQ3MXB4MkpKTzlPV0t2Q2JLeFRFbnA0dG9YZnJSaVQwAiEA4i9sVUdSTk9lM3hSeFdDR1lyV2JrSk5wMElhYkZVTEVONkJ4Y2s9",
-      "version": "1.5.0-beta.1",
-      "notes": "https://init.optalocal.com/releases/manager-1-5-0-beta-1",
-      "date": "2026-03-02T04:10:00Z"
+      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_x64-setup.nsis.zip",
+      "signature": "MEUCIE4yQVVrV2V6SUQ3MXB4MkpKTzlPV0t2Q2JLeFRFbnA0dG9YZnJSaVQwAiEA4i9sVUdSTk9lM3hSeFdDR1lyV2JrSk5wMElhYkZVTEVONkJ4Y2s9"
     }
   }
 }
