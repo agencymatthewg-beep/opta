@@ -12,7 +12,7 @@
       "signature": "MEUCICQvRHRoV0N3Q3dQSEY4eFhNQjRkSkxjSFZjc2h4NjhTRHBnL0d4MktTAiEA5a1hM3hRWWs4d2JkRlYxQjF6Ym0wUTB1Q3hkd1lMS1l6M2I5MUE9"
     },
     "windows-x86_64": {
-      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/opta-init-mac.dmg",
+      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_x64-setup.nsis.zip",
       "signature": "MEUCICQvRHRoV0N3Q3dQSEY4eFhNQjRkSkxjSFZjc2h4NjhTRHBnL0d4MktTAiEA5a1hM3hRWWs4d2JkRlYxQjF6Ym0wUTB1Q3hkd1lMS1l6M2I5MUE9"
     }
   }

@@ -18,7 +18,10 @@ const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 const httpsRegex = /^https:\/\//;
 const platformKeyRegex = /^(darwin|windows|linux)-[A-Za-z0-9_-]+$/;
+const windowsArtifactRegex = /\.(?:exe|msi|zip)(?:[?#].*)?$/i;
+const macArtifactRegex = /\.(?:dmg|pkg|app\.tar\.gz)(?:[?#].*)?$/i;
 const requiredPlatformKeys = new Set(['darwin-aarch64', 'darwin-x86_64', 'windows-x86_64']);
+const managerHost = 'init.optalocal.com';
 
 function usage() {
   console.log(
@@ -58,6 +61,16 @@ function validatePlatformRelease(platformId, release, location, errors, allowedP
 
   if (typeof release.url !== 'string' || !httpsRegex.test(release.url)) {
     errors.push(`${location}.url must be an https URL`);
+  } else if (platformFromKey === 'windows') {
+    if (macArtifactRegex.test(release.url)) {
+      errors.push(`${location}.url must not point to a macOS artifact`);
+    } else if (!windowsArtifactRegex.test(release.url)) {
+      errors.push(`${location}.url must point to a Windows artifact (.zip, .msi, or .exe)`);
+    }
+  } else if (platformFromKey === 'darwin') {
+    if (/\.(?:exe|msi|nsis\.zip)(?:[?#].*)?$/i.test(release.url)) {
+      errors.push(`${location}.url must not point to a Windows artifact`);
+    }
   }
 
   if (typeof release.signature !== 'string' || release.signature.trim().length < 16) {
@@ -135,12 +148,41 @@ function validateManifest(manifest, schema, manifestPath, options = {}) {
     };
   }
 
+  const platformUrlUsage = new Map();
+  const expectedChannelValue = typeof manifest.channel === 'string' ? manifest.channel : '';
+  const expectedVersionValue = typeof manifest.version === 'string' ? manifest.version : '';
   for (const [platformId, release] of platformEntries) {
     const location = `platforms.${platformId}`;
     if (!platformKeyRegex.test(platformId)) {
       errors.push(`${location} key must match ^(darwin|windows|linux)-[A-Za-z0-9_-]+$`);
     }
     validatePlatformRelease(platformId, release, location, errors, allowedPlatforms);
+
+    if (isObject(release) && typeof release.url === 'string') {
+      try {
+        const parsed = new URL(release.url);
+        const expectedPrefix = `/desktop-updates/manager/${expectedChannelValue}/${expectedVersionValue}/`;
+        if (parsed.hostname !== managerHost || !parsed.pathname.startsWith(expectedPrefix)) {
+          errors.push(
+            `${location}.url must be under https://${managerHost}${expectedPrefix}`
+          );
+        }
+      } catch {
+        // URL format is validated separately in validatePlatformRelease.
+      }
+
+      const os = platformId.split('-')[0];
+      const existing = platformUrlUsage.get(release.url) ?? { oses: new Set(), platforms: [] };
+      existing.oses.add(os);
+      existing.platforms.push(platformId);
+      platformUrlUsage.set(release.url, existing);
+    }
+  }
+
+  for (const [url, usage] of platformUrlUsage.entries()) {
+    if (usage.oses.size > 1) {
+      errors.push(`platform URLs must not be reused across OS families (${usage.platforms.join(', ')} -> ${url})`);
+    }
   }
 
   if (!allowPartialPlatforms) {

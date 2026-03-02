@@ -1,8 +1,8 @@
 type Platform = "macos" | "windows";
 
 type ReleaseTarget = {
-  repo: string;
-  patterns: string[];
+  manifestUrl: string;
+  platformKeys: string[];
   fallbackUrl: string | null;
 };
 
@@ -19,10 +19,9 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       "The core desktop application to orchestrate your local AI stack. Download models, launch tools, and manage the background daemon.",
     platforms: {
       macos: {
-        repo: "agencymatthewg-beep/opta",
-        patterns: ["opta-init", "mac", ".dmg"],
-        fallbackUrl:
-          "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-init-mac.dmg",
+        manifestUrl: "/desktop-updates/stable.json",
+        platformKeys: ["darwin-aarch64", "darwin-x86_64"],
+        fallbackUrl: "/downloads/opta-init/latest/opta-init-mac.dmg",
       },
       windows: null,
     },
@@ -33,7 +32,7 @@ export type DownloadAvailability = {
   url: string | null;
   available: boolean;
   label: string;
-  source: "release" | "fallback" | "none";
+  source: "manifest" | "fallback" | "none";
 };
 
 export type DownloadAvailabilityMap = Record<
@@ -46,38 +45,38 @@ export type DownloadAvailabilityMap = Record<
   }
 >;
 
-const RELEASE_API = "https://api.github.com/repos";
+type ManagerUpdateFeed = {
+  platforms?: Record<string, { url?: string }>;
+};
 
-async function findLatestAsset(repo: string, patterns: string[]) {
-  const res = await fetch(`${RELEASE_API}/${repo}/releases/latest`, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": "opta-init-download-check",
-    },
-    cache: "no-store",
-  });
+type ManifestAssetResult =
+  | { status: "found"; url: string; platformKey: string }
+  | { status: "missing" }
+  | { status: "unreachable" };
 
-  if (!res.ok) return null;
+async function findManifestAsset(
+  manifestUrl: string,
+  platformKeys: string[]
+): Promise<ManifestAssetResult> {
+  let res: Response;
+  try {
+    res = await fetch(manifestUrl, { cache: "no-store" });
+  } catch {
+    return { status: "unreachable" };
+  }
 
-  const data = (await res.json()) as {
-    tag_name?: string;
-    assets?: Array<{ name: string; browser_download_url: string }>;
-  };
+  if (!res.ok) return { status: "unreachable" };
 
-  const assets = data.assets ?? [];
-  const needle = patterns.map((p) => p.toLowerCase());
-  const match =
-    assets.find((asset) => {
-      const name = asset.name.toLowerCase();
-      return needle.every((token) => token.startsWith(".") || name.includes(token));
-    }) ??
-    assets.find((asset) => {
-      const name = asset.name.toLowerCase();
-      return needle.some((token) => name.includes(token));
-    });
+  const data = (await res.json()) as ManagerUpdateFeed;
+  const platforms = data.platforms ?? {};
+  for (const platformKey of platformKeys) {
+    const url = platforms[platformKey]?.url;
+    if (typeof url === "string" && url.length > 0) {
+      return { status: "found", url, platformKey };
+    }
+  }
 
-  if (!match) return null;
-  return { url: match.browser_download_url, tag: data.tag_name ?? null, name: match.name };
+  return { status: "missing" };
 }
 
 function labelFor(url: string | null, available: boolean) {
@@ -86,50 +85,54 @@ function labelFor(url: string | null, available: boolean) {
   return "Package Ready";
 }
 
+function isInstallerAsset(url: string) {
+  return url.endsWith(".pkg") || url.endsWith(".dmg");
+}
+
+async function resolvePlatformAvailability(
+  target: ReleaseTarget | null
+): Promise<DownloadAvailability> {
+  if (!target) {
+    return {
+      url: null,
+      available: false,
+      label: labelFor(null, false),
+      source: "none",
+    };
+  }
+
+  const release = await findManifestAsset(target.manifestUrl, target.platformKeys);
+  if (release.status === "found" && isInstallerAsset(release.url)) {
+    return {
+      url: release.url,
+      available: true,
+      label: labelFor(release.url, true),
+      source: "manifest",
+    };
+  }
+
+  if (target.fallbackUrl) {
+    return {
+      url: target.fallbackUrl,
+      available: true,
+      label: labelFor(target.fallbackUrl, true),
+      source: "fallback",
+    };
+  }
+
+  return {
+    url: null,
+    available: false,
+    label: labelFor(null, false),
+    source: "none",
+  };
+}
+
 export async function resolveDownloadAvailability(): Promise<DownloadAvailabilityMap> {
   const entries = await Promise.all(
     Object.entries(DOWNLOAD_TARGETS).map(async ([key, target]) => {
-      const macTarget = target.platforms.macos;
-      const winTarget = target.platforms.windows;
-
-      const macRelease = macTarget
-        ? await findLatestAsset(macTarget.repo, macTarget.patterns)
-        : null;
-
-      const mac = macRelease
-        ? {
-          url: macRelease.url,
-          available: true,
-          label: labelFor(macRelease.url, true),
-          source: "release" as const,
-        }
-        : macTarget?.fallbackUrl
-          ? {
-            url: macTarget.fallbackUrl,
-            available: true,
-            label: labelFor(macTarget.fallbackUrl, true),
-            source: "fallback" as const,
-          }
-          : {
-            url: null,
-            available: false,
-            label: labelFor(null, false),
-            source: "none" as const,
-          };
-
-      const windows = winTarget
-        ? {
-          url: winTarget.fallbackUrl,
-          available: Boolean(winTarget.fallbackUrl),
-          label: labelFor(winTarget.fallbackUrl, Boolean(winTarget.fallbackUrl)),
-          source: winTarget.fallbackUrl ? ("fallback" as const) : ("none" as const),
-        }
-        : {
-          url: null,
-          available: false,
-          label: "Coming Soon",
-          source: "none" as const,
-        };
+      const mac = await resolvePlatformAvailability(target.platforms.macos);
+      const windows = await resolvePlatformAvailability(target.platforms.windows);
 
       return [
         key,
