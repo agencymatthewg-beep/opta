@@ -157,6 +157,11 @@ export async function verifyApiKey(
 
 async function probeProviderEndpoint(provider: string, key: string): Promise<boolean> {
   const timeout = AbortSignal.timeout(6_000);
+  const lmxBaseUrl = (
+    process.env['OPTA_LMX_BASE_URL']
+    || process.env['NEXT_PUBLIC_LMX_BASE_URL']
+    || 'https://lmx.optalocal.com'
+  ).replace(/\/+$/, '');
   try {
     switch (provider) {
       case 'anthropic': {
@@ -221,6 +226,17 @@ async function probeProviderEndpoint(provider: string, key: string): Promise<boo
       case 'groq': {
         const res = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { authorization: `Bearer ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'lmx': {
+        const res = await fetch(`${lmxBaseUrl}/v1/models`, {
+          headers: {
+            authorization: `Bearer ${key}`,
+            'x-api-key': key,
+            'x-admin-key': key,
+          },
           signal: timeout,
         });
         return res.ok;

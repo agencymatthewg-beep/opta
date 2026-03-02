@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import threading
 import time
+from collections import deque
 from dataclasses import dataclass
 from typing import Any
 
@@ -59,6 +60,7 @@ class MetricsCollector:
         self._latency_buckets = [0.1, 0.25, 0.5, 1.0, 2.5, 5.0, 10.0, 30.0, 60.0]
         self._latency_bucket_counts: dict[str, list[int]] = {}
         self._latency_sum: dict[str, float] = {}
+        self._request_timestamps: deque[float] = deque()
         self._started_at: float = time.time()
 
     @staticmethod
@@ -83,7 +85,12 @@ class MetricsCollector:
     def record(self, metric: RequestMetric) -> None:
         """Record a completed request's metrics."""
         with self._lock:
+            now = time.time()
             self._total_requests += 1
+            self._request_timestamps.append(now)
+            cutoff = now - 60.0
+            while self._request_timestamps and self._request_timestamps[0] < cutoff:
+                self._request_timestamps.popleft()
             if metric.stream:
                 self._total_stream_requests += 1
             if metric.error:
@@ -324,6 +331,17 @@ class MetricsCollector:
     def summary(self) -> dict[str, Any]:
         """Return a JSON-friendly summary for admin endpoints."""
         with self._lock:
+            now = time.time()
+            uptime_seconds = max(now - self._started_at, 0.0)
+            cutoff = now - 60.0
+            while self._request_timestamps and self._request_timestamps[0] < cutoff:
+                self._request_timestamps.popleft()
+            throughput_window_seconds = min(60.0, uptime_seconds)
+            throughput_1m = (
+                len(self._request_timestamps) / throughput_window_seconds
+                if throughput_window_seconds > 0
+                else 0.0
+            )
             speculative_ratio = self._speculative_acceptance_ratio()
             return {
                 "total_requests": self._total_requests,
@@ -331,6 +349,18 @@ class MetricsCollector:
                 "total_stream_requests": self._total_stream_requests,
                 "total_prompt_tokens": self._total_prompt_tokens,
                 "total_completion_tokens": self._total_completion_tokens,
+                # Backward-compatible aliases for consumer dashboards that expect
+                # nested metrics objects.
+                "requests": {
+                    "total": self._total_requests,
+                    "errors": self._total_errors,
+                    "stream_total": self._total_stream_requests,
+                    "throughput_1m": round(throughput_1m, 6),
+                },
+                "tokens": {
+                    "prompt_total": self._total_prompt_tokens,
+                    "completion_total": self._total_completion_tokens,
+                },
                 "speculative": {
                     "accepted_tokens": self._total_speculative_accepted_tokens,
                     "rejected_tokens": self._total_speculative_rejected_tokens,
@@ -347,7 +377,7 @@ class MetricsCollector:
                     }
                     for model_id in sorted(self._model_requests.keys())
                 },
-                "uptime_seconds": round(time.time() - self._started_at, 1),
+                "uptime_seconds": round(uptime_seconds, 1),
                 "per_client": {
                     cid: {
                         "requests": self._client_requests.get(cid, 0),
@@ -356,6 +386,7 @@ class MetricsCollector:
                     }
                     for cid in sorted(self._client_requests.keys())
                 },
+                "schema_version": "2026-03-02",
             }
 
 

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ModelsPage } from "./ModelsPage";
 import { useModels, type UseModelsResult } from "../hooks/useModels";
 
@@ -9,6 +9,20 @@ vi.mock("../hooks/useModels", () => ({
 
 const connection = { host: "127.0.0.1", port: 8080, token: "token" };
 const modelId = "mlx-community/Qwen2.5-7B-Instruct-4bit";
+const trackedDownloadsStorage =
+  "opta:lmx:tracked-downloads:http://127.0.0.1:8080";
+const originalLocalStorage = window.localStorage;
+const storageBacking = new Map<string, string>();
+
+const localStorageMock = {
+  getItem: vi.fn((key: string) => storageBacking.get(key) ?? null),
+  setItem: vi.fn((key: string, value: string) => {
+    storageBacking.set(key, value);
+  }),
+  removeItem: vi.fn((key: string) => {
+    storageBacking.delete(key);
+  }),
+};
 
 function createUseModelsState(
   overrides: Partial<UseModelsResult> = {},
@@ -36,6 +50,19 @@ describe("ModelsPage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.restoreAllMocks();
+    storageBacking.clear();
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: localStorageMock,
+    });
+    window.localStorage.removeItem(trackedDownloadsStorage);
+  });
+
+  afterEach(() => {
+    Object.defineProperty(window, "localStorage", {
+      configurable: true,
+      value: originalLocalStorage,
+    });
   });
 
   it("confirms download-required loads, polls progress, and refreshes on completion", async () => {
@@ -132,5 +159,49 @@ describe("ModelsPage", () => {
     expect(
       await screen.findByText(`Download cancelled for ${modelId}`),
     ).toBeInTheDocument();
+  });
+
+  it("rehydrates tracked downloads and reconciles completion when model appears on disk", async () => {
+    window.localStorage.setItem(
+      trackedDownloadsStorage,
+      JSON.stringify({
+        "download-restore-1": {
+          download_id: "download-restore-1",
+          model_id: modelId,
+          repo_id: modelId,
+          status: "downloading",
+          progress_percent: 52,
+          downloaded_bytes: 520,
+          total_bytes: 1000,
+          files_completed: 5,
+          files_total: 10,
+        },
+      }),
+    );
+
+    const downloadProgress = vi.fn().mockResolvedValue(null);
+    const refreshLmx = vi.fn().mockResolvedValue(undefined);
+    vi.mocked(useModels).mockReturnValue(
+      createUseModelsState({
+        downloadProgress,
+        refreshLmx,
+        availableModels: [{ model_id: modelId, size_bytes: 1024 }],
+      }),
+    );
+
+    render(<ModelsPage connection={connection} />);
+
+    await waitFor(() => {
+      expect(downloadProgress).toHaveBeenCalledWith("download-restore-1");
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText(`Download complete · ${modelId}`),
+      ).toBeInTheDocument();
+    });
+    await waitFor(() => {
+      expect(window.localStorage.getItem(trackedDownloadsStorage)).toBe("{}");
+    });
+    expect(refreshLmx).toHaveBeenCalled();
   });
 });

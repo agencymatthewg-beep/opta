@@ -319,6 +319,42 @@ class TestVerifyAdminKeyFailClosed:
         request = _make_request(admin_key="admin-secret")
         verify_admin_key(request, x_admin_key="admin-secret")
 
+    def test_accepts_sse_admin_key_query_for_events_route(self) -> None:
+        """GET /admin/events accepts query fallback for browser EventSource."""
+        request = _make_request(admin_key="admin-secret")
+        request.method = "GET"
+        request.url = SimpleNamespace(path="/admin/events")
+        verify_admin_key(
+            request,
+            x_admin_key=None,
+            sse_admin_key="admin-secret",
+        )
+
+    def test_accepts_sse_legacy_query_alias_for_events_route(self) -> None:
+        """Legacy x_admin_key query alias is accepted for /admin/events."""
+        request = _make_request(admin_key="admin-secret")
+        request.method = "GET"
+        request.url = SimpleNamespace(path="/admin/events")
+        verify_admin_key(
+            request,
+            x_admin_key=None,
+            sse_admin_key=None,
+            sse_admin_key_legacy="admin-secret",
+        )
+
+    def test_rejects_sse_query_fallback_for_non_events_route(self) -> None:
+        """Query fallback is not accepted outside GET /admin/events."""
+        request = _make_request(admin_key="admin-secret")
+        request.method = "GET"
+        request.url = SimpleNamespace(path="/admin/status")
+        with pytest.raises(HTTPException) as exc:
+            verify_admin_key(
+                request,
+                x_admin_key=None,
+                sse_admin_key="admin-secret",
+            )
+        assert exc.value.status_code == 403
+
 
 class TestCloudProfileHTTPIntegration:
     """Integration tests: cloud-configured server rejects unauthenticated HTTP requests."""

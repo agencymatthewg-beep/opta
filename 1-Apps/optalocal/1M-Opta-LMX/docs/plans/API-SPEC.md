@@ -633,6 +633,22 @@ lmx_request_duration_seconds_bucket{model="llama-3.2-8b",le="+Inf"} 42
   "total_stream_requests": 20,
   "total_prompt_tokens": 5000,
   "total_completion_tokens": 12000,
+  "requests": {
+    "total": 42,
+    "errors": 1,
+    "stream_total": 20,
+    "throughput_1m": 1.25
+  },
+  "tokens": {
+    "prompt_total": 5000,
+    "completion_total": 12000
+  },
+  "speculative": {
+    "accepted_tokens": 0,
+    "rejected_tokens": 0,
+    "ignored_tokens": 0,
+    "acceptance_ratio": null
+  },
   "per_model": {
     "llama-3.2-8b": {
       "requests": 42,
@@ -640,7 +656,9 @@ lmx_request_duration_seconds_bucket{model="llama-3.2-8b",le="+Inf"} 42
       "completion_tokens": 12000
     }
   },
-  "uptime_seconds": 3600.0
+  "per_client": {},
+  "uptime_seconds": 3600.0,
+  "schema_version": "2026-03-02"
 }
 ```
 
@@ -677,7 +695,7 @@ curl -X GET http://localhost:8000/v1/models \
 - Can be disabled for LAN-only deployments
 - Default: Inference API accepts any key (permissive)
 
-### Admin API (Required)
+### Admin API (When `security.admin_key` is set)
 
 Use `X-Admin-Key: <key>` header:
 
@@ -686,9 +704,13 @@ curl -X GET http://localhost:8000/admin/status \
   -H "X-Admin-Key: YOUR_ADMIN_KEY"
 ```
 
-- Always required
-- Must be set at startup (config file or env var)
+- Required when `security.admin_key` is non-null
+- If `security.admin_key` is null (LAN mode), admin auth is disabled
 - Separate from inference API key
+
+For browser `EventSource` clients, `GET /admin/events` additionally accepts query
+parameter auth (`admin_key`, legacy `x_admin_key`) because headers are not
+available on native EventSource. Other admin routes still use `X-Admin-Key`.
 
 ---
 

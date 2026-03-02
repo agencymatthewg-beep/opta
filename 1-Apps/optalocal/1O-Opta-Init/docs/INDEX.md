@@ -7,15 +7,16 @@
 1. APP.md — identity, purpose, audience, non-negotiables
 2. CLAUDE.md — coding rules, stack, aesthetic directives
 3. ARCHITECTURE.md — system design, data flow, build pipeline
-4. docs/ROADMAP.md — current phase and acceptance criteria
-5. docs/GUARDRAILS.md — hard rules, never-do list
-6. docs/ECOSYSTEM.md — optalocal.com platform context
-7. docs/KNOWLEDGE.md — research references, design token sources
-8. docs/WORKFLOWS.md — build, deploy, Clauding pattern
-9. docs/DECISIONS.md — locked architectural decisions
-10. docs/RELEASE-CONTROL-WORKFLOW.md — channel manifest contract + promotion steps
-11. docs/CHANGELOG.md — version history
-12. docs/GO-LIVE-CHECKLIST.md — release readiness checklist with owners
+4. docs/COMPONENT-LOCATION-CONTRACT.md — canonical locations, required files, boundaries
+5. docs/ROADMAP.md — current phase and acceptance criteria
+6. docs/GUARDRAILS.md — hard rules, never-do list
+7. docs/ECOSYSTEM.md — optalocal.com platform context
+8. docs/KNOWLEDGE.md — research references, design token sources
+9. docs/WORKFLOWS.md — build, deploy, Clauding pattern
+10. docs/DECISIONS.md — locked architectural decisions
+11. docs/RELEASE-CONTROL-WORKFLOW.md — channel manifest contract + promotion steps
+12. docs/CHANGELOG.md — version history
+13. docs/GO-LIVE-CHECKLIST.md — release readiness checklist with owners
 
 ## File Map
 
@@ -25,6 +26,7 @@
 | CLAUDE.md                 | 2026-02-28   | AI coding instructions             |
 | ARCHITECTURE.md           | 2026-02-28   | System design                      |
 | docs/INDEX.md             | 2026-03-02   | This file                          |
+| docs/COMPONENT-LOCATION-CONTRACT.md | 2026-03-02 | Website/app location + required files |
 | docs/ROADMAP.md           | 2026-03-02   | Build phases                       |
 | docs/GUARDRAILS.md        | 2026-02-28   | Hard rules                         |
 | docs/ECOSYSTEM.md         | 2026-02-28   | Ecosystem relationships            |

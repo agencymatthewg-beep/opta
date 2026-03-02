@@ -27,7 +27,7 @@ status: active
 - [x] CLI Showcase — visual terminal flows and command palette examples
 - [x] Install section — bootstrap command + prerequisites
 - [x] Architecture + features sections — stack and capability overview
-- [x] Downloads — card per app (CLI, LMX), macOS + Windows state, glass card style
+- [x] Downloads — manager-only card (Opta Init desktop app), macOS + Windows state, glass card style
 - [x] Dashboard CTA — "Open Web Dashboard" + "Manage Account"
 - [x] Footer — brand, links
 
@@ -60,7 +60,7 @@ status: active
 _Partially delivered: release-asset detection + state-aware CTA shipped. Remaining items track version badges and full go-live gates._
 
 - [x] Replace placeholder download URLs with release-asset detection from GitHub API
-- [ ] GitHub API call at build time to fetch latest release version tag
+- [x] GitHub API call at build time to fetch latest release version tag for manager installers
 - [ ] Version badge shown on download buttons (e.g. "v0.1.0")
 - [ ] Fallback to hardcoded URL if GitHub API unavailable at build time
 - [ ] Bootstrap script hosted at `https://optalocal.com/init` — update UI to point to it

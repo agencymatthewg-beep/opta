@@ -15,6 +15,7 @@ import { EnvProfilesPage } from "./pages/EnvProfilesPage";
 import { McpManagementPage } from "./pages/McpManagementPage";
 import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { AccountControlPage } from "./pages/AccountControlPage";
+import { CliOperationsPage } from "./pages/CliOperationsPage";
 import { DaemonPanel } from "./components/DaemonPanel";
 import {
   downloadAsFile,
@@ -22,7 +23,6 @@ import {
 } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
-import { OptaRing } from "./components/OptaRing";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
 import { LiveBrowserView } from "./components/LiveBrowserView";
 import { OPEN_SETUP_WIZARD_EVENT } from "./components/ErrorBoundary";
@@ -37,6 +37,7 @@ type AppPage =
   | "sessions"
   | "models"
   | "operations"
+  | "cli"
   | "env"
   | "mcp"
   | "config"
@@ -368,6 +369,23 @@ function App() {
         run: () => setActivePage("operations"),
       },
       {
+        id: "open-cli-operations",
+        title: "Open CLI operations",
+        description:
+          "Run daemon, serve, session, onboarding, and keychain CLI operations",
+        keywords: [
+          "cli",
+          "daemon",
+          "serve",
+          "sessions",
+          "doctor",
+          "onboard",
+          "update",
+          "keychain",
+        ],
+        run: () => setActivePage("cli"),
+      },
+      {
         id: "open-env-profiles",
         title: "Open env management",
         description: "Run daemon env.* operations for profile management",
@@ -602,9 +620,6 @@ function App() {
             </div>
 
             <div className="top-actions" style={{ alignItems: "center" }}>
-              <div style={{ marginRight: "1rem", display: "flex" }}>
-                <OptaRing size={48} paused={palette.isOpen} />
-              </div>
               <div className="segmented-nav-pill">
                 <button
                   type="button"
@@ -626,6 +641,13 @@ function App() {
                   onClick={() => setActivePage("operations")}
                 >
                   Operations
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "cli" ? "active" : ""}
+                  onClick={() => setActivePage("cli")}
+                >
+                  CLI
                 </button>
                 <button
                   type="button"
@@ -714,6 +736,8 @@ function App() {
               <ModelsPage connection={connection} />
             ) : activePage === "operations" ? (
               <OperationsPage connection={connection} />
+            ) : activePage === "cli" ? (
+              <CliOperationsPage connection={connection} />
             ) : activePage === "env" ? (
               <EnvProfilesPage connection={connection} />
             ) : activePage === "mcp" ? (
@@ -842,6 +866,7 @@ function App() {
                 <DaemonPanel
                   connection={connection}
                   connectionState={connectionState}
+                  onOpenDaemonOperations={() => setActivePage("cli")}
                 />
               </aside>
             ) : null}

@@ -487,18 +487,7 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     confirmationToken: string,
   ): Promise<DaemonLmxLoadResponse> {
-    const raw = await daemonRequest<unknown>(
-      connection,
-      "/v3/lmx/models/load/confirm",
-      {
-        method: "POST",
-        body: JSON.stringify({
-          confirmationToken,
-          confirmation_token: confirmationToken,
-        }),
-      },
-      LMX_MUTATION_TIMEOUT_MS,
-    );
+    const raw = await httpClient(connection).lmxConfirmLoad(confirmationToken);
     return normalizeLmxLoadResponse(raw, "");
   },
 
@@ -506,12 +495,7 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     downloadId: string,
   ): Promise<DaemonLmxDownloadProgress> {
-    const raw = await daemonRequest<unknown>(
-      connection,
-      `/v3/lmx/models/download/${encodeURIComponent(downloadId)}/progress`,
-      {},
-      LMX_READ_TIMEOUT_MS,
-    );
+    const raw = await httpClient(connection).lmxDownloadProgress(downloadId);
     return normalizeLmxDownloadProgress(raw, downloadId);
   },
 

@@ -15,8 +15,16 @@ optalocal.com (platform root)
 
 | App | Path | Role |
 |-----|------|------|
-| Opta CLI | 1D-Opta-CLI-TS | Agentic coding CLI — MacBook -> Mac Studio |
-| Opta LMX | 1M-Opta-LMX | Local inference daemon — Apple Silicon |
+| Opta Init Desktop Manager | /desktop-manager (1O) | Single install/discovery surface for stack management |
+
+## Apps Managed Through Opta Init Manifests
+
+| App | Path | Role |
+|-----|------|------|
+| Opta CLI | 1D-Opta-CLI-TS | Agentic coding CLI |
+| Opta LMX | 1M-Opta-LMX | Local inference daemon |
+| Opta Code | TBD | Desktop coding surface |
+| Opta Daemon | core service | Runtime orchestration daemon |
 
 ## App This Site Links To (Dashboard CTA)
 

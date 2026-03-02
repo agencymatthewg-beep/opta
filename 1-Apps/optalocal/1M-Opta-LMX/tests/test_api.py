@@ -1060,6 +1060,11 @@ async def test_metrics_json_endpoint(client: AsyncClient) -> None:
     data = response.json()
     assert "total_requests" in data
     assert "per_model" in data
+    assert data["requests"]["total"] == data["total_requests"]
+    assert data["requests"]["errors"] == data["total_errors"]
+    assert data["tokens"]["prompt_total"] == data["total_prompt_tokens"]
+    assert data["tokens"]["completion_total"] == data["total_completion_tokens"]
+    assert "throughput_1m" in data["requests"]
 
 
 async def test_metrics_increment_after_chat(client: AsyncClient) -> None:

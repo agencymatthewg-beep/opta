@@ -13,6 +13,9 @@ import { useModels } from "../hooks/useModels";
 import type { DaemonConnectionOptions } from "../types";
 import type { DaemonLmxLoadResponse } from "../lib/daemonClient";
 
+const DOWNLOAD_POLL_MS = 2_500;
+const DOWNLOAD_POLL_MISS_LIMIT = 3;
+
 function fmtBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -54,6 +57,69 @@ interface TrackedLoadDownload {
   error?: string;
 }
 
+function getLocalStorage():
+  | Pick<Storage, "getItem" | "setItem">
+  | null {
+  try {
+    const storage = window.localStorage as Partial<Storage> | undefined;
+    if (!storage) return null;
+    if (
+      typeof storage.getItem !== "function" ||
+      typeof storage.setItem !== "function"
+    ) {
+      return null;
+    }
+    return storage as Pick<Storage, "getItem" | "setItem">;
+  } catch {
+    return null;
+  }
+}
+
+function trackedDownloadsStorageKey(
+  connection: DaemonConnectionOptions | null,
+): string | null {
+  if (!connection) return null;
+  const protocol = connection.protocol ?? "http";
+  return `opta:lmx:tracked-downloads:${protocol}://${connection.host}:${connection.port}`;
+}
+
+function isTrackedLoadDownload(value: unknown): value is TrackedLoadDownload {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Record<string, unknown>;
+  return (
+    typeof candidate.download_id === "string" &&
+    typeof candidate.model_id === "string" &&
+    typeof candidate.repo_id === "string" &&
+    typeof candidate.status === "string" &&
+    typeof candidate.progress_percent === "number" &&
+    typeof candidate.downloaded_bytes === "number" &&
+    typeof candidate.total_bytes === "number" &&
+    typeof candidate.files_completed === "number" &&
+    typeof candidate.files_total === "number"
+  );
+}
+
+function loadTrackedDownloadsFromStorage(
+  storageKey: string | null,
+): Record<string, TrackedLoadDownload> {
+  if (!storageKey) return {};
+  const storage = getLocalStorage();
+  if (!storage) return {};
+  const raw = storage.getItem(storageKey);
+  if (!raw) return {};
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== "object") return {};
+  const entries = Object.entries(parsed as Record<string, unknown>).filter(
+    ([, value]) => isTrackedLoadDownload(value),
+  ) as Array<[string, TrackedLoadDownload]>;
+  return Object.fromEntries(entries);
+}
+
 export function ModelsPage({ connection }: ModelsPageProps) {
   const {
     lmxStatus,
@@ -83,6 +149,7 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   >({});
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const downloadNoticeTimerRef = useRef<number | null>(null);
+  const downloadPollMissesRef = useRef<Record<string, number>>({});
 
   const usedPct = memory ? memPct(memory.used_gb, memory.total_unified_memory_gb) : 0;
   const memBarColor =
@@ -92,9 +159,21 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     () => Object.keys(trackedDownloads).sort().join("|"),
     [trackedDownloads],
   );
+  const trackedDownloadsStorage = useMemo(
+    () => trackedDownloadsStorageKey(connection),
+    [connection?.protocol, connection?.host, connection?.port],
+  );
   const trackedDownloadIds = useMemo(
     () => (trackedDownloadsKey ? trackedDownloadsKey.split("|") : []),
     [trackedDownloadsKey],
+  );
+  const knownLocalModelIds = useMemo(
+    () =>
+      new Set([
+        ...loadedModels.map((model) => model.model_id),
+        ...availableModels.map((model) => model.model_id),
+      ]),
+    [availableModels, loadedModels],
   );
   const activeDownloads = useMemo(
     () =>
@@ -121,6 +200,7 @@ export function ModelsPage({ connection }: ModelsPageProps) {
 
   const trackDownload = useCallback(
     (downloadId: string, modelId: string, repoId?: string) => {
+      downloadPollMissesRef.current[downloadId] = 0;
       setTrackedDownloads((previous) => ({
         ...previous,
         [downloadId]: {
@@ -240,10 +320,30 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   }, [deleteModel]);
 
   useEffect(() => {
+    setTrackedDownloads(loadTrackedDownloadsFromStorage(trackedDownloadsStorage));
+    downloadPollMissesRef.current = {};
+  }, [trackedDownloadsStorage]);
+
+  useEffect(() => {
+    if (!trackedDownloadsStorage) return;
+    const storage = getLocalStorage();
+    if (!storage) return;
+    try {
+      storage.setItem(
+        trackedDownloadsStorage,
+        JSON.stringify(trackedDownloads),
+      );
+    } catch {
+      // Best-effort persistence only.
+    }
+  }, [trackedDownloads, trackedDownloadsKey, trackedDownloadsStorage]);
+
+  useEffect(() => {
     return () => {
       if (downloadNoticeTimerRef.current !== null) {
         window.clearTimeout(downloadNoticeTimerRef.current);
       }
+      downloadPollMissesRef.current = {};
     };
   }, []);
 
@@ -264,62 +364,96 @@ export function ModelsPage({ connection }: ModelsPageProps) {
 
       if (cancelled) return;
 
-      const completedModels = results
-        .map(({ downloadId, progress }) => {
-          if (progress?.status !== "completed") return null;
-          return trackedDownloads[downloadId]?.model_id ?? null;
-        })
-        .filter((modelId): modelId is string => Boolean(modelId));
+      const updates = new Map<string, TrackedLoadDownload | null>();
+      const completedModels = new Set<string>();
+      const failedMessages: string[] = [];
+      const staleMessages: string[] = [];
 
-      const failedMessages = results
-        .map(({ downloadId, progress }) => {
-          if (progress?.status !== "failed") return null;
-          const modelId = trackedDownloads[downloadId]?.model_id;
-          if (!modelId) return null;
-          return progress.error
-            ? `${modelId}: ${progress.error}`
-            : `${modelId}: download failed`;
-        })
-        .filter((message): message is string => Boolean(message));
+      for (const { downloadId, progress } of results) {
+        const existing = trackedDownloads[downloadId];
+        if (!existing) continue;
 
-      setTrackedDownloads((previous) => {
-        const next = { ...previous };
-        for (const { downloadId, progress } of results) {
-          if (!progress) continue;
-          const existing = next[downloadId];
-          if (!existing) continue;
-
-          const updated: TrackedLoadDownload = {
-            ...existing,
-            ...progress,
-            model_id: existing.model_id,
-            repo_id: progress.repo_id || existing.repo_id,
-          };
-          next[downloadId] = updated;
-
-          if (progress.status === "completed") {
-            delete next[downloadId];
+        if (!progress) {
+          if (knownLocalModelIds.has(existing.model_id)) {
+            completedModels.add(existing.model_id);
+            updates.set(downloadId, null);
+            delete downloadPollMissesRef.current[downloadId];
             continue;
           }
-
-          if (progress.status === "failed") {
-            delete next[downloadId];
+          const misses = (downloadPollMissesRef.current[downloadId] ?? 0) + 1;
+          downloadPollMissesRef.current[downloadId] = misses;
+          if (misses >= DOWNLOAD_POLL_MISS_LIMIT) {
+            staleMessages.push(
+              `${existing.model_id}: status unavailable after retries`,
+            );
+            updates.set(downloadId, null);
+            delete downloadPollMissesRef.current[downloadId];
+          } else {
+            updates.set(downloadId, { ...existing, status: "unknown" });
           }
+          continue;
         }
-        return next;
-      });
 
-      if (completedModels.length > 0) {
-        setTimedNotice(`Download complete · ${completedModels.join(", ")}`);
+        downloadPollMissesRef.current[downloadId] = 0;
+        const updated: TrackedLoadDownload = {
+          ...existing,
+          ...progress,
+          model_id: existing.model_id,
+          repo_id: progress.repo_id || existing.repo_id,
+        };
+
+        if (progress.status === "completed") {
+          completedModels.add(existing.model_id);
+          updates.set(downloadId, null);
+          delete downloadPollMissesRef.current[downloadId];
+          continue;
+        }
+
+        if (progress.status === "failed") {
+          failedMessages.push(
+            progress.error
+              ? `${existing.model_id}: ${progress.error}`
+              : `${existing.model_id}: download failed`,
+          );
+          updates.set(downloadId, null);
+          delete downloadPollMissesRef.current[downloadId];
+          continue;
+        }
+
+        updates.set(downloadId, updated);
+      }
+
+      if (updates.size > 0) {
+        setTrackedDownloads((previous) => {
+          const next = { ...previous };
+          let changed = false;
+          for (const [downloadId, updated] of updates) {
+            if (!(downloadId in next)) continue;
+            if (updated === null) {
+              delete next[downloadId];
+            } else {
+              next[downloadId] = updated;
+            }
+            changed = true;
+          }
+          return changed ? next : previous;
+        });
+      }
+
+      const completed = Array.from(completedModels);
+      const failures = [...failedMessages, ...staleMessages];
+      if (completed.length > 0 || failures.length > 0) {
         void refreshLmx();
       }
-      if (failedMessages.length > 0) {
-        setTimedNotice(failedMessages.join(" · "), "error");
+      if (failures.length > 0) {
+        setTimedNotice(failures.join(" · "), "error");
+      } else if (completed.length > 0) {
+        setTimedNotice(`Download complete · ${completed.join(", ")}`);
       }
     };
 
     void pollOnce();
-    const timer = window.setInterval(() => void pollOnce(), 2500);
+    const timer = window.setInterval(() => void pollOnce(), DOWNLOAD_POLL_MS);
     return () => {
       cancelled = true;
       window.clearInterval(timer);
@@ -329,8 +463,10 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     downloadProgress,
     refreshLmx,
     setTimedNotice,
+    knownLocalModelIds,
     trackedDownloadIds,
     trackedDownloadsKey,
+    trackedDownloads,
   ]);
 
   return (

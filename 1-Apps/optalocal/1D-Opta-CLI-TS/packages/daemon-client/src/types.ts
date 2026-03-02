@@ -160,6 +160,9 @@ export interface DaemonLmxAvailableModel {
 export interface DaemonLmxLoadOptions {
   backend?: string;
   autoDownload?: boolean;
+  performanceOverrides?: Record<string, unknown>;
+  keepAliveSec?: number;
+  allowUnsupportedRuntime?: boolean;
 }
 
 export type DaemonLmxLoadStatus = 'loaded' | 'download_required' | 'downloading';
@@ -180,6 +183,9 @@ export interface DaemonLmxLoadResponse {
 
 export interface DaemonLmxDownloadResponse {
   download_id: string;
+  repo_id: string;
+  estimated_size_bytes?: number;
+  status?: string;
 }
 
 export interface DaemonLmxDownloadProgressResponse {
@@ -192,6 +198,7 @@ export interface DaemonLmxDownloadProgressResponse {
   filesCompleted: number;
   filesTotal: number;
   error?: string;
+  errorCode?: string;
 }
 
 export type DaemonOperationSafetyClass = 'read' | 'write' | 'dangerous';

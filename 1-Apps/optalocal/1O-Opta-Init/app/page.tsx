@@ -105,7 +105,7 @@ export default function Home() {
           </div>
           <nav className="hidden md:flex gap-10 text-xs tracking-[0.2em] uppercase font-medium text-text-secondary">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
-            <a href="#showcase" className="hover:text-primary transition-colors">CLI</a>
+            <a href="#showcase" className="hover:text-primary transition-colors">Manager</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#downloads" className="hover:text-primary transition-colors text-primary">Download</a>
             <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
@@ -169,7 +169,7 @@ export default function Home() {
           </div>
         </motion.section>
 
-        {/* --- APP SHOWCASE (CLI UI Mockups) --- */}
+        {/* --- APP SHOWCASE (Manager UI Mockups) --- */}
         <motion.section
           id="showcase"
           initial="hidden"

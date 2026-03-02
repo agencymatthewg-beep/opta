@@ -19,8 +19,8 @@
       "permanent": false
     },
     {
-      "source": "/downloads/opta-cli/:version/:asset",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-cli-npm.tgz",
+      "source": "/downloads/opta-cli/v0.6.2/:asset",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
       "permanent": false
     },
     {
@@ -36,6 +36,11 @@
     {
       "source": "/downloads/opta-daemon/v0.4.1/:asset",
       "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-cli/v0.7.0-beta.2/:asset",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
       "permanent": false
     },
     {

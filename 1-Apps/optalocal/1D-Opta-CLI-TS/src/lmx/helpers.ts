@@ -88,6 +88,7 @@ export interface RawDownloadProgressResponse {
   files_completed: number;
   files_total: number;
   error?: string;
+  error_code?: string;
 }
 
 export interface RawDeleteResponse {
@@ -149,6 +150,34 @@ export function mapHttpErrorCode(status: number): string {
   if (status === 429) return 'rate_limited';
   if (status >= 500) return 'server_error';
   return `http_${status}`;
+}
+
+function readErrorCode(value: unknown): string | undefined {
+  if (!value || typeof value !== 'object') return undefined;
+  const candidate = (value as Record<string, unknown>)['code'];
+  if (typeof candidate !== 'string') return undefined;
+  const trimmed = candidate.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+export function parseApiErrorCode(body: string, status: number): string {
+  const fallback = mapHttpErrorCode(status);
+  const trimmedBody = body.trim();
+  if (!trimmedBody) return fallback;
+
+  try {
+    const parsed = JSON.parse(trimmedBody) as unknown;
+    const topLevelCode = readErrorCode(parsed);
+    if (topLevelCode) return topLevelCode;
+    if (parsed && typeof parsed === 'object') {
+      const nestedCode = readErrorCode((parsed as Record<string, unknown>)['error']);
+      if (nestedCode) return nestedCode;
+    }
+  } catch {
+    // Not JSON — keep fallback.
+  }
+
+  return fallback;
 }
 
 export function parseApiErrorMessage(body: string, statusText: string): string {

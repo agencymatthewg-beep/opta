@@ -102,7 +102,7 @@ import {
   GB_TO_BYTES,
   isAbortFailure,
   lookupContextLimit,
-  mapHttpErrorCode,
+  parseApiErrorCode,
   parseApiErrorMessage,
   RETRYABLE_HTTP_STATUS,
 } from './helpers.js';
@@ -323,7 +323,7 @@ export class LmxClient {
 
         if (!response.ok) {
           const body = await response.text().catch(() => '');
-          const code = mapHttpErrorCode(response.status);
+          const code = parseApiErrorCode(body, response.status);
           const message = parseApiErrorMessage(body, response.statusText);
           if (RETRYABLE_HTTP_STATUS.has(response.status) && attempt < attempts - 1) {
             await sleep(this.retryDelayMs(attempt));
@@ -572,6 +572,7 @@ export class LmxClient {
       filesCompleted: raw.files_completed,
       filesTotal: raw.files_total,
       error: raw.error,
+      errorCode: raw.error_code,
     };
   }
 

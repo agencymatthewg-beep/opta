@@ -103,6 +103,7 @@ def verify_admin_key(
     request: Request,
     x_admin_key: str | None = Header(None),
     sse_admin_key: str | None = Query(None, alias="admin_key"),
+    sse_admin_key_legacy: str | None = Query(None, alias="x_admin_key"),
 ) -> None:
     """Verify X-Admin-Key header if admin_key is configured.
 
@@ -110,7 +111,8 @@ def verify_admin_key(
     (LAN-only trust model). If set, the header must match exactly.
 
     Browser EventSource cannot send custom headers; for that single case we
-    allow a query-param fallback (`admin_key`) only on GET /admin/events.
+    allow query-param fallbacks (`admin_key`, legacy `x_admin_key`) only on
+    GET /admin/events.
     All other admin routes still require X-Admin-Key header auth.
     """
     path = getattr(getattr(request, "url", None), "path", "")
@@ -124,7 +126,7 @@ def verify_admin_key(
 
     candidate_key = x_admin_key
     if candidate_key is None and method.upper() == "GET" and path == "/admin/events":
-        candidate_key = sse_admin_key
+        candidate_key = sse_admin_key or sse_admin_key_legacy
 
     if candidate_key is None or not secrets.compare_digest(candidate_key, config_key):
         raise HTTPException(status_code=403, detail="Invalid or missing admin key")

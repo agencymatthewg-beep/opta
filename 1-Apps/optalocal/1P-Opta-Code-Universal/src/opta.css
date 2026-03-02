@@ -199,15 +199,6 @@ h6 {
   color: var(--accent-2);
 }
 
-.app-logo-ascii {
-  color: var(--accent-2);
-  font-size: 10px;
-  line-height: 1.1;
-  margin: 0 0 0.5rem 0;
-  font-family: "JetBrains Mono", monospace;
-  font-weight: bold;
-}
-
 .app-logo-anchor {
   position: absolute;
   left: 50%;
@@ -4531,6 +4522,23 @@ button.active,
   border-color: rgba(239, 68, 68, 0.4);
   color: var(--opta-neon-red);
   background: rgba(239, 68, 68, 0.08);
+}
+
+.daemon-action-btn.daemon-action-cli {
+  border-color: rgba(139, 92, 246, 0.35);
+  color: var(--opta-primary-glow);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.daemon-action-btn.daemon-action-cli:hover {
+  border-color: rgba(139, 92, 246, 0.6);
+  color: var(--opta-text-primary);
+  background: rgba(139, 92, 246, 0.14);
+}
+
+.daemon-action-cli-link {
+  width: 100%;
+  margin-top: 10px;
 }
 
 /* ── Daemon logs page (Stream I) ───────────────────────────────────────── */

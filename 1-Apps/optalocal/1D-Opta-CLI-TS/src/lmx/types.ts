@@ -128,6 +128,7 @@ export interface LmxDownloadProgress {
   filesCompleted: number;
   filesTotal: number;
   error?: string;
+  errorCode?: string;
 }
 
 export interface LmxDeleteResponse {

@@ -950,7 +950,10 @@ curl http://192.168.188.11:1234/admin/metrics \
 ```bash
 curl http://192.168.188.11:1234/admin/metrics/json \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
-# Returns: total_requests, total_errors, per_model breakdown, per_client breakdown, uptime
+# Returns: top-level totals + compatibility aliases:
+#   requests.{total,errors,stream_total,throughput_1m}
+#   tokens.{prompt_total,completion_total}
+#   per_model/per_client breakdown + speculative counters + uptime
 ```
 
 ### 4.3 SSE Event Stream
@@ -964,6 +967,19 @@ curl -N http://192.168.188.11:1234/admin/events \
 # Events: model_loaded, model_unloaded, download_progress, download_completed,
 #          download_failed, request_completed, memory_warning, config_reloaded
 # Heartbeat every 30 seconds (configurable: server.sse_heartbeat_interval_sec)
+```
+
+Browser EventSource clients cannot send custom headers. For `GET /admin/events`
+only, pass the admin key as query parameter:
+
+```text
+/admin/events?admin_key=...
+```
+
+Legacy compatibility alias is also accepted on that route:
+
+```text
+/admin/events?x_admin_key=...
 ```
 
 ### 4.4 Compatibility Registry

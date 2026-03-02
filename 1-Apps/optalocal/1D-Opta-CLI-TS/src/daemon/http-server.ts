@@ -27,6 +27,7 @@ import { isStorageRelatedError } from '../utils/disk.js';
 import { errorMessage } from '../utils/errors.js';
 import { loadConfig } from '../core/config.js';
 import { LmxClient } from '../lmx/client.js';
+import { LmxApiError, type LmxLoadModelOptions } from '../lmx/types.js';
 import { executeDaemonOperation, listDaemonOperationsResponse } from './operations/execute.js';
 
 export interface HttpServerOptions {
@@ -130,6 +131,19 @@ function mapMutationError(err: unknown): { status: number; message: string } {
   return { status: 500, message };
 }
 
+function mapLmxRouteError(err: unknown): { status: number; body: { error: string; code?: string } } {
+  if (err instanceof LmxApiError) {
+    return {
+      status: err.status > 0 ? err.status : 502,
+      body: { error: err.message, code: err.code },
+    };
+  }
+  return {
+    status: 500,
+    body: { error: errorMessage(err) },
+  };
+}
+
 function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void {
   app.get('/health', () => ({
     status: 'ok',
@@ -185,90 +199,126 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
 
   app.get('/v3/lmx/status', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const status = await lmx.status();
-    return status;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const status = await lmx.status();
+      return status;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.get('/v3/lmx/discovery', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const discovery = await lmx.discovery();
-    return discovery;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const discovery = await lmx.discovery();
+      return discovery;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.get('/v3/lmx/models', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const models = await lmx.models();
-    return models;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const models = await lmx.models();
+      return models;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.get('/v3/lmx/memory', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const memory = await lmx.memory();
-    return memory;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const memory = await lmx.memory();
+      return memory;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.get('/v3/lmx/models/available', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const available = await lmx.available();
-    return available;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const available = await lmx.available();
+      return available;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.post('/v3/lmx/models/load', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const body = req.body as
-      | { modelId?: string; backend?: string; autoDownload?: boolean }
+      | ({ modelId?: string } & Pick<
+          LmxLoadModelOptions,
+          'backend' | 'autoDownload' | 'performanceOverrides' | 'keepAliveSec' | 'allowUnsupportedRuntime'
+        >)
       | undefined;
     if (!body?.modelId || !body.modelId.trim()) {
       return reply.status(400).send({ error: 'Missing modelId' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.loadModel(body.modelId, {
-      backend: body.backend,
-      autoDownload: body.autoDownload,
-    });
-    return result;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.loadModel(body.modelId, {
+        backend: body.backend,
+        autoDownload: body.autoDownload,
+        performanceOverrides: body.performanceOverrides,
+        keepAliveSec: body.keepAliveSec,
+        allowUnsupportedRuntime: body.allowUnsupportedRuntime,
+      });
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.post('/v3/lmx/models/load/confirm', async (req, reply) => {
@@ -279,15 +329,20 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       return reply.status(400).send({ error: 'Missing confirmationToken' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.confirmLoad(confirmationToken);
-    return result;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.confirmLoad(confirmationToken);
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.post('/v3/lmx/models/unload', async (req, reply) => {
@@ -297,15 +352,20 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       return reply.status(400).send({ error: 'Missing modelId' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.unloadModel(body.modelId);
-    return result;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.unloadModel(body.modelId);
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.delete('/v3/lmx/models/:modelId', async (req, reply) => {
@@ -315,15 +375,20 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       return reply.status(400).send({ error: 'Missing modelId' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.deleteModel(params.modelId);
-    return result;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.deleteModel(params.modelId);
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.post('/v3/lmx/models/download', async (req, reply) => {
@@ -333,19 +398,25 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       return reply.status(400).send({ error: 'Missing repoId' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.downloadModel(body.repoId);
-    return {
-      download_id: result.downloadId,
-      repo_id: result.repoId,
-      status: result.status,
-    };
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.downloadModel(body.repoId);
+      return {
+        download_id: result.downloadId,
+        repo_id: result.repoId,
+        estimated_size_bytes: result.estimatedSizeBytes,
+        status: result.status,
+      };
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.get('/v3/lmx/models/download/:downloadId/progress', async (req, reply) => {
@@ -355,15 +426,20 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       return reply.status(400).send({ error: 'Missing downloadId' });
     }
 
-    const config = await loadConfig();
-    const lmx = new LmxClient({
-      host: config.connection.host,
-      fallbackHosts: config.connection.fallbackHosts,
-      port: config.connection.port,
-      adminKey: config.connection.adminKey,
-    });
-    const result = await lmx.downloadProgress(params.downloadId);
-    return result;
+    try {
+      const config = await loadConfig();
+      const lmx = new LmxClient({
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+        adminKey: config.connection.adminKey,
+      });
+      const result = await lmx.downloadProgress(params.downloadId);
+      return result;
+    } catch (err) {
+      const mapped = mapLmxRouteError(err);
+      return reply.status(mapped.status).send(mapped.body);
+    }
   });
 
   app.post('/v3/sessions', async (req, reply) => {

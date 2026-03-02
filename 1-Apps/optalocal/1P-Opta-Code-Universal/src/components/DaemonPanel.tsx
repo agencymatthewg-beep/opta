@@ -16,9 +16,14 @@ interface DaemonState {
 interface DaemonPanelProps {
   connection: DaemonConnectionOptions;
   connectionState: "connected" | "connecting" | "disconnected";
+  onOpenDaemonOperations?: () => void;
 }
 
-export function DaemonPanel({ connection, connectionState }: DaemonPanelProps) {
+export function DaemonPanel({
+  connection,
+  connectionState,
+  onOpenDaemonOperations,
+}: DaemonPanelProps) {
   const nativeDesktop = isNativeDesktop();
   const [state, setState] = useState<DaemonState | null>(null);
   const [loading, setLoading] = useState(false);
@@ -192,11 +197,33 @@ export function DaemonPanel({ connection, connectionState }: DaemonPanelProps) {
             <Square size={12} aria-hidden="true" />
             Stop
           </button>
+          {onOpenDaemonOperations ? (
+            <button
+              type="button"
+              className="daemon-action-btn daemon-action-cli"
+              onClick={onOpenDaemonOperations}
+              title="Open daemon CLI operations"
+            >
+              CLI Ops
+            </button>
+          ) : null}
         </div>
       ) : (
-        <p className="text-secondary" style={{ marginTop: 12, fontSize: 12 }}>
-          Web runtime: daemon control actions are unavailable; HTTP/WS client mode is active.
-        </p>
+        <>
+          <p className="text-secondary" style={{ marginTop: 12, fontSize: 12 }}>
+            Web runtime: daemon control actions are unavailable; HTTP/WS client mode is active.
+          </p>
+          {onOpenDaemonOperations ? (
+            <button
+              type="button"
+              className="daemon-action-btn daemon-action-cli daemon-action-cli-link"
+              onClick={onOpenDaemonOperations}
+              title="Open daemon CLI operations"
+            >
+              Open daemon CLI operations
+            </button>
+          ) : null}
+        </>
       )}
     </div>
   );

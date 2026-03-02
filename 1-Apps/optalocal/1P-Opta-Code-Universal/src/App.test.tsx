@@ -58,16 +58,16 @@ vi.mock("./components/SetupWizard", () => ({
   SetupWizard: () => <div>SetupWizardMock</div>,
 }));
 
-vi.mock("./components/OptaRing", () => ({
-  OptaRing: () => <div>OptaRingMock</div>,
-}));
-
 vi.mock("./pages/ModelsPage", () => ({
   ModelsPage: () => <div>ModelsPageMock</div>,
 }));
 
 vi.mock("./pages/OperationsPage", () => ({
   OperationsPage: () => <div>OperationsPageMock</div>,
+}));
+
+vi.mock("./pages/CliOperationsPage", () => ({
+  CliOperationsPage: () => <div>CliOperationsPageMock</div>,
 }));
 
 vi.mock("./pages/EnvProfilesPage", () => ({
@@ -182,6 +182,10 @@ describe("App account controls wiring", () => {
 
   it("renders Env and MCP tabs and switches pages", async () => {
     render(<App />);
+
+    const cliTab = await screen.findByRole("button", { name: "CLI" });
+    fireEvent.click(cliTab);
+    expect(screen.getByText("CliOperationsPageMock")).toBeInTheDocument();
 
     const envTab = await screen.findByRole("button", { name: "Env" });
     fireEvent.click(envTab);

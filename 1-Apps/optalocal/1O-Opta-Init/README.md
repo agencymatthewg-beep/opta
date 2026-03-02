@@ -19,3 +19,9 @@ Opta Init is the core entry point and lifecycle manager for the Opta Local stack
 - Orchestrates the lifecycle of `1D-Opta-CLI-TS` and `1M-Opta-LMX`.
 - Serves as the primary onboarding funnel for operators.
 - Should follow canonical path contract from `1-Apps/PATH-CONTRACT.md`.
+
+## Location + File Contract
+
+For the exact location split, required files, and purpose boundaries between the website and desktop app, see:
+
+- `docs/COMPONENT-LOCATION-CONTRACT.md`
