@@ -780,6 +780,31 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
 def cli() -> None:
     """CLI entry point: parse args, load config, start uvicorn."""
+    import sys
+    import os
+    import subprocess
+    
+    # Prevent macOS idle sleep while LMX is running by spawning caffeinate.
+    # It watches this process (-w) and exits when LMX exits.
+    if sys.platform == "darwin":
+        subprocess.Popen(
+            ["/usr/bin/caffeinate", "-i", "-w", str(os.getpid())],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    # Prevent duplicate processes on rapid launchd restarts via exclusive file lock
+    try:
+        import fcntl
+        # Keep a reference to the file descriptor so it isn't garbage collected
+        # The OS will automatically release the lock and close the FD when the process exits
+        global _lock_fd
+        _lock_fd = open("/tmp/opta-lmx.lock", "w")
+        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (IOError, BlockingIOError):
+        print("Opta-LMX is already running (lock file active). Exiting to allow graceful shutdown of previous instance.", file=sys.stderr)
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(
         prog="opta-lmx",
         description="Opta-LMX — Private AI inference engine for Apple Silicon",

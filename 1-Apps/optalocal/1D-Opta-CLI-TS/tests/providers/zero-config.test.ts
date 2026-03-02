@@ -161,6 +161,31 @@ describe('probeProvider — LMX reachable', () => {
 
     expect(probeLmx).toHaveBeenCalledWith('192.168.188.11', 1234, { timeoutMs: 2_000 });
   });
+
+  it('falls through to fallback host probes when primary host is down', async () => {
+    const probeLmx = await getProbeLmxConnection();
+    probeLmx
+      .mockResolvedValueOnce({ state: 'disconnected', latencyMs: 800, reason: 'ECONNREFUSED' })
+      .mockResolvedValueOnce({ state: 'connected', latencyMs: 45 });
+
+    const { probeProvider } = await getProbeProvider();
+    const config = makeConfig({
+      provider: { ...DEFAULT_CONFIG.provider, active: 'lmx' },
+      connection: {
+        ...DEFAULT_CONFIG.connection,
+        host: 'localhost',
+        fallbackHosts: ['mono512'],
+        port: 1234,
+      },
+    });
+    const provider = await probeProvider(config);
+
+    expect(provider.name).toBe('lmx');
+    expect(probeLmx).toHaveBeenCalledTimes(2);
+    expect(probeLmx.mock.calls[0]?.[0]).toBe('localhost');
+    expect(probeLmx.mock.calls[1]?.[0]).toBe('mono512');
+    expect(probeLmx.mock.calls[1]?.[1]).toBe(1234);
+  });
 });
 
 describe('probeProvider — LMX unreachable + ANTHROPIC_API_KEY set', () => {

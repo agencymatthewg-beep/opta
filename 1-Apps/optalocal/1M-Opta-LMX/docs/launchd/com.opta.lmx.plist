@@ -7,8 +7,6 @@
 
     <key>ProgramArguments</key>
     <array>
-        <string>/usr/bin/caffeinate</string>
-        <string>-i</string>
         <string>/Users/opta/venvs/mlx/bin/python</string>
         <string>-m</string>
         <string>opta_lmx.main</string>

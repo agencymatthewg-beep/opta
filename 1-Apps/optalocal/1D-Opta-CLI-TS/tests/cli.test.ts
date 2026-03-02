@@ -52,7 +52,7 @@ describe('opta CLI', () => {
   });
 
   it('shows command-specific help for chat', async () => {
-    const result = await run(['do', '--help']);
+    const result = await run(['chat', '--help']);
     expect(result.stdout).toContain('--model');
     expect(result.stdout).toContain('--provider');
     expect(result.stdout).toContain('--device');
@@ -61,9 +61,10 @@ describe('opta CLI', () => {
   });
 
   it('shows command-specific help for tui alias', async () => {
-    const result = await run(['do', '--help']);
+    const result = await run(['tui', '--help']);
     expect(result.stdout).toContain('--model');
     expect(result.stdout).toContain('--format');
+    expect(result.stdout).toContain('--device');
     expect(result.exitCode).toBe(0);
   });
 
@@ -91,7 +92,7 @@ describe('opta CLI', () => {
   });
 
   it('chat command accepts --auto flag', async () => {
-    const result = await run(['do', '--help']);
+    const result = await run(['chat', '--help']);
     expect(result.stdout).toContain('--auto');
     expect(result.stdout).toContain('--dangerous');
   });
@@ -151,7 +152,7 @@ describe('opta CLI', () => {
   });
 
   it('chat command shows --format flag with json description', async () => {
-    const result = await run(['do', '--help']);
+    const result = await run(['chat', '--help']);
     expect(result.stdout).toContain('--format');
     expect(result.stdout).toContain('json');
   });

@@ -48,11 +48,17 @@ To keep platform workflows unambiguous, this repo now keeps explicitly labeled p
 ## Usage
 
 ```bash
+# Default launch (full-screen TUI)
+opta
+
 # Interactive chat session
 opta chat
 
 # Full-screen terminal UI (React/Ink)
 opta tui
+
+# Chat command can also force TUI
+opta chat --tui
 
 # One-shot task execution
 opta do "refactor the auth module"
@@ -71,6 +77,28 @@ opta chat --device mono512:1234
 
 # Resume a previous session
 opta chat --resume <session-id>
+```
+
+## Startup Host Setup (Important)
+
+If your primary host is `localhost:1234` but LMX actually runs on another machine (for example `mono512:1234`), startup now probes both `connection.host` and `connection.fallbackHosts` before failing.
+
+Recommended setup:
+
+```bash
+# Keep localhost as primary but add studio fallback(s)
+opta config set connection.fallbackHosts mono512,192.168.188.11
+
+# Or make your remote host the primary endpoint
+opta config set connection.host mono512
+opta config set connection.port 1234
+```
+
+Quick verification:
+
+```bash
+opta doctor
+opta status --full
 ```
 
 ## Features

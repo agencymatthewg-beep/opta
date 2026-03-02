@@ -8,6 +8,10 @@ Rate limiting is opt-in: disabled by default, enabled via config.security.rate_l
 
 from __future__ import annotations
 
+import contextvars
+
+request_ctx: contextvars.ContextVar[Request] = contextvars.ContextVar("request_ctx")
+
 try:
     from slowapi import Limiter
     from slowapi.util import get_remote_address
@@ -31,24 +35,39 @@ except ImportError:  # pragma: no cover
 
 from starlette.requests import Request
 
-limiter = Limiter(key_func=get_remote_address, enabled=False)  # type: ignore[arg-type]
+
+def _key_func(request: Request) -> str:
+    """Wrapper around get_remote_address that stores the request in context."""
+    request_ctx.set(request)
+    return get_remote_address(request)
 
 
-def _chat_completions_limit(request: Request) -> str:
+limiter = Limiter(key_func=_key_func, enabled=False)  # type: ignore[arg-type]
+
+
+def _chat_completions_limit(key: str) -> str:
     """Dynamic rate limit for /v1/chat/completions."""
-    config = getattr(request.app.state, "config", None)
-    if config and config.security.rate_limit.chat_completions_limit:
-        return config.security.rate_limit.chat_completions_limit
-    if config:
-        return config.security.rate_limit.default_limit
+    try:
+        request = request_ctx.get()
+        config = getattr(request.app.state, "config", None)
+        if config and config.security.rate_limit.chat_completions_limit:
+            return config.security.rate_limit.chat_completions_limit
+        if config:
+            return config.security.rate_limit.default_limit
+    except LookupError:
+        pass
     return "60/minute"
 
 
-def _embeddings_limit(request: Request) -> str:
+def _embeddings_limit(key: str) -> str:
     """Dynamic rate limit for /v1/embeddings."""
-    config = getattr(request.app.state, "config", None)
-    if config and config.security.rate_limit.embeddings_limit:
-        return config.security.rate_limit.embeddings_limit
-    if config:
-        return config.security.rate_limit.default_limit
+    try:
+        request = request_ctx.get()
+        config = getattr(request.app.state, "config", None)
+        if config and config.security.rate_limit.embeddings_limit:
+            return config.security.rate_limit.embeddings_limit
+        if config:
+            return config.security.rate_limit.default_limit
+    except LookupError:
+        pass
     return "60/minute"

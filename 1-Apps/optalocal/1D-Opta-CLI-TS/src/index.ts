@@ -100,6 +100,49 @@ program.action(async () => {
   await runChat({ ...opts, tui: true });
 });
 
+program
+  .command('chat')
+  .description('Start an interactive chat session')
+  .option('-r, --resume <id>', 'resume a previous session')
+  .option('--plan', 'plan mode — read-only, design implementation approach')
+  .option('--review', 'code review mode — read-only, structured review output')
+  .option('--research', 'research mode — explore ideas, gather information')
+  .option('-m, --model <name>', 'override default model')
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
+  .option('-f, --format <type>', 'output format: text (default) or json')
+  .option('--no-commit', 'disable auto-commit at task end')
+  .option('--no-checkpoints', 'disable checkpoint creation')
+  .option('-a, --auto', 'auto-accept file edits without prompting')
+  .option('--dangerous', 'bypass all permission prompts')
+  .option('--yolo', 'alias for --dangerous')
+  .option('--tui', 'launch full-screen terminal UI (Ink)')
+  .action(async (opts: ChatCommandOptions) => {
+    await applyDeviceOption(opts);
+    await runChat(opts);
+  });
+
+program
+  .command('tui')
+  .description('Launch full-screen terminal UI (alias for `opta chat --tui`)')
+  .option('-r, --resume <id>', 'resume a previous session')
+  .option('--plan', 'plan mode — read-only, design implementation approach')
+  .option('--review', 'code review mode — read-only, structured review output')
+  .option('--research', 'research mode — explore ideas, gather information')
+  .option('-m, --model <name>', 'override default model')
+  .option('--provider <name>', 'override provider for this run (lmx|anthropic)', parseProviderOption)
+  .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
+  .option('-f, --format <type>', 'output format: text (default) or json')
+  .option('--no-commit', 'disable auto-commit at task end')
+  .option('--no-checkpoints', 'disable checkpoint creation')
+  .option('-a, --auto', 'auto-accept file edits without prompting')
+  .option('--dangerous', 'bypass all permission prompts')
+  .option('--yolo', 'alias for --dangerous')
+  .action(async (opts: ChatCommandOptions) => {
+    await applyDeviceOption(opts);
+    await runChat({ ...opts, tui: true });
+  });
+
 program.addHelpText(
   'after',
   `

@@ -94,24 +94,52 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
     return new AnthropicProvider(config);
   }
 
-  // Probe LMX with a short timeout so we don't slow down normal usage.
-  const PROBE_TIMEOUT_MS = 2_000;
-  const host = config.connection.host;
+  // Probe LMX with a short timeout budget so startup stays responsive.
+  // We check the primary host first, then any configured fallbacks.
+  const PROBE_TIMEOUT_BUDGET_MS = 2_000;
+  const primaryHost = config.connection.host;
   const port = config.connection.port;
+  const probeTargets = [primaryHost, ...config.connection.fallbackHosts]
+    .map((host) => host.trim())
+    .filter((host) => host.length > 0)
+    .filter((host, index, list) => list.findIndex((item) => item.toLowerCase() === host.toLowerCase()) === index);
 
-  try {
-    const { probeLmxConnection } = await import('../lmx/connection.js');
-    const result = await probeLmxConnection(host, port, { timeoutMs: PROBE_TIMEOUT_MS });
+  const attemptedEndpoints: string[] = [];
+  const probeFailures: string[] = [];
+  const deadline = Date.now() + PROBE_TIMEOUT_BUDGET_MS;
 
-    if (result.state !== 'disconnected') {
-      verbose(`Provider probe: LMX reachable at ${host}:${port} (state=${result.state}, ${result.latencyMs}ms)`);
-      // LMX is reachable — use the normal provider (with FallbackProvider if configured).
-      return await getProvider(config);
+  for (let index = 0; index < probeTargets.length; index += 1) {
+    const host = probeTargets[index];
+    if (!host) continue;
+    const remainingTargets = probeTargets.length - index;
+    const remainingBudgetMs = Math.max(250, deadline - Date.now());
+    const timeoutMs =
+      probeTargets.length === 1
+        ? PROBE_TIMEOUT_BUDGET_MS
+        : Math.max(250, Math.floor(remainingBudgetMs / remainingTargets));
+    attemptedEndpoints.push(`${host}:${port}`);
+
+    try {
+      const { probeLmxConnection } = await import('../lmx/connection.js');
+      const result = await probeLmxConnection(host, port, { timeoutMs });
+
+      if (result.state !== 'disconnected') {
+        verbose(
+          `Provider probe: LMX reachable at ${host}:${port} ` +
+            `(state=${result.state}, ${result.latencyMs}ms)`
+        );
+        // LMX is reachable — use the normal provider (with FallbackProvider if configured).
+        return await getProvider(config);
+      }
+
+      const reason = result.reason ?? 'no response';
+      probeFailures.push(`${host}:${port} (${reason})`);
+      verbose(`Provider probe: LMX unreachable at ${host}:${port} — ${reason}`);
+    } catch (err) {
+      const reason = errorMessage(err);
+      probeFailures.push(`${host}:${port} (${reason})`);
+      verbose(`Provider probe: LMX probe threw for ${host}:${port} — ${reason}`);
     }
-
-    verbose(`Provider probe: LMX unreachable at ${host}:${port} — ${result.reason ?? 'no response'}`);
-  } catch (err) {
-    verbose(`Provider probe: LMX probe threw — ${errorMessage(err)}`);
   }
 
   // LMX is unreachable — check for Anthropic fallback.
@@ -124,12 +152,22 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
   }
 
   // No fallback available — throw a clear, actionable error.
+  const attemptedSummary =
+    attemptedEndpoints.length > 0 ? attemptedEndpoints.join(', ') : `${primaryHost}:${port}`;
+  const failureSummary = probeFailures.length > 0 ? `\nProbe failures: ${probeFailures.join('; ')}` : '';
+  const fallbackTip =
+    probeTargets.length > 1
+      ? '\n  4. Promote reachable host:   opta config set connection.host <fallback-host>'
+      : '\n  4. Configure fallback hosts: opta config set connection.fallbackHosts hostA,hostB';
+
   throw new Error(
-    `LMX unreachable at ${host}:${port} and no ANTHROPIC_API_KEY set.\n\n` +
-    'Fix options:\n' +
-    '  1. Start LMX server:         opta lmx start\n' +
-    '  2. Use Anthropic cloud:      export ANTHROPIC_API_KEY=sk-ant-...\n' +
-    '  3. Configure a different host: opta config set connection.host <host>',
+    `LMX unreachable at ${primaryHost}:${port} (probed: ${attemptedSummary}) and no ANTHROPIC_API_KEY set.\n` +
+      failureSummary +
+      '\n\nFix options:\n' +
+      '  1. Start LMX server:         opta lmx start\n' +
+      '  2. Use Anthropic cloud:      export ANTHROPIC_API_KEY=sk-ant-...\n' +
+      '  3. Configure a different host: opta config set connection.host <host>' +
+      fallbackTip
   );
 }
 

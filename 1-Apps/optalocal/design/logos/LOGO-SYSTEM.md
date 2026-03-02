@@ -60,10 +60,12 @@ All other elements — ring, background, particles, glow, typography style, colo
 |-----|--------------|------------|-------------|
 | **Opta Learn** | `learn` (violet) | Orbit ellipse + 2 nodes | ✅ Canonical (template source) |
 | **Opta Help** | `help` (violet) | TBD | ⬜ Not yet rendered |
-| **Opta Local** (dashboard) | `local` (violet) | TBD | ⬜ Not yet rendered |
+| **Opta Local** (dashboard) | `local` (violet) | Tilted Orbit + Node Network | ✅ Rendered |
 | **Opta Status** | `status` (violet) | TBD | ⬜ Not yet rendered |
-| **Opta Accounts** | `accounts` (violet) | TBD | ⬜ Not yet rendered |
-| **Opta LMX** | `lmx` (violet) | TBD | ⬜ Not yet rendered |
+| **Opta Accounts** | `accounts` (violet) | Identity Portal + Auth Nodes | ✅ Rendered |
+| **Opta LMX** | `lmx` (violet) | CPU Core + Tensor Grid | ✅ Rendered |
+| **Opta CLI** | `cli` (violet) | Chevrons + Square | ✅ Rendered |
+| **Opta Code** | `code` (violet) | Code Brackets + Data Rings | ✅ Rendered |
 
 ---
 

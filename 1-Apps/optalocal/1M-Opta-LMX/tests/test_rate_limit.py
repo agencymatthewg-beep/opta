@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-from opta_lmx.api.rate_limit import _chat_completions_limit, _embeddings_limit
+from opta_lmx.api.rate_limit import _chat_completions_limit, _embeddings_limit, request_ctx
 
 
 def _make_request(config: object | None = None) -> MagicMock:
@@ -30,29 +30,53 @@ class TestChatCompletionsLimit:
     def test_returns_config_chat_limit_when_set(self) -> None:
         config = _make_config(chat="30/minute")
         request = _make_request(config)
-        assert _chat_completions_limit(request) == "30/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _chat_completions_limit("127.0.0.1") == "30/minute"
+        finally:
+            request_ctx.reset(token)
 
     def test_falls_back_to_default_limit(self) -> None:
         config = _make_config(default="100/minute", chat=None)
         request = _make_request(config)
-        assert _chat_completions_limit(request) == "100/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _chat_completions_limit("127.0.0.1") == "100/minute"
+        finally:
+            request_ctx.reset(token)
 
     def test_fallback_when_no_config(self) -> None:
         request = _make_request(config=None)
-        assert _chat_completions_limit(request) == "60/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _chat_completions_limit("127.0.0.1") == "60/minute"
+        finally:
+            request_ctx.reset(token)
 
 
 class TestEmbeddingsLimit:
     def test_returns_config_embeddings_limit_when_set(self) -> None:
         config = _make_config(embeddings="120/minute")
         request = _make_request(config)
-        assert _embeddings_limit(request) == "120/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _embeddings_limit("127.0.0.1") == "120/minute"
+        finally:
+            request_ctx.reset(token)
 
     def test_falls_back_to_default_limit(self) -> None:
         config = _make_config(default="200/minute", embeddings=None)
         request = _make_request(config)
-        assert _embeddings_limit(request) == "200/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _embeddings_limit("127.0.0.1") == "200/minute"
+        finally:
+            request_ctx.reset(token)
 
     def test_fallback_when_no_config(self) -> None:
         request = _make_request(config=None)
-        assert _embeddings_limit(request) == "60/minute"
+        token = request_ctx.set(request)
+        try:
+            assert _embeddings_limit("127.0.0.1") == "60/minute"
+        finally:
+            request_ctx.reset(token)

@@ -86,6 +86,7 @@ body,
   width: 100%;
   min-height: 100%;
   margin: 0;
+  background-color: var(--opta-bg);
 }
 
 body {
@@ -93,7 +94,7 @@ body {
     "JetBrains Mono",
     monospace;
   color: var(--text);
-  background-color: var(--bg-0);
+  background-color: var(--opta-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
