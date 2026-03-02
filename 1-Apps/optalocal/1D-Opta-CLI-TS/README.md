@@ -410,3 +410,13 @@ opta completions fish | source
 ## License
 
 MIT -- see `package.json` for details.
+
+## Dependency Lifecycle
+
+See `docs/DEPENDENCY-POLICY.md` for upgrade cadence, coupled package rules, and verification gates.
+
+Quick commands:
+```bash
+pnpm run deps:check
+pnpm run deps:upgrade:safe
+```

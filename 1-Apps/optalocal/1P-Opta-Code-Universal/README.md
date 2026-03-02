@@ -102,3 +102,13 @@ npm run dev -- daemon start
 See [docs/WINDOWS-COMPATIBILITY.md](docs/WINDOWS-COMPATIBILITY.md) for the
 supported/conditional/out-of-scope feature matrix and release evidence
 requirements.
+
+## Dependency Lifecycle
+
+See `docs/DEPENDENCY-POLICY.md` for upgrade cadence, coupled package rules, and verification gates.
+
+Quick commands:
+```bash
+npm run deps:check
+npm run deps:upgrade:safe
+```

@@ -102,6 +102,7 @@ function App() {
     createSession,
     removeSession,
     initialCheckDone,
+    runtimePollDelayMs,
   } = useDaemonSessions();
 
   const { getSlotForSession } = useBrowserLiveHost();
@@ -516,7 +517,7 @@ function App() {
   }
 
   const showReconnectOverlay =
-    initialCheckDone && connectionState === "disconnected" && hasEverConnected;
+    initialCheckDone && connectionState !== "connected" && hasEverConnected;
 
   return (
     <>
@@ -904,7 +905,8 @@ function App() {
                   Endpoint: <code>{reconnectEndpoint}</code>
                 </p>
                 <p className="daemon-reconnect-overlay__meta">
-                  Offline for {offlineSeconds}s. Health checks retry every 4s.
+                  Offline for {offlineSeconds}s. Health checks retry every{" "}
+                  {Math.max(1, Math.round(runtimePollDelayMs / 1000))}s.
                 </p>
                 {connectionError ? (
                   <p className="daemon-reconnect-overlay__error">{connectionError}</p>

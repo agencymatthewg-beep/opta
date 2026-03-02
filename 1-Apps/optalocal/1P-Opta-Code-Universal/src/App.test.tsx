@@ -120,6 +120,7 @@ describe("App account controls wiring", () => {
       createSession: vi.fn().mockResolvedValue("sess_1"),
       removeSession: vi.fn(),
       initialCheckDone: true,
+      runtimePollDelayMs: 4_000,
       ...overrides,
     }) as never;
 
@@ -230,7 +231,9 @@ describe("App account controls wiring", () => {
     expect(screen.getByText("Daemon connection lost")).toBeInTheDocument();
     expect(screen.getByText(/Endpoint:/i)).toBeInTheDocument();
     expect(screen.getByText("http://127.0.0.1:9999")).toBeInTheDocument();
-    expect(screen.getByText(/health checks retry every 4s/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/health checks retry every \d+s/i),
+    ).toBeInTheDocument();
 
     act(() => {
       vi.advanceTimersByTime(2_000);

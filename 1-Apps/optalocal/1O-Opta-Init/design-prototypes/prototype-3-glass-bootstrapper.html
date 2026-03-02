@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Init - Prototype 3: Glass Bootstrapper</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { background-color: #09090b; color: #fafafa; font-family: 'Sora', sans-serif; }
+    .bg-dot-subtle {
+      background-image: radial-gradient(rgba(245, 158, 11, 0.15) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+    .glass-card {
+      background: rgba(12, 12, 18, 0.6); border: 1px solid rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(12px); border-radius: 1.5rem; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .glass-card:hover { transform: translateY(-5px); border-color: rgba(245, 158, 11, 0.4); }
+    .accent { color: #f59e0b; }
+  </style>
+</head>
+<body class="min-h-screen bg-dot-subtle flex items-center justify-center p-6 relative">
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent to-[#09090b] pointer-events-none"></div>
+  
+  <div class="glass-card max-w-2xl w-full p-12 relative z-10 text-center">
+    <div class="mx-auto w-16 h-16 rounded-full bg-orange-500/10 border border-orange-500/30 flex items-center justify-center mb-8">
+      <svg class="w-8 h-8 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+    </div>
+    
+    <h2 class="text-3xl font-bold mb-4">Start your Local Engine</h2>
+    <p class="text-gray-400 mb-10 leading-relaxed">
+      Opta Init provides a seamless, one-click installation path for the Opta LMX daemon and the CLI orchestration tools. Designed for immediate local readiness.
+    </p>
+
+    <div class="flex flex-col gap-4 max-w-sm mx-auto">
+      <button class="w-full bg-[#f59e0b] text-black font-bold py-4 rounded-xl shadow-[0_4px_20px_rgba(245,158,11,0.3)] hover:shadow-[0_6px_30px_rgba(245,158,11,0.5)] transition-shadow">
+        Download for macOS
+      </button>
+      <button class="w-full bg-transparent border border-white/20 text-white font-semibold py-4 rounded-xl hover:bg-white/5 transition-colors">
+        View Windows Guide
+      </button>
+    </div>
+    
+    <div class="mt-8 text-xs text-gray-500 uppercase tracking-widest">
+      v1.0.1 Stable Release
+    </div>
+  </div>
+</body>
+</html>

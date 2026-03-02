@@ -22,12 +22,12 @@ export interface EnvProfile {
   connection: {
     host: string;
     port: number;
-    apiKey?: string;
-    protocol: 'http';
+    adminKey?: string;
+    protocol?: 'http';
   };
+  modelDefault: string;
   provider: ProviderName;
   defaultMode: DefaultMode;
-  createdAt: number;
   updatedAt: number;
 }
 
@@ -102,15 +102,16 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
         ? (obj.connection as Record<string, unknown>).adminKey
         : undefined;
     const modelDefault = obj.modelDefault;
-    const provider = obj.provider;
+    const providerRaw = obj.provider;
     const defaultMode = obj.defaultMode;
     const updatedAt = obj.updatedAt;
 
     if (typeof host !== 'string' || !host.trim()) continue;
     if (typeof port !== 'number' || !Number.isFinite(port)) continue;
     if (typeof modelDefault !== 'string') continue;
-    if (provider !== 'lmx' && provider !== 'anthropic') continue;
+    if (typeof providerRaw !== 'string' || !VALID_PROVIDERS.has(providerRaw as ProviderName)) continue;
     if (typeof defaultMode !== 'string' || !VALID_MODES.has(defaultMode as DefaultMode)) continue;
+    const provider = providerRaw as ProviderName;
 
     const normalized = normalizeEnvProfileName(typeof obj.name === 'string' ? obj.name : key);
     if (!normalized) continue;

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Init - Prototype 1: Amber Horizon</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sora: 'Sora', sans-serif;
+      --font-jetbrains: 'JetBrains Mono', monospace;
+      --void: #09090b;
+      --surface: #0c0c12;
+      --elevated: #1a1a24;
+      --amber: #f59e0b;
+      --amber-glow: rgba(245, 158, 11, 0.3);
+      --amber-subtle: rgba(245, 158, 11, 0.1);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --glass-bg: rgba(12, 12, 18, 0.6);
+      --glass-border: rgba(255, 255, 255, 0.15);
+    }
+    body { background-color: var(--void); color: var(--text-primary); font-family: var(--font-sora); }
+    .font-mono { font-family: var(--font-jetbrains); }
+    .glass {
+      background: var(--glass-bg); border: 1px solid var(--glass-border);
+      backdrop-filter: blur(12px); border-radius: 1rem;
+    }
+    .text-moonlight {
+      background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(245, 158, 11, 0.8) 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .btn-primary {
+      background-color: var(--amber); color: var(--void); font-weight: 600; padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem; display: inline-flex; align-items: center; gap: 0.5rem;
+      box-shadow: 0 0 15px var(--amber-glow); transition: all 0.3s;
+    }
+    .btn-primary:hover { box-shadow: 0 0 25px rgba(245, 158, 11, 0.5); transform: translateY(-1px); }
+    .badge {
+      background: var(--amber-subtle); border: 1px solid rgba(245, 158, 11, 0.3); color: var(--amber);
+      padding: 0.25rem 0.75rem; border-radius: 999px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-8">
+  <div class="max-w-4xl w-full">
+    <div class="mb-8 flex justify-center"><div class="badge">Opta Init</div></div>
+    <h1 class="text-6xl font-bold text-center mb-6 text-moonlight">Your local AI stack,<br>ready in minutes.</h1>
+    <p class="text-center text-text-secondary text-lg mb-12 max-w-2xl mx-auto">
+      Install the Opta ecosystem locally. One command configures your daemon, dashboard, and CLI interfaces for ultimate privacy and speed.
+    </p>
+    
+    <div class="glass p-8 flex flex-col md:flex-row gap-8 items-center">
+      <div class="flex-1">
+        <h3 class="text-xl font-semibold mb-2">Bootstrap Opta</h3>
+        <p class="text-sm text-text-secondary mb-6">Works on macOS (M-Series) and Windows (RTX). Requires 16GB+ RAM.</p>
+        <div class="bg-black border border-white/10 rounded-lg p-4 font-mono text-sm mb-6 flex items-center justify-between">
+          <span class="text-white">curl -fsSL https://optalocal.com/init | bash</span>
+          <button class="text-text-secondary hover:text-white">Copy</button>
+        </div>
+        <a href="#" class="btn-primary">Download Packages Manualy &rarr;</a>
+      </div>
+      <div class="w-px h-32 bg-white/10 hidden md:block"></div>
+      <div class="flex-1 space-y-4">
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-amber/10 text-amber flex items-center justify-center font-bold">1</div>
+          <div><h4 class="font-semibold">Run the Script</h4><p class="text-sm text-text-secondary">Installs the daemon and checks hardware.</p></div>
+        </div>
+        <div class="flex items-start gap-3">
+          <div class="w-8 h-8 rounded-full bg-amber/10 text-amber flex items-center justify-center font-bold">2</div>
+          <div><h4 class="font-semibold">Launch Dashboard</h4><p class="text-sm text-text-secondary">Manage models and apps at lmx.optalocal.com.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

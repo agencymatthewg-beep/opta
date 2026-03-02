@@ -179,7 +179,7 @@ export async function runOnboarding(): Promise<void> {
       existing?.provider?.active === 'anthropic' ? 1 : 0
     );
 
-    const provider: 'lmx' | 'anthropic' | 'gemini' | 'openai' | 'opencode_zen' = providerChoice === 0 ? 'lmx' : 'anthropic';
+    const provider: ProviderName = providerChoice === 0 ? 'lmx' : 'anthropic';
 
     let lmxHost = '192.168.188.11';
     let lmxPort = 1234;

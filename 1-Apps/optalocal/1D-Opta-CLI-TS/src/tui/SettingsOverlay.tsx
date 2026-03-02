@@ -113,6 +113,22 @@ const ADVANCED_PROFILE_ONLY_KEYS = new Set<string>([
   'tui.responseIntentTone',
   'computerControl.background.enabled',
   'computerControl.foreground.enabled',
+  'provider.gemini.apiKey',
+  'provider.gemini.model',
+  'provider.openai.apiKey',
+  'provider.openai.model',
+  'provider.opencode_zen.apiKey',
+  'provider.opencode_zen.model',
+  'policy.runtimeEnforcement.timeoutMs',
+  'safety.circuitBreaker.perToolLimit',
+  'policy.gateAllAutonomy',
+  'learning.governor.thresholds.eventLoopLagMs',
+  'learning.governor.thresholds.cpuHighPct',
+  'learning.governor.thresholds.diskWriteKbPerSec',
+  'browser.adaptation.regressionPressureThreshold',
+  'browser.adaptation.meanRegressionScoreThreshold',
+  'subAgent.defaultBudget.maxToolCalls',
+  'subAgent.maxDepth',
 ]);
 
 /** Platform-specific command used to open a URL in the default browser. */
@@ -145,29 +161,24 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Inference Timeout',   configKey: 'connection.inferenceTimeout',  defaultValue: '120000',              description: 'Max ms to wait for model response',                        hint: 'In milliseconds (120000 = 2 min)' },
   ],
   models: [
+    { label: 'Manage Models',       configKey: '__action_models_manage',       defaultValue: '',                    description: 'Interactive model manager (exit and run `opta models manage`)', hint: 'Press Esc and type `opta models manage`', inputType: 'action', action: () => {} },
+    { label: 'Download Model',      configKey: '__action_models_download',     defaultValue: '',                    description: 'Download a model (exit and run `opta models download`)',      hint: 'Press Esc and type `opta models download <id>`', inputType: 'action', action: () => {} },
+    { label: 'Unload All Models',   configKey: '__action_models_unload',       defaultValue: '',                    description: 'Free GPU RAM (exit and run `opta models stop`)',       hint: 'Press Esc and type `opta models stop`', inputType: 'action', action: () => {} },
     { label: 'Default Model',       configKey: 'model.default',                defaultValue: '',                    description: 'Model loaded by default in new sessions',                  hint: 'Run: opta models list' },
     { label: 'Context Limit',       configKey: 'model.contextLimit',           defaultValue: '32768',               description: 'Token context window override',                            hint: 'Tokens (default: 32768)' },
-    { label: 'Active Provider',     configKey: 'provider.active',              defaultValue: 'lmx',                 description: 'Primary provider: lmx or anthropic',
+    { label: 'Active Provider',     configKey: 'provider.active',              defaultValue: 'lmx',                 description: 'Primary provider for the agent',
       inputType: 'select', options: [
-        { label: 'LMX (local)',    value: 'lmx',       description: 'Local inference via Mac Studio' },
-        { label: 'Anthropic (cloud)', value: 'anthropic', description: 'Cloud API via Anthropic' },
+        { label: 'LMX (local)',    value: 'lmx',          description: 'Local inference via Mac Studio' },
+        { label: 'Anthropic',      value: 'anthropic',    description: 'Anthropic Cloud API' },
+        { label: 'Google Gemini',  value: 'gemini',       description: 'Gemini Cloud API' },
+        { label: 'OpenAI',         value: 'openai',       description: 'OpenAI Cloud API' },
+        { label: 'OpenCode Zen',   value: 'opencode_zen', description: 'OpenCode Zen Cloud' },
       ],
     },
-    { label: 'Anthropic Key',       configKey: 'provider.anthropic.apiKey',    defaultValue: '', sensitive: true,    description: 'Anthropic API key for cloud fallback',                     hint: 'console.anthropic.com' },
-    { label: 'Anthropic Model',     configKey: 'provider.anthropic.model',     defaultValue: 'claude-3-7-sonnet-latest', description: 'Anthropic model for fallback',
-      inputType: 'select', options: [
-        { label: 'Claude 3.7 Sonnet',  value: 'claude-3-7-sonnet-latest',     description: 'Current top generation' },
-        { label: 'Claude 3.5 Sonnet',  value: 'claude-3-5-sonnet-latest',     description: 'Previous top generation' },
-        { label: 'Claude Opus 4.6',    value: 'claude-opus-4-6',              description: 'Most capable, slower' },
-        { label: 'Claude Sonnet 4.6',  value: 'claude-sonnet-4-6',            description: 'Balanced speed/quality' },
-        { label: 'Claude Sonnet 4.5',  value: 'claude-sonnet-4-5-20250929',   description: 'Previous generation' },
-        { label: 'Claude Haiku 4.5',   value: 'claude-haiku-4-5-20251001',    description: 'Fast, lightweight' },
-      ],
-    },
-    { label: 'Fallback on Failure', configKey: 'provider.fallbackOnFailure',   defaultValue: 'false',               description: 'Auto-fallback to Anthropic if LMX fails',
+    { label: 'Fallback on Failure', configKey: 'provider.fallbackOnFailure',   defaultValue: 'false',               description: 'Auto-fallback to secondary if main fails',
       inputType: 'toggle', options: [
-        { label: 'Enabled',  value: 'true',  description: 'Auto-switch to Anthropic when LMX fails' },
-        { label: 'Disabled', value: 'false', description: 'Stay on LMX even if it fails' },
+        { label: 'Enabled',  value: 'true',  description: 'Auto-switch when provider fails' },
+        { label: 'Disabled', value: 'false', description: 'Stay on provider even if it fails' },
       ],
     },
     { label: 'Embedding Model',     configKey: 'model.embeddingModel',         defaultValue: '',                    description: 'HuggingFace model ID for LMX embeddings',                  hint: 'e.g. nomic-ai/nomic-embed-text-v2-moe' },
@@ -412,7 +423,7 @@ function isCtrlSShortcut(input: string, key: { ctrl?: boolean; meta?: boolean })
  * Filters a page's settings items to those appropriate for the active display profile.
  * - `advanced`: all items shown.
  * - `compact`: only the curated subset in {@link COMPACT_PROFILE_KEYS}.
- * - `opta` (default): everything except deep expert options in {@link ADVANCED_PROFILE_ONLY_KEYS}.
+ * - `opta` (default): everything except deep expert keys in {@link ADVANCED_PROFILE_ONLY_KEYS}.
  */
 function filterItemsForDisplayProfile(
   items: SettingsItem[],
@@ -832,30 +843,77 @@ export function SettingsOverlay({
       return;
     }
 
-    if (key.leftArrow || input === 'h') {
+    // Ctrl+S (or Ctrl+Shift+S when emitted as CSI-u) saves all changes.
+    if (isCtrlSShortcut(input, key)) {
+      onSave(changes); onClose(); return;
+    }
+
+    // Explicit page switching
+    if ((key.leftArrow && key.shift) || input === '[') {
       const prev = (PAGE_INDEX[selectedPage] + PAGES.length - 1) % PAGES.length;
       setPage(PAGES[prev]!.id); return;
     }
-    if (key.rightArrow || input === 'l') {
+    if ((key.rightArrow && key.shift) || input === ']') {
       const next = (PAGE_INDEX[selectedPage] + 1) % PAGES.length;
       setPage(PAGES[next]!.id); return;
     }
-    if (key.upArrow || input === 'k') {
+
+    if (key.upArrow || input === 'k' || input === 'w') {
       setSelectedIndex(prev => (prev - 1 + items.length) % items.length); return;
     }
-    if (key.downArrow || input === 'j') {
+    if (key.downArrow || input === 'j' || input === 's') {
       setSelectedIndex(prev => (prev + 1) % items.length); return;
+    }
+
+    const currentItem = items[selectedIndex];
+    const isCycleable = currentItem?.inputType === 'select' || currentItem?.inputType === 'toggle' || currentItem?.inputType === 'slider';
+
+    if (key.leftArrow || input === 'h' || input === 'a') {
+      if (isCycleable && currentItem) {
+        if (currentItem.inputType === 'toggle') {
+          handleToggleQuick(currentItem);
+        } else if (currentItem.inputType === 'select' && currentItem.options) {
+          const val = currentValue(currentItem);
+          const idx = currentItem.options.findIndex(o => o.value === val);
+          const nextIdx = (idx - 1 + currentItem.options.length) % currentItem.options.length;
+          setChanges(prev => ({ ...prev, [currentItem.configKey]: currentItem.options![nextIdx]!.value }));
+        } else if (currentItem.inputType === 'slider' && currentItem.min !== undefined && currentItem.max !== undefined) {
+          const val = parseInt(currentValue(currentItem), 10) || currentItem.min;
+          const nextVal = Math.max(currentItem.min, val - 1);
+          setChanges(prev => ({ ...prev, [currentItem.configKey]: String(nextVal) }));
+        }
+        return;
+      } else {
+        const prev = (PAGE_INDEX[selectedPage] + PAGES.length - 1) % PAGES.length;
+        setPage(PAGES[prev]!.id); return;
+      }
+    }
+
+    if (key.rightArrow || input === 'l' || input === 'd') {
+      if (isCycleable && currentItem) {
+        if (currentItem.inputType === 'toggle') {
+          handleToggleQuick(currentItem);
+        } else if (currentItem.inputType === 'select' && currentItem.options) {
+          const val = currentValue(currentItem);
+          const idx = currentItem.options.findIndex(o => o.value === val);
+          const nextIdx = (idx + 1) % currentItem.options.length;
+          setChanges(prev => ({ ...prev, [currentItem.configKey]: currentItem.options![nextIdx]!.value }));
+        } else if (currentItem.inputType === 'slider' && currentItem.min !== undefined && currentItem.max !== undefined) {
+          const val = parseInt(currentValue(currentItem), 10) || currentItem.min;
+          const nextVal = Math.min(currentItem.max, val + 1);
+          setChanges(prev => ({ ...prev, [currentItem.configKey]: String(nextVal) }));
+        }
+        return;
+      } else {
+        const next = (PAGE_INDEX[selectedPage] + 1) % PAGES.length;
+        setPage(PAGES[next]!.id); return;
+      }
     }
 
     // Number shortcuts for pages
     const num = Number(input);
     if (!key.ctrl && !key.meta && !Number.isNaN(num) && num >= 1 && num <= PAGES.length) {
       setPage(PAGES[num - 1]!.id); return;
-    }
-
-    // Ctrl+S (or Ctrl+Shift+S when emitted as CSI-u) saves all changes.
-    if (isCtrlSShortcut(input, key)) {
-      onSave(changes); onClose(); return;
     }
 
     // Enter / Space = activate action, quick-toggle, or open inline editor.

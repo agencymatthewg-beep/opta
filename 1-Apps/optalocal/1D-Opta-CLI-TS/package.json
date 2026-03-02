@@ -42,13 +42,17 @@
     "dev:chat": "node_modules/.bin/tsx src/index.ts chat",
     "dev:chat:watch": "node_modules/.bin/tsx watch src/index.ts chat",
     "prepare": "npm run build",
-    "check-dist": "node -e \"const fs=require('fs');const s=fs.statSync('dist/index.js');if(s.size===0)throw new Error('dist/index.js is empty \u2014 run npm run build')\"",
-    "postbuild": "node --eval \"const s=require('fs').statSync('dist/index.js');if(s.size===0){console.error('FATAL: dist/index.js is empty \u2014 tsup --clean was interrupted');process.exit(1)}\"",
+    "check-dist": "node -e \"const fs=require('fs');const s=fs.statSync('dist/index.js');if(s.size===0)throw new Error('dist/index.js is empty — run npm run build')\"",
+    "postbuild": "node --eval \"const s=require('fs').statSync('dist/index.js');if(s.size===0){console.error('FATAL: dist/index.js is empty — tsup --clean was interrupted');process.exit(1)}\"",
     "test:contract": "vitest run tests/protocol/operations-contract.test.ts tests/daemon/http-server.test.ts tests/daemon/client-contract.test.ts",
     "plan-state:check": "node scripts/plan-state/sync.mjs",
     "plan-state:sync": "node scripts/plan-state/sync.mjs --write",
     "quality:gate": "npm run plan-state:check && npm run typecheck && npm run test:contract && npm run test:parity:core-smoke",
-    "smoke:features": "node scripts/feature-smoke-live.mjs"
+    "smoke:features": "node scripts/feature-smoke-live.mjs",
+    "deps:check": "pnpm --filter @opta/opta-cli outdated || true && npm audit",
+    "deps:verify": "pnpm --filter @opta/opta-cli run typecheck && pnpm --filter @opta/opta-cli run test:run && pnpm --filter @opta/opta-cli run build && pnpm --filter @opta/opta-cli run check-dist && npm audit",
+    "deps:upgrade:safe": "pnpm up && pnpm run deps:verify",
+    "deps:upgrade:major": "pnpm up --latest && pnpm run deps:verify"
   },
   "optionalDependencies": {
     "playwright": "^1.50.0"
@@ -56,14 +60,14 @@
   "dependencies": {
     "@fastify/websocket": "^11.2.0",
     "@inquirer/prompts": "^7.0.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.27.1",
     "chalk": "^5.3.0",
     "commander": "^13.0.0",
     "conf": "^13.0.0",
     "cosmiconfig": "^9.0.0",
     "dotenv": "^16.4.0",
     "execa": "^9.0.0",
-    "fast-glob": "^3.3.0",
+    "fast-glob": "^3.3.3",
     "fastify": "^5.7.4",
     "ink": "^5.2.1",
     "ink-text-input": "^6.0.0",
@@ -82,15 +86,15 @@
     "@types/node": "^22.0.0",
     "@types/react": "^18.3.28",
     "@types/ws": "^8.18.1",
-    "@typescript-eslint/eslint-plugin": "^8.0.0",
-    "@typescript-eslint/parser": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
     "eslint": "^9.0.0",
     "ink-testing-library": "^4.0.0",
     "prettier": "^3.4.0",
-    "tsup": "^8.3.0",
+    "tsup": "^8.5.1",
     "tsx": "^4.19.0",
     "typescript": "^5.7.0",
-    "vitest": "^2.1.0"
+    "vitest": "^4.0.18"
   },
   "engines": {
     "node": ">=20.0.0"

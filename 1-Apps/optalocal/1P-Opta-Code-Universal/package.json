@@ -18,7 +18,11 @@
     "test:e2e:strict": "playwright test",
     "build": "tsc --noEmit && vite build",
     "check:desktop": "npm run typecheck && npm run test:run && npm run build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "deps:check": "npm outdated || true && npm audit",
+    "deps:verify": "npm run typecheck && npm run test:run && npm run build && npm audit",
+    "deps:upgrade:safe": "npm update && npm run deps:verify",
+    "deps:upgrade:major": "npx npm-check-updates -u && npm install && npm run deps:verify"
   },
   "dependencies": {
     "@opta/daemon-client": "file:../1D-Opta-CLI-TS/packages/daemon-client",

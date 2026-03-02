@@ -128,6 +128,7 @@ export function useDaemonSessions() {
   >("disconnected");
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [initialCheckDone, setInitialCheckDone] = useState(false);
+  const [runtimePollDelayMs, setRuntimePollDelayMs] = useState(RUNTIME_POLL_MS);
   const [runtimeOverride, setRuntimeOverride] =
     useState<RuntimeSnapshot | null>(null);
 
@@ -289,6 +290,7 @@ export function useDaemonSessions() {
         if (!mountedRef.current) return;
 
         runtimePollDelayRef.current = RUNTIME_POLL_MS;
+        setRuntimePollDelayMs(RUNTIME_POLL_MS);
         if (result?.health.status) {
           setConnectionState("connected");
           setConnectionError(null);
@@ -305,10 +307,12 @@ export function useDaemonSessions() {
         }
       } catch (error) {
         if (!mountedRef.current) return;
-        runtimePollDelayRef.current = Math.min(
+        const nextDelay = Math.min(
           RUNTIME_POLL_MAX_MS,
           Math.max(RUNTIME_POLL_MS, runtimePollDelayRef.current * 2),
         );
+        runtimePollDelayRef.current = nextDelay;
+        setRuntimePollDelayMs(nextDelay);
         setConnectionState("disconnected");
         setConnectionError(
           error instanceof Error ? error.message : String(error),
@@ -621,5 +625,6 @@ export function useDaemonSessions() {
     trackSession,
     createSession,
     initialCheckDone,
+    runtimePollDelayMs,
   };
 }

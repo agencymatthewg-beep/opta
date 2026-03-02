@@ -817,6 +817,7 @@ def cli() -> None:
     import sys
     import os
     import subprocess
+    from opta_lmx.manager.quantize import SUPPORTED_QUANT_BITS, SUPPORTED_QUANT_MODES
 
     parser = argparse.ArgumentParser(
         prog="opta-lmx",
@@ -828,9 +829,26 @@ def cli() -> None:
     quantize_parser = subparsers.add_parser("quantize", help="Quantize a HuggingFace model for MLX")
     quantize_parser.add_argument("--model", type=str, required=True, help="HF repo ID or local path")
     quantize_parser.add_argument("--output", type=str, default=None, help="Output directory path")
-    quantize_parser.add_argument("--bits", type=int, default=4, choices=[2, 4, 8], help="Quantization bits")
-    quantize_parser.add_argument("--group-size", type=int, default=64, help="Quantization group size")
-    quantize_parser.add_argument("--mode", type=str, default="affine", help="Quantization mode (affine, mxfp4, etc)")
+    quantize_parser.add_argument(
+        "--bits",
+        type=int,
+        default=4,
+        choices=list(SUPPORTED_QUANT_BITS),
+        help="Quantization bits (mode-specific constraints apply)",
+    )
+    quantize_parser.add_argument(
+        "--group-size",
+        type=int,
+        default=64,
+        help="Quantization group size (mode-specific constraints apply)",
+    )
+    quantize_parser.add_argument(
+        "--mode",
+        type=str,
+        default="affine",
+        choices=list(SUPPORTED_QUANT_MODES),
+        help="Quantization mode",
+    )
     
     # Global args for default serve behavior
     parser.add_argument(
@@ -862,15 +880,26 @@ def cli() -> None:
     args = parser.parse_args()
     
     if args.command == "quantize":
-        from opta_lmx.manager.quantize import _do_quantize
+        from opta_lmx.manager.quantize import _do_quantize, validate_quantize_settings
+
+        try:
+            bits, group_size, mode = validate_quantize_settings(
+                bits=args.bits,
+                group_size=args.group_size,
+                mode=args.mode,
+            )
+        except ValueError as e:
+            print(f"Quantization failed: {e}", file=sys.stderr)
+            sys.exit(2)
+
         # Run it synchronously since it's a CLI tool
         out_path = args.output
         if not out_path:
             safe_name = args.model.replace("/", "--")
-            out_path = str(Path.home() / ".opta-lmx" / "quantized" / f"{safe_name}-{args.bits}bit")
-        print(f"Starting quantization of {args.model} -> {out_path} ({args.bits}-bit)")
+            out_path = str(Path.home() / ".opta-lmx" / "quantized" / f"{safe_name}-{bits}bit")
+        print(f"Starting quantization of {args.model} -> {out_path} ({bits}-bit)")
         try:
-            size = _do_quantize(args.model, out_path, args.bits, args.group_size, args.mode)
+            size = _do_quantize(args.model, out_path, bits, group_size, mode)
             print(f"Quantization complete. Saved {size / 1024 / 1024 / 1024:.2f} GB to {out_path}")
         except Exception as e:
             print(f"Quantization failed: {e}", file=sys.stderr)

@@ -4,7 +4,13 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
+
+from opta_lmx.manager.quantize import (
+    SUPPORTED_QUANT_BITS,
+    SUPPORTED_QUANT_MODES,
+    validate_quantize_settings,
+)
 
 # ─── Request Models ───────────────────────────────────────────────────────────
 # Ordered to avoid forward references: FunctionCall → ToolCall → ChatMessage
@@ -600,16 +606,54 @@ class QuantizeRequest(BaseModel):
     output_path: str | None = Field(
         None, description="Custom output path (auto-generated if omitted)"
     )
-    bits: int = Field(4, description="Quantization bits (4 or 8)")
-    group_size: int = Field(64, ge=1, description="Quantization group size")
-    mode: str = Field("affine", pattern="^(affine|symmetric)$", description="Quantization mode")
+    bits: int = Field(
+        4,
+        description=(
+            "Quantization bit-width. Mode-specific constraints apply: "
+            "affine supports 2,3,4,5,6,8; mxfp4/nvfp4 require 4; mxfp8 requires 8."
+        ),
+    )
+    group_size: int = Field(
+        64,
+        ge=1,
+        description=(
+            "Quantization group size. Mode-specific constraints apply: "
+            "affine supports 32,64,128; mxfp4/mxfp8 require 32; nvfp4 requires 16."
+        ),
+    )
+    mode: str = Field(
+        "affine",
+        description=f"Quantization mode ({', '.join(SUPPORTED_QUANT_MODES)})",
+    )
 
     @field_validator("bits")
     @classmethod
     def _validate_bits(cls, v: int) -> int:
-        if v not in (4, 8):
-            raise ValueError(f"bits must be 4 or 8 (got {v})")
+        if v not in SUPPORTED_QUANT_BITS:
+            allowed = ", ".join(str(bit) for bit in SUPPORTED_QUANT_BITS)
+            raise ValueError(f"bits must be one of [{allowed}] (got {v})")
         return v
+
+    @field_validator("mode")
+    @classmethod
+    def _validate_mode(cls, v: str) -> str:
+        normalized = v.strip().lower()
+        if normalized not in SUPPORTED_QUANT_MODES:
+            allowed = ", ".join(SUPPORTED_QUANT_MODES)
+            raise ValueError(f"mode must be one of [{allowed}] (got {v!r})")
+        return normalized
+
+    @model_validator(mode="after")
+    def _validate_mode_specific_constraints(self) -> "QuantizeRequest":
+        bits, group_size, mode = validate_quantize_settings(
+            bits=self.bits,
+            group_size=self.group_size,
+            mode=self.mode,
+        )
+        self.bits = bits
+        self.group_size = group_size
+        self.mode = mode
+        return self
 
 
 class PresetResponse(BaseModel):

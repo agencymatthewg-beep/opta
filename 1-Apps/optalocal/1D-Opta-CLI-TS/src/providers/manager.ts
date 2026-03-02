@@ -32,8 +32,13 @@ function providerCacheKey(config: OptaConfig): string {
     const apiKeyPrefix = resolveLmxApiKey(config.connection).slice(0, 8);
     return `lmx${fallback}|${config.connection.host}:${config.connection.port}|${fallbackHosts}|${apiKeyPrefix}`;
   }
-  const apiKey = config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
-  return `anthropic|${apiKey.slice(0, 8)}`;
+  let apiKey = '';
+  if (active === 'anthropic') apiKey = config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+  if (active === 'gemini') apiKey = config.provider.gemini.apiKey || process.env['GEMINI_API_KEY'] || '';
+  if (active === 'openai') apiKey = config.provider.openai.apiKey || process.env['OPENAI_API_KEY'] || '';
+  if (active === 'opencode_zen') apiKey = config.provider.opencode_zen.apiKey || process.env['OPENCODE_ZEN_API_KEY'] || '';
+  
+  return `${active}|${apiKey.slice(0, 8)}`;
 }
 
 export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
@@ -47,6 +52,9 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
   if (active === 'anthropic') {
     const { AnthropicProvider } = await import('./anthropic.js');
     cachedProvider = new AnthropicProvider(config);
+  } else if (active === 'gemini' || active === 'openai' || active === 'opencode_zen') {
+    const { CloudProvider } = await import('./cloud.js');
+    cachedProvider = new CloudProvider(active, config);
   } else {
     const { LmxProvider } = await import('./lmx.js');
     const lmx = new LmxProvider(config);
@@ -60,6 +68,7 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
   }
 
   cachedProviderKey = key;
+  if (!cachedProvider) throw new Error('Failed to initialize provider');
   return cachedProvider;
 }
 

@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from pydantic import ValidationError
 
+from opta_lmx.inference.schema import QuantizeRequest
 from opta_lmx.manager.quantize import (
     QuantizeJob,
     _do_quantize,
     _jobs,
+    _run_quantize,
     get_job,
     list_jobs,
     start_quantize,
@@ -41,13 +44,13 @@ class TestQuantizeJob:
             source_model="m",
             output_path="/out",
             bits=8,
-            group_size=128,
+            group_size=32,
             mode="mxfp4",
             status="running",
             started_at=100.0,
         )
         assert job.bits == 8
-        assert job.group_size == 128
+        assert job.group_size == 32
         assert job.mode == "mxfp4"
         assert job.status == "running"
 
@@ -141,7 +144,7 @@ class TestDoQuantize:
         mock_mlx_lm.convert = mock_convert
 
         with patch.dict("sys.modules", {"mlx_lm": mock_mlx_lm}):
-            size = _do_quantize("org/model", str(out), 8, 128, "mxfp8")
+            size = _do_quantize("org/model", str(out), 8, 32, "mxfp8")
 
         assert size == 500 + 50 + 200
 
@@ -216,9 +219,9 @@ class TestStartQuantize:
     @pytest.mark.asyncio
     async def test_custom_bits_and_group_size(self) -> None:
         with patch("opta_lmx.manager.quantize.asyncio.create_task"):
-            job = await start_quantize("m", "/tmp/o", bits=8, group_size=128, mode="mxfp8")
+            job = await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp8")
         assert job.bits == 8
-        assert job.group_size == 128
+        assert job.group_size == 32
         assert job.mode == "mxfp8"
 
     @pytest.mark.asyncio
@@ -227,3 +230,194 @@ class TestStartQuantize:
             j1 = await start_quantize("m", "/tmp/o1")
             j2 = await start_quantize("m", "/tmp/o2")
         assert j1.job_id != j2.job_id
+
+    @pytest.mark.asyncio
+    async def test_rejects_unsupported_bits_for_mode(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            with pytest.raises(ValueError, match="bits=8 is not supported for mode='mxfp4'"):
+                await start_quantize("m", "/tmp/o", bits=8, group_size=32, mode="mxfp4")
+
+    @pytest.mark.asyncio
+    async def test_rejects_unsupported_group_size_for_mode(self) -> None:
+        with patch("opta_lmx.manager.quantize.asyncio.create_task"):
+            with pytest.raises(
+                ValueError,
+                match="group_size=64 is not supported for mode='nvfp4'",
+            ):
+                await start_quantize("m", "/tmp/o", bits=4, group_size=64, mode="nvfp4")
+
+
+class TestQuantizeRequestValidation:
+    def test_affine_accepts_extended_bit_widths(self) -> None:
+        req = QuantizeRequest(
+            source_model="org/model",
+            bits=6,
+            group_size=128,
+            mode="affine",
+        )
+        assert req.bits == 6
+        assert req.group_size == 128
+        assert req.mode == "affine"
+
+    def test_mode_is_normalized_to_lowercase(self) -> None:
+        req = QuantizeRequest(
+            source_model="org/model",
+            bits=4,
+            group_size=32,
+            mode="MXFP4",
+        )
+        assert req.mode == "mxfp4"
+
+    def test_rejects_invalid_mode_specific_bits(self) -> None:
+        with pytest.raises(
+            ValidationError,
+            match="bits=8 is not supported for mode='mxfp4'",
+        ):
+            QuantizeRequest(
+                source_model="org/model",
+                bits=8,
+                group_size=32,
+                mode="mxfp4",
+            )
+
+    def test_rejects_invalid_mode_specific_group_size(self) -> None:
+        with pytest.raises(
+            ValidationError,
+            match="group_size=64 is not supported for mode='nvfp4'",
+        ):
+            QuantizeRequest(
+                source_model="org/model",
+                bits=4,
+                group_size=64,
+                mode="nvfp4",
+            )
+
+
+# ─── _run_quantize ───────────────────────────────────────────────────────────
+
+
+class _AwaitableNone:
+    def __await__(self):
+        if False:  # pragma: no cover
+            yield
+        return None
+
+
+class _PublishSpy:
+    def __init__(self) -> None:
+        self.calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+
+    def __call__(self, *args: object, **kwargs: object) -> _AwaitableNone:
+        self.calls.append((args, kwargs))
+        return _AwaitableNone()
+
+
+class _EventBusSpy:
+    def __init__(self) -> None:
+        self.publish = _PublishSpy()
+
+
+def _extract_event(call: tuple[tuple[object, ...], dict[str, object]]) -> tuple[str, dict[str, object]]:
+    args, kwargs = call
+    assert kwargs == {}
+    if len(args) == 1 and hasattr(args[0], "event_type") and hasattr(args[0], "data"):
+        event = args[0]
+        event_type = getattr(event, "event_type")
+        data = getattr(event, "data")
+        assert isinstance(event_type, str)
+        assert isinstance(data, dict)
+        return event_type, data
+
+    assert len(args) == 2
+    event_type, data = args
+    assert isinstance(event_type, str)
+    assert isinstance(data, dict)
+    return event_type, data
+
+
+class TestRunQuantize:
+    @pytest.mark.asyncio
+    async def test_success_updates_job_and_publishes_events(self) -> None:
+        job = QuantizeJob(
+            job_id="job-1",
+            source_model="org/model",
+            output_path="/tmp/out",
+            bits=8,
+            group_size=128,
+            mode="symmetric",
+            status="running",
+            started_at=10.0,
+        )
+        loop = MagicMock()
+        loop.run_in_executor = AsyncMock(return_value=321)
+        event_bus = _EventBusSpy()
+
+        with (
+            patch("opta_lmx.manager.quantize.asyncio.get_running_loop", return_value=loop),
+            patch("opta_lmx.manager.quantize.time.time", return_value=25.0),
+        ):
+            await _run_quantize(job, event_bus=event_bus)
+
+        assert job.status == "completed"
+        assert job.output_size_bytes == 321
+        assert job.completed_at == 25.0
+        assert job.error is None
+
+        call_args = loop.run_in_executor.await_args.args
+        assert call_args[1:] == (
+            _do_quantize,
+            "org/model",
+            "/tmp/out",
+            8,
+            128,
+            "symmetric",
+        )
+
+        events = [_extract_event(call) for call in event_bus.publish.calls]
+        assert events == [
+            (
+                "quantize_progress",
+                {"model_id": "org/model", "status": "quantizing", "percent": 0},
+            ),
+            (
+                "quantize_progress",
+                {"model_id": "org/model", "status": "completed", "percent": 100},
+            ),
+        ]
+
+    @pytest.mark.asyncio
+    async def test_failure_updates_job_and_publishes_failure_event(self) -> None:
+        job = QuantizeJob(
+            job_id="job-2",
+            source_model="org/fail-model",
+            output_path="/tmp/out-fail",
+            status="running",
+            started_at=3.0,
+        )
+        loop = MagicMock()
+        loop.run_in_executor = AsyncMock(side_effect=RuntimeError("boom"))
+        event_bus = _EventBusSpy()
+
+        with (
+            patch("opta_lmx.manager.quantize.asyncio.get_running_loop", return_value=loop),
+            patch("opta_lmx.manager.quantize.time.time", return_value=9.5),
+        ):
+            await _run_quantize(job, event_bus=event_bus)
+
+        assert job.status == "failed"
+        assert job.completed_at == 9.5
+        assert job.error == "boom"
+        assert job.output_size_bytes == 0
+
+        events = [_extract_event(call) for call in event_bus.publish.calls]
+        assert len(events) == 2
+        assert events[0] == (
+            "quantize_progress",
+            {"model_id": "org/fail-model", "status": "quantizing", "percent": 0},
+        )
+        assert events[1][0] == "quantize_progress"
+        assert events[1][1]["model_id"] == "org/fail-model"
+        assert events[1][1]["percent"] == 0
+        assert isinstance(events[1][1]["status"], str)
+        assert "failed:" in str(events[1][1]["status"])
+        assert "boom" in str(events[1][1]["status"])

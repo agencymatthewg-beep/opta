@@ -298,6 +298,40 @@ class TestAdminLoad:
         assert kwargs["allow_unsupported_runtime"] is True
 
     @pytest.mark.asyncio
+    async def test_load_normalizes_legacy_mlx_backend_alias(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Legacy backend='mlx' should normalize to preferred_backend='vllm-mlx'."""
+        app = client._transport.app  # type: ignore[union-attr]
+        app.state.engine.load_model = AsyncMock(
+            return_value=SimpleNamespace(memory_used_gb=11.1),
+        )
+
+        response = await client.post(
+            "/admin/models/load",
+            json={"model_id": "test/model", "backend": "mlx"},
+        )
+        assert response.status_code == 200
+        kwargs = app.state.engine.load_model.await_args.kwargs
+        assert kwargs["preferred_backend"] == "vllm-mlx"
+
+    @pytest.mark.asyncio
+    async def test_load_rejects_invalid_backend_value(
+        self,
+        client: AsyncClient,
+    ) -> None:
+        """Invalid backend values should return deterministic invalid_value errors."""
+        response = await client.post(
+            "/admin/models/load",
+            json={"model_id": "test/model", "backend": "not-a-backend"},
+        )
+        assert response.status_code == 400
+        body = response.json()
+        assert body["error"]["param"] == "backend"
+        assert body["error"]["code"] == "invalid_value"
+
+    @pytest.mark.asyncio
     async def test_load_runtime_timeout_maps_to_deterministic_loader_code(
         self,
         client: AsyncClient,

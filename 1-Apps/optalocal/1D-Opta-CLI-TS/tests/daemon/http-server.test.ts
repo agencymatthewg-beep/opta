@@ -33,7 +33,9 @@ const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
     })),
   };
 
-  const lmxClientCtor = vi.fn(() => lmxClientInstance);
+  const lmxClientCtor = vi.fn(function LmxClientCtor() {
+    return lmxClientInstance;
+  });
 
   return { loadConfigMock, lmxClientCtor, lmxClientInstance };
 });

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Init - Prototype 4: Obsidian Library</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --amber: #f59e0b; --void: #09090b; --surface: #0c0c12; }
+    body { background: var(--void); color: #fafafa; font-family: 'Sora', sans-serif; overflow: hidden; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .window { width: 1000px; height: 650px; background: rgba(12, 12, 18, 0.9); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; display: flex; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.8); backdrop-filter: blur(20px); }
+    .sidebar { width: 240px; background: rgba(5,3,10,0.8); border-right: 1px solid rgba(255,255,255,0.05); padding: 20px; display: flex; flex-direction: column; }
+    .main { flex: 1; padding: 30px; overflow-y: auto; }
+    .nav-item { padding: 10px 15px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; transition: all 0.2s; font-size: 14px; font-weight: 600; color: #a1a1aa; }
+    .nav-item:hover { background: rgba(255,255,255,0.05); color: #fff; }
+    .nav-item.active { background: rgba(245, 158, 11, 0.1); color: var(--amber); border-left: 3px solid var(--amber); }
+    .app-card { background: rgba(26,26,36,0.5); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; transition: transform 0.2s; }
+    .app-card:hover { transform: translateY(-2px); border-color: rgba(245,158,11,0.3); }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="sidebar">
+      <div class="text-xl font-bold tracking-widest uppercase mb-8 flex items-center gap-2">
+        <div class="w-4 h-4 rounded-full bg-amber-500 shadow-[0_0_10px_#f59e0b]"></div>
+        Opta Init
+      </div>
+      <div class="text-xs uppercase text-gray-500 font-bold mb-4 font-mono tracking-widest">Library</div>
+      <div class="nav-item active">Installed Apps</div>
+      <div class="nav-item">Available Store</div>
+      <div class="nav-item">Updates <span class="ml-2 bg-amber-500 text-black px-2 py-0.5 rounded-full text-[10px]">2</span></div>
+      <div class="mt-auto">
+        <div class="text-xs uppercase text-gray-500 font-bold mb-4 font-mono tracking-widest">System</div>
+        <div class="nav-item flex justify-between">Daemon <span class="w-2 h-2 rounded-full bg-green-500 self-center"></span></div>
+        <div class="nav-item">Settings</div>
+      </div>
+    </div>
+    <div class="main">
+      <h1 class="text-2xl font-bold mb-6">Installed Apps</h1>
+      <div class="grid grid-cols-2 gap-6">
+        <div class="app-card flex flex-col h-full">
+          <div class="flex justify-between items-start mb-4">
+            <div class="w-12 h-12 rounded-lg bg-purple-500/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold text-xl">L</div>
+            <span class="text-xs font-mono bg-white/10 px-2 py-1 rounded text-gray-300">v2.1.0</span>
+          </div>
+          <h3 class="text-lg font-bold mb-1">Opta LMX Runtime</h3>
+          <p class="text-sm text-gray-400 mb-6 flex-1">Model exchange and artifact orchestration runtime.</p>
+          <button class="w-full bg-white/5 hover:bg-white/10 border border-white/10 text-white font-semibold py-2 rounded transition">Launch Dashboard</button>
+        </div>
+
+        <div class="app-card flex flex-col h-full relative overflow-hidden">
+          <div class="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent pointer-events-none"></div>
+          <div class="flex justify-between items-start mb-4 relative z-10">
+            <div class="w-12 h-12 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-500 font-bold text-xl font-mono">>_</div>
+            <span class="text-xs font-mono bg-amber-500/20 text-amber-400 px-2 py-1 rounded">Update Avail</span>
+          </div>
+          <h3 class="text-lg font-bold mb-1 relative z-10">Opta CLI</h3>
+          <p class="text-sm text-gray-400 mb-6 flex-1 relative z-10">Command-line interface for orchestration.</p>
+          <button class="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold py-2 rounded transition relative z-10 shadow-[0_0_15px_rgba(245,158,11,0.3)]">Update to v1.2</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

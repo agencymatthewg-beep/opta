@@ -153,6 +153,13 @@ export function GuideViewer({ guide }: { guide: Guide }) {
                   dangerouslySetInnerHTML={{ __html: processBody(section.body) }}
                 />
                 
+                {section.visual && (
+                  <div 
+                    className="visual-container w-full"
+                    dangerouslySetInnerHTML={{ __html: processBody(section.visual) }}
+                  />
+                )}
+
                 {section.note && (
                   <div className="callout p-6 mt-2 flex gap-4 text-base bg-surface border border-white/5 rounded-xl border-l-4 border-l-amber-500">
                     <Info className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />

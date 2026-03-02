@@ -4,6 +4,7 @@ import type {
   Channel,
   CommandOutcome,
   DaemonStatus,
+  ManifestPayload,
   InstalledApp,
   ManifestApp,
   ManifestResponse,
@@ -18,7 +19,81 @@ const EXTERNAL_LINKS = [
 
 type AppAction = "install" | "update" | "launch";
 
+const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
+  stable: {
+    channel: "stable",
+    updatedAt: "preview",
+    apps: [
+      {
+        id: "opta-cli",
+        name: "Opta CLI",
+        description: "Command-line interface for install/update and workflow orchestration.",
+        version: "stable-preview",
+        website: "https://init.optalocal.com/downloads/cli",
+      },
+      {
+        id: "opta-lmx",
+        name: "Opta LMX Runtime",
+        description: "Model exchange and artifact orchestration runtime.",
+        version: "stable-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
+        id: "opta-code-universal",
+        name: "Opta Code Universal",
+        description: "Desktop coding surface for Opta operator workflows.",
+        version: "stable-preview",
+        website: "https://init.optalocal.com/apps/opta-code",
+      },
+      {
+        id: "opta-daemon",
+        name: "Opta Daemon Service",
+        description: "Background daemon required for local runtime services.",
+        version: "stable-preview",
+        website: "https://docs.optalocal.com/daemon",
+      },
+    ],
+  },
+  beta: {
+    channel: "beta",
+    updatedAt: "preview",
+    apps: [
+      {
+        id: "opta-cli",
+        name: "Opta CLI",
+        description: "Beta channel CLI with upcoming app and runtime features.",
+        version: "beta-preview",
+        website: "https://init.optalocal.com/downloads/cli",
+      },
+      {
+        id: "opta-lmx",
+        name: "Opta LMX Runtime",
+        description: "Beta model exchange runtime for pre-release validation.",
+        version: "beta-preview",
+        website: "https://lmx.optalocal.com",
+      },
+      {
+        id: "opta-code-universal",
+        name: "Opta Code Universal",
+        description: "Preview builds of Opta Code Universal desktop.",
+        version: "beta-preview",
+        website: "https://init.optalocal.com/apps/opta-code",
+      },
+      {
+        id: "opta-daemon",
+        name: "Opta Daemon Service",
+        description: "Pre-release daemon service package for validation rings.",
+        version: "beta-preview",
+        website: "https://docs.optalocal.com/daemon",
+      },
+    ],
+  },
+};
+
 export function App() {
+  const tauriAvailable =
+    typeof window !== "undefined" &&
+    Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
   const [channel, setChannel] = useState<Channel>("stable");
   const [loading, setLoading] = useState(false);
   const [manifestResp, setManifestResp] = useState<ManifestResponse | null>(null);
@@ -42,6 +117,25 @@ export function App() {
     setLoading(true);
     setWarning(null);
     setNotice(null);
+
+    if (!tauriAvailable) {
+      setManifestResp({
+        manifest: BROWSER_PREVIEW_MANIFEST[channel],
+        source: "browser-preview",
+        warning:
+          "Browser preview mode: install/update/launch and daemon controls require the packaged Opta Init desktop app.",
+      });
+      setInstalledApps([]);
+      setDaemon({
+        running: false,
+        message: "browser preview mode",
+        rawOutput: "Tauri bridge unavailable in browser-only mode.",
+        checkedAt: new Date().toISOString(),
+      });
+      setLoading(false);
+      return;
+    }
+
     try {
       const [manifestResult, installedResult, daemonResult] = await Promise.all([
         invoke<ManifestResponse>("fetch_manifest", { channel }),
@@ -60,22 +154,32 @@ export function App() {
     } finally {
       setLoading(false);
     }
-  }, [channel]);
+  }, [channel, tauriAvailable]);
 
   useEffect(() => {
     void refreshData();
   }, [refreshData]);
 
   const openExternal = useCallback(async (url: string) => {
+    if (!tauriAvailable) {
+      window.open(url, "_blank", "noopener,noreferrer");
+      return;
+    }
+
     try {
       await invoke("open_url", { url });
     } catch (error) {
       setNotice(`Could not open URL: ${String(error)}`);
     }
-  }, []);
+  }, [tauriAvailable]);
 
   const runAppAction = useCallback(
     async (app: ManifestApp, action: AppAction) => {
+      if (!tauriAvailable) {
+        setNotice("Run this inside the Opta Init desktop shell to execute install/update/launch actions.");
+        return;
+      }
+
       const key = `${action}:${app.id}`;
       setPendingKey(key);
       setNotice(null);
@@ -104,10 +208,15 @@ export function App() {
         setPendingKey(null);
       }
     },
-    [channel],
+    [channel, tauriAvailable],
   );
 
   const runDaemonAction = useCallback(async (action: "start" | "stop") => {
+    if (!tauriAvailable) {
+      setNotice("Run this inside the Opta Init desktop shell to control daemon lifecycle.");
+      return;
+    }
+
     setPendingKey(`daemon:${action}`);
     setNotice(null);
     try {
@@ -121,7 +230,7 @@ export function App() {
     } finally {
       setPendingKey(null);
     }
-  }, []);
+  }, [tauriAvailable]);
 
   const apps = manifestResp?.manifest.apps ?? [];
 
@@ -178,14 +287,14 @@ export function App() {
               <button
                 type="button"
                 onClick={() => void runDaemonAction("start")}
-                disabled={pendingKey !== null}
+                disabled={pendingKey !== null || !tauriAvailable}
               >
                 Start daemon
               </button>
               <button
                 type="button"
                 onClick={() => void runDaemonAction("stop")}
-                disabled={pendingKey !== null}
+                disabled={pendingKey !== null || !tauriAvailable}
               >
                 Stop daemon
               </button>
@@ -219,21 +328,21 @@ export function App() {
                   <button
                     type="button"
                     onClick={() => void runAppAction(app, "install")}
-                    disabled={pendingKey !== null}
+                    disabled={pendingKey !== null || !tauriAvailable}
                   >
                     {runningInstall ? "Installing..." : "Install"}
                   </button>
                   <button
                     type="button"
                     onClick={() => void runAppAction(app, "update")}
-                    disabled={pendingKey !== null}
+                    disabled={pendingKey !== null || !tauriAvailable}
                   >
                     {runningUpdate ? "Updating..." : "Update"}
                   </button>
                   <button
                     type="button"
                     onClick={() => void runAppAction(app, "launch")}
-                    disabled={pendingKey !== null}
+                    disabled={pendingKey !== null || !tauriAvailable}
                   >
                     {runningLaunch ? "Launching..." : "Launch"}
                   </button>

@@ -270,6 +270,11 @@ export function useSessionSockets({
             innerHandle = null;
             if (!mountedRef.current || !wsHandlesRef.current.has(sessionId)) return;
             if (code !== 1000) {
+              flushTokenBuffer(sessionId);
+              setStreamingBySession((prev) => {
+                if (!prev[sessionId]) return prev;
+                return { ...prev, [sessionId]: false };
+              });
               const delay = Math.min(1000 * Math.pow(2, attempts), 10_000);
               attempts = Math.min(attempts + 1, 10);
               reconnectTimer = window.setTimeout(open, delay);

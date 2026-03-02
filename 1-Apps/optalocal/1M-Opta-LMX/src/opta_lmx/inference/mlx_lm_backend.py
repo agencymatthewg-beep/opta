@@ -61,7 +61,6 @@ class MLXLMBackend:
             self._model is not None
             and self._tokenizer is not None
             and self._generate_fn is not None
-            and self._load_fn is not None
         ):
             return
         async with self._load_lock:
@@ -69,7 +68,6 @@ class MLXLMBackend:
                 self._model is not None
                 and self._tokenizer is not None
                 and self._generate_fn is not None
-                and self._load_fn is not None
             ):
                 return
             try:
@@ -93,7 +91,10 @@ class MLXLMBackend:
             return self._draft_model
 
         await self._ensure_loaded()
-        assert self._load_fn is not None
+        if self._load_fn is None:
+            from mlx_lm import load as mlx_load
+
+            self._load_fn = mlx_load
 
         async with self._draft_load_lock:
             if self._draft_model is not None:
@@ -196,8 +197,9 @@ class MLXLMBackend:
                 "prompt": prompt,
                 "max_tokens": max_tokens,
                 "sampler": sampler,
-                "draft_model": draft_model,
             }
+            if speculative_enabled:
+                stream_kwargs["draft_model"] = draft_model
             if speculative_enabled and self._num_draft_tokens is not None:
                 stream_kwargs["num_draft_tokens"] = self._num_draft_tokens
 
@@ -215,10 +217,12 @@ class MLXLMBackend:
 
                     generation_tokens = getattr(response, "generation_tokens", None)
                     new_tokens = 0
-                    if isinstance(generation_tokens, int):
-                        if generation_tokens > generated_seen:
-                            new_tokens = generation_tokens - generated_seen
-                            generated_seen = generation_tokens
+                    if (
+                        isinstance(generation_tokens, int)
+                        and generation_tokens > generated_seen
+                    ):
+                        new_tokens = generation_tokens - generated_seen
+                        generated_seen = generation_tokens
 
                     if speculative_enabled and new_tokens > 0:
                         from_draft = bool(getattr(response, "from_draft", False))
@@ -227,10 +231,17 @@ class MLXLMBackend:
                         else:
                             payload["rejected_tokens"] = new_tokens
 
-                    if payload.get("text") or payload.get("accepted_tokens") or payload.get("rejected_tokens"):
+                    if (
+                        payload.get("text")
+                        or payload.get("accepted_tokens")
+                        or payload.get("rejected_tokens")
+                    ):
                         loop.call_soon_threadsafe(queue.put_nowait, payload)
             except Exception as exc:
-                logger.error("mlx_lm_stream_failed", extra={"model_id": self._model_id, "error": str(exc)})
+                logger.error(
+                    "mlx_lm_stream_failed",
+                    extra={"model_id": self._model_id, "error": str(exc)},
+                )
                 loop.call_soon_threadsafe(queue.put_nowait, exc)
             finally:
                 loop.call_soon_threadsafe(queue.put_nowait, None)

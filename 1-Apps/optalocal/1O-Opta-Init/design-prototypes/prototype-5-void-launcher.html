@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Init - Prototype 5: Void Launcher</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: #000; color: #fff; font-family: 'Sora', sans-serif; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    .window { width: 1100px; height: 700px; background: #09090b; display: flex; border-radius: 8px; overflow: hidden; border: 1px solid #27272a; }
+    .sidebar { width: 280px; background: #0c0c12; border-right: 1px solid #18181b; padding: 20px 0; }
+    .hero { flex: 1; position: relative; display: flex; flex-direction: column; }
+    .hero-bg { position: absolute; inset: 0; background: radial-gradient(circle at 70% 30%, rgba(168,85,247,0.15) 0%, transparent 60%), radial-gradient(circle at 30% 80%, rgba(6,182,212,0.1) 0%, transparent 50%); opacity: 0.8; }
+    .app-row { padding: 12px 24px; display: flex; align-items: center; gap: 12px; cursor: pointer; transition: background 0.2s; }
+    .app-row:hover { background: #18181b; }
+    .app-row.active { background: #18181b; border-left: 3px solid #a855f7; }
+    .app-icon { width: 32px; height: 32px; border-radius: 8px; background: #27272a; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="sidebar">
+      <div class="px-6 mb-8 text-xl font-bold tracking-widest text-gray-400">INIT<span class="text-white">MANAGER</span></div>
+      
+      <div class="px-6 text-xs text-gray-500 font-bold tracking-widest mb-2 font-mono">YOUR APPS</div>
+      <div class="app-row active">
+        <div class="app-icon flex items-center justify-center text-purple-400 font-bold bg-purple-500/10">L</div>
+        <div>
+          <div class="text-sm font-bold">Opta LMX</div>
+          <div class="text-[10px] text-gray-500 font-mono">Running</div>
+        </div>
+      </div>
+      <div class="app-row">
+        <div class="app-icon flex items-center justify-center text-cyan-400 font-bold bg-cyan-500/10">C</div>
+        <div>
+          <div class="text-sm font-bold">Opta Code</div>
+          <div class="text-[10px] text-gray-500 font-mono">Ready</div>
+        </div>
+      </div>
+      <div class="app-row opacity-50">
+        <div class="app-icon flex items-center justify-center text-gray-400 font-bold bg-gray-800">D</div>
+        <div>
+          <div class="text-sm font-bold">Daemon</div>
+          <div class="text-[10px] text-gray-500 font-mono">Stopped</div>
+        </div>
+      </div>
+    </div>
+    <div class="hero">
+      <div class="hero-bg"></div>
+      <div class="relative z-10 flex-1 p-12 flex flex-col justify-end">
+        <div class="inline-flex items-center gap-2 bg-purple-500/10 border border-purple-500/30 text-purple-400 px-3 py-1 rounded-full text-xs font-mono mb-4 self-start">
+          <span class="w-2 h-2 rounded-full bg-purple-500 animate-pulse"></span> Service Active
+        </div>
+        <h1 class="text-6xl font-bold mb-4">Opta LMX Runtime</h1>
+        <p class="text-xl text-gray-400 max-w-lg mb-8 leading-relaxed">The core local inference engine. Manage your models, endpoints, and local API traffic.</p>
+        <div class="flex gap-4">
+          <button class="bg-purple-500 hover:bg-purple-400 text-white font-bold text-lg px-12 py-4 rounded-xl transition shadow-[0_0_20px_rgba(168,85,247,0.4)]">
+            Launch
+          </button>
+          <button class="bg-white/5 hover:bg-white/10 border border-white/10 text-white font-bold text-lg px-6 py-4 rounded-xl transition">
+            Settings
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

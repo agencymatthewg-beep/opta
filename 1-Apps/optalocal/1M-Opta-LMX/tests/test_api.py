@@ -297,6 +297,80 @@ async def test_chat_client_id_header_takes_precedence_over_openclaw_header(
     assert "bot-secondary" not in per_client
 
 
+async def test_chat_serving_lane_interactive_maps_to_high_priority(
+    client: AsyncClient,
+) -> None:
+    """X-Serving-Lane=interactive should map to high internal priority."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={"X-Serving-Lane": "interactive"},
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    assert seen["priority"] == "high"
+
+
+async def test_chat_serving_lane_takes_precedence_over_x_priority(
+    client: AsyncClient,
+) -> None:
+    """X-Serving-Lane should override X-Priority when both are present."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={
+            "X-Serving-Lane": "throughput",
+            "X-Priority": "high",
+        },
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 200
+    assert seen["priority"] == "normal"
+
+
+async def test_chat_rejects_invalid_serving_lane_header(client: AsyncClient) -> None:
+    """Invalid X-Serving-Lane values return OpenAI-style invalid_header errors."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    response = await client.post(
+        "/v1/chat/completions",
+        headers={"X-Serving-Lane": "burst"},
+        json={
+            "model": "test-model",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
+    assert response.status_code == 400
+    body = response.json()
+    assert body["error"]["param"] == "x-serving-lane"
+    assert body["error"]["code"] == "invalid_header"
+
+
 async def test_unload_model(client: AsyncClient) -> None:
     """Load then unload a model."""
     # Load
@@ -495,6 +569,30 @@ async def test_legacy_completions_stream_supports_prompt_array(client: AsyncClie
     assert seen_indices == {0, 1, 2, 3}
 
 
+async def test_legacy_completions_serving_lane_maps_to_normal_priority(
+    client: AsyncClient,
+) -> None:
+    """/v1/completions should map throughput lane to normal priority."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/completions",
+        headers={"X-Serving-Lane": "throughput"},
+        json={"model": "test-model", "prompt": "Hello"},
+    )
+    assert response.status_code == 200
+    assert seen["priority"] == "normal"
+
+
 async def test_responses_invalid_json_returns_openai_error(client: AsyncClient) -> None:
     """/v1/responses malformed JSON returns OpenAI-style error envelope."""
     response = await client.post(
@@ -548,6 +646,30 @@ async def test_responses_passes_effective_client_id_to_engine(client: AsyncClien
     )
     assert response.status_code == 200
     assert seen["client_id"] == "bot-resp"
+
+
+async def test_responses_serving_lane_maps_to_high_priority(
+    client: AsyncClient,
+) -> None:
+    """/v1/responses should map interactive lane to high priority."""
+    await client.post("/admin/models/load", json={"model_id": "test-model"})
+    engine = client._transport.app.state.engine  # type: ignore[union-attr]
+    original_generate = engine.generate
+    seen: dict[str, object] = {}
+
+    async def capture_generate(*args: object, **kwargs: object):
+        seen.update(kwargs)
+        return await original_generate(*args, **kwargs)
+
+    engine.generate = capture_generate
+
+    response = await client.post(
+        "/v1/responses",
+        headers={"X-Serving-Lane": "interactive"},
+        json={"model": "test-model", "input": "Hello"},
+    )
+    assert response.status_code == 200
+    assert seen["priority"] == "high"
 
 
 async def test_responses_maps_max_output_tokens_to_max_tokens(client: AsyncClient) -> None:

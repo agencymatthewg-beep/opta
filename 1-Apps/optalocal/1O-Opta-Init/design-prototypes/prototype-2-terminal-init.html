@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Init - Prototype 2: Terminal Initialization</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #09090b; --amber: #f59e0b;
+      --font-sora: 'Sora', sans-serif; --font-jetbrains: 'JetBrains Mono', monospace;
+    }
+    body { background-color: var(--void); color: #fafafa; font-family: var(--font-sora); }
+    .obsidian {
+      background: rgba(5, 3, 10, 0.8); backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px;
+      box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
+    }
+    .terminal-header { background: rgba(255,255,255,0.02); border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .text-amber { color: var(--amber); }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col pt-20 px-8">
+  <header class="max-w-5xl w-full mx-auto mb-16 flex justify-between items-center">
+    <div class="font-bold tracking-tighter uppercase flex items-center gap-2">
+      <div class="w-6 h-6 rounded-full border-2 border-amber shadow-[0_0_10px_rgba(245,158,11,0.5)]"></div>
+      OPTA_INIT
+    </div>
+    <nav class="flex gap-6 text-xs uppercase tracking-widest text-gray-400">
+      <a href="#" class="hover:text-white">Install</a>
+      <a href="#" class="hover:text-white">Downloads</a>
+    </nav>
+  </header>
+
+  <main class="max-w-5xl w-full mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+    <div>
+      <h1 class="text-5xl font-bold mb-4 uppercase tracking-tight">System<br><span class="text-amber">Initialization.</span></h1>
+      <p class="text-gray-400 text-lg mb-8">Deploy the local inference stack directly to your machine. Opta Init orchestrates downloading, configuring, and launching the LMX daemon.</p>
+      
+      <div class="flex gap-4">
+        <button class="bg-amber text-black font-semibold px-6 py-3 rounded-md hover:bg-amber/90 transition shadow-[0_0_15px_rgba(245,158,11,0.4)]">
+          Copy Install Command
+        </button>
+        <button class="border border-white/20 text-white font-semibold px-6 py-3 rounded-md hover:border-amber/50 transition">
+          View Documentation
+        </button>
+      </div>
+    </div>
+
+    <div class="obsidian overflow-hidden font-mono text-sm">
+      <div class="terminal-header h-8 flex items-center px-4 gap-2">
+        <div class="w-3 h-3 rounded-full bg-white/20"></div>
+        <div class="w-3 h-3 rounded-full bg-white/20"></div>
+        <div class="w-3 h-3 rounded-full bg-white/20"></div>
+        <div class="ml-auto text-[10px] text-gray-500">~ / opta-init</div>
+      </div>
+      <div class="p-6 space-y-2">
+        <p><span class="text-amber">❯</span> curl -fsSL https://optalocal.com/init | bash</p>
+        <div class="opacity-70 mt-4 space-y-1">
+          <p class="text-blue-400">==> Starting Opta Init manager...</p>
+          <p>==> Checking hardware: <span class="text-green-400">Apple M3 Max (128GB)</span></p>
+          <p>==> Installing Opta app manager + launcher...</p>
+          <p>==> Registering installed apps...</p>
+          <p class="text-green-400 mt-2">✔ Manager ready. Stack is operational.</p>
+        </div>
+      </div>
+    </div>
+  </main>
+</body>
+</html>

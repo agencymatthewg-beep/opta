@@ -13,6 +13,7 @@ export interface GuideSection {
   body: string;
   note?: string;
   code?: string;
+  visual?: string;
 }
 
 export interface Guide {

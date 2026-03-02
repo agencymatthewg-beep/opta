@@ -58,8 +58,10 @@ describe('SettingsOverlay', () => {
     const onSave = vi.fn();
     const { stdin } = render(<SettingsOverlay {...baseProps} onClose={onClose} onSave={onSave} />);
     await flush();
-    stdin.write('\x13'); // Ctrl+S
-    await flush();
+    // Cover both legacy Ctrl+S and CSI-u key-reporting terminals.
+    stdin.write('\x13');
+    stdin.write('\x1B[115;5u');
+    await flush(60);
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
   });
@@ -212,7 +214,7 @@ describe('SettingsOverlay', () => {
     stdin.write('2');
     await flush();
     const frame = lastFrame() ?? '';
-    // Active Provider should show the label 'Anthropic (cloud)' not raw 'anthropic'
-    expect(frame).toContain('Anthropic (cloud)');
+    // Active Provider should show the provider label, not raw 'anthropic'
+    expect(frame).toContain('Anthropic');
   });
 });

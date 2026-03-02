@@ -75,3 +75,15 @@ Pairs with [Opta CLI](https://github.com/optaops/opta-cli) for an end-to-end loc
 ## License
 
 MIT
+
+## Dependency Lifecycle
+
+See `docs/DEPENDENCY-POLICY.md` for upgrade cadence, coupled package rules, and verification gates.
+
+Quick checks:
+```bash
+source .venv/bin/activate
+python -m ensurepip --upgrade
+python -m pip list --outdated
+python -m pip check
+```
