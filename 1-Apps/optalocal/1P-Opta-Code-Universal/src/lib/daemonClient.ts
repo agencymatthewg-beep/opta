@@ -19,6 +19,10 @@ import type { DaemonConnectionOptions } from "../types";
 
 export type V3Envelope = SharedV3Envelope;
 
+const GB_TO_BYTES = 1024 * 1024 * 1024;
+const LMX_READ_TIMEOUT_MS = 30_000;
+const LMX_MUTATION_TIMEOUT_MS = 120_000;
+
 interface SessionSnapshot {
   sessionId: string;
   title?: string;
@@ -32,6 +36,213 @@ interface RuntimeMetricsResponse {
     activeTurnCount?: number;
     queuedTurnCount?: number;
     subscriberCount?: number;
+  };
+}
+
+export type DaemonLmxLoadStatus = "loaded" | "download_required" | "downloading";
+
+export interface DaemonLmxLoadResponse {
+  model_id: string;
+  status: DaemonLmxLoadStatus;
+  memory_bytes?: number;
+  load_time_seconds?: number;
+  estimated_size_bytes?: number;
+  estimated_size_human?: string;
+  confirmation_token?: string;
+  download_id?: string;
+  message?: string;
+  confirm_url?: string;
+  progress_url?: string;
+}
+
+export type DaemonLmxDownloadProgressStatus =
+  | "pending"
+  | "downloading"
+  | "completed"
+  | "failed"
+  | "unknown";
+
+export interface DaemonLmxDownloadProgress {
+  download_id: string;
+  repo_id: string;
+  status: DaemonLmxDownloadProgressStatus;
+  progress_percent: number;
+  downloaded_bytes: number;
+  total_bytes: number;
+  files_completed: number;
+  files_total: number;
+  error?: string;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function baseUrl(connection: DaemonConnectionOptions): string {
+  const protocol = connection.protocol ?? "http";
+  return `${protocol}://${connection.host}:${connection.port}`;
+}
+
+async function daemonRequest<T>(
+  connection: DaemonConnectionOptions,
+  path: string,
+  init: RequestInit = {},
+  timeoutMs = LMX_READ_TIMEOUT_MS,
+): Promise<T> {
+  const headers = new Headers(init.headers);
+  headers.set("Authorization", `Bearer ${connection.token}`);
+  if (init.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  const controller = new AbortController();
+  const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(`${baseUrl(connection)}${path}`, {
+      ...init,
+      headers,
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      const message = await response.text().catch(() => "");
+      throw new Error(
+        `Daemon request failed (${response.status}): ${message || response.statusText}`,
+      );
+    }
+    return (await response.json()) as T;
+  } catch (err) {
+    if (
+      err instanceof DOMException &&
+      err.name === "AbortError"
+    ) {
+      throw new Error(`Daemon request timed out (${timeoutMs}ms): ${path}`);
+    }
+    throw err;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+  }
+}
+
+function normalizeLmxLoadResponse(
+  raw: unknown,
+  fallbackModelId: string,
+): DaemonLmxLoadResponse {
+  const parsed = asRecord(raw);
+  const model_id =
+    typeof parsed?.model_id === "string"
+      ? parsed.model_id
+      : fallbackModelId;
+
+  const rawStatus = parsed?.status;
+  const status: DaemonLmxLoadStatus =
+    rawStatus === "download_required" || rawStatus === "downloading"
+      ? rawStatus
+      : "loaded";
+
+  const memory_bytes =
+    typeof parsed?.memory_bytes === "number"
+      ? parsed.memory_bytes
+      : typeof parsed?.memory_after_load_gb === "number"
+        ? parsed.memory_after_load_gb * GB_TO_BYTES
+        : undefined;
+
+  const load_time_seconds =
+    typeof parsed?.load_time_seconds === "number"
+      ? parsed.load_time_seconds
+      : typeof parsed?.time_to_load_ms === "number"
+        ? parsed.time_to_load_ms / 1000
+        : undefined;
+
+  return {
+    model_id,
+    status,
+    memory_bytes,
+    load_time_seconds,
+    estimated_size_bytes:
+      typeof parsed?.estimated_size_bytes === "number"
+        ? parsed.estimated_size_bytes
+        : undefined,
+    estimated_size_human:
+      typeof parsed?.estimated_size_human === "string"
+        ? parsed.estimated_size_human
+        : undefined,
+    confirmation_token:
+      typeof parsed?.confirmation_token === "string"
+        ? parsed.confirmation_token
+        : undefined,
+    download_id:
+      typeof parsed?.download_id === "string"
+        ? parsed.download_id
+        : undefined,
+    message: typeof parsed?.message === "string" ? parsed.message : undefined,
+    confirm_url:
+      typeof parsed?.confirm_url === "string" ? parsed.confirm_url : undefined,
+    progress_url:
+      typeof parsed?.progress_url === "string" ? parsed.progress_url : undefined,
+  };
+}
+
+function normalizeLmxDownloadProgress(
+  raw: unknown,
+  fallbackDownloadId: string,
+): DaemonLmxDownloadProgress {
+  const parsed = asRecord(raw);
+  const statusValue = parsed?.status;
+  const status: DaemonLmxDownloadProgressStatus =
+    statusValue === "pending" ||
+    statusValue === "downloading" ||
+    statusValue === "completed" ||
+    statusValue === "failed"
+      ? statusValue
+      : "unknown";
+
+  return {
+    download_id:
+      typeof parsed?.download_id === "string"
+        ? parsed.download_id
+        : typeof parsed?.downloadId === "string"
+          ? parsed.downloadId
+          : fallbackDownloadId,
+    repo_id:
+      typeof parsed?.repo_id === "string"
+        ? parsed.repo_id
+        : typeof parsed?.repoId === "string"
+          ? parsed.repoId
+          : "",
+    status,
+    progress_percent:
+      typeof parsed?.progress_percent === "number"
+        ? parsed.progress_percent
+        : typeof parsed?.progressPercent === "number"
+          ? parsed.progressPercent
+          : 0,
+    downloaded_bytes:
+      typeof parsed?.downloaded_bytes === "number"
+        ? parsed.downloaded_bytes
+        : typeof parsed?.downloadedBytes === "number"
+          ? parsed.downloadedBytes
+          : 0,
+    total_bytes:
+      typeof parsed?.total_bytes === "number"
+        ? parsed.total_bytes
+        : typeof parsed?.totalBytes === "number"
+          ? parsed.totalBytes
+          : 0,
+    files_completed:
+      typeof parsed?.files_completed === "number"
+        ? parsed.files_completed
+        : typeof parsed?.filesCompleted === "number"
+          ? parsed.filesCompleted
+          : 0,
+    files_total:
+      typeof parsed?.files_total === "number"
+        ? parsed.files_total
+        : typeof parsed?.filesTotal === "number"
+          ? parsed.filesTotal
+          : 0,
+    error: typeof parsed?.error === "string" ? parsed.error : undefined,
   };
 }
 
@@ -267,8 +478,41 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     modelId: string,
     opts?: DaemonLmxLoadOptions,
-  ): Promise<void> {
-    await httpClient(connection).lmxLoad(modelId, opts);
+  ): Promise<DaemonLmxLoadResponse> {
+    const raw = await httpClient(connection).lmxLoad(modelId, opts);
+    return normalizeLmxLoadResponse(raw, modelId);
+  },
+
+  async lmxConfirmLoad(
+    connection: DaemonConnectionOptions,
+    confirmationToken: string,
+  ): Promise<DaemonLmxLoadResponse> {
+    const raw = await daemonRequest<unknown>(
+      connection,
+      "/v3/lmx/models/load/confirm",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          confirmationToken,
+          confirmation_token: confirmationToken,
+        }),
+      },
+      LMX_MUTATION_TIMEOUT_MS,
+    );
+    return normalizeLmxLoadResponse(raw, "");
+  },
+
+  async lmxDownloadProgress(
+    connection: DaemonConnectionOptions,
+    downloadId: string,
+  ): Promise<DaemonLmxDownloadProgress> {
+    const raw = await daemonRequest<unknown>(
+      connection,
+      `/v3/lmx/models/download/${encodeURIComponent(downloadId)}/progress`,
+      {},
+      LMX_READ_TIMEOUT_MS,
+    );
+    return normalizeLmxDownloadProgress(raw, downloadId);
   },
 
   async lmxUnload(

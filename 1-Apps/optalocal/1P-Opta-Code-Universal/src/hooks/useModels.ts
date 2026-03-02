@@ -7,6 +7,10 @@ import type {
   DaemonLmxModelDetail,
   DaemonLmxStatusResponse,
 } from "../types";
+import type {
+  DaemonLmxDownloadProgress,
+  DaemonLmxLoadResponse,
+} from "../lib/daemonClient";
 import { daemonClient } from "../lib/daemonClient";
 
 const LMX_POLL_MS = 5_000;
@@ -22,7 +26,13 @@ export interface UseModelsResult {
   loadModel: (
     modelId: string,
     opts?: DaemonLmxLoadOptions,
-  ) => Promise<void>;
+  ) => Promise<DaemonLmxLoadResponse | null>;
+  confirmLoad: (
+    confirmationToken: string,
+  ) => Promise<DaemonLmxLoadResponse | null>;
+  downloadProgress: (
+    downloadId: string,
+  ) => Promise<DaemonLmxDownloadProgress | null>;
   unloadModel: (modelId: string) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
   downloadModel: (repoId: string) => Promise<string | null>;
@@ -104,16 +114,53 @@ export function useModels(
   }, [connection]);
 
   const loadModel = useCallback(
-    async (modelId: string, opts?: DaemonLmxLoadOptions) => {
-      if (!connection) return;
+    async (
+      modelId: string,
+      opts?: DaemonLmxLoadOptions,
+    ): Promise<DaemonLmxLoadResponse | null> => {
+      if (!connection) return null;
       try {
-        await daemonClient.lmxLoad(connection, modelId, opts);
+        const result = await daemonClient.lmxLoad(connection, modelId, opts);
+        setError(null);
         await refreshLmx();
+        return result;
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
+        return null;
       }
     },
     [connection, refreshLmx],
+  );
+
+  const confirmLoad = useCallback(
+    async (confirmationToken: string): Promise<DaemonLmxLoadResponse | null> => {
+      if (!connection) return null;
+      try {
+        const result = await daemonClient.lmxConfirmLoad(
+          connection,
+          confirmationToken,
+        );
+        setError(null);
+        await refreshLmx();
+        return result;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        return null;
+      }
+    },
+    [connection, refreshLmx],
+  );
+
+  const downloadProgress = useCallback(
+    async (downloadId: string): Promise<DaemonLmxDownloadProgress | null> => {
+      if (!connection) return null;
+      try {
+        return await daemonClient.lmxDownloadProgress(connection, downloadId);
+      } catch {
+        return null;
+      }
+    },
+    [connection],
   );
 
   const unloadModel = useCallback(
@@ -172,6 +219,8 @@ export function useModels(
     loading,
     error,
     loadModel,
+    confirmLoad,
+    downloadProgress,
     unloadModel,
     deleteModel,
     downloadModel,

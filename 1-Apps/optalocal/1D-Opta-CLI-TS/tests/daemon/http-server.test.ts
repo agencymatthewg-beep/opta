@@ -29,12 +29,27 @@ const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
     })),
     available: vi.fn(async () => []),
     loadModel: vi.fn(async () => ({ model_id: 'demo/model', status: 'loaded' })),
+    confirmLoad: vi.fn(async () => ({
+      model_id: 'demo/model',
+      status: 'downloading',
+      download_id: 'dl_123',
+    })),
     unloadModel: vi.fn(async () => ({ model_id: 'demo/model', status: 'unloaded' })),
     deleteModel: vi.fn(async () => ({ modelId: 'demo/model', freedBytes: 123 })),
     downloadModel: vi.fn(async () => ({
       downloadId: 'dl_123',
       repoId: 'demo/model',
       status: 'queued',
+    })),
+    downloadProgress: vi.fn(async () => ({
+      downloadId: 'dl_123',
+      repoId: 'demo/model',
+      status: 'downloading',
+      progressPercent: 42,
+      downloadedBytes: 420,
+      totalBytes: 1000,
+      filesCompleted: 4,
+      filesTotal: 10,
     })),
   };
 
@@ -346,6 +361,20 @@ describe('daemon http-server telemetry and routes', () => {
       autoDownload: true,
     });
 
+    const confirmRes = await running.app.inject({
+      method: 'POST',
+      url: '/v3/lmx/models/load/confirm',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { confirmationToken: 'confirm_123' },
+    });
+    expect(confirmRes.statusCode).toBe(200);
+    expect(confirmRes.json()).toMatchObject({
+      model_id: 'demo/model',
+      status: 'downloading',
+      download_id: 'dl_123',
+    });
+    expect(lmxClientInstance.confirmLoad).toHaveBeenCalledWith('confirm_123');
+
     const downloadRes = await running.app.inject({
       method: 'POST',
       url: '/v3/lmx/models/download',
@@ -358,6 +387,20 @@ describe('daemon http-server telemetry and routes', () => {
       repo_id: 'demo/model',
       status: 'queued',
     });
+
+    const progressRes = await running.app.inject({
+      method: 'GET',
+      url: '/v3/lmx/models/download/dl_123/progress',
+      headers: { authorization: 'Bearer secret-token' },
+    });
+    expect(progressRes.statusCode).toBe(200);
+    expect(progressRes.json()).toMatchObject({
+      downloadId: 'dl_123',
+      repoId: 'demo/model',
+      status: 'downloading',
+      progressPercent: 42,
+    });
+    expect(lmxClientInstance.downloadProgress).toHaveBeenCalledWith('dl_123');
   });
 
   it('maps permission race conflicts to HTTP 409', async () => {

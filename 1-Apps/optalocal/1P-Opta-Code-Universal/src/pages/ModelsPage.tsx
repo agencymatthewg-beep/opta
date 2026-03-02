@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   Box,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useModels } from "../hooks/useModels";
 import type { DaemonConnectionOptions } from "../types";
+import type { DaemonLmxLoadResponse } from "../lib/daemonClient";
 
 function fmtBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -40,6 +41,19 @@ interface ModelsPageProps {
   connection: DaemonConnectionOptions | null;
 }
 
+interface TrackedLoadDownload {
+  download_id: string;
+  model_id: string;
+  repo_id: string;
+  status: string;
+  progress_percent: number;
+  downloaded_bytes: number;
+  total_bytes: number;
+  files_completed: number;
+  files_total: number;
+  error?: string;
+}
+
 export function ModelsPage({ connection }: ModelsPageProps) {
   const {
     lmxStatus,
@@ -50,6 +64,8 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     loading,
     error,
     loadModel,
+    confirmLoad,
+    downloadProgress,
     unloadModel,
     deleteModel,
     downloadModel,
@@ -59,6 +75,12 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   const [downloadRepo, setDownloadRepo] = useState("");
   const [downloading, setDownloading] = useState(false);
   const [downloadNotice, setDownloadNotice] = useState<string | null>(null);
+  const [downloadNoticeKind, setDownloadNoticeKind] = useState<"ok" | "error">(
+    "ok",
+  );
+  const [trackedDownloads, setTrackedDownloads] = useState<
+    Record<string, TrackedLoadDownload>
+  >({});
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const downloadNoticeTimerRef = useRef<number | null>(null);
 
@@ -66,29 +88,144 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   const memBarColor =
     usedPct > 85 ? "var(--opta-danger)" : usedPct > 65 ? "var(--opta-warning)" : "var(--opta-primary)";
 
-  const triggerDownload = useCallback(async (event: React.FormEvent) => {
-    event.preventDefault();
-    const repo = downloadRepo.trim();
-    if (!repo) return;
-    setDownloading(true);
-    setDownloadNotice(null);
-    const id = await downloadModel(repo);
-    setDownloading(false);
-    if (id) {
-      setDownloadNotice(`Download queued · ID: ${id}`);
-      setDownloadRepo("");
-    } else {
-      setDownloadNotice("Download failed — check daemon logs");
-    }
-    if (downloadNoticeTimerRef.current !== null) window.clearTimeout(downloadNoticeTimerRef.current);
-    downloadNoticeTimerRef.current = window.setTimeout(() => setDownloadNotice(null), 5000);
-  }, [downloadModel, downloadRepo]);
+  const trackedDownloadsKey = useMemo(
+    () => Object.keys(trackedDownloads).sort().join("|"),
+    [trackedDownloads],
+  );
+  const trackedDownloadIds = useMemo(
+    () => (trackedDownloadsKey ? trackedDownloadsKey.split("|") : []),
+    [trackedDownloadsKey],
+  );
+  const activeDownloads = useMemo(
+    () =>
+      trackedDownloadIds
+        .map((downloadId) => trackedDownloads[downloadId])
+        .filter((download): download is TrackedLoadDownload => Boolean(download)),
+    [trackedDownloadIds, trackedDownloads],
+  );
 
-  const doLoad = useCallback(async (modelId: string) => {
-    setPendingAction(modelId);
-    await loadModel(modelId);
-    setPendingAction(null);
-  }, [loadModel]);
+  const setTimedNotice = useCallback(
+    (message: string, kind: "ok" | "error" = "ok") => {
+      setDownloadNotice(message);
+      setDownloadNoticeKind(kind);
+      if (downloadNoticeTimerRef.current !== null) {
+        window.clearTimeout(downloadNoticeTimerRef.current);
+      }
+      downloadNoticeTimerRef.current = window.setTimeout(
+        () => setDownloadNotice(null),
+        6000,
+      );
+    },
+    [],
+  );
+
+  const trackDownload = useCallback(
+    (downloadId: string, modelId: string, repoId?: string) => {
+      setTrackedDownloads((previous) => ({
+        ...previous,
+        [downloadId]: {
+          download_id: downloadId,
+          model_id: modelId,
+          repo_id: repoId ?? previous[downloadId]?.repo_id ?? modelId,
+          status: previous[downloadId]?.status ?? "pending",
+          progress_percent: previous[downloadId]?.progress_percent ?? 0,
+          downloaded_bytes: previous[downloadId]?.downloaded_bytes ?? 0,
+          total_bytes: previous[downloadId]?.total_bytes ?? 0,
+          files_completed: previous[downloadId]?.files_completed ?? 0,
+          files_total: previous[downloadId]?.files_total ?? 0,
+          error: previous[downloadId]?.error,
+        },
+      }));
+    },
+    [],
+  );
+
+  const applyLoadResponse = useCallback(
+    async (modelId: string, response: DaemonLmxLoadResponse | null) => {
+      if (!response) {
+        setTimedNotice(`Load failed for ${modelId}`, "error");
+        return;
+      }
+
+      if (response.status === "loaded") {
+        setTimedNotice(`Loaded ${modelId}`);
+        return;
+      }
+
+      if (response.status === "download_required") {
+        if (!response.confirmation_token) {
+          setTimedNotice(
+            `Download required for ${modelId}, but no confirmation token was returned`,
+            "error",
+          );
+          return;
+        }
+
+        const sizeHint = response.estimated_size_human
+          ? ` (${response.estimated_size_human})`
+          : "";
+        const proceed = window.confirm(
+          response.message ??
+            `Model ${modelId} requires a download${sizeHint}. Continue?`,
+        );
+        if (!proceed) {
+          setTimedNotice(`Download cancelled for ${modelId}`);
+          return;
+        }
+
+        setPendingAction(modelId);
+        const confirmResponse = await confirmLoad(response.confirmation_token);
+        setPendingAction(null);
+        await applyLoadResponse(modelId, confirmResponse);
+        return;
+      }
+
+      const downloadId = response.download_id;
+      if (!downloadId) {
+        setTimedNotice(
+          `Download started for ${modelId}, but no download ID was returned`,
+          "error",
+        );
+        return;
+      }
+
+      trackDownload(downloadId, modelId, response.model_id || modelId);
+      setTimedNotice(
+        response.message ?? `Downloading ${modelId} · ID: ${downloadId}`,
+      );
+    },
+    [confirmLoad, setTimedNotice, trackDownload],
+  );
+
+  const triggerDownload = useCallback(
+    async (event: React.FormEvent) => {
+      event.preventDefault();
+      const repo = downloadRepo.trim();
+      if (!repo) return;
+      setDownloading(true);
+      setDownloadNotice(null);
+      const id = await downloadModel(repo);
+      setDownloading(false);
+      if (id) {
+        trackDownload(id, repo, repo);
+        setTimedNotice(`Download queued · ID: ${id}`);
+        setDownloadRepo("");
+      } else {
+        setTimedNotice("Download failed — check daemon logs", "error");
+      }
+    },
+    [downloadModel, downloadRepo, setTimedNotice, trackDownload],
+  );
+
+  const doLoad = useCallback(
+    async (modelId: string) => {
+      setPendingAction(modelId);
+      const response = await loadModel(modelId);
+      setPendingAction(null);
+      await applyLoadResponse(modelId, response);
+    },
+    [applyLoadResponse, loadModel],
+  );
 
   const doUnload = useCallback(async (modelId: string) => {
     setPendingAction(modelId);
@@ -101,6 +238,91 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     await deleteModel(modelId);
     setPendingAction(null);
   }, [deleteModel]);
+
+  useEffect(() => {
+    return () => {
+      if (downloadNoticeTimerRef.current !== null) {
+        window.clearTimeout(downloadNoticeTimerRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!connection || trackedDownloadIds.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const pollOnce = async () => {
+      const results = await Promise.all(
+        trackedDownloadIds.map(async (downloadId) => ({
+          downloadId,
+          progress: await downloadProgress(downloadId),
+        })),
+      );
+
+      if (cancelled) return;
+
+      const completedModels: string[] = [];
+      const failedMessages: string[] = [];
+
+      setTrackedDownloads((previous) => {
+        const next = { ...previous };
+        for (const { downloadId, progress } of results) {
+          if (!progress) continue;
+          const existing = next[downloadId];
+          if (!existing) continue;
+
+          const updated: TrackedLoadDownload = {
+            ...existing,
+            ...progress,
+            model_id: existing.model_id,
+            repo_id: progress.repo_id || existing.repo_id,
+          };
+          next[downloadId] = updated;
+
+          if (progress.status === "completed") {
+            completedModels.push(existing.model_id);
+            delete next[downloadId];
+            continue;
+          }
+
+          if (progress.status === "failed") {
+            failedMessages.push(
+              progress.error
+                ? `${existing.model_id}: ${progress.error}`
+                : `${existing.model_id}: download failed`,
+            );
+            delete next[downloadId];
+          }
+        }
+        return next;
+      });
+
+      if (completedModels.length > 0) {
+        setTimedNotice(`Download complete · ${completedModels.join(", ")}`);
+        void refreshLmx();
+      }
+      if (failedMessages.length > 0) {
+        setTimedNotice(failedMessages.join(" · "), "error");
+      }
+    };
+
+    void pollOnce();
+    const timer = window.setInterval(() => void pollOnce(), 2500);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [
+    connection,
+    downloadProgress,
+    refreshLmx,
+    setTimedNotice,
+    trackedDownloadIds,
+    trackedDownloadsKey,
+  ]);
 
   return (
     <section className="models-page">
@@ -322,8 +544,68 @@ export function ModelsPage({ connection }: ModelsPageProps) {
             {downloading ? "Queuing…" : "Download"}
           </button>
         </form>
+        {activeDownloads.length > 0 ? (
+          <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
+            {activeDownloads.map((download) => {
+              const pct = Math.max(
+                0,
+                Math.min(100, Math.round(download.progress_percent)),
+              );
+              const bytesLabel =
+                download.total_bytes > 0
+                  ? `${fmtBytes(download.downloaded_bytes)} / ${fmtBytes(download.total_bytes)}`
+                  : `${fmtBytes(download.downloaded_bytes)} downloaded`;
+              const filesLabel =
+                download.files_total > 0
+                  ? `${download.files_completed}/${download.files_total} files`
+                  : "";
+              return (
+                <div
+                  key={download.download_id}
+                  className="download-notice download-ok"
+                  style={{ marginTop: 0 }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <strong>{download.model_id}</strong>
+                    <span>
+                      {download.status}
+                      {" · "}
+                      {pct}%
+                    </span>
+                  </div>
+                  <progress
+                    value={pct}
+                    max={100}
+                    style={{ width: "100%", height: 8 }}
+                  />
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      gap: 10,
+                      marginTop: 6,
+                    }}
+                  >
+                    <span>{bytesLabel}</span>
+                    <span>{filesLabel}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : null}
         {downloadNotice ? (
-          <p className={`download-notice ${downloadNotice.includes("failed") ? "download-error" : "download-ok"}`}>
+          <p
+            className={`download-notice ${downloadNoticeKind === "error" ? "download-error" : "download-ok"}`}
+          >
             {downloadNotice}
           </p>
         ) : null}

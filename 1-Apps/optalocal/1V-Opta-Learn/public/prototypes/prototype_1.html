@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Learn Prototype 1: Obsidian Vault</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #0c0c12;
+      --elevated: #1a1a24;
+      --violet: #a855f7;
+      --violet-glow: rgba(168,85,247,0.3);
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --text-main: #fafafa;
+      --text-muted: #52525b;
+      --text-secondary: #a1a1aa;
+    }
+    body {
+      background-color: var(--void);
+      color: var(--text-main);
+      font-family: 'Sora', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+    
+    .glass-nav {
+      background: rgba(12,12,18,0.6);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+    }
+    
+    .obsidian-card {
+      background: rgba(5,3,10,0.8);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+    .obsidian-card:hover {
+      border-color: rgba(168,85,247,0.4);
+      background: rgba(10,5,20,0.9);
+      box-shadow: 0 0 20px rgba(168,85,247,0.08);
+    }
+    
+    .text-moonlight {
+      background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168,85,247,0.5) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .code-block {
+      background: #0a0a0f;
+      color: var(--green);
+      font-family: 'JetBrains Mono', monospace;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col">
+  <header class="fixed top-0 w-full z-50 glass-nav px-8 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-3 font-mono text-sm text-text-muted">
+      <div class="w-2 h-2 rounded-full bg-[var(--violet)] shadow-[0_0_8px_var(--violet)]"></div>
+      <span class="text-[var(--violet)] font-semibold">Opta</span><span>local</span>
+      <span class="text-[var(--text-muted)]">/</span>
+      <span class="text-white">learn</span>
+      <span class="text-[var(--text-muted)]">/</span>
+      <span class="text-[var(--green)]">CLI Guide</span>
+    </div>
+    <div class="font-mono text-xs text-[var(--text-muted)]">PROTOTYPE 1: OBSIDIAN VAULT</div>
+  </header>
+
+  <div class="flex flex-1 pt-[72px]">
+    <aside class="w-64 fixed h-full border-r border-[#ffffff15] p-8 hidden lg:flex flex-col gap-6">
+      <div class="text-xs font-mono text-[var(--text-secondary)] tracking-widest uppercase">Guide Navigation</div>
+      <nav class="flex flex-col gap-4 text-sm font-medium">
+        <a href="#" class="text-[var(--violet)] pl-2 border-l-2 border-[var(--violet)]">1. Overview</a>
+        <a href="#" class="text-[var(--text-muted)] hover:text-white pl-2 border-l-2 border-transparent transition-colors">2. Architecture</a>
+        <a href="#" class="text-[var(--text-muted)] hover:text-white pl-2 border-l-2 border-transparent transition-colors">3. Configuration</a>
+      </nav>
+    </aside>
+
+    <main class="flex-1 lg:ml-64 p-12 max-w-4xl flex flex-col gap-8">
+      <div class="inline-flex items-center gap-2 px-3 py-1 text-xs font-mono border rounded uppercase tracking-wider w-max" style="border-color: rgba(34,197,94,0.4); color: var(--green); background: rgba(34,197,94,0.1);">
+        CLI Mastery Guide
+      </div>
+      
+      <h1 class="text-6xl font-bold tracking-tight text-moonlight mb-4">Command Line Mastery</h1>
+      
+      <p class="text-xl text-[var(--text-secondary)] leading-relaxed mb-8">
+        An operational, step-oriented guide focused on execution and verification within the Opta Local CLI environment.
+      </p>
+
+      <div class="obsidian-card p-10 flex flex-col gap-6">
+        <h2 class="text-3xl font-semibold">1. Overview</h2>
+        <p class="text-[var(--text-secondary)] leading-relaxed text-lg">
+          The <span class="text-[var(--violet)] font-semibold">Opta</span> CLI is a terminal-native command-line tool designed for precision engineering. It favors data density and raw output visibility over graphical fluff.
+        </p>
+        <div class="code-block p-6 text-sm">
+          <pre><code>$ opta init --mode local
+Initializing local AI infrastructure...
+[OK] Core daemon started on port 3000
+[OK] LMX instance ready</code></pre>
+        </div>
+      </div>
+
+      <div class="obsidian-card p-10 flex flex-col gap-6">
+        <h2 class="text-3xl font-semibold">2. Configuration</h2>
+        <p class="text-[var(--text-secondary)] leading-relaxed text-lg">
+          Configure your local environment using the standard dotfiles. Ensure paths are absolute.
+        </p>
+        <div class="p-6 rounded-xl border-l-4 border-l-[var(--amber)] bg-[var(--surface)] border border-y-[rgba(255,255,255,0.05)] border-r-[rgba(255,255,255,0.05)] flex gap-4">
+          <div class="text-[var(--amber)] font-bold text-xl">ℹ</div>
+          <p class="text-[var(--amber)] opacity-90">Always source your terminal profile after making changes to the Opta config file to ensure environmental variables are loaded correctly.</p>
+        </div>
+      </div>
+      <div class="h-32"></div>
+    </main>
+  </div>
+</body>
+</html>

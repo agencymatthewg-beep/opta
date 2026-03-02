@@ -43,18 +43,27 @@ For this project:
 3. Implement one phase section at a time
 4. Verify Lighthouse after each phase
 
-## Updating Download URLs
+## Updating Release Metadata
 
-Update release-control manifests when new releases ship:
+Update both release-control contracts whenever a new release ships:
 
-1. Edit `channels/stable.json` and/or `channels/beta.json`
-2. Keep artifact URLs in the canonical namespace:
-   - `https://init.optalocal.com/downloads/...`
-3. Sync deploy manifests:
+1. Update component manifests:
+   - `channels/stable.json`
+   - `channels/beta.json`
+2. Update manager updater metadata:
+   - `channels/manager-updates/stable.json`
+   - `channels/manager-updates/beta.json`
+3. Keep URLs in canonical namespaces:
+   - component artifacts: `https://init.optalocal.com/downloads/...`
+   - manager updater artifacts: `https://init.optalocal.com/desktop-updates/manager/...`
+4. Required manager signing variables:
+   - `TAURI_SIGNING_PRIVATE_KEY`
+   - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+5. Sync publishable JSON:
    - `npm run sync:desktop-manifests`
-4. Validate:
-   - `npm run validate:release-manifests -- channels/stable.json channels/beta.json`
-   - `npm run validate:manifest-links -- channels/stable.json channels/beta.json`
+   - `npm run sync:manager-updates`
+6. Validate contracts and links:
+   - `npm run validate:release-contract`
 
 Commit + push -> Vercel auto-deploys.
 

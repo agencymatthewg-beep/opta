@@ -3,12 +3,19 @@ use semver::Version;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashSet, fs, path::PathBuf, process::Stdio, time::Duration};
+use tauri_plugin_updater::UpdaterExt;
 use thiserror::Error;
 use tokio::{io::AsyncReadExt, process::Command, time::timeout};
 
 const CLI_COMMAND_TIMEOUT_SECS: u64 = 20;
 const CLI_DISCOVERY_TIMEOUT_SECS: u64 = 5;
 const MANAGER_VERSION: &str = env!("CARGO_PKG_VERSION");
+const UPDATER_ENDPOINT_ENV_STABLE: &str = "OPTA_INIT_UPDATER_ENDPOINT_STABLE";
+const UPDATER_ENDPOINT_ENV_BETA: &str = "OPTA_INIT_UPDATER_ENDPOINT_BETA";
+const DEFAULT_UPDATER_ENDPOINT_STABLE: &str =
+    "https://init.optalocal.com/desktop/updater/stable/{{target}}/{{arch}}/{{current_version}}";
+const DEFAULT_UPDATER_ENDPOINT_BETA: &str =
+    "https://init.optalocal.com/desktop/updater/beta/{{target}}/{{arch}}/{{current_version}}";
 
 #[derive(Debug, Error)]
 enum ManagerError {
@@ -51,6 +58,35 @@ struct CommandOutcome {
     exit_code: Option<i32>,
     stdout: String,
     stderr: String,
+    message: String,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ManagerUpdateStatus {
+    current_version: String,
+    channel: String,
+    endpoint_used: String,
+    available: bool,
+    latest_version: Option<String>,
+    release_notes: Option<String>,
+    release_date: Option<String>,
+    warnings: Vec<String>,
+    error: Option<String>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct ManagerUpdateInstallOutcome {
+    ok: bool,
+    installed: bool,
+    current_version: String,
+    channel: String,
+    endpoint_used: String,
+    latest_version: Option<String>,
+    release_notes: Option<String>,
+    release_date: Option<String>,
+    warnings: Vec<String>,
     message: String,
 }
 
@@ -272,6 +308,57 @@ fn normalize_channel(channel: &str) -> String {
     }
 }
 
+fn normalize_optional_channel(channel: Option<String>) -> String {
+    normalize_channel(channel.as_deref().unwrap_or("stable"))
+}
+
+fn updater_endpoint_env_key(channel: &str) -> &'static str {
+    match channel {
+        "beta" => UPDATER_ENDPOINT_ENV_BETA,
+        _ => UPDATER_ENDPOINT_ENV_STABLE,
+    }
+}
+
+fn default_updater_endpoint(channel: &str) -> &'static str {
+    match channel {
+        "beta" => DEFAULT_UPDATER_ENDPOINT_BETA,
+        _ => DEFAULT_UPDATER_ENDPOINT_STABLE,
+    }
+}
+
+fn is_http_endpoint(value: &str) -> bool {
+    let normalized = value.trim().to_ascii_lowercase();
+    normalized.starts_with("https://") || normalized.starts_with("http://")
+}
+
+fn resolve_updater_endpoint(channel: &str) -> (String, Vec<String>) {
+    let mut warnings = Vec::new();
+    let env_key = updater_endpoint_env_key(channel);
+    let fallback = default_updater_endpoint(channel).to_string();
+
+    match std::env::var(env_key) {
+        Ok(value) => {
+            let trimmed = value.trim();
+            if trimmed.is_empty() {
+                warnings.push(format!(
+                    "Environment variable `{}` is empty. Using fallback endpoint.",
+                    env_key
+                ));
+                (fallback, warnings)
+            } else if !is_http_endpoint(trimmed) {
+                warnings.push(format!(
+                    "Environment variable `{}` is invalid. Use an http/https URL. Using fallback endpoint.",
+                    env_key
+                ));
+                (fallback, warnings)
+            } else {
+                (trimmed.to_string(), warnings)
+            }
+        }
+        Err(_) => (fallback, warnings),
+    }
+}
+
 fn default_manifest(channel: &str) -> ManifestPayload {
     ManifestPayload {
         channel: channel.to_string(),
@@ -282,8 +369,9 @@ fn default_manifest(channel: &str) -> ManifestPayload {
             ManifestApp {
                 id: "opta-cli".to_string(),
                 name: "Opta CLI".to_string(),
-                description: "Command-line interface for install/update and workflow orchestration."
-                    .to_string(),
+                description:
+                    "Command-line interface for install/update and workflow orchestration."
+                        .to_string(),
                 version: "fallback".to_string(),
                 website: Some("https://init.optalocal.com/downloads/cli".to_string()),
                 min_manager_version: None,
@@ -1439,9 +1527,191 @@ async fn open_url(url: String) -> Result<(), String> {
     open_http_url(&url).map_err(|error| error.to_string())
 }
 
+#[tauri::command]
+async fn check_manager_update(
+    app: tauri::AppHandle,
+    channel: Option<String>,
+) -> ManagerUpdateStatus {
+    let normalized_channel = normalize_optional_channel(channel);
+    let (endpoint_used, mut warnings) = resolve_updater_endpoint(&normalized_channel);
+
+    let mut status = ManagerUpdateStatus {
+        current_version: MANAGER_VERSION.to_string(),
+        channel: normalized_channel.clone(),
+        endpoint_used: endpoint_used.clone(),
+        available: false,
+        latest_version: None,
+        release_notes: None,
+        release_date: None,
+        warnings: Vec::new(),
+        error: None,
+    };
+
+    let endpoint_url = match Url::parse(endpoint_used.as_str()) {
+        Ok(endpoint) => endpoint,
+        Err(error) => {
+            warnings.push(format!("Updater endpoint parse failed: {}", error));
+            status.warnings = warnings;
+            status.error = Some(
+                "Updater endpoint is invalid. Please contact support or set a valid override endpoint."
+                    .to_string(),
+            );
+            return status;
+        }
+    };
+
+    let updater_builder = app.updater_builder();
+
+    let updater_builder = match updater_builder.endpoints(vec![endpoint_url]) {
+        Ok(builder) => builder,
+        Err(error) => {
+            warnings.push(format!("Updater endpoint config failed: {}", error));
+            status.warnings = warnings;
+            status.error = Some(
+                "Updater endpoint settings are not valid for this build. Please retry later."
+                    .to_string(),
+            );
+            return status;
+        }
+    };
+
+    let updater = match updater_builder.build() {
+        Ok(updater) => updater,
+        Err(error) => {
+            warnings.push(format!("Updater build failed: {}", error));
+            status.warnings = warnings;
+            status.error = Some(
+                "Could not prepare update check right now. Please retry in a moment.".to_string(),
+            );
+            return status;
+        }
+    };
+
+    match updater.check().await {
+        Ok(Some(update)) => {
+            status.available = true;
+            status.latest_version = Some(update.version.clone());
+            status.release_notes = update.body.clone().filter(|value| !value.trim().is_empty());
+            status.release_date = update.date.map(|value| value.to_string());
+        }
+        Ok(None) => {}
+        Err(error) => {
+            warnings.push(format!("Update check failed: {}", error));
+            status.error = Some(
+                "Could not check for manager updates right now. Please retry in a moment."
+                    .to_string(),
+            );
+        }
+    }
+
+    status.warnings = warnings;
+    status
+}
+
+#[tauri::command]
+async fn install_manager_update(
+    app: tauri::AppHandle,
+    channel: Option<String>,
+) -> ManagerUpdateInstallOutcome {
+    let normalized_channel = normalize_optional_channel(channel);
+    let (endpoint_used, mut warnings) = resolve_updater_endpoint(&normalized_channel);
+
+    let mut outcome = ManagerUpdateInstallOutcome {
+        ok: false,
+        installed: false,
+        current_version: MANAGER_VERSION.to_string(),
+        channel: normalized_channel.clone(),
+        endpoint_used: endpoint_used.clone(),
+        latest_version: None,
+        release_notes: None,
+        release_date: None,
+        warnings: Vec::new(),
+        message: "Manager update was not installed.".to_string(),
+    };
+
+    let endpoint_url = match Url::parse(endpoint_used.as_str()) {
+        Ok(endpoint) => endpoint,
+        Err(error) => {
+            warnings.push(format!("Updater endpoint parse failed: {}", error));
+            outcome.message =
+                "Updater endpoint is invalid. Please contact support or set a valid override endpoint."
+                    .to_string();
+            outcome.warnings = warnings;
+            return outcome;
+        }
+    };
+
+    let updater_builder = app.updater_builder();
+
+    let updater_builder = match updater_builder.endpoints(vec![endpoint_url]) {
+        Ok(builder) => builder,
+        Err(error) => {
+            warnings.push(format!("Updater endpoint config failed: {}", error));
+            outcome.message =
+                "Updater endpoint settings are not valid for this build. Please retry later."
+                    .to_string();
+            outcome.warnings = warnings;
+            return outcome;
+        }
+    };
+
+    let updater = match updater_builder.build() {
+        Ok(updater) => updater,
+        Err(error) => {
+            warnings.push(format!("Updater build failed: {}", error));
+            outcome.message =
+                "Could not prepare manager update install right now. Please retry later."
+                    .to_string();
+            outcome.warnings = warnings;
+            return outcome;
+        }
+    };
+
+    let update = match updater.check().await {
+        Ok(Some(update)) => update,
+        Ok(None) => {
+            outcome.ok = true;
+            outcome.message = "Manager is already up to date.".to_string();
+            outcome.warnings = warnings;
+            return outcome;
+        }
+        Err(error) => {
+            warnings.push(format!("Update check failed: {}", error));
+            outcome.message =
+                "Could not check for manager updates right now. Please retry in a moment."
+                    .to_string();
+            outcome.warnings = warnings;
+            return outcome;
+        }
+    };
+
+    outcome.latest_version = Some(update.version.clone());
+    outcome.release_notes = update.body.clone().filter(|value| !value.trim().is_empty());
+    outcome.release_date = update.date.map(|value| value.to_string());
+
+    match update.download_and_install(|_, _| {}, || {}).await {
+        Ok(()) => {
+            outcome.ok = true;
+            outcome.installed = true;
+            outcome.message = format!(
+                "Manager update to v{} installed. Restart Opta Init to apply the update.",
+                outcome.latest_version.as_deref().unwrap_or("latest")
+            );
+        }
+        Err(error) => {
+            warnings.push(format!("Install failed: {}", error));
+            outcome.message = "Manager update download/install failed. Please retry later or reinstall from init.optalocal.com.".to_string();
+        }
+    }
+
+    outcome.warnings = warnings;
+    outcome
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             fetch_manifest,
             list_installed_apps,
@@ -1451,7 +1721,9 @@ fn main() {
             daemon_status,
             daemon_start,
             daemon_stop,
-            open_url
+            open_url,
+            check_manager_update,
+            install_manager_update
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

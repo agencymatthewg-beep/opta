@@ -11,7 +11,9 @@ import type {
   DaemonLmxAvailableModel,
   DaemonLmxDiscoveryResponse,
   DaemonLmxDownloadResponse,
+  DaemonLmxDownloadProgressResponse,
   DaemonLmxLoadOptions,
+  DaemonLmxLoadResponse,
   DaemonLmxMemoryResponse,
   DaemonLmxModelDetail,
   DaemonLmxStatusResponse,
@@ -300,11 +302,26 @@ export class DaemonHttpClient implements DaemonHttpApi {
       .then((available) => available.map(normalizeAvailableModel).filter(Boolean) as DaemonLmxAvailableModel[]);
   }
 
-  lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<unknown> {
+  lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<DaemonLmxLoadResponse> {
     return this.request('/v3/lmx/models/load', {
       method: 'POST',
       body: JSON.stringify({ modelId, ...opts }),
     }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
+  }
+
+  lmxConfirmLoad(confirmationToken: string): Promise<DaemonLmxLoadResponse> {
+    return this.request('/v3/lmx/models/load/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ confirmationToken }),
+    }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
+  }
+
+  lmxDownloadProgress(downloadId: string): Promise<DaemonLmxDownloadProgressResponse> {
+    return this.request(
+      `/v3/lmx/models/download/${encodeURIComponent(downloadId)}/progress`,
+      {},
+      { timeoutMs: LMX_READ_TIMEOUT_MS },
+    );
   }
 
   lmxUnload(modelId: string): Promise<unknown> {

@@ -18,3 +18,4 @@ reqwest = { version = "0.12", default-features = false, features = ["json", "rus
 webbrowser = "1"
 dirs = "5"
 semver = "1"
+tauri-plugin-updater = "2"

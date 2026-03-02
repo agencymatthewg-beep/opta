@@ -7,6 +7,9 @@ import type {
   InstalledApp,
   ManifestApp,
   ManifestResponse,
+  ManagerUpdateCheckResult,
+  ManagerUpdateInstallResult,
+  ManagerUpdateState,
 } from "./types";
 import "./app.css";
 
@@ -101,6 +104,75 @@ const BROWSER_PREVIEW_MANIFEST: Record<Channel, ManifestPayload> = {
   },
 };
 
+const MANAGER_UPDATE_LABELS: Record<ManagerUpdateState, string> = {
+  up_to_date: "Up to date",
+  update_available: "Update available",
+  error: "Error",
+};
+
+function parseManagerUpdateCheck(
+  payload: ManagerUpdateCheckResult | boolean,
+): { status: ManagerUpdateState; warning?: string } {
+  if (typeof payload === "boolean") {
+    return { status: payload ? "update_available" : "up_to_date" };
+  }
+
+  const statusText = typeof payload.status === "string" ? payload.status.toLowerCase() : "";
+  const warningFromWarnings =
+    Array.isArray(payload.warnings) &&
+    typeof payload.warnings[0] === "string" &&
+    payload.warnings[0].trim().length > 0
+      ? payload.warnings[0]
+      : undefined;
+  const explicitWarning =
+    typeof payload.error === "string" && payload.error.trim().length > 0
+      ? payload.error
+      : typeof payload.message === "string" && payload.message.trim().length > 0
+        ? payload.message
+        : warningFromWarnings;
+  const detectedAvailability = [
+    payload.available,
+    payload.updateAvailable,
+    payload.update_available,
+    payload.hasUpdate,
+    payload.has_update,
+  ].find((value): value is boolean => typeof value === "boolean");
+
+  if (statusText.includes("error") || statusText.includes("fail")) {
+    return {
+      status: "error",
+      warning: explicitWarning ?? "Manager update check failed.",
+    };
+  }
+
+  if (typeof payload.error === "string" && payload.error.trim().length > 0) {
+    return { status: "error", warning: payload.error };
+  }
+
+  if (typeof detectedAvailability === "boolean") {
+    return {
+      status: detectedAvailability ? "update_available" : "up_to_date",
+      warning: warningFromWarnings,
+    };
+  }
+
+  if (
+    statusText.includes("up_to_date")
+    || statusText.includes("up-to-date")
+    || statusText.includes("uptodate")
+    || statusText.includes("latest")
+    || statusText.includes("no_update")
+  ) {
+    return { status: "up_to_date", warning: warningFromWarnings };
+  }
+
+  if (statusText.includes("available") || statusText === "update_available" || statusText === "update") {
+    return { status: "update_available", warning: warningFromWarnings };
+  }
+
+  return { status: "up_to_date", warning: warningFromWarnings };
+}
+
 function ParticleBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -180,6 +252,9 @@ export function App() {
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [daemon, setDaemon] = useState<DaemonStatus | null>(null);
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  const [managerUpdateState, setManagerUpdateState] = useState<ManagerUpdateState>("up_to_date");
+  const [managerUpdateWarning, setManagerUpdateWarning] = useState<string | null>(null);
+  const [managerUpdatePending, setManagerUpdatePending] = useState(false);
   
   const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
 
@@ -222,8 +297,58 @@ export function App() {
     void refreshData();
   }, [refreshData]);
 
+  const checkManagerUpdate = useCallback(async () => {
+    if (!tauriAvailable) {
+      setManagerUpdateState("up_to_date");
+      setManagerUpdateWarning(null);
+      return;
+    }
+
+    try {
+      const result = await invoke<ManagerUpdateCheckResult | boolean>("check_manager_update", { channel });
+      const parsed = parseManagerUpdateCheck(result);
+      setManagerUpdateState(parsed.status);
+      setManagerUpdateWarning(parsed.warning ?? null);
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setManagerUpdateState("error");
+      setManagerUpdateWarning(`Manager update check failed: ${message}`);
+    }
+  }, [channel, tauriAvailable]);
+
+  useEffect(() => {
+    void checkManagerUpdate();
+  }, [checkManagerUpdate]);
+
+  const installManagerUpdate = useCallback(async () => {
+    if (!tauriAvailable || managerUpdatePending) return;
+    setManagerUpdatePending(true);
+    try {
+      const result = await invoke<ManagerUpdateInstallResult>("install_manager_update", { channel });
+      if (result?.ok === false) {
+        setManagerUpdateState("error");
+        setManagerUpdateWarning(
+          result.message
+          ?? result.error
+          ?? "Manager update failed. Please retry in a moment.",
+        );
+        return;
+      }
+      if (typeof result?.message === "string" && result.message.trim().length > 0) {
+        setManagerUpdateWarning(result.message);
+      }
+      await checkManagerUpdate();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      setManagerUpdateState("error");
+      setManagerUpdateWarning(`Manager update failed: ${message}`);
+    } finally {
+      setManagerUpdatePending(false);
+    }
+  }, [channel, checkManagerUpdate, managerUpdatePending, tauriAvailable]);
+
   const runAppAction = useCallback(async (app: ManifestApp, action: "install" | "update" | "launch" | "verify" | "open_folder") => {
-    if (!tauriAvailable) return;
+    if (!tauriAvailable || managerUpdatePending) return;
     if (action === "verify" || action === "open_folder") {
       console.log(`Action ${action} requested for ${app.name}`);
       // In the future, map these to real Tauri commands like invoke("verify_app")
@@ -242,10 +367,10 @@ export function App() {
     } finally {
       setPendingKey(null);
     }
-  }, [channel, tauriAvailable]);
+  }, [channel, managerUpdatePending, tauriAvailable]);
 
   useEffect(() => {
-    if (!hoveredApp || pendingKey !== null) return;
+    if (!hoveredApp || pendingKey !== null || managerUpdatePending) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
@@ -266,10 +391,10 @@ export function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [hoveredApp, installedIndex, pendingKey, runAppAction]);
+  }, [hoveredApp, installedIndex, managerUpdatePending, pendingKey, runAppAction]);
 
   const runDaemonAction = async (action: "start" | "stop") => {
-    if (!tauriAvailable) return;
+    if (!tauriAvailable || managerUpdatePending) return;
     setPendingKey(`daemon:${action}`);
     try {
       await invoke(action === "start" ? "daemon_start" : "daemon_stop");
@@ -298,6 +423,13 @@ export function App() {
   const displayApp = hoveredApp;
   const isInstalled = displayApp ? installedIndex.has(displayApp.id) : false;
   const isPending = displayApp ? pendingKey?.includes(displayApp.id) : false;
+  const controlsDisabled = pendingKey !== null || managerUpdatePending;
+  const managerUpdateChipClass =
+    managerUpdateState === "update_available"
+      ? "update-available"
+      : managerUpdateState === "error"
+        ? "error"
+        : "up-to-date";
 
   // Floating animation delays
   const getFloatingClass = (index: number) => `floating-${(index % 5) + 1}`;
@@ -385,41 +517,63 @@ export function App() {
       </div>
 
       <div className="bottom-panel">
-        <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
-          <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
-          {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
-          {pendingKey?.includes('daemon') && " (Working...)"}
+        <div className="status-stack">
+          <div className="status-row">
+            <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
+              <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
+              {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
+              {pendingKey?.includes('daemon') && " (Working...)"}
+            </div>
+            <div className={`manager-update-chip ${managerUpdateChipClass}`}>
+              <span className="manager-update-chip-title">Manager</span>
+              <span>{MANAGER_UPDATE_LABELS[managerUpdateState]}</span>
+            </div>
+          </div>
+          {managerUpdateWarning && (
+            <p className="manager-update-warning" title={managerUpdateWarning}>
+              {managerUpdateWarning}
+            </p>
+          )}
         </div>
         
         <div className="action-buttons">
+          {managerUpdateState === "update_available" && (
+            <button
+              className="btn secondary manager-update-button"
+              disabled={controlsDisabled}
+              onClick={() => void installManagerUpdate()}
+            >
+              {managerUpdatePending ? "Updating Manager..." : "Update Manager"}
+            </button>
+          )}
           {displayApp ? (
             <div className="fade-in">
               {displayApp.id === "opta-daemon" ? (
                 <button 
                   className="btn primary" 
-                  disabled={pendingKey !== null}
+                  disabled={controlsDisabled}
                   onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
                 >
                   {pendingKey?.includes('daemon') ? "Processing..." : (daemon?.running ? "Stop Daemon" : "Start Daemon")}
                 </button>
               ) : isInstalled ? (
                 <>
-                  <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "launch")}>
+                  <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "launch")}>
                     {isPending ? "Working..." : "Launch App"}
                   </button>
-                  <button className="btn secondary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "update")}>
+                  <button className="btn secondary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "update")}>
                     Update
                   </button>
                 </>
               ) : (
-                <button className="btn primary" disabled={pendingKey !== null} onClick={() => runAppAction(displayApp, "install")}>
+                <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "install")}>
                   {isPending ? "Installing..." : "Install App"}
                 </button>
               )}
             </div>
           ) : (
             <div className="fade-in">
-              <button className="btn primary" onClick={() => void refreshData()} disabled={pendingKey !== null}>
+              <button className="btn primary" onClick={() => void refreshData()} disabled={controlsDisabled}>
                 Refresh Stack
               </button>
             </div>

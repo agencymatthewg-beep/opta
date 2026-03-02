@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://init.optalocal.com/schemas/manager-updater-metadata.v1.schema.json",
+  "title": "Opta Init Desktop Manager Updater Metadata v1",
+  "description": "Channel metadata consumed by the desktop manager self-updater feed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestVersion",
+    "channel",
+    "publishedAt",
+    "targets"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "manifestVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["stable", "beta"]
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "targets": {
+      "type": "object",
+      "minProperties": 1,
+      "patternProperties": {
+        "^(darwin|windows|linux)-[A-Za-z0-9_-]+$": {
+          "$ref": "#/$defs/targetMetadata"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "httpsUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "targetMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "url", "signature", "version", "notes", "date"],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": ["darwin", "windows", "linux"]
+        },
+        "url": {
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "signature": {
+          "type": "string",
+          "minLength": 16,
+          "maxLength": 4096
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "notes": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4096
+        },
+        "date": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

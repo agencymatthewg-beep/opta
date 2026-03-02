@@ -271,6 +271,25 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     return result;
   });
 
+  app.post('/v3/lmx/models/load/confirm', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = req.body as { confirmationToken?: string; confirmation_token?: string } | undefined;
+    const confirmationToken = body?.confirmationToken ?? body?.confirmation_token;
+    if (!confirmationToken || !confirmationToken.trim()) {
+      return reply.status(400).send({ error: 'Missing confirmationToken' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.confirmLoad(confirmationToken);
+    return result;
+  });
+
   app.post('/v3/lmx/models/unload', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const body = req.body as { modelId?: string } | undefined;
@@ -327,6 +346,24 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       repo_id: result.repoId,
       status: result.status,
     };
+  });
+
+  app.get('/v3/lmx/models/download/:downloadId/progress', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const params = req.params as { downloadId?: string };
+    if (!params.downloadId || !params.downloadId.trim()) {
+      return reply.status(400).send({ error: 'Missing downloadId' });
+    }
+
+    const config = await loadConfig();
+    const lmx = new LmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    });
+    const result = await lmx.downloadProgress(params.downloadId);
+    return result;
   });
 
   app.post('/v3/sessions', async (req, reply) => {

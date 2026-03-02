@@ -1,0 +1,33 @@
+{
+  "$schema": "../schema/manager-updater-metadata.v1.schema.json",
+  "schemaVersion": "1.0.0",
+  "manifestVersion": 1,
+  "channel": "stable",
+  "publishedAt": "2026-03-02T04:00:00Z",
+  "targets": {
+    "darwin-aarch64": {
+      "platform": "darwin",
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/1.4.0/Opta-Init-Manager_aarch64.app.tar.gz",
+      "signature": "MEUCIFh7N3M3VnN6Q3pBbWdFQW9iWjFMc3RhY3VwWlR4b1Y0S2dUMjJyaTBWzAiEA4HE2V3FhQlR2cS9Qd3N3Nk44U2RGRjJjMldPdXdtQjV0QXF0K3I9",
+      "version": "1.4.0",
+      "notes": "https://init.optalocal.com/releases/manager-1-4-0-stable",
+      "date": "2026-03-02T04:00:00Z"
+    },
+    "darwin-x86_64": {
+      "platform": "darwin",
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/1.4.0/Opta-Init-Manager_x64.app.tar.gz",
+      "signature": "MEYCIQDMR2JrWFpYbFNoTjd1aSt2M3RjeVh5WG9vR2Q3QjQwY0VuMnlvY2c4wIhAN2xQY1F4WnE2a1Brbk4xOVJocjYxMTR4T1hQYjlsbDV5WnM9",
+      "version": "1.4.0",
+      "notes": "https://init.optalocal.com/releases/manager-1-4-0-stable",
+      "date": "2026-03-02T04:00:00Z"
+    },
+    "windows-x86_64": {
+      "platform": "windows",
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/1.4.0/Opta-Init-Manager_x64-setup.nsis.zip",
+      "signature": "MEQCIHBrQ2Q2VGh0Ylp4N0N5eXhTbUN3bEV2L2ltQm5uSmJEM3hpdjQxU2xDAiA1M0VoMFNqdlF6anA5LzQ4VStxM2paQTFvWkJxYmN5Wm9ZZy8rSUE9",
+      "version": "1.4.0",
+      "notes": "https://init.optalocal.com/releases/manager-1-4-0-stable",
+      "date": "2026-03-02T04:00:00Z"
+    }
+  }
+}

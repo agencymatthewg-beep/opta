@@ -288,6 +288,19 @@ body {
   z-index: 20;
 }
 
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .status-badge {
   display: inline-flex;
   align-items: center;
@@ -305,6 +318,50 @@ body {
   background: rgba(34, 197, 94, 0.15);
 }
 
+.manager-update-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.manager-update-chip-title {
+  opacity: 0.75;
+}
+
+.manager-update-chip.up-to-date {
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
+}
+
+.manager-update-chip.update-available {
+  border-color: rgba(168, 85, 247, 0.45);
+  color: #d8b4fe;
+  background: rgba(168, 85, 247, 0.15);
+}
+
+.manager-update-chip.error {
+  border-color: rgba(248, 113, 113, 0.45);
+  color: #fca5a5;
+  background: rgba(248, 113, 113, 0.12);
+}
+
+.manager-update-warning {
+  margin: 0;
+  max-width: 420px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: rgba(244, 244, 245, 0.7);
+}
+
 .status-dot {
   width: 8px;
   height: 8px;
@@ -319,6 +376,11 @@ body {
 .action-buttons {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.manager-update-button {
+  white-space: nowrap;
 }
 
 .btn {

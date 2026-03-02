@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn Prototype 2: Glass Matrix</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --void: #09090b;
+            --violet: #a855f7;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --text-main: #fafafa;
+            --text-muted: #52525b;
+            --text-secondary: #a1a1aa;
+        }
+
+        body {
+            background-color: var(--void);
+            color: var(--text-main);
+            font-family: 'Sora', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-image: radial-gradient(rgba(168, 85, 247, 0.15) 1px, transparent 1px);
+            background-size: 32px 32px;
+            /* .bg-dot-subtle equivalent */
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .glass-strong {
+            background: rgba(12, 12, 18, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.20);
+        }
+
+        .text-moonlight {
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168, 85, 247, 0.5) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .section-divider {
+            height: 1px;
+            width: 100%;
+            background: linear-gradient(90deg, transparent, rgba(168, 85, 247, 0.3), transparent);
+            margin: 3rem 0;
+        }
+
+        .code-block {
+            background: #0a0a0f;
+            color: var(--green);
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col">
+    <header class="fixed top-0 w-full z-50 glass-strong px-8 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3 font-mono text-sm text-[var(--text-muted)]">
+            <div class="w-2 h-2 rounded-full bg-[var(--violet)] shadow-[0_0_8px_var(--violet)]"></div>
+            <span class="text-[var(--violet)] font-semibold lowercase">Opta</span><span class="lowercase">local</span>
+            <span>/</span><span class="text-white lowercase">learn</span><span>/</span>
+            <span class="text-[var(--violet)]">LMX Architecture</span>
+        </div>
+        <div class="font-mono text-xs text-[var(--text-muted)]">PROTOTYPE 2: GLASS MATRIX</div>
+    </header>
+
+    <div class="flex flex-1 pt-[72px]">
+        <aside class="w-72 fixed h-full p-8 hidden lg:flex flex-col gap-8 glass-strong border-l-0 border-y-0 border-r"
+            style="border-right-color: rgba(255,255,255,0.1)">
+            <div class="text-[var(--text-main)] font-semibold text-lg leading-snug">LMX Architecture</div>
+            <nav class="flex flex-col gap-3 text-sm font-medium border-l border-[rgba(255,255,255,0.1)]">
+                <a href="#"
+                    class="pl-4 text-[var(--violet)] flex items-center before:content-[''] before:w-1.5 before:h-1.5 before:rounded-full before:bg-[var(--violet)] before:absolute before:-ml-[1.12rem]">1.
+                    Overview</a>
+                <a href="#" class="pl-4 text-[var(--text-muted)] hover:text-white transition-colors">2. Architecture</a>
+                <a href="#" class="pl-4 text-[var(--text-muted)] hover:text-white transition-colors">3.
+                    Configuration</a>
+            </nav>
+        </aside>
+
+        <main class="flex-1 lg:ml-72 p-12 lg:p-24 max-w-4xl flex flex-col">
+            <div class="inline-flex items-center gap-2 px-3 py-1 text-xs font-mono border rounded uppercase tracking-wider w-max mb-6"
+                style="border-color: rgba(168,85,247,0.4); color: var(--violet); background: rgba(168,85,247,0.1);">
+                Holistic Guide
+            </div>
+
+            <h1 class="text-5xl lg:text-7xl font-bold tracking-tight text-moonlight mb-6">LMX Architecture Deep Dive
+            </h1>
+
+            <p class="text-2xl text-[var(--text-secondary)] leading-relaxed font-light mb-16">
+                An extensive, ecosystem-level guide explaining the core local inference engine that powers the Opta
+                Local stack.
+            </p>
+
+            <section class="flex flex-col gap-6">
+                <h2 class="text-3xl font-semibold">1. Overview</h2>
+                <p class="text-[var(--text-secondary)] leading-relaxed text-lg">
+                    Opta LMX represents the foundation. The void-native interface ensures OLED-optimized precision while
+                    maintaining terminal DNA.
+                </p>
+            </section>
+
+            <div class="section-divider"></div>
+
+            <section class="flex flex-col gap-6">
+                <h2 class="text-3xl font-semibold">2. Configuration</h2>
+                <div
+                    class="p-6 rounded-xl border-l-4 border-l-[var(--amber)] bg-[rgba(12,12,18,0.6)] border border-y-[rgba(255,255,255,0.05)] border-r-[rgba(255,255,255,0.05)] flex gap-4 backdrop-blur-md">
+                    <div class="text-[var(--amber)] font-bold text-xl">⚠</div>
+                    <p class="text-[var(--amber)] bg-opacity-90">Avoid setting max concurrency above 8 unless you are on
+                        a dedicated heavy compute instance.</p>
+                </div>
+
+                <div class="code-block p-8 mt-4 text-sm">
+                    <pre><code>{
+  "lmx_engine": {
+    "concurrency": 4,
+    "acceleration": "metal",
+    "precision": "fp16"
+  }
+}</code></pre>
+                </div>
+            </section>
+            <div class="h-32"></div>
+        </main>
+    </div>
+</body>
+
+</html>

@@ -50,3 +50,37 @@ export interface CommandOutcome {
   stderr?: string;
   message: string;
 }
+
+export type ManagerUpdateState = "up_to_date" | "update_available" | "error";
+
+export interface ManagerUpdateCheckResult {
+  currentVersion?: string;
+  latestVersion?: string;
+  releaseNotes?: string;
+  releaseDate?: string;
+  endpointUsed?: string;
+  channel?: string;
+  available?: boolean;
+  updateAvailable?: boolean;
+  update_available?: boolean;
+  hasUpdate?: boolean;
+  has_update?: boolean;
+  status?: string;
+  warnings?: string[];
+  message?: string;
+  error?: string;
+}
+
+export interface ManagerUpdateInstallResult {
+  ok?: boolean;
+  installed?: boolean;
+  currentVersion?: string;
+  latestVersion?: string;
+  releaseNotes?: string;
+  releaseDate?: string;
+  endpointUsed?: string;
+  channel?: string;
+  warnings?: string[];
+  message?: string;
+  error?: string;
+}

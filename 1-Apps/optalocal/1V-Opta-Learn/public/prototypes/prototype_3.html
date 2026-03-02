@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Learn Prototype 3: Terminal Doc Layout</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --void: #09090b;
+            --violet: #a855f7;
+            --green: #22c55e;
+            --blue: #3b82f6;
+            --text-main: #fafafa;
+            --text-muted: #52525b;
+            --text-secondary: #a1a1aa;
+        }
+
+        body {
+            background-color: var(--void);
+            color: var(--text-main);
+            font-family: 'Sora', sans-serif;
+            margin: 0;
+            padding: 0;
+            /* bg-grid-subtle */
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 48px 48px;
+        }
+
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .terminal-header {
+            background: rgba(9, 9, 11, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .section-block {
+            border-left: 2px solid rgba(255, 255, 255, 0.1);
+            padding-left: 2rem;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .section-block:hover {
+            border-left-color: var(--blue);
+        }
+
+        .section-block::before {
+            content: '';
+            position: absolute;
+            left: -5px;
+            top: 0;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--void);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .section-block:hover::before {
+            border-color: var(--blue);
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.6);
+            background: var(--blue);
+        }
+
+        .text-moonlight {
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168, 85, 247, 0.5) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .code-block {
+            background: #0a0a0f;
+            color: var(--green);
+            font-family: 'JetBrains Mono', monospace;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            /* More terminal-esque sharp slightly rounded corners */
+            padding: 1.5rem;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col items-center">
+    <header
+        class="w-full max-w-5xl z-50 terminal-header px-6 py-6 flex flex-col gap-4 mt-8 rounded-t-xl border border-white/10 border-b-0">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 font-mono text-sm text-[var(--text-muted)]">
+                <span class="text-[var(--text-main)] font-bold tracking-widest uppercase">Opta Accounts</span>
+                <span>•</span>
+                <span>Guide Document</span>
+            </div>
+            <div
+                class="font-mono text-xs text-[var(--blue)] px-2 py-1 bg-[rgba(59,130,246,0.1)] border border-[rgba(59,130,246,0.3)] rounded">
+                L2-OPERATIONAL
+            </div>
+        </div>
+        <h1 class="text-4xl md:text-5xl font-bold tracking-tight text-moonlight">Identity Management Protocol</h1>
+        <p class="text-lg text-[var(--text-secondary)] font-mono">Reference-first guide for managing Opta
+            authentication.</p>
+    </header>
+
+    <main
+        class="w-full max-w-5xl bg-[rgba(12,12,18,0.95)] border border-white/10 rounded-b-xl p-8 md:p-16 flex flex-col gap-12 mb-20 shadow-[-20px_20px_60px_rgba(0,0,0,0.5)]">
+
+        <div class="section-block flex flex-col gap-6">
+            <h2 class="text-2xl font-mono text-[var(--text-main)]">> 1. Overview</h2>
+            <p class="text-[var(--text-secondary)] leading-relaxed text-lg">
+                Opta Accounts provides identity and authentication across the ecosystem, utilizing <span
+                    class="text-[var(--blue)]">Identity Blue</span> as its primary accent. This maintains trust-first
+                layouts and structural readability.
+            </p>
+        </div>
+
+        <div class="section-block flex flex-col gap-6">
+            <h2 class="text-2xl font-mono text-[var(--text-main)]">> 2. Web Token Structure</h2>
+            <p class="text-[var(--text-secondary)] leading-relaxed text-lg">
+                Below defines the standardized structure for JWT exchange inside the local dashboard bridging context.
+            </p>
+
+            <div class="code-block text-sm">
+                <pre><code>curl -X POST https://accounts.optalocal.com/v1/auth \
+  -H "Content-Type: application/json" \
+  -d '{"client_id": "local_dashboard_01"}'
+
+# -> 200 OK
+{
+  "token": "ey...",
+  "status": "verified"
+}</code></pre>
+            </div>
+        </div>
+
+    </main>
+</body>
+
+</html>
