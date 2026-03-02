@@ -13,29 +13,16 @@ type ProductTarget = {
 };
 
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
-  cli: {
-    name: "Opta CLI",
+  init: {
+    name: "Opta Init Manager",
     description:
-      "Chat with AI models privately on your Mac — visual menus, no commands needed.",
+      "The core desktop application to orchestrate your local AI stack. Download models, launch tools, and manage the background daemon.",
     platforms: {
       macos: {
         repo: "agencymatthewg-beep/opta",
-        patterns: ["opta-cli", "npm.tgz", ".tgz", ".pkg"],
+        patterns: ["opta-init", "mac", ".dmg"],
         fallbackUrl:
-          "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-cli-npm.tgz",
-      },
-      windows: null,
-    },
-  },
-  lmx: {
-    name: "Opta LMX",
-    description:
-      "The engine that runs AI models on your Mac's hardware — installs in one click.",
-    platforms: {
-      macos: {
-        repo: "optaops/opta-lmx",
-        patterns: ["opta-lmx", "mac", ".pkg", ".dmg"],
-        fallbackUrl: "https://github.com/downloads/optaops/opta-lmx/opta-lmx-mac.pkg",
+          "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-init-mac.dmg",
       },
       windows: null,
     },
