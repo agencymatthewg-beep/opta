@@ -2,11 +2,18 @@
 
 ## Overview
 
-Pure static site. No server. No API. No database. Vercel CDN delivers the pre-built output globally.
+The `1O-Opta-Init` project encompasses two distinct but related architectural surfaces:
 
-## Data Flow
+1. **The Web Landing Page (`init.optalocal.com`)**: A pure static Next.js site. No server. No API. No database. Vercel CDN delivers the pre-built output globally. Its sole purpose is marketing and distributing the Opta Init Desktop Manager.
+2. **The Desktop Manager (`/desktop-manager`)**: A native Tauri application built with React + Vite on the frontend and Rust on the backend. It serves as the local orchestration engine (the "Core Cluster") for all Opta apps.
 
-```
+---
+
+## 1. Web Landing Page Architecture
+
+### Data Flow
+
+```text
 User hits init.optalocal.com
         |
 Cloudflare DNS resolves init CNAME -> cname.vercel-dns.com
@@ -15,72 +22,53 @@ Vercel serves static HTML/CSS/JS from CDN edge
         |
 Browser renders page (no hydration needed for content)
         |
-Framer Motion mounts spring animations client-side
-        |
-User clicks download -> init.optalocal.com/downloads gateway (redirects to package or release notes)
-User clicks Open Web Dashboard -> https://lmx.optalocal.com
-User clicks Manage Account -> https://accounts.optalocal.com
+User clicks "Download Manager" -> triggers download of the Tauri .dmg/.exe
 ```
 
-## Page Structure (Single Page)
+### Page Structure (Single Page)
 
-```
+```text
 / (page.tsx)
-  ├── Header                — Logo + nav anchors (Features, CLI, Install, Download, Account)
-  ├── Hero                  — Core value prop + "Initialize System" CTA
-  ├── CLI Showcase          — Three productized visual terminal panels
+  ├── Header                — Logo + nav anchors
+  ├── Hero                  — Core value prop + CTA
+  ├── CLI Showcase          — Productized visual terminal panels
   ├── Install Section       — Bootstrap command + prerequisites
-  ├── Layered Architecture  — CLI / LMX / Web stack cards
+  ├── Layered Architecture  — Control Topology cards
   ├── Features Grid         — Capability cards
-  ├── Downloads             — CLI available + LMX coming soon state
-  ├── Dashboard CTA         — "Open Web Dashboard" + "Manage Account"
-  └── Footer                — Brand + links
+  ├── Downloads             — Manager packages exclusively
+  └── Dashboard CTA         — Links to web platform
 ```
 
-## Rendering Strategy
+### Rendering & Deployment Strategy
 
-- `output: 'export'` in next.config.ts — full static export
-- All content server-rendered at build time
-- Client components only for animation wrappers
-- Zero client-side data fetching
+- `output: 'export'` in `next.config.ts` — full static export.
+- All content server-rendered at build time.
+- Vercel deploys `out/` directory to the edge.
 
-## Animation Architecture
+---
 
-Framer Motion provides spring physics on the web. Pattern:
+## 2. Desktop Manager Architecture (Tauri)
 
-1. Each section is a `motion.div` with `useInView` trigger
-2. Children stagger in with `variants` + `transition: { staggerChildren: 0.015 }`
-3. Entry animation: `opacity 0->1, y 20->0, filter blur(8px)->blur(0)`
-4. Interactive elements use `whileHover` and `whileTap` with spring
-5. Film grain: CSS pseudo-element with SVG noise filter, `opacity: 0.03`
+### Overview
+The Desktop Manager is the actual engine users run locally to manage their stack. It utilizes a visually rich "Core Cluster" layout with raw SVG icons, physics-based floating animations, and a centralized status bar.
 
-## Build Pipeline
+### Backend (Rust / Tauri Core)
+- **Manifest Fetching**: Pulls down `.json` release manifests from `init.optalocal.com/desktop/*`.
+- **Command Orchestration**: Executes native OS commands (`open`, `explorer`, `xdg-open`) and `opta` CLI commands to launch, update, install, and verify Opta apps.
+- **Daemon Control**: Manages the local `opta daemon` lifecycle (start/stop/status).
 
+### Frontend (React / Vite)
+- **App App.tsx**: The core interface containing the circular app cluster.
+- **Interactivity**: Hover-based tooltips and global keyboard shortcuts (`s` for scan, `l` for launch, `u` for update, `d` for download, `v` for verify, `f` for folder).
+- **Settings Modal**: Displays account linking status and exact installation paths/versions for all local apps.
+
+### Build Pipeline
+
+```bash
+# Web Landing Page
+npm run build (Next.js export)
+
+# Desktop Manager
+cd desktop-manager
+npm run tauri build (Compiles Rust backend and Vite frontend into native app)
 ```
-npm run build
-  -> next build --webpack (TypeScript + static export)
-  -> out/
-  -> Vercel deploys output to CDN
-  -> init.optalocal.com resolves
-
-Local dev:
-  npm run dev -> localhost:3005
-```
-
-## Caching Behavior
-
-- Static assets (`/_next/static/*`) are immutable (`max-age=31536000, immutable`)
-- HTML routes are revalidated (`max-age=0, must-revalidate`)
-- Rewritten non-asset routes also revalidate (`max-age=0, must-revalidate`)
-- This prevents stale UI variants from persisting behind CDN/browser caches
-
-## Dependencies (current)
-
-| Package | Purpose | Size impact |
-|---------|---------|------------|
-| next 16 | Framework | — |
-| framer-motion | Spring animations | ~45KB gzip |
-| clsx | Class merging | ~1KB |
-| tailwind-merge | Tailwind dedup | ~5KB |
-
-Total JS budget: < 150KB gzip for initial load.
