@@ -267,7 +267,7 @@ Expected: PASS.
 - Modify: `tests/tui/App.test.tsx`
 - Modify: `tests/tui/visual-snapshots.test.tsx`
 - Modify: `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`
-- Modify: `.github/workflows/parity-macos-codex.yml`
+- Modify: `.github/workflows/parity-macos-opta-code.yml`
 - Modify: `docs/plans/2026-02-23-codex-desktop-parity-spec.md`
 
 **Step 1: Add alternate buffer assertions (`P0-03`)**

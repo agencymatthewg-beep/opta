@@ -11,10 +11,10 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 
 ## Summary
 
-- Total scoped plan files: 41
-- ACTIVE: 8
+- Total scoped plan files: 44
+- ACTIVE: 9
 - REVIEW: 0
-- COMPLETED: 5
+- COMPLETED: 7
 - ARCHIVED: 28
 - Frontmatter vs registry mismatches: 0
 - Frontmatter vs queue mismatches: 0
@@ -27,28 +27,31 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 - `COMPLETED` has no open checkboxes and at least one done checkbox.
 - `ARCHIVED` has no open checkboxes and no pending work.
 
-## ACTIVE (8)
+## ACTIVE (9)
 
 | Plan | Open | Done |
 |---|---:|---:|
 | .planning/phases/01-tui-markdown/01-01-PLAN.md | 8 | 0 |
-| docs/FEATURE-PLAN.md | 13 | 2 |
+| docs/FEATURE-PLAN.md | 10 | 5 |
 | docs/plans/2026-02-15-v2-features-design.md | 5 | 22 |
 | docs/plans/2026-02-23-codex-desktop-parity-spec.md | 8 | 8 |
 | docs/plans/2026-02-28-browser-full-autonomy-upgrade-design.md | 14 | 0 |
+| docs/plans/2026-02-28-browser-full-autonomy-upgrade-plan.md | 11 | 0 |
 | docs/plans/2026-02-28-opta-code-capability-stability-windows-master-plan.md | 5 | 1 |
-| docs/ROADMAP.md | 3 | 0 |
+| docs/ROADMAP.md | 5 | 0 |
 | OPTIMIZATION-PLAN.md | 22 | 0 |
 
 ## REVIEW (0)
 
 - _None_
 
-## COMPLETED (5)
+## COMPLETED (7)
 
 | Plan | Open | Done |
 |---|---:|---:|
 | .planning/ROADMAP.md | 0 | 20 |
+| docs/plans/2026-02-28-browser-integration-improvements.md | 0 | 0 |
+| docs/plans/2026-03-01-daemon-optimization-report.md | 0 | 0 |
 | docs/plans/archive/2026-02-16-v2-phase2-git-integration.md | 0 | 6 |
 | docs/plans/archive/2026-02-26-accounts-lmx-integration-plan.md | 0 | 10 |
 | docs/plans/archive/2026-02-26-opta-v1-implementation-plan.md | 0 | 3 |

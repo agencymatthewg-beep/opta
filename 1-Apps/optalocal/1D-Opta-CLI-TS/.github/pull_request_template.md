@@ -50,6 +50,6 @@
 
 ## Validation Checklist
 
-- [ ] `/Users/matthewbyrden/Synced/Opta/1-Apps/1D-Opta-CLI-TS/.github/workflows/parity-macos-codex.yml` passes.
+- [ ] `/Users/matthewbyrden/Synced/Opta/1-Apps/1D-Opta-CLI-TS/.github/workflows/parity-macos-opta-code.yml` passes.
 - [ ] New/updated tests cover behavioral changes.
 - [ ] Any remaining TODOs are linked to tracked follow-up work.

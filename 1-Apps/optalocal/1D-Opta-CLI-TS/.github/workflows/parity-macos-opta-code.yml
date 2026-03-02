@@ -1,4 +1,4 @@
-name: parity-macos-codex
+name: parity-macos-opta-code
 
 on:
   pull_request:
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: parity-macos-codex-${{ github.event.pull_request.number || github.ref }}
+  group: parity-macos-opta-code-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 env:

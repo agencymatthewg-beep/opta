@@ -14,7 +14,7 @@ status: active
 - `docs/plans/2026-02-17-ux-phase1c-session-workflow.md`
 - `docs/plans/2026-02-17-ux-phase2-ink-migration.md`
 - `docs/plans/2026-02-17-ux-phase3-advanced-tui.md`
-- `.github/workflows/parity-macos-codex.yml`
+- `.github/workflows/parity-macos-opta-code.yml`
 
 > Note: Requested source file `docs/plans/2026-02-23-codex-macos-parity-enforcement-plan.md` is not present in this repo snapshot. This spec derives canonical parity requirements from the available parity roadmap + enforcement workflow above.
 
@@ -259,14 +259,14 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 
 | Scenario IDs | Workflow | Job Name / Check Context | Command(s) | Required Outcome |
 |---|---|---|---|---|
-| `P0-01`, `P0-02` | `parity-macos-codex.yml` | `P0 matrix (20.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
-| `P0-01`, `P0-02` | `parity-macos-codex.yml` | `P0 matrix (20.x / core_smoke)` | `npm run test:core -- --run` | pass |
-| `P0-01`, `P0-02` | `parity-macos-codex.yml` | `P0 matrix (22.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
-| `P0-01`, `P0-02` | `parity-macos-codex.yml` | `P0 matrix (22.x / core_smoke)` | `npm run test:core -- --run` | pass |
-| `P0-09` | `parity-macos-codex.yml` | `Visual regression` | `npx vitest run tests/tui/visual-snapshots.test.tsx` | pass + snapshot integrity |
-| `P0-06` | `parity-macos-codex.yml` | `Reconnect parity` | `npx vitest run tests/lmx/connection.test.ts tests/core/agent-streaming.test.ts tests/core/insights.test.ts` | pass |
-| `P0-07` | `parity-macos-codex.yml` | `Permission race parity` | `npx vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts` | pass |
-| `P0-01..P0-10` | `parity-macos-codex.yml` | `Strict parity gate` | needs-check aggregator | all upstream jobs must be `success` |
+| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (20.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
+| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (20.x / core_smoke)` | `npm run test:core -- --run` | pass |
+| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (22.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
+| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (22.x / core_smoke)` | `npm run test:core -- --run` | pass |
+| `P0-09` | `parity-macos-opta-code.yml` | `Visual regression` | `npx vitest run tests/tui/visual-snapshots.test.tsx` | pass + snapshot integrity |
+| `P0-06` | `parity-macos-opta-code.yml` | `Reconnect parity` | `npx vitest run tests/lmx/connection.test.ts tests/core/agent-streaming.test.ts tests/core/insights.test.ts` | pass |
+| `P0-07` | `parity-macos-opta-code.yml` | `Permission race parity` | `npx vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts` | pass |
+| `P0-01..P0-10` | `parity-macos-opta-code.yml` | `Strict parity gate` | needs-check aggregator | all upstream jobs must be `success` |
 
 ### Required branch protection checks
 - `P0 matrix (20.x / build_lint_typecheck)`
@@ -288,7 +288,7 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 
 ## 6.1 Release-blocking sign-off (must all be true)
 - [ ] All `P0-01` through `P0-10` scenarios marked `PASS` in the parity report. — _P0-03 ✓ (cursor lifecycle assertions added); P0-09 ✓ (all 8 VG- snapshots captured); remaining gaps: P0-06 reconnect e2e, P0-07 permission stress_
-- [ ] All required workflow checks in `parity-macos-codex.yml` are green on the merge commit. — _Workflow exists and is correct; TODO stubs remain in reconnect + permission-race jobs; no remote to run_
+- [ ] All required workflow checks in `parity-macos-opta-code.yml` are green on the merge commit. — _Workflow exists and is correct; TODO stubs remain in reconnect + permission-race jobs; no remote to run_
 - [ ] No unresolved visual diffs in `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`. — _All 8 VG- snapshots now captured: VG-APP-IDLE ×3, VG-APP-SAFE, VG-OVERLAY-MENU ×2, VG-PERMISSION, VG-SCROLL-DEEP_
 - [ ] Reconnect and permission-race suites pass without retries/flakes. — _Both test files pass; stress/fuzz scenario not yet added (TODO in workflow)_
 - [x] No live-network dependency in parity test path. — _All tests use mocks; chat integration test is skipIf(!ANTHROPIC_API_KEY)_

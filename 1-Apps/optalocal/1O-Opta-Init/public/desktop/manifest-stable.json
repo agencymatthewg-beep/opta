@@ -33,7 +33,7 @@
             "platform": "macos",
             "arch": "universal",
             "packageType": "pkg",
-            "url": "https://init.optalocal.com/downloads/opta-cli/v0.6.2/opta-cli-0.6.2-macos-universal.pkg",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
             "sizeBytes": 89368576,
             "checksum": {
               "algorithm": "sha256",
@@ -41,7 +41,7 @@
             },
             "signature": {
               "type": "codesign",
-              "url": "https://init.optalocal.com/downloads/opta-cli/v0.6.2/opta-cli-0.6.2-macos-universal.pkg.sig",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
               "certificate": "Developer ID Installer: Opta Local Pty Ltd (ABCD123456)"
             }
           }
@@ -51,7 +51,7 @@
             "platform": "windows",
             "arch": "x64",
             "packageType": "msi",
-            "url": "https://init.optalocal.com/downloads/opta-cli/v0.6.2/opta-cli-0.6.2-windows-x64.msi",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
             "sizeBytes": 91587072,
             "checksum": {
               "algorithm": "sha256",
@@ -59,7 +59,7 @@
             },
             "signature": {
               "type": "authenticode",
-              "url": "https://init.optalocal.com/downloads/opta-cli/v0.6.2/opta-cli-0.6.2-windows-x64.msi.sig",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
               "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
             }
           }

@@ -288,4 +288,4 @@ Files to delete content from (not delete files):
 - Browser module: `src/browser/`
 - MCP client: `src/mcp/client.ts`, `src/mcp/registry.ts`
 - Orchestrator sub-agent: `src/core/orchestrator.ts`
-- CI parity workflow: `.github/workflows/parity-macos-codex.yml`
+- CI parity workflow: `.github/workflows/parity-macos-opta-code.yml`

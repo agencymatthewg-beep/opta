@@ -82,7 +82,7 @@ Key files:
 
 Key files:
 - `package.json`
-- `.github/workflows/parity-macos-codex.yml`
+- `.github/workflows/parity-macos-opta-code.yml`
 - `src/commands/slash/browser.ts`
 - `tests/commands/slash-browser.test.ts`
 - `tests/browser/canary-evidence.test.ts`

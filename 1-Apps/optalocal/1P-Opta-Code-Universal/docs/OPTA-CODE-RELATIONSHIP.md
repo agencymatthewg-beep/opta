@@ -1,12 +1,12 @@
 # Opta Code ↔ Opta CLI Relationship
 
 ## Naming
-- Product name: **Opta Code** (formerly “Opta Codex”).
+- Product name: **Opta Code**.
 - Desktop surface label: **Opta Code Desktop**.
 
 ## Canonical Source Location
 - Source of truth: `1-Apps/optalocal/1P-Opta-Code-Universal`
-- Compatibility alias path: `1-Apps/1P-Opta-Code-Universal` (symlink to canonical domain path). Legacy Codex aliases removed and archived.
+- Compatibility alias path: `1-Apps/1P-Opta-Code-Universal` (symlink to canonical domain path). Legacy Opta Code aliases removed and archived.
 
 ## Architecture Boundary
 - **Opta CLI** = execution/runtime layer

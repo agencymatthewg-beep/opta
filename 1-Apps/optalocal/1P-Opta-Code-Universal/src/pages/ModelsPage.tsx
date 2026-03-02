@@ -151,6 +151,7 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const downloadNoticeTimerRef = useRef<number | null>(null);
   const downloadPollMissesRef = useRef<Record<string, number>>({});
+  const trackedDownloadsRef = useRef<Record<string, TrackedLoadDownload>>({});
 
   const usedPct = memory ? memPct(memory.used_gb, memory.total_unified_memory_gb) : 0;
   const memBarColor =
@@ -321,6 +322,10 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   }, [deleteModel]);
 
   useEffect(() => {
+    trackedDownloadsRef.current = trackedDownloads;
+  }, [trackedDownloads]);
+
+  useEffect(() => {
     setTrackedDownloads(loadTrackedDownloadsFromStorage(trackedDownloadsStorage));
     downloadPollMissesRef.current = {};
   }, [trackedDownloadsStorage]);
@@ -430,9 +435,10 @@ export function ModelsPage({ connection }: ModelsPageProps) {
       const completedModels = new Set<string>();
       const failedMessages: string[] = [];
       const staleMessages: string[] = [];
+      const currentTrackedDownloads = trackedDownloadsRef.current;
 
       for (const { downloadId, progress } of results) {
-        const existing = trackedDownloads[downloadId];
+        const existing = currentTrackedDownloads[downloadId];
         if (!existing) continue;
 
         if (!progress) {
@@ -528,7 +534,6 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     knownLocalModelIds,
     trackedDownloadIds,
     trackedDownloadsKey,
-    trackedDownloads,
   ]);
 
   return (

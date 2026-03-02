@@ -185,12 +185,8 @@ export async function runOnboarding(): Promise<void> {
 
   // Header
   console.log('');
-  console.log(chalk.bold.hex('#8b5cf6')('  ██████╗ ██████╗ ████████╗ █████╗ '));
-  console.log(chalk.bold.hex('#a855f7')('  ██╔══██╗██╔══██╗╚══██╔══╝██╔══██╗'));
-  console.log(chalk.bold.hex('#8b5cf6')('  ██║  ██║██████╔╝   ██║   ███████║'));
-  console.log(chalk.bold.hex('#a855f7')('  ██║  ██║██╔═══╝    ██║   ██╔══██║'));
-  console.log(chalk.bold.hex('#8b5cf6')('  ██████╔╝██║        ██║   ██║  ██║'));
-  console.log(chalk.dim('  ╚═════╝ ╚═╝        ╚═╝   ╚═╝  ╚═╝'));
+  console.log(chalk.bold.hex('#8b5cf6')('  OPTA CODE'));
+  console.log(chalk.bold.hex('#a855f7')('  OPTA CODE'));
   console.log('');
   console.log(chalk.bold('  Setup Wizard') + chalk.dim(' — Configure Opta CLI for first use'));
   console.log('');

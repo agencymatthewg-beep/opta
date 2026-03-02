@@ -42,7 +42,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - 2,277 tests across 197 test files (all passing)
 - ESM-only output with tsup bundling
 - TypeScript strict mode throughout
-- GitHub Actions: CI + parity-macos-codex matrix + release automation
+- GitHub Actions: CI + parity-macos-opta-code matrix + release automation
 
 ---
 

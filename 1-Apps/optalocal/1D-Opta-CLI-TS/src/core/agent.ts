@@ -484,7 +484,7 @@ export async function agentLoop(
         throw makeAbortError();
       }
 
-      // --- ATPO SUPERVISOR CHECK ---
+      // --- OPTA SUPERVISOR CHECK ---
       if (atpo.isEnabled && await atpo.checkThresholds(messages)) {
         const intervention = await atpo.intervene(messages);
         if (intervention) {

@@ -1,3 +1,7 @@
+---
+status: completed
+---
+
 # Opta Local Ecosystem Optimization Report
 **Date:** 2026-03-01
 

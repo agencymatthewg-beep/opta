@@ -10,7 +10,7 @@ status: active
 
 **Version:** `0.5.0-alpha.1`
 
-The core feature set is complete. The CLI ships a production-quality agent loop, full-screen TUI, daemon HTTP/WS server, browser automation, MCP/LSP integration, and full Codex Desktop parity spec coverage. What remains before v1.0 is operational: soak testing, macOS packaging, and documentation.
+The core feature set is complete. The CLI ships a production-quality agent loop, full-screen TUI, daemon HTTP/WS server, browser automation, MCP/LSP integration, and full Opta Code Desktop parity spec coverage. What remains before v1.0 is operational: soak testing, macOS packaging, and documentation.
 
 ### What is shipped and working
 
@@ -24,7 +24,7 @@ The core feature set is complete. The CLI ships a production-quality agent loop,
 | Browser automation — Playwright MCP bridge, sub-agent delegator, policy engine, visual diff | ✅ Complete |
 | MCP server registry, LSP client lifecycle | ✅ Complete |
 | Settings overlay (9 pages), Account Sign In, Keychain storage | ✅ Complete |
-| All 10 P0 parity scenarios (Codex Desktop Parity Spec) | ✅ Complete |
+| All 10 P0 parity scenarios (Opta Code Desktop Parity Spec) | ✅ Complete |
 | All 6 P1 parity scenarios | ✅ Complete |
 | 2,367 tests passing (212 test files) | ✅ Green |
 

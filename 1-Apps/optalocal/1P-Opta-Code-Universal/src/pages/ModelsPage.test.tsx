@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ModelsPage } from "./ModelsPage";
 import { useModels, type UseModelsResult } from "../hooks/useModels";
@@ -60,6 +60,7 @@ describe("ModelsPage", () => {
   });
 
   afterEach(() => {
+    cleanup();
     Object.defineProperty(window, "localStorage", {
       configurable: true,
       value: originalLocalStorage,

@@ -23,25 +23,10 @@ export function WelcomeScreen({
 
   return (
     <Box flexDirection="column" paddingX={4} paddingY={3} alignItems="center">
-      {/* Header ASCII Art */}
+      {/* Header Wordmark */}
       <Box flexDirection="column" alignItems="center" marginBottom={2}>
         <Text color="#8b5cf6" bold>
-          {`  ██████╗ ██████╗████████╗ █████╗ `}
-        </Text>
-        <Text color="#8b5cf6" bold>
-          {` ██╔═══██╗██╔══██╗╚══██╔══╝██╔══██╗`}
-        </Text>
-        <Text color="#8b5cf6" bold>
-          {` ██║   ██║██████╔╝   ██║   ███████║`}
-        </Text>
-        <Text color="#8b5cf6" bold>
-          {` ██║   ██║██╔═══╝    ██║   ██╔══██║`}
-        </Text>
-        <Text color="#8b5cf6" bold>
-          {` ╚██████╔╝██║       ██║   ██║  ██║`}
-        </Text>
-        <Text color="#8b5cf6" bold>
-          {`  ╚═════╝ ╚═╝       ╚═╝   ╚═╝  ╚═╝`}
+          {`OPTA CODE`}
         </Text>
       </Box>
 
