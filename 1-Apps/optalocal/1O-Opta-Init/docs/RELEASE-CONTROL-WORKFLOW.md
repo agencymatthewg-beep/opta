@@ -56,6 +56,11 @@ This document defines the internal release-control contract for Opta Init channe
 - Every platform entry must include:
   - `url`
   - `signature`
+- `scripts/sync-manager-updates.mjs` publishes runtime feeds (`public/desktop-updates/*.json`) in Tauri-native shape:
+  - `version`
+  - `notes`
+  - `pub_date`
+  - `platforms`
 
 ## URL Policy
 

@@ -405,7 +405,7 @@ class TestRunQuantize:
         assert job.completed_at == 25.0
         assert job.error is None
         assert job.failure_code is None
-        assert job.worker_pid is None
+        assert job.worker_pid == 1234
 
         events = [_extract_event(call) for call in event_bus.publish.calls]
         assert events == [
@@ -464,6 +464,74 @@ class TestRunQuantize:
         assert isinstance(events[1][1]["status"], str)
         assert "failed:" in str(events[1][1]["status"])
         assert "boom" in str(events[1][1]["status"])
+
+    @pytest.mark.asyncio
+    async def test_cancel_race_after_spawn_triggers_handle_cancel(self) -> None:
+        job = QuantizeJob(
+            job_id="job-race",
+            source_model="org/model",
+            output_path="/tmp/out-race",
+            status="queued",
+            started_at=1.0,
+        )
+        fake_handle = MagicMock()
+        fake_handle.pid = 222
+        fake_handle.cancel = AsyncMock(return_value=True)
+        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
+            ok=False,
+            failure=LoaderFailure(code="worker_crashed", message="killed", signal=15),
+        ))
+
+        async def _spawn(_spec: object) -> object:
+            job.cancel_requested = True
+            job.cancel_requested_at = 2.0
+            return fake_handle
+
+        with patch(
+            "opta_lmx.manager.quantize.spawn_quantize_process",
+            new=AsyncMock(side_effect=_spawn),
+        ):
+            await _run_quantize(job)
+
+        fake_handle.cancel.assert_awaited()
+        assert job.status == "cancelled"
+        assert job.failure_code == "cancelled_by_user"
+
+    @pytest.mark.asyncio
+    async def test_cancelled_output_path_exists_does_not_cleanup_user_path(self) -> None:
+        job = QuantizeJob(
+            job_id="job-existing-out",
+            source_model="org/model",
+            output_path="/tmp/existing-out",
+            status="queued",
+            started_at=1.0,
+        )
+        fake_handle = MagicMock()
+        fake_handle.pid = 333
+        fake_handle.cancel = AsyncMock(return_value=True)
+
+        async def _wait_outcome(*_args: object, **_kwargs: object) -> QuantizeSupervisorOutcome:
+            job.cancel_requested = True
+            return QuantizeSupervisorOutcome(
+                ok=False,
+                failure=LoaderFailure(
+                    code="output_path_exists",
+                    message="Output path already exists: /tmp/existing-out",
+                ),
+            )
+
+        fake_handle.wait_outcome = AsyncMock(side_effect=_wait_outcome)
+        with (
+            patch(
+                "opta_lmx.manager.quantize.spawn_quantize_process",
+                new=AsyncMock(return_value=fake_handle),
+            ),
+            patch("opta_lmx.manager.quantize._cleanup_partial_output") as cleanup,
+        ):
+            await _run_quantize(job)
+
+        assert job.status == "cancelled"
+        cleanup.assert_not_called()
 
 
 class _FakeTask:

@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from huggingface_hub import HfApi, scan_cache_dir, snapshot_download
+from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
 from tqdm.auto import tqdm
 
 from opta_lmx.inference.types import DownloadTask
@@ -76,7 +77,7 @@ class ModelManager:
 
     def _resolved_cache_dir(self) -> Path:
         """Resolve effective HF cache directory used by manager operations."""
-        return self._models_directory or (Path.home() / ".cache" / "huggingface" / "hub")
+        return self._models_directory or Path(HUGGINGFACE_HUB_CACHE)
 
     async def start_download(
         self,

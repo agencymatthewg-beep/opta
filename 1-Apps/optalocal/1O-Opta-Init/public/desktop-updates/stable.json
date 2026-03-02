@@ -1,9 +1,4 @@
 {
-  "$schema": "./schema/manager-updater-metadata.v1.schema.json",
-  "schemaVersion": "1.0.0",
-  "manifestVersion": 1,
-  "channel": "stable",
-  "publishedAt": "2026-03-02T05:12:00Z",
   "version": "0.6.1",
   "notes": "https://init.optalocal.com/releases/2026-03-02-stable-1",
   "pub_date": "2026-03-02T05:12:00Z",

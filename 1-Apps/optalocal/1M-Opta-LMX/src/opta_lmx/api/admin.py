@@ -519,7 +519,7 @@ async def cancel_quantize_job(
     job_id: str,
     _auth: AdminAuth,
 ) -> Response:
-    """Cancel a queued quantization job."""
+    """Cancel a queued or running quantization job."""
     from opta_lmx.manager.quantize import cancel_quantize
 
     event_bus = getattr(request.app.state, "event_bus", None)

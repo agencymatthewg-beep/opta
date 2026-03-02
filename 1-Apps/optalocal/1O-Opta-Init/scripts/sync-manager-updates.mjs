@@ -23,10 +23,15 @@ async function syncChannelFile(sourcePath, targetPath) {
 
   const raw = await readFile(absoluteSource, "utf8");
   const parsed = JSON.parse(raw);
-  parsed.$schema = "./schema/manager-updater-metadata.v1.schema.json";
+  const runtimeFeed = {
+    version: parsed.version,
+    notes: parsed.notes,
+    pub_date: parsed.pub_date,
+    platforms: parsed.platforms,
+  };
 
   await mkdir(path.dirname(absoluteTarget), { recursive: true });
-  await writeFile(absoluteTarget, `${JSON.stringify(parsed, null, 2)}\n`, "utf8");
+  await writeFile(absoluteTarget, `${JSON.stringify(runtimeFeed, null, 2)}\n`, "utf8");
   console.log(`synced ${sourcePath} -> ${targetPath}`);
 }
 

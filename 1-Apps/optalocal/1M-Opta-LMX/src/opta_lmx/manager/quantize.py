@@ -15,6 +15,8 @@ import logging
 import os
 import secrets
 import shutil
+import signal
+import subprocess
 import time
 from collections.abc import Awaitable
 from dataclasses import asdict, dataclass
@@ -180,7 +182,6 @@ def _set_terminal(
     if status == "cancelled" and job.cancelled_at is None:
         job.cancelled_at = now
     job.queue_position = None
-    job.worker_pid = None
     _touch(job)
 
 
@@ -282,6 +283,8 @@ def _load_jobs_from_disk() -> None:
             continue
 
         if job.status in {"pending", "queued", "running", "cancelling"}:
+            if job.status in {"running", "cancelling"}:
+                _best_effort_stop_orphan_worker(job.worker_pid)
             # Quantization isn't resumable mid-conversion; mark interrupted jobs as failed.
             _set_terminal(
                 job,
@@ -371,6 +374,58 @@ async def _cancel_handle_task(handle: QuantizeProcessHandle) -> None:
         grace_sec=_DEFAULT_CANCEL_GRACE_SEC,
         kill_timeout_sec=_DEFAULT_CANCEL_KILL_TIMEOUT_SEC,
     )
+
+
+def _best_effort_stop_orphan_worker(pid: int | None) -> None:
+    """Terminate orphaned quantize worker when command-line matches worker module."""
+    if pid is None or pid <= 0:
+        return
+
+    try:
+        command = subprocess.run(
+            ["ps", "-p", str(pid), "-o", "command="],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.strip()
+    except Exception:
+        return
+
+    if "opta_lmx.runtime.child_quantize_worker" not in command:
+        return
+
+    try:
+        os.kill(pid, signal.SIGTERM)
+    except ProcessLookupError:
+        return
+    except PermissionError:
+        logger.warning("quantize_orphan_worker_kill_denied", extra={"pid": pid})
+        return
+    except Exception as exc:
+        logger.warning("quantize_orphan_worker_kill_failed", extra={"pid": pid, "error": str(exc)})
+        return
+
+    deadline = time.time() + 1.0
+    while time.time() < deadline:
+        try:
+            os.kill(pid, 0)
+        except ProcessLookupError:
+            return
+        except Exception:
+            return
+        time.sleep(0.05)
+
+    try:
+        os.kill(pid, signal.SIGKILL)
+    except ProcessLookupError:
+        return
+    except PermissionError:
+        logger.warning("quantize_orphan_worker_sigkill_denied", extra={"pid": pid})
+    except Exception as exc:
+        logger.warning(
+            "quantize_orphan_worker_sigkill_failed",
+            extra={"pid": pid, "error": str(exc)},
+        )
 
 
 def _do_quantize(
@@ -541,10 +596,14 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
             job.worker_pid = handle.pid
             _touch(job)
             _persist_jobs()
+            if job.cancel_requested:
+                job.status = "cancelling"
+                _touch(job)
+                _persist_jobs()
+                await _cancel_handle_task(handle)
 
             outcome = await handle.wait_outcome(timeout_sec=_quantize_worker_timeout_sec())
             _process_handles.pop(job.job_id, None)
-            job.worker_pid = None
 
             if outcome.ok and outcome.result is not None:
                 job.status = "completed"
@@ -593,7 +652,8 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
                     exit_code=failure.exit_code,
                     signal=failure.signal,
                 )
-                _cleanup_partial_output(job.output_path)
+                if failure.code != "output_path_exists":
+                    _cleanup_partial_output(job.output_path)
                 _recompute_queue_positions()
                 _persist_jobs()
                 await _safe_publish_event(
@@ -674,7 +734,6 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
         return
     except Exception as e:
         _set_terminal(job, "failed", error=str(e), failure_code="quantize_failed")
-        _cleanup_partial_output(job.output_path)
         _recompute_queue_positions()
         _persist_jobs()
         await _safe_publish_event(
