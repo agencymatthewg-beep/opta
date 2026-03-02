@@ -19,10 +19,12 @@ import {
 } from '../../lmx/model-lifecycle.js';
 import { getDisplayProfile } from '../../core/model-display.js';
 import { fmtGB } from '../../providers/model-scan.js';
+import { runMenuPrompt } from '../../ui/prompt-nav.js';
 import {
   FAST_DISCOVERY_REQUEST_OPTS,
   STABLE_MODEL_LOAD_TIMEOUT_MS,
   STABLE_MODEL_LOAD_REQUEST_TIMEOUT_MS,
+  isInteractiveTerminal,
   progressText,
   throwModelCommandError,
   warnModelInventoryFallback,
@@ -34,6 +36,54 @@ import {
 } from './types.js';
 import { recordModelHistory } from './history.js';
 import { getModelOptions, resolveModelIdFromOptions } from './inventory.js';
+
+type LoadBackendChoice = 'auto' | 'mlx-lm' | 'vllm-mlx' | 'gguf';
+
+const LOAD_BACKEND_CHOICES: ReadonlyArray<{
+  value: LoadBackendChoice;
+  label: string;
+  hint: string;
+}> = [
+  { value: 'auto', label: 'Auto (recommended)', hint: 'Let LMX select the best backend' },
+  { value: 'mlx-lm', label: 'MLX-LM', hint: 'Apple Silicon optimized runtime' },
+  { value: 'vllm-mlx', label: 'vLLM-MLX', hint: 'Throughput-oriented runtime' },
+  { value: 'gguf', label: 'GGUF', hint: 'llama.cpp-compatible runtime' },
+];
+
+function normalizeLoadBackend(value: string | undefined): LoadBackendChoice {
+  const normalized = value?.trim().toLowerCase();
+  if (!normalized || normalized === 'auto' || normalized === 'default') return 'auto';
+  if (normalized === 'mlx' || normalized === 'mlx-lm') return 'mlx-lm';
+  if (normalized === 'vllm' || normalized === 'vllm-mlx') return 'vllm-mlx';
+  if (normalized === 'gguf') return 'gguf';
+  return 'auto';
+}
+
+async function chooseLoadBackend(initial?: string): Promise<LoadBackendChoice> {
+  const preselected = normalizeLoadBackend(initial);
+  if (!isInteractiveTerminal()) return preselected;
+  const { select } = await import('@inquirer/prompts');
+  try {
+    const selected = await runMenuPrompt(
+      (context) =>
+        select<LoadBackendChoice>(
+          {
+            message: chalk.dim('Select backend runtime for this load'),
+            default: preselected,
+            choices: LOAD_BACKEND_CHOICES.map((choice) => ({
+              value: choice.value,
+              name: `${choice.label} ${chalk.dim(`— ${choice.hint}`)}`,
+            })),
+          },
+          context,
+        ),
+      'select',
+    );
+    return selected ?? preselected;
+  } catch {
+    return preselected;
+  }
+}
 
 export async function useModel(
   name: string | undefined,
@@ -178,7 +228,8 @@ export async function loadModel(
   name: string | undefined,
   client: LmxClient,
   aliasMap: ModelAliasMap = {},
-  defaultModel = ''
+  defaultModel = '',
+  backend?: string
 ): Promise<void> {
   const spinner = await createSpinner();
   spinner.start(progressText('Load model', 15, 'fetching downloadable models'));
@@ -217,15 +268,27 @@ export async function loadModel(
       'Select model to load',
       aliasMap
     );
+    const backendSelection = await chooseLoadBackend(backend);
+    const selectedBackend = backendSelection === 'auto' ? undefined : backendSelection;
 
-    spinner.start(progressText('Load model', 75, `loading ${selectedId}`));
+    spinner.start(
+      progressText(
+        'Load model',
+        75,
+        `loading ${selectedId}${selectedBackend ? ` (${selectedBackend})` : ''}`,
+      ),
+    );
     const loadedId = await ensureModelLoaded(client, selectedId, {
       timeoutMs: STABLE_MODEL_LOAD_TIMEOUT_MS,
       loadRequestTimeoutMs: STABLE_MODEL_LOAD_REQUEST_TIMEOUT_MS,
+      loadOptions: selectedBackend ? { backend: selectedBackend } : undefined,
       onProgress: createLoadProgressUpdater(spinner, 'Load model', selectedId, 75),
     });
     spinner.succeed(progressText('Load model', 100, `loaded ${loadedId}`));
     await recordModelHistory([loadedId], 'loaded');
+    if (selectedBackend) {
+      console.log(chalk.dim(`  Backend: ${selectedBackend}`));
+    }
 
     const loadedSnapshot = await client
       .models(FAST_DISCOVERY_REQUEST_OPTS)

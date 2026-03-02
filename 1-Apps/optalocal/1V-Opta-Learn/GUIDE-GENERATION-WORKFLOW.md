@@ -1,5 +1,14 @@
 # Opta Learn Guide Generation Workflow
 
+## 0. Quality Bar (Mandatory)
+
+All published guides on learn.optalocal.com must match the CLI masterclass quality baseline:
+- Dense explanatory depth (architecture + operation + failure modes)
+- At least one integrated visual block per guide section set (template-enforced)
+- Cross-guide linking where relevant (`/guides/cli`, `/guides/lmx`, `/guides/accounts`, `/guides/code-desktop`)
+- Practical operational commands and verification paths
+- No thin summaries for verified guides
+
 This document outlines the strict process for generating content and guides for the `learn.optalocal.com` platform.
 Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
 

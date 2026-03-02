@@ -42,6 +42,7 @@ export interface UseAppConfigReturn {
   // Connection details
   connectionHost: string;
   connectionFallbackHosts: string[];
+  connectionAutoDiscover: boolean;
   connectionPort: number;
   connectionAdminKey: string | undefined;
   connectionSshUser: string;
@@ -105,6 +106,9 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   // --- Connection details ---
   const [connectionHost, setConnectionHost] = useState(DEFAULT_CONFIG.connection.host);
   const [connectionFallbackHosts, setConnectionFallbackHosts] = useState<string[]>([]);
+  const [connectionAutoDiscover, setConnectionAutoDiscover] = useState(
+    DEFAULT_CONFIG.connection.autoDiscover
+  );
   const [connectionPort, setConnectionPort] = useState(1234);
   const [connectionAdminKey, setConnectionAdminKey] = useState<string | undefined>(undefined);
   const [connectionSshUser, setConnectionSshUser] = useState('opta');
@@ -155,6 +159,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
           .then((cfg) => {
             setConnectionHost(cfg.connection.host);
             setConnectionFallbackHosts(cfg.connection.fallbackHosts);
+            setConnectionAutoDiscover(cfg.connection.autoDiscover);
             setConnectionPort(cfg.connection.port);
             setConnectionAdminKey(cfg.connection.adminKey);
             setConnectionSshUser(cfg.connection.ssh.user);
@@ -196,6 +201,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
     setConnectionFallbackHosts,
     setConnectionPort,
     setConnectionAdminKey,
+    setConnectionAutoDiscover,
     setConnectionSshUser,
     setConnectionSshIdentityFile,
     setConnectionSshConnectTimeoutSec,
@@ -358,6 +364,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   return {
     connectionHost,
     connectionFallbackHosts,
+    connectionAutoDiscover,
     connectionPort,
     connectionAdminKey,
     connectionSshUser,

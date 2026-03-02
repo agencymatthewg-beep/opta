@@ -6,26 +6,33 @@ export const browserAutomationGuide: Guide = {
   app: 'general',
   category: 'feature',
   template: 'feature-deep-dive',
-  summary: 'Understand how the Opta agent navigates the web, executes JavaScript, and interacts with UI elements using Playwright-based browser automation.',
+  summary:
+    'Understand how the Opta agent navigates the web, executes JavaScript, and interacts with UI elements using Playwright-based browser automation.',
   tags: ['browser', 'playwright', 'automation', 'mcp', 'agent'],
   updatedAt: '2026-03-02',
   sections: [
     {
       heading: 'What is Browser Automation?',
-      body: 'Browser automation provides your local AI agent the ability to operate a real Chromium browser programmatically. This is not a simulated environment—it is a full browser instance that executes JavaScript, renders CSS, and interacts with the DOM. The agent sees the page through accessibility tree snapshots and screenshots, allowing it to perform complex tasks like reading docs, testing web apps, or data scraping.'
+      body: 'Browser automation gives your local agent control of a real browser runtime. It can navigate, inspect state, and perform UI interactions based on accessibility snapshots and DOM-level feedback loops.',
+      visual: `<div class="visual-wrapper my-6 p-6 rounded-xl border border-white/10 bg-[#0a0a0f]"><div class="flex items-center justify-between text-xs font-mono"><span class="px-2 py-1 rounded border border-[#3b82f6]/30">navigate</span><span>→</span><span class="px-2 py-1 rounded border border-white/20">snapshot</span><span>→</span><span class="px-2 py-1 rounded border border-[#22c55e]/30">act</span><span>→</span><span class="px-2 py-1 rounded border border-[#a855f7]/30">verify</span></div></div>`,
     },
     {
-      heading: 'Playwright & MCP Foundation',
-      body: 'The automation system leverages <code>@playwright/mcp</code>, exposing over 30 browser control tools through the Model Context Protocol. This provides cross-browser support, reliable DOM element selection, network interception, and multi-tab management directly to the local intelligence engine.'
+      heading: 'Playwright + MCP Foundation',
+      body: 'The system is built on Playwright tools surfaced through MCP, enabling robust navigation, element interaction, and tab/session management while preserving deterministic tool telemetry.',
     },
     {
-      heading: 'AI-Driven Navigation Workflow',
-      body: 'Unlike traditional scripted automation, Opta\'s approach is dynamically driven by the model. The typical flow begins with the model calling <code>navigate</code> to load a URL, followed by <code>snapshot</code> to interpret the accessibility tree. It then decides whether to <code>click</code>, <code>type</code>, or evaluate the state, repeating this loop until the assigned goal is achieved.'
+      heading: 'Agentic Navigation Loop',
+      body: 'Typical loop: <code>navigate</code> → <code>snapshot</code> → select target action (<code>click</code>/<code>type</code>/<code>press</code>) → re-snapshot and verify goal progression. This loop is what enables adaptive behavior vs brittle fixed scripts.',
     },
     {
       heading: 'Policy & Permission Controls',
-      body: 'To ensure safety, the <code>BrowserMcpInterceptor</code> routes all tool calls through the Opta policy engine. Safe actions like navigating to allowed domains or taking screenshots are auto-approved. Destructive actions, such as evaluating arbitrary JavaScript or uploading local files, trigger a strict permission prompt before execution.',
-      note: 'In autonomous <strong>Do Mode</strong>, safe browser actions are auto-approved for fluent browsing, but data-exfiltration risks or destructive DOM manipulations will always require your explicit confirmation.'
-    }
+      body: 'Browser tool calls are routed through daemon policy guards. Safe actions can auto-run; sensitive actions (script eval, file upload, high-risk extraction) require explicit approval.',
+      note: 'In autonomous mode, safe browsing remains fluid while data-sensitive edges are always human-gated.',
+    },
+    {
+      heading: 'Reliability Checklist',
+      body: 'For stable runs, force deterministic selectors, avoid hidden timing assumptions, and use state assertions after each major transition. Combine browser automation with <a href="/guides/cli" class="app-link link-cli">CLI</a> task decomposition to isolate failures faster.',
+      code: 'opta do "open docs, capture key API changes, and produce a markdown summary with sources"',
+    },
   ],
 };

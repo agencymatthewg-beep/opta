@@ -33,6 +33,8 @@ Workspace scripts are powered by:
 - `apps.registry.json`
 - `scripts/opta-local-workspace.mjs`
 
+For reliability, workspace `check` and `build` tasks force `CI=1` automatically so test/build tools run in non-interactive mode.
+
 ## Opta Init Release Metadata Preparation
 
 To prepare Opta Init manifests/feeds/redirects in one command:

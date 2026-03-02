@@ -6,30 +6,33 @@ export const codeDesktopOverview: Guide = {
   app: 'general',
   category: 'feature',
   template: 'feature-deep-dive',
-  summary: 'Discover the Opta Code Desktop, a graphical interface for monitoring daemon activity, managing sessions, and controlling local intelligence.',
+  summary:
+    'Discover the Opta Code Desktop, a graphical interface for monitoring daemon activity, managing sessions, and controlling local intelligence.',
   tags: ['code desktop', 'gui', 'daemon', 'monitoring', 'sessions'],
   updatedAt: '2026-03-02',
   sections: [
     {
       heading: 'What is Code Desktop?',
-      body: 'While the <a href="/guides/cli" class="app-link link-cli">Opta CLI</a> is a terminal-native experience, Code Desktop offers a rich, visual interface to the exact same daemon. It connects via WebSocket and HTTP, presenting your session history as an intuitive timeline, tool calls as collapsible cards, and real-time streaming model responses with live token counters.'
+      body: 'While the <a href="/guides/cli" class="app-link link-cli">Opta CLI</a> is terminal-native, Code Desktop provides a visual operations layer on the same daemon. It renders timeline events, tool calls, and streaming output for high-speed debugging and review.',
+      visual: `<div class="visual-wrapper my-6 p-6 rounded-xl border border-white/10 bg-void"><div class="grid grid-cols-3 gap-3 text-xs font-mono"><div class="p-3 border border-white/20 rounded">Session Rail</div><div class="p-3 border border-[#22c55e]/30 rounded">Live Stream</div><div class="p-3 border border-[#a855f7]/30 rounded">Tool Events</div></div></div>`,
     },
     {
-      heading: 'Under the Hood',
-      body: 'Code Desktop is a pure Vite + React web application. It does not rely on heavy wrappers like Electron or Tauri. Instead, it communicates directly with the Opta Daemon over localhost (<code>127.0.0.1:9999</code>). The daemon then proxies inference requests to <a href="/guides/lmx" class="app-link link-lmx">Opta LMX</a>.'
+      heading: 'Runtime Architecture',
+      body: 'Code Desktop is a Vite + React app that communicates with daemon endpoints over localhost. The daemon then brokers calls to <a href="/guides/lmx" class="app-link link-lmx">LMX</a>, keeping transport and policy centralized.',
     },
     {
-      heading: 'Workspace Rail & Timeline',
-      body: 'The interface is anchored by the Workspace Rail—a sidebar listing all active and historical daemon sessions. Selecting a session opens the Timeline View, which chronologically displays user messages, model responses, and tool executions. This makes it incredibly easy to review past agentic loops or debug complex tasks.'
+      heading: 'Session Rail & Timeline',
+      body: 'The left rail indexes active and historical sessions. Selecting a session opens a full timeline with model turns, tool invocations, and latency spans, making post-mortem analysis practical for autonomous runs.',
     },
     {
-      heading: 'Real-Time Streaming & Stats',
-      body: 'As the daemon processes inference, Code Desktop displays live token counters and progress indicators. Upon completion, each turn displays rich statistics including total tokens, generation speed (tok/s), and execution time.',
-      note: 'Code Desktop includes a Daemon Panel that allows you to start, stop, or restart the background daemon, and tail its logs in real time.'
+      heading: 'Streaming + Performance Panels',
+      body: 'During generation, Code Desktop surfaces token velocity, elapsed runtime, and event granularity. This gives immediate signal on regressions after model/config changes.',
+      note: 'Use this panel as your first stop after dependency, model, or daemon policy changes.',
     },
     {
-      heading: 'Connection Model',
-      body: 'Authentication is handled seamlessly. The app reads a Bearer token from the daemon\'s local <code>state.json</code> file and stores it in your browser\'s <code>localStorage</code>. If the daemon restarts, Code Desktop detects the disconnection and automatically reconnects with exponential backoff.',
-    }
+      heading: 'Ops Workflow Integration',
+      body: 'Optimal workflow: start or verify daemon in CLI, execute tasks, then use Code Desktop for visual debugging and replay. This prevents hidden failures and improves intervention speed when tools drift or prompts overreach.',
+      code: 'opta status\nopta do "run repo health check and summarize blockers"',
+    },
   ],
 };

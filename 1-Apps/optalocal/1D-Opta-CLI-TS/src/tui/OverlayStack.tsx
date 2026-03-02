@@ -126,6 +126,7 @@ export interface OverlayStackProps {
 
   // --- SettingsOverlay ---
   responseIntentTone: ResponseIntentTone;
+  settingsConfig: Record<string, unknown>;
 
   // --- AgentPickerOverlay ---
   activeAgents: SubAgentDisplayState[];
@@ -292,7 +293,12 @@ export function OverlayStack(props: OverlayStackProps): React.ReactElement | nul
             maxWidth={props.overlayMaxWidth}
             maxHeight={props.overlayMaxHeight}
             config={{
+              ...props.settingsConfig,
               'tui.responseIntentTone': props.responseIntentTone,
+            }}
+            onRunCommand={(command) => {
+              props.closeOverlay();
+              void props.handleSubmit(command);
             }}
             onClose={props.closeOverlay}
             onSave={(changes) => {

@@ -23,6 +23,7 @@ import type { Spinner } from '../../ui/spinner.js';
 export interface ModelsOptions {
   json?: boolean;
   full?: boolean;
+  backend?: string;
 }
 
 export interface ModelPickerOption {

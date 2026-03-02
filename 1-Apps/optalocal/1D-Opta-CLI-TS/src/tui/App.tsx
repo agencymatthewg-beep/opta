@@ -216,6 +216,7 @@ function AppInner({
   const {
     connectionHost,
     connectionFallbackHosts,
+    connectionAutoDiscover,
     connectionPort,
     connectionAdminKey,
     studioConnectivity,
@@ -615,6 +616,33 @@ function AppInner({
     && !safeMode
     && messageAreaHeight >= 20
     && messageAreaWidth >= 96;
+  const settingsConfig = useMemo<Record<string, unknown>>(
+    () => ({
+      'connection.host': connectionHost,
+      'connection.fallbackHosts': connectionFallbackHosts,
+      'connection.autoDiscover': connectionAutoDiscover,
+      'connection.port': connectionPort,
+      'connection.adminKey': connectionAdminKey ?? '',
+      'connection.apiKey': connectionAdminKey ?? '',
+      'model.default': currentModel,
+      'model.contextLimit': contextLimit,
+      'autonomy.level': autonomyLevel,
+      'autonomy.mode': autonomyMode,
+      'tui.responseIntentTone': responseIntentTone,
+    }),
+    [
+      connectionHost,
+      connectionFallbackHosts,
+      connectionAutoDiscover,
+      connectionPort,
+      connectionAdminKey,
+      currentModel,
+      contextLimit,
+      autonomyLevel,
+      autonomyMode,
+      responseIntentTone,
+    ],
+  );
   const reservedRows = (showInsightBlock ? 2 : 0) + (showOptimiserPanel ? 6 : 0);
   const messageViewportHeight = messageAreaHeight > 0
     ? Math.max(messageAreaHeight - 2 - reservedRows, 1)
@@ -691,6 +719,7 @@ function AppInner({
             actionHistory={actionHistory}
             handleSettingsSave={handleSettingsSave}
             responseIntentTone={responseIntentTone}
+            settingsConfig={settingsConfig}
             workflowMode={workflowMode}
             autonomyLevel={autonomyLevel}
             autonomyMode={autonomyMode}

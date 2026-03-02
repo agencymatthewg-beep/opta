@@ -2523,6 +2523,23 @@ button.active,
   display: flex;
   gap: 6px;
   flex-shrink: 0;
+  align-items: center;
+}
+
+.model-backend-select {
+  border: 1px solid var(--opta-border-strong);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.32);
+  color: var(--opta-text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  padding: 5px 8px;
+  min-width: 98px;
+}
+
+.model-backend-select:focus {
+  outline: none;
+  border-color: var(--opta-primary);
 }
 
 /* Download form */

@@ -47,6 +47,8 @@ export interface SettingsOverlayProps {
   maxHeight?: number;
   /** Flat dot-notation config snapshot (e.g. `{ 'connection.host': 'localhost' }`). */
   config?: Record<string, unknown>;
+  /** Optional command runner for action rows (e.g. `/models manage`). */
+  onRunCommand?: (command: string) => void;
   onClose: () => void;
   onSave: (changes: Record<string, unknown>) => void;
 }
@@ -62,6 +64,14 @@ const PAGES: SettingsPage[] = [
   { id: 'atpo',       label: 'Atpo',        color: '#c084fc' },
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
+
+const ACTION_COMMANDS: Record<string, string> = {
+  __action_lmx_status: '/lmx status',
+  __action_lmx_reconnect: '/lmx reconnect',
+  __action_models_manage: '/models manage',
+  __action_models_download: '/models download',
+  __action_models_unload: '/models stop',
+};
 
 const PAGE_INDEX = PAGES.reduce<Record<SettingsPageId, number>>(
   (acc, p, i) => { acc[p.id] = i; return acc; },
@@ -155,15 +165,17 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Auto Discover',       configKey: 'connection.autoDiscover',      defaultValue: 'true',                description: 'Automatically discover local inference hosts',
       inputType: 'toggle', options: [{ label: 'Enabled', value: 'true'}, { label: 'Disabled', value: 'false'}] },
     { label: 'Fallback Hosts',      configKey: 'connection.fallbackHosts',     defaultValue: '',                    description: 'Comma-separated fallback LMX hosts',                       hint: 'e.g. 10.0.0.2:1234,10.0.0.3:1234' },
+    { label: 'Check LMX Status',    configKey: '__action_lmx_status',          defaultValue: '',                    description: 'Run an immediate LMX health check in chat',                hint: 'Runs `/lmx status`', inputType: 'action', action: () => {} },
+    { label: 'Reconnect LMX',       configKey: '__action_lmx_reconnect',       defaultValue: '',                    description: 'Force reconnection against configured host(s)',            hint: 'Runs `/lmx reconnect`', inputType: 'action', action: () => {} },
     { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the Mac Studio' },
     { label: 'SSH Key Path',        configKey: 'connection.ssh.identityFile',  defaultValue: '~/.ssh/id_ed25519',   description: 'Path to SSH private key',                                  hint: 'Full path or ~ expansion' },
     { label: 'Remote LMX Path',     configKey: 'connection.ssh.lmxPath',       defaultValue: '~/opta-lmx', description: 'LMX install path on remote host (git clone or pip install dir)', hint: 'Absolute path on remote machine' },
     { label: 'Inference Timeout',   configKey: 'connection.inferenceTimeout',  defaultValue: '120000',              description: 'Max ms to wait for model response',                        hint: 'In milliseconds (120000 = 2 min)' },
   ],
   models: [
-    { label: 'Manage Models',       configKey: '__action_models_manage',       defaultValue: '',                    description: 'Interactive model manager (exit and run `opta models manage`)', hint: 'Press Esc and type `opta models manage`', inputType: 'action', action: () => {} },
-    { label: 'Download Model',      configKey: '__action_models_download',     defaultValue: '',                    description: 'Download a model (exit and run `opta models download`)',      hint: 'Press Esc and type `opta models download <id>`', inputType: 'action', action: () => {} },
-    { label: 'Unload All Models',   configKey: '__action_models_unload',       defaultValue: '',                    description: 'Free GPU RAM (exit and run `opta models stop`)',       hint: 'Press Esc and type `opta models stop`', inputType: 'action', action: () => {} },
+    { label: 'Manage Models',       configKey: '__action_models_manage',       defaultValue: '',                    description: 'Open model manager flow directly in chat',                 hint: 'Runs `/models manage`', inputType: 'action', action: () => {} },
+    { label: 'Download Model',      configKey: '__action_models_download',     defaultValue: '',                    description: 'Start model download flow in chat',                        hint: 'Runs `/models download`', inputType: 'action', action: () => {} },
+    { label: 'Unload All Models',   configKey: '__action_models_unload',       defaultValue: '',                    description: 'Unload currently loaded models to free memory',            hint: 'Runs `/models stop`', inputType: 'action', action: () => {} },
     { label: 'Default Model',       configKey: 'model.default',                defaultValue: '',                    description: 'Model loaded by default in new sessions',                  hint: 'Run: opta models list' },
     { label: 'Context Limit',       configKey: 'model.contextLimit',           defaultValue: '32768',               description: 'Token context window override',                            hint: 'Tokens (default: 32768)' },
     { label: 'Active Provider',     configKey: 'provider.active',              defaultValue: 'lmx',                 description: 'Primary provider for the agent',
@@ -359,6 +371,38 @@ function getConfigValue(config: Record<string, unknown> | undefined, key: string
   const val = config[key];
   if (val === undefined || val === null) return defaultVal;
   return String(val);
+}
+
+/**
+ * Reads a comma-separated or JSON-array host list from flat config.
+ */
+function getConfigHostList(config: Record<string, unknown> | undefined, key: string): string[] {
+  if (!config) return [];
+  const raw = config[key];
+  if (Array.isArray(raw)) {
+    return raw
+      .map((entry) => String(entry).trim())
+      .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+  }
+  if (typeof raw !== 'string') return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((entry) => String(entry).trim())
+          .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+      }
+    } catch {
+      // Fall through to CSV parsing.
+    }
+  }
+  return trimmed
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
 }
 
 /**
@@ -608,6 +652,7 @@ export function SettingsOverlay({
   maxWidth,
   maxHeight,
   config,
+  onRunCommand,
   onClose,
   onSave,
 }: SettingsOverlayProps): React.ReactElement {
@@ -642,8 +687,20 @@ export function SettingsOverlay({
   const [accountSyncMessage, setAccountSyncMessage] = useState<string | null>(null);
   const accountSignInInFlightRef = useRef(false);
   const lmxHostForModelFetch = getConfigValue(config, 'connection.host', 'localhost');
-  const lmxPortForModelFetch = Number(getConfigValue(config, 'connection.port', '1234'));
-  const lmxApiKeyForModelFetch = getConfigValue(config, 'connection.apiKey', '');
+  const parsedLmxPortForModelFetch = Number(getConfigValue(config, 'connection.port', '1234'));
+  const lmxPortForModelFetch = Number.isFinite(parsedLmxPortForModelFetch) && parsedLmxPortForModelFetch > 0
+    ? parsedLmxPortForModelFetch
+    : 1234;
+  const lmxFallbackHostsRaw = config?.['connection.fallbackHosts'];
+  const lmxFallbackHostsForModelFetch = useMemo(
+    () => getConfigHostList(config, 'connection.fallbackHosts'),
+    [lmxFallbackHostsRaw],
+  );
+  const lmxApiKeyForModelFetch = getConfigValue(
+    config,
+    'connection.apiKey',
+    getConfigValue(config, 'connection.adminKey', ''),
+  );
 
   useEffect(() => {
     if (selectedPage !== 'models') return;
@@ -654,6 +711,7 @@ export function SettingsOverlay({
         const { LmxClient } = await import('../lmx/client.js');
         const lmx = new LmxClient({
           host: lmxHostForModelFetch,
+          fallbackHosts: lmxFallbackHostsForModelFetch,
           port: lmxPortForModelFetch,
           adminKey: lmxApiKeyForModelFetch,
           timeoutMs: 3000,
@@ -691,7 +749,13 @@ export function SettingsOverlay({
     
     void fetchModels();
     return () => { cancelled = true; };
-  }, [selectedPage, lmxHostForModelFetch, lmxPortForModelFetch, lmxApiKeyForModelFetch]);
+  }, [
+    selectedPage,
+    lmxHostForModelFetch,
+    lmxPortForModelFetch,
+    lmxApiKeyForModelFetch,
+    lmxFallbackHostsForModelFetch,
+  ]);
 
   const runAccountOauthSignIn = useCallback(async (trigger: 'auto' | 'manual') => {
     if (accountSignInInFlightRef.current) return;
@@ -934,6 +998,11 @@ export function SettingsOverlay({
       const item = items[selectedIndex];
       if (!item) return;
       if (item.inputType === 'action') {
+        const mappedCommand = ACTION_COMMANDS[item.configKey];
+        if (mappedCommand && onRunCommand) {
+          onRunCommand(mappedCommand);
+          return;
+        }
         if (item.configKey === '__account_signin') {
           void runAccountOauthSignIn('manual');
         } else {

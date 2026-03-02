@@ -45,11 +45,19 @@ function resolveApps(registry, selector) {
   return [match];
 }
 
-function runNodeTask(app, taskName, cwd) {
+function runNodeTask(app, taskLabel, taskName, cwd) {
   const npmCmd = process.platform === 'win32' ? 'npm.cmd' : 'npm';
+  const env = { ...process.env };
+
+  // Quality and build runs should be non-interactive across local shells/CI.
+  if ((taskLabel === 'check' || taskLabel === 'build') && !env.CI) {
+    env.CI = '1';
+  }
+
   return spawnSync(npmCmd, ['run', taskName], {
     cwd,
     stdio: 'inherit',
+    env,
   });
 }
 
@@ -152,7 +160,7 @@ async function runTask(registry, selector, task, continueOnError) {
 
     let result;
     if (app.type === 'node') {
-      result = runNodeTask(app, taskSpec, cwd);
+      result = runNodeTask(app, task, taskSpec, cwd);
     } else {
       result = runShellTask(taskSpec, cwd);
     }

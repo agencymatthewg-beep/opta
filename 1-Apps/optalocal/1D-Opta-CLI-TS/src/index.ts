@@ -235,6 +235,7 @@ interface StatusCommandOptions extends DeviceOption {
 
 interface ModelsCommandOptions extends DeviceOption {
   remote?: boolean;
+  backend?: string;
   json?: boolean;
   full?: boolean;
 }
@@ -520,6 +521,7 @@ program
   .argument('[args...]', 'model query args (for swap: <running> <replacement>)')
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('--remote', 'use configured remote connection host (alias for --device from config)')
+  .option('--backend <name>', 'preferred backend/runtime for model loads (auto|mlx-lm|vllm-mlx|gguf)')
   .option('--json', 'machine-readable output')
   .option('--full', 'perform an extensive, more purposeful scan (may take longer)')
   .addHelpText(
@@ -532,6 +534,7 @@ Examples:
   $ opta models manage              Force interactive manager
   $ opta models use                 Pick default model via keyboard
   $ opta models load minimax        Fuzzy match and load a model
+  $ opta models load minimax --backend mlx-lm
   $ opta models swap                Interactive swap (choose old/new)
   $ opta models dashboard           At-a-glance model health + aliases
   $ opta models predictor           Predictor stats and next-model guess

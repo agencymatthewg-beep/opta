@@ -9,25 +9,30 @@ export const lmxOverview: Guide = {
   summary:
     'Learn how to use the LMX dashboard to load models, run inference, and manage your local AI server.',
   tags: ['lmx', 'dashboard', 'inference', 'models', 'server', 'getting started'],
-  updatedAt: '2026-03-01',
+  updatedAt: '2026-03-02',
   sections: [
     {
       heading: 'What is LMX?',
-      body: 'LMX is the inference engine at the core of Opta Local. It runs an OpenAI-compatible API on your machine, serves models via MLX on Apple Silicon, and provides a dashboard for monitoring and managing inference.',
+      body: 'LMX is the inference engine at the core of Opta Local. It exposes an OpenAI-compatible API, runs local models on Apple Silicon, and provides operational telemetry for model lifecycle, throughput, and active sessions.',
+      visual: `<div class="visual-wrapper my-6 p-5 rounded-xl border border-white/10 bg-[#0a0a0f]"><div class="font-mono text-xs grid grid-cols-2 gap-3"><div class="p-3 border border-[#a855f7]/30 rounded">Model Runtime</div><div class="p-3 border border-[#22c55e]/30 rounded">API Surface</div><div class="p-3 border border-white/20 rounded">Queue + Sessions</div><div class="p-3 border border-[#3b82f6]/30 rounded">Telemetry</div></div></div>`,
     },
     {
-      heading: 'The Dashboard',
-      body: 'Access the LMX dashboard at lmx.optalocal.com. From here you can see loaded models, VRAM usage, throughput, and active sessions. The dashboard connects to your local LMX server running on port 1234.',
+      heading: 'Dashboard Surfaces',
+      body: 'At <code>lmx.optalocal.com</code>, the dashboard exposes model inventory, loaded model state, queue pressure, and response throughput. Treat it as your operational control panel while <a href="/guides/cli" class="app-link link-cli">CLI</a> remains your execution interface.',
     },
     {
-      heading: 'Loading a Model',
-      body: 'Navigate to the Models tab in the LMX dashboard. Models are stored locally in your HuggingFace cache. Select a model from the list and click Load — it will be pulled into unified memory and made available via the API.',
-      note: 'LMX uses MLX format (safetensors) on Apple Silicon for best performance. GGUF is not supported on this backend.',
+      heading: 'Model Load Workflow',
+      body: 'Open the Models panel, select an approved local model, and load it into runtime. Validate readiness before issuing heavy jobs so autonomous runs do not fail from cold-start or incompatible context windows.',
+      note: 'LMX performs best with native Apple-Silicon-optimized formats; verify compatibility before benchmark runs.',
     },
     {
-      heading: 'Running Inference',
-      body: 'Once a model is loaded, use the Chat tab to test it directly, or send requests to the OpenAI-compatible endpoint at http://localhost:1234/v1/chat/completions from any compatible client.',
-      code: 'curl http://localhost:1234/v1/chat/completions \\\n  -H "Content-Type: application/json" \\\n  -d \'{"model":"current","messages":[{"role":"user","content":"Hello"}]}\'',
+      heading: 'Inference API Usage',
+      body: 'Once loaded, requests can be sent to the OpenAI-compatible endpoint. Use this path for direct integration tests and latency benchmarking before wiring app-level flows.',
+      code: `curl http://localhost:1234/v1/chat/completions \\n  -H "Content-Type: application/json" \\n  -d '{"model":"current","messages":[{"role":"user","content":"Hello"}]}'`,
+    },
+    {
+      heading: 'Operational Guardrails',
+      body: 'Before production tasks: confirm model loaded, verify daemon health, and cap context size to avoid avoidable OOM or runaway latency. Pair LMX checks with <a href="/guides/code-desktop" class="app-link link-general">Code Desktop</a> for stream-level visibility.',
     },
   ],
 };

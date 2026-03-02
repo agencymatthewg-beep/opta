@@ -110,7 +110,7 @@ _opta_completions() {
       return 0
       ;;
     models)
-      COMPREPLY=( $(compgen -W "list manage dashboard scan use info load unload swap stop alias aliases unalias download delete benchmark predictor helpers quantize agents skills rag health browse-local browse-library --json --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "list manage dashboard scan use info load unload swap stop alias aliases unalias download delete benchmark predictor helpers quantize agents skills rag health browse-local browse-library --backend --json --help" -- "\${cur}") )
       return 0
       ;;
     env)
@@ -286,7 +286,7 @@ _opta() {
             '--json[machine-readable output]'
           ;;
         models)
-          _arguments '1:action:(list manage dashboard scan use info load unload swap stop alias aliases unalias download delete benchmark predictor helpers quantize agents skills rag health browse-local browse-library)' '--json[machine-readable output]'
+          _arguments '1:action:(list manage dashboard scan use info load unload swap stop alias aliases unalias download delete benchmark predictor helpers quantize agents skills rag health browse-local browse-library)' '--backend[load backend runtime]:backend:(auto mlx-lm vllm-mlx gguf)' '--json[machine-readable output]'
           ;;
         env)
           _arguments '1:action:(list show save use delete)' \\
@@ -489,6 +489,7 @@ complete -c opta -n '__fish_seen_subcommand_from status' -l json -d 'Machine-rea
 
 # models subcommands and flags
 complete -c opta -n '__fish_seen_subcommand_from models' -a 'list manage dashboard scan use info load unload swap stop alias aliases unalias download delete benchmark predictor helpers quantize agents skills rag health browse-local browse-library' -d 'Action'
+complete -c opta -n '__fish_seen_subcommand_from models' -l backend -d 'Load backend runtime' -x -a 'auto mlx-lm vllm-mlx gguf'
 complete -c opta -n '__fish_seen_subcommand_from models' -l json -d 'Machine-readable output'
 
 # env subcommands and flags

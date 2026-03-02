@@ -22,8 +22,8 @@ describe('buildConfigOverrides', () => {
   });
 
   it('throws for invalid provider override', () => {
-    expect(() => buildConfigOverrides({ provider: 'openai' })).toThrow(
-      'Invalid provider "openai". Expected one of: lmx, anthropic.'
+    expect(() => buildConfigOverrides({ provider: 'invalid-provider' })).toThrow(
+      'Invalid provider "invalid-provider". Expected one of: lmx, anthropic, gemini, openai, opencode_zen.'
     );
   });
 

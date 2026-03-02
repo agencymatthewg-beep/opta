@@ -18,6 +18,7 @@ export interface GuideTemplateDefinition {
   minSections: number;
   minWordCount: number;
   requiresCodeExample: boolean;
+  minVisuals: number;
 }
 
 export const GUIDE_TEMPLATE_DEFINITIONS: Record<GuideTemplateId, GuideTemplateDefinition> = {
@@ -27,9 +28,10 @@ export const GUIDE_TEMPLATE_DEFINITIONS: Record<GuideTemplateId, GuideTemplateDe
     explanationExtent: 'L4-masterclass',
     description:
       'Extensive, ecosystem-level guide with architecture and integrated workflows.',
-    minSections: 4,
-    minWordCount: 220,
+    minSections: 6,
+    minWordCount: 280,
     requiresCodeExample: false,
+    minVisuals: 2,
   },
   'feature-deep-dive': {
     id: 'feature-deep-dive',
@@ -37,9 +39,10 @@ export const GUIDE_TEMPLATE_DEFINITIONS: Record<GuideTemplateId, GuideTemplateDe
     explanationExtent: 'L3-deep-dive',
     description:
       'Detailed explanation of one capability, covering use cases and internals.',
-    minSections: 4,
+    minSections: 5,
     minWordCount: 160,
     requiresCodeExample: false,
+    minVisuals: 1,
   },
   'process-workflow': {
     id: 'process-workflow',
@@ -47,9 +50,10 @@ export const GUIDE_TEMPLATE_DEFINITIONS: Record<GuideTemplateId, GuideTemplateDe
     explanationExtent: 'L2-operational',
     description:
       'Operational, step-oriented guide focused on execution and verification.',
-    minSections: 3,
-    minWordCount: 130,
+    minSections: 5,
+    minWordCount: 160,
     requiresCodeExample: true,
+    minVisuals: 1,
   },
   'setting-configuration': {
     id: 'setting-configuration',
@@ -57,9 +61,10 @@ export const GUIDE_TEMPLATE_DEFINITIONS: Record<GuideTemplateId, GuideTemplateDe
     explanationExtent: 'L1-reference',
     description:
       'Reference-first guide for flags/env vars/settings with concrete examples.',
-    minSections: 4,
-    minWordCount: 120,
+    minSections: 5,
+    minWordCount: 150,
     requiresCodeExample: true,
+    minVisuals: 1,
   },
 };
 
@@ -72,6 +77,7 @@ export interface GuideLike {
     body: string;
     note?: string;
     code?: string;
+    visual?: string;
   }>;
 }
 
@@ -120,6 +126,14 @@ export function validateGuideByTemplate(guide: GuideLike): string[] {
     if (!hasCode) {
       errors.push(`Template '${template.id}' requires at least one code example.`);
     }
+  }
+
+
+  const visualCount = guide.sections.filter((section) => Boolean(section.visual?.trim())).length;
+  if (visualCount < template.minVisuals) {
+    errors.push(
+      `Template '${template.id}' requires at least ${template.minVisuals} visual block(s) (found ${visualCount}).`,
+    );
   }
 
   return errors;

@@ -62,6 +62,20 @@ export type DaemonLmxDownloadProgressStatus =
   | "failed"
   | "unknown";
 
+export type DaemonLmxEndpointSource =
+  | "preferred_base_url"
+  | "openai_base_url"
+  | "base_urls";
+
+export interface DaemonLmxEndpointCandidate {
+  id: string;
+  source: DaemonLmxEndpointSource;
+  url: string;
+  protocol: "http" | "https";
+  host: string;
+  port: number;
+}
+
 export interface DaemonLmxDownloadProgress {
   download_id: string;
   repo_id: string;
@@ -274,6 +288,72 @@ function normalizeLmxDownloadsList(raw: unknown): DaemonLmxDownloadProgress[] {
     );
 }
 
+function normalizeConfigValue(raw: unknown): unknown {
+  if (typeof raw !== "string") return raw;
+  const trimmed = raw.trim();
+  if (!trimmed) return "";
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (/^-?\d+$/.test(trimmed)) return Number.parseInt(trimmed, 10);
+  if (/^-?\d+\.\d+$/.test(trimmed)) return Number.parseFloat(trimmed);
+  if (
+    (trimmed.startsWith("[") && trimmed.endsWith("]")) ||
+    (trimmed.startsWith("{") && trimmed.endsWith("}"))
+  ) {
+    try {
+      return JSON.parse(trimmed);
+    } catch {
+      return raw;
+    }
+  }
+  return raw;
+}
+
+function operationError(
+  operationId: string,
+  response: DaemonRunOperationResponse,
+): Error {
+  if (response.ok) {
+    return new Error(`[${operationId}] unexpected success response`);
+  }
+  return new Error(
+    `[${response.error.code}] ${response.error.message}`,
+  );
+}
+
+function parseEndpointCandidate(
+  source: DaemonLmxEndpointSource,
+  rawUrl: string,
+  index = 0,
+): DaemonLmxEndpointCandidate | null {
+  const url = rawUrl.trim();
+  if (!url) return null;
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
+      return null;
+    }
+    const protocol = parsed.protocol === "https:" ? "https" : "http";
+    const port =
+      parsed.port.length > 0
+        ? Number.parseInt(parsed.port, 10)
+        : protocol === "https"
+          ? 443
+          : 80;
+    if (!Number.isFinite(port) || port <= 0) return null;
+    return {
+      id: `${source}:${index}:${parsed.host}`,
+      source,
+      url,
+      protocol,
+      host: parsed.hostname,
+      port,
+    };
+  } catch {
+    return null;
+  }
+}
+
 function httpClient(connection: DaemonConnectionOptions): DaemonHttpClient {
   return new DaemonHttpClient(connection);
 }
@@ -435,6 +515,43 @@ export const daemonClient = {
     return httpClient(connection).runOperation(id, payload);
   },
 
+  async configGet(
+    connection: DaemonConnectionOptions,
+    key: string,
+  ): Promise<unknown> {
+    const response = await daemonClient.runOperation(connection, "config.get", {
+      input: { key },
+    });
+    if (!response.ok) throw operationError("config.get", response);
+    const result = asRecord(response.result);
+    const rawValue = result && "value" in result ? result.value : response.result;
+    return normalizeConfigValue(rawValue);
+  },
+
+  async configSet(
+    connection: DaemonConnectionOptions,
+    key: string,
+    value: unknown,
+  ): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "config.set", {
+      input: { key, value },
+    });
+    if (!response.ok) throw operationError("config.set", response);
+  },
+
+  async configList(
+    connection: DaemonConnectionOptions,
+  ): Promise<Record<string, unknown>> {
+    const response = await daemonClient.runOperation(connection, "config.list", {
+      input: {},
+    });
+    if (!response.ok) throw operationError("config.list", response);
+    const result = asRecord(response.result);
+    if (!result) return {};
+    const nestedConfig = asRecord(result.config);
+    return nestedConfig ?? result;
+  },
+
   async listBackground(
     connection: DaemonConnectionOptions,
     sessionId?: string,
@@ -482,6 +599,44 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
   ): Promise<DaemonLmxDiscoveryResponse> {
     return httpClient(connection).lmxDiscovery();
+  },
+
+  extractLmxEndpointCandidates(
+    discovery: DaemonLmxDiscoveryResponse | null,
+  ): DaemonLmxEndpointCandidate[] {
+    if (!discovery) return [];
+    const root = asRecord(discovery);
+    const endpoints = asRecord(root?.endpoints);
+    if (!endpoints) return [];
+
+    const candidates: DaemonLmxEndpointCandidate[] = [];
+    const pushIfValid = (
+      source: DaemonLmxEndpointSource,
+      value: unknown,
+    ) => {
+      if (typeof value !== "string") return;
+      const parsed = parseEndpointCandidate(source, value, candidates.length);
+      if (parsed) candidates.push(parsed);
+    };
+
+    pushIfValid("preferred_base_url", endpoints.preferred_base_url);
+    pushIfValid("openai_base_url", endpoints.openai_base_url);
+
+    const baseUrls = Array.isArray(endpoints.base_urls) ? endpoints.base_urls : [];
+    for (let i = 0; i < baseUrls.length; i += 1) {
+      const value = baseUrls[i];
+      if (typeof value !== "string") continue;
+      const parsed = parseEndpointCandidate("base_urls", value, i);
+      if (parsed) candidates.push(parsed);
+    }
+
+    const deduped = new Map<string, DaemonLmxEndpointCandidate>();
+    for (const candidate of candidates) {
+      if (!deduped.has(candidate.url)) {
+        deduped.set(candidate.url, candidate);
+      }
+    }
+    return Array.from(deduped.values());
   },
 
   async lmxModels(

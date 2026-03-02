@@ -2,12 +2,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   DaemonConnectionOptions,
   DaemonLmxAvailableModel,
+  DaemonLmxDiscoveryResponse,
   DaemonLmxLoadOptions,
   DaemonLmxMemoryResponse,
   DaemonLmxModelDetail,
   DaemonLmxStatusResponse,
 } from "../types";
 import type {
+  DaemonLmxEndpointCandidate,
   DaemonLmxDownloadProgress,
   DaemonLmxLoadResponse,
 } from "../lib/daemonClient";
@@ -15,8 +17,68 @@ import { daemonClient } from "../lib/daemonClient";
 
 const LMX_POLL_MS = 5_000;
 
+export interface LmxTargetConfig {
+  host: string;
+  port: number;
+  fallbackHosts: string[];
+  autoDiscover: boolean;
+}
+
+function parseHostList(raw: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((entry) => String(entry).trim())
+      .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+  }
+  if (typeof raw !== "string") return [];
+  const trimmed = raw.trim();
+  if (!trimmed) return [];
+  if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((entry) => String(entry).trim())
+          .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+      }
+    } catch {
+      // Fall through to CSV parsing.
+    }
+  }
+  return trimmed
+    .split(",")
+    .map((entry) => entry.trim())
+    .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+}
+
+function parsePort(raw: unknown, fallback: number): number {
+  const candidate =
+    typeof raw === "number"
+      ? raw
+      : typeof raw === "string"
+        ? Number.parseInt(raw, 10)
+        : Number.NaN;
+  if (!Number.isFinite(candidate) || candidate <= 0 || candidate > 65_535) {
+    return fallback;
+  }
+  return candidate;
+}
+
+function parseBoolean(raw: unknown, fallback: boolean): boolean {
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "string") {
+    const normalized = raw.trim().toLowerCase();
+    if (normalized === "true") return true;
+    if (normalized === "false") return false;
+  }
+  return fallback;
+}
+
 export interface UseModelsResult {
   lmxStatus: DaemonLmxStatusResponse | null;
+  lmxDiscovery: DaemonLmxDiscoveryResponse | null;
+  lmxEndpointCandidates: DaemonLmxEndpointCandidate[];
+  lmxTarget: LmxTargetConfig | null;
   loadedModels: DaemonLmxModelDetail[];
   availableModels: DaemonLmxAvailableModel[];
   memory: DaemonLmxMemoryResponse | null;
@@ -37,6 +99,7 @@ export interface UseModelsResult {
   unloadModel: (modelId: string) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
   downloadModel: (repoId: string) => Promise<string | null>;
+  saveLmxTarget: (next: Partial<LmxTargetConfig>) => Promise<boolean>;
   refreshLmx: () => Promise<void>;
 }
 
@@ -46,6 +109,12 @@ export function useModels(
   const [lmxStatus, setLmxStatus] = useState<DaemonLmxStatusResponse | null>(
     null,
   );
+  const [lmxDiscovery, setLmxDiscovery] =
+    useState<DaemonLmxDiscoveryResponse | null>(null);
+  const [lmxEndpointCandidates, setLmxEndpointCandidates] = useState<
+    DaemonLmxEndpointCandidate[]
+  >([]);
+  const [lmxTarget, setLmxTarget] = useState<LmxTargetConfig | null>(null);
   const [loadedModels, setLoadedModels] = useState<DaemonLmxModelDetail[]>([]);
   const [availableModels, setAvailableModels] = useState<
     DaemonLmxAvailableModel[]
@@ -73,26 +142,58 @@ export function useModels(
     setLoading(true);
 
     try {
-      const [statusRes, modelsRes, memoryRes, availableRes] = await Promise.all(
-        [
-          daemonClient.lmxStatus(connection).catch(() => null),
-          daemonClient.lmxModels(connection).catch(() => null),
-          daemonClient.lmxMemory(connection).catch(() => null),
-          daemonClient.lmxAvailable(connection).catch(() => null),
-        ],
-      );
+      const [
+        statusRes,
+        discoveryRes,
+        modelsRes,
+        memoryRes,
+        availableRes,
+        hostRaw,
+        portRaw,
+        fallbackHostsRaw,
+        autoDiscoverRaw,
+      ] = await Promise.all([
+        daemonClient.lmxStatus(connection).catch(() => null),
+        daemonClient.lmxDiscovery(connection).catch(() => null),
+        daemonClient.lmxModels(connection).catch(() => null),
+        daemonClient.lmxMemory(connection).catch(() => null),
+        daemonClient.lmxAvailable(connection).catch(() => null),
+        daemonClient.configGet(connection, "connection.host").catch(() => null),
+        daemonClient.configGet(connection, "connection.port").catch(() => null),
+        daemonClient.configGet(connection, "connection.fallbackHosts").catch(() => []),
+        daemonClient.configGet(connection, "connection.autoDiscover").catch(() => true),
+      ]);
 
       if (!mountedRef.current || epoch !== refreshEpochRef.current) {
         return;
       }
 
       const anyReachable = Boolean(
-        statusRes || modelsRes || memoryRes || availableRes,
+        statusRes || discoveryRes || modelsRes || memoryRes || availableRes,
       );
 
       if (statusRes) {
         setLmxStatus(statusRes);
       }
+      if (discoveryRes) {
+        setLmxDiscovery(discoveryRes);
+        setLmxEndpointCandidates(
+          daemonClient.extractLmxEndpointCandidates(discoveryRes),
+        );
+      } else {
+        setLmxDiscovery(null);
+        setLmxEndpointCandidates([]);
+      }
+      const nextTarget: LmxTargetConfig = {
+        host:
+          typeof hostRaw === "string" && hostRaw.trim().length > 0
+            ? hostRaw.trim()
+            : connection.host,
+        port: parsePort(portRaw, connection.port),
+        fallbackHosts: parseHostList(fallbackHostsRaw),
+        autoDiscover: parseBoolean(autoDiscoverRaw, true),
+      };
+      setLmxTarget(nextTarget);
       setLmxReachable(anyReachable);
       setError(anyReachable ? null : "LMX server unreachable");
 
@@ -215,6 +316,55 @@ export function useModels(
     [connection],
   );
 
+  const saveLmxTarget = useCallback(
+    async (next: Partial<LmxTargetConfig>): Promise<boolean> => {
+      if (!connection) return false;
+      const current: LmxTargetConfig = lmxTarget ?? {
+        host: connection.host,
+        port: connection.port,
+        fallbackHosts: [],
+        autoDiscover: true,
+      };
+      const nextHost =
+        typeof next.host === "string" && next.host.trim().length > 0
+          ? next.host.trim()
+          : current.host;
+      const nextPort = parsePort(next.port, current.port);
+      const nextFallbackHosts =
+        next.fallbackHosts !== undefined
+          ? parseHostList(next.fallbackHosts)
+          : current.fallbackHosts;
+      const nextAutoDiscover =
+        next.autoDiscover !== undefined
+          ? Boolean(next.autoDiscover)
+          : current.autoDiscover;
+
+      try {
+        await Promise.all([
+          daemonClient.configSet(connection, "connection.host", nextHost),
+          daemonClient.configSet(connection, "connection.port", nextPort),
+          daemonClient.configSet(
+            connection,
+            "connection.fallbackHosts",
+            nextFallbackHosts,
+          ),
+          daemonClient.configSet(
+            connection,
+            "connection.autoDiscover",
+            nextAutoDiscover,
+          ),
+        ]);
+        setError(null);
+        await refreshLmx();
+        return true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        return false;
+      }
+    },
+    [connection, lmxTarget, refreshLmx],
+  );
+
   useEffect(() => {
     if (!connection) return;
     void refreshLmx();
@@ -224,6 +374,9 @@ export function useModels(
 
   return {
     lmxStatus,
+    lmxDiscovery,
+    lmxEndpointCandidates,
+    lmxTarget,
     loadedModels,
     availableModels,
     memory,
@@ -237,6 +390,7 @@ export function useModels(
     unloadModel,
     deleteModel,
     downloadModel,
+    saveLmxTarget,
     refreshLmx,
   };
 }

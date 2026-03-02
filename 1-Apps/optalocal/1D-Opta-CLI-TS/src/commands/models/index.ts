@@ -115,7 +115,7 @@ export async function models(
       await infoModel(resolvedName, client, opts);
       return;
     case 'load':
-      await loadModel(resolvedName, client, aliasMap, defaultModel);
+      await loadModel(resolvedName, client, aliasMap, defaultModel, opts?.backend);
       return;
     case 'unload':
       await unloadModel(resolvedName, client, aliasMap);
@@ -226,7 +226,7 @@ async function interactiveModelManager(
           };
           break;
         case 'load':
-          await loadModel(undefined, client, {}, currentDefault);
+          await loadModel(undefined, client, {}, currentDefault, opts?.backend);
           break;
         case 'unload':
           await unloadModel(undefined, client);
@@ -274,6 +274,9 @@ function printModelsHelp(): void {
     `  ${chalk.reset('opta models use [name]')}          switch default (fuzzy + picker)`
   );
   console.log(`  ${chalk.reset('opta models load [name]')}         load a downloaded model`);
+  console.log(
+    `  ${chalk.reset('opta models load [name] --backend <name>')}  target runtime (auto|mlx-lm|vllm-mlx|gguf)`
+  );
   console.log(`  ${chalk.reset('opta models unload [name]')}       unload a running model`);
   console.log(`  ${chalk.reset('opta models swap [old] [new]')}    replace running model`);
   console.log(

@@ -15,6 +15,12 @@ import type { DaemonLmxLoadResponse } from "../lib/daemonClient";
 
 const DOWNLOAD_POLL_MS = 2_500;
 const DOWNLOAD_POLL_MISS_LIMIT = 3;
+const LOAD_BACKEND_OPTIONS = [
+  { value: "auto", label: "Auto" },
+  { value: "mlx-lm", label: "MLX-LM" },
+  { value: "vllm-mlx", label: "vLLM-MLX" },
+  { value: "gguf", label: "GGUF" },
+] as const;
 
 function fmtBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -123,6 +129,8 @@ function loadTrackedDownloadsFromStorage(
 export function ModelsPage({ connection }: ModelsPageProps) {
   const {
     lmxStatus,
+    lmxEndpointCandidates,
+    lmxTarget,
     loadedModels,
     availableModels,
     memory,
@@ -149,6 +157,9 @@ export function ModelsPage({ connection }: ModelsPageProps) {
     Record<string, TrackedLoadDownload>
   >({});
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [loadBackendByModel, setLoadBackendByModel] = useState<
+    Record<string, string>
+  >({});
   const downloadNoticeTimerRef = useRef<number | null>(null);
   const downloadPollMissesRef = useRef<Record<string, number>>({});
   const trackedDownloadsRef = useRef<Record<string, TrackedLoadDownload>>({});
@@ -302,11 +313,15 @@ export function ModelsPage({ connection }: ModelsPageProps) {
   const doLoad = useCallback(
     async (modelId: string) => {
       setPendingAction(modelId);
-      const response = await loadModel(modelId);
+      const backend = loadBackendByModel[modelId] ?? "auto";
+      const response = await loadModel(
+        modelId,
+        backend === "auto" ? undefined : { backend },
+      );
       setPendingAction(null);
       await applyLoadResponse(modelId, response);
     },
-    [applyLoadResponse, loadModel],
+    [applyLoadResponse, loadBackendByModel, loadModel],
   );
 
   const doUnload = useCallback(async (modelId: string) => {
@@ -575,6 +590,28 @@ export function ModelsPage({ connection }: ModelsPageProps) {
               <dt>Loaded</dt>
               <dd>{loadedModels.length} model{loadedModels.length !== 1 ? "s" : ""}</dd>
             </div>
+            {lmxTarget ? (
+              <div>
+                <dt>LMX Target</dt>
+                <dd>{lmxTarget.host}:{lmxTarget.port}</dd>
+              </div>
+            ) : null}
+            {lmxTarget ? (
+              <div>
+                <dt>Fallbacks</dt>
+                <dd>
+                  {lmxTarget.fallbackHosts.length > 0
+                    ? lmxTarget.fallbackHosts.join(", ")
+                    : "—"}
+                </dd>
+              </div>
+            ) : null}
+            {lmxEndpointCandidates.length > 0 ? (
+              <div>
+                <dt>Discovered</dt>
+                <dd>{lmxEndpointCandidates.length} endpoint(s)</dd>
+              </div>
+            ) : null}
             {memory ? (
               <div>
                 <dt>Memory</dt>
@@ -705,6 +742,25 @@ export function ModelsPage({ connection }: ModelsPageProps) {
                   ) : null}
                 </div>
                 <div className="model-card-actions">
+                  <select
+                    className="model-backend-select"
+                    aria-label={`Backend for ${model.model_id}`}
+                    value={loadBackendByModel[model.model_id] ?? "auto"}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setLoadBackendByModel((previous) => ({
+                        ...previous,
+                        [model.model_id]: next,
+                      }));
+                    }}
+                    disabled={pendingAction === model.model_id}
+                  >
+                    {LOAD_BACKEND_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
                   <button
                     type="button"
                     className="action-btn load"
