@@ -63,6 +63,14 @@ vi.mock("./pages/OperationsPage", () => ({
   OperationsPage: () => <div>OperationsPageMock</div>,
 }));
 
+vi.mock("./pages/EnvProfilesPage", () => ({
+  EnvProfilesPage: () => <div>EnvProfilesPageMock</div>,
+}));
+
+vi.mock("./pages/McpManagementPage", () => ({
+  McpManagementPage: () => <div>McpManagementPageMock</div>,
+}));
+
 vi.mock("./pages/ConfigStudioPage", () => ({
   ConfigStudioPage: () => <div>ConfigStudioPageMock</div>,
 }));
@@ -151,5 +159,17 @@ describe("App account controls wiring", () => {
     await waitFor(() => {
       expect(screen.getByText("AccountControlPageMock")).toBeInTheDocument();
     });
+  });
+
+  it("renders Env and MCP tabs and switches pages", async () => {
+    render(<App />);
+
+    const envTab = await screen.findByRole("button", { name: "Env" });
+    fireEvent.click(envTab);
+    expect(screen.getByText("EnvProfilesPageMock")).toBeInTheDocument();
+
+    const mcpTab = screen.getByRole("button", { name: "MCP" });
+    fireEvent.click(mcpTab);
+    expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
   });
 });

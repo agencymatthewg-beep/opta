@@ -15,7 +15,7 @@ export const cliMasterclass: Guide = {
     },
     {
       heading: 'Architecture & The Daemon',
-      body: 'Under the hood, the CLI doesn't perform inference itself. Instead, it connects to the Opta Daemon (running in the background), which manages long-lived sessions, tool permissions, and communication with the <a href="/guides/lmx" class="app-link link-lmx">LMX</a> server. You can control the daemon directly using commands like <code>opta daemon start</code> or view its health via <code>opta status</code>.'
+      body: 'Under the hood, the CLI doesn\'t perform inference itself. Instead, it connects to the Opta Daemon (running in the background), which manages long-lived sessions, tool permissions, and communication with the <a href="/guides/lmx" class="app-link link-lmx">LMX</a> server. You can control the daemon directly using commands like <code>opta daemon start</code> or view its health via <code>opta status</code>.'
     },
     {
       heading: 'Two Modes of Operation: Chat vs. Do',
@@ -25,20 +25,12 @@ export const cliMasterclass: Guide = {
     {
       heading: 'Working with Tools',
       body: 'Both chat and do modes have access to the same powerful toolset. Read-only tools like <code>read_file</code> and <code>search_files</code> are auto-approved by default. Destructive tools like <code>write_file</code> or <code>run_command</code> trigger a Permission Prompt where you can approve, deny, or auto-approve for the remainder of the session.',
-      code: 'Tool: write_file
-Path: src/auth/validate.ts
-Content: (47 lines)
-
-[A]pprove  [D]eny  [A]ll for this tool  [Q]uit'
+      code: `Tool: write_file\nPath: src/auth/validate.ts\nContent: (47 lines)\n\n[A]pprove  [D]eny  [A]ll for this tool  [Q]uit`
     },
     {
       heading: 'Managing Sessions & Models',
       body: 'Your conversations are persistently stored. Use <code>opta sessions</code> to list, view, export, or delete past sessions. To switch out the intelligence engine, use <code>opta models</code> to load, swap, or browse models cached on your machine via <a href="/guides/lmx" class="app-link link-lmx">LMX</a>.',
-      code: '# Resume a previous session
-opta chat --session abc123
-
-# Start a chat with a specific model
-opta chat --model deepseek-r1'
+      code: `# Resume a previous session\nopta chat --session abc123\n\n# Start a chat with a specific model\nopta chat --model deepseek-r1`
     }
   ],
 };

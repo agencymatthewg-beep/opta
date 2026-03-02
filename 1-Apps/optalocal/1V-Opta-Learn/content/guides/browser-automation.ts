@@ -19,7 +19,7 @@ export const browserAutomationGuide: Guide = {
     },
     {
       heading: 'AI-Driven Navigation Workflow',
-      body: 'Unlike traditional scripted automation, Opta's approach is dynamically driven by the model. The typical flow begins with the model calling <code>navigate</code> to load a URL, followed by <code>snapshot</code> to interpret the accessibility tree. It then decides whether to <code>click</code>, <code>type</code>, or evaluate the state, repeating this loop until the assigned goal is achieved.'
+      body: 'Unlike traditional scripted automation, Opta\'s approach is dynamically driven by the model. The typical flow begins with the model calling <code>navigate</code> to load a URL, followed by <code>snapshot</code> to interpret the accessibility tree. It then decides whether to <code>click</code>, <code>type</code>, or evaluate the state, repeating this loop until the assigned goal is achieved.'
     },
     {
       heading: 'Policy & Permission Controls',

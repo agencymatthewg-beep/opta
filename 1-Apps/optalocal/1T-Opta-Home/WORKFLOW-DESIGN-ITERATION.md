@@ -1,6 +1,7 @@
 # optalocal.com — Design Iteration Workflow
 
 > How to make high-quality changes to the landing page using Gemini + Claude Code (frontend-design plugin).
+> Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
 
 ---
 

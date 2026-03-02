@@ -40,6 +40,7 @@ describe('v3 operations contract', () => {
       'daemon.logs',
       'daemon.install',
       'daemon.uninstall',
+      'onboard.apply',
       'serve.status',
       'serve.start',
       'serve.stop',

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isNativeDesktop } from "../../lib/runtime";
 import { MonoLabel, TextInput, type WizardFormSetter } from "./controls";
 import {
   type ConnectionTestResult,
@@ -50,7 +51,14 @@ export function StepConnection({
         setTestState("fail");
         setTestMsg(`Error ${result.message}`);
       }
-    } catch {
+    } catch (error) {
+      if (isNativeDesktop()) {
+        setTestState("fail");
+        setTestMsg(
+          `Error ${error instanceof Error ? error.message : "connection failed"}`,
+        );
+        return;
+      }
       await new Promise<void>((resolve) => setTimeout(resolve, 800));
       setTestState("ok");
       setTestMsg("OK Simulated (dev mode)");

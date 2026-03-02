@@ -1,19 +1,34 @@
-import sys
+"""Patch quantize manager to emit EventBus progress updates.
+
+This helper is intentionally idempotent and can be run multiple times safely.
+"""
+
+from __future__ import annotations
+
 from pathlib import Path
 
-def patch_quantize_events():
-    path = "1M-Opta-LMX/src/opta_lmx/manager/quantize.py"
-    with open(path, "r") as f:
-        content = f.read()
 
-    # Add EventBus type import at the top
-    if "from opta_lmx.monitoring.events import EventBus" not in content:
-        content = content.replace("from pathlib import Path
-", "from pathlib import Path
-from opta_lmx.monitoring.events import EventBus
-")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+TARGET = REPO_ROOT / "src" / "opta_lmx" / "manager" / "quantize.py"
 
-    # Update start_quantize signature
+
+def _replace_once(content: str, old: str, new: str, label: str) -> str:
+    if old not in content:
+        raise RuntimeError(f"Expected block not found for {label}")
+    return content.replace(old, new, 1)
+
+
+def patch_quantize_events() -> None:
+    content = TARGET.read_text(encoding="utf-8")
+
+    # Add EventBus import (once).
+    event_import = "from opta_lmx.monitoring.events import EventBus\n"
+    if event_import not in content:
+        marker = "from pathlib import Path\n"
+        if marker not in content:
+            raise RuntimeError("Could not locate import marker in quantize.py")
+        content = content.replace(marker, marker + event_import, 1)
+
     old_sig = """async def start_quantize(
     source_model: str,
     output_path: str | None = None,
@@ -29,22 +44,26 @@ from opta_lmx.monitoring.events import EventBus
     mode: str = "affine",
     event_bus: EventBus | None = None,
 ) -> QuantizeJob:"""
-    content = content.replace(old_sig, new_sig)
+    if "event_bus: EventBus | None = None" not in content:
+        content = _replace_once(content, old_sig, new_sig, "start_quantize signature")
 
-    # Update task creation
-    old_task = "task = asyncio.create_task(_run_quantize(job))"
-    new_task = "task = asyncio.create_task(_run_quantize(job, event_bus))"
-    content = content.replace(old_task, new_task)
+    if "_run_quantize(job, event_bus)" not in content:
+        content = _replace_once(
+            content,
+            "task = asyncio.create_task(_run_quantize(job))",
+            "task = asyncio.create_task(_run_quantize(job, event_bus))",
+            "task creation",
+        )
 
-    # Update _run_quantize signature
     old_run_sig = "async def _run_quantize(job: QuantizeJob) -> None:"
     new_run_sig = "async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> None:"
-    content = content.replace(old_run_sig, new_run_sig)
+    if new_run_sig not in content:
+        content = _replace_once(content, old_run_sig, new_run_sig, "_run_quantize signature")
 
-    # Add event emit before try block
-    old_try = """    try:
+    if '"status": "quantizing"' not in content:
+        old_try = """    try:
         loop = asyncio.get_running_loop()"""
-    new_try = """    if event_bus:
+        new_try = """    if event_bus:
         event_bus.publish("quantize_progress", {
             "model_id": job.source_model,
             "status": "quantizing",
@@ -52,13 +71,13 @@ from opta_lmx.monitoring.events import EventBus
         })
     try:
         loop = asyncio.get_running_loop()"""
-    content = content.replace(old_try, new_try)
+        content = _replace_once(content, old_try, new_try, "pre-try progress event")
 
-    # Add event emit on success
-    old_success = """        job.output_size_bytes = size_bytes
+    if '"status": "completed"' not in content:
+        old_success = """        job.output_size_bytes = size_bytes
         elapsed = job.completed_at - job.started_at
         logger.info("quantize_completed","""
-    new_success = """        job.output_size_bytes = size_bytes
+        new_success = """        job.output_size_bytes = size_bytes
         elapsed = job.completed_at - job.started_at
         if event_bus:
             event_bus.publish("quantize_progress", {
@@ -67,12 +86,12 @@ from opta_lmx.monitoring.events import EventBus
                 "percent": 100,
             })
         logger.info("quantize_completed","""
-    content = content.replace(old_success, new_success)
+        content = _replace_once(content, old_success, new_success, "success progress event")
 
-    # Add event emit on failure
-    old_fail = """        job.error = str(e)
+    if '"status": f"failed: {e}"' not in content:
+        old_fail = """        job.error = str(e)
         logger.error("quantize_failed","""
-    new_fail = """        job.error = str(e)
+        new_fail = """        job.error = str(e)
         if event_bus:
             event_bus.publish("quantize_progress", {
                 "model_id": job.source_model,
@@ -80,10 +99,11 @@ from opta_lmx.monitoring.events import EventBus
                 "percent": 0,
             })
         logger.error("quantize_failed","""
-    content = content.replace(old_fail, new_fail)
+        content = _replace_once(content, old_fail, new_fail, "failure progress event")
 
-    with open(path, "w") as f:
-        f.write(content)
+    TARGET.write_text(content, encoding="utf-8")
+    print(f"Patched {TARGET}")
+
 
 if __name__ == "__main__":
     patch_quantize_events()

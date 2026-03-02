@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocalStorage } from "./useLocalStorage";
 import { daemonClient } from "../lib/daemonClient";
 import {
+  bootstrapDaemonConnection,
   clearToken,
   isSecureConnectionStoreAvailable,
   loadToken,
@@ -32,6 +33,28 @@ import {
 } from "./daemonSessions/useSessionSockets";
 
 const RUNTIME_POLL_MS = 4000;
+
+function isLocalEndpointHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase();
+  return (
+    normalized === "127.0.0.1" ||
+    normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized === "0.0.0.0"
+  );
+}
+
+function isAuthFailure(error: unknown): boolean {
+  if (error instanceof Error) {
+    return /\b(401|403)\b/.test(error.message);
+  }
+  if (typeof error === "object" && error !== null && "status" in error) {
+    const status = (error as { status?: unknown }).status;
+    return status === 401 || status === 403;
+  }
+  return false;
+}
 
 export function useDaemonSessions() {
   const [connection, setConnectionRaw] =
@@ -140,10 +163,18 @@ export function useDaemonSessions() {
     let cancelled = false;
     const host = connection.host;
     const port = connection.port;
+    const localEndpoint = isLocalEndpointHost(host);
 
     secureStoreQueueRef.current = secureStoreQueueRef.current
       .catch(() => undefined)
       .then(async () => {
+        if (localEndpoint) {
+          try {
+            await bootstrapDaemonConnection(true);
+          } catch {
+            // Bootstrap is best-effort; keep existing secure-store flow.
+          }
+        }
         const legacyToken = connectionRef.current.token.trim();
         if (legacyToken) {
           await saveToken(host, port, legacyToken);
@@ -195,19 +226,60 @@ export function useDaemonSessions() {
   const refreshNow = useCallback(async () => {
     setConnectionState("connecting");
     try {
-      const [health, metrics] = await Promise.all([
-        daemonClient.health(connection),
-        daemonClient.metrics(connection).catch(() => null),
-      ]);
+      const runHealthCheck = async (conn: DaemonConnectionOptions) => {
+        const [health, metrics] = await Promise.all([
+          daemonClient.health(conn),
+          daemonClient.metrics(conn).catch(() => null),
+        ]);
+        return { health, metrics };
+      };
+
+      let activeConnection = connection;
+      let result: Awaited<ReturnType<typeof runHealthCheck>> | null = null;
+
+      try {
+        const checked = await runHealthCheck(activeConnection);
+        result = checked;
+      } catch (error) {
+        const canRepairAuth =
+          isSecureConnectionStoreAvailable() &&
+          isLocalEndpointHost(activeConnection.host) &&
+          isAuthFailure(error);
+        if (!canRepairAuth) {
+          throw error;
+        }
+
+        try {
+          await bootstrapDaemonConnection(true);
+        } catch {
+          // Keep retry path best-effort and continue with stored token load.
+        }
+
+        const repairedToken = (await loadToken(
+          activeConnection.host,
+          activeConnection.port,
+        ))?.trim();
+        if (repairedToken && repairedToken !== activeConnection.token) {
+          activeConnection = { ...activeConnection, token: repairedToken };
+          setConnectionRaw((current) =>
+            current.host === connection.host && current.port === connection.port
+              ? { ...current, token: repairedToken }
+              : current,
+          );
+        }
+
+        const checked = await runHealthCheck(activeConnection);
+        result = checked;
+      }
 
       if (!mountedRef.current) return;
 
-      if (health.status) {
+      if (result?.health.status) {
         setConnectionState("connected");
         setConnectionError(null);
       }
 
-      const runtimeMetrics = metrics?.runtime;
+      const runtimeMetrics = result?.metrics?.runtime;
       if (runtimeMetrics) {
         setRuntimeOverride({
           sessionCount: runtimeMetrics.sessionCount ?? sessions.length,

@@ -27,6 +27,77 @@ export async function markOnboarded(): Promise<void> {
   await writeFile(ONBOARD_MARKER, new Date().toISOString(), 'utf-8');
 }
 
+export interface OnboardingProfileInput {
+  provider?: 'lmx' | 'anthropic';
+  lmxHost?: string;
+  lmxPort?: number;
+  anthropicApiKey?: string;
+  autonomyLevel?: number;
+  tuiDefault?: boolean;
+}
+
+export interface OnboardingProfileResult {
+  ok: true;
+  provider: 'lmx' | 'anthropic';
+  connection: {
+    host: string;
+    port: number;
+  };
+  autonomyLevel: number;
+  tuiDefault: boolean;
+  anthropicKeyConfigured: boolean;
+  onboarded: true;
+}
+
+function clampAutonomyLevel(level: number): number {
+  if (!Number.isFinite(level)) return 2;
+  return Math.max(1, Math.min(5, Math.trunc(level)));
+}
+
+function normalizePort(port: number): number {
+  if (!Number.isFinite(port)) return 1234;
+  const intPort = Math.trunc(port);
+  if (intPort < 1 || intPort > 65_535) return 1234;
+  return intPort;
+}
+
+export async function applyOnboardingProfile(
+  input: OnboardingProfileInput = {}
+): Promise<OnboardingProfileResult> {
+  const existing = await loadConfig().catch(() => null);
+
+  const provider: 'lmx' | 'anthropic' = input.provider ?? existing?.provider?.active ?? 'lmx';
+  const lmxHost = input.lmxHost?.trim() || existing?.connection?.host || '192.168.188.11';
+  const lmxPort = normalizePort(input.lmxPort ?? existing?.connection?.port ?? 1234);
+  const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
+  const tuiDefault = input.tuiDefault ?? existing?.tui?.default ?? false;
+  const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider?.anthropic?.apiKey ?? '').trim();
+
+  await saveConfig({
+    'provider.active': provider,
+    ...(provider === 'lmx'
+      ? { 'connection.host': lmxHost, 'connection.port': lmxPort }
+      : { 'provider.anthropic.apiKey': anthropicApiKey }),
+    'autonomy.level': autonomyLevel,
+    'tui.default': tuiDefault,
+  });
+
+  await markOnboarded();
+
+  return {
+    ok: true,
+    provider,
+    connection: {
+      host: lmxHost,
+      port: lmxPort,
+    },
+    autonomyLevel,
+    tuiDefault,
+    anthropicKeyConfigured: anthropicApiKey.length > 0,
+    onboarded: true,
+  };
+}
+
 // ── Interactive prompt helpers ───────────────────────────────────────────────
 
 /** Returns trimmed string, uses defaultValue if blank. */

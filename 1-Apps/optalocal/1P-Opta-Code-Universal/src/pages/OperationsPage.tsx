@@ -5,9 +5,16 @@ import type { DaemonConnectionOptions } from "../types";
 
 interface OperationsPageProps {
   connection: DaemonConnectionOptions;
+  scopedOperationIds?: string[];
+  title?: string;
+  subtitle?: string;
 }
 
 type SafetyFilter = "all" | "read" | "write" | "dangerous";
+type OperationScopeMatcher = string | RegExp;
+
+const DEFAULT_TITLE = "Operations Console";
+const DEFAULT_SUBTITLE = "Full CLI command-family access via daemon API.";
 
 function groupByFamily(
   operations: OperationDefinition[],
@@ -26,7 +33,27 @@ function groupByFamily(
   return groups;
 }
 
-export function OperationsPage({ connection }: OperationsPageProps) {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function compileScopeMatcher(scope: string): OperationScopeMatcher {
+  if (!scope.includes("*")) return scope;
+  const pattern = scope.split("*").map(escapeRegExp).join(".*");
+  return new RegExp(`^${pattern}$`);
+}
+
+function matchesScope(operationId: string, matcher: OperationScopeMatcher): boolean {
+  if (typeof matcher === "string") return operationId === matcher;
+  return matcher.test(operationId);
+}
+
+export function OperationsPage({
+  connection,
+  scopedOperationIds,
+  title,
+  subtitle,
+}: OperationsPageProps) {
   const {
     operations,
     loading,
@@ -41,8 +68,24 @@ export function OperationsPage({ connection }: OperationsPageProps) {
   const [safetyFilter, setSafetyFilter] = useState<SafetyFilter>("all");
   const [query, setQuery] = useState("");
 
+  const scopeMatchers = useMemo(() => {
+    const ids =
+      scopedOperationIds
+        ?.map((value) => value.trim())
+        .filter((value): value is string => value.length > 0) ?? [];
+    if (ids.length === 0) return null;
+    return ids.map(compileScopeMatcher);
+  }, [scopedOperationIds]);
+
+  const scopedOperations = useMemo(() => {
+    if (!scopeMatchers) return operations;
+    return operations.filter((operation) =>
+      scopeMatchers.some((matcher) => matchesScope(operation.id, matcher)),
+    );
+  }, [operations, scopeMatchers]);
+
   const safetyCounts = useMemo(() => {
-    return operations.reduce(
+    return scopedOperations.reduce(
       (accumulator, operation) => {
         accumulator.all += 1;
         accumulator[operation.safety] += 1;
@@ -50,13 +93,13 @@ export function OperationsPage({ connection }: OperationsPageProps) {
       },
       { all: 0, read: 0, write: 0, dangerous: 0 },
     );
-  }, [operations]);
+  }, [scopedOperations]);
 
   const filtered = useMemo(
     () => {
       const normalizedQuery = query.trim().toLowerCase();
 
-      return operations.filter((operation) => {
+      return scopedOperations.filter((operation) => {
         const passesSafety =
           safetyFilter === "all" || operation.safety === safetyFilter;
         if (!passesSafety) return false;
@@ -66,7 +109,7 @@ export function OperationsPage({ connection }: OperationsPageProps) {
         return haystack.includes(normalizedQuery);
       });
     },
-    [operations, query, safetyFilter],
+    [query, safetyFilter, scopedOperations],
   );
 
   const grouped = useMemo(
@@ -81,7 +124,7 @@ export function OperationsPage({ connection }: OperationsPageProps) {
   );
 
   const selectedOperation =
-    operations.find((op) => op.id === selectedId) ?? null;
+    scopedOperations.find((op) => op.id === selectedId) ?? null;
 
   const lastResultForSelected =
     lastResult?.id === selectedId ? lastResult : null;
@@ -98,10 +141,10 @@ export function OperationsPage({ connection }: OperationsPageProps) {
     <div className="operations-page">
       <header className="operations-page-header">
         <div>
-          <h2>Operations Console</h2>
+          <h2>{title ?? DEFAULT_TITLE}</h2>
           <p>
-            Full CLI command-family access via daemon API.{" "}
-            {operations.length} operations available.
+            {subtitle ?? DEFAULT_SUBTITLE}{" "}
+            {scopedOperations.length} operations available.
           </p>
         </div>
 
@@ -174,13 +217,13 @@ export function OperationsPage({ connection }: OperationsPageProps) {
             </section>
           ))}
 
-          {!loading && operations.length === 0 && !error ? (
+          {!loading && scopedOperations.length === 0 && !error ? (
             <p className="operations-empty">
               No operations found. Ensure the daemon is running and connected.
             </p>
           ) : null}
 
-          {!loading && operations.length > 0 && filtered.length === 0 ? (
+          {!loading && scopedOperations.length > 0 && filtered.length === 0 ? (
             <p className="operations-empty">
               No operations match the current filter/query.
             </p>

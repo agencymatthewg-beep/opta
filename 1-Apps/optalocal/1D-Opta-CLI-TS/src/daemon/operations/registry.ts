@@ -42,6 +42,7 @@ import { benchmark } from '../../commands/benchmark.js';
 import { embed } from '../../commands/embed.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { keyCopy, keyCreate, keyShow } from '../../commands/key.js';
+import { applyOnboardingProfile } from '../../commands/onboard.js';
 import { rerank } from '../../commands/rerank.js';
 import { serve } from '../../commands/serve.js';
 import { sessions } from '../../commands/sessions.js';
@@ -443,6 +444,16 @@ export const operationRegistry = {
   'daemon.uninstall': defineOperation('daemon.uninstall', async () =>
     runCommandForText(async () => {
       await daemonUninstall({});
+    })
+  ),
+  'onboard.apply': defineOperation('onboard.apply', async (input) =>
+    applyOnboardingProfile({
+      provider: input.provider,
+      lmxHost: input.lmxHost,
+      lmxPort: input.lmxPort === undefined ? undefined : Number(input.lmxPort),
+      anthropicApiKey: input.anthropicApiKey,
+      autonomyLevel: input.autonomyLevel,
+      tuiDefault: input.tuiDefault,
     })
   ),
   'serve.status': defineOperation('serve.status', async () =>

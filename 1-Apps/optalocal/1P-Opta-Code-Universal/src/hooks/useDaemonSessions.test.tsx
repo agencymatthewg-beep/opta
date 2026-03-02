@@ -190,4 +190,55 @@ describe("useDaemonSessions secure connection persistence", () => {
       port: 7007,
     });
   });
+
+  it("does not reconnect existing sockets when a new tracked session is added", async () => {
+    const connectCalls: string[] = [];
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, sessionId) => {
+        connectCalls.push(sessionId);
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-a");
+    });
+    await waitFor(() => expect(connectCalls).toEqual(["sess-a"]));
+
+    await act(async () => {
+      await result.current.trackSession("sess-b");
+    });
+
+    await waitFor(() => {
+      expect(connectCalls.filter((id) => id === "sess-a")).toHaveLength(1);
+      expect(connectCalls.filter((id) => id === "sess-b")).toHaveLength(1);
+    });
+  });
+
+  it("does not mark global connection disconnected on per-session websocket close", async () => {
+    const onCloseBySession = new Map<string, (code: number) => void>();
+    vi.mocked(daemonClient.connectWebSocket).mockImplementation(
+      (_connection, sessionId, _afterSeq, handlers) => {
+        onCloseBySession.set(sessionId, handlers.onClose ?? (() => undefined));
+        return { close: vi.fn(), send: vi.fn() } as never;
+      },
+    );
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-stream");
+    });
+
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    expect(onCloseBySession.has("sess-stream")).toBe(true);
+
+    act(() => {
+      onCloseBySession.get("sess-stream")?.(1006);
+    });
+
+    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+  });
 });

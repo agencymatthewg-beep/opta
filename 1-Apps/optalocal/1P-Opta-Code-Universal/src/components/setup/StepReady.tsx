@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isNativeDesktop } from "../../lib/runtime";
 import { type WizardFormData, wizardInvoke, WIZARD_THEME } from "./shared";
 
 export function StepReady({
@@ -10,6 +11,8 @@ export function StepReady({
 }) {
   const [launching, setLaunching] = useState(false);
   const [launched, setLaunched] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const nativeDesktop = isNativeDesktop();
 
   const autonomyLabel =
     form.autonomyLevel === 1
@@ -27,6 +30,7 @@ export function StepReady({
   async function launch() {
     if (launching || launched) return;
     setLaunching(true);
+    setSaveError(null);
 
     try {
       await wizardInvoke("save_setup_config", {
@@ -39,7 +43,16 @@ export function StepReady({
         shell: form.shell,
         tuiDefault: form.tuiDefault,
       });
-    } catch {
+    } catch (error) {
+      if (nativeDesktop) {
+        setLaunching(false);
+        setSaveError(
+          error instanceof Error
+            ? error.message
+            : "Unable to save setup config",
+        );
+        return;
+      }
       // Browser/dev mode fallback.
     }
 
@@ -247,6 +260,20 @@ export function StepReady({
         >
           Open documentation -&gt;
         </a>
+        {saveError ? (
+          <p
+            role="alert"
+            style={{
+              margin: 0,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10.5,
+              color: WIZARD_THEME.fail,
+              textAlign: "center",
+            }}
+          >
+            Save failed: {saveError}
+          </p>
+        ) : null}
       </div>
     </div>
   );

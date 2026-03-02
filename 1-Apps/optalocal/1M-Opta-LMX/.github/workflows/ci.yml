@@ -26,17 +26,14 @@ jobs:
 
     - name: Install dependencies
       run: |
-        cd 1M-Opta-LMX
         uv venv
         uv pip install -e ".[dev]"
 
     - name: Lint with ruff
       run: |
-        cd 1M-Opta-LMX
         uv run ruff check .
         uv run ruff format --check .
 
     - name: Run Pytest
       run: |
-        cd 1M-Opta-LMX
         uv run pytest tests/ -v

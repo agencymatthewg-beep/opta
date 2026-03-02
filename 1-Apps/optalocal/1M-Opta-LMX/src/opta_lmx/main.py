@@ -783,27 +783,6 @@ def cli() -> None:
     import sys
     import os
     import subprocess
-    
-    # Prevent macOS idle sleep while LMX is running by spawning caffeinate.
-    # It watches this process (-w) and exits when LMX exits.
-    if sys.platform == "darwin":
-        subprocess.Popen(
-            ["/usr/bin/caffeinate", "-i", "-w", str(os.getpid())],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-
-    # Prevent duplicate processes on rapid launchd restarts via exclusive file lock
-    try:
-        import fcntl
-        # Keep a reference to the file descriptor so it isn't garbage collected
-        # The OS will automatically release the lock and close the FD when the process exits
-        global _lock_fd
-        _lock_fd = open("/tmp/opta-lmx.lock", "w")
-        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except (IOError, BlockingIOError):
-        print("Opta-LMX is already running (lock file active). Exiting to allow graceful shutdown of previous instance.", file=sys.stderr)
-        sys.exit(1)
 
     parser = argparse.ArgumentParser(
         prog="opta-lmx",
@@ -846,10 +825,9 @@ def cli() -> None:
         help="Override log level",
     )
     
-    args, unknown = parser.parse_known_args()
+    args = parser.parse_args()
     
     if args.command == "quantize":
-        import asyncio
         from opta_lmx.manager.quantize import _do_quantize
         # Run it synchronously since it's a CLI tool
         out_path = args.output
@@ -864,6 +842,30 @@ def cli() -> None:
             print(f"Quantization failed: {e}", file=sys.stderr)
             sys.exit(1)
         sys.exit(0)
+
+    # Prevent macOS idle sleep while LMX is running by spawning caffeinate.
+    # It watches this process (-w) and exits when LMX exits.
+    if sys.platform == "darwin":
+        subprocess.Popen(
+            ["/usr/bin/caffeinate", "-i", "-w", str(os.getpid())],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+
+    # Prevent duplicate processes on rapid launchd restarts via exclusive file lock
+    try:
+        import fcntl
+        # Keep a reference to the file descriptor so it isn't garbage collected.
+        # The OS releases the lock/FD automatically when the process exits.
+        global _lock_fd
+        _lock_fd = open("/tmp/opta-lmx.lock", "w")
+        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except (IOError, BlockingIOError):
+        print(
+            "Opta-LMX is already running (lock file active). Exiting to allow graceful shutdown of previous instance.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
 
     # Load config
     config = load_config(args.config)

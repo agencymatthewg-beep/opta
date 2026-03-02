@@ -24,8 +24,7 @@ export const accountsSync: Guide = {
     {
       heading: 'Usage & Configuration',
       body: 'You can verify your current sync status and identity mapping directly through the CLI.',
-      code: 'opta config view
-opta config set sync.enabled true'
+      code: `opta config view\nopta config set sync.enabled true`
     }
   ],
 };

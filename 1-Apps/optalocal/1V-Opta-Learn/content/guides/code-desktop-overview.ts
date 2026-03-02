@@ -28,7 +28,7 @@ export const codeDesktopOverview: Guide = {
     },
     {
       heading: 'Connection Model',
-      body: 'Authentication is handled seamlessly. The app reads a Bearer token from the daemon's local <code>state.json</code> file and stores it in your browser's <code>localStorage</code>. If the daemon restarts, Code Desktop detects the disconnection and automatically reconnects with exponential backoff.',
+      body: 'Authentication is handled seamlessly. The app reads a Bearer token from the daemon\'s local <code>state.json</code> file and stores it in your browser\'s <code>localStorage</code>. If the daemon restarts, Code Desktop detects the disconnection and automatically reconnects with exponential backoff.',
     }
   ],
 };

@@ -28,6 +28,7 @@ pub fn run() {
             daemon_ops::append_session_event,
             daemon_ops::load_session_events,
             daemon_ops::daemon_action,
+            daemon_ops::bootstrap_daemon_connection,
             daemon_ops::read_daemon_logs,
         ])
         .run(tauri::generate_context!())

@@ -29,6 +29,7 @@ export const OPERATION_IDS = [
   'daemon.logs',
   'daemon.install',
   'daemon.uninstall',
+  'onboard.apply',
   'serve.status',
   'serve.start',
   'serve.stop',
@@ -191,6 +192,16 @@ export const OperationInputSchemaById = {
   'daemon.logs': EmptyInputSchema,
   'daemon.install': EmptyInputSchema,
   'daemon.uninstall': EmptyInputSchema,
+  'onboard.apply': z
+    .object({
+      provider: z.enum(['lmx', 'anthropic']).optional(),
+      lmxHost: z.string().min(1).optional(),
+      lmxPort: z.union([z.string().min(1), z.number().int().min(1).max(65_535)]).optional(),
+      anthropicApiKey: z.string().optional(),
+      autonomyLevel: z.number().int().min(1).max(5).optional(),
+      tuiDefault: z.boolean().optional(),
+    })
+    .strict(),
   'serve.status': EmptyInputSchema,
   'serve.start': EmptyInputSchema,
   'serve.stop': EmptyInputSchema,
@@ -456,6 +467,22 @@ export const OperationOutputSchemaById = {
   'daemon.logs': z.unknown(),
   'daemon.install': TextCommandOutputSchema,
   'daemon.uninstall': TextCommandOutputSchema,
+  'onboard.apply': z
+    .object({
+      ok: z.literal(true),
+      provider: z.enum(['lmx', 'anthropic']),
+      connection: z
+        .object({
+          host: z.string().min(1),
+          port: z.number().int().min(1).max(65_535),
+        })
+        .strict(),
+      autonomyLevel: z.number().int().min(1).max(5),
+      tuiDefault: z.boolean(),
+      anthropicKeyConfigured: z.boolean(),
+      onboarded: z.literal(true),
+    })
+    .strict(),
   'serve.status': z
     .object({
       running: z.boolean(),
@@ -530,6 +557,7 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('daemon.logs'),
   makeExecuteRequestVariant('daemon.install'),
   makeExecuteRequestVariant('daemon.uninstall'),
+  makeExecuteRequestVariant('onboard.apply'),
   makeExecuteRequestVariant('serve.status'),
   makeExecuteRequestVariant('serve.start'),
   makeExecuteRequestVariant('serve.stop'),
@@ -783,6 +811,12 @@ export const OPERATION_TAXONOMY = [
     title: 'Daemon Uninstall',
     description: 'Uninstall daemon system service registration.',
     safety: 'dangerous',
+  },
+  {
+    id: 'onboard.apply',
+    title: 'Onboarding Apply',
+    description: 'Apply onboarding defaults non-interactively and mark setup complete.',
+    safety: 'write',
   },
   {
     id: 'serve.status',

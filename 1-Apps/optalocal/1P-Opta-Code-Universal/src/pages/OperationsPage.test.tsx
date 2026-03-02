@@ -71,4 +71,25 @@ describe("OperationsPage", () => {
     expect(screen.queryByText("env.list")).not.toBeInTheDocument();
     expect(screen.queryByText("doctor")).not.toBeInTheDocument();
   });
+
+  it("supports scoped operation IDs and custom copy", () => {
+    render(
+      <OperationsPage
+        connection={connection}
+        scopedOperationIds={["env.*"]}
+        title="Environment Profiles"
+        subtitle="Env-scoped operations."
+      />,
+    );
+
+    expect(
+      screen.getByRole("heading", { name: "Environment Profiles" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/Env-scoped operations\./)).toBeInTheDocument();
+    expect(screen.getByText("env (2)")).toBeInTheDocument();
+    expect(screen.queryByText("doctor (1)")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "all (2)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "read (1)" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "write (1)" })).toBeInTheDocument();
+  });
 });

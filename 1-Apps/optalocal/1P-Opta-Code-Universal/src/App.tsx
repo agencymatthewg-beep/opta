@@ -11,6 +11,8 @@ import { ModelsPage } from "./pages/ModelsPage";
 import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
 import { OperationsPage } from "./pages/OperationsPage";
+import { EnvProfilesPage } from "./pages/EnvProfilesPage";
+import { McpManagementPage } from "./pages/McpManagementPage";
 import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { AccountControlPage } from "./pages/AccountControlPage";
 import { DaemonPanel } from "./components/DaemonPanel";
@@ -36,6 +38,8 @@ type AppPage =
   | "sessions"
   | "models"
   | "operations"
+  | "env"
+  | "mcp"
   | "config"
   | "account"
   | "jobs"
@@ -207,16 +211,26 @@ function App() {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setBrowserViewMode((current) => {
-          if (current === "default") return "expanded";
-          if (current === "expanded") return "minimized";
-          return "default";
+          const next =
+            current === "default"
+              ? "expanded"
+              : current === "expanded"
+                ? "minimized"
+                : "default";
+          const nextLabel =
+            next === "expanded"
+              ? "Expanded"
+              : next === "minimized"
+                ? "Minimized"
+                : "Default";
+          setNotice(`Browser mode: ${nextLabel}`);
+          return next;
         });
-        setNotice(`Browser mode: ${browserViewMode === "default" ? "Expanded" : browserViewMode === "expanded" ? "Minimized" : "Default"}`);
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [browserViewMode]);
+  }, []);
 
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
@@ -320,6 +334,20 @@ function App() {
         description: "Run any CLI command-family operation via the daemon API",
         keywords: ["operations", "doctor", "env", "mcp", "keychain", "benchmark", "embed", "rerank"],
         run: () => setActivePage("operations"),
+      },
+      {
+        id: "open-env-profiles",
+        title: "Open env management",
+        description: "Run daemon env.* operations for profile management",
+        keywords: ["env", "profiles", "environment", "vars", "secrets"],
+        run: () => setActivePage("env"),
+      },
+      {
+        id: "open-mcp-management",
+        title: "Open MCP management",
+        description: "Run daemon mcp.* operations for server management",
+        keywords: ["mcp", "servers", "management", "tools"],
+        run: () => setActivePage("mcp"),
       },
       {
         id: "open-config-studio",
@@ -552,6 +580,20 @@ function App() {
                 </button>
                 <button
                   type="button"
+                  className={activePage === "env" ? "active" : ""}
+                  onClick={() => setActivePage("env")}
+                >
+                  Env
+                </button>
+                <button
+                  type="button"
+                  className={activePage === "mcp" ? "active" : ""}
+                  onClick={() => setActivePage("mcp")}
+                >
+                  MCP
+                </button>
+                <button
+                  type="button"
                   className={activePage === "config" ? "active" : ""}
                   onClick={() => setActivePage("config")}
                 >
@@ -623,6 +665,10 @@ function App() {
               <ModelsPage connection={connection} />
             ) : activePage === "operations" ? (
               <OperationsPage connection={connection} />
+            ) : activePage === "env" ? (
+              <EnvProfilesPage connection={connection} />
+            ) : activePage === "mcp" ? (
+              <McpManagementPage connection={connection} />
             ) : activePage === "config" ? (
               <ConfigStudioPage connection={connection} />
             ) : activePage === "account" ? (

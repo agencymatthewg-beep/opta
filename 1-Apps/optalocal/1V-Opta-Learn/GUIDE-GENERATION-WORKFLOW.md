@@ -1,6 +1,7 @@
 # Opta Learn Guide Generation Workflow
 
 This document outlines the strict process for generating content and guides for the `learn.optalocal.com` platform.
+Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
 
 ## 1. Tooling Requirements
 
