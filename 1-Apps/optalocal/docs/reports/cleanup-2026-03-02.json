@@ -1,0 +1,237 @@
+{
+  "summary": {
+    "moved_files": 28,
+    "trashed_dirs": 29,
+    "freed_mb_est": 5016.1
+  },
+  "actions": [
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-desktop-1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-desktop-1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-desktop-2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-desktop-2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-desktop-3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-desktop-3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-option2-v1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-option2-v1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-option2-v2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-option2-v2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-code-option2-v3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-code-option2-v3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-comprehensive.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-comprehensive.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-design-1-extended.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-design-1-extended.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-design-1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-design-1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-design-2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-design-2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-design-3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-design-3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-holistic-visuals.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-holistic-visuals.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-inline-links-1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-inline-links-1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-inline-links-2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-inline-links-2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-inline-links-3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-inline-links-3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-4.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-4.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-5.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-5.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-v2-iteration-6.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-v2-iteration-6.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-whole-app-guide-design-1.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-whole-app-guide-design-1.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-whole-app-guide-design-2.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-whole-app-guide-design-2.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-whole-app-guide-design-3.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-whole-app-guide-design-3.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/opta-learn-whole-app-guide-final.html",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/design/mockups/iterations/opta-learn-whole-app-guide-final.html"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/ECOSYSTEM-ASSESSMENT-2026-02-28.md",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/reports/ECOSYSTEM-ASSESSMENT-2026-02-28.md"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/OPTA-AESTHETIC-CONTEXT.md",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/reports/OPTA-AESTHETIC-CONTEXT.md"
+    },
+    {
+      "move": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/OPTALOCAL-DOCS-STATUS.md",
+      "to": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/reports/OPTALOCAL-DOCS-STATUS.md"
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/~",
+      "size_mb": 0.1
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/dist",
+      "size_mb": 1.1
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init/out",
+      "size_mb": 1.6
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1T-Opta-Home/out",
+      "size_mb": 1.7
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1U-Opta-Help/out",
+      "size_mb": 4.9
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init/.next",
+      "size_mb": 137.3
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1T-Opta-Home/.next",
+      "size_mb": 109.7
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1U-Opta-Help/.next",
+      "size_mb": 244.1
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/dist",
+      "size_mb": 2.5
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1V-Opta-Learn/.next",
+      "size_mb": 93.9
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1S-Opta-Status/.next",
+      "size_mb": 249.7
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1R-Opta-Accounts/.next",
+      "size_mb": 183.0
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/.mypy_cache",
+      "size_mb": 269.9
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/.ruff_cache",
+      "size_mb": 0.0
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1U-Opta-Help/node_modules",
+      "size_mb": 377.4
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/.pytest_cache",
+      "size_mb": 0.1
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init/node_modules",
+      "size_mb": 380.8
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1T-Opta-Home/node_modules",
+      "size_mb": 377.4
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1V-Opta-Learn/node_modules",
+      "size_mb": 395.1
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1S-Opta-Status/node_modules",
+      "size_mb": 378.6
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/node_modules",
+      "size_mb": 0.0
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/dist",
+      "size_mb": 0.3
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/target",
+      "size_mb": 0.4
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1R-Opta-Accounts/node_modules",
+      "size_mb": 413.3
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/node_modules",
+      "size_mb": 172.2
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/test-results",
+      "size_mb": 0.2
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target",
+      "size_mb": 1220.9
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client/node_modules",
+      "size_mb": 0.0
+    },
+    {
+      "trash": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/packages/protocol-shared/node_modules",
+      "size_mb": 0.0
+    }
+  ]
+}
