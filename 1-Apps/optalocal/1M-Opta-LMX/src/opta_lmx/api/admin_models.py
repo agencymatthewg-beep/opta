@@ -75,6 +75,27 @@ _pending_lock = asyncio.Lock()
 # Strong references to background tasks (prevents GC before completion)
 _background_tasks: set[asyncio.Task[None]] = set()
 
+_ALLOWED_LOAD_BACKENDS = frozenset({"vllm-mlx", "mlx-lm", "gguf"})
+_LEGACY_LOAD_BACKEND_ALIASES: dict[str, str] = {
+    "mlx": "vllm-mlx",
+}
+
+
+def _normalize_load_backend(raw_backend: str | None) -> str | None:
+    """Normalize backend aliases and validate accepted backend names."""
+    if raw_backend is None:
+        return None
+    normalized = raw_backend.strip().lower()
+    if not normalized:
+        return None
+    normalized = _LEGACY_LOAD_BACKEND_ALIASES.get(normalized, normalized)
+    if normalized not in _ALLOWED_LOAD_BACKENDS:
+        allowed = ", ".join(sorted(_ALLOWED_LOAD_BACKENDS))
+        raise ValueError(
+            f"Invalid backend '{raw_backend}'. Expected one of: {allowed}."
+        )
+    return normalized
+
 
 def _human_size(size_bytes: int) -> str:
     """Convert bytes to human-readable string (e.g. '37.5 GB')."""
@@ -329,6 +350,17 @@ async def load_model(
     if engine.is_model_loaded(body.model_id):
         return AdminLoadResponse(success=True, model_id=body.model_id)
 
+    try:
+        preferred_backend = _normalize_load_backend(body.backend)
+    except ValueError as e:
+        return openai_error(
+            status_code=400,
+            message=str(e),
+            error_type="invalid_request_error",
+            param="backend",
+            code="invalid_value",
+        )
+
     # Admission gate: architecture/backend compatibility.
     try:
         validate_architecture(body.model_id)
@@ -347,7 +379,7 @@ async def load_model(
         readiness = engine.model_readiness(body.model_id)
         if readiness.get("state") == "quarantined" and not body.allow_unsupported_runtime:
             allow_backend_switch = False
-            if body.backend:
+            if preferred_backend:
                 failed_backend: str | None = None
                 with contextlib.suppress(Exception):
                     failed_rows = engine._compatibility.list_records(
@@ -360,7 +392,7 @@ async def load_model(
                         if isinstance(candidate_backend, str):
                             failed_backend = candidate_backend
                 allow_backend_switch = bool(
-                    failed_backend and body.backend != failed_backend
+                    failed_backend and preferred_backend != failed_backend
                 )
 
             if allow_backend_switch:
@@ -368,7 +400,7 @@ async def load_model(
                     "quarantine_override_backend_switch",
                     extra={
                         "model_id": body.model_id,
-                        "requested_backend": body.backend,
+                        "requested_backend": preferred_backend,
                     },
                 )
             else:
@@ -433,6 +465,10 @@ async def load_model(
                     "model_id": body.model_id,
                     "estimated_bytes": estimated,
                     "created_at": time.time(),
+                    "backend": preferred_backend,
+                    "allow_unsupported_runtime": body.allow_unsupported_runtime,
+                    "keep_alive_sec": body.keep_alive_sec,
+                    "performance_overrides": body.performance_overrides,
                 }
                 request.app.state.pending_downloads = pending
 
@@ -479,7 +515,7 @@ async def load_model(
                 perf or None,
                 keep_alive_sec=body.keep_alive_sec,
                 allow_unsupported_runtime=body.allow_unsupported_runtime,
-                preferred_backend=body.backend,
+                preferred_backend=preferred_backend,
                 journal_manager=_get_journal_manager(request),
             ),
         )
@@ -521,7 +557,7 @@ async def load_model(
             performance_overrides=perf or None,
             keep_alive_sec=body.keep_alive_sec,
             allow_unsupported_runtime=body.allow_unsupported_runtime,
-            preferred_backend=body.backend,
+            preferred_backend=preferred_backend,
         )
     except ModelRuntimeCompatibilityError as e:
         return openai_error(
@@ -598,7 +634,7 @@ async def load_model(
             "auto_download": body.auto_download,
             "keep_alive_sec": body.keep_alive_sec,
             "allow_unsupported_runtime": body.allow_unsupported_runtime,
-            "backend": body.backend,
+            "backend": preferred_backend,
             "performance_overrides": body.performance_overrides or {},
             "source": "disk",
         },
@@ -924,13 +960,28 @@ async def confirm_and_load(
         )
 
     model_id = entry["model_id"]
+    preferred_backend = entry.get("backend")
+    if preferred_backend is not None and not isinstance(preferred_backend, str):
+        preferred_backend = None
+    allow_unsupported_runtime = entry.get("allow_unsupported_runtime")
+    if not isinstance(allow_unsupported_runtime, bool):
+        allow_unsupported_runtime = False
+    keep_alive_sec = entry.get("keep_alive_sec")
+    if not isinstance(keep_alive_sec, int):
+        keep_alive_sec = None
+    explicit_overrides = entry.get("performance_overrides")
+    if not isinstance(explicit_overrides, dict):
+        explicit_overrides = None
 
-    tuned = engine.get_tuned_profile(model_id)
+    tuned = engine.get_tuned_profile(
+        model_id,
+        allow_failed=allow_unsupported_runtime,
+    )
     tuned_profile = tuned.get("profile") if isinstance(tuned, dict) else None
     perf = preset_mgr.compose_performance_for_load(
         model_id,
         tuned=tuned_profile if isinstance(tuned_profile, dict) else None,
-        explicit=None,
+        explicit=explicit_overrides,
     )
     try:
         task = await manager.start_download(repo_id=model_id)
@@ -945,6 +996,9 @@ async def confirm_and_load(
             manager,
             engine,
             perf,
+            keep_alive_sec=keep_alive_sec,
+            allow_unsupported_runtime=allow_unsupported_runtime,
+            preferred_backend=preferred_backend,
             journal_manager=_get_journal_manager(request),
         ),
     )

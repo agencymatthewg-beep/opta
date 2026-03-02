@@ -87,7 +87,7 @@ function makeSessionManager(
     getSessionMessages: vi.fn(async () => []),
     submitTurn: vi.fn(async () => ({ turnId: 'turn-1', queued: 1 })),
     resolvePermission: vi.fn(() => ({ ok: true, conflict: false })),
-    cancelSessionTurns: vi.fn(async () => 0),
+    cancelSessionTurns: vi.fn(async () => ({ cancelledQueued: 0, cancelledActive: false })),
     getEventsAfter: vi.fn(async () => []),
     subscribe: vi.fn((_sessionId: string, _cb: (event: V3Envelope) => void) => () => {}),
   } satisfies Partial<SessionManager>;
@@ -240,6 +240,54 @@ describe('daemon http-server telemetry and routes', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json()).toEqual({ events });
     expect(getEventsAfter).toHaveBeenCalledWith('sess-1', 5);
+  });
+
+  it('returns normalized cancel response with aggregate cancelled count', async () => {
+    const cancelSessionTurns = vi.fn(async () => ({ cancelledQueued: 1, cancelledActive: true }));
+    const sessionManager = makeSessionManager({
+      getSession: vi.fn(async () => ({
+        sessionId: 'sess-1',
+        model: 'test-model',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        queuedTurns: 0,
+        toolCallCount: 0,
+        writerCount: 0,
+      })),
+      cancelSessionTurns,
+    });
+
+    running = await startHttpServer({
+      daemonId: 'daemon_test',
+      host: '127.0.0.1',
+      port: 0,
+      token: 'secret-token',
+      sessionManager,
+      listen: false,
+    });
+
+    const res = await running.app.inject({
+      method: 'POST',
+      url: '/v3/sessions/sess-1/cancel',
+      headers: {
+        authorization: 'Bearer secret-token',
+      },
+      payload: {
+        writerId: 'writer-1',
+      },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).toEqual({
+      ok: true,
+      cancelled: 2,
+      cancelledQueued: 1,
+      cancelledActive: true,
+    });
+    expect(cancelSessionTurns).toHaveBeenCalledWith('sess-1', {
+      turnId: undefined,
+      writerId: 'writer-1',
+    });
   });
 
   it('serves authenticated /v3/lmx routes and maps download response shape', async () => {

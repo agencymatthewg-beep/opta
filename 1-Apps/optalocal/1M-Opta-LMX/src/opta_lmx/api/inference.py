@@ -65,6 +65,51 @@ class LegacyCompletionRequest(BaseModel):
     num_ctx: int | None = Field(None, ge=512, le=131072)
 
 
+_SERVING_LANE_TO_PRIORITY: dict[str, str] = {
+    "interactive": "high",
+    "throughput": "normal",
+}
+_PRIORITY_TO_SERVING_LANE: dict[str, str] = {
+    "high": "interactive",
+    "normal": "throughput",
+}
+
+
+def _resolve_serving_lane_and_priority(
+    *,
+    route: str,
+    x_serving_lane: str | None,
+    x_priority: str | None,
+) -> tuple[str, str]:
+    """Resolve serving lane and request priority with deterministic precedence."""
+    lane_raw = (x_serving_lane or "").strip().lower()
+    if lane_raw:
+        if lane_raw not in _SERVING_LANE_TO_PRIORITY:
+            allowed = ", ".join(_SERVING_LANE_TO_PRIORITY.keys())
+            raise ValueError(
+                f"Invalid value for 'x-serving-lane'. Expected one of: {allowed}."
+            )
+        serving_lane = lane_raw
+        priority = _SERVING_LANE_TO_PRIORITY[serving_lane]
+        source = "x-serving-lane"
+    else:
+        priority_raw = (x_priority or "").strip().lower()
+        priority = priority_raw or "normal"
+        serving_lane = _PRIORITY_TO_SERVING_LANE.get(priority, "custom")
+        source = "x-priority" if priority_raw else "default"
+
+    logger.info(
+        "serving_lane_resolved",
+        extra={
+            "route": route,
+            "serving_lane": serving_lane,
+            "priority": priority,
+            "source": source,
+        },
+    )
+    return serving_lane, priority
+
+
 
 
 router = APIRouter(dependencies=[Depends(verify_inference_key)])
@@ -85,6 +130,7 @@ async def chat_completions(
     preset_mgr: Presets,
     x_client_id: str | None = Header(None),
     x_openclaw_agent_id: str | None = Header(None),
+    x_serving_lane: str | None = Header(None),
     x_priority: str | None = Header(None),
 ) -> Response:
     """OpenAI-compatible chat completion.
@@ -107,7 +153,20 @@ async def chat_completions(
     if not engine.is_model_loaded(resolved_model):
         return model_not_found(body.model)
     start_time = time.monotonic()
-    priority = x_priority or "normal"
+    try:
+        _, priority = _resolve_serving_lane_and_priority(
+            route="/v1/chat/completions",
+            x_serving_lane=x_serving_lane,
+            x_priority=x_priority,
+        )
+    except ValueError as e:
+        return openai_error(
+            status_code=400,
+            message=str(e),
+            error_type="invalid_request_error",
+            param="x-serving-lane",
+            code="invalid_header",
+        )
     # x-openclaw-agent-id is the OpenClaw equivalent of X-Client-ID
     effective_client_id = x_client_id or x_openclaw_agent_id
 
@@ -363,6 +422,7 @@ async def responses_endpoint(
     task_router: Router,
     x_client_id: str | None = Header(None),
     x_openclaw_agent_id: str | None = Header(None),
+    x_serving_lane: str | None = Header(None),
     x_priority: str | None = Header(None),
 ) -> Response:
     """OpenAI Responses API — simplified single-turn endpoint.
@@ -403,7 +463,20 @@ async def responses_endpoint(
 
     loaded_ids = [m.model_id for m in engine.get_loaded_models()]
     resolved_model = task_router.resolve(model_id, loaded_ids)
-    priority = x_priority or "normal"
+    try:
+        _, priority = _resolve_serving_lane_and_priority(
+            route="/v1/responses",
+            x_serving_lane=x_serving_lane,
+            x_priority=x_priority,
+        )
+    except ValueError as e:
+        return openai_error(
+            status_code=400,
+            message=str(e),
+            error_type="invalid_request_error",
+            param="x-serving-lane",
+            code="invalid_header",
+        )
     effective_client_id = x_client_id or x_openclaw_agent_id
 
     if not engine.is_model_loaded(resolved_model):
@@ -489,6 +562,7 @@ async def legacy_completions(
     metrics: Metrics,
     x_client_id: str | None = Header(None),
     x_openclaw_agent_id: str | None = Header(None),
+    x_serving_lane: str | None = Header(None),
     x_priority: str | None = Header(None),
 ) -> Response:
     """OpenAI-compatible legacy /v1/completions endpoint."""
@@ -507,7 +581,20 @@ async def legacy_completions(
             code="invalid_input",
         )
 
-    priority = x_priority or "normal"
+    try:
+        _, priority = _resolve_serving_lane_and_priority(
+            route="/v1/completions",
+            x_serving_lane=x_serving_lane,
+            x_priority=x_priority,
+        )
+    except ValueError as e:
+        return openai_error(
+            status_code=400,
+            message=str(e),
+            error_type="invalid_request_error",
+            param="x-serving-lane",
+            code="invalid_header",
+        )
     effective_client_id = x_client_id or x_openclaw_agent_id or body.user
     stop = [body.stop] if isinstance(body.stop, str) else body.stop
 

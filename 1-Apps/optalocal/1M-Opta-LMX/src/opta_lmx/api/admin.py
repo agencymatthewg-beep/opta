@@ -205,12 +205,18 @@ async def benchmark_model(
             "telemetry": "unavailable" if loaded.speculative_active else "not_requested",
         }
         metric_kwargs = speculative_metric_kwargs(telemetry)
-        if loaded.speculative_active:
+        if bool(metric_kwargs.get("speculative_active", False)):
             metrics.record_speculative(
                 accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
                 rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
                 ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
             )
+        acceptance_ratio_raw = metric_kwargs.get("speculative_acceptance_ratio")
+        acceptance_ratio_value: float | None = (
+            float(acceptance_ratio_raw)
+            if isinstance(acceptance_ratio_raw, int | float)
+            else None
+        )
 
         results.append(BenchmarkResult(
             run=run_idx + 1,
@@ -227,7 +233,7 @@ async def benchmark_model(
                 accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
                 rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
                 ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
-                acceptance_ratio=telemetry.get("acceptance_ratio"),
+                acceptance_ratio=acceptance_ratio_value,
                 telemetry=str(metric_kwargs.get("speculative_telemetry", "unavailable")),
             ),
         ))

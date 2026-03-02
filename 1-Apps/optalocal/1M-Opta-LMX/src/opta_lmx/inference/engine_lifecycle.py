@@ -43,6 +43,17 @@ _READINESS_TELEMETRY_STATES = frozenset(
     {"admitted", "loading", "canary_pending", "routable", "quarantined"}
 )
 
+_MOE_ARCHITECTURE_SIGNATURES: tuple[str, ...] = (
+    "moe",
+    "mixtral",
+    "deepseekv2",
+    "deepseekv3",
+    "qwen2moe",
+    "qwen3moe",
+    "jamba",
+    "dbrx",
+)
+
 
 class ModelRuntimeCompatibilityError(RuntimeError):
     """Raised when a model is known-incompatible with the active runtime stack."""
@@ -108,6 +119,24 @@ def _detect_runtime_incompatibility(model_id: str) -> dict[str, Any] | None:
         "architectures": config.get("architectures"),
         "runtime_versions": _runtime_backend_versions(),
     }
+
+
+def _detect_moe_like_signature(model_id: str) -> str | None:
+    """Best-effort MoE signature detector from local model config hints."""
+    config = _load_model_config(model_id)
+    if not isinstance(config, dict):
+        return None
+
+    hints = _collect_model_signature_hints(config)
+    for hint in hints:
+        normalized = _normalize_signature(hint)
+        compact = normalized.replace("_", "")
+        if any(
+            signature in normalized or signature in compact
+            for signature in _MOE_ARCHITECTURE_SIGNATURES
+        ):
+            return hint
+    return None
 
 
 def _resolve_context_length(model_id: str) -> int | None:
@@ -874,6 +903,22 @@ class ModelLifecycleManager:
             "num_tokens": spec_num_tokens if spec_requested else None,
             "telemetry": "unavailable",
         }
+        if selected_backend == "mlx-lm" and spec_requested:
+            moe_signature = _detect_moe_like_signature(model_id)
+            if moe_signature is not None:
+                speculative_status["active"] = False
+                speculative_status["reason"] = (
+                    f"backend_disabled:moe_architecture:{_normalize_signature(moe_signature)}"
+                )
+                logger.warning("speculative_disabled_moe_architecture", extra={
+                    "model_id": model_id,
+                    "backend": "mlx-lm",
+                    "matched_signature": moe_signature,
+                    "reason": speculative_status["reason"],
+                })
+            else:
+                speculative_status["active"] = True
+                speculative_status["reason"] = None
         memory_before = self._memory.used_memory_gb()
         start = time.monotonic()
 
@@ -882,7 +927,11 @@ class ModelLifecycleManager:
 
         try:
             if selected_backend == "mlx-lm":
-                backend_instance = MLXLMBackend(model_id=model_id)
+                backend_kwargs: dict[str, Any] = {"model_id": model_id}
+                if speculative_status.get("active"):
+                    backend_kwargs["draft_model_id"] = draft_model
+                    backend_kwargs["num_draft_tokens"] = spec_num_tokens
+                backend_instance = MLXLMBackend(**backend_kwargs)
                 engine = None
             elif fmt == "gguf":
                 if spec_requested and spec_require_supported:

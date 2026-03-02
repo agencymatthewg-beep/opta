@@ -243,7 +243,8 @@ class AdminLoadRequest(BaseModel):
     backend: str | None = Field(
         None,
         description=(
-            "Preferred inference backend ('mlx' or 'gguf'). "
+            "Preferred inference backend ('vllm-mlx', 'mlx-lm', or 'gguf'). "
+            "Legacy value 'mlx' is accepted as an alias for 'vllm-mlx'. "
             "When None, the server selects the best available backend automatically."
         ),
     )

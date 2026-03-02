@@ -25,12 +25,12 @@ const jetbrains = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Opta Init \u2014 Your local AI stack, ready in minutes',
-  description: 'Download and set up Opta CLI and Opta LMX for local AI inference on your Mac. Step-by-step guides, optimal usage tips, and instant access to your dashboard.',
-  keywords: 'local AI, LLM, inference, macOS, Apple Silicon, MLX, Opta',
+  title: 'Opta Init \u2014 App manager, updater, and launcher for Opta Local',
+  description: 'Manage Opta apps, updates, and daemon operations from one control surface. Opta Init handles lifecycle operations while Opta Local platform powers day-to-day workflows.',
+  keywords: 'Opta Init, app manager, updater, daemon control, local AI, Opta Local, macOS, Apple Silicon',
   openGraph: {
-    title: 'Opta Init \u2014 Your local AI stack, ready in minutes',
-    description: 'Download and set up your local AI inference stack in minutes.',
+    title: 'Opta Init \u2014 App manager for Opta Local',
+    description: 'Manage apps, updates, and daemon lifecycle for your Opta Local stack.',
     url: 'https://init.optalocal.com',
     siteName: 'Opta Init',
     locale: 'en_US',
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'Opta Init \u2014 Your local AI stack, ready in minutes',
-    description: 'Download and set up your local AI inference stack in minutes.',
+    title: 'Opta Init \u2014 App manager for Opta Local',
+    description: 'Manage apps, updates, and daemon lifecycle from one place.',
   },
 }
 

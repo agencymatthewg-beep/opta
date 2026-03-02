@@ -84,6 +84,39 @@ def _resolve_path(path: Path | str | None, fallback: Path) -> Path:
     return Path(path or fallback).expanduser()
 
 
+def _ensure_runtime_directories(config: LMXConfig) -> list[Path]:
+    """Create required runtime directories before services start."""
+    opta_home = Path.home() / ".opta-lmx"
+    required_dirs: set[Path] = {
+        opta_home,
+        opta_home / "quantized",
+        opta_home / "benchmarks",
+        config.models.models_directory.expanduser(),
+        config.presets.directory.expanduser(),
+        config.rag.persist_path.expanduser().parent,
+        config.journaling.session_logs_dir.expanduser(),
+        config.journaling.update_logs_dir.expanduser(),
+        _resolve_path(
+            config.workers.skill_queue_persist_path,
+            opta_home / "skills-queue.db",
+        ).parent,
+        _resolve_path(
+            config.agents.queue_persist_path,
+            opta_home / "agents-queue.db",
+        ).parent,
+        _resolve_agents_state_store_path(config.agents.state_store_path).parent,
+    }
+    if config.logging.file:
+        required_dirs.add(Path(config.logging.file).expanduser().parent)
+
+    created_dirs: list[Path] = []
+    for directory in sorted(required_dirs, key=lambda p: str(p)):
+        directory.mkdir(parents=True, exist_ok=True)
+        created_dirs.append(directory)
+
+    return created_dirs
+
+
 
 
 def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
@@ -133,6 +166,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     config: LMXConfig = app.state.config
 
     _enforce_opta48_no_local_models(config)
+    _ensure_runtime_directories(config)
 
     # Crash loop detection — record startup and check for rapid restarts
     runtime_state = RuntimeState()

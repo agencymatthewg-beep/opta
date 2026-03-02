@@ -111,11 +111,27 @@ When instructed to create a new guide:
 1. **Activate Skill:** Ensure Gemini 3.1 with the frontend design skill is active.
 2. **Analyze Request:** Determine the target `AppSlug`, `Category`, and Guide Type (App, Feature, Process, Setting).
 3. **Draft Object:** Generate the valid TypeScript object adhering to the structure. Ensure `app-link` anchor tags are heavily utilized in the `body` string.
+   - Use the reusable Gemini prompt pack in `1V-Opta-Learn/prompts/gemini/`:
+     - `system-opta-learn.md`
+     - `template-<id>.md` matching the selected template.
 4. **Apply Aesthetics:** Ensure tone matches Opta guidelines. Use `note` for callouts and `code` for snippets. Keep summaries tight.
 5. **Export & Register:** 
    - Create the new file in `1V-Opta-Learn/content/guides/<slug>.ts`.
    - Update `1V-Opta-Learn/content/guides/index.ts` to import the new guide and add it to the `allGuides` array.
+   - Preferred: use the enforced scaffolder so template structure and registration are generated automatically:
+     - `npm run guide:new -- --slug <slug> --title "<title>" --app <lmx|cli|accounts|init|general> --category <getting-started|feature|troubleshooting|reference> --template <holistic-whole-app|feature-deep-dive|process-workflow|setting-configuration>`
 6. **Verify:** 
    - Run `npm run guides:validate` to enforce template structure, explanation extent constraints, and internal guide-link integrity.
    - Run `npm run lint` and ensure it passes.
+   - Run `npm run build` and ensure static generation succeeds.
    - Check that no forbidden visual descriptors or generic AI language were used in the content strings.
+
+## 6.1 CI Enforcement
+
+- Repository workflow: `.github/workflows/opta-learn-quality.yml`
+- CI gates on Learn changes:
+  - `npm ci`
+  - `npm run lint` (includes `guides:validate`)
+  - `npm run build`
+
+This ensures guide template compliance and rendering integrity are enforced before merge.

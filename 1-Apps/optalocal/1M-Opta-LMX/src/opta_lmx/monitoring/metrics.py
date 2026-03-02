@@ -45,6 +45,9 @@ class MetricsCollector:
         self._total_prompt_tokens: int = 0
         self._total_completion_tokens: int = 0
         self._total_stream_requests: int = 0
+        self._total_speculative_accepted_tokens: int = 0
+        self._total_speculative_rejected_tokens: int = 0
+        self._total_speculative_ignored_tokens: int = 0
         self._model_requests: dict[str, int] = {}
         self._model_errors: dict[str, int] = {}
         self._model_tokens: dict[str, int] = {}
@@ -57,6 +60,25 @@ class MetricsCollector:
         self._latency_bucket_counts: dict[str, list[int]] = {}
         self._latency_sum: dict[str, float] = {}
         self._started_at: float = time.time()
+
+    @staticmethod
+    def _coerce_non_negative_int(value: Any) -> int:
+        """Parse integer-like metric input and clamp negatives to zero."""
+        try:
+            parsed = int(value)
+        except (TypeError, ValueError):
+            return 0
+        return max(parsed, 0)
+
+    def _speculative_acceptance_ratio(self) -> float | None:
+        """accepted / (accepted + rejected), or None when no token decisions exist."""
+        denominator = (
+            self._total_speculative_accepted_tokens
+            + self._total_speculative_rejected_tokens
+        )
+        if denominator <= 0:
+            return None
+        return self._total_speculative_accepted_tokens / denominator
 
     def record(self, metric: RequestMetric) -> None:
         """Record a completed request's metrics."""
@@ -103,6 +125,24 @@ class MetricsCollector:
                     break
             # If latency exceeds all buckets, it only appears in +Inf
 
+    def record_speculative(
+        self,
+        accepted_tokens: int = 0,
+        rejected_tokens: int = 0,
+        ignored_tokens: int = 0,
+    ) -> None:
+        """Record aggregate speculative decoding counters for a request/run."""
+        with self._lock:
+            self._total_speculative_accepted_tokens += self._coerce_non_negative_int(
+                accepted_tokens,
+            )
+            self._total_speculative_rejected_tokens += self._coerce_non_negative_int(
+                rejected_tokens,
+            )
+            self._total_speculative_ignored_tokens += self._coerce_non_negative_int(
+                ignored_tokens,
+            )
+
     def record_model_load(self, model_id: str, duration_sec: float) -> None:
         """Record model load time (for tracking startup performance)."""
         # Stub implementation - could be expanded to track load times
@@ -147,6 +187,47 @@ class MetricsCollector:
             lines.append("# HELP lmx_completion_tokens_total Total completion tokens generated.")
             lines.append("# TYPE lmx_completion_tokens_total counter")
             lines.append(f"lmx_completion_tokens_total {self._total_completion_tokens}")
+
+            lines.append(
+                "# HELP lmx_speculative_accepted_tokens_total "
+                "Total accepted speculative draft tokens.",
+            )
+            lines.append("# TYPE lmx_speculative_accepted_tokens_total counter")
+            lines.append(
+                f"lmx_speculative_accepted_tokens_total "
+                f"{self._total_speculative_accepted_tokens}",
+            )
+
+            lines.append(
+                "# HELP lmx_speculative_rejected_tokens_total "
+                "Total rejected speculative draft tokens.",
+            )
+            lines.append("# TYPE lmx_speculative_rejected_tokens_total counter")
+            lines.append(
+                f"lmx_speculative_rejected_tokens_total "
+                f"{self._total_speculative_rejected_tokens}",
+            )
+
+            lines.append(
+                "# HELP lmx_speculative_ignored_tokens_total "
+                "Total speculative-ignored completion tokens.",
+            )
+            lines.append("# TYPE lmx_speculative_ignored_tokens_total counter")
+            lines.append(
+                f"lmx_speculative_ignored_tokens_total "
+                f"{self._total_speculative_ignored_tokens}",
+            )
+
+            lines.append(
+                "# HELP lmx_speculative_acceptance_ratio "
+                "Accepted speculative tokens ratio (accepted/(accepted+rejected)).",
+            )
+            lines.append("# TYPE lmx_speculative_acceptance_ratio gauge")
+            speculative_ratio = self._speculative_acceptance_ratio()
+            if speculative_ratio is None:
+                lines.append("lmx_speculative_acceptance_ratio NaN")
+            else:
+                lines.append(f"lmx_speculative_acceptance_ratio {speculative_ratio:.6f}")
 
             # --- Per-model counters ---
             lines.append("# HELP lmx_model_requests_total Requests per model.")
@@ -243,12 +324,21 @@ class MetricsCollector:
     def summary(self) -> dict[str, Any]:
         """Return a JSON-friendly summary for admin endpoints."""
         with self._lock:
+            speculative_ratio = self._speculative_acceptance_ratio()
             return {
                 "total_requests": self._total_requests,
                 "total_errors": self._total_errors,
                 "total_stream_requests": self._total_stream_requests,
                 "total_prompt_tokens": self._total_prompt_tokens,
                 "total_completion_tokens": self._total_completion_tokens,
+                "speculative": {
+                    "accepted_tokens": self._total_speculative_accepted_tokens,
+                    "rejected_tokens": self._total_speculative_rejected_tokens,
+                    "ignored_tokens": self._total_speculative_ignored_tokens,
+                    "acceptance_ratio": (
+                        round(speculative_ratio, 6) if speculative_ratio is not None else None
+                    ),
+                },
                 "per_model": {
                     model_id: {
                         "requests": self._model_requests.get(model_id, 0),
@@ -272,20 +362,52 @@ class MetricsCollector:
 def speculative_metric_kwargs(telemetry: dict[str, Any] | str | None) -> dict[str, Any]:
     """Extract speculative decoding counters from engine telemetry for MetricsCollector.
 
-    Returns a dict with speculative_accepted_tokens, speculative_rejected_tokens,
-    and speculative_ignored_tokens. Safe defaults are returned when telemetry is
+    Returns normalized `speculative_*` keys with safe defaults when telemetry is
     unavailable (string sentinel or None).
     """
     if not isinstance(telemetry, dict):
+        sentinel = telemetry if isinstance(telemetry, str) else "unavailable"
         return {
+            "speculative_requested": False,
+            "speculative_active": False,
+            "speculative_reason": None,
+            "speculative_draft_model": None,
+            "speculative_num_tokens": None,
             "speculative_accepted_tokens": 0,
             "speculative_rejected_tokens": 0,
             "speculative_ignored_tokens": 0,
+            "speculative_acceptance_ratio": None,
+            "speculative_telemetry": sentinel,
         }
     return {
+        "speculative_requested": bool(
+            telemetry.get("speculative_requested", telemetry.get("requested", False)),
+        ),
+        "speculative_active": bool(
+            telemetry.get("speculative_active", telemetry.get("active", False)),
+        ),
+        "speculative_reason": telemetry.get("speculative_reason", telemetry.get("reason")),
+        "speculative_draft_model": telemetry.get(
+            "speculative_draft_model",
+            telemetry.get("draft_model"),
+        ),
+        "speculative_num_tokens": telemetry.get(
+            "speculative_num_tokens",
+            telemetry.get("num_tokens"),
+        ),
         "speculative_accepted_tokens": telemetry.get("speculative_accepted_tokens",
                                                        telemetry.get("accepted_tokens", 0)),
         "speculative_rejected_tokens": telemetry.get("speculative_rejected_tokens",
                                                       telemetry.get("rejected_tokens", 0)),
-        "speculative_ignored_tokens": telemetry.get("speculative_ignored_tokens", 0),
+        "speculative_ignored_tokens": telemetry.get(
+            "speculative_ignored_tokens",
+            telemetry.get("ignored_tokens", 0),
+        ),
+        "speculative_acceptance_ratio": telemetry.get(
+            "speculative_acceptance_ratio",
+            telemetry.get("acceptance_ratio"),
+        ),
+        "speculative_telemetry": telemetry.get("speculative_telemetry", telemetry.get(
+            "telemetry", "available",
+        )),
     }

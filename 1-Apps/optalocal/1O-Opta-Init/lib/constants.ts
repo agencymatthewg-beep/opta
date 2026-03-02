@@ -11,47 +11,47 @@ export const NAV_LINKS = [
 export const FEATURES = [
   {
     icon: "shield",
-    title: "Private & Local",
+    title: "Central App Manager",
     description:
-      "Your conversations never leave your Mac. No cloud, no tracking, no data collection.",
+      "One control layer for install, launch, and maintenance across your Opta Local applications.",
   },
   {
     icon: "layout",
-    title: "Visual Menus",
+    title: "Launcher Workflows",
     description:
-      "Navigate with keyboard menus and overlays — no commands to memorize.",
+      "Start Opta Code, open the Opta Local platform, and route into account controls from one place.",
   },
   {
     icon: "layers",
-    title: "Multiple Models",
+    title: "Update Orchestration",
     description:
-      "Switch between AI models instantly. Load new ones with a single menu selection.",
+      "Coordinate version-safe updates for apps and runtime components without manual dependency juggling.",
   },
   {
     icon: "activity",
-    title: "Real-time Dashboard",
+    title: "Daemon Operations",
     description:
-      "Monitor memory usage, model performance, and system health at a glance.",
+      "Monitor daemon health, restart services, and recover runtime state when authentication or sessions drift.",
   },
   {
     icon: "cpu",
-    title: "Apple Silicon Optimized",
+    title: "Apple Silicon Native",
     description:
-      "Built for M1, M2, M3, and M4 chips — fast inference using your Mac’s GPU.",
+      "Built for M1, M2, M3, and M4 environments where the Opta Local stack runs with local acceleration.",
   },
   {
     icon: "plug",
-    title: "OpenAI Compatible",
+    title: "Platform Separation",
     description:
-      "Works with any app that supports the OpenAI API — connect your favorite tools.",
+      "Opta Init manages and updates the stack; Opta Local platform delivers day-to-day app and model workflows.",
   },
 ] as const;
 
 export const SHOWCASE_CONTENT = {
   welcome: {
-    heading: "Welcome Screen",
+    heading: "Manager Home",
     caption:
-      "Open Opta and you’re greeted with a clean menu — pick an action and go.",
+      "Open Opta Init and choose a workflow: launch apps, run updates, or control daemon services.",
     logo: [
       "  ██████╗ ██████╗████████╗ █████╗ ",
       " ██╔═══██╗██╔══██╗╚══██╔══╝██╔══██╗",
@@ -61,38 +61,38 @@ export const SHOWCASE_CONTENT = {
       "  ╚═════╝ ╚═╝       ╚═╝   ╚═╝  ╚═╝",
     ],
     menuItems: [
-      { label: "New Chat", shortcut: "Enter" },
-      { label: "Resume Session", shortcut: "r" },
-      { label: "Browse Models", shortcut: "m" },
-      { label: "Settings", shortcut: "s" },
+      { label: "Launch Opta Code", shortcut: "Enter" },
+      { label: "Manage Updates", shortcut: "u" },
+      { label: "Daemon Controls", shortcut: "d" },
+      { label: "Open Opta Local", shortcut: "o" },
     ],
   },
   chat: {
-    heading: "Chat Interface",
+    heading: "Ops Console",
     caption:
-      "Talk to your local AI with a clean, responsive chat — streaming replies in real time.",
-    model: "Qwen 2.5 7B",
+      "Track update state and maintenance output in real time while the manager coordinates stack changes.",
+    model: "Init Ops Agent",
     messages: [
       {
         role: "user" as const,
-        text: "Summarize the key points of my meeting notes from today",
+        text: "Apply pending app updates, then restart daemon and verify health.",
       },
       {
         role: "assistant" as const,
-        text: "Here are the 3 key takeaways from your meeting:\n\n1. Launch timeline moved to March 15\n2. Budget approved for the new feature set\n3. Team expanding with two new hires",
+        text: "Update workflow started.\n\n1. Updated Opta Code Desktop to latest stable\n2. Restarted daemon at 127.0.0.1:9999\n3. Health check passed and sessions reattached",
       },
     ],
   },
   menu: {
-    heading: "Command Palette",
+    heading: "Quick Actions",
     caption:
-      "Press Shift+Space to open the menu — browse models, switch settings, all by keyboard.",
+      "Use Shift+Space to manage apps, schedule updates, and operate daemon controls from one command surface.",
     items: [
-      { label: "Switch Model", active: false },
-      { label: "Qwen 2.5 7B", active: true },
-      { label: "Llama 3.1 8B", active: false },
-      { label: "DeepSeek R1 14B", active: false },
-      { label: "Mistral Small 22B", active: false },
+      { label: "Launch App", active: false },
+      { label: "Update Installed Apps", active: true },
+      { label: "Daemon Status", active: false },
+      { label: "Restart Daemon", active: false },
+      { label: "Open Opta Local Platform", active: false },
     ],
     hint: "↑↓ Navigate  Enter Select  Esc Close",
   },

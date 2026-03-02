@@ -368,7 +368,13 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       turnId: body?.turnId,
       writerId: body?.writerId,
     });
-    return { ok: true, cancelledQueued: result.cancelledQueued, cancelledActive: result.cancelledActive };
+    const cancelled = result.cancelledQueued + (result.cancelledActive ? 1 : 0);
+    return {
+      ok: true,
+      cancelled,
+      cancelledQueued: result.cancelledQueued,
+      cancelledActive: result.cancelledActive,
+    };
   });
 
   app.post('/v3/sessions/:sessionId/permissions/:requestId', async (req, reply) => {

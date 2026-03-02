@@ -28,6 +28,10 @@ export interface DaemonHealthResponse {
   status: string;
   version?: string;
   daemonId?: string;
+  contract?: {
+    name: string;
+    version: number;
+  };
   runtime?: unknown;
 }
 
@@ -44,6 +48,9 @@ export interface DaemonSubmitTurnResponse {
 
 export interface DaemonCancelResponse {
   cancelled: number;
+  ok?: boolean;
+  cancelledQueued?: number;
+  cancelledActive?: boolean;
 }
 
 export interface DaemonPermissionResponse {
@@ -110,9 +117,12 @@ export interface DaemonLmxMemoryResponse {
 
 export interface DaemonLmxAvailableModel {
   model_id: string;
+  repo_id?: string;
   size_bytes?: number;
   quantization?: string;
   modified_at?: string;
+  local_path?: string;
+  downloaded_at?: number;
 }
 
 export interface DaemonLmxLoadOptions {

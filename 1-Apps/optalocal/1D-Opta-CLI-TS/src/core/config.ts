@@ -530,12 +530,30 @@ export const OptaConfigSchema = z.object({
     .default({}),
   provider: z
     .object({
-      active: z.enum(['lmx', 'anthropic']).default('lmx'),
+      active: z.enum(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']).default('lmx'),
       fallbackOnFailure: z.boolean().default(false),
       anthropic: z
         .object({
           apiKey: z.string().default(''),
-          model: z.string().default('claude-sonnet-4-5-20250929'),
+          model: z.string().default('claude-3-7-sonnet-latest'),
+        })
+        .default({}),
+      gemini: z
+        .object({
+          apiKey: z.string().default(''),
+          model: z.string().default('gemini-2.5-pro'),
+        })
+        .default({}),
+      openai: z
+        .object({
+          apiKey: z.string().default(''),
+          model: z.string().default('gpt-4o'),
+        })
+        .default({}),
+      opencode_zen: z
+        .object({
+          apiKey: z.string().default(''),
+          model: z.string().default('opencode-zen-1'),
         })
         .default({}),
     })

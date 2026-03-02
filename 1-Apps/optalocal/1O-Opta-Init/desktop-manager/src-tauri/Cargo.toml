@@ -1,0 +1,20 @@
+[package]
+name = "opta-init-desktop-manager"
+version = "0.1.0"
+description = "Opta Init Desktop Manager"
+authors = ["Opta"]
+edition = "2021"
+
+[build-dependencies]
+tauri-build = { version = "2.0.2", features = [] }
+
+[dependencies]
+tauri = { version = "2.2.5", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "process"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+webbrowser = "1"
+dirs = "5"
+

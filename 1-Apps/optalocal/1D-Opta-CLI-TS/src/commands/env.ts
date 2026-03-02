@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { getConfigStore, loadConfig, saveConfig } from '../core/config.js';
+import type { OptaConfig } from '../core/config.js';
 import { EXIT, ExitError } from '../core/errors.js';
 import { lookupContextLimit } from '../lmx/client.js';
 import { normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
@@ -13,26 +14,26 @@ interface EnvCommandOptions {
   provider?: string;
   mode?: string;
 }
-
-type ProviderName = 'lmx' | 'anthropic';
-type DefaultMode = 'safe' | 'auto' | 'plan' | 'review' | 'research' | 'dangerous' | 'ci';
+type ProviderName = OptaConfig['provider']['active'];
+type DefaultMode = OptaConfig['defaultMode'];
 
 export interface EnvProfile {
   name: string;
   connection: {
     host: string;
     port: number;
-    adminKey?: string;
+    apiKey?: string;
+    protocol: 'http';
   };
-  modelDefault: string;
   provider: ProviderName;
   defaultMode: DefaultMode;
+  createdAt: number;
   updatedAt: number;
 }
 
 const ENV_PROFILES_KEY = 'profiles.environments';
 const ENV_CURRENT_KEY = 'profiles.activeEnvironment';
-const VALID_PROVIDERS = new Set<ProviderName>(['lmx', 'anthropic']);
+const VALID_PROVIDERS = new Set<ProviderName>(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']);
 const VALID_MODES = new Set<DefaultMode>([
   'safe',
   'auto',

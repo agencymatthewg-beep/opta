@@ -264,6 +264,38 @@ class GenerationExecutor:
         self._predictor = predictor
         self._runtime_failure_quarantine_threshold = runtime_failure_quarantine_threshold
 
+    @staticmethod
+    def _coerce_backend_stream_chunk(chunk: Any) -> tuple[str, Any | None]:
+        """Normalize backend stream chunks into (delta_text, telemetry_payload)."""
+        if isinstance(chunk, str):
+            return chunk, None
+
+        payload: Any = chunk
+        if isinstance(chunk, dict):
+            for key in ("new_text", "text", "delta", "content", "token"):
+                value = chunk.get(key)
+                if isinstance(value, str):
+                    return value, payload
+            return "", payload
+
+        if hasattr(chunk, "new_text"):
+            value = getattr(chunk, "new_text", "")
+            if isinstance(value, str):
+                return value, payload
+        if hasattr(chunk, "text"):
+            value = getattr(chunk, "text", "")
+            if isinstance(value, str):
+                return value, payload
+        return str(chunk), payload
+
+    @staticmethod
+    def _pop_backend_speculative_payload(backend: Any) -> Any | None:
+        popper = getattr(backend, "pop_speculative_telemetry", None)
+        if callable(popper):
+            with contextlib.suppress(Exception):
+                return popper()
+        return None
+
     async def generate(
         self,
         model_id: str,
@@ -448,6 +480,11 @@ class GenerationExecutor:
                 response_format=response_format,
             )
             content, prompt_tokens, completion_tokens = cast(tuple[str, int, int], backend_result)
+            backend_payload = self._pop_backend_speculative_payload(loaded.backend)
+            if backend_payload is not None:
+                SpeculativeTelemetryHelper.update_speculative_from_payload(
+                    speculative_telemetry, backend_payload,
+                )
             SpeculativeTelemetryHelper.finalize_speculative_telemetry(
                 speculative_telemetry, completion_tokens,
             )
@@ -543,7 +580,7 @@ class GenerationExecutor:
                 try:
                     async with asyncio.timeout(self._inference_timeout):
                         if loaded.backend is not None:
-                            async for token in loaded.backend.stream(
+                            async for chunk in loaded.backend.stream(
                                 messages=msg_dicts,
                                 temperature=temperature,
                                 max_tokens=max_tokens or 2048,
@@ -552,8 +589,19 @@ class GenerationExecutor:
                                 tools=tools,
                                 response_format=response_format,
                             ):
-                                completion_units += 1
-                                yield token
+                                delta, payload = self._coerce_backend_stream_chunk(chunk)
+                                if payload is not None:
+                                    SpeculativeTelemetryHelper.update_speculative_from_payload(
+                                        speculative_telemetry, payload,
+                                    )
+                                if delta:
+                                    completion_units += 1
+                                    yield delta
+                            backend_payload = self._pop_backend_speculative_payload(loaded.backend)
+                            if backend_payload is not None:
+                                SpeculativeTelemetryHelper.update_speculative_from_payload(
+                                    speculative_telemetry, backend_payload,
+                                )
                         else:
                             chat_kwargs: dict[str, Any] = {
                                 "messages": msg_dicts,

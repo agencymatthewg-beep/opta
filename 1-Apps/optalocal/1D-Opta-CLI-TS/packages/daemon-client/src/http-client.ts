@@ -38,7 +38,63 @@ function baseUrl(connection: DaemonConnectionOptions): string {
   return `${protocol}://${connection.host}:${connection.port}`;
 }
 
-const REQUEST_TIMEOUT_MS = 8000;
+const DEFAULT_REQUEST_TIMEOUT_MS = 8_000;
+const BACKGROUND_OUTPUT_TIMEOUT_MS = 20_000;
+const LMX_READ_TIMEOUT_MS = 30_000;
+const LMX_MUTATION_TIMEOUT_MS = 120_000;
+
+interface RequestOptions {
+  timeoutMs?: number;
+}
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === 'object' && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function normalizeCancelResponse(raw: unknown): DaemonCancelResponse {
+  const parsed = asRecord(raw);
+  if (!parsed) {
+    return { cancelled: 0 };
+  }
+
+  const cancelled = typeof parsed.cancelled === 'number' ? parsed.cancelled : undefined;
+  const cancelledQueued =
+    typeof parsed.cancelledQueued === 'number' ? parsed.cancelledQueued : undefined;
+  const cancelledActive =
+    typeof parsed.cancelledActive === 'boolean' ? parsed.cancelledActive : undefined;
+
+  return {
+    cancelled: cancelled ?? (cancelledQueued ?? 0) + (cancelledActive ? 1 : 0),
+    ok: typeof parsed.ok === 'boolean' ? parsed.ok : undefined,
+    cancelledQueued,
+    cancelledActive,
+  };
+}
+
+function normalizeAvailableModel(raw: unknown): DaemonLmxAvailableModel | null {
+  const parsed = asRecord(raw);
+  if (!parsed) return null;
+
+  const modelId =
+    typeof parsed.model_id === 'string'
+      ? parsed.model_id
+      : typeof parsed.repo_id === 'string'
+        ? parsed.repo_id
+        : null;
+  if (!modelId) return null;
+
+  const repoId = typeof parsed.repo_id === 'string' ? parsed.repo_id : modelId;
+
+  return {
+    model_id: modelId,
+    repo_id: repoId,
+    size_bytes: typeof parsed.size_bytes === 'number' ? parsed.size_bytes : undefined,
+    quantization: typeof parsed.quantization === 'string' ? parsed.quantization : undefined,
+    modified_at: typeof parsed.modified_at === 'string' ? parsed.modified_at : undefined,
+    local_path: typeof parsed.local_path === 'string' ? parsed.local_path : undefined,
+    downloaded_at: typeof parsed.downloaded_at === 'number' ? parsed.downloaded_at : undefined,
+  };
+}
 
 export class DaemonHttpClient implements DaemonHttpApi {
   constructor(
@@ -48,12 +104,17 @@ export class DaemonHttpClient implements DaemonHttpApi {
       globalThis.fetch(input, init)
   ) {}
 
-  private async request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    path: string,
+    init: RequestInit = {},
+    options: RequestOptions = {},
+  ): Promise<T> {
     const headers = new Headers(init.headers);
     headers.set('Authorization', `Bearer ${this.connection.token}`);
     if (init.body && !headers.has('Content-Type')) {
       headers.set('Content-Type', 'application/json');
     }
+    const timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
 
     const controller = new AbortController();
     const upstreamSignal = init.signal;
@@ -70,7 +131,7 @@ export class DaemonHttpClient implements DaemonHttpApi {
     const timeoutId = setTimeout(() => {
       timedOut = true;
       controller.abort();
-    }, REQUEST_TIMEOUT_MS);
+    }, timeoutMs);
 
     let response: Response;
     try {
@@ -81,7 +142,7 @@ export class DaemonHttpClient implements DaemonHttpApi {
       });
     } catch (error) {
       if (timedOut) {
-        throw new Error(`Daemon request timed out (${REQUEST_TIMEOUT_MS}ms): ${path}`);
+        throw new Error(`Daemon request timed out (${timeoutMs}ms): ${path}`);
       }
       throw error;
     } finally {
@@ -131,10 +192,10 @@ export class DaemonHttpClient implements DaemonHttpApi {
     sessionId: string,
     payload: { turnId?: string; writerId?: string } = {}
   ): Promise<DaemonCancelResponse> {
-    return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/cancel`, {
+    return this.request<unknown>(`/v3/sessions/${encodeURIComponent(sessionId)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(payload),
-    });
+    }).then(normalizeCancelResponse);
   }
 
   resolvePermission(
@@ -201,7 +262,9 @@ export class DaemonHttpClient implements DaemonHttpApi {
     if (options.stream !== undefined) query.set('stream', options.stream);
     const suffix = query.toString();
     return this.request(
-      `/v3/background/${encodeURIComponent(processId)}/output${suffix ? `?${suffix}` : ''}`
+      `/v3/background/${encodeURIComponent(processId)}/output${suffix ? `?${suffix}` : ''}`,
+      {},
+      { timeoutMs: BACKGROUND_OUTPUT_TIMEOUT_MS },
     );
   }
 
@@ -216,45 +279,46 @@ export class DaemonHttpClient implements DaemonHttpApi {
   }
 
   lmxStatus(): Promise<DaemonLmxStatusResponse> {
-    return this.request('/v3/lmx/status');
+    return this.request('/v3/lmx/status', {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
   }
 
   lmxModels(): Promise<{ models: DaemonLmxModelDetail[] }> {
-    return this.request('/v3/lmx/models');
+    return this.request('/v3/lmx/models', {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
   }
 
   lmxMemory(): Promise<DaemonLmxMemoryResponse> {
-    return this.request('/v3/lmx/memory');
+    return this.request('/v3/lmx/memory', {}, { timeoutMs: LMX_READ_TIMEOUT_MS });
   }
 
   lmxAvailable(): Promise<DaemonLmxAvailableModel[]> {
-    return this.request('/v3/lmx/models/available');
+    return this.request<unknown[]>('/v3/lmx/models/available', {}, { timeoutMs: LMX_READ_TIMEOUT_MS })
+      .then((available) => available.map(normalizeAvailableModel).filter(Boolean) as DaemonLmxAvailableModel[]);
   }
 
   lmxLoad(modelId: string, opts?: DaemonLmxLoadOptions): Promise<unknown> {
     return this.request('/v3/lmx/models/load', {
       method: 'POST',
       body: JSON.stringify({ modelId, ...opts }),
-    });
+    }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
   }
 
   lmxUnload(modelId: string): Promise<unknown> {
     return this.request('/v3/lmx/models/unload', {
       method: 'POST',
       body: JSON.stringify({ modelId }),
-    });
+    }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
   }
 
   lmxDelete(modelId: string): Promise<unknown> {
     return this.request(`/v3/lmx/models/${encodeURIComponent(modelId)}`, {
       method: 'DELETE',
-    });
+    }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
   }
 
   lmxDownload(repoId: string): Promise<DaemonLmxDownloadResponse> {
     return this.request('/v3/lmx/models/download', {
       method: 'POST',
       body: JSON.stringify({ repoId }),
-    });
+    }, { timeoutMs: LMX_MUTATION_TIMEOUT_MS });
   }
 }

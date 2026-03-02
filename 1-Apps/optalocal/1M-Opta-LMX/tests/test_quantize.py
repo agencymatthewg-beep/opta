@@ -105,6 +105,24 @@ class TestDoQuantize:
         )
         assert size == 100
 
+    def test_creates_output_parent_directory(self, tmp_path: Path) -> None:
+        out = tmp_path / "missing-parent" / "output"
+        mock_convert = MagicMock()
+
+        def fake_convert(**kwargs: object) -> None:
+            p = Path(kwargs["mlx_path"])
+            p.mkdir(parents=True)
+            (p / "weights.bin").write_bytes(b"x")
+
+        mock_convert.side_effect = fake_convert
+        mock_mlx_lm = MagicMock()
+        mock_mlx_lm.convert = mock_convert
+
+        with patch.dict("sys.modules", {"mlx_lm": mock_mlx_lm}):
+            _do_quantize("org/model", str(out), 4, 64, "affine")
+
+        assert (tmp_path / "missing-parent").exists()
+
     def test_calculates_output_size(self, tmp_path: Path) -> None:
         out = tmp_path / "sized"
         mock_convert = MagicMock()

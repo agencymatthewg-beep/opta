@@ -61,6 +61,7 @@ def _do_quantize(
     out = Path(output_path)
     if out.exists():
         raise FileExistsError(f"Output path already exists: {output_path}")
+    out.parent.mkdir(parents=True, exist_ok=True)
 
     from mlx_lm import convert
 

@@ -1,5 +1,25 @@
 # Opta Init — Changelog
 
+## [1.1.0] - 2026-03-02 ✅ Release Control Plane Contract
+
+### Added
+
+- Added versioned release-control schema: `channels/schema/release-manifest.v1.schema.json`.
+- Added internal release-control runbook: `docs/RELEASE-CONTROL-WORKFLOW.md`.
+- Added manifest validator script: `scripts/validate-release-manifests.mjs`.
+
+### Changed
+
+- Replaced minimal channel metadata with full control-plane manifests in:
+  - `channels/stable.json`
+  - `channels/beta.json`
+- Channel manifests now include component-level macOS/Windows artifacts for:
+  - `opta-cli`
+  - `opta-lmx`
+  - `opta-code-universal`
+  - `opta-daemon`
+- Added rollout + promotion visibility to docs index and roadmap.
+
 ## [1.0.1] - 2026-02-28 ✅ Documentation + Delivery Sync
 
 ### Changed

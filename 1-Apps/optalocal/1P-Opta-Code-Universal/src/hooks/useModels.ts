@@ -75,14 +75,15 @@ export function useModels(
         return;
       }
 
+      const anyReachable = Boolean(
+        statusRes || modelsRes || memoryRes || availableRes,
+      );
+
       if (statusRes) {
         setLmxStatus(statusRes);
-        setLmxReachable(true);
-        setError(null);
-      } else {
-        setLmxReachable(false);
-        setError("LMX server unreachable");
       }
+      setLmxReachable(anyReachable);
+      setError(anyReachable ? null : "LMX server unreachable");
 
       if (modelsRes) setLoadedModels(modelsRes.models);
       if (memoryRes) setMemory(memoryRes);

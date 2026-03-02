@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { access, writeFile, mkdir } from 'node:fs/promises';
 import chalk from 'chalk';
 import { saveConfig, loadConfig } from '../core/config.js';
+import type { OptaConfig } from '../core/config.js';
 import { isKeychainAvailable } from '../keychain/index.js';
 import { storeAnthropicKey } from '../keychain/api-keys.js';
 import { getConfigDir } from '../platform/paths.js';
@@ -27,8 +28,10 @@ export async function markOnboarded(): Promise<void> {
   await writeFile(ONBOARD_MARKER, new Date().toISOString(), 'utf-8');
 }
 
+type ProviderName = OptaConfig['provider']['active'];
+
 export interface OnboardingProfileInput {
-  provider?: 'lmx' | 'anthropic';
+  provider?: ProviderName;
   lmxHost?: string;
   lmxPort?: number;
   anthropicApiKey?: string;
@@ -38,7 +41,7 @@ export interface OnboardingProfileInput {
 
 export interface OnboardingProfileResult {
   ok: true;
-  provider: 'lmx' | 'anthropic';
+  provider: ProviderName;
   connection: {
     host: string;
     port: number;
@@ -66,7 +69,7 @@ export async function applyOnboardingProfile(
 ): Promise<OnboardingProfileResult> {
   const existing = await loadConfig().catch(() => null);
 
-  const provider: 'lmx' | 'anthropic' = input.provider ?? existing?.provider?.active ?? 'lmx';
+  const provider: ProviderName = input.provider ?? existing?.provider?.active ?? 'lmx';
   const lmxHost = input.lmxHost?.trim() || existing?.connection?.host || '192.168.188.11';
   const lmxPort = normalizePort(input.lmxPort ?? existing?.connection?.port ?? 1234);
   const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
@@ -176,7 +179,7 @@ export async function runOnboarding(): Promise<void> {
       existing?.provider?.active === 'anthropic' ? 1 : 0
     );
 
-    const provider: 'lmx' | 'anthropic' = providerChoice === 0 ? 'lmx' : 'anthropic';
+    const provider: 'lmx' | 'anthropic' | 'gemini' | 'openai' | 'opencode_zen' = providerChoice === 0 ? 'lmx' : 'anthropic';
 
     let lmxHost = '192.168.188.11';
     let lmxPort = 1234;

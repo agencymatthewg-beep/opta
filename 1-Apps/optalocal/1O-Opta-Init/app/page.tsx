@@ -8,6 +8,7 @@ import {
   SHOWCASE_CONTENT,
   DASHBOARD_URL,
   ACCOUNTS_URL,
+  PLATFORM_URL,
 } from "@/lib/constants";
 import { DOWNLOAD_TARGETS, resolveDownloadAvailability, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
 import { OptaRing } from "@/components/OptaRing";
@@ -126,20 +127,20 @@ export default function Home() {
             <div className="absolute top-20 right-1/3 w-1.5 h-1.5 bg-primary/40 rounded-full animate-[ping_6s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs text-primary uppercase tracking-widest mb-8">
-              <Zap className="w-3 h-3" /> Opta Local Stack v2.0
+              <Zap className="w-3 h-3" /> Opta Init App Manager
             </div>
 
             <h1 className="text-[10vw] leading-[0.9] font-bold tracking-tighter uppercase">
               <div className="overflow-hidden pb-4">
-                <motion.div variants={textUp} className="text-moonlight">Deploy</motion.div>
+                <motion.div variants={textUp} className="text-moonlight">Manage</motion.div>
               </div>
               <div className="overflow-hidden pb-4 ml-[8vw]">
                 <motion.div variants={textUp}>
-                  <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(168,85,247,0.6)' }}>Local</span>
+                  <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(168,85,247,0.6)' }}>Opta Apps</span>
                 </motion.div>
               </div>
               <div className="overflow-hidden pb-4">
-                <motion.div variants={textUp} className="text-moonlight">Intelligence.</motion.div>
+                <motion.div variants={textUp} className="text-moonlight">and Daemon.</motion.div>
               </div>
             </h1>
           </div>
@@ -147,7 +148,7 @@ export default function Home() {
           <div className="md:col-span-4 md:col-start-2">
             <motion.div variants={lineRevealX} className="h-px bg-white/10 w-full mb-8" />
             <motion.p variants={textUp} className="text-lg font-light leading-relaxed text-text-secondary">
-              The definitive bootstrap for Apple Silicon AI. Run LLMs locally with our highly optimized, private inference stack. Zero cloud. Pure capability.
+              Opta Init is the manager, updater, and launcher for your Opta Local stack. Install apps, roll updates safely, and control daemon lifecycle from one native surface.
             </motion.p>
 
             <motion.a href="#install" variants={textUp} className="mt-12 group cursor-pointer inline-flex items-center gap-4 obsidian-interactive p-3 rounded-full pr-8 border border-white/10">
@@ -155,8 +156,15 @@ export default function Home() {
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
               </div>
               <span className="text-sm uppercase tracking-widest font-medium text-text-primary">
-                Initialize System
+                Open Manager Flow
               </span>
+            </motion.a>
+            <motion.a
+              href={PLATFORM_URL}
+              variants={textUp}
+              className="mt-4 inline-flex items-center gap-2 text-sm uppercase tracking-widest text-neon-blue hover:text-primary transition-colors"
+            >
+              Open Opta Local Platform <ArrowUpRight className="w-4 h-4" />
             </motion.a>
           </div>
         </motion.section>
@@ -171,10 +179,10 @@ export default function Home() {
           className="px-[8%] mb-40 relative z-20"
         >
           <motion.div variants={fadeUp} className="mb-16 text-center">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Command Line Interface</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Visual Terminal App.</h3>
+            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Manager Interface</h2>
+            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Visual Operations Surface.</h3>
             <p className="mt-6 text-lg text-text-secondary font-light max-w-2xl mx-auto">
-              A highly interactive TUI (Terminal User Interface). Navigate with menus, switch models, and chat—no complex arguments required.
+              Opta Init coordinates stack operations with guided menus for app launch, update workflows, and daemon controls.
             </p>
           </motion.div>
 
@@ -293,7 +301,7 @@ export default function Home() {
                 </div>
                 <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br />Full Stack.</h2>
                 <p className="text-text-secondary mb-10 font-light leading-relaxed">
-                  Run the bootstrap script and the installer wizard takes over. It verifies hardware, installs CLI + LMX in order, and leaves you with a ready-to-run stack.
+                  Run bootstrap once, then Opta Init takes over as your lifecycle manager. It installs stack components, tracks versions, and keeps app + daemon state synchronized.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm text-text-muted">
@@ -323,14 +331,14 @@ export default function Home() {
                       <span className="text-white">curl -fsSL https://optalocal.com/init | bash</span>
                     </p>
                     <div className="pt-4 space-y-1 opacity-70">
-                      <p className="text-neon-blue">==&gt; Provisioning Opta Environment...</p>
+                      <p className="text-neon-blue">==&gt; Starting Opta Init manager...</p>
                       <p>==&gt; Checking hardware: <span className="text-neon-green">Apple M3 Max (128GB)</span></p>
-                      <p>==&gt; Installing Opta CLI globally</p>
-                      <p>==&gt; Launching guided installer wizard</p>
-                      <p>==&gt; Installing LMX runtime + services</p>
-                      <p>==&gt; Downloading default weights (4.2GB)</p>
-                      <p className="text-neon-green mt-2">✔ System successfully initialized.</p>
-                      <p className="text-text-muted mt-2">Wizard complete. Run `opta tui` to open the dashboard.</p>
+                      <p>==&gt; Installing Opta app manager + launcher</p>
+                      <p>==&gt; Registering installed apps and update channels</p>
+                      <p>==&gt; Verifying daemon service + auth recovery hooks</p>
+                      <p>==&gt; Syncing runtime status with Opta Local platform</p>
+                      <p className="text-neon-green mt-2">✔ Manager ready. Apps, updates, and daemon are now coordinated.</p>
+                      <p className="text-text-muted mt-2">Run `opta init` any time to launch manager workflows.</p>
                     </div>
                   </div>
                 </div>
@@ -348,8 +356,8 @@ export default function Home() {
           className="px-[8%] mb-40"
         >
           <motion.div variants={fadeUp} className="mb-16">
-            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">The Pipeline</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Layered Architecture</h3>
+            <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Control Topology</h2>
+            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Manager vs Platform Roles</h3>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
@@ -359,24 +367,24 @@ export default function Home() {
             {[
               {
                 step: "01",
-                title: "Opta CLI Daemon",
+                title: "Opta Init Manager",
                 icon: <Code2 className="w-5 h-5" />,
-                port: "127.0.0.1:9999",
-                desc: "Session orchestration, permission gating, and event persistence. Proxies requests to LMX."
+                port: "Local App Layer",
+                desc: "Owns app launch, updater policies, daemon actions, and recovery workflows for the local stack."
               },
               {
                 step: "02",
-                title: "Opta LMX Server",
+                title: "Opta CLI Daemon",
                 icon: <Layers className="w-5 h-5" />,
-                port: "127.0.0.1:1234",
-                desc: "The core MLX inference server. OpenAI API-compatible. Automatically degrades on OOM rather than crashing."
+                port: "127.0.0.1:9999",
+                desc: "Session orchestration and runtime services managed by Opta Init for health checks, restarts, and recovery."
               },
               {
                 step: "03",
-                title: "Opta Local Web",
+                title: "Opta Local Platform",
                 icon: <Box className="w-5 h-5" />,
-                port: "localhost:3004",
-                desc: "React dashboard connecting directly to LMX. Runs in LAN mode or Cloud mode via Supabase auth."
+                port: "optalocal.com + apps",
+                desc: "The application experience for models and workflows. Opta Init manages the stack; Opta Local delivers daily usage."
               }
             ].map((node, i) => (
               <motion.div key={i} variants={fadeUp} className="relative z-10">
@@ -411,7 +419,7 @@ export default function Home() {
         >
           <motion.div variants={fadeUp} className="mb-16">
             <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Capabilities</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Built for the Edge</h3>
+            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Built to Manage the Stack</h3>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -442,8 +450,8 @@ export default function Home() {
         >
           <motion.div variants={fadeUp} className="text-center mb-16">
             <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Direct Access</h2>
-            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Download Packages</h3>
-            <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the latest package files below.</p>
+            <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Download Manager Packages</h3>
+            <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the latest Opta Init manager packages below.</p>
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
@@ -497,16 +505,21 @@ export default function Home() {
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/20 blur-[100px] rounded-full pointer-events-none"></div>
 
               <div className="relative z-10">
-                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-moonlight">Ready to manage your models?</h2>
+                <h2 className="text-3xl md:text-5xl font-bold mb-6 text-moonlight">Manage apps, updates, and daemon from one surface.</h2>
                 <p className="text-lg text-text-secondary font-light max-w-xl mx-auto mb-10">
-                  Access your Web Dashboard to monitor performance, manage weights, and chat—all in a beautiful browser interface.
+                  Opta Init is your lifecycle manager and launcher. Use Opta Local platform for product workflows, with daemon state kept healthy underneath.
                 </p>
-                <a href={DASHBOARD_URL} className="inline-flex h-14 px-8 items-center justify-center gap-2 rounded-xl bg-white text-void font-bold text-lg hover:bg-white/90 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)]">
-                  Open Web Dashboard <ArrowUpRight className="w-5 h-5" />
-                </a>
-                <a href={ACCOUNTS_URL} className="mt-4 inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
-                  Manage Account <ArrowUpRight className="w-4 h-4" />
-                </a>
+                <div className="flex flex-col items-center gap-4">
+                  <a href={PLATFORM_URL} className="inline-flex h-14 px-8 items-center justify-center gap-2 rounded-xl bg-white text-void font-bold text-lg hover:bg-white/90 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)]">
+                    Open Opta Local Platform <ArrowUpRight className="w-5 h-5" />
+                  </a>
+                  <a href={DASHBOARD_URL} className="inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
+                    Open Web Dashboard <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                  <a href={ACCOUNTS_URL} className="inline-flex h-12 px-7 items-center justify-center gap-2 rounded-xl border border-white/20 text-text-primary font-semibold text-base hover:border-primary/50 hover:text-primary transition-colors">
+                    Manage Account <ArrowUpRight className="w-4 h-4" />
+                  </a>
+                </div>
               </div>
             </div>
           </motion.div>
@@ -521,9 +534,9 @@ export default function Home() {
             <span className="text-sm font-light">Opta Operations © 2026. Secure by design.</span>
           </div>
           <div className="flex gap-8 text-sm font-medium tracking-wide text-text-secondary">
-            <a href="#" className="hover:text-primary transition-colors">Manifesto</a>
-            <a href="#" className="hover:text-primary transition-colors">Documentation</a>
-            <a href="#" className="hover:text-primary transition-colors">GitHub</a>
+            <a href={PLATFORM_URL} className="hover:text-primary transition-colors">Opta Local</a>
+            <a href={DASHBOARD_URL} className="hover:text-primary transition-colors">Dashboard</a>
+            <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
           </div>
         </div>
       </footer>

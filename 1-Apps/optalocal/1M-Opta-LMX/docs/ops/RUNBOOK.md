@@ -448,7 +448,30 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
     "model": "preset:code-assistant",
     "messages": [{"role": "user", "content": "Explain async/await"}]
   }'
+
+# Route to interactive lane (maps to high priority / queue bypass)
+curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-Serving-Lane: interactive" \
+  -d '{
+    "model": "code",
+    "messages": [{"role": "user", "content": "Fast response please"}]
+  }'
+
+# Route to throughput lane (maps to normal priority)
+curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+  -H "Content-Type: application/json" \
+  -H "X-Serving-Lane: throughput" \
+  -d '{
+    "model": "code",
+    "messages": [{"role": "user", "content": "Batch-style request"}]
+  }'
 ```
+
+**Lane/priority precedence:**
+- `X-Serving-Lane: interactive|throughput` is preferred and deterministically maps to internal priorities (`high`/`normal`).
+- `X-Priority` remains supported for backward compatibility when `X-Serving-Lane` is absent.
+- If both headers are present, `X-Serving-Lane` wins.
 
 ---
 
@@ -498,7 +521,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/probe \
 | Error Code | Cause | Fix |
 |-----------|-------|-----|
 | `model_unsupported_arch` | MLX requires Apple Silicon (arm64) | Cannot fix -- MLX is Apple Silicon only |
-| `model_unsupported_backend` | Backend cannot handle this model format | Try `"backend": "gguf"` or `"backend": "mlx"` explicitly |
+| `model_unsupported_backend` | Backend cannot handle this model format | Try `"backend": "vllm-mlx"`, `"backend": "mlx-lm"`, or `"backend": "gguf"` (`"mlx"` is a legacy alias for `"vllm-mlx"`) |
 | `model_load_timeout` | Child loader timed out (default 120s) | Increase `models.loader_timeout_sec` in config, check disk speed |
 | `model_loader_crashed` | Child loader process died (signal/segfault) | Check for OOM, re-download model, try different quant |
 | `model_probe_failed` | Probe returned invalid output | Check model file integrity, re-download |

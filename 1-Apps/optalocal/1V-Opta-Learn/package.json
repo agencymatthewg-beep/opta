@@ -5,8 +5,10 @@
   "scripts": {
     "dev": "next dev -p 3007",
     "build": "next build --webpack",
+    "guide:new": "node ./scripts/new-guide.mjs",
     "guides:validate": "node ./scripts/validate-guides.mjs",
-    "lint": "npm run guides:validate && eslint ."
+    "lint": "npm run guides:validate && eslint .",
+    "check": "npm run lint && npm run build"
   },
   "dependencies": {
     "clsx": "^2",

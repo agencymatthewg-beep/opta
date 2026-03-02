@@ -1,0 +1,283 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://init.optalocal.com/schemas/release-manifest.v1.schema.json",
+  "title": "Opta Init Release Manifest v1",
+  "description": "Release-control manifest consumed by the Opta Init manager control plane.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "manifestVersion",
+    "channel",
+    "publishedAt",
+    "release",
+    "rollout",
+    "components"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0.0"
+    },
+    "manifestVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "channel": {
+      "type": "string",
+      "enum": ["stable", "beta"]
+    },
+    "publishedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "release": {
+      "$ref": "#/$defs/release"
+    },
+    "rollout": {
+      "$ref": "#/$defs/rollout"
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/component"
+      }
+    }
+  },
+  "$defs": {
+    "semver": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$"
+    },
+    "httpsUrl": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https://"
+    },
+    "release": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "notesUrl", "minManagerVersion"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 128
+        },
+        "notesUrl": {
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "minManagerVersion": {
+          "$ref": "#/$defs/semver"
+        }
+      }
+    },
+    "rollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "percentage", "cohort", "startsAt", "allowDowngrade"],
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["immediate", "phased", "holdback"]
+        },
+        "percentage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "cohort": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "startsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "allowDowngrade": {
+          "type": "boolean"
+        }
+      }
+    },
+    "checksum": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["algorithm", "value"],
+      "properties": {
+        "algorithm": {
+          "type": "string",
+          "const": "sha256"
+        },
+        "value": {
+          "type": "string",
+          "pattern": "^[A-Fa-f0-9]{64}$"
+        }
+      }
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "url"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["codesign", "authenticode", "cosign", "minisign", "sigstore"]
+        },
+        "url": {
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "certificate": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "keyId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        }
+      }
+    },
+    "artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "platform",
+        "arch",
+        "packageType",
+        "url",
+        "sizeBytes",
+        "checksum",
+        "signature"
+      ],
+      "properties": {
+        "platform": {
+          "type": "string",
+          "enum": ["macos", "windows"]
+        },
+        "arch": {
+          "type": "string",
+          "enum": ["x64", "arm64", "universal"]
+        },
+        "packageType": {
+          "type": "string",
+          "enum": ["pkg", "dmg", "zip", "tar.gz", "msi", "exe"]
+        },
+        "url": {
+          "$ref": "#/$defs/httpsUrl"
+        },
+        "sizeBytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "checksum": {
+          "$ref": "#/$defs/checksum"
+        },
+        "signature": {
+          "$ref": "#/$defs/signature"
+        }
+      }
+    },
+    "componentRollout": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["percentage", "priority"],
+      "properties": {
+        "percentage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      }
+    },
+    "component": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "displayName",
+        "version",
+        "minManagerVersion",
+        "track",
+        "rollout",
+        "artifacts"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "enum": ["opta-cli", "opta-lmx", "opta-code-universal", "opta-daemon"]
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 96
+        },
+        "version": {
+          "$ref": "#/$defs/semver"
+        },
+        "minManagerVersion": {
+          "$ref": "#/$defs/semver"
+        },
+        "track": {
+          "type": "string",
+          "enum": ["stable", "beta"]
+        },
+        "rollout": {
+          "$ref": "#/$defs/componentRollout"
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["macos", "windows"],
+          "properties": {
+            "macos": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/artifact"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "const": "macos"
+                      }
+                    }
+                  }
+                ]
+              }
+            },
+            "windows": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "allOf": [
+                  {
+                    "$ref": "#/$defs/artifact"
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "platform": {
+                        "const": "windows"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

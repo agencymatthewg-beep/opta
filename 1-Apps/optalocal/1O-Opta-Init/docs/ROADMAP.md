@@ -75,6 +75,13 @@ _Partially delivered: release-asset detection + state-aware CTA shipped. Remaini
 - [ ] Verify all download links return 200
 - [ ] End-to-end acceptance test on clean machine (see GO-LIVE-CHECKLIST.md)
 
+## v1.3 — Release Control Plane ✅ SHIPPED 2026-03-02
+
+- [x] Versioned JSON manifest schema for release-control contract (`channels/schema/release-manifest.v1.schema.json`)
+- [x] Stable + beta channel manifests include componentized macOS/Windows artifacts, checksums, signatures, min manager versions, and rollout metadata
+- [x] Added manifest validator script (`scripts/validate-release-manifests.mjs`)
+- [x] Added operational runbook for beta publish and beta→stable promotion (`docs/RELEASE-CONTROL-WORKFLOW.md`)
+
 ## v2.0 — optalocal.com Platform Root
 
 - [ ] Root domain landing page at optalocal.com linking to all platform apps

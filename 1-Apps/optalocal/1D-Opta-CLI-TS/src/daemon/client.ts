@@ -168,11 +168,27 @@ export class DaemonClient {
   async cancel(
     sessionId: string,
     payload: { turnId?: string; writerId?: string }
-  ): Promise<{ cancelled: number }> {
-    return this.request(`/v3/sessions/${encodeURIComponent(sessionId)}/cancel`, {
+  ): Promise<{ cancelled: number; ok?: boolean; cancelledQueued?: number; cancelledActive?: boolean }> {
+    const raw = await this.request<unknown>(`/v3/sessions/${encodeURIComponent(sessionId)}/cancel`, {
       method: 'POST',
       body: JSON.stringify(payload),
     });
+
+    const parsed = asObject(raw);
+    if (!parsed) {
+      return { cancelled: 0 };
+    }
+    const cancelled = typeof parsed.cancelled === 'number' ? parsed.cancelled : undefined;
+    const cancelledQueued =
+      typeof parsed.cancelledQueued === 'number' ? parsed.cancelledQueued : undefined;
+    const cancelledActive =
+      typeof parsed.cancelledActive === 'boolean' ? parsed.cancelledActive : undefined;
+    return {
+      cancelled: cancelled ?? (cancelledQueued ?? 0) + (cancelledActive ? 1 : 0),
+      ok: typeof parsed.ok === 'boolean' ? parsed.ok : undefined,
+      cancelledQueued,
+      cancelledActive,
+    };
   }
 
   async resolvePermission(

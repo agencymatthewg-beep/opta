@@ -51,7 +51,7 @@ class InferenceBackend(Protocol):
         stop: list[str] | None,
         tools: list[dict[str, Any]] | None,
         response_format: dict[str, Any] | None = None,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[str | dict[str, Any]]:
         """Streaming generation — yields token strings.
 
         Args:
@@ -64,7 +64,8 @@ class InferenceBackend(Protocol):
             response_format: Response format constraint (e.g. json_object).
 
         Yields:
-            Individual token strings.
+            Token strings or backend payload objects containing text plus
+            optional metadata (for example speculative telemetry counters).
         """
         ...
 

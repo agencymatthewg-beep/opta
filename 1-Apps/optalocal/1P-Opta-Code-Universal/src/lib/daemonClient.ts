@@ -172,7 +172,12 @@ export const daemonClient = {
     connection: DaemonConnectionOptions,
     sessionId: string,
     payload: { turnId?: string; writerId?: string },
-  ): Promise<{ cancelled: number }> {
+  ): Promise<{
+    cancelled: number;
+    ok?: boolean;
+    cancelledQueued?: number;
+    cancelledActive?: boolean;
+  }> {
     return httpClient(connection).cancel(sessionId, payload);
   },
 

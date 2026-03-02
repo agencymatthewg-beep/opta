@@ -221,6 +221,15 @@
             <div id="rps-value" class="value">0.0</div>
             <div class="sub-value">Requests per second (live)</div>
         </div>
+
+        <div class="card">
+            <h2>Serving Lane</h2>
+            <div id="serving-lane" class="value" style="font-size: 1.2rem;">Unknown</div>
+            <div id="backend-indicator" class="sub-value">Backend: n/a</div>
+            <div id="spec-ratio" class="sub-value" style="margin-top: 0.5rem;">
+                Speculative acceptance: n/a
+            </div>
+        </div>
     </div>
 
     <div class="card" style="margin-bottom: 1.5rem;">
@@ -252,7 +261,10 @@
             apiUrl: document.getElementById('api-url'),
             apiKey: document.getElementById('api-key'),
             connectBtn: document.getElementById('connect-btn'),
-            tasksContainer: document.getElementById('tasks-container')
+            tasksContainer: document.getElementById('tasks-container'),
+            servingLane: document.getElementById('serving-lane'),
+            backendIndicator: document.getElementById('backend-indicator'),
+            specRatio: document.getElementById('spec-ratio')
         };
 
         function addLog(type, message) {
@@ -279,23 +291,51 @@
                 ui.modelName.textContent = 'Unknown';
                 ui.ramValue.textContent = '0 GB';
                 ui.ramBar.style.width = '0%';
+                ui.servingLane.textContent = 'Unknown';
+                ui.backendIndicator.textContent = 'Backend: n/a';
+                ui.specRatio.textContent = 'Speculative acceptance: n/a';
+                ui.rpsValue.textContent = '--';
             }
         }
 
         async function fetchState() {
             const baseUrl = ui.apiUrl.value.replace(/\/$/, '');
             const headers = {};
-            if (ui.apiKey.value) headers['Authorization'] = `Bearer ${ui.apiKey.value}`;
+            if (ui.apiKey.value) {
+                headers['X-Admin-Key'] = ui.apiKey.value;
+                headers['Authorization'] = `Bearer ${ui.apiKey.value}`;
+            }
 
             try {
                 // Fetch Memory
                 const memRes = await fetch(`${baseUrl}/admin/memory`, { headers });
                 if (memRes.ok) {
                     const mem = await memRes.json();
-                    const gb = (mem.mlx_allocated_bytes / 1024 / 1024 / 1024).toFixed(1);
-                    const percent = mem.memory_percent.toFixed(1);
-                    ui.ramValue.textContent = `${gb} GB`;
-                    ui.ramSub.textContent = `${percent}% MLX allocated`;
+                    const usedGbRaw = (
+                        mem.used_gb !== undefined
+                            ? mem.used_gb
+                            : (mem.mlx_allocated_bytes !== undefined
+                                ? mem.mlx_allocated_bytes / 1024 / 1024 / 1024
+                                : 0)
+                    );
+                    const totalGbRaw = (
+                        mem.total_unified_memory_gb !== undefined
+                            ? mem.total_unified_memory_gb
+                            : (mem.total_gb !== undefined ? mem.total_gb : 0)
+                    );
+                    let percent = (
+                        mem.usage_percent !== undefined
+                            ? Number(mem.usage_percent)
+                            : Number(mem.memory_percent)
+                    );
+                    if (!Number.isFinite(percent)) {
+                        const used = Number(usedGbRaw);
+                        const total = Number(totalGbRaw);
+                        percent = (total > 0) ? (used / total) * 100 : 0;
+                    }
+                    const usedGb = Number(usedGbRaw);
+                    ui.ramValue.textContent = `${usedGb.toFixed(1)} GB`;
+                    ui.ramSub.textContent = `${percent.toFixed(1)}% utilized`;
                     ui.ramBar.style.width = `${Math.min(100, percent)}%`;
                     
                     if (percent > 90) ui.ramBar.className = 'progress-bar-fill danger';
@@ -309,25 +349,97 @@
                     return;
                 }
 
-                // Fetch Model
-                const modelRes = await fetch(`${baseUrl}/v1/models`, { headers });
-                if (modelRes.ok) {
-                    const models = await modelRes.json();
-                    if (models.data && models.data.length > 0) {
-                        ui.modelName.textContent = models.data[0].id;
-                        ui.modelStatus.textContent = 'Active & Ready';
-                    } else {
-                        ui.modelName.textContent = 'None';
-                        ui.modelStatus.textContent = 'Awaiting load trigger';
+                // Fetch model + lane/backend info from admin endpoints first
+                let activeModelId = null;
+                const adminModelsRes = await fetch(`${baseUrl}/admin/models`, { headers });
+                if (adminModelsRes.ok) {
+                    const adminModels = await adminModelsRes.json();
+                    if (Array.isArray(adminModels.loaded) && adminModels.loaded.length > 0) {
+                        activeModelId = adminModels.loaded[0].id;
                     }
                 }
+
+                if (!activeModelId) {
+                    const modelRes = await fetch(`${baseUrl}/v1/models`, { headers });
+                    if (modelRes.ok) {
+                        const models = await modelRes.json();
+                        if (models.data && models.data.length > 0) {
+                            activeModelId = models.data[0].id;
+                        }
+                    }
+                }
+
+                if (activeModelId) {
+                    ui.modelName.textContent = activeModelId;
+                    ui.modelStatus.textContent = 'Active & Ready';
+                    try {
+                        const modelPath = encodeURIComponent(activeModelId);
+                        const perfRes = await fetch(`${baseUrl}/admin/models/${modelPath}/performance`, { headers });
+                        if (perfRes.ok) {
+                            const perf = await perfRes.json();
+                            const lane = perf.use_batching ? 'throughput' : 'interactive';
+                            const backend = perf.backend_type || 'unknown';
+                            ui.servingLane.textContent = lane;
+                            ui.backendIndicator.textContent = `Backend: ${backend}`;
+                        } else {
+                            ui.servingLane.textContent = 'unknown';
+                            ui.backendIndicator.textContent = 'Backend: unavailable';
+                        }
+                    } catch (_) {
+                        ui.servingLane.textContent = 'unknown';
+                        ui.backendIndicator.textContent = 'Backend: unavailable';
+                    }
+                } else {
+                    ui.modelName.textContent = 'None';
+                    ui.modelStatus.textContent = 'Awaiting load trigger';
+                    ui.servingLane.textContent = 'idle';
+                    ui.backendIndicator.textContent = 'Backend: n/a';
+                }
                 
-                // Fetch Metrics for RPS
+                // Fetch Metrics for RPS + speculative acceptance
                 const metricsRes = await fetch(`${baseUrl}/admin/metrics/json`, { headers });
                 if (metricsRes.ok) {
                     const metrics = await metricsRes.json();
+                    let rps = null;
                     if (metrics.requests && metrics.requests.throughput_1m !== undefined) {
-                        ui.rpsValue.textContent = metrics.requests.throughput_1m.toFixed(2);
+                        rps = Number(metrics.requests.throughput_1m);
+                    } else if (metrics.total_requests !== undefined && metrics.uptime_seconds !== undefined) {
+                        const uptime = Number(metrics.uptime_seconds);
+                        if (uptime > 0) {
+                            rps = Number(metrics.total_requests) / uptime;
+                        }
+                    }
+                    if (rps !== null && Number.isFinite(rps)) {
+                        ui.rpsValue.textContent = rps.toFixed(2);
+                    } else {
+                        ui.rpsValue.textContent = '--';
+                    }
+
+                    const spec = metrics.speculative || null;
+                    if (spec && typeof spec === 'object') {
+                        const accepted = Number(spec.accepted_tokens ?? 0);
+                        const rejected = Number(spec.rejected_tokens ?? 0);
+                        const ignored = Number(spec.ignored_tokens ?? 0);
+                        let ratio = (
+                            spec.acceptance_ratio !== null && spec.acceptance_ratio !== undefined
+                                ? Number(spec.acceptance_ratio)
+                                : null
+                        );
+                        if ((ratio === null || !Number.isFinite(ratio)) && (accepted + rejected) > 0) {
+                            ratio = accepted / (accepted + rejected);
+                        }
+                        if (ratio !== null && Number.isFinite(ratio)) {
+                            ui.specRatio.textContent = (
+                                `Speculative acceptance: ${(ratio * 100).toFixed(1)}% `
+                                + `(a=${accepted}, r=${rejected}, i=${ignored})`
+                            );
+                        } else {
+                            ui.specRatio.textContent = (
+                                `Speculative acceptance: n/a (a=${accepted}, r=${rejected}, i=${ignored})`
+                            );
+                        }
+                    } else {
+                        ui.specRatio.textContent = 'Speculative acceptance: unavailable';
                     }
                 }
             } catch (err) {
