@@ -199,6 +199,17 @@ class ModelManager:
         """Run the actual download in a background thread."""
         task = self._downloads[download_id]
 
+        async def _publish_event(event_type: str, data: dict[str, Any]) -> None:
+            if self._event_bus is None:
+                return
+            try:
+                await self._event_bus.publish(ServerEvent(event_type=event_type, data=data))
+            except Exception as exc:
+                logger.warning(
+                    "download_event_publish_failed",
+                    extra={"download_id": download_id, "event_type": event_type, "error": str(exc)},
+                )
+
         try:
             # Set the task in the worker thread via thread-local storage so
             # _DownloadProgressTracker can find it without a dynamic subclass.
@@ -244,16 +255,37 @@ class ModelManager:
                 },
             )
 
-            if self._event_bus:
-                await self._event_bus.publish(ServerEvent(
-                    event_type="download_completed",
-                    data={
-                        "download_id": download_id,
-                        "repo_id": repo_id,
-                        "local_path": local_path,
-                        "duration_sec": round(time.time() - task.started_at, 1),
-                    },
-                ))
+            await _publish_event(
+                "download_completed",
+                {
+                    "download_id": download_id,
+                    "repo_id": repo_id,
+                    "local_path": local_path,
+                    "duration_sec": round(time.time() - task.started_at, 1),
+                },
+            )
+        except asyncio.CancelledError:
+            task.status = "cancelled"
+            task.error = "Download cancelled"
+            task.error_code = "download_cancelled"
+            task.completed_at = time.time()
+
+            logger.info(
+                "download_cancelled",
+                extra={
+                    "download_id": download_id,
+                    "repo_id": repo_id,
+                },
+            )
+
+            await _publish_event(
+                "download_cancelled",
+                {
+                    "download_id": download_id,
+                    "repo_id": repo_id,
+                },
+            )
+            raise
         except Exception as e:
             task.status = "failed"
             task.error = str(e)
@@ -268,15 +300,14 @@ class ModelManager:
                 },
             )
 
-            if self._event_bus:
-                await self._event_bus.publish(ServerEvent(
-                    event_type="download_failed",
-                    data={
-                        "download_id": download_id,
-                        "repo_id": repo_id,
-                        "error": str(e),
-                    },
-                ))
+            await _publish_event(
+                "download_failed",
+                {
+                    "download_id": download_id,
+                    "repo_id": repo_id,
+                    "error": str(e),
+                },
+            )
 
     def get_download_progress(self, download_id: str) -> DownloadTask | None:
         """Get the current state of a download.
@@ -433,6 +464,18 @@ class ModelManager:
         )
 
         return size_before
+
+    def has_active_download(self, repo_id: str) -> bool:
+        """Return True when repo has a currently active download task."""
+        for task in self._downloads.values():
+            if task.repo_id != repo_id:
+                continue
+            if task.status != "downloading":
+                continue
+            if task.task is not None and task.task.done():
+                continue
+            return True
+        return False
 
     async def cancel_active_downloads(self) -> None:
         """Cancel all active download tasks. Called on shutdown."""

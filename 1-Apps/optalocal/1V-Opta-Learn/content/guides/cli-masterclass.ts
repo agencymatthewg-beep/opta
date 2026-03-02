@@ -76,18 +76,18 @@ export const cliMasterclass: Guide = {
       heading: 'Working with Tools',
       body: 'Both chat and do modes have access to the same powerful toolset. Read-only tools like <code>read_file</code> and <code>search_files</code> are auto-approved by default. Destructive tools like <code>write_file</code> or <code>run_command</code> trigger a Permission Prompt where you can approve, deny, or auto-approve for the remainder of the session.',
       code: `Tool: write_file\nPath: src/auth/validate.ts\nContent: (47 lines)\n\n[A]pprove  [D]eny  [A]ll for this tool  [Q]uit`,
-      visual: `<div class="visual-wrapper my-6 border border-[#f59e0b]/30 bg-[#f59e0b]/5 rounded-xl p-5 relative">
-        <div class="absolute top-0 right-0 px-3 py-1 bg-[#f59e0b]/20 text-[#f59e0b] font-mono text-xs rounded-bl-lg rounded-tr-xl">Permission Gateway</div>
+      visual: `<div class="visual-wrapper my-8 border border-[#f59e0b]/30 bg-[rgba(245,158,11,0.05)] rounded-xl p-6 relative shadow-[0_0_30px_rgba(245,158,11,0.05)]">
+        <div class="absolute -top-3 right-6 px-3 py-1 bg-[#f59e0b]/20 border border-[#f59e0b]/30 text-[#f59e0b] font-mono text-xs rounded backdrop-blur-md shadow-lg">Permission Gateway</div>
         <div class="flex flex-col gap-4 mt-2 font-mono text-sm">
-          <div class="flex items-center gap-3 bg-void p-2 rounded border border-[#22c55e]/30">
-             <div class="w-2 h-2 rounded-full bg-[#22c55e] animate-pulse"></div>
+          <div class="flex items-center gap-3 bg-void/80 backdrop-blur-md p-3 rounded-lg border border-[#22c55e]/20">
+             <div class="w-2 h-2 rounded-full bg-[#22c55e] shadow-[0_0_8px_rgba(34,197,94,0.8)]"></div>
              <span class="text-text-primary">read_file</span>
-             <span class="ml-auto text-xs text-[#22c55e]">Auto-approved</span>
+             <span class="ml-auto text-xs text-[#22c55e] bg-[#22c55e]/10 px-2 py-1 rounded">Auto-approved</span>
           </div>
-          <div class="flex items-center gap-3 bg-void p-2 rounded border border-[#f59e0b]/50 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
-             <div class="w-2 h-2 rounded-full bg-[#f59e0b]"></div>
+          <div class="flex items-center gap-3 bg-void/80 backdrop-blur-md p-3 rounded-lg border border-[#f59e0b]/40 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+             <div class="w-2 h-2 rounded-full bg-[#f59e0b] shadow-[0_0_8px_rgba(245,158,11,0.8)]"></div>
              <span class="text-text-primary">run_shell_command</span>
-             <span class="ml-auto text-xs text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-0.5 rounded">Requires Approval</span>
+             <span class="ml-auto text-xs text-[#f59e0b] bg-[#f59e0b]/10 px-2 py-1 rounded">Requires Approval</span>
           </div>
         </div>
       </div>`

@@ -6,6 +6,7 @@
     "dev": "npm run sync:desktop-manifests && npm run sync:manager-updates && next dev",
     "sync:desktop-manifests": "node scripts/sync-desktop-manifests.mjs",
     "sync:manager-updates": "node scripts/sync-manager-updates.mjs",
+    "generate:manager-update-metadata": "node scripts/generate-manager-update-metadata.mjs",
     "validate:release-manifests": "node scripts/validate-release-manifests.mjs",
     "validate:manager-update-metadata": "node scripts/validate-manager-update-metadata.mjs",
     "validate:manager-update-links": "node scripts/validate-manager-update-links.mjs",

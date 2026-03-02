@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 from httpx import AsyncClient
 
+from opta_lmx.api.admin_models import _load_after_download
 from opta_lmx.manager.model import ModelManager
 
 # ─── Unit Tests: is_model_available ──────────────────────────────────────────
@@ -245,3 +246,29 @@ async def test_confirm_requires_auth(client_with_auth: AsyncClient) -> None:
     )
     # 404 because token doesn't exist, but auth passed
     assert resp.status_code == 404
+
+
+async def test_load_after_download_stops_when_cancelled() -> None:
+    """Auto-load waiter should stop polling on cancelled download tasks."""
+    manager = ModelManager()
+    engine = AsyncMock()
+
+    call_count = {"count": 0}
+
+    def _progress(_download_id: str):
+        call_count["count"] += 1
+        if call_count["count"] == 1:
+            return type("Task", (), {"status": "downloading", "error": None})()
+        return type("Task", (), {"status": "cancelled", "error": "cancelled"})()
+
+    manager.get_download_progress = _progress  # type: ignore[assignment]
+
+    with patch("opta_lmx.api.admin_models.asyncio.sleep", new=AsyncMock(return_value=None)):
+        await _load_after_download(
+            download_id="dl-1",
+            model_id="mlx-community/test-model",
+            manager=manager,
+            engine=engine,
+        )
+
+    engine.load_model.assert_not_called()

@@ -18,6 +18,8 @@ This document defines the internal release-control contract for Opta Init channe
   - `scripts/validate-release-manifests.mjs`
   - `scripts/validate-manager-update-metadata.mjs`
   - `scripts/validate-manager-update-links.mjs`
+- Metadata generator:
+  - `scripts/generate-manager-update-metadata.mjs`
 - Link reachability validator:
   - `scripts/validate-manifest-links.mjs`
 - Publish sync:
@@ -69,6 +71,8 @@ This document defines the internal release-control contract for Opta Init channe
   - `https://init.optalocal.com/downloads/...`
 - Canonical manager updater artifact URL namespace:
   - `https://init.optalocal.com/desktop-updates/manager/...`
+- Primary manager artifact storage for CI automation:
+  - `https://github.com/<repo>/releases/download/opta-init-manager-<channel>-v<version>/...`
 - Published manager updater feed endpoints consumed by desktop manager:
   - `https://init.optalocal.com/desktop-updates/stable.json`
   - `https://init.optalocal.com/desktop-updates/beta.json`
@@ -118,6 +122,12 @@ If either variable is missing, do not publish manager updater metadata.
 
 ## Publish Procedure (Manager Updater Metadata)
 
+Preferred path: run the automated workflow
+`.github/workflows/opta-init-desktop-manager-release.yml`.
+It builds macOS + Windows updater artifacts, publishes release assets, generates
+`channels/manager-updates/<channel>.json`, syncs `public/desktop-updates/<channel>.json`,
+and runs contract validation gates.
+
 1. Build desktop manager update artifacts for each target being published (`darwin-aarch64`, `darwin-x86_64`, `windows-x86_64` at minimum).
 2. Export required signing variables:
    - `export TAURI_SIGNING_PRIVATE_KEY='<private-key-pem>'`
@@ -135,6 +145,15 @@ If either variable is missing, do not publish manager updater metadata.
 8. Run the combined contract gate:
    - `npm run validate:release-contract`
 9. Commit + publish changes.
+
+## Automated Release Workflow Inputs
+
+- `channel`: `stable` or `beta`
+- `version`: semver (defaults to desktop-manager version)
+- `notes_url`: optional release notes URL (defaults to GitHub release page)
+- `publish_metadata`: whether workflow commits feed updates
+- `strict_link_check`: runs strict manager updater URL gate
+- `dry_run`: build + validate without metadata commit
 
 ## Promote Beta to Stable
 

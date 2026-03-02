@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 
 from opta_lmx.config import LMXConfig
-from opta_lmx.main import _ensure_runtime_directories
+from opta_lmx.main import _configure_hf_cache_environment, _ensure_runtime_directories
 
 
 def test_ensure_runtime_directories_creates_required_paths(
@@ -49,3 +50,19 @@ def test_ensure_runtime_directories_creates_required_paths(
     for expected in expected_dirs:
         assert expected.exists()
         assert expected.is_dir()
+
+
+def test_configure_hf_cache_environment_uses_models_directory(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    """Startup should align HF cache env vars to configured models_directory."""
+    monkeypatch.delenv("HF_HOME", raising=False)
+    monkeypatch.delenv("HF_HUB_CACHE", raising=False)
+
+    models_dir = tmp_path / "models-cache"
+    config = LMXConfig.model_validate({"models": {"models_directory": str(models_dir)}})
+
+    _configure_hf_cache_environment(config)
+
+    assert Path(str(os.environ.get("HF_HUB_CACHE"))).expanduser() == models_dir
+    assert Path(str(os.environ.get("HF_HOME"))).expanduser() == models_dir.parent

@@ -182,7 +182,7 @@ async def _load_after_download(
     """Wait for a download to complete, then auto-load the model."""
     while True:
         task = manager.get_download_progress(download_id)
-        if task is None or task.status in ("completed", "failed"):
+        if task is None or task.status in ("completed", "failed", "cancelled"):
             break
         await asyncio.sleep(2)
 
@@ -1154,6 +1154,14 @@ async def delete_model(
     # Safety check: don't delete a loaded model
     if engine.is_model_loaded(model_id):
         return model_in_use(model_id)
+    if manager.has_active_download(model_id):
+        return openai_error(
+            status_code=409,
+            message=f"Model '{model_id}' is currently downloading and cannot be deleted.",
+            error_type="invalid_request_error",
+            code="model_in_use",
+            param="model_id",
+        )
 
     try:
         freed_bytes = await manager.delete_model(model_id)

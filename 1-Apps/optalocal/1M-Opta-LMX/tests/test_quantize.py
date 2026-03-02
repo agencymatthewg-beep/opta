@@ -14,7 +14,9 @@ from opta_lmx.manager.quantize import (
     QuantizeJob,
     _do_quantize,
     _jobs,
+    _load_jobs_from_disk,
     _process_handles,
+    _quantize_worker_timeout_sec,
     _run_quantize,
     cancel_quantize,
     get_job,
@@ -533,6 +535,39 @@ class TestRunQuantize:
         assert job.status == "cancelled"
         cleanup.assert_not_called()
 
+    @pytest.mark.asyncio
+    async def test_spawn_exception_cleans_up_active_worker_handle(self) -> None:
+        job = QuantizeJob(
+            job_id="job-spawn-fail",
+            source_model="org/model",
+            output_path="/tmp/out-fail",
+            status="queued",
+            started_at=1.0,
+        )
+        fake_handle = MagicMock()
+        fake_handle.pid = 444
+        fake_handle.cancel = AsyncMock(return_value=True)
+        calls = {"count": 0}
+
+        def _persist_with_failure() -> None:
+            calls["count"] += 1
+            if calls["count"] == 2:
+                raise RuntimeError("disk full")
+
+        with (
+            patch(
+                "opta_lmx.manager.quantize.spawn_quantize_process",
+                new=AsyncMock(return_value=fake_handle),
+            ),
+            patch("opta_lmx.manager.quantize._persist_jobs", side_effect=_persist_with_failure),
+        ):
+            await _run_quantize(job)
+
+        assert job.status == "failed"
+        assert job.failure_code == "quantize_failed"
+        assert job.job_id not in _process_handles
+        fake_handle.cancel.assert_awaited()
+
 
 class _FakeTask:
     def __init__(self) -> None:
@@ -617,3 +652,79 @@ class TestCancelQuantize:
             "quantize_progress",
             {"model_id": "org/model", "status": "cancelled", "percent": 0},
         )
+
+
+class TestRegistryRecovery:
+    def setup_method(self) -> None:
+        _jobs.clear()
+        _process_handles.clear()
+
+    def teardown_method(self) -> None:
+        _jobs.clear()
+        _process_handles.clear()
+
+    def test_load_jobs_from_disk_recovers_running_and_cancelling_jobs(self, tmp_path: Path) -> None:
+        registry_path = tmp_path / "quantize-jobs.json"
+        registry_path.write_text(
+            """
+{
+  "version": 2,
+  "saved_at": 1.0,
+  "jobs": [
+    {
+      "job_id": "job-running",
+      "source_model": "org/model-a",
+      "output_path": "/tmp/a",
+      "status": "running",
+      "started_at": 10.0,
+      "worker_pid": 123
+    },
+    {
+      "job_id": "job-cancelling",
+      "source_model": "org/model-b",
+      "output_path": "/tmp/b",
+      "status": "cancelling",
+      "started_at": 11.0,
+      "worker_pid": 456
+    }
+  ]
+}
+""".strip(),
+            encoding="utf-8",
+        )
+
+        with (
+            patch("opta_lmx.manager.quantize._should_persist_jobs", return_value=True),
+            patch("opta_lmx.manager.quantize._jobs_registry_path", return_value=registry_path),
+            patch("opta_lmx.manager.quantize._persist_jobs"),
+            patch("opta_lmx.manager.quantize._best_effort_stop_orphan_worker") as stop_orphan,
+        ):
+            _load_jobs_from_disk()
+
+        assert _jobs["job-running"].status == "failed"
+        assert _jobs["job-running"].failure_code == "interrupted_by_restart"
+        assert _jobs["job-cancelling"].status == "failed"
+        assert _jobs["job-cancelling"].failure_code == "interrupted_by_restart"
+        stop_orphan.assert_any_call(123)
+        stop_orphan.assert_any_call(456)
+
+    def test_load_jobs_from_disk_ignores_corrupt_json(self, tmp_path: Path) -> None:
+        registry_path = tmp_path / "quantize-jobs.json"
+        registry_path.write_text("{not valid json", encoding="utf-8")
+
+        with (
+            patch("opta_lmx.manager.quantize._should_persist_jobs", return_value=True),
+            patch("opta_lmx.manager.quantize._jobs_registry_path", return_value=registry_path),
+        ):
+            _load_jobs_from_disk()
+
+        assert _jobs == {}
+
+
+class TestQuantizeWorkerTimeoutConfig:
+    def test_default_timeout_is_applied_when_env_not_set(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv("OPTA_LMX_QUANTIZE_WORKER_TIMEOUT_SEC", raising=False)
+        assert _quantize_worker_timeout_sec() == 3600.0

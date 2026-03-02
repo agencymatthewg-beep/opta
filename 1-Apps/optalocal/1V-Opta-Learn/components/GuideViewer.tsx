@@ -150,7 +150,7 @@ export function GuideViewer({ guide }: { guide: Guide }) {
                   HTML content for <span class="text-opta"> and inline <a class="app-link link-*"> 
                 */}
                 <div
-                  className="text-text-secondary leading-relaxed text-lg flex flex-col gap-6"
+                  className="text-text-secondary leading-relaxed text-lg flex flex-col gap-6 [&_code]:text-[#06b6d4] [&_code]:bg-white/5 [&_code]:rounded [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:inline-block [&_code]:mx-1"
                   dangerouslySetInnerHTML={{ __html: processBody(section.body) }}
                 />
 
@@ -165,7 +165,7 @@ export function GuideViewer({ guide }: { guide: Guide }) {
                   <div className="callout p-6 mt-2 flex gap-4 text-base bg-surface border border-white/5 rounded-xl border-l-4 border-l-amber-500">
                     <Info className="w-6 h-6 text-amber-500 flex-shrink-0 mt-0.5" />
                     <div className="flex flex-col gap-2">
-                      <p className="text-amber-500/90 leading-relaxed" dangerouslySetInnerHTML={{ __html: processBody(section.note) }} />
+                      <p className="text-amber-500/90 leading-relaxed [&_code]:text-[#f59e0b] [&_code]:bg-[#f59e0b]/10 [&_code]:rounded [&_code]:px-1.5 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-sm [&_code]:inline-block [&_code]:mx-1" dangerouslySetInnerHTML={{ __html: processBody(section.note) }} />
                     </div>
                   </div>
                 )}

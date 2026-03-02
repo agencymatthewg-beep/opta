@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -40,6 +41,16 @@ async def test_start_download_estimates_size(manager: ModelManager) -> None:
         task = await manager.start_download("mlx-community/big-model")
 
     assert task.total_bytes == 5_000_000_000
+
+
+async def test_start_download_rejects_when_disk_space_insufficient(manager: ModelManager) -> None:
+    """start_download raises OSError when free disk is below required threshold."""
+    with (
+        patch.object(manager, "estimate_size", return_value=1000),
+        patch("opta_lmx.manager.model.shutil.disk_usage", return_value=SimpleNamespace(free=100)),
+        pytest.raises(OSError, match="Insufficient disk space"),
+    ):
+        await manager.start_download("mlx-community/too-big")
 
 
 async def test_download_progress_tracking(manager: ModelManager) -> None:
@@ -206,3 +217,61 @@ async def test_cancel_active_downloads(manager: ModelManager) -> None:
     # Give event loop a tick to process cancellation
     await asyncio.sleep(0)
     assert task.task.cancelled()
+
+
+# --- cancellation + event bus isolation ---
+
+
+async def test_run_download_marks_task_cancelled_on_cancelled_error(manager: ModelManager) -> None:
+    """_run_download transitions task to cancelled when cancellation is raised."""
+    task = DownloadTask(download_id="dl-cancel", repo_id="mlx-community/test")
+    manager._downloads[task.download_id] = task
+
+    with (
+        patch("opta_lmx.manager.model.asyncio.to_thread", side_effect=asyncio.CancelledError),
+        pytest.raises(asyncio.CancelledError),
+    ):
+        await manager._run_download(task.download_id, task.repo_id, None, None, None)
+
+    state = manager.get_download_progress(task.download_id)
+    assert state is not None
+    assert state.status == "cancelled"
+    assert state.error_code == "download_cancelled"
+
+
+async def test_run_download_stays_completed_when_event_publish_fails(tmp_path: Path) -> None:
+    """Event-bus failures should not convert completed downloads into failed state."""
+    manager = ModelManager(models_directory=tmp_path)
+    manager._event_bus = MagicMock()
+    manager._event_bus.publish = MagicMock(side_effect=RuntimeError("event bus down"))
+
+    output = tmp_path / "hf-cache" / "models--mlx--repo"
+    output.mkdir(parents=True)
+    (output / "weights.bin").write_bytes(b"x" * 8)
+
+    task = DownloadTask(download_id="dl-ok", repo_id="mlx-community/repo", started_at=1.0)
+    manager._downloads[task.download_id] = task
+
+    with patch("opta_lmx.manager.model.snapshot_download", return_value=str(output)):
+        await manager._run_download(task.download_id, task.repo_id, None, None, None)
+
+    state = manager.get_download_progress(task.download_id)
+    assert state is not None
+    assert state.status == "completed"
+    assert state.local_path == str(output)
+
+
+async def test_has_active_download_detects_in_progress(manager: ModelManager) -> None:
+    """has_active_download returns True only for active downloading repo IDs."""
+    active = DownloadTask(download_id="dl-1", repo_id="mlx-community/test", status="downloading")
+    done = DownloadTask(download_id="dl-2", repo_id="mlx-community/test", status="completed")
+    other = DownloadTask(download_id="dl-3", repo_id="mlx-community/other", status="downloading")
+    manager._downloads = {
+        active.download_id: active,
+        done.download_id: done,
+        other.download_id: other,
+    }
+
+    assert manager.has_active_download("mlx-community/test") is True
+    assert manager.has_active_download("mlx-community/other") is True
+    assert manager.has_active_download("mlx-community/missing") is False

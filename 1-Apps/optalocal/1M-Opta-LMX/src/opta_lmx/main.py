@@ -117,6 +117,16 @@ def _ensure_runtime_directories(config: LMXConfig) -> list[Path]:
     return created_dirs
 
 
+def _configure_hf_cache_environment(config: LMXConfig) -> None:
+    """Align Hugging Face cache env vars with configured models directory."""
+    models_dir = str(config.models.models_directory.expanduser())
+    os.environ["HF_HUB_CACHE"] = models_dir
+
+    hf_home = str(Path(models_dir).parent)
+    if not os.environ.get("HF_HOME"):
+        os.environ["HF_HOME"] = hf_home
+
+
 
 
 def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
@@ -167,6 +177,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     _enforce_opta48_no_local_models(config)
     _ensure_runtime_directories(config)
+    _configure_hf_cache_environment(config)
 
     # Crash loop detection — record startup and check for rapid restarts
     runtime_state = RuntimeState()

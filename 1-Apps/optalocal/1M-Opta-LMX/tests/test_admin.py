@@ -14,6 +14,7 @@ from opta_lmx.inference.autotune_registry import AutotuneRegistry
 from opta_lmx.inference.backend_policy import backend_candidates
 from opta_lmx.inference.engine import LoadedModel, ModelRuntimeCompatibilityError
 from opta_lmx.inference.schema import AdminLoadRequest
+from opta_lmx.inference.types import DownloadTask
 from opta_lmx.model_safety import CompatibilityRegistry, ErrorCodes, backend_version
 
 # ─── Helper ──────────────────────────────────────────────────────────────
@@ -653,6 +654,19 @@ class TestAdminDelete:
             "DELETE", "/admin/models/%2Fetc%2Fpasswd",
         )
         assert response.status_code == 400
+
+    @pytest.mark.asyncio
+    async def test_delete_downloading_model_returns_409(self, client: AsyncClient) -> None:
+        """Cannot delete a model while a download for the same repo is in progress."""
+        manager = client._transport.app.state.model_manager  # type: ignore[union-attr]
+        manager._downloads["dl-1"] = DownloadTask(  # type: ignore[attr-defined]
+            download_id="dl-1",
+            repo_id="test/model",
+            status="downloading",
+        )
+
+        response = await client.request("DELETE", "/admin/models/test/model")
+        assert response.status_code == 409
 
 
 # ─── Metrics ─────────────────────────────────────────────────────────────

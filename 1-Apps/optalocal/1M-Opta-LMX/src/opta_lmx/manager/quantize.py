@@ -60,6 +60,7 @@ _QUEUED_STATUSES = frozenset({"pending", "queued"})
 
 _DEFAULT_CANCEL_GRACE_SEC = 5.0
 _DEFAULT_CANCEL_KILL_TIMEOUT_SEC = 2.0
+_DEFAULT_WORKER_TIMEOUT_SEC = 3600.0
 
 
 QUANTIZE_CANCELLED_BY_USER = "cancelled_by_user"
@@ -144,12 +145,12 @@ def _jobs_registry_path() -> Path:
 def _quantize_worker_timeout_sec() -> float | None:
     raw = os.environ.get("OPTA_LMX_QUANTIZE_WORKER_TIMEOUT_SEC")
     if raw is None or raw.strip() == "":
-        return None
+        return _DEFAULT_WORKER_TIMEOUT_SEC
     try:
         value = float(raw)
     except ValueError:
         logger.warning("invalid_quantize_worker_timeout", extra={"raw": raw})
-        return None
+        return _DEFAULT_WORKER_TIMEOUT_SEC
     return value if value > 0 else None
 
 
@@ -540,6 +541,7 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
     if job.status in _TERMINAL_STATUSES:
         return
 
+    active_handle: QuantizeProcessHandle | None = None
     try:
         async with _quantize_slot:
             if job.cancel_requested or job.status == "cancelled":
@@ -591,19 +593,23 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
                 group_size=job.group_size,
                 mode=job.mode,
             )
-            handle = await spawn_quantize_process(spec)
-            _process_handles[job.job_id] = handle
-            job.worker_pid = handle.pid
-            _touch(job)
-            _persist_jobs()
-            if job.cancel_requested:
-                job.status = "cancelling"
+            try:
+                active_handle = await spawn_quantize_process(spec)
+                _process_handles[job.job_id] = active_handle
+                job.worker_pid = active_handle.pid
                 _touch(job)
                 _persist_jobs()
-                await _cancel_handle_task(handle)
+                if job.cancel_requested:
+                    job.status = "cancelling"
+                    _touch(job)
+                    _persist_jobs()
+                    await _cancel_handle_task(active_handle)
 
-            outcome = await handle.wait_outcome(timeout_sec=_quantize_worker_timeout_sec())
-            _process_handles.pop(job.job_id, None)
+                outcome = await active_handle.wait_outcome(
+                    timeout_sec=_quantize_worker_timeout_sec(),
+                )
+            finally:
+                _process_handles.pop(job.job_id, None)
 
             if outcome.ok and outcome.result is not None:
                 job.status = "completed"
@@ -705,9 +711,9 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
             )
 
     except asyncio.CancelledError:
-        active_handle = _process_handles.get(job.job_id)
-        if active_handle is not None:
-            await active_handle.cancel(
+        handle = active_handle or _process_handles.get(job.job_id)
+        if handle is not None:
+            await handle.cancel(
                 grace_sec=_DEFAULT_CANCEL_GRACE_SEC,
                 kill_timeout_sec=_DEFAULT_CANCEL_KILL_TIMEOUT_SEC,
             )
@@ -733,6 +739,13 @@ async def _run_quantize(job: QuantizeJob, event_bus: EventBus | None = None) -> 
             )
         return
     except Exception as e:
+        handle = active_handle or _process_handles.get(job.job_id)
+        if handle is not None:
+            await handle.cancel(
+                grace_sec=_DEFAULT_CANCEL_GRACE_SEC,
+                kill_timeout_sec=_DEFAULT_CANCEL_KILL_TIMEOUT_SEC,
+            )
+            _process_handles.pop(job.job_id, None)
         _set_terminal(job, "failed", error=str(e), failure_code="quantize_failed")
         _recompute_queue_positions()
         _persist_jobs()

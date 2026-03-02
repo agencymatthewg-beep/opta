@@ -5,8 +5,11 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import json
+import os
+import signal
 import sys
 from dataclasses import dataclass, field
+from typing import Any
 
 from opta_lmx.runtime.loader_protocol import LoaderFailure, QuantizeResult, QuantizeSpec
 
@@ -25,16 +28,24 @@ def _decode_lines(payload: bytes) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
+def _decode_last_json_dict(payload: bytes) -> dict[str, Any] | None:
+    for line in reversed(_decode_lines(payload)):
+        try:
+            data = json.loads(line)
+        except Exception:
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
 def _parse_worker_failure(stderr: bytes, *, default_code: str) -> LoaderFailure:
     lines = _decode_lines(stderr)
+    json_payload = _decode_last_json_dict(stderr)
+    if json_payload is not None:
+        return LoaderFailure.from_dict(json_payload)
     if lines:
-        try:
-            data = json.loads(lines[0])
-            if isinstance(data, dict):
-                return LoaderFailure.from_dict(data)
-        except Exception:
-            pass
-        return LoaderFailure(code=default_code, message=lines[0])
+        return LoaderFailure(code=default_code, message=lines[-1])
     return LoaderFailure(code=default_code, message=default_code)
 
 
@@ -50,20 +61,38 @@ class QuantizeProcessHandle:
     def pid(self) -> int | None:
         return self.proc.pid
 
+    def _signal_process_group(self, sig: int) -> bool:
+        if os.name == "nt" or not hasattr(os, "killpg"):
+            return False
+        pid = self.proc.pid
+        if pid is None or pid <= 0:
+            return False
+        try:
+            os.killpg(pid, sig)
+            return True
+        except ProcessLookupError:
+            return True
+        except PermissionError:
+            return False
+        except Exception:
+            return False
+
     async def cancel(self, *, grace_sec: float = 5.0, kill_timeout_sec: float = 2.0) -> bool:
         """Terminate child process with kill escalation. Returns True when process exits."""
         async with self._cancel_lock:
             if self.proc.returncode is not None:
                 return True
 
-            with contextlib.suppress(ProcessLookupError):
-                self.proc.terminate()
+            if not self._signal_process_group(signal.SIGTERM):
+                with contextlib.suppress(ProcessLookupError):
+                    self.proc.terminate()
             try:
                 await asyncio.wait_for(self.proc.wait(), timeout=grace_sec)
                 return True
             except TimeoutError:
-                with contextlib.suppress(ProcessLookupError):
-                    self.proc.kill()
+                if not self._signal_process_group(signal.SIGKILL):
+                    with contextlib.suppress(ProcessLookupError):
+                        self.proc.kill()
                 try:
                     await asyncio.wait_for(self.proc.wait(), timeout=kill_timeout_sec)
                     return True
@@ -89,8 +118,8 @@ class QuantizeProcessHandle:
 
         rc = self.proc.returncode if self.proc.returncode is not None else 1
         if rc == 0:
-            lines = _decode_lines(stdout)
-            if not lines:
+            data = _decode_last_json_dict(stdout)
+            if data is None:
                 return QuantizeSupervisorOutcome(
                     ok=False,
                     failure=LoaderFailure(
@@ -99,9 +128,6 @@ class QuantizeProcessHandle:
                     ),
                 )
             try:
-                data = json.loads(lines[0])
-                if not isinstance(data, dict):
-                    raise ValueError("worker stdout payload must be a JSON object")
                 return QuantizeSupervisorOutcome(ok=True, result=QuantizeResult.from_dict(data))
             except Exception as exc:
                 return QuantizeSupervisorOutcome(
@@ -137,6 +163,9 @@ async def spawn_quantize_process(
 ) -> QuantizeProcessHandle:
     """Spawn quantize child worker process and return a handle for control + outcome."""
     executable = python_executable or sys.executable
+    spawn_kwargs: dict[str, Any] = {}
+    if os.name != "nt":
+        spawn_kwargs["start_new_session"] = True
     proc = await asyncio.create_subprocess_exec(
         executable,
         "-m",
@@ -144,8 +173,8 @@ async def spawn_quantize_process(
         stdin=asyncio.subprocess.PIPE,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
+        **spawn_kwargs,
     )
     payload = json.dumps(spec.to_dict(), sort_keys=True).encode("utf-8")
     communicate_task = asyncio.create_task(proc.communicate(payload))
     return QuantizeProcessHandle(proc=proc, _communicate_task=communicate_task)
-
