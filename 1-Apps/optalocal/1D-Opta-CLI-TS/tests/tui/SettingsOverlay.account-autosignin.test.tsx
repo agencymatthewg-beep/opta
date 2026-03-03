@@ -103,7 +103,7 @@ describe('SettingsOverlay account auto sign-in', () => {
   it('auto-opens Opta browser sign-in after account scan when unauthenticated', async () => {
     const { stdin } = render(<SettingsOverlay {...baseProps} />);
     await flush();
-    stdin.write('7');
+    stdin.write('8');
     await flush(80);
 
     expect(loadAccountStateMock).toHaveBeenCalled();
@@ -126,7 +126,7 @@ describe('SettingsOverlay account auto sign-in', () => {
       process.chdir(isolatedCwd);
       const { stdin } = render(<SettingsOverlay {...baseProps} />);
       await flush();
-      stdin.write('7');
+      stdin.write('8');
       await flush(80);
 
       expect(loadAccountStateMock).toHaveBeenCalled();
@@ -141,14 +141,14 @@ describe('SettingsOverlay account auto sign-in', () => {
     const { stdin } = render(<SettingsOverlay {...baseProps} />);
     await flush();
 
-    stdin.write('7');
+    stdin.write('8');
     await flush(80);
     expect(runOAuthLoginFlowMock).toHaveBeenCalledTimes(1);
 
     stdin.write('1');
     await flush(40);
 
-    stdin.write('7');
+    stdin.write('8');
     await flush(80);
     expect(runOAuthLoginFlowMock).toHaveBeenCalledTimes(2);
   });

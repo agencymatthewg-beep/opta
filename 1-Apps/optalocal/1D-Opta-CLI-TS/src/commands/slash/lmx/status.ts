@@ -29,6 +29,7 @@ export const lmxStatusHandler = async (args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   const reqOpts = isFull ? { timeoutMs: 15_000, maxRetries: 1 } : FAST_SLASH_REQUEST_OPTS;
@@ -112,6 +113,7 @@ export const diagnoseHandler = async (_args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   // 1. Server reachability + latency
@@ -202,6 +204,7 @@ export const memoryHandler = async (_args: string, ctx: SlashContext): Promise<S
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -263,6 +266,7 @@ export const metricsHandler = async (args: string, ctx: SlashContext): Promise<S
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -468,6 +472,7 @@ export const predictorHandler = async (args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -512,6 +517,7 @@ export const helpersHandler = async (args: string, ctx: SlashContext): Promise<S
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -572,6 +578,7 @@ export const stackHandler = async (args: string, ctx: SlashContext): Promise<Sla
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {

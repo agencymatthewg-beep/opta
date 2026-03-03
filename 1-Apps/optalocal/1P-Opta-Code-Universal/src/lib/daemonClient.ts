@@ -15,7 +15,12 @@ import type {
   DaemonRunOperationResponse,
 } from "@opta/daemon-client/types";
 import type { V3Envelope as SharedV3Envelope } from "@opta/protocol-shared";
-import type { DaemonConnectionOptions } from "../types";
+import type {
+  DaemonConnectionOptions,
+  DaemonSessionSummary,
+  SessionSubmitMode,
+  SessionTurnOverrides,
+} from "../types";
 
 export type V3Envelope = SharedV3Envelope;
 
@@ -39,7 +44,10 @@ interface RuntimeMetricsResponse {
   };
 }
 
-export type DaemonLmxLoadStatus = "loaded" | "download_required" | "downloading";
+export type DaemonLmxLoadStatus =
+  | "loaded"
+  | "download_required"
+  | "downloading";
 
 export interface DaemonLmxLoadResponse {
   model_id: string;
@@ -127,11 +135,13 @@ async function daemonRequest<T>(
     }
     return (await response.json()) as T;
   } catch (err) {
-    if (
-      err instanceof DOMException &&
-      err.name === "AbortError"
-    ) {
+    if (err instanceof DOMException && err.name === "AbortError") {
       throw new Error(`Daemon request timed out (${timeoutMs}ms): ${path}`);
+    }
+    if (err instanceof TypeError && err.message.includes("fetch failed")) {
+      throw new Error(
+        `Connection refused: Cannot reach daemon at ${connection.host}:${connection.port}. Ensure 'opta daemon run' is active.`,
+      );
     }
     throw err;
   } finally {
@@ -145,9 +155,7 @@ function normalizeLmxLoadResponse(
 ): DaemonLmxLoadResponse {
   const parsed = asRecord(raw);
   const model_id =
-    typeof parsed?.model_id === "string"
-      ? parsed.model_id
-      : fallbackModelId;
+    typeof parsed?.model_id === "string" ? parsed.model_id : fallbackModelId;
 
   const rawStatus = parsed?.status;
   const status: DaemonLmxLoadStatus =
@@ -187,14 +195,14 @@ function normalizeLmxLoadResponse(
         ? parsed.confirmation_token
         : undefined,
     download_id:
-      typeof parsed?.download_id === "string"
-        ? parsed.download_id
-        : undefined,
+      typeof parsed?.download_id === "string" ? parsed.download_id : undefined,
     message: typeof parsed?.message === "string" ? parsed.message : undefined,
     confirm_url:
       typeof parsed?.confirm_url === "string" ? parsed.confirm_url : undefined,
     progress_url:
-      typeof parsed?.progress_url === "string" ? parsed.progress_url : undefined,
+      typeof parsed?.progress_url === "string"
+        ? parsed.progress_url
+        : undefined,
   };
 }
 
@@ -282,9 +290,8 @@ function normalizeLmxDownloadsList(raw: unknown): DaemonLmxDownloadProgress[] {
       if (!downloadId) return null;
       return normalizeLmxDownloadProgress(item, downloadId);
     })
-    .filter(
-      (item): item is DaemonLmxDownloadProgress =>
-        Boolean(item && item.download_id),
+    .filter((item): item is DaemonLmxDownloadProgress =>
+      Boolean(item && item.download_id),
     );
 }
 
@@ -316,9 +323,39 @@ function operationError(
   if (response.ok) {
     return new Error(`[${operationId}] unexpected success response`);
   }
-  return new Error(
-    `[${response.error.code}] ${response.error.message}`,
-  );
+  return new Error(`[${response.error.code}] ${response.error.message}`);
+}
+
+function normalizeSessionSummary(raw: unknown): DaemonSessionSummary | null {
+  const record = asRecord(raw);
+  if (!record) return null;
+  const sessionId =
+    typeof record.sessionId === "string"
+      ? record.sessionId
+      : typeof record.id === "string"
+        ? record.id
+        : "";
+  if (!sessionId) return null;
+  const title =
+    typeof record.title === "string" && record.title.trim()
+      ? record.title
+      : `Session ${sessionId.slice(0, 7)}`;
+  const workspace =
+    typeof record.workspace === "string" && record.workspace.trim()
+      ? record.workspace
+      : "Workspace";
+  const updatedAt =
+    typeof record.updatedAt === "string"
+      ? record.updatedAt
+      : typeof record.updated_at === "string"
+        ? record.updated_at
+        : undefined;
+  return {
+    sessionId,
+    title,
+    workspace,
+    updatedAt,
+  };
 }
 
 function parseEndpointCandidate(
@@ -415,7 +452,8 @@ export const daemonClient = {
       content: string;
       clientId?: string;
       writerId?: string;
-      mode?: "chat" | "do";
+      mode?: SessionSubmitMode;
+      overrides?: SessionTurnOverrides;
     },
   ): Promise<{ turnId?: string }> {
     return httpClient(connection).submitTurn(sessionId, {
@@ -423,6 +461,7 @@ export const daemonClient = {
       clientId: payload.clientId ?? "opta-code-desktop",
       writerId: payload.writerId ?? "opta-code-desktop",
       mode: payload.mode ?? "chat",
+      overrides: payload.overrides,
     });
   },
 
@@ -524,7 +563,8 @@ export const daemonClient = {
     });
     if (!response.ok) throw operationError("config.get", response);
     const result = asRecord(response.result);
-    const rawValue = result && "value" in result ? result.value : response.result;
+    const rawValue =
+      result && "value" in result ? result.value : response.result;
     return normalizeConfigValue(rawValue);
   },
 
@@ -542,14 +582,49 @@ export const daemonClient = {
   async configList(
     connection: DaemonConnectionOptions,
   ): Promise<Record<string, unknown>> {
-    const response = await daemonClient.runOperation(connection, "config.list", {
-      input: {},
-    });
+    const response = await daemonClient.runOperation(
+      connection,
+      "config.list",
+      {
+        input: {},
+      },
+    );
     if (!response.ok) throw operationError("config.list", response);
     const result = asRecord(response.result);
     if (!result) return {};
     const nestedConfig = asRecord(result.config);
     return nestedConfig ?? result;
+  },
+
+  async sessionsList(
+    connection: DaemonConnectionOptions,
+    input?: {
+      model?: string;
+      since?: string;
+      tag?: string;
+      limit?: number;
+    },
+  ): Promise<DaemonSessionSummary[]> {
+    const response = await daemonClient.runOperation(
+      connection,
+      "sessions.list",
+      {
+        input: {
+          model: input?.model,
+          since: input?.since,
+          tag: input?.tag,
+          limit: input?.limit,
+        },
+      },
+    );
+    if (!response.ok) throw operationError("sessions.list", response);
+    const rawList = Array.isArray(response.result)
+      ? response.result
+      : asRecord(response.result)?.sessions;
+    if (!Array.isArray(rawList)) return [];
+    return rawList
+      .map((entry) => normalizeSessionSummary(entry))
+      .filter((entry): entry is DaemonSessionSummary => Boolean(entry));
   },
 
   async listBackground(
@@ -610,10 +685,7 @@ export const daemonClient = {
     if (!endpoints) return [];
 
     const candidates: DaemonLmxEndpointCandidate[] = [];
-    const pushIfValid = (
-      source: DaemonLmxEndpointSource,
-      value: unknown,
-    ) => {
+    const pushIfValid = (source: DaemonLmxEndpointSource, value: unknown) => {
       if (typeof value !== "string") return;
       const parsed = parseEndpointCandidate(source, value, candidates.length);
       if (parsed) candidates.push(parsed);
@@ -622,7 +694,9 @@ export const daemonClient = {
     pushIfValid("preferred_base_url", endpoints.preferred_base_url);
     pushIfValid("openai_base_url", endpoints.openai_base_url);
 
-    const baseUrls = Array.isArray(endpoints.base_urls) ? endpoints.base_urls : [];
+    const baseUrls = Array.isArray(endpoints.base_urls)
+      ? endpoints.base_urls
+      : [];
     for (let i = 0; i < baseUrls.length; i += 1) {
       const value = baseUrls[i];
       if (typeof value !== "string") continue;

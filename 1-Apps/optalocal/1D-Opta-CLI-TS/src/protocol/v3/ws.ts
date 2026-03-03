@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { SessionModeSchema, TurnOverridesSchema } from './types.js';
 
 export const WsHelloSchema = z.object({
   type: z.literal('hello'),
@@ -13,8 +14,9 @@ export const WsTurnSubmitSchema = z.object({
   writerId: z.string().min(1),
   sessionId: z.string().min(1),
   content: z.string().min(1),
-  mode: z.enum(['chat', 'do']).default('chat'),
+  mode: SessionModeSchema.default('chat'),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  overrides: TurnOverridesSchema.optional(),
 });
 
 export const WsPermissionResolveSchema = z.object({

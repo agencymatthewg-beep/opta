@@ -5,30 +5,58 @@
  *   status            Show availability + stored key presence
  *   set-anthropic     Store Anthropic API key in OS keychain
  *   set-lmx           Store LMX API key in OS keychain
+ *   set-gemini        Store Gemini API key in OS keychain
+ *   set-openai        Store OpenAI API key in OS keychain
+ *   set-opencode-zen  Store Opencode Zen API key in OS keychain
  *   delete-anthropic  Remove Anthropic key from keychain
  *   delete-lmx        Remove LMX key from keychain
+ *   delete-gemini     Remove Gemini key from keychain
+ *   delete-openai     Remove OpenAI key from keychain
+ *   delete-opencode-zen Remove Opencode Zen key from keychain
  */
 
 import chalk from 'chalk';
 import {
   storeAnthropicKey,
   storeLmxKey,
+  storeGeminiKey,
+  storeOpenaiKey,
+  storeOpencodeZenKey,
   getAnthropicKey,
   getLmxKey,
+  getGeminiKey,
+  getOpenaiKey,
+  getOpencodeZenKey,
   deleteAnthropicKey,
   deleteLmxKey,
+  deleteGeminiKey,
+  deleteOpenaiKey,
+  deleteOpencodeZenKey,
+  storeGithubKey,
+  getGithubKey,
+  deleteGithubKey,
   keychainStatus,
 } from '../keychain/api-keys.js';
 import { isKeychainAvailable } from '../keychain/index.js';
 import { loadAccountState } from '../accounts/storage.js';
 import { listCloudApiKeys } from '../accounts/cloud.js';
 
+type KeychainProvider = 'anthropic' | 'lmx' | 'gemini' | 'openai' | 'opencode-zen' | 'github';
+
 type KeychainAction =
   | 'status'
   | 'set-anthropic'
   | 'set-lmx'
+  | 'set-gemini'
+  | 'set-openai'
+  | 'set-opencode-zen'
   | 'delete-anthropic'
-  | 'delete-lmx';
+  | 'delete-lmx'
+  | 'delete-gemini'
+  | 'delete-openai'
+  | 'delete-opencode-zen'
+  | 'set-github'
+  | 'delete-github';
 
 export async function runKeychainCommand(
   action: KeychainAction,
@@ -44,11 +72,35 @@ export async function runKeychainCommand(
     case 'set-lmx':
       await handleSet('lmx', value);
       break;
+    case 'set-gemini':
+      await handleSet('gemini', value);
+      break;
+    case 'set-openai':
+      await handleSet('openai', value);
+      break;
+    case 'set-opencode-zen':
+      await handleSet('opencode-zen', value);
+      break;
     case 'delete-anthropic':
       await handleDelete('anthropic');
       break;
     case 'delete-lmx':
       await handleDelete('lmx');
+      break;
+    case 'delete-gemini':
+      await handleDelete('gemini');
+      break;
+    case 'delete-openai':
+      await handleDelete('openai');
+      break;
+    case 'delete-opencode-zen':
+      await handleDelete('opencode-zen');
+      break;
+    case 'set-github':
+      await handleSet('github', value);
+      break;
+    case 'delete-github':
+      await handleDelete('github');
       break;
     default: {
       // TypeScript exhaustiveness guard
@@ -86,9 +138,25 @@ async function handleStatus(): Promise<void> {
     const lmxLabel = status.lmx
       ? chalk.green('stored')
       : chalk.dim('not stored');
+    const geminiLabel = status.gemini
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
+    const openaiLabel = status.openai
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
+    const opencodeZenLabel = status.opencodeZen
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
+    const githubLabel = status.github
+      ? chalk.green('stored')
+      : chalk.dim('not stored');
 
-    console.log(`  Anthropic API key: ${anthropicLabel}`);
-    console.log(`  LMX API key:       ${lmxLabel}`);
+    console.log(`  Anthropic API key:   ${anthropicLabel}`);
+    console.log(`  LMX API key:         ${lmxLabel}`);
+    console.log(`  Gemini API key:      ${geminiLabel}`);
+    console.log(`  OpenAI API key:      ${openaiLabel}`);
+    console.log(`  Opencode Zen API key:${opencodeZenLabel}`);
+    console.log(`  GitHub API key:      ${githubLabel}`);
   }
 
   // Cloud keys section
@@ -120,7 +188,7 @@ async function handleStatus(): Promise<void> {
 }
 
 async function handleSet(
-  provider: 'anthropic' | 'lmx',
+  provider: KeychainProvider,
   value: string | undefined,
 ): Promise<void> {
   if (!isKeychainAvailable()) {
@@ -146,21 +214,40 @@ async function handleSet(
   }
 
   const key = value.trim();
+  const providerLabel: Record<KeychainProvider, string> = {
+    anthropic: 'Anthropic',
+    lmx: 'LMX',
+    gemini: 'Gemini',
+    openai: 'OpenAI',
+    'opencode-zen': 'Opencode Zen',
+    github: 'GitHub',
+  };
 
-  let success: boolean;
-  if (provider === 'anthropic') {
-    success = await storeAnthropicKey(key);
-  } else {
-    success = await storeLmxKey(key);
-  }
+  const storeByProvider: Record<KeychainProvider, (apiKey: string) => Promise<boolean>> = {
+    anthropic: storeAnthropicKey,
+    lmx: storeLmxKey,
+    gemini: storeGeminiKey,
+    openai: storeOpenaiKey,
+    'opencode-zen': storeOpencodeZenKey,
+    github: storeGithubKey,
+  };
+
+  const readByProvider: Record<KeychainProvider, () => Promise<string | null>> = {
+    anthropic: getAnthropicKey,
+    lmx: getLmxKey,
+    gemini: getGeminiKey,
+    openai: getOpenaiKey,
+    'opencode-zen': getOpencodeZenKey,
+    github: getGithubKey,
+  };
+
+  const success = await storeByProvider[provider](key);
 
   if (success) {
-    const label = provider === 'anthropic' ? 'Anthropic' : 'LMX';
+    const label = providerLabel[provider];
     console.log(chalk.green(`${label} API key stored in keychain.`));
     // Show masked confirmation
-    const stored = provider === 'anthropic'
-      ? await getAnthropicKey()
-      : await getLmxKey();
+    const stored = await readByProvider[provider]();
     if (stored) {
       console.log(chalk.dim(`  Stored: ${maskKey(stored)}`));
     }
@@ -175,7 +262,7 @@ async function handleSet(
   }
 }
 
-async function handleDelete(provider: 'anthropic' | 'lmx'): Promise<void> {
+async function handleDelete(provider: KeychainProvider): Promise<void> {
   if (!isKeychainAvailable()) {
     console.error(
       chalk.yellow(
@@ -186,13 +273,26 @@ async function handleDelete(provider: 'anthropic' | 'lmx'): Promise<void> {
     return;
   }
 
-  if (provider === 'anthropic') {
-    await deleteAnthropicKey();
-    console.log(chalk.green('Anthropic API key removed from keychain.'));
-  } else {
-    await deleteLmxKey();
-    console.log(chalk.green('LMX API key removed from keychain.'));
-  }
+  const providerLabel: Record<KeychainProvider, string> = {
+    anthropic: 'Anthropic',
+    lmx: 'LMX',
+    gemini: 'Gemini',
+    openai: 'OpenAI',
+    'opencode-zen': 'Opencode Zen',
+    github: 'GitHub',
+  };
+
+  const deleteByProvider: Record<KeychainProvider, () => Promise<void>> = {
+    anthropic: deleteAnthropicKey,
+    lmx: deleteLmxKey,
+    gemini: deleteGeminiKey,
+    openai: deleteOpenaiKey,
+    'opencode-zen': deleteOpencodeZenKey,
+    github: deleteGithubKey,
+  };
+
+  await deleteByProvider[provider]();
+  console.log(chalk.green(`${providerLabel[provider]} API key removed from keychain.`));
 }
 
 // ---------------------------------------------------------------------------

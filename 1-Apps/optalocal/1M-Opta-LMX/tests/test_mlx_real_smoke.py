@@ -22,10 +22,10 @@ from opta_lmx.inference.schema import ChatMessage
 from opta_lmx.main import create_app
 
 _RUN_REAL_SMOKE = os.getenv("LMX_RUN_REAL_MLX_SMOKE", "0") == "1"
-_IS_APPLE_SILICON = (
-    platform.system() == "Darwin"
-    and platform.machine().lower() in {"arm64", "aarch64"}
-)
+_IS_APPLE_SILICON = platform.system() == "Darwin" and platform.machine().lower() in {
+    "arm64",
+    "aarch64",
+}
 _MODEL_ID = os.getenv(
     "LMX_MLX_SMOKE_MODEL",
     "mlx-community/SmolLM2-360M-Instruct-4bit",
@@ -33,8 +33,7 @@ _MODEL_ID = os.getenv(
 _LOAD_TIMEOUT_SEC = float(os.getenv("LMX_MLX_SMOKE_TIMEOUT_SEC", "1800"))
 
 _REAL_SMOKE_SKIP_REASON = (
-    "Real MLX smoke is only enabled when "
-    "LMX_RUN_REAL_MLX_SMOKE=1 on Apple Silicon."
+    "Real MLX smoke is only enabled when LMX_RUN_REAL_MLX_SMOKE=1 on Apple Silicon."
 )
 
 
@@ -97,34 +96,37 @@ async def test_real_mlx_end_to_end_smoke() -> None:
         assert stream_text
 
         events: list[str] = []
-        async with AsyncClient(
-            transport=ASGITransport(app=app),
-            base_url="http://test",
-        ) as client, client.stream(
-            "POST",
-            "/v1/responses",
-            json={
-                "model": _MODEL_ID,
-                "input": "What is the weather in San Francisco? Use a tool if appropriate.",
-                "stream": True,
-                "tools": [
-                    {
-                        "type": "function",
-                        "function": {
-                            "name": "get_weather",
-                            "description": "Return weather for a location",
-                            "parameters": {
-                                "type": "object",
-                                "properties": {
-                                    "location": {"type": "string"},
+        async with (
+            AsyncClient(
+                transport=ASGITransport(app=app),
+                base_url="http://test",
+            ) as client,
+            client.stream(
+                "POST",
+                "/v1/responses",
+                json={
+                    "model": _MODEL_ID,
+                    "input": "What is the weather in San Francisco? Use a tool if appropriate.",
+                    "stream": True,
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "get_weather",
+                                "description": "Return weather for a location",
+                                "parameters": {
+                                    "type": "object",
+                                    "properties": {
+                                        "location": {"type": "string"},
+                                    },
+                                    "required": ["location"],
                                 },
-                                "required": ["location"],
                             },
-                        },
-                    }
-                ],
-            },
-        ) as response:
+                        }
+                    ],
+                },
+            ) as response,
+        ):
             assert response.status_code == 200
             async for line in response.aiter_lines():
                 if line.startswith("event: "):

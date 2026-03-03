@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Models Page - Prototype 3 (Precision Terminal)</title>
+    <style>
+        :root {
+            --opta-bg: #000000;
+            --opta-surface: #0a0a0a;
+            --opta-primary: #a855f7;
+            --text: #e5e5e5;
+            --text-muted: #52525b;
+            --border: #333333;
+        }
+
+        body {
+            background: var(--opta-bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .models-page {
+            max-width: 800px;
+            margin: 0 auto;
+            display: grid;
+            gap: 2rem;
+        }
+
+        h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            margin: 0 0 1rem 0;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 0.5rem;
+        }
+
+        /* Memory Block */
+        .models-memory {
+            background: var(--opta-surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .memory-header span {
+            color: var(--opta-primary);
+        }
+
+        .memory-bar-container {
+            height: 16px;
+            border: 1px dotted var(--border);
+            padding: 2px;
+            margin-bottom: 0.75rem;
+            display: flex;
+        }
+
+        .memory-bar-fill {
+            background: var(--opta-primary);
+            opacity: 0.8;
+            height: 100%;
+            width: 75%;
+        }
+
+        .memory-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Advanced Tools */
+        .models-tools {
+            background: var(--opta-surface);
+            border: 1px solid var(--border);
+            padding: 1.5rem;
+        }
+
+        .tools-row {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .terminal-btn {
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            padding: 0;
+            position: relative;
+        }
+
+        .terminal-btn::before {
+            content: '[';
+            color: var(--text-muted);
+            margin-right: 8px;
+        }
+
+        .terminal-btn::after {
+            content: ']';
+            color: var(--text-muted);
+            margin-left: 8px;
+        }
+
+        .terminal-btn:hover {
+            color: var(--opta-primary);
+            text-shadow: 0 0 8px var(--opta-primary);
+        }
+
+        .terminal-btn:hover::before,
+        .terminal-btn:hover::after {
+            color: var(--opta-primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="models-page">
+        <div class="models-memory">
+            <h3>Unified Memory</h3>
+            <div class="memory-header">
+                <div>STATUS: ALLOCATED</div>
+                <span>75%</span>
+            </div>
+            <div class="memory-bar-container">
+                <div class="memory-bar-fill"></div>
+            </div>
+            <div class="memory-label">24.0 GB / 32.0 GB TOTAL</div>
+        </div>
+
+        <div class="models-tools">
+            <h3>Advanced Controls</h3>
+            <div class="tools-row">
+                <button class="terminal-btn">HISTORY</button>
+                <button class="terminal-btn">HEALTH_CHECK</button>
+                <button class="terminal-btn">SCAN</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -125,14 +125,24 @@ export function useOperations(
     [connection, operations],
   );
 
-  return { operations, loading, error, running, lastResult, runOperation, refresh };
+  return {
+    operations,
+    loading,
+    error,
+    running,
+    lastResult,
+    runOperation,
+    refresh,
+  };
 }
 
 function normalizeOperationsResponse(response: unknown): OperationDefinition[] {
   if (!isRecord(response) || !Array.isArray(response.operations)) return [];
   return response.operations
     .map(normalizeOperationDefinition)
-    .filter((operation): operation is OperationDefinition => operation !== null);
+    .filter(
+      (operation): operation is OperationDefinition => operation !== null,
+    );
 }
 
 function normalizeOperationDefinition(
@@ -170,31 +180,34 @@ function normalizeSafety(safety: unknown): OperationSafety {
   return "read";
 }
 
-function normalizeInputSchema(schema: unknown): OperationInputSchema | undefined {
+function normalizeInputSchema(
+  schema: unknown,
+): OperationInputSchema | undefined {
   if (!isRecord(schema)) return undefined;
 
   const properties = isRecord(schema.properties)
-    ? Object.entries(schema.properties).reduce<Record<string, JsonSchemaProperty>>(
-        (accumulator, [key, value]) => {
-          if (!isRecord(value)) return accumulator;
-          accumulator[key] = {
-            type: asStringOrStringArray(value.type),
-            title: typeof value.title === "string" ? value.title : undefined,
-            description:
-              typeof value.description === "string"
-                ? value.description
-                : undefined,
-            default: value.default,
-            enum: Array.isArray(value.enum) ? value.enum : undefined,
-          };
-          return accumulator;
-        },
-        {},
-      )
+    ? Object.entries(schema.properties).reduce<
+        Record<string, JsonSchemaProperty>
+      >((accumulator, [key, value]) => {
+        if (!isRecord(value)) return accumulator;
+        accumulator[key] = {
+          type: asStringOrStringArray(value.type),
+          title: typeof value.title === "string" ? value.title : undefined,
+          description:
+            typeof value.description === "string"
+              ? value.description
+              : undefined,
+          default: value.default,
+          enum: Array.isArray(value.enum) ? value.enum : undefined,
+        };
+        return accumulator;
+      }, {})
     : undefined;
 
   const required = Array.isArray(schema.required)
-    ? schema.required.filter((entry): entry is string => typeof entry === "string")
+    ? schema.required.filter(
+        (entry): entry is string => typeof entry === "string",
+      )
     : undefined;
 
   if (!properties || Object.keys(properties).length === 0) return undefined;
@@ -221,7 +234,9 @@ function normalizeOperationResult(
   }
 
   const normalizedId =
-    typeof response.id === "string" && response.id.length > 0 ? response.id : id;
+    typeof response.id === "string" && response.id.length > 0
+      ? response.id
+      : id;
   const normalizedSafety = normalizeSafety(response.safety ?? safety);
   const hasOk = typeof response.ok === "boolean";
   const hasResult = hasOwn(response, "result");
@@ -250,7 +265,8 @@ function normalizeOperationError(error: unknown): {
     return { code: "operation_error", message: error };
   }
   if (isRecord(error)) {
-    const code = typeof error.code === "string" ? error.code : "operation_error";
+    const code =
+      typeof error.code === "string" ? error.code : "operation_error";
     const message =
       typeof error.message === "string"
         ? error.message
@@ -276,11 +292,11 @@ function hasOwn(object: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
-function asStringOrStringArray(
-  value: unknown,
-): string | string[] | undefined {
+function asStringOrStringArray(value: unknown): string | string[] | undefined {
   if (typeof value === "string") return value;
   if (!Array.isArray(value)) return undefined;
-  const filtered = value.filter((entry): entry is string => typeof entry === "string");
+  const filtered = value.filter(
+    (entry): entry is string => typeof entry === "string",
+  );
   return filtered.length > 0 ? filtered : undefined;
 }

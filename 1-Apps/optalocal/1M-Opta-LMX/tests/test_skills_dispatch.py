@@ -72,10 +72,7 @@ async def test_queued_dispatcher_executes_manifest(tmp_path: Path) -> None:
 async def test_queued_dispatcher_rejects_when_queue_is_full(tmp_path: Path) -> None:
     _write_module(
         tmp_path / "slow_skill.py",
-        "import time\n"
-        "def run(delay: float) -> str:\n"
-        "    time.sleep(delay)\n"
-        "    return 'ok'\n",
+        "import time\ndef run(delay: float) -> str:\n    time.sleep(delay)\n    return 'ok'\n",
     )
     manifest = _entrypoint_manifest("slow_skill", "run")
 

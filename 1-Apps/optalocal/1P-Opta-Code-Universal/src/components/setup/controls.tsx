@@ -2,13 +2,7 @@ import { useState } from "react";
 import type { CSSProperties, Dispatch, ReactNode, SetStateAction } from "react";
 import { WIZARD_THEME } from "./shared";
 
-export function StepDots({
-  step,
-  total,
-}: {
-  step: number;
-  total: number;
-}) {
+export function StepDots({ step, total }: { step: number; total: number }) {
   const items: ReactNode[] = [];
   for (let i = 0; i < total; i++) {
     const isDone = i < step;
@@ -59,7 +53,11 @@ export function StepDots({
       );
     }
   }
-  return <div style={{ display: "flex", alignItems: "center", flex: 1 }}>{items}</div>;
+  return (
+    <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
+      {items}
+    </div>
+  );
 }
 
 export type SegOption<T extends string> = { value: T; label: string };
@@ -239,4 +237,6 @@ export function TextInput({
   );
 }
 
-export type WizardFormSetter = Dispatch<SetStateAction<import("./shared").WizardFormData>>;
+export type WizardFormSetter = Dispatch<
+  SetStateAction<import("./shared").WizardFormData>
+>;

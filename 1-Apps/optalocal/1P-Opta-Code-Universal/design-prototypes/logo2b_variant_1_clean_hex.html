@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Code Logo - 2B-1: Clean Concentric Hex</title>
+    <style>
+        @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@700&display=swap");
+
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #09090b;
+            font-family: "JetBrains Mono", monospace;
+            overflow: hidden;
+        }
+
+        .logo-container {
+            width: 400px;
+            height: 400px;
+        }
+
+        .ambient-spin-slow {
+            animation: spin 60s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        .ambient-spin-reverse {
+            animation: spin-reverse 40s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin-reverse {
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        .label {
+            margin-top: 40px;
+            color: #fafafa;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 0.4rem;
+        }
+
+        .label span {
+            color: #06b6d4;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="logo-container">
+        <svg width="100%" height="100%" viewBox="0 0 210 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <filter id="ringGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="cyanBloom" x="-200%" y="-200%" width="500%" height="500%">
+                    <feGaussianBlur stdDeviation="5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <filter id="cyanGlow" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="2" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                </filter>
+                <radialGradient id="voidFill" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#100e18" />
+                    <stop offset="60%" stop-color="#0c0a14" />
+                    <stop offset="100%" stop-color="#09090b" />
+                </radialGradient>
+                <linearGradient id="ringHighlight" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.9" />
+                    <stop offset="25%" stop-color="#a855f7" stop-opacity="0.7" />
+                    <stop offset="55%" stop-color="#7c3aed" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#06b6d4" stop-opacity="0.15" />
+                </linearGradient>
+                <radialGradient id="centreBloom" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.8" />
+                    <stop offset="40%" stop-color="#a855f7" stop-opacity="0.4" />
+                    <stop offset="100%" stop-color="#3b82f6" stop-opacity="0" />
+                </radialGradient>
+            </defs>
+
+            <!-- Base Canonical Template Opta Circle -->
+            <circle cx="105" cy="105" r="88" fill="url(#voidFill)" />
+            <circle cx="105" cy="105" r="96" stroke="#06b6d4" stroke-width="6" stroke-opacity="0.06" fill="none" />
+            <circle cx="105" cy="105" r="93" stroke="#a855f7" stroke-width="3" stroke-opacity="0.10" fill="none" />
+            <circle cx="105" cy="105" r="90" stroke="url(#ringHighlight)" stroke-width="1.6" fill="none"
+                filter="url(#ringGlow)" />
+            <circle cx="105" cy="105" r="87" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.12" fill="none" />
+
+            <!-- BACKGROUND MARK: Concentric technical rings (Identical to CLI/LMX setup) -->
+            <g class="ambient-spin-slow">
+                <circle cx="105" cy="105" r="64" stroke="#a855f7" stroke-width="0.6" stroke-opacity="0.10"
+                    fill="none" />
+                <circle cx="105" cy="105" r="48" stroke="#a855f7" stroke-width="1.0" stroke-opacity="0.15" fill="none"
+                    stroke-dasharray="4 6" />
+                <circle cx="105" cy="105" r="32" stroke="#06b6d4" stroke-width="0.5" stroke-opacity="0.4" fill="none"
+                    stroke-dasharray="2 4" />
+
+                <!-- Orbiting Data Nodes -->
+                <circle cx="71" cy="71" r="2" fill="#06b6d4" fill-opacity="0.8" filter="url(#cyanGlow)" />
+                <circle cx="139" cy="139" r="2" fill="#06b6d4" fill-opacity="0.8" filter="url(#cyanGlow)" />
+            </g>
+
+            <g transform="translate(105, 105)">
+                <!-- FOREGROUND MARK: Clean Geometric Hex & Code Motif -->
+
+                <!-- Geometric Hexagon (R=24) -->
+                <!-- Points: 0,-24 | 20.78,-12 | 20.78,12 | 0,24 | -20.78,12 | -20.78,-12 -->
+                <path d="M 0 -24 L 20.78 -12 L 20.78 12 L 0 24 L -20.78 12 L -20.78 -12 Z" fill="#06b6d4"
+                    filter="url(#cyanBloom)" opacity="0.15" />
+                <path d="M 0 -24 L 20.78 -12 L 20.78 12 L 0 24 L -20.78 12 L -20.78 -12 Z" fill="none" stroke="#06b6d4"
+                    stroke-width="1.5" opacity="0.8" filter="url(#cyanGlow)" />
+
+                <!-- The Inner Brackets { } -->
+                <path d="M -6 -10 C -12 -10 -12 0 -16 0 C -12 0 -12 10 -6 10" fill="none" stroke="#fafafa"
+                    stroke-width="2" stroke-linecap="round" opacity="0.9" />
+                <path d="M 6 -10 C 12 -10 12 0 16 0 C 12 0 12 10 6 10" fill="none" stroke="#fafafa" stroke-width="2"
+                    stroke-linecap="round" opacity="0.9" />
+            </g>
+
+            <circle cx="105" cy="105" r="24" fill="url(#centreBloom)" fill-opacity="0.2" />
+        </svg>
+    </div>
+
+    <div class="label">OPTA<span>_</span>CODE</div>
+</body>
+
+</html>

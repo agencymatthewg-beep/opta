@@ -69,17 +69,19 @@ class SkillsMCPBridge:
 
         for manifest in self._registry.list_latest():
             tool_name = manifest.name if manifest.namespace == "default" else manifest.reference
-            tools.append({
-                "name": tool_name,
-                "short_name": manifest.name,
-                "namespace": manifest.namespace,
-                "version": manifest.version,
-                "description": manifest.description,
-                "input_schema": manifest.input_schema,
-                "kind": manifest.kind.value,
-                "permission_tags": [tag.value for tag in manifest.permission_tags],
-                "risk_tags": [tag.value for tag in manifest.risk_tags],
-            })
+            tools.append(
+                {
+                    "name": tool_name,
+                    "short_name": manifest.name,
+                    "namespace": manifest.namespace,
+                    "version": manifest.version,
+                    "description": manifest.description,
+                    "input_schema": manifest.input_schema,
+                    "kind": manifest.kind.value,
+                    "permission_tags": [tag.value for tag in manifest.permission_tags],
+                    "risk_tags": [tag.value for tag in manifest.risk_tags],
+                }
+            )
 
         return {
             "ok": True,
@@ -129,17 +131,19 @@ class SkillsMCPBridge:
         for manifest in self._registry.list_latest():
             if manifest.kind != SkillKind.PROMPT:
                 continue
-            prompts.append({
-                "name": manifest.name,
-                "description": manifest.description,
-                "arguments": [
-                    {
-                        "name": key,
-                        "required": key in manifest.input_schema.get("required", []),
-                    }
-                    for key in manifest.input_schema.get("properties", {})
-                ],
-            })
+            prompts.append(
+                {
+                    "name": manifest.name,
+                    "description": manifest.description,
+                    "arguments": [
+                        {
+                            "name": key,
+                            "required": key in manifest.input_schema.get("required", []),
+                        }
+                        for key in manifest.input_schema.get("properties", {})
+                    ],
+                }
+            )
         return {"ok": True, "prompts": prompts}
 
     def prompts_get(
@@ -157,13 +161,15 @@ class SkillsMCPBridge:
             return {"ok": False, "error": f"unknown prompt: {name}"}
         if manifest.kind != SkillKind.PROMPT:
             return {"ok": False, "error": f"{name} is not a prompt skill"}
+        if manifest.prompt_template is None:
+            return {"ok": False, "error": f"{name} has no prompt template"}
 
         args: dict[str, object] = {}
         if isinstance(arguments, Mapping):
             args = {str(k): v for k, v in arguments.items()}
 
         try:
-            rendered = manifest.prompt_template.format_map(args)  # type: ignore[union-attr]
+            rendered = manifest.prompt_template.format_map(args)
         except (KeyError, ValueError) as exc:
             return {"ok": False, "error": f"prompt rendering failed: {exc}"}
 
@@ -184,12 +190,14 @@ class SkillsMCPBridge:
             if not roots:
                 continue
             for root in roots:
-                resources.append({
-                    "uri": f"file://{root}",
-                    "name": f"{manifest.name} ({root})",
-                    "description": f"Filesystem access for {manifest.name}",
-                    "mimeType": "application/octet-stream",
-                })
+                resources.append(
+                    {
+                        "uri": f"file://{root}",
+                        "name": f"{manifest.name} ({root})",
+                        "description": f"Filesystem access for {manifest.name}",
+                        "mimeType": "application/octet-stream",
+                    }
+                )
         return {"ok": True, "resources": resources}
 
     def resources_read(self, *, uri: str) -> dict[str, object]:
@@ -207,13 +215,15 @@ class SkillsMCPBridge:
         if uri == "lmx://models":
             models: list[dict[str, object]] = []
             for manifest in self._registry.list_latest():
-                models.append({
-                    "name": manifest.name,
-                    "namespace": manifest.namespace,
-                    "version": manifest.version,
-                    "kind": manifest.kind.value,
-                    "description": manifest.description,
-                })
+                models.append(
+                    {
+                        "name": manifest.name,
+                        "namespace": manifest.namespace,
+                        "version": manifest.version,
+                        "kind": manifest.kind.value,
+                        "description": manifest.description,
+                    }
+                )
             import json
 
             return {
@@ -247,7 +257,7 @@ class SkillsMCPBridge:
 
         # file:// URIs from skill roots — return stub metadata
         if uri.startswith("file://"):
-            path = uri[len("file://"):]
+            path = uri[len("file://") :]
             # Verify this URI is from a registered skill root
             for manifest in self._registry.list_latest():
                 roots = getattr(manifest, "roots", None) or []
@@ -380,7 +390,7 @@ class RemoteMCPBridge:
                 if is_last_attempt or not retryable:
                     self._circuit_breaker.record_failure()
                     return {"ok": False, "error": str(exc)}
-                await asyncio.sleep(self._retry_backoff_sec * (2 ** attempt))
+                await asyncio.sleep(self._retry_backoff_sec * (2**attempt))
 
         self._circuit_breaker.record_failure()
         return {"ok": False, "error": "remote MCP request failed"}

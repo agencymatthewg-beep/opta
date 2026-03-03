@@ -105,14 +105,14 @@ describe('init command with --yes flag', () => {
     expect(await fileExists(join(testDir, 'docs', 'INDEX.md'))).toBe(true);
   });
 
-  it('creates 9 files total (APP.md + 8 docs)', async () => {
+  it('creates baseline scaffold files (APP/docs + memory files)', async () => {
     const { init } = await import('../../src/commands/init.js');
     await init({ yes: true });
 
-    // Verify the summary output mentions 9 files
+    // Verify the summary output includes created file count
     const calls = (console.log as ReturnType<typeof vi.fn>).mock.calls;
     const allOutput = calls.map((c: unknown[]) => c.map(String).join(' ')).join('\n');
-    expect(allOutput).toContain('9');
+    expect(allOutput).toContain('15');
   });
 
   it('uses directory name as project name', async () => {

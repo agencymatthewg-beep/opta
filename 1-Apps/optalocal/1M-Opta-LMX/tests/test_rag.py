@@ -206,9 +206,13 @@ class TestVectorStore:
         )
         # Should not raise with custom rrf params
         results = store.search(
-            "col", [1.0, 0.0, 0.0], top_k=3,
-            mode="hybrid", query_text="alpha",
-            rrf_k=40, rrf_weights=[2.0, 1.0],
+            "col",
+            [1.0, 0.0, 0.0],
+            top_k=3,
+            mode="hybrid",
+            query_text="alpha",
+            rrf_k=40,
+            rrf_weights=[2.0, 1.0],
         )
         assert len(results) >= 1
 
@@ -341,14 +345,16 @@ def _mock_embed(texts: list[str], **_kw: object) -> list[list[float]]:
         h = hash(text) % 10000
         vec = [(h >> i & 1) * 0.5 + 0.1 for i in range(8)]
         # Normalize
-        norm = sum(v ** 2 for v in vec) ** 0.5
+        norm = sum(v**2 for v in vec) ** 0.5
         embeddings.append([v / norm for v in vec])
     return embeddings
 
 
 @pytest.fixture
 async def rag_client(
-    mock_engine: object, mock_model_manager: object, tmp_path: Path,
+    mock_engine: object,
+    mock_model_manager: object,
+    tmp_path: Path,
 ) -> AsyncClient:
     """Test HTTP client with RAG store initialized and mock embeddings."""
 
@@ -429,10 +435,12 @@ async def test_ingest_documents(rag_client: AsyncClient) -> None:
 
 async def test_ingest_with_text_chunking(rag_client: AsyncClient) -> None:
     """POST /v1/rag/ingest with text chunking splits long documents."""
-    long_doc = "\n".join([
-        f"Paragraph {i} with enough content to exceed a small chunk size limit."
-        for i in range(200)
-    ])
+    long_doc = "\n".join(
+        [
+            f"Paragraph {i} with enough content to exceed a small chunk size limit."
+            for i in range(200)
+        ]
+    )
     response = await rag_client.post(
         "/v1/rag/ingest",
         json={
@@ -636,10 +644,9 @@ async def test_ingest_with_metadata(rag_client: AsyncClient) -> None:
 
 async def test_ingest_code_chunking(rag_client: AsyncClient) -> None:
     """POST /v1/rag/ingest with code chunking uses double-newline splits."""
-    code = "\n\n".join([
-        f"def func_{i}():\n    x = {i}\n    y = x * 2\n    return y + {i}"
-        for i in range(50)
-    ])
+    code = "\n\n".join(
+        [f"def func_{i}():\n    x = {i}\n    y = x * 2\n    return y + {i}" for i in range(50)]
+    )
     response = await rag_client.post(
         "/v1/rag/ingest",
         json={
@@ -705,6 +712,7 @@ class TestRAGConfig:
 
     def test_default_values(self) -> None:
         from opta_lmx.config import RAGConfig
+
         cfg = RAGConfig()
         assert cfg.rrf_k == 60
         assert cfg.rrf_vector_weight == 1.0
@@ -719,6 +727,7 @@ class TestRAGConfig:
 
     def test_custom_values(self) -> None:
         from opta_lmx.config import RAGConfig
+
         cfg = RAGConfig(
             rrf_k=40,
             rrf_vector_weight=1.5,
@@ -739,6 +748,7 @@ class TestRAGConfig:
         from pydantic import ValidationError
 
         from opta_lmx.config import RAGConfig
+
         with pytest.raises(ValidationError):
             RAGConfig(rrf_k=0)  # Must be >= 1
 
@@ -747,6 +757,7 @@ class TestRAGConfig:
         from pydantic import ValidationError
 
         from opta_lmx.config import RAGConfig
+
         with pytest.raises(ValidationError):
             RAGConfig(chunking_strategy="banana")
 
@@ -759,17 +770,20 @@ class TestChunkMarkdown:
 
     def test_empty_markdown(self) -> None:
         from opta_lmx.rag.chunker import chunk_markdown
+
         assert chunk_markdown("") == []
 
     def test_no_headers(self) -> None:
         """Text without headers falls back to single chunk."""
         from opta_lmx.rag.chunker import chunk_markdown
+
         chunks = chunk_markdown("Just some plain text.\nAnother line.")
         assert len(chunks) == 1
         assert "Just some plain text." in chunks[0].text
 
     def test_splits_on_h2(self) -> None:
         from opta_lmx.rag.chunker import chunk_markdown
+
         md = "## Section A\nContent A.\n\n## Section B\nContent B."
         chunks = chunk_markdown(md)
         assert len(chunks) == 2
@@ -781,6 +795,7 @@ class TestChunkMarkdown:
     def test_preserves_h1_context(self) -> None:
         """H1 header is prepended to each H2 chunk as context."""
         from opta_lmx.rag.chunker import chunk_markdown
+
         md = "# Main Title\n\n## Section A\nContent A.\n\n## Section B\nContent B."
         chunks = chunk_markdown(md)
         assert len(chunks) == 2
@@ -791,6 +806,7 @@ class TestChunkMarkdown:
     def test_large_section_re_split(self) -> None:
         """Sections exceeding max_chunk_size are sub-chunked."""
         from opta_lmx.rag.chunker import chunk_markdown
+
         lines = [f"Line {i} with some filler content here." for i in range(200)]
         md = "## Big Section\n" + "\n".join(lines)
         chunks = chunk_markdown(md, max_chunk_size=512)
@@ -802,6 +818,7 @@ class TestChunkMarkdown:
     def test_h3_not_split_by_default(self) -> None:
         """By default, only split on H1 and H2."""
         from opta_lmx.rag.chunker import chunk_markdown
+
         md = "## Section\nIntro.\n### Subsection\nSub-content."
         chunks = chunk_markdown(md)
         assert len(chunks) == 1
@@ -809,6 +826,7 @@ class TestChunkMarkdown:
 
     def test_sequential_indices(self) -> None:
         from opta_lmx.rag.chunker import chunk_markdown
+
         md = "## A\nText.\n\n## B\nText.\n\n## C\nText."
         chunks = chunk_markdown(md)
         for i, chunk in enumerate(chunks):
@@ -823,12 +841,14 @@ class TestRerankerEngine:
 
     def test_reranker_not_loaded_initially(self) -> None:
         from opta_lmx.rag.reranker import RerankerEngine
+
         engine = RerankerEngine()
         assert not engine.is_loaded
 
     def test_reranker_rerank_returns_sorted_scores(self) -> None:
         """Mock reranker returns scores in descending order."""
         from opta_lmx.rag.reranker import RerankerEngine
+
         engine = RerankerEngine()
         # Simulate a loaded reranker with mock
         engine._reranker = True  # mark as loaded

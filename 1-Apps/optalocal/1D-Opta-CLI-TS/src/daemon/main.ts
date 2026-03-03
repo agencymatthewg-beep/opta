@@ -52,6 +52,7 @@ export async function runDaemon(options?: RunDaemonOptions): Promise<void> {
     fallbackHosts: startupConfig.connection.fallbackHosts,
     port: startupConfig.connection.port,
     adminKey: startupConfig.connection.adminKey,
+    adminKeysByHost: startupConfig.connection.adminKeysByHost,
   }).catch(() => undefined);
 
   const running = await startHttpServer({

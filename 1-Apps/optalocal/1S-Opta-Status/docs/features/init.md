@@ -16,15 +16,15 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 - [x] LMX setup guide — install and configure LMX on Apple Silicon
 - [x] Daemon setup — start background daemon and verify connection
 - [x] First model download — guide to pulling the first LMX model
-- [ ] Interactive setup wizard — browser-based step-by-step configurator
-- [ ] OS detection — auto-detect macOS/Linux and show relevant guide
+- [x] Interactive setup wizard — browser-based step-by-step configurator
+- [x] OS detection — auto-detect macOS/Linux and show relevant guide
 
 ## Documentation Pages
 
 - [x] Architecture overview — how CLI, daemon, and LMX fit together
 - [x] FAQ — common setup questions and troubleshooting
-- [ ] Changelog page — release history with dates
-- [ ] API reference — LMX and daemon API documentation
+- [x] Changelog page — release history with dates
+- [x] API reference — LMX and daemon API documentation
 
 ## Technical
 
@@ -34,8 +34,8 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 - [x] Framer Motion animations — entrance animations and scroll effects
 - [x] Responsive layout — mobile and desktop optimized
 - [x] SEO meta tags — Open Graph and Twitter cards
-- [ ] Health badge — live status.optalocal.com indicator embedded in footer
-- [ ] RSS feed — subscribe to release announcements
+- [x] Health badge — live status.optalocal.com indicator embedded in footer
+- [x] RSS feed — subscribe to release announcements
 
 ## Recent Updates
 

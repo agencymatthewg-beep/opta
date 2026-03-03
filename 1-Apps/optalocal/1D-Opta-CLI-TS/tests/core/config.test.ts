@@ -5,6 +5,7 @@ describe('config', () => {
   it('produces valid defaults', () => {
     expect(DEFAULT_CONFIG.connection.host).toBe('localhost');
     expect(DEFAULT_CONFIG.connection.fallbackHosts).toEqual([]);
+    expect(DEFAULT_CONFIG.connection.adminKeysByHost).toEqual({});
     expect(DEFAULT_CONFIG.connection.port).toBe(1234);
     expect(DEFAULT_CONFIG.connection.protocol).toBe('http');
     expect(DEFAULT_CONFIG.connection.apiKey).toBeUndefined();
@@ -71,6 +72,21 @@ describe('config', () => {
       },
     });
     expect(config.connection.apiKey).toBe('lmx-key');
+  });
+
+  it('accepts host-specific admin keys map', () => {
+    const config = OptaConfigSchema.parse({
+      connection: {
+        adminKeysByHost: {
+          "192.168.188.11": "admin-key-a",
+          "192.168.188.8:1234": "admin-key-b",
+        },
+      },
+    });
+    expect(config.connection.adminKeysByHost).toEqual({
+      "192.168.188.11": "admin-key-a",
+      "192.168.188.8:1234": "admin-key-b",
+    });
   });
 
   it('has git defaults', () => {

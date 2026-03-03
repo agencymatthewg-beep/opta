@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
 import { executeDelegation } from '../../src/core/orchestrator.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
 import type { SubAgentResult, SubAgentTask } from '../../src/core/subagent.js';
@@ -29,6 +30,12 @@ const mockRegistry: ToolRegistry = {
   execute: vi.fn(),
   close: vi.fn(),
 };
+
+function extractHandoffPath(description: string): string {
+  const match = description.match(/saved to:\n([^\n]+)/);
+  expect(match?.[1]).toBeDefined();
+  return (match?.[1] ?? '').trim();
+}
 
 describe('delegate_task orchestrator', () => {
   it('executes subtasks sequentially', async () => {
@@ -74,9 +81,12 @@ describe('delegate_task orchestrator', () => {
       spawnSpy,
     );
 
-    // Second call should include first result in task description
+    // Second call should point to handoff context persisted on disk.
     const secondCall = spawnSpy.mock.calls[1]![0] as SubAgentTask;
-    expect(secondCall.description).toContain('File list: a.ts, b.ts');
+    expect(secondCall.description).toContain('Context from previous subtask is saved to:');
+    const handoffPath = extractHandoffPath(secondCall.description);
+    const handoffContent = readFileSync(handoffPath, 'utf8');
+    expect(handoffContent).toContain('File list: a.ts, b.ts');
   });
 
   it('stops on subtask error when stopOnError is true', async () => {
@@ -235,7 +245,9 @@ describe('delegate_task orchestrator', () => {
     const secondCall = spawnSpy.mock.calls[1]![0] as SubAgentTask;
     expect(secondCall.description).toContain('budget_exceeded');
     expect(secondCall.description).toContain('results may be incomplete');
-    expect(secondCall.description).toContain('Partial results from budget exceeded');
+    const handoffPath = extractHandoffPath(secondCall.description);
+    const handoffContent = readFileSync(handoffPath, 'utf8');
+    expect(handoffContent).toContain('Partial results from budget exceeded');
 
     // Both tasks execute (only error status halts)
     expect(spawnSpy).toHaveBeenCalledTimes(2);

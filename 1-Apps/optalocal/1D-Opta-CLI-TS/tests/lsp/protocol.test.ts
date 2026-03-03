@@ -9,6 +9,8 @@ import {
   formatSymbolInformation,
   formatDocumentSymbols,
   formatWorkspaceEdit,
+  formatDiagnostics,
+  formatCodeActions,
 } from '../../src/lsp/protocol.js';
 
 describe('filePathToUri', () => {
@@ -262,5 +264,63 @@ describe('formatWorkspaceEdit', () => {
 
   it('returns "No changes." for empty edit', () => {
     expect(formatWorkspaceEdit({ changes: {} }, '/project')).toBe('No changes.');
+  });
+});
+
+describe('formatDiagnostics', () => {
+  it('formats diagnostics with severity and location', () => {
+    const result = formatDiagnostics(
+      [
+        {
+          range: {
+            start: { line: 4, character: 8 },
+            end: { line: 4, character: 15 },
+          },
+          severity: 1,
+          source: 'ts',
+          code: 2304,
+          message: 'Cannot find name "missingVar".',
+        },
+      ],
+      '/project',
+      'file:///project/src/app.ts'
+    );
+
+    expect(result).toContain('src/app.ts:5:8');
+    expect(result).toContain('[Error]');
+    expect(result).toContain('Cannot find name');
+    expect(result).toContain('(ts:2304)');
+  });
+
+  it('returns "No diagnostics found." for empty list', () => {
+    expect(formatDiagnostics([], '/project')).toBe('No diagnostics found.');
+  });
+});
+
+describe('formatCodeActions', () => {
+  it('formats code action details', () => {
+    const result = formatCodeActions(
+      [
+        {
+          title: 'Import missing symbol',
+          kind: 'quickfix',
+          isPreferred: true,
+          command: {
+            title: 'Apply',
+            command: 'typescript.applyCodeAction',
+          },
+        },
+      ],
+      '/project'
+    );
+
+    expect(result).toContain('1. Import missing symbol');
+    expect(result).toContain('quickfix');
+    expect(result).toContain('preferred');
+    expect(result).toContain('command: typescript.applyCodeAction');
+  });
+
+  it('returns "No code actions available." for empty list', () => {
+    expect(formatCodeActions([], '/project')).toBe('No code actions available.');
   });
 });

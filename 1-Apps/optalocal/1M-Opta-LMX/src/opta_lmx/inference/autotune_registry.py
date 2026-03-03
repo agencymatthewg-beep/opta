@@ -78,7 +78,8 @@ class AutotuneRegistry:
                     old_metrics.get(
                         "queue_wait_ms",
                         old_metrics.get("avg_queue_wait_ms", 0.0),
-                    ) or 0.0
+                    )
+                    or 0.0
                 ),
             )
             old_sort_key = old_score_result.sort_key

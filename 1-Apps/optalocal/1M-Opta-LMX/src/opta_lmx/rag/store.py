@@ -15,13 +15,14 @@ via Reciprocal Rank Fusion (RRF).
 
 from __future__ import annotations
 
+import importlib
 import json
 import logging
 import time
 import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 import numpy as np
 from numpy.typing import NDArray
@@ -30,12 +31,40 @@ from opta_lmx.rag.bm25 import BM25Index, reciprocal_rank_fusion
 
 logger = logging.getLogger(__name__)
 
-# Try to import FAISS — purely optional accelerator
-try:
-    import faiss
 
+class _FaissIndex(Protocol):
+    """Structural type for the FAISS index methods we use."""
+
+    ntotal: int
+
+    def add(self, vectors: NDArray[np.float32]) -> None:
+        """Add vectors to the index."""
+
+    def search(
+        self,
+        query_vectors: NDArray[np.float32],
+        top_k: int,
+    ) -> tuple[NDArray[np.float32], NDArray[np.int64]]:
+        """Search vectors and return (scores, indices)."""
+
+
+class _FaissModule(Protocol):
+    """Structural type for the optional faiss module."""
+
+    def IndexFlatIP(self, dim: int) -> _FaissIndex:  # noqa: N802
+        """Create an inner-product index."""
+
+    def normalize_L2(self, vectors: NDArray[np.float32]) -> None:  # noqa: N802
+        """L2-normalize vectors in-place."""
+
+
+# Try to import FAISS — purely optional accelerator
+_FAISS: _FaissModule | None
+try:
+    _FAISS = cast(_FaissModule, importlib.import_module("faiss"))
     _FAISS_AVAILABLE = True
 except ImportError:
+    _FAISS = None
     _FAISS_AVAILABLE = False
 
 
@@ -85,7 +114,7 @@ class SearchResult:
 _FAISS_MIN_DIM = 32  # FAISS on ARM64 can segfault with low-dim vectors; real models use >= 384
 
 
-def _build_faiss_index(embeddings: NDArray[np.float32]) -> Any:
+def _build_faiss_index(embeddings: NDArray[np.float32]) -> _FaissIndex | None:
     """Build a FAISS inner-product index from L2-normalised vectors.
 
     Returns None (forcing NumPy fallback) when:
@@ -93,27 +122,29 @@ def _build_faiss_index(embeddings: NDArray[np.float32]) -> Any:
     - No embeddings to index
     - Embedding dimension < 8 (ARM NEON SIMD alignment requirement)
     """
-    if not _FAISS_AVAILABLE or len(embeddings) == 0:
+    if _FAISS is None or len(embeddings) == 0:
         return None
     dim = embeddings.shape[1]
     if dim < _FAISS_MIN_DIM:
         return None
-    index = faiss.IndexFlatIP(dim)
+    index = _FAISS.IndexFlatIP(dim)
     # Normalise so inner product = cosine similarity
     normed = embeddings.copy()
-    faiss.normalize_L2(normed)
+    _FAISS.normalize_L2(normed)
     index.add(normed)
     return index
 
 
 def _search_faiss(
-    index: Any,
+    index: _FaissIndex,
     query: NDArray[np.float32],
     top_k: int,
 ) -> list[tuple[int, float]]:
     """Search FAISS index. Returns [(doc_index, score), ...]."""
+    if _FAISS is None:
+        return []
     q = query.reshape(1, -1).copy()
-    faiss.normalize_L2(q)
+    _FAISS.normalize_L2(q)
     scores, indices = index.search(q, min(top_k, index.ntotal))
     results: list[tuple[int, float]] = []
     for idx, score in zip(indices[0], scores[0], strict=False):
@@ -138,11 +169,11 @@ def _search_numpy(
     doc_norms = np.linalg.norm(doc_embeddings, axis=1)
 
     valid_mask = doc_norms > 0
-    similarities = np.zeros(len(docs), dtype=np.float32)
+    similarities: NDArray[np.float32] = np.zeros(len(docs), dtype=np.float32)
     if valid_mask.any():
-        similarities[valid_mask] = (
-            doc_embeddings[valid_mask] @ query_vec
-        ) / (doc_norms[valid_mask] * query_norm)
+        similarities[valid_mask] = (doc_embeddings[valid_mask] @ query_vec) / (
+            doc_norms[valid_mask] * query_norm
+        )
 
     indices = np.argsort(-similarities)
     results: list[SearchResult] = []
@@ -175,7 +206,7 @@ class VectorStore:
     def __init__(self, persist_path: Path | None = None) -> None:
         self._collections: dict[str, list[Document]] = {}
         self._collection_dims: dict[str, int] = {}  # collection -> embedding dim
-        self._faiss_indexes: dict[str, Any] = {}
+        self._faiss_indexes: dict[str, _FaissIndex] = {}
         self._bm25_indexes: dict[str, BM25Index] = {}
         self._persist_path = persist_path
 
@@ -252,12 +283,15 @@ class VectorStore:
         # Rebuild FAISS + BM25 indexes for this collection
         self._rebuild_indexes(collection)
 
-        logger.info("documents_added", extra={
-            "collection": collection,
-            "count": len(texts),
-            "total": len(self._collections[collection]),
-            "faiss": collection in self._faiss_indexes,
-        })
+        logger.info(
+            "documents_added",
+            extra={
+                "collection": collection,
+                "count": len(texts),
+                "total": len(self._collections[collection]),
+                "faiss": collection in self._faiss_indexes,
+            },
+        )
 
         return doc_ids
 
@@ -306,8 +340,14 @@ class VectorStore:
 
         if mode == "hybrid":
             return self._search_hybrid(
-                collection, query_vec, query_text or "", top_k, min_score, docs,
-                rrf_k=rrf_k, rrf_weights=rrf_weights,
+                collection,
+                query_vec,
+                query_text or "",
+                top_k,
+                min_score,
+                docs,
+                rrf_k=rrf_k,
+                rrf_weights=rrf_weights,
             )
 
         # Default: vector search
@@ -371,12 +411,13 @@ class VectorStore:
 
         # Get vector results (double top_k to ensure good candidates)
         vector_results = self._search_vector(
-            collection, query_vec, top_k * 2, min_score, docs,
+            collection,
+            query_vec,
+            top_k * 2,
+            min_score,
+            docs,
         )
-        vector_ranked = [
-            (id_to_idx.get(r.document.id, -1), r.score)
-            for r in vector_results
-        ]
+        vector_ranked = [(id_to_idx.get(r.document.id, -1), r.score) for r in vector_results]
 
         # Get keyword results
         bm25 = self._bm25_indexes.get(collection)
@@ -413,9 +454,13 @@ class VectorStore:
         self._bm25_indexes.pop(collection, None)
         count = len(docs)
         if count:
-            logger.info("collection_deleted", extra={
-                "collection": collection, "documents_removed": count,
-            })
+            logger.info(
+                "collection_deleted",
+                extra={
+                    "collection": collection,
+                    "documents_removed": count,
+                },
+            )
         return count
 
     def delete_documents(self, collection: str, doc_ids: list[str]) -> int:
@@ -431,9 +476,13 @@ class VectorStore:
 
         if deleted:
             self._rebuild_indexes(collection)
-            logger.info("documents_deleted", extra={
-                "collection": collection, "count": deleted,
-            })
+            logger.info(
+                "documents_deleted",
+                extra={
+                    "collection": collection,
+                    "count": deleted,
+                },
+            )
         return deleted
 
     def get_stats(self) -> dict[str, Any]:
@@ -496,10 +545,13 @@ class VectorStore:
         with open(target, "w") as f:
             json.dump(data, f)
 
-        logger.info("store_saved", extra={
-            "path": str(target),
-            "total_documents": self.total_documents(),
-        })
+        logger.info(
+            "store_saved",
+            extra={
+                "path": str(target),
+                "total_documents": self.total_documents(),
+            },
+        )
 
     def load(self, path: Path | None = None) -> int:
         """Load store from JSON file. Returns total documents loaded."""
@@ -516,21 +568,20 @@ class VectorStore:
         self._bm25_indexes.clear()
         total = 0
         for collection, doc_dicts in data.items():
-            self._collections[collection] = [
-                Document.from_dict(d) for d in doc_dicts
-            ]
+            self._collections[collection] = [Document.from_dict(d) for d in doc_dicts]
             total += len(doc_dicts)
             # Restore embedding dimensions from loaded data
             if self._collections[collection]:
-                self._collection_dims[collection] = len(
-                    self._collections[collection][0].embedding
-                )
+                self._collection_dims[collection] = len(self._collections[collection][0].embedding)
             self._rebuild_indexes(collection)
 
-        logger.info("store_loaded", extra={
-            "path": str(target),
-            "total_documents": total,
-            "collections": len(self._collections),
-            "faiss": _FAISS_AVAILABLE,
-        })
+        logger.info(
+            "store_loaded",
+            extra={
+                "path": str(target),
+                "total_documents": total,
+                "collections": len(self._collections),
+                "faiss": _FAISS_AVAILABLE,
+            },
+        )
         return total

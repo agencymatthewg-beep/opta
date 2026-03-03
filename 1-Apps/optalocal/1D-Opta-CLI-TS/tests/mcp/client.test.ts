@@ -2,34 +2,36 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock the MCP SDK modules
 vi.mock('@modelcontextprotocol/sdk/client/index.js', () => ({
-  Client: vi.fn().mockImplementation(() => ({
-    connect: vi.fn(),
-    listTools: vi.fn().mockResolvedValue({
-      tools: [
-        {
-          name: 'get_issue',
-          description: 'Get a GitHub issue',
-          inputSchema: {
-            type: 'object',
-            properties: { owner: { type: 'string' }, repo: { type: 'string' } },
-            required: ['owner', 'repo'],
+  Client: vi.fn().mockImplementation(function() {
+    return {
+      connect: vi.fn(),
+      listTools: vi.fn().mockResolvedValue({
+        tools: [
+          {
+            name: 'get_issue',
+            description: 'Get a GitHub issue',
+            inputSchema: {
+              type: 'object',
+              properties: { owner: { type: 'string' }, repo: { type: 'string' } },
+              required: ['owner', 'repo'],
+            },
           },
-        },
-      ],
-    }),
-    callTool: vi.fn().mockResolvedValue({
-      content: [{ type: 'text', text: 'Issue #1: Fix bug' }],
-    }),
-    close: vi.fn(),
-  })),
+        ],
+      }),
+      callTool: vi.fn().mockResolvedValue({
+        content: [{ type: 'text', text: 'Issue #1: Fix bug' }],
+      }),
+      close: vi.fn(),
+    };
+  }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/stdio.js', () => ({
-  StdioClientTransport: vi.fn(),
+  StdioClientTransport: vi.fn().mockImplementation(function() { return {}; }),
 }));
 
 vi.mock('@modelcontextprotocol/sdk/client/streamableHttp.js', () => ({
-  StreamableHTTPClientTransport: vi.fn(),
+  StreamableHTTPClientTransport: vi.fn().mockImplementation(function() { return {}; }),
 }));
 
 import { connectMcpServer } from '../../src/mcp/client.js';
@@ -100,13 +102,14 @@ describe('MCP client', () => {
   it('returns error string when tool call fails', async () => {
     const { Client } = await import('@modelcontextprotocol/sdk/client/index.js');
     vi.mocked(Client).mockImplementationOnce(
-      () =>
-        ({
+      function() {
+        return {
           connect: vi.fn(),
           listTools: vi.fn().mockResolvedValue({ tools: [] }),
           callTool: vi.fn().mockRejectedValue(new Error('Server crashed')),
           close: vi.fn(),
-        }) as any
+        } as any;
+      }
     );
 
     const conn = await connectMcpServer('broken', {

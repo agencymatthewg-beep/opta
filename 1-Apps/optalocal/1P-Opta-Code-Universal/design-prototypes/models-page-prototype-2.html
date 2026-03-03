@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Models Page - Prototype 2 (Neon Outline)</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --opta-bg: #09090b;
+            --opta-surface: #0a0a0e;
+            --opta-primary: #8b5cf6;
+            --opta-neon-green: #22c55e;
+            --text: #fafafa;
+            --text-soft: #a1a1aa;
+        }
+
+        body {
+            background: var(--opta-bg);
+            color: var(--text);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 2rem;
+            margin: 0;
+        }
+
+        .models-page {
+            max-width: 800px;
+            margin: 0 auto;
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        h3 {
+            font-family: 'Sora', sans-serif;
+            font-size: 1.1rem;
+            color: var(--text);
+            margin: 0 0 1.25rem 0;
+            letter-spacing: 0.5px;
+        }
+
+        /* Memory Block */
+        .models-memory {
+            background: var(--opta-surface);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 1.75rem;
+            position: relative;
+        }
+
+        .models-memory::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.05);
+            pointer-events: none;
+        }
+
+        .memory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+
+        .memory-pct {
+            font-size: 1.2rem;
+            color: var(--opta-primary);
+        }
+
+        .memory-bar-container {
+            height: 8px;
+            background: #1a1a24;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .memory-bar-fill {
+            height: 100%;
+            width: 75%;
+            background: var(--opta-primary);
+            box-shadow: 0 0 12px var(--opta-primary);
+        }
+
+        .memory-label {
+            font-size: 0.8rem;
+            color: var(--text-soft);
+        }
+
+        /* Advanced Tools as Segmented */
+        .models-tools {
+            background: var(--opta-surface);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
+            padding: 1.75rem;
+        }
+
+        .tools-nav-pill {
+            display: inline-flex;
+            background: rgba(15, 15, 20, 0.4);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            padding: 6px;
+            gap: 4px;
+        }
+
+        .tools-nav-pill button {
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: var(--text-soft);
+            font-family: 'JetBrains Mono', monospace;
+            padding: 0.6rem 1rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .tools-nav-pill button:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="models-page">
+        <div class="models-memory">
+            <div class="memory-header">
+                <h3>Unified Memory</h3>
+                <span class="memory-pct">75%</span>
+            </div>
+            <div class="memory-bar-container">
+                <div class="memory-bar-fill"></div>
+            </div>
+            <div class="memory-label">24.0 GB used of 32.0 GB total</div>
+        </div>
+
+        <div class="models-tools">
+            <h3>Advanced Model Controls</h3>
+            <div class="tools-nav-pill">
+                <button>Run History</button>
+                <button>Run Health Check</button>
+                <button>Full Scan</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

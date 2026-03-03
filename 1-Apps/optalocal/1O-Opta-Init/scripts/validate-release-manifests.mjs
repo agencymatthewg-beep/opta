@@ -24,7 +24,15 @@ function usage() {
     [
       'Usage:',
       '  node scripts/validate-release-manifests.mjs',
-      '  node scripts/validate-release-manifests.mjs <manifest-path> [more-manifests...]',
+      '  node scripts/validate-release-manifests.mjs [options] <manifest-path> [more-manifests...]',
+      '',
+      'Options:',
+      '  --require-populated-artifacts-for <component-id>',
+      '      Require at least one artifact entry for the component (repeatable).',
+      '  --require-populated-platforms-for <component-id>:<platform1>,<platform2>',
+      '      Require each listed platform to have at least one artifact entry for the component (repeatable).',
+      '  --require-signatures-for <component-id>',
+      '      Require every artifact entry for the component to include signature metadata (repeatable).',
       '',
       'Defaults to channels/stable.json and channels/beta.json.',
     ].join('\n')
@@ -91,12 +99,12 @@ function validateArtifact(artifact, location, expectedPlatform, errors, allowedP
   if (typeof artifact.url !== 'string' || !httpsRegex.test(artifact.url)) {
     errors.push(`${location}.url must be an https URL`);
   }
-  if (!Number.isInteger(artifact.sizeBytes) || artifact.sizeBytes < 1) {
-    errors.push(`${location}.sizeBytes must be a positive integer`);
+  if (artifact.sizeBytes !== undefined && (!Number.isInteger(artifact.sizeBytes) || artifact.sizeBytes < 1)) {
+    errors.push(`${location}.sizeBytes must be a positive integer when provided`);
   }
-  if (!isObject(artifact.checksum)) {
-    errors.push(`${location}.checksum must be an object`);
-  } else {
+  if (artifact.checksum !== undefined && !isObject(artifact.checksum)) {
+    errors.push(`${location}.checksum must be an object when provided`);
+  } else if (isObject(artifact.checksum)) {
     if (artifact.checksum.algorithm !== 'sha256') {
       errors.push(`${location}.checksum.algorithm must be "sha256"`);
     }
@@ -104,9 +112,9 @@ function validateArtifact(artifact, location, expectedPlatform, errors, allowedP
       errors.push(`${location}.checksum.value must be a 64-char hex sha256 digest`);
     }
   }
-  if (!isObject(artifact.signature)) {
-    errors.push(`${location}.signature must be an object`);
-  } else {
+  if (artifact.signature !== undefined && !isObject(artifact.signature)) {
+    errors.push(`${location}.signature must be an object when provided`);
+  } else if (isObject(artifact.signature)) {
     if (!allowedSignatureTypes.has(artifact.signature.type)) {
       errors.push(`${location}.signature.type must be one of: ${[...allowedSignatureTypes].join(', ')}`);
     }
@@ -116,7 +124,12 @@ function validateArtifact(artifact, location, expectedPlatform, errors, allowedP
   }
 }
 
-function validateManifest(manifest, schema, manifestPath) {
+function validateManifest(manifest, schema, manifestPath, options = {}) {
+  const {
+    requiredPopulatedComponents = new Set(),
+    requiredSignedComponents = new Set(),
+    requiredPlatformComponents = new Map(),
+  } = options;
   const errors = [];
   const schemaVersion = schema?.properties?.schemaVersion?.const ?? '1.0.0';
   const manifestVersion = schema?.properties?.manifestVersion?.const ?? 1;
@@ -187,6 +200,8 @@ function validateManifest(manifest, schema, manifestPath) {
   }
 
   const seenComponentIds = new Set();
+  const componentArtifactStats = new Map();
+  let optaCliHasArtifactUrl = false;
   for (let index = 0; index < manifest.components.length; index += 1) {
     const component = manifest.components[index];
     const loc = `components[${index}]`;
@@ -223,11 +238,20 @@ function validateManifest(manifest, schema, manifestPath) {
       continue;
     }
 
+    componentArtifactStats.set(component.id, {
+      total: 0,
+      withSignature: 0,
+      platforms: {
+        macos: 0,
+        windows: 0,
+      },
+    });
+
     for (const platform of ['macos', 'windows']) {
       const artifacts = component.artifacts[platform];
       const artifactsLoc = `${loc}.artifacts.${platform}`;
-      if (!Array.isArray(artifacts) || artifacts.length === 0) {
-        errors.push(`${artifactsLoc} must be a non-empty array`);
+      if (!Array.isArray(artifacts)) {
+        errors.push(`${artifactsLoc} must be an array`);
         continue;
       }
 
@@ -245,6 +269,26 @@ function validateManifest(manifest, schema, manifestPath) {
           allowedArchValues
         );
         if (isObject(artifact)) {
+          const componentStats = componentArtifactStats.get(component.id);
+          if (componentStats) {
+            componentStats.total += 1;
+            if (isObject(artifact.signature) && typeof artifact.signature.url === 'string') {
+              componentStats.withSignature += 1;
+            }
+            if (artifact.platform === 'macos') {
+              componentStats.platforms.macos += 1;
+            }
+            if (artifact.platform === 'windows') {
+              componentStats.platforms.windows += 1;
+            }
+          }
+          if (
+            component.id === 'opta-cli' &&
+            typeof artifact.url === 'string' &&
+            artifact.url.startsWith('https://')
+          ) {
+            optaCliHasArtifactUrl = true;
+          }
           const dedupeKey = `${artifact.platform}|${artifact.arch}|${artifact.packageType}`;
           if (seenArtifactKeys.has(dedupeKey)) {
             errors.push(`${artifactLoc} duplicates another artifact variant (${dedupeKey})`);
@@ -253,6 +297,72 @@ function validateManifest(manifest, schema, manifestPath) {
         }
       }
     }
+  }
+
+  for (const componentId of requiredPopulatedComponents) {
+    if (!seenComponentIds.has(componentId)) {
+      errors.push(`strict requirement failed: component "${componentId}" is not present`);
+      continue;
+    }
+
+    const stats = componentArtifactStats.get(componentId);
+    if (!stats || stats.total < 1) {
+      errors.push(
+        `strict requirement failed: component "${componentId}" must include at least one artifact entry`
+      );
+    }
+  }
+
+  for (const [componentId, requiredPlatforms] of requiredPlatformComponents.entries()) {
+    if (!seenComponentIds.has(componentId)) {
+      errors.push(`strict requirement failed: component "${componentId}" is not present`);
+      continue;
+    }
+
+    const stats = componentArtifactStats.get(componentId);
+    if (!stats) {
+      errors.push(
+        `strict requirement failed: component "${componentId}" missing platform-specific artifact stats`
+      );
+      continue;
+    }
+
+    for (const platform of requiredPlatforms) {
+      if (platform !== 'macos' && platform !== 'windows') {
+        errors.push(`strict requirement failed: unsupported platform "${platform}" for component "${componentId}"`);
+        continue;
+      }
+      if (stats.platforms[platform] < 1) {
+        errors.push(
+          `strict requirement failed: component "${componentId}" must include at least one ${platform} artifact`
+        );
+      }
+    }
+  }
+
+  for (const componentId of requiredSignedComponents) {
+    if (!seenComponentIds.has(componentId)) {
+      errors.push(`strict requirement failed: component "${componentId}" is not present`);
+      continue;
+    }
+
+    const stats = componentArtifactStats.get(componentId);
+    if (!stats || stats.total < 1) {
+      errors.push(
+        `strict requirement failed: component "${componentId}" must include at least one artifact before signature checks`
+      );
+      continue;
+    }
+
+    if (stats.withSignature < stats.total) {
+      errors.push(
+        `strict requirement failed: component "${componentId}" must include signatures for all artifacts (${stats.withSignature}/${stats.total})`
+      );
+    }
+  }
+
+  if (!optaCliHasArtifactUrl) {
+    errors.push('components for "opta-cli" must include at least one artifact url for bootstrap/download flow');
   }
 
   return {
@@ -273,8 +383,92 @@ async function main() {
     return;
   }
 
+  const requiredPopulatedComponents = new Set();
+  const requiredSignedComponents = new Set();
+  const requiredPlatformComponents = new Map();
+  const manifestInputs = [];
+
+  for (let index = 0; index < args.length; index += 1) {
+    const arg = args[index];
+    if (arg === '--require-populated-artifacts-for') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) {
+        throw new Error('--require-populated-artifacts-for requires a component id');
+      }
+      requiredPopulatedComponents.add(value);
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--require-populated-artifacts-for=')) {
+      const value = arg.slice('--require-populated-artifacts-for='.length).trim();
+      if (!value) {
+        throw new Error('--require-populated-artifacts-for requires a component id');
+      }
+      requiredPopulatedComponents.add(value);
+      continue;
+    }
+
+    if (arg === '--require-populated-platforms-for') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) {
+        throw new Error('--require-populated-platforms-for requires <component-id>:<platforms>');
+      }
+      const [componentId, platformList] = value.split(':');
+      if (!componentId || !platformList) {
+        throw new Error('--require-populated-platforms-for requires <component-id>:<platforms>');
+      }
+      const required = new Set(platformList.split(',').map((value) => value.trim()).filter(Boolean));
+      const existing = requiredPlatformComponents.get(componentId) ?? new Set();
+      required.forEach((platform) => existing.add(platform));
+      requiredPlatformComponents.set(componentId, existing);
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--require-populated-platforms-for=')) {
+      const value = arg.slice('--require-populated-platforms-for='.length).trim();
+      if (!value) {
+        throw new Error('--require-populated-platforms-for requires <component-id>:<platforms>');
+      }
+      const [componentId, platformList] = value.split(':');
+      if (!componentId || !platformList) {
+        throw new Error('--require-populated-platforms-for requires <component-id>:<platforms>');
+      }
+      const required = new Set(platformList.split(',').map((value) => value.trim()).filter(Boolean));
+      const existing = requiredPlatformComponents.get(componentId) ?? new Set();
+      required.forEach((platform) => existing.add(platform));
+      requiredPlatformComponents.set(componentId, existing);
+      continue;
+    }
+
+    if (arg === '--require-signatures-for') {
+      const value = args[index + 1];
+      if (!value || value.startsWith('--')) {
+        throw new Error('--require-signatures-for requires a component id');
+      }
+      requiredSignedComponents.add(value);
+      index += 1;
+      continue;
+    }
+
+    if (arg.startsWith('--require-signatures-for=')) {
+      const value = arg.slice('--require-signatures-for='.length).trim();
+      if (!value) {
+        throw new Error('--require-signatures-for requires a component id');
+      }
+      requiredSignedComponents.add(value);
+      continue;
+    }
+
+    manifestInputs.push(arg);
+  }
+
   const schemaPath = defaultSchemaPath;
-  const manifestPaths = args.length > 0 ? args.map((input) => path.resolve(process.cwd(), input)) : defaultManifestPaths;
+  const manifestPaths =
+    manifestInputs.length > 0
+      ? manifestInputs.map((input) => path.resolve(process.cwd(), input))
+      : defaultManifestPaths;
 
   const schema = await readJsonFile(schemaPath);
 
@@ -282,7 +476,11 @@ async function main() {
   for (const manifestPath of manifestPaths) {
     try {
       const manifest = await readJsonFile(manifestPath);
-      const { errors, componentCount } = validateManifest(manifest, schema, manifestPath);
+      const { errors, componentCount } = validateManifest(manifest, schema, manifestPath, {
+        requiredPopulatedComponents,
+        requiredSignedComponents,
+        requiredPlatformComponents,
+      });
       if (errors.length > 0) {
         hadErrors = true;
         console.error(`FAIL ${path.relative(repoRoot, manifestPath)} (${errors.length} error${errors.length === 1 ? '' : 's'})`);

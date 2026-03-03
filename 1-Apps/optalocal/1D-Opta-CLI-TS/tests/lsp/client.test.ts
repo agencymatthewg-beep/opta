@@ -142,6 +142,8 @@ describe('LspClient', () => {
         hoverProvider: true,
         workspaceSymbolProvider: true,
         documentSymbolProvider: true,
+        diagnosticProvider: true,
+        codeActionProvider: true,
         renameProvider: true,
       });
     });
@@ -294,6 +296,56 @@ describe('LspClient', () => {
 
       const result = await resultPromise;
       expect(result.changes).toBeDefined();
+    });
+
+    it('sends diagnostics request', async () => {
+      const resultPromise = client.diagnostics('file:///project/src/app.ts');
+
+      setTimeout(() => {
+        sendResponse(mockProc, 2, {
+          kind: 'full',
+          items: [
+            {
+              range: {
+                start: { line: 3, character: 2 },
+                end: { line: 3, character: 12 },
+              },
+              severity: 1,
+              source: 'ts',
+              message: 'Cannot find name "foobar"',
+            },
+          ],
+        });
+      }, 5);
+
+      const result = await resultPromise;
+      expect(result).toHaveLength(1);
+      expect(result[0]!.message).toContain('Cannot find name');
+    });
+
+    it('sends code actions request', async () => {
+      const resultPromise = client.codeActions(
+        'file:///project/src/app.ts',
+        {
+          start: { line: 1, character: 0 },
+          end: { line: 1, character: 5 },
+        },
+        { only: ['quickfix'] }
+      );
+
+      setTimeout(() => {
+        sendResponse(mockProc, 2, [
+          {
+            title: 'Import missing symbol',
+            kind: 'quickfix',
+            isPreferred: true,
+          },
+        ]);
+      }, 5);
+
+      const result = await resultPromise;
+      expect(result).toHaveLength(1);
+      expect(result[0]!.title).toBe('Import missing symbol');
     });
   });
 

@@ -6,6 +6,7 @@ import logging
 import secrets
 import time
 from collections.abc import AsyncIterator
+from typing import Any, cast
 
 from fastapi import APIRouter, Depends, Header, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -35,7 +36,7 @@ from opta_lmx.inference.schema import (
     ModelsListResponse,
 )
 from opta_lmx.inference.streaming import format_sse_stream, format_sse_tool_stream
-from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
+from opta_lmx.inference.tool_parser import StreamChunk, wrap_stream_with_tool_parsing
 from opta_lmx.monitoring.metrics import RequestMetric
 from opta_lmx.presets.manager import PRESET_PREFIX
 
@@ -86,9 +87,7 @@ def _resolve_serving_lane_and_priority(
     if lane_raw:
         if lane_raw not in _SERVING_LANE_TO_PRIORITY:
             allowed = ", ".join(_SERVING_LANE_TO_PRIORITY.keys())
-            raise ValueError(
-                f"Invalid value for 'x-serving-lane'. Expected one of: {allowed}."
-            )
+            raise ValueError(f"Invalid value for 'x-serving-lane'. Expected one of: {allowed}.")
         serving_lane = lane_raw
         priority = _SERVING_LANE_TO_PRIORITY[serving_lane]
         source = "x-serving-lane"
@@ -108,8 +107,6 @@ def _resolve_serving_lane_and_priority(
         },
     )
     return serving_lane, priority
-
-
 
 
 router = APIRouter(dependencies=[Depends(verify_inference_key)])
@@ -139,7 +136,7 @@ async def chat_completions(
     """
     # Resolve preset (e.g. "preset:code-assistant") — applies defaults + swaps model ID
     if body.model.startswith(PRESET_PREFIX):
-        preset_name = body.model[len(PRESET_PREFIX):]
+        preset_name = body.model[len(PRESET_PREFIX) :]
         preset = preset_mgr.get(preset_name)
         if preset is None:
             return model_not_found(body.model)
@@ -177,9 +174,7 @@ async def chat_completions(
         try:
             # Approximate prompt tokens for metrics (4 chars ≈ 1 token)
             est_prompt_tokens = max(1, _estimate_prompt_tokens(body.messages))
-            include_usage = bool(
-                body.stream_options and body.stream_options.get("include_usage")
-            )
+            include_usage = bool(body.stream_options and body.stream_options.get("include_usage"))
 
             if body.n > 1:
                 return StreamingResponse(
@@ -217,38 +212,53 @@ async def chat_completions(
             )
             # Wrap stream to count tokens and record final metrics
             counted_stream = _counting_stream(
-                token_stream, resolved_model, start_time, est_prompt_tokens, metrics,
+                token_stream,
+                resolved_model,
+                start_time,
+                est_prompt_tokens,
+                metrics,
                 client_id=effective_client_id,
             )
 
             if body.tools:
                 # Parse MiniMax XML tool calls from the token stream
                 chunk_stream = wrap_stream_with_tool_parsing(
-                    counted_stream, tools=body.tools,
+                    cast(AsyncIterator[str], counted_stream),
+                    tools=body.tools,
                 )
                 sse_stream = format_sse_tool_stream(
-                    chunk_stream, request_id, resolved_model,
-                    include_usage=include_usage, prompt_tokens=est_prompt_tokens,
+                    cast(AsyncIterator[StreamChunk], chunk_stream),
+                    request_id,
+                    resolved_model,
+                    include_usage=include_usage,
+                    prompt_tokens=est_prompt_tokens,
                     created=created,
                     include_logprobs_placeholder=include_logprobs_placeholder,
                 )
             else:
                 sse_stream = format_sse_stream(
-                    counted_stream, request_id, resolved_model,
-                    include_usage=include_usage, prompt_tokens=est_prompt_tokens,
+                    cast(AsyncIterator[str], counted_stream),
+                    request_id,
+                    resolved_model,
+                    include_usage=include_usage,
+                    prompt_tokens=est_prompt_tokens,
                     created=created,
                     include_logprobs_placeholder=include_logprobs_placeholder,
                 )
             return StreamingResponse(sse_stream, media_type="text/event-stream")
         except Exception as e:
             logger.error("stream_error", extra={"model": resolved_model, "error": str(e)})
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0, completion_tokens=0,
-                stream=True, error=True,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=True,
+                    error=True,
+                    client_id=effective_client_id,
+                )
+            )
             return internal_error(str(e))
     else:
         try:
@@ -299,14 +309,16 @@ async def chat_completions(
                 for choice in choices:
                     choice["logprobs"] = None
 
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=prompt_tokens_total,
-                completion_tokens=completion_tokens_total,
-                stream=False,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=prompt_tokens_total,
+                    completion_tokens=completion_tokens_total,
+                    stream=False,
+                    client_id=effective_client_id,
+                )
+            )
             payload = response.model_dump()
             payload["choices"] = choices
             payload["usage"] = {
@@ -318,13 +330,17 @@ async def chat_completions(
         except RuntimeError as e:
             err_msg = str(e)
             if "Server is busy" in err_msg:
-                metrics.record(RequestMetric(
-                    model_id=resolved_model,
-                    latency_sec=time.monotonic() - start_time,
-                    prompt_tokens=0, completion_tokens=0,
-                    stream=False, error=True,
-                    client_id=effective_client_id,
-                ))
+                metrics.record(
+                    RequestMetric(
+                        model_id=resolved_model,
+                        latency_sec=time.monotonic() - start_time,
+                        prompt_tokens=0,
+                        completion_tokens=0,
+                        stream=False,
+                        error=True,
+                        client_id=effective_client_id,
+                    )
+                )
                 return JSONResponse(
                     status_code=429,
                     content={
@@ -337,24 +353,33 @@ async def chat_completions(
                     headers={"Retry-After": "5"},
                 )
             logger.error("completion_error", extra={"model": resolved_model, "error": err_msg})
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0, completion_tokens=0,
-                stream=False, error=True,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=False,
+                    error=True,
+                    client_id=effective_client_id,
+                )
+            )
             return internal_error(err_msg)
         except Exception as e:
             logger.error("completion_error", extra={"model": resolved_model, "error": str(e)})
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0, completion_tokens=0,
-                stream=False, error=True,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=False,
+                    error=True,
+                    client_id=effective_client_id,
+                )
+            )
             return internal_error(str(e))
+
 
 @router.get("/v1/models")
 async def list_models(engine: Engine, embedding_engine: Embeddings) -> ModelsListResponse:
@@ -375,12 +400,14 @@ async def list_models(engine: Engine, embedding_engine: Embeddings) -> ModelsLis
     # Include embedding model if loaded
     if embedding_engine is not None and embedding_engine.is_loaded:
         info = embedding_engine.get_info()
-        data.append(ModelObject(
-            id=info["model_id"],
-            object="model",
-            created=int(info.get("loaded_at") or 0),
-            owned_by="local-embedding",
-        ))
+        data.append(
+            ModelObject(
+                id=info["model_id"],
+                object="model",
+                created=int(info.get("loaded_at") or 0),
+                owned_by="local-embedding",
+            )
+        )
 
     return ModelsListResponse(object="list", data=data)
 
@@ -393,26 +420,28 @@ async def get_model(model_id: str, engine: Engine, embedding_engine: Embeddings)
     """
     for m in engine.get_loaded_models():
         if m.model_id == model_id:
-            return JSONResponse(content=ModelObject(
-                id=m.model_id,
-                object="model",
-                created=int(m.loaded_at),
-                owned_by="local",
-            ).model_dump())
+            return JSONResponse(
+                content=ModelObject(
+                    id=m.model_id,
+                    object="model",
+                    created=int(m.loaded_at),
+                    owned_by="local",
+                ).model_dump()
+            )
 
     if embedding_engine is not None and embedding_engine.is_loaded:
         info = embedding_engine.get_info()
         if info.get("model_id") == model_id:
-            return JSONResponse(content=ModelObject(
-                id=info["model_id"],
-                object="model",
-                created=int(info.get("loaded_at") or 0),
-                owned_by="local-embedding",
-            ).model_dump())
+            return JSONResponse(
+                content=ModelObject(
+                    id=info["model_id"],
+                    object="model",
+                    created=int(info.get("loaded_at") or 0),
+                    owned_by="local-embedding",
+                ).model_dump()
+            )
 
     return model_not_found(model_id)
-
-
 
 
 @router.post("/v1/responses", response_model=None)
@@ -447,15 +476,12 @@ async def responses_endpoint(
     temperature: float = float(body.get("temperature", 0.7))
     max_tokens, max_tokens_param_error = _parse_responses_max_tokens(body)
     top_p: float = float(body.get("top_p", 1.0))
-    tools: list[dict] | None = body.get("tools")
+    tools: list[dict[str, Any]] | None = cast(list[dict[str, Any]] | None, body.get("tools"))
 
     if max_tokens_param_error is not None:
         return openai_error(
             status_code=400,
-            message=(
-                f"Invalid value for '{max_tokens_param_error}'. "
-                "Expected a positive integer."
-            ),
+            message=(f"Invalid value for '{max_tokens_param_error}'. Expected a positive integer."),
             error_type="invalid_request_error",
             param=max_tokens_param_error,
             code="invalid_input",
@@ -524,13 +550,15 @@ async def responses_endpoint(
             client_id=effective_client_id,
         )
         output_text = response.choices[0].message.content or ""
-        return JSONResponse(content={
-            "id": request_id,
-            "object": "response",
-            "status": "completed",
-            "output_text": output_text,
-            "output": [],
-        })
+        return JSONResponse(
+            content={
+                "id": request_id,
+                "object": "response",
+                "status": "completed",
+                "output_text": output_text,
+                "output": [],
+            }
+        )
     except RuntimeError as e:
         err_msg = str(e)
         if "Server is busy" in err_msg:
@@ -650,29 +678,33 @@ async def legacy_completions(
                             yield line
                         choice_index += 1
 
-                metrics.record(RequestMetric(
-                    model_id=resolved_model,
-                    latency_sec=time.monotonic() - start_time,
-                    prompt_tokens=usage_totals["prompt_tokens"],
-                    completion_tokens=usage_totals["completion_tokens"],
-                    stream=True,
-                    client_id=effective_client_id,
-                ))
+                metrics.record(
+                    RequestMetric(
+                        model_id=resolved_model,
+                        latency_sec=time.monotonic() - start_time,
+                        prompt_tokens=usage_totals["prompt_tokens"],
+                        completion_tokens=usage_totals["completion_tokens"],
+                        stream=True,
+                        client_id=effective_client_id,
+                    )
+                )
                 yield "data: [DONE]\n\n"
             except Exception as e:
                 logger.error(
                     "legacy_completion_stream_error",
                     extra={"model": resolved_model, "error": str(e)},
                 )
-                metrics.record(RequestMetric(
-                    model_id=resolved_model,
-                    latency_sec=time.monotonic() - start_time,
-                    prompt_tokens=usage_totals["prompt_tokens"],
-                    completion_tokens=usage_totals["completion_tokens"],
-                    stream=True,
-                    error=True,
-                    client_id=effective_client_id,
-                ))
+                metrics.record(
+                    RequestMetric(
+                        model_id=resolved_model,
+                        latency_sec=time.monotonic() - start_time,
+                        prompt_tokens=usage_totals["prompt_tokens"],
+                        completion_tokens=usage_totals["completion_tokens"],
+                        stream=True,
+                        error=True,
+                        client_id=effective_client_id,
+                    )
+                )
                 yield "data: [DONE]\n\n"
 
         try:
@@ -685,15 +717,17 @@ async def legacy_completions(
                 "legacy_completion_stream_error",
                 extra={"model": resolved_model, "error": str(e)},
             )
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0,
-                completion_tokens=0,
-                stream=True,
-                error=True,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=True,
+                    error=True,
+                    client_id=effective_client_id,
+                )
+            )
             return internal_error(str(e))
 
     request_id = f"cmpl-{secrets.token_urlsafe(16)}"
@@ -729,48 +763,56 @@ async def legacy_completions(
                 if body.suffix:
                     text = f"{text}{body.suffix}"
 
-                choices.append({
-                    "text": text,
-                    "index": index,
-                    "logprobs": None,
-                    "finish_reason": response.choices[0].finish_reason,
-                })
+                choices.append(
+                    {
+                        "text": text,
+                        "index": index,
+                        "logprobs": None,
+                        "finish_reason": response.choices[0].finish_reason,
+                    }
+                )
                 index += 1
                 prompt_tokens_total += response.usage.prompt_tokens
                 completion_tokens_total += response.usage.completion_tokens
 
-        metrics.record(RequestMetric(
-            model_id=resolved_model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=prompt_tokens_total,
-            completion_tokens=completion_tokens_total,
-            stream=False,
-            client_id=effective_client_id,
-        ))
-        return JSONResponse(content={
-            "id": request_id,
-            "object": "text_completion",
-            "created": created,
-            "model": resolved_model,
-            "choices": choices,
-            "usage": {
-                "prompt_tokens": prompt_tokens_total,
-                "completion_tokens": completion_tokens_total,
-                "total_tokens": prompt_tokens_total + completion_tokens_total,
-            },
-        })
+        metrics.record(
+            RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=prompt_tokens_total,
+                completion_tokens=completion_tokens_total,
+                stream=False,
+                client_id=effective_client_id,
+            )
+        )
+        return JSONResponse(
+            content={
+                "id": request_id,
+                "object": "text_completion",
+                "created": created,
+                "model": resolved_model,
+                "choices": choices,
+                "usage": {
+                    "prompt_tokens": prompt_tokens_total,
+                    "completion_tokens": completion_tokens_total,
+                    "total_tokens": prompt_tokens_total + completion_tokens_total,
+                },
+            }
+        )
     except RuntimeError as e:
         err_msg = str(e)
         if "Server is busy" in err_msg:
-            metrics.record(RequestMetric(
-                model_id=resolved_model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0,
-                completion_tokens=0,
-                stream=False,
-                error=True,
-                client_id=effective_client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=resolved_model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=False,
+                    error=True,
+                    client_id=effective_client_id,
+                )
+            )
             return JSONResponse(
                 status_code=429,
                 content={
@@ -782,25 +824,29 @@ async def legacy_completions(
                 },
                 headers={"Retry-After": "5"},
             )
-        metrics.record(RequestMetric(
-            model_id=resolved_model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=0,
-            completion_tokens=0,
-            stream=False,
-            error=True,
-            client_id=effective_client_id,
-        ))
+        metrics.record(
+            RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=0,
+                completion_tokens=0,
+                stream=False,
+                error=True,
+                client_id=effective_client_id,
+            )
+        )
         return internal_error(err_msg)
     except Exception as e:
-        metrics.record(RequestMetric(
-            model_id=resolved_model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=0,
-            completion_tokens=0,
-            stream=False,
-            error=True,
-            client_id=effective_client_id,
-        ))
+        metrics.record(
+            RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=0,
+                completion_tokens=0,
+                stream=False,
+                error=True,
+                client_id=effective_client_id,
+            )
+        )
         logger.error("legacy_completion_error", extra={"model": resolved_model, "error": str(e)})
         return internal_error(str(e))

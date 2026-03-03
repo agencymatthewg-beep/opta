@@ -286,9 +286,7 @@ class SkillManifest(BaseModel):
     def _validate_roots(cls, value: list[str]) -> list[str]:
         for idx, path in enumerate(value):
             if not path.startswith("/"):
-                raise ValueError(
-                    f"roots[{idx}] must be an absolute path (starts with '/')"
-                )
+                raise ValueError(f"roots[{idx}] must be an absolute path (starts with '/')")
         return value
 
     @model_validator(mode="after")

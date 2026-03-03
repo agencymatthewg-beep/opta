@@ -43,7 +43,14 @@ vi.mock('../../src/platform/paths.js', () => ({
   getThemesDir: vi.fn().mockReturnValue('/tmp/opta-mcp-test-themes'),
 }));
 
-import { mcpList, mcpAdd, mcpAddPlaywright, mcpRemove, mcpTest } from '../../src/commands/mcp.js';
+import {
+  mcpList,
+  mcpAdd,
+  mcpAddPlaywright,
+  mcpRemove,
+  mcpTest,
+  mcpHealth,
+} from '../../src/commands/mcp.js';
 
 describe('opta mcp', () => {
   beforeEach(() => {
@@ -118,6 +125,33 @@ describe('opta mcp', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await mcpTest('github');
     expect(connectMcpServer).toHaveBeenCalled();
+    log.mockRestore();
+  });
+
+  it('health skips stdio probing by default', async () => {
+    const { connectMcpServer } = await import('../../src/mcp/client.js');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await mcpHealth({});
+
+    expect(connectMcpServer).not.toHaveBeenCalled();
+    const output = log.mock.calls.map((c) => c.join(' ')).join('\n');
+    expect(output).toContain('skipped');
+    log.mockRestore();
+  });
+
+  it('health with --json and stdio probe emits machine-readable snapshot', async () => {
+    const { connectMcpServer } = await import('../../src/mcp/client.js');
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await mcpHealth({ json: true, probeStdio: true, timeoutMs: 1000 });
+
+    expect(connectMcpServer).toHaveBeenCalled();
+    const output = log.mock.calls.map((c) => c.join(' ')).join('\n');
+    const parsed = JSON.parse(output);
+    expect(parsed.summary.total).toBe(1);
+    expect(parsed.summary.healthy).toBe(1);
+    expect(parsed.servers[0].name).toBe('github');
     log.mockRestore();
   });
 });

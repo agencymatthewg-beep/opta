@@ -118,6 +118,7 @@ export function registerWsServer(app: FastifyInstance, deps: WsServerDeps): void
             content: inbound.content,
             mode: inbound.mode,
             metadata: inbound.metadata,
+            overrides: inbound.overrides,
           })
           .then((queued) => {
             sendJson(socket, { type: 'ack', action: 'turn.submit', ...queued });

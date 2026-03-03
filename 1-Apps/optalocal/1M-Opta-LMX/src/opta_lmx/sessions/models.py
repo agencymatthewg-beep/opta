@@ -7,6 +7,8 @@ definitions live in ``1-Apps/optalocal/1D-Opta-CLI-TS/src/memory/store.ts``.
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field
 
 
@@ -30,8 +32,8 @@ class SessionMessage(BaseModel):
     """
 
     role: str
-    content: str | list | None = None
-    tool_calls: list | None = None
+    content: str | list[Any] | None = None
+    tool_calls: list[Any] | None = None
     tool_call_id: str | None = None
 
 

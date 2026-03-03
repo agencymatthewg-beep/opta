@@ -6,10 +6,11 @@ import { useRef } from "react";
 const lines = [
   { type: "cmd",    text: "$ opta stack start" },
   { type: "blank",  text: "" },
+  { type: "ok",     text: "[✓] Running opta init: managed installer profile loaded" },
   { type: "ok",     text: "[✓] Starting Opta LMX on localhost:8080..." },
-  { type: "ok",     text: "[✓] Loading model: Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf" },
-  { type: "ok",     text: "[✓] Starting Opta Code server on port 8081..." },
-  { type: "ok",     text: "[✓] Attaching Opta CLI daemon..." },
+  { type: "ok",     text: "[✓] Loading model: Kimi K2.5-Q2KXL.MLX (MLX format)" },
+  { type: "ok",     text: "[✓] Starting Opta Code and Opta CLI connectors..." },
+  { type: "ok",     text: "[✓] Sync profile loaded from Opta Accounts" },
   { type: "blank",  text: "" },
   { type: "url",    text: "Stack running. API at http://localhost:8080/v1" },
 ];

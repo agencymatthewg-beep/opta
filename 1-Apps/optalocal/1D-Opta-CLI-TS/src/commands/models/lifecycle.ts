@@ -242,12 +242,31 @@ export async function loadModel(
     if (onDisk.length === 0) {
       if (loaded.length > 0) {
         console.log(chalk.dim('  No additional models on disk to load.'));
-      } else {
-        console.log(
-          chalk.dim('  No downloaded models found. Use `opta models download <repo>` first.')
-        );
+        return;
       }
-      return;
+
+      if (!name) {
+        console.log(
+          chalk.dim(
+            '  No downloaded models found. Run `opta models browse-library` or `opta models download <repo>` first.'
+          )
+        );
+        return;
+      }
+
+      const downloadTarget = aliasMap[name] ?? name;
+      const looksLikeRepoId = /.+\/.+/.test(downloadTarget);
+      if (!looksLikeRepoId) {
+        console.log(
+          chalk.dim(
+            `  No downloaded models found. '${name}' is not a full repo id. Use a full id like mlx-community/Qwen3-30B-A3B-Instruct-2507-4bit, or run opta models browse-library.`
+          )
+        );
+        return;
+      }
+
+      console.log(chalk.dim(`  No downloaded models found — downloading ${downloadTarget} first...`));
+      await downloadModel(downloadTarget, client);
     }
 
     if (name) {

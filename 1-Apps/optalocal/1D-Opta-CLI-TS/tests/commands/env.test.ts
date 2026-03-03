@@ -48,7 +48,12 @@ const saveConfigMock = vi.fn(async (updates: Record<string, unknown>) => {
 
 vi.mock('../../src/core/config.js', () => ({
   loadConfig: vi.fn(async () => ({
-    connection: { host: '192.168.188.11', port: 1234, adminKey: 'adminkey' },
+    connection: {
+      host: '192.168.188.11',
+      port: 1234,
+      adminKey: 'adminkey',
+      adminKeysByHost: { '192.168.188.11': 'adminkey' },
+    },
     model: { default: 'mlx-community/MiniMax-M2.5-4bit', contextLimit: 197000 },
     provider: { active: 'lmx' },
     defaultMode: 'safe',
@@ -145,11 +150,35 @@ describe('env command', () => {
     expect(parsed.profiles).toHaveLength(0);
   });
 
+  it('saves and applies host-specific admin key maps', async () => {
+    const { envCommand } = await import('../../src/commands/env.js');
+
+    await envCommand('save', 'cluster', {
+      host: '192.168.188.11',
+      port: '1234',
+      adminKeysByHost: '{"192.168.188.11":"key-a","192.168.188.8":"key-b"}',
+    });
+
+    await envCommand('use', 'cluster', {});
+    expect(getByPath(storeState, 'connection.adminKeysByHost')).toEqual({
+      '192.168.188.11': 'key-a',
+      '192.168.188.8': 'key-b',
+    });
+  });
+
   it('fails with misuse for invalid provider', async () => {
     const { envCommand } = await import('../../src/commands/env.js');
 
     await expect(envCommand('save', 'bad', { provider: 'unknown' }))
       .rejects.toMatchObject<ExitError>({ exitCode: EXIT.MISUSE });
     expect(stderr.join('\n')).toContain('Invalid provider');
+  });
+
+  it('fails with misuse for invalid admin-keys-by-host format', async () => {
+    const { envCommand } = await import('../../src/commands/env.js');
+
+    await expect(envCommand('save', 'badkeys', { adminKeysByHost: 'not-json' }))
+      .rejects.toMatchObject<ExitError>({ exitCode: EXIT.MISUSE });
+    expect(stderr.join('\n')).toContain('Invalid admin-keys-by-host format');
   });
 });

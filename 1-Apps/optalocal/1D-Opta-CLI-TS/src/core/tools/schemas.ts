@@ -510,6 +510,51 @@ export const TOOL_SCHEMAS = [
   {
     type: 'function' as const,
     function: {
+      name: 'lsp_diagnostics',
+      description:
+        'Get diagnostics (errors, warnings, hints) for a file from the active language server.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+        },
+        required: ['path'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
+      name: 'lsp_code_actions',
+      description:
+        'List available code actions (quick fixes/refactors) at a file location or range.',
+      parameters: {
+        type: 'object',
+        properties: {
+          path: { type: 'string', description: 'File path (relative to cwd)' },
+          line: { type: 'number', description: 'Start line number (1-based)' },
+          character: { type: 'number', description: 'Start column number (0-based)' },
+          end_line: {
+            type: 'number',
+            description: 'Optional end line number (1-based, defaults to line)',
+          },
+          end_character: {
+            type: 'number',
+            description: 'Optional end column number (0-based, defaults to character)',
+          },
+          only_kind: {
+            type: 'string',
+            description:
+              'Optional LSP action kind filter (e.g. quickfix, refactor, source.organizeImports)',
+          },
+        },
+        required: ['path', 'line', 'character'],
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    function: {
       name: 'lsp_rename',
       description: 'Rename a symbol across all files in the workspace. Returns a list of edits to apply.',
       parameters: {

@@ -85,11 +85,13 @@ class TestBM25Index:
     @_requires_rank_bm25
     def test_search_returns_results(self) -> None:
         idx = BM25Index()
-        idx.add([
-            "Python programming language",
-            "Rust systems programming",
-            "TypeScript web development",
-        ])
+        idx.add(
+            [
+                "Python programming language",
+                "Rust systems programming",
+                "TypeScript web development",
+            ]
+        )
         results = idx.search("python programming")
         assert len(results) > 0
         # First result should be the Python document (index 0)

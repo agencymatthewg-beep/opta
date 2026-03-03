@@ -157,7 +157,7 @@ export class AtpoSupervisor {
   /**
    * Generates a review/intervention prompt based on the recent context and injects it.
    */
-  public async intervene(messages: AgentMessage[]): Promise<AgentMessage | null> {
+  public async intervene(messages: AgentMessage[], signal?: AbortSignal): Promise<AgentMessage | null> {
     if (!this.isEnabled) return null;
     
     this.isIntervening = true;
@@ -187,7 +187,7 @@ export class AtpoSupervisor {
         ],
         max_tokens: 500,
         temperature: 0.1,
-      });
+      }, { signal });
 
       // Track rough simulated usage
       this.sessionCost += 0.01; 

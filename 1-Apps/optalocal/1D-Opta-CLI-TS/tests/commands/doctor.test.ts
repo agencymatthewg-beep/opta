@@ -165,6 +165,52 @@ describe('checkLmxConnection', () => {
 
     globalThis.fetch = originalFetch;
   });
+
+  it('returns warn when host is reachable but admin endpoints are unauthorized', async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = vi.fn(async (input: unknown) => {
+      const url = String(input);
+      if (url.endsWith('/healthz')) {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ status: 'ok' }),
+          text: () => Promise.resolve('ok'),
+        } as unknown as Response;
+      }
+      if (url.endsWith('/readyz')) {
+        return {
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ models_loaded: 1 }),
+          text: () => Promise.resolve('ready'),
+        } as unknown as Response;
+      }
+      if (url.endsWith('/admin/models')) {
+        return {
+          ok: false,
+          status: 403,
+          statusText: 'Forbidden',
+          text: () => Promise.resolve(JSON.stringify({ detail: 'Invalid or missing admin key' })),
+        } as unknown as Response;
+      }
+      return {
+        ok: false,
+        status: 404,
+        statusText: 'Not Found',
+        text: () => Promise.resolve('not found'),
+      } as unknown as Response;
+    }) as unknown as typeof fetch;
+
+    const { checkLmxConnection } = await import('../../src/commands/doctor.js');
+    const result = await checkLmxConnection('localhost', 1234);
+
+    expect(result.status).toBe('warn');
+    expect(result.message).toContain('admin endpoints are unauthorized');
+    expect(result.detail).toContain('connection.adminKey');
+
+    globalThis.fetch = originalFetch;
+  });
 });
 
 // --- checkActiveModel ---

@@ -63,9 +63,7 @@ def test_grafana_dashboard_pack_parses_and_targets_core_metrics() -> None:
     assert "Per-Model Evictions (30m)" in panel_titles
 
     panel_queries = [
-        target.get("expr", "")
-        for panel in panels
-        for target in panel.get("targets", [])
+        target.get("expr", "") for panel in panels for target in panel.get("targets", [])
     ]
     assert any("lmx_request_latency_p95_seconds" in query for query in panel_queries)
     assert any("lmx_queued_requests" in query for query in panel_queries)

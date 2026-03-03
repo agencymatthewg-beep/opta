@@ -1,12 +1,14 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { agentLoop } from '../core/agent.js';
-import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT, ensureModel } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
-import { NO_MODEL_ERROR } from '../utils/errors.js';
 import { DaemonClient } from '../daemon/client.js';
 import { loadAccountState } from '../accounts/storage.js';
 import { evaluateCapability } from '../accounts/cloud.js';
+import { runPreFlightOrchestration } from '../core/pre-flight.js';
+import { runPostFlightReview } from '../core/post-flight.js';
+import type { ClientSubmitTurn, TurnOutputFormat } from '../protocol/v3/types.js';
 
 // --- Types ---
 
@@ -22,6 +24,7 @@ export interface DoResult {
 
 interface DoOptions {
   model?: string;
+  provider?: string;
   device?: string;
   commit?: boolean;
   checkpoints?: boolean;
@@ -31,6 +34,54 @@ interface DoOptions {
   auto?: boolean;
   dangerous?: boolean;
   yolo?: boolean;
+  mode?: string;
+}
+
+type DaemonSessionMode = ClientSubmitTurn['mode'];
+
+function normalizeDaemonSessionMode(mode?: string): DaemonSessionMode {
+  const normalized = mode?.trim().toLowerCase();
+  switch (normalized) {
+    case 'chat':
+      return 'chat';
+    case 'plan':
+      return 'plan';
+    case 'review':
+      return 'review';
+    case 'research':
+      return 'research';
+    case 'do':
+    case 'ceo':
+    default:
+      return 'do';
+  }
+}
+
+function normalizeTurnFormat(format?: string): TurnOutputFormat | undefined {
+  const normalized = format?.trim().toLowerCase();
+  if (normalized === 'markdown' || normalized === 'text' || normalized === 'json') {
+    return normalized;
+  }
+  return undefined;
+}
+
+function buildDaemonTurnOverrides(opts: DoOptions): ClientSubmitTurn['overrides'] | undefined {
+  const candidates: NonNullable<ClientSubmitTurn['overrides']> = {
+    model: opts.model?.trim() || undefined,
+    provider: opts.provider?.trim() || undefined,
+    dangerous: opts.dangerous || opts.yolo ? true : undefined,
+    auto: opts.auto ? true : undefined,
+    noCommit: opts.commit === false ? true : undefined,
+    noCheckpoints: opts.checkpoints === false ? true : undefined,
+    format: normalizeTurnFormat(opts.format),
+    autonomyMode: (opts.mode?.trim().toLowerCase() === 'ceo' ? 'ceo' : undefined) as any,
+  };
+
+  const overrides = Object.fromEntries(
+    Object.entries(candidates).filter(([, value]) => value !== undefined)
+  ) as NonNullable<ClientSubmitTurn['overrides']>;
+
+  return Object.keys(overrides).length > 0 ? overrides : undefined;
 }
 
 // --- Output Formatting (testable) ---
@@ -109,23 +160,25 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
   try {
     const config = await loadConfig(overrides);
 
-    if (!config.model.default) {
-      const doResult: DoResult = {
-        response: '',
-        toolCallCount: 0,
-        model: '',
-        exitCode: EXIT.NO_CONNECTION,
-        error: NO_MODEL_ERROR,
-      };
-      const output = formatDoResult(doResult, outputFormat);
-      if (output) console.log(output);
-      throw new ExitError(EXIT.NO_CONNECTION);
-    }
+    ensureModel(config.model.default);
 
     if (!silent) {
       console.log(
         chalk.dim(`opta \u00b7 ${config.model.default} \u00b7 ${config.connection.host}`)
       );
+    }
+
+    let activeTaskStr = taskStr;
+    const isCeoMode = config.autonomy?.mode === 'ceo' || opts.mode === 'ceo';
+
+    if (isCeoMode && !silent) {
+      const preFlight = await runPreFlightOrchestration(config, taskStr);
+      if (!preFlight.proceed) {
+        console.log(chalk.yellow('\nCEO Mode cancelled by user.'));
+        return;
+      }
+      activeTaskStr = preFlight.refinedObjective;
+      console.log(chalk.green('\nStarting Autonomous CEO Run...\n'));
     }
 
     const taskStart = Date.now();
@@ -137,7 +190,10 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
         throw new Error('Bypassing daemon for explicit --device override');
       }
       const daemon = await DaemonClient.connect();
-      const daemonResp = await daemon.legacyChat(taskStr);
+      const daemonResp = await daemon.legacyChat(activeTaskStr, undefined, {
+        mode: normalizeDaemonSessionMode(opts.mode),
+        overrides: buildDaemonTurnOverrides(opts),
+      });
       const stats = daemonResp.stats;
       doResult = {
         response: daemonResp.response ?? '',
@@ -152,7 +208,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
         console.error(chalk.yellow(`⚠ daemon path unavailable: ${reason}`));
         console.error(chalk.dim('  Falling back to local agent loop for this run.'));
       }
-      const result = await agentLoop(taskStr, config, { silent });
+      const result = await agentLoop(activeTaskStr, config, { silent, mode: opts.mode });
       const assistantMsgs = result.messages.filter((m) => m.role === 'assistant');
       const finalMsg = assistantMsgs[assistantMsgs.length - 1];
       doResult = {
@@ -161,6 +217,10 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
         model: config.model.default,
         exitCode: 0,
       };
+
+      if (isCeoMode && !silent) {
+        await runPostFlightReview(config, result.messages, activeTaskStr);
+      }
     }
 
     const output = formatDoResult(doResult, outputFormat);
@@ -172,8 +232,8 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
       const toolStr =
         doResult.toolCallCount > 0
           ? chalk.dim(
-              ` · ${doResult.toolCallCount} tool call${doResult.toolCallCount !== 1 ? 's' : ''}`
-            )
+            ` · ${doResult.toolCallCount} tool call${doResult.toolCallCount !== 1 ? 's' : ''}`
+          )
           : '';
       console.log(chalk.dim(`\n  Done in ${elapsed}s${toolStr}`));
     }

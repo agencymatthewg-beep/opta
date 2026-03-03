@@ -6,8 +6,8 @@ import asyncio
 import logging
 import time
 import uuid
-from collections.abc import Mapping
-from typing import Any, Protocol
+from collections.abc import Callable, Mapping
+from typing import Any, Protocol, cast
 
 from opta_lmx.agents.graph import GraphExecutor
 from opta_lmx.agents.models import (
@@ -23,7 +23,7 @@ from opta_lmx.agents.scheduler import RunQueueFullError, RunScheduler
 from opta_lmx.agents.state_store import AgentsStateStore
 from opta_lmx.agents.tracing import NullTracer, TraceEvent, Tracer
 from opta_lmx.inference.schema import ChatMessage
-from opta_lmx.monitoring.metrics import AgentRunMetric, MetricsCollector
+from opta_lmx.monitoring.metrics import AgentRunMetric
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +75,13 @@ class RouterProtocol(Protocol):
         """Resolve aliases to loaded model IDs."""
 
 
+class AgentMetricsRecorder(Protocol):
+    """Subset of metrics collector used by agents runtime."""
+
+    def record_agent_run(self, metric: AgentRunMetric) -> None:
+        """Record one completed agent run."""
+
+
 class AgentsRuntime:
     """In-process async runtime for multi-agent runs."""
 
@@ -87,7 +94,7 @@ class AgentsRuntime:
         scheduler: RunScheduler | None = None,
         graph_executor: GraphExecutor | None = None,
         tracer: Tracer | None = None,
-        metrics_collector: MetricsCollector | None = None,
+        metrics_collector: AgentMetricsRecorder | object | None = None,
         max_steps_per_run: int = 32,
         retain_completed_runs: int = 500,
         step_retry_attempts: int = 2,
@@ -96,7 +103,7 @@ class AgentsRuntime:
         self._engine = engine
         self._router = router
         self._tracer: Tracer = tracer or NullTracer()
-        self._metrics = metrics_collector
+        self._metrics: object | None = metrics_collector
         self._state_store = state_store or AgentsStateStore()
         self._scheduler = scheduler or RunScheduler()
         self._graph = graph_executor or GraphExecutor(tracer=self._tracer)
@@ -107,9 +114,7 @@ class AgentsRuntime:
         self._started = False
         self._run_tasks: dict[str, asyncio.Task[None]] = {}
         self._submit_lock = asyncio.Lock()
-        self._runs: dict[str, AgentRun] = {
-            run.id: run for run in self._state_store.list_runs()
-        }
+        self._runs: dict[str, AgentRun] = {run.id: run for run in self._state_store.list_runs()}
         self._restore_incomplete_runs()
 
     async def start(self) -> None:
@@ -165,11 +170,7 @@ class AgentsRuntime:
                         return existing_run.model_copy(deep=True)
                     self._state_store.clear_idempotency(normalized_key)
 
-            status = (
-                RunStatus.WAITING_APPROVAL
-                if request.approval_required
-                else RunStatus.QUEUED
-            )
+            status = RunStatus.WAITING_APPROVAL if request.approval_required else RunStatus.QUEUED
             run = AgentRun(
                 id=uuid.uuid4().hex,
                 request=request,
@@ -184,12 +185,14 @@ class AgentsRuntime:
                     run.id,
                     idempotency_fingerprint,
                 )
-            self._tracer.emit(TraceEvent(
-                run_id=run.id,
-                event="run_submitted",
-                status=run.status,
-                metadata=self._trace_metadata(run),
-            ))
+            self._tracer.emit(
+                TraceEvent(
+                    run_id=run.id,
+                    event="run_submitted",
+                    status=run.status,
+                    metadata=self._trace_metadata(run),
+                )
+            )
 
             if run.status == RunStatus.QUEUED:
                 try:
@@ -199,25 +202,29 @@ class AgentsRuntime:
                     run.error = f"{exc}. Retry when queue pressure drops."
                     run.updated_at = time.time()
                     self._record_run(run)
-                    self._tracer.emit(TraceEvent(
-                        run_id=run.id,
-                        event="run_submission_failed",
-                        status=run.status,
-                        message=run.error,
-                        metadata=self._trace_metadata(run),
-                    ))
+                    self._tracer.emit(
+                        TraceEvent(
+                            run_id=run.id,
+                            event="run_submission_failed",
+                            status=run.status,
+                            message=run.error,
+                            metadata=self._trace_metadata(run),
+                        )
+                    )
                 except RuntimeError as exc:
                     run.status = RunStatus.FAILED
                     run.error = str(exc)
                     run.updated_at = time.time()
                     self._record_run(run)
-                    self._tracer.emit(TraceEvent(
-                        run_id=run.id,
-                        event="run_submission_failed",
-                        status=run.status,
-                        message=run.error,
-                        metadata=self._trace_metadata(run),
-                    ))
+                    self._tracer.emit(
+                        TraceEvent(
+                            run_id=run.id,
+                            event="run_submission_failed",
+                            status=run.status,
+                            message=run.error,
+                            metadata=self._trace_metadata(run),
+                        )
+                    )
 
             return run.model_copy(deep=True)
 
@@ -249,12 +256,14 @@ class AgentsRuntime:
         task = self._run_tasks.get(run_id)
         if task is not None:
             task.cancel()
-        self._tracer.emit(TraceEvent(
-            run_id=run.id,
-            event="run_cancelled",
-            status=run.status,
-            metadata=self._trace_metadata(run),
-        ))
+        self._tracer.emit(
+            TraceEvent(
+                run_id=run.id,
+                event="run_cancelled",
+                status=run.status,
+                metadata=self._trace_metadata(run),
+            )
+        )
         return True
 
     async def _run_from_queue(self, run_id: str) -> None:
@@ -281,12 +290,14 @@ class AgentsRuntime:
         run.updated_at = time.time()
         started_at = time.monotonic()
         self._record_run(run)
-        self._tracer.emit(TraceEvent(
-            run_id=run.id,
-            event="run_started",
-            status=run.status,
-            metadata=self._trace_metadata(run),
-        ))
+        self._tracer.emit(
+            TraceEvent(
+                run_id=run.id,
+                event="run_started",
+                status=run.status,
+                metadata=self._trace_metadata(run),
+            )
+        )
 
         try:
             run.resolved_model = self._resolve_model_for_requested(run.request.model)
@@ -327,23 +338,30 @@ class AgentsRuntime:
         finally:
             run.updated_at = time.time()
             self._record_run(run)
-            self._tracer.emit(TraceEvent(
-                run_id=run.id,
-                event="run_finished",
-                status=run.status,
-                message=run.error,
-                metadata=self._trace_metadata(run),
-            ))
-            if self._metrics is not None and run.status in TERMINAL_RUN_STATES:
-                self._metrics.record_agent_run(
-                    AgentRunMetric(
-                        run_id=run.id,
-                        status=run.status.value,
-                        duration_sec=max(0.0, time.monotonic() - started_at),
-                        model_id=run.resolved_model or run.request.model,
-                        role_count=len(run.request.roles),
-                    )
+            self._tracer.emit(
+                TraceEvent(
+                    run_id=run.id,
+                    event="run_finished",
+                    status=run.status,
+                    message=run.error,
+                    metadata=self._trace_metadata(run),
                 )
+            )
+            if self._metrics is not None and run.status in TERMINAL_RUN_STATES:
+                record_agent_run = getattr(self._metrics, "record_agent_run", None)
+                if callable(record_agent_run):
+                    cast(
+                        Callable[[AgentRunMetric], None],
+                        record_agent_run,
+                    )(
+                        AgentRunMetric(
+                            run_id=run.id,
+                            status=run.status.value,
+                            duration_sec=max(0.0, time.monotonic() - started_at),
+                            model_id=run.resolved_model or run.request.model,
+                            role_count=len(run.request.roles),
+                        )
+                    )
 
     async def _on_step_update(self, run: AgentRun) -> None:
         run.updated_at = time.time()
@@ -355,10 +373,7 @@ class AgentsRuntime:
 
     def _check_budget(self, run: AgentRun) -> None:
         """Check if run has exceeded its budget constraints."""
-        if (
-            run.request.token_budget is not None
-            and run.tokens_used >= run.request.token_budget
-        ):
+        if run.request.token_budget is not None and run.tokens_used >= run.request.token_budget:
             raise BudgetExhaustedError(
                 budget_type="token",
                 used=float(run.tokens_used),
@@ -401,17 +416,19 @@ class AgentsRuntime:
                 is_last_attempt = attempt_index >= attempts_total - 1
                 if is_last_attempt or not self._is_retryable_step_error(exc):
                     raise
-                delay_sec = self._step_retry_backoff_sec * (2 ** attempt_index)
+                delay_sec = self._step_retry_backoff_sec * (2**attempt_index)
                 metadata = self._trace_metadata(run)
                 metadata["retry_attempt"] = str(attempt_index + 1)
                 metadata["retry_delay_sec"] = f"{delay_sec:.3f}"
-                self._tracer.emit(TraceEvent(
-                    run_id=run.id,
-                    event="step_retry",
-                    status=run.status,
-                    message=str(exc),
-                    metadata=metadata,
-                ))
+                self._tracer.emit(
+                    TraceEvent(
+                        run_id=run.id,
+                        event="step_retry",
+                        status=run.status,
+                        message=str(exc),
+                        metadata=metadata,
+                    )
+                )
                 await asyncio.sleep(delay_sec)
 
         if response is not None:
@@ -488,8 +505,7 @@ class AgentsRuntime:
         loaded_models = self._engine.get_loaded_model_ids()
         if not loaded_models:
             raise RuntimeError(
-                "No models are currently loaded. "
-                "Load a model before submitting agent runs."
+                "No models are currently loaded. Load a model before submitting agent runs."
             )
 
         load_snapshot: Mapping[str, float | int] | None = None
@@ -534,9 +550,7 @@ class AgentsRuntime:
         self._state_store.upsert_run(run)
 
     def _prune_completed_runs(self) -> None:
-        terminal_runs = [
-            run for run in self._runs.values() if run.status in TERMINAL_RUN_STATES
-        ]
+        terminal_runs = [run for run in self._runs.values() if run.status in TERMINAL_RUN_STATES]
         overflow = len(terminal_runs) - self._retain_completed_runs
         if overflow <= 0:
             return

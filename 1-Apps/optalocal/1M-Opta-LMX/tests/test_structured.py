@@ -25,13 +25,15 @@ def test_build_json_system_prompt_json_object():
 
 
 def test_build_json_system_prompt_json_schema():
-    prompt = build_json_system_prompt({
-        "type": "json_schema",
-        "json_schema": {
-            "name": "test_schema",
-            "schema": {"type": "object", "properties": {"name": {"type": "string"}}},
-        },
-    })
+    prompt = build_json_system_prompt(
+        {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "test_schema",
+                "schema": {"type": "object", "properties": {"name": {"type": "string"}}},
+            },
+        }
+    )
     assert prompt is not None
     assert "test_schema" in prompt
     assert "JSON Schema" in prompt
@@ -70,7 +72,7 @@ def test_extract_json_from_code_block():
 
 
 def test_extract_json_embedded():
-    text = "The result is {\"b\": 2} which is correct."
+    text = 'The result is {"b": 2} which is correct.'
     assert extract_json_from_text(text) == {"b": 2}
 
 

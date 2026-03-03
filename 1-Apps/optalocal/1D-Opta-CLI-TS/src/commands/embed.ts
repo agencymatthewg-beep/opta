@@ -34,6 +34,7 @@ export async function embed(input: string | string[], opts: EmbedOptions = {}): 
     fallbackHosts: config.connection.fallbackHosts,
     port: config.connection.port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
 
   try {

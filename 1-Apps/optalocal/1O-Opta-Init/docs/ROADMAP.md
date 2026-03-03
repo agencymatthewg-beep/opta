@@ -62,8 +62,8 @@ _Partially delivered: release-asset detection + state-aware CTA shipped. Remaini
 - [x] Replace placeholder download URLs with release-asset detection from GitHub API
 - [x] GitHub API call at build time to fetch latest release version tag for manager installers
 - [ ] Version badge shown on download buttons (e.g. "v0.1.0")
-- [ ] Fallback to hardcoded URL if GitHub API unavailable at build time
-- [ ] Bootstrap script hosted at `https://optalocal.com/init` — update UI to point to it
+- [x] Fallback to hardcoded URL when GitHub release API lookup is unavailable
+- [x] Bootstrap script hosted at `https://init.optalocal.com/init` and UI points to the canonical endpoint
 - [x] Install-state messaging: show live "Installer/Package Ready" vs "Coming Soon" based on artifact status
 
 **Design contract:** All v1.1 additions must match the approved v1.0 aesthetic — glass cards, violet accents, spring interactions. No new design patterns without owner sign-off (see D07 in DECISIONS.md).
@@ -75,12 +75,25 @@ _Partially delivered: release-asset detection + state-aware CTA shipped. Remaini
 - [ ] Verify all download links return 200
 - [ ] End-to-end acceptance test on clean machine (see GO-LIVE-CHECKLIST.md)
 
-## v1.3 — Release Control Plane ✅ SHIPPED 2026-03-02
+## v1.3 — Release Control Plane ⚠️ PARTIALLY DELIVERED
 
 - [x] Versioned JSON manifest schema for release-control contract (`channels/schema/release-manifest.v1.schema.json`)
-- [x] Stable + beta channel manifests include componentized macOS/Windows artifacts, checksums, signatures, min manager versions, and rollout metadata
+- [x] Stable + beta channel manifests include componentized entries, min manager versions, and rollout metadata
+- [x] Contract now supports progressive artifact rollout (components can be present before every platform artifact is published)
 - [x] Added manifest validator script (`scripts/validate-release-manifests.mjs`)
 - [x] Added operational runbook for beta publish and beta→stable promotion (`docs/RELEASE-CONTROL-WORKFLOW.md`)
+- [x] Fixed live self-redirect loop risk in generated `vercel.json` routes (`scripts/sync-vercel-redirects.mjs`)
+- [x] Restored `/downloads/opta-cli/latest` and `/downloads/cli` to resolvable endpoints (`200`)
+- [x] `release:opta-init:prepare` now passes end-to-end
+- [x] Added reusable component-manifest sync workflow (`/.github/workflows/opta-init-component-manifest-sync.yml`)
+- [x] Wired `opta-cli` tag releases to auto-sync Opta Init channel metadata (`/.github/workflows/opta-cli-release.yml`)
+- [x] Added release sync workflow for `opta-code-universal` (`/.github/workflows/opta-code-release-manifest-sync.yml`)
+- [x] Added release build + sync workflow for `opta-lmx` (`/.github/workflows/opta-lmx-release.yml`)
+- [x] Added release sync workflow for `opta-daemon` (`/.github/workflows/opta-daemon-release-manifest-sync.yml`)
+- [x] Added promotion visibility/reporting script (`scripts/promotion-status-report.mjs`) and CI artifact export (`opta-init-promotion-status`)
+- [x] Added conditional stable hard-gate in release-manifest checks (`npm run validate:stable-promotion` when stable feeds change)
+- [ ] Publish stable real installers for `opta-lmx`, `opta-code-universal`, and `opta-daemon` artifacts
+- [ ] Publish Windows manager updater bundle for stable+beta (`Opta-Init-Manager_x64-setup.nsis.zip`) to GitHub release tags
 
 ## v2.0 — optalocal.com Platform Root
 

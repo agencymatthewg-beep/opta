@@ -1,4 +1,4 @@
-import { emitKeypressEvents } from 'node:readline';
+import { emitKeypressEvents, cursorTo, clearScreenDown } from 'node:readline';
 import chalk from 'chalk';
 import { colorizeOptaWord } from './brand.js';
 import { fitTextToWidth, padToWidth } from '../utils/terminal-layout.js';
@@ -65,7 +65,7 @@ function renderFrame(
   const sections = options.sections;
   const selectedSection = sections[sectionIndex];
   const selectedItems = selectedSection?.items ?? [];
-  const itemIndex = itemIndexes[sectionIndex] ?? 0;
+  const itemIndex = clamp(itemIndexes[sectionIndex] ?? 0, 0, Math.max(0, selectedItems.length - 1));
 
   const usableColumns = Math.max(20, columns - 3);
   const minLeft = 8;
@@ -85,16 +85,22 @@ function renderFrame(
   const subtitle = options.subtitle ? chalk.dim(options.subtitle) : '';
   const instructions = options.instructions ?? '←/→ switch panes · ↑/↓ scroll (infinite) · Enter select · q exit';
 
-  process.stdout.write('\x1b[2J\x1b[H');
-  process.stdout.write(`${chalk.bold(title)}\n`);
-  if (subtitle) process.stdout.write(`${subtitle}\n`);
-  process.stdout.write(`${chalk.dim(instructions)}\n\n`);
+  if (process.stdout.isTTY) {
+    cursorTo(process.stdout, 0, 0);
+    clearScreenDown(process.stdout);
+  }
+  const lines: string[] = [];
+
+  lines.push(chalk.bold(title));
+  if (subtitle) lines.push(subtitle);
+  lines.push(chalk.dim(instructions));
+  lines.push('');
 
   const leftHeader = fitTextToWidth('Areas', leftWidth, { pad: true });
   const rightHeader = fitTextToWidth(selectedSection?.label ?? 'Commands', rightWidth, { pad: true });
-  process.stdout.write(
+  lines.push(
     `${activePane === 'sections' ? chalk.bgMagenta.black(` ${leftHeader} `) : chalk.magenta(` ${leftHeader} `)} ` +
-    `${activePane === 'items' ? chalk.bgCyan.black(` ${rightHeader} `) : chalk.cyan(` ${rightHeader} `)}\n`,
+    `${activePane === 'items' ? chalk.bgCyan.black(` ${rightHeader} `) : chalk.cyan(` ${rightHeader} `)}`,
   );
 
   for (let i = 0; i < maxRows; i++) {
@@ -129,21 +135,22 @@ function renderFrame(
       }
     }
 
-    process.stdout.write(`${left} ${right}\n`);
+    lines.push(`${left} ${right}`);
   }
 
   const selectedItem = selectedItems[itemIndex];
-  process.stdout.write('\n');
+  lines.push('');
   if (selectedItem) {
-    process.stdout.write(
+    lines.push(
       chalk.dim('Selected: ') +
       chalk.cyan(`/${selectedItem.id}`) +
-      (selectedItem.description ? chalk.dim(` — ${selectedItem.description}`) : '') +
-      '\n',
+      (selectedItem.description ? chalk.dim(` — ${selectedItem.description}`) : '')
     );
   } else {
-    process.stdout.write(chalk.dim('No commands in this area') + '\n');
+    lines.push(chalk.dim('No commands in this area'));
   }
+
+  process.stdout.write(`${lines.join('\n')}\n`);
 }
 
 export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSelection | null> {
@@ -159,18 +166,18 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
   const previousRawMode = process.stdin.isRaw ?? false;
   if (!previousRawMode) process.stdin.setRawMode(true);
   process.stdin.resume();
-  process.stdout.write('\x1b[?25l');
+  // keep cursor visible during menu render for terminal stability
+
 
   return new Promise<PaneMenuSelection | null>((resolve) => {
     const cleanup = (): void => {
       process.stdin.off('keypress', onKeypress);
       if (!previousRawMode && process.stdin.isTTY) process.stdin.setRawMode(false);
-      process.stdout.write('\x1b[?25h');
     };
 
     const finish = (value: PaneMenuSelection | null): void => {
       cleanup();
-      process.stdout.write('\x1b[0m\n');
+      process.stdout.write('\n');
       resolve(value);
     };
 

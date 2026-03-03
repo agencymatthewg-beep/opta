@@ -62,18 +62,22 @@ def test_auto_skips_unloaded_default() -> None:
 
 def test_alias_resolves_first_loaded_preference() -> None:
     """Alias resolves to the first preference that is loaded."""
-    _, router = _make_router(aliases={
-        "code": ["first-choice", "second-choice", "third-choice"],
-    })
+    _, router = _make_router(
+        aliases={
+            "code": ["first-choice", "second-choice", "third-choice"],
+        }
+    )
     result = router.resolve("code", ["third-choice", "second-choice"])
     assert result == "second-choice"
 
 
 def test_alias_returns_unchanged_when_no_preference_loaded() -> None:
     """Alias returns as-is when none of its preferences are loaded."""
-    _, router = _make_router(aliases={
-        "reasoning": ["model-a", "model-b"],
-    })
+    _, router = _make_router(
+        aliases={
+            "reasoning": ["model-a", "model-b"],
+        }
+    )
     result = router.resolve("reasoning", ["completely-different"])
     assert result == "reasoning"
 

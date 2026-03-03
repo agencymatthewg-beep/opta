@@ -39,14 +39,16 @@ def _list_log_files(directory: Path, suffixes: set[str]) -> list[LogFileEntry]:
         except OSError:
             continue
         created_at = datetime.fromtimestamp(stat.st_mtime, tz=UTC).isoformat()
-        entries.append((
-            stat.st_mtime,
-            LogFileEntry(
-                filename=path.name,
-                size_bytes=stat.st_size,
-                created_at=created_at,
-            ),
-        ))
+        entries.append(
+            (
+                stat.st_mtime,
+                LogFileEntry(
+                    filename=path.name,
+                    size_bytes=stat.st_size,
+                    created_at=created_at,
+                ),
+            )
+        )
 
     # Sort by mtime descending (most recent first)
     entries.sort(key=lambda item: item[0], reverse=True)

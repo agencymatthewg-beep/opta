@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><title>Proto 2: Side Rails</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  
+  :root {
+    --void: #09090b; --purple: #a855f7; --green: #22c55e;
+    --text-main: #ffffff; --text-muted: #a1a1aa;
+  }
+  body { 
+    margin:0; height:100vh; background: radial-gradient(ellipse at center, #0d0c14 0%, #09090b 70%); 
+    color: var(--text-main); font-family: 'Sora', sans-serif; overflow: hidden; position: relative;
+    box-sizing: border-box;
+  }
+  .cluster {
+    position: absolute; top: 55%; left: 50%; transform: translate(-50%, -50%);
+    width: 600px; height: 400px;
+    display: flex; align-items: center; justify-content: center;
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="400"><circle cx="300" cy="200" r="80" stroke="%23a855f7" stroke-width="1" fill="none" opacity="0.5"/><circle cx="150" cy="200" r="40" stroke="%2322c55e" stroke-width="1" fill="none" opacity="0.3"/><circle cx="450" cy="200" r="40" stroke="%2306b6d4" stroke-width="1" fill="none" opacity="0.3"/></svg>') no-repeat center center;
+  }
+  .text-moonlight {
+    background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168,85,247,0.5) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 999px; font-size: 11px; letter-spacing: 0.02em;
+    border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.03); color: var(--text-muted);
+  }
+  .badge.green { border-color: rgba(34,197,94,0.3); color: #4ade80; background: rgba(34,197,94,0.1); }
+  .badge.grey { border-color: rgba(255,255,255,0.1); color: var(--text-muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; }
+  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .kb { background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2); border-radius: 4px; padding: 2px 6px; font-size: 9px; color: #fff; }
+
+  .header { position: absolute; top: 40px; left: 40px; }
+  .sidebar-text { color: var(--text-muted); font-size: 11px; letter-spacing: 0.2em; margin-bottom: 8px; }
+  .main-title { font-size: 32px; font-weight: 600; margin: 0; letter-spacing: -0.02em; }
+  
+  .left-rail { position: absolute; left: 40px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 16px; }
+  .right-rail { position: absolute; right: 40px; top: 50%; transform: translateY(-50%); display: flex; flex-direction: column; gap: 16px; }
+</style>
+</head><body>
+  <div class="header">
+    <div class="mono sidebar-text">// INIT MANAGER</div>
+    <h1 class="main-title text-moonlight">Select Environment</h1>
+  </div>
+  <div class="cluster"></div>
+  <div class="left-rail">
+    <div class="badge grey mono"><div class="dot" style="background:rgba(255,255,255,0.3)"></div> Daemon Stopped</div>
+    <div class="badge green mono"><span style="opacity:0.6">Manager</span> Up to date</div>
+  </div>
+  <div class="right-rail">
+    <div class="badge grey mono" style="cursor:pointer">Scan <span class="kb">S</span></div>
+  </div>
+</body></html>

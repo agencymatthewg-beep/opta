@@ -37,13 +37,17 @@ class TestPresetManagerLoading:
 
     def test_load_single_preset(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test",
-            "description": "A test preset",
-            "model": "mlx-community/Qwen2.5-7B-4bit",
-            "parameters": {"temperature": 0.3, "max_tokens": 2048},
-            "system_prompt": "You are a helpful assistant.",
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "description": "A test preset",
+                "model": "mlx-community/Qwen2.5-7B-4bit",
+                "parameters": {"temperature": 0.3, "max_tokens": 2048},
+                "system_prompt": "You are a helpful assistant.",
+            },
+        )
         mgr = PresetManager(presets_dir)
         count = mgr.load_presets()
         assert count == 1
@@ -119,10 +123,15 @@ class TestPresetManagerLookup:
 
     def test_find_performance_for_model(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "a", {
-            "name": "a", "model": "m1",
-            "performance": {"kv_bits": 4, "prefix_cache": False},
-        })
+        _write_preset(
+            presets_dir,
+            "a",
+            {
+                "name": "a",
+                "model": "m1",
+                "performance": {"kv_bits": 4, "prefix_cache": False},
+            },
+        )
         _write_preset(presets_dir, "b", {"name": "b", "model": "m2"})
 
         mgr = PresetManager(presets_dir)
@@ -153,15 +162,19 @@ class TestPresetManagerLookup:
     def test_autotune_compose_performance_precedence(self, tmp_path: Path) -> None:
         """compose_performance_for_load uses explicit > tuned > preset precedence."""
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "a", {
-            "name": "a",
-            "model": "m1",
-            "performance": {
-                "kv_bits": 8,
-                "scheduler": {"max_num_seqs": 64, "prefill_batch_size": 2},
-                "prefix_cache": True,
+        _write_preset(
+            presets_dir,
+            "a",
+            {
+                "name": "a",
+                "model": "m1",
+                "performance": {
+                    "kv_bits": 8,
+                    "scheduler": {"max_num_seqs": 64, "prefill_batch_size": 2},
+                    "prefix_cache": True,
+                },
             },
-        })
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
@@ -202,10 +215,15 @@ class TestPresetApply:
 
     def test_apply_sets_default_temperature(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test", "model": "m1",
-            "parameters": {"temperature": 0.2},
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "model": "m1",
+                "parameters": {"temperature": 0.2},
+            },
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
@@ -219,10 +237,15 @@ class TestPresetApply:
 
     def test_apply_explicit_request_overrides_preset(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test", "model": "m1",
-            "parameters": {"temperature": 0.2},
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "model": "m1",
+                "parameters": {"temperature": 0.2},
+            },
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
@@ -236,10 +259,15 @@ class TestPresetApply:
 
     def test_apply_prepends_system_prompt(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test", "model": "m1",
-            "system_prompt": "Be concise.",
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "model": "m1",
+                "system_prompt": "Be concise.",
+            },
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
@@ -254,30 +282,42 @@ class TestPresetApply:
 
     def test_apply_skips_system_if_already_present(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test", "model": "m1",
-            "system_prompt": "Preset system prompt.",
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "model": "m1",
+                "system_prompt": "Preset system prompt.",
+            },
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
         preset = mgr.get("test")
         assert preset is not None
 
-        request = self._make_request(messages=[
-            {"role": "system", "content": "User's system prompt."},
-            {"role": "user", "content": "Hello"},
-        ])
+        request = self._make_request(
+            messages=[
+                {"role": "system", "content": "User's system prompt."},
+                {"role": "user", "content": "Hello"},
+            ]
+        )
         result = mgr.apply(preset, request)
         assert len(result.messages) == 2
         assert result.messages[0].content == "User's system prompt."
 
     def test_apply_does_not_mutate_original(self, tmp_path: Path) -> None:
         presets_dir = tmp_path / "presets"
-        _write_preset(presets_dir, "test", {
-            "name": "test", "model": "m1",
-            "parameters": {"temperature": 0.1},
-        })
+        _write_preset(
+            presets_dir,
+            "test",
+            {
+                "name": "test",
+                "model": "m1",
+                "parameters": {"temperature": 0.1},
+            },
+        )
 
         mgr = PresetManager(presets_dir)
         mgr.load_presets()
@@ -308,12 +348,16 @@ async def test_list_presets_with_data(client, tmp_path: Path) -> None:
     """GET /admin/presets lists loaded presets."""
     # Write a preset and reload
     presets_dir = tmp_path / "presets"
-    _write_preset(presets_dir, "test-preset", {
-        "name": "test-preset",
-        "description": "For testing",
-        "model": "test-model",
-        "parameters": {"temperature": 0.5},
-    })
+    _write_preset(
+        presets_dir,
+        "test-preset",
+        {
+            "name": "test-preset",
+            "description": "For testing",
+            "model": "test-model",
+            "parameters": {"temperature": 0.5},
+        },
+    )
 
     # Swap the preset manager to use our test dir
     mgr = PresetManager(presets_dir)
@@ -332,12 +376,16 @@ async def test_list_presets_with_data(client, tmp_path: Path) -> None:
 async def test_get_preset_found(client, tmp_path: Path) -> None:
     """GET /admin/presets/{name} returns preset details."""
     presets_dir = tmp_path / "presets"
-    _write_preset(presets_dir, "my-preset", {
-        "name": "my-preset",
-        "description": "Desc",
-        "model": "some-model",
-        "system_prompt": "Be brief.",
-    })
+    _write_preset(
+        presets_dir,
+        "my-preset",
+        {
+            "name": "my-preset",
+            "description": "Desc",
+            "model": "some-model",
+            "system_prompt": "Be brief.",
+        },
+    )
 
     mgr = PresetManager(presets_dir)
     mgr.load_presets()
@@ -398,11 +446,15 @@ async def test_preset_auth_required(client_with_auth) -> None:
 async def test_preset_model_resolution(client, tmp_path: Path) -> None:
     """model: 'preset:name' resolves to the preset's model ID."""
     presets_dir = tmp_path / "presets"
-    _write_preset(presets_dir, "fast", {
-        "name": "fast",
-        "model": "test-model",
-        "parameters": {"temperature": 0.1},
-    })
+    _write_preset(
+        presets_dir,
+        "fast",
+        {
+            "name": "fast",
+            "model": "test-model",
+            "parameters": {"temperature": 0.1},
+        },
+    )
 
     mgr = PresetManager(presets_dir)
     mgr.load_presets()
@@ -412,10 +464,13 @@ async def test_preset_model_resolution(client, tmp_path: Path) -> None:
     # Load mock model with the preset's target model ID
     await app.state.engine.load_model("test-model")
 
-    resp = await client.post("/v1/chat/completions", json={
-        "model": "preset:fast",
-        "messages": [{"role": "user", "content": "Hello"}],
-    })
+    resp = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "preset:fast",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
     assert resp.status_code == 200
     data = resp.json()
     assert data["model"] == "test-model"
@@ -424,8 +479,11 @@ async def test_preset_model_resolution(client, tmp_path: Path) -> None:
 @pytest.mark.anyio
 async def test_preset_not_found_in_inference(client) -> None:
     """model: 'preset:unknown' returns 404."""
-    resp = await client.post("/v1/chat/completions", json={
-        "model": "preset:nonexistent",
-        "messages": [{"role": "user", "content": "Hello"}],
-    })
+    resp = await client.post(
+        "/v1/chat/completions",
+        json={
+            "model": "preset:nonexistent",
+            "messages": [{"role": "user", "content": "Hello"}],
+        },
+    )
     assert resp.status_code == 404

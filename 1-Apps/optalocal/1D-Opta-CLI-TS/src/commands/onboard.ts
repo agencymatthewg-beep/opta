@@ -6,9 +6,15 @@ import chalk from 'chalk';
 import { saveConfig, loadConfig } from '../core/config.js';
 import type { OptaConfig } from '../core/config.js';
 import { isKeychainAvailable } from '../keychain/index.js';
-import { storeAnthropicKey } from '../keychain/api-keys.js';
+import {
+  storeAnthropicKey,
+  storeGeminiKey,
+  storeOpenaiKey,
+  storeOpencodeZenKey,
+} from '../keychain/api-keys.js';
 import { getConfigDir } from '../platform/paths.js';
 import { discoverLmxHosts } from '../lmx/mdns-discovery.js';
+import { LmxApiError, LmxClient } from '../lmx/client.js';
 
 // ── Onboard marker (first-run detection) ────────────────────────────────────
 
@@ -30,19 +36,34 @@ export async function markOnboarded(): Promise<void> {
 }
 
 type ProviderName = OptaConfig['provider']['active'];
-type OnboardingProvider = Extract<ProviderName, 'lmx' | 'anthropic'>;
+type OnboardingProvider = Extract<ProviderName, 'lmx' | 'anthropic' | 'gemini' | 'openai' | 'opencode_zen'>;
 
 function normalizeOnboardingProvider(input: string | undefined): OnboardingProvider {
-  return input === 'anthropic' ? 'anthropic' : 'lmx';
+  if (input === 'anthropic' || input === 'gemini' || input === 'openai' || input === 'opencode_zen') {
+    return input;
+  }
+  return 'lmx';
+}
+
+interface ProviderFieldConfig {
+  provider: OnboardingProvider;
+  configured: boolean;
+  storage: 'none' | 'config' | 'keychain';
+  maskedSuffix?: string;
 }
 
 export interface OnboardingProfileInput {
   provider?: OnboardingProvider;
   lmxHost?: string;
   lmxPort?: number;
+  lmxAdminKey?: string;
   anthropicApiKey?: string;
+  geminiApiKey?: string;
+  openaiApiKey?: string;
+  opencodeZenApiKey?: string;
   autonomyLevel?: number;
   tuiDefault?: boolean;
+  providerKeyStorage?: 'none' | 'config' | 'keychain';
 }
 
 export interface OnboardingProfileResult {
@@ -54,8 +75,15 @@ export interface OnboardingProfileResult {
   };
   autonomyLevel: number;
   tuiDefault: boolean;
-  anthropicKeyConfigured: boolean;
+  keyConfigured: ProviderFieldConfig[];
   onboarded: true;
+}
+
+interface ProviderKeyPersistenceResult {
+  configValue: string;
+  configured: boolean;
+  storage: 'none' | 'config' | 'keychain';
+  maskedSuffix?: string;
 }
 
 function clampAutonomyLevel(level: number): number {
@@ -109,16 +137,112 @@ export async function applyOnboardingProfile(
   const lmxPort = normalizePort(input.lmxPort ?? defaultLmxConnection.port);
   const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
   const tuiDefault = input.tuiDefault ?? existing?.tui?.default ?? false;
-  const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider?.anthropic?.apiKey ?? '').trim();
 
-  await saveConfig({
-    'provider.active': provider,
-    ...(provider === 'lmx'
-      ? { 'connection.host': lmxHost, 'connection.port': lmxPort }
-      : { 'provider.anthropic.apiKey': anthropicApiKey }),
+  const configured: ProviderFieldConfig[] = [];
+
+  const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider?.anthropic?.apiKey ?? '').trim();
+  const geminiApiKey = (input.geminiApiKey ?? existing?.provider?.gemini?.apiKey ?? '').trim();
+  const openaiApiKey = (input.openaiApiKey ?? existing?.provider?.openai?.apiKey ?? '').trim();
+  const opencodeZenApiKey = (
+    input.opencodeZenApiKey ??
+    existing?.provider?.opencode_zen?.apiKey ??
+    ''
+  ).trim();
+
+  const configPatch: Record<string, unknown> = {
     'autonomy.level': autonomyLevel,
     'tui.default': tuiDefault,
-  });
+    'provider.active': provider,
+  };
+
+  if (provider === 'lmx') {
+    configPatch['connection.host'] = lmxHost;
+    configPatch['connection.port'] = String(lmxPort);
+    if (input.lmxAdminKey !== undefined) {
+      configPatch['connection.adminKey'] = input.lmxAdminKey.trim();
+    }
+  } else {
+    const providerKeyStorage = input.providerKeyStorage ?? 'config';
+    const persistProviderKey = async (
+      targetProvider: OnboardingProvider,
+      apiKey: string
+    ): Promise<ProviderKeyPersistenceResult> => {
+      const trimmed = apiKey.trim();
+      if (!trimmed) {
+        return {
+          configValue: '',
+          configured: false,
+          storage: 'none',
+        };
+      }
+
+      if (providerKeyStorage === 'keychain' && isKeychainAvailable()) {
+        const store = async (value: string): Promise<boolean> => {
+          if (targetProvider === 'anthropic') return storeAnthropicKey(value);
+          if (targetProvider === 'gemini') return storeGeminiKey(value);
+          if (targetProvider === 'openai') return storeOpenaiKey(value);
+          return storeOpencodeZenKey(value);
+        };
+
+        const stored = await store(trimmed);
+        if (stored) {
+          return {
+            configValue: '',
+            configured: true,
+            storage: 'keychain',
+            maskedSuffix: trimmed.slice(-4),
+          };
+        }
+      }
+
+      return {
+        configValue: trimmed,
+        configured: true,
+        storage: 'config',
+        maskedSuffix: trimmed.slice(-4),
+      };
+    };
+
+    if (provider === 'anthropic') {
+      const persisted = await persistProviderKey('anthropic', anthropicApiKey);
+      configPatch['provider.anthropic.apiKey'] = persisted.configValue;
+      configured.push({
+        provider: 'anthropic',
+        configured: persisted.configured,
+        storage: persisted.storage,
+        maskedSuffix: persisted.maskedSuffix,
+      });
+    } else if (provider === 'gemini') {
+      const persisted = await persistProviderKey('gemini', geminiApiKey);
+      configPatch['provider.gemini.apiKey'] = persisted.configValue;
+      configured.push({
+        provider: 'gemini',
+        configured: persisted.configured,
+        storage: persisted.storage,
+        maskedSuffix: persisted.maskedSuffix,
+      });
+    } else if (provider === 'openai') {
+      const persisted = await persistProviderKey('openai', openaiApiKey);
+      configPatch['provider.openai.apiKey'] = persisted.configValue;
+      configured.push({
+        provider: 'openai',
+        configured: persisted.configured,
+        storage: persisted.storage,
+        maskedSuffix: persisted.maskedSuffix,
+      });
+    } else if (provider === 'opencode_zen') {
+      const persisted = await persistProviderKey('opencode_zen', opencodeZenApiKey);
+      configPatch['provider.opencode_zen.apiKey'] = persisted.configValue;
+      configured.push({
+        provider: 'opencode_zen',
+        configured: persisted.configured,
+        storage: persisted.storage,
+        maskedSuffix: persisted.maskedSuffix,
+      });
+    }
+  }
+
+  await saveConfig(configPatch);
 
   await markOnboarded();
 
@@ -131,7 +255,7 @@ export async function applyOnboardingProfile(
     },
     autonomyLevel,
     tuiDefault,
-    anthropicKeyConfigured: anthropicApiKey.length > 0,
+    keyConfigured: configured,
     onboarded: true,
   };
 }
@@ -156,6 +280,65 @@ async function confirm(
   const trimmed = raw.trim().toLowerCase();
   if (!trimmed) return defaultYes;
   return trimmed.startsWith('y');
+}
+
+
+type CloudKeyResult = {
+  keyInput: string;
+  keyForConfig: string;
+  keyStorage: 'none' | 'config' | 'keychain';
+};
+
+async function promptProviderApiKey(
+  rl: readline.Interface,
+  provider: OnboardingProvider,
+  label: string,
+  existingKey: string,
+): Promise<CloudKeyResult> {
+  let keyStorage: 'none' | 'config' | 'keychain' = 'none';
+  let keyInput = '';
+  let keyForConfig = '';
+
+  keyInput = await ask(rl, `  ${label} API key`, existingKey);
+  const trimmed = keyInput.trim();
+
+  if (!trimmed) {
+    keyStorage = 'none';
+    keyForConfig = '';
+  } else if (isKeychainAvailable()) {
+    const storeSecurely = await confirm(rl, '  Store key securely in OS keychain?', true);
+    if (storeSecurely) {
+      const store = async (value: string): Promise<boolean> => {
+        if (provider === 'anthropic') return storeAnthropicKey(value);
+        if (provider === 'gemini') return storeGeminiKey(value);
+        if (provider === 'openai') return storeOpenaiKey(value);
+        return storeOpencodeZenKey(value);
+      };
+
+      const stored = await store(trimmed);
+      if (stored) {
+        keyStorage = 'keychain';
+        keyForConfig = '';
+        console.log(chalk.green('  ✓ Key stored in keychain (not saved in plaintext config)'));
+      } else {
+        keyStorage = 'config';
+        keyForConfig = trimmed;
+        console.log(chalk.yellow('  ! Keychain write failed — saving key in config instead'));
+      }
+    } else {
+      keyStorage = 'config';
+      keyForConfig = trimmed;
+    }
+  } else {
+    keyStorage = 'config';
+    keyForConfig = trimmed;
+  }
+
+  return {
+    keyInput: trimmed,
+    keyForConfig,
+    keyStorage,
+  };
 }
 
 /** Presents a numbered list and returns the zero-based index of the chosen item. */
@@ -206,17 +389,37 @@ export async function runOnboarding(): Promise<void> {
       [
         'Local LMX  ' + chalk.dim('— Mac Studio inference server (recommended)'),
         'Anthropic  ' + chalk.dim('— Cloud API with your API key'),
+        'Gemini    ' + chalk.dim('— Google OpenAI-compatible endpoint (Gemini)'),
+        'OpenAI    ' + chalk.dim('— OpenAI/Codex-compatible endpoint'),
+        'Opencode Zen' + chalk.dim('— Alternative provider endpoint'),
       ],
-      normalizeOnboardingProvider(existing?.provider?.active) === 'anthropic' ? 1 : 0
+      (() => {
+        const active = normalizeOnboardingProvider(existing?.provider?.active);
+        if (active === 'anthropic') return 1;
+        if (active === 'gemini') return 2;
+        if (active === 'openai') return 3;
+        if (active === 'opencode_zen') return 4;
+        return 0;
+      })(),
     );
 
-    const provider: OnboardingProvider = providerChoice === 0 ? 'lmx' : 'anthropic';
+    const provider: OnboardingProvider =
+      providerChoice === 0
+        ? 'lmx'
+        : providerChoice === 2
+          ? 'gemini'
+          : providerChoice === 3
+            ? 'openai'
+            : providerChoice === 4
+              ? 'opencode_zen'
+              : 'anthropic';
 
     let lmxHost = 'localhost';
     let lmxPort = 1234;
-    let anthropicKey = '';
-    let anthropicKeyForConfig = '';
-    let anthropicKeyStorage: 'none' | 'config' | 'keychain' = 'none';
+    let lmxAdminKey = '';
+    let cloudKey = '';
+    let cloudKeyForConfig = '';
+    let cloudKeyStorage: 'none' | 'config' | 'keychain' = 'none';
 
     if (provider === 'lmx') {
       console.log('');
@@ -264,25 +467,70 @@ export async function runOnboarding(): Promise<void> {
         const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
         lmxPort = parseInt(portStr, 10) || 1234;
       }
+      lmxAdminKey = await ask(
+        rl,
+        '  LMX admin key (optional)',
+        existing?.connection?.adminKey || ''
+      );
 
       const testConn = await confirm(rl, '  Test connection now?', true);
       if (testConn) {
-        process.stdout.write(chalk.dim('  Connecting…'));
+        process.stdout.write(chalk.dim('  Checking LMX liveness…'));
         try {
-          const net = await import('node:net');
-          await new Promise<void>((resolve, reject) => {
-            const socket = new net.Socket();
-            socket.setTimeout(3000);
-            socket.connect(lmxPort, lmxHost, () => {
-              socket.destroy();
-              resolve();
-            });
-            socket.on('error', reject);
-            socket.on('timeout', () => reject(new Error('timeout')));
+          const client = new LmxClient({
+            host: lmxHost,
+            port: lmxPort,
+            adminKey: lmxAdminKey.trim() || existing?.connection?.adminKey,
+            adminKeysByHost: existing?.connection?.adminKeysByHost,
           });
+          await client.health({ timeoutMs: 3_000, maxRetries: 0 });
           process.stdout.write(
-            '\r' + chalk.green('  ✓ Connected to ' + lmxHost + ':' + lmxPort) + '\n'
+            '\r' + chalk.green('  ✓ LMX reachable at ' + lmxHost + ':' + lmxPort) + '\n'
           );
+
+          process.stdout.write(chalk.dim('  Checking admin endpoint access…'));
+          try {
+            await client.status({ timeoutMs: 3_000, maxRetries: 0 });
+            process.stdout.write(
+              '\r' + chalk.green('  ✓ Admin endpoints accessible') + '\n'
+            );
+          } catch (err) {
+            if (
+              err instanceof LmxApiError &&
+              (err.code === 'unauthorized' || err.status === 401 || err.status === 403)
+            ) {
+              process.stdout.write(
+                '\r' +
+                  chalk.yellow(
+                    '  ! LMX is reachable but /admin endpoints are unauthorized (invalid or missing admin key)'
+                  ) +
+                  '\n'
+              );
+              console.log(
+                chalk.dim(
+                  '    Set key:   opta config set connection.adminKey <key>'
+                )
+              );
+              console.log(
+                chalk.dim(
+                  '    Set map:   opta config set connection.adminKeysByHost \'{"host":"key"}\''
+                )
+              );
+              console.log(
+                chalk.dim(
+                  '    Clear key: opta config delete connection.adminKey'
+                )
+              );
+            } else {
+              process.stdout.write(
+                '\r' +
+                  chalk.yellow(
+                    '  ! LMX reachable, but admin check could not be completed'
+                  ) +
+                  '\n'
+              );
+            }
+          }
         } catch {
           process.stdout.write(
             '\r' +
@@ -294,44 +542,28 @@ export async function runOnboarding(): Promise<void> {
       }
     } else {
       console.log('');
-      anthropicKey = await ask(
-        rl,
-        '  Anthropic API key',
-        existing?.provider?.anthropic?.apiKey || ''
-      );
-      const trimmed = anthropicKey.trim();
+      const existingCloudKey =
+        provider === 'anthropic'
+          ? existing?.provider?.anthropic?.apiKey || ''
+          : provider === 'gemini'
+            ? existing?.provider?.gemini?.apiKey || ''
+            : provider === 'openai'
+              ? existing?.provider?.openai?.apiKey || ''
+              : existing?.provider?.opencode_zen?.apiKey || '';
 
-      if (!trimmed) {
-        anthropicKeyStorage = 'none';
-        anthropicKeyForConfig = '';
-      } else if (isKeychainAvailable()) {
-        const storeSecurely = await confirm(
-          rl,
-          '  Store key securely in OS keychain?',
-          true
-        );
+      const cloudPromptLabel =
+        provider === 'anthropic'
+          ? 'Anthropic'
+          : provider === 'gemini'
+            ? 'Gemini'
+            : provider === 'openai'
+              ? 'OpenAI/Codex'
+              : 'Opencode Zen';
 
-        if (storeSecurely) {
-          const stored = await storeAnthropicKey(trimmed);
-          if (stored) {
-            anthropicKeyStorage = 'keychain';
-            anthropicKeyForConfig = '';
-            console.log(chalk.green('  ✓ Key stored in keychain (not saved in plaintext config)'));
-          } else {
-            anthropicKeyStorage = 'config';
-            anthropicKeyForConfig = trimmed;
-            console.log(
-              chalk.yellow('  ! Keychain write failed — saving key in config instead')
-            );
-          }
-        } else {
-          anthropicKeyStorage = 'config';
-          anthropicKeyForConfig = trimmed;
-        }
-      } else {
-        anthropicKeyStorage = 'config';
-        anthropicKeyForConfig = trimmed;
-      }
+      const keyPrompt = await promptProviderApiKey(rl, provider, cloudPromptLabel, existingCloudKey);
+      cloudKey = keyPrompt.keyInput;
+      cloudKeyForConfig = keyPrompt.keyForConfig;
+      cloudKeyStorage = keyPrompt.keyStorage;
     }
 
     // ── Step 2: Preferences ────────────────────────────────────────────────
@@ -363,20 +595,28 @@ export async function runOnboarding(): Promise<void> {
     console.log(chalk.bold.hex('#8b5cf6')('Step 3/3 — Review & Apply'));
     console.log('');
     console.log(chalk.dim('  Settings to save:'));
-    console.log(
-      `    Provider  : ${chalk.cyan(provider === 'lmx' ? 'Local LMX' : 'Anthropic Cloud')}`
-    );
+    const providerLabel =
+      provider === 'lmx'
+        ? 'Local LMX'
+        : provider === 'anthropic'
+          ? 'Anthropic Cloud'
+          : provider === 'gemini'
+            ? 'Gemini Cloud'
+            : provider === 'openai'
+              ? 'OpenAI/Codex Cloud'
+              : 'Opencode Zen Cloud';
+
+    console.log(`    Provider  : ${chalk.cyan(providerLabel)}`);
     if (provider === 'lmx') {
       console.log(`    LMX host  : ${chalk.cyan(lmxHost + ':' + lmxPort)}`);
     } else {
-      const suffix = anthropicKey ? '••••' + anthropicKey.slice(-4) : '(not set)';
-      const storageLabel = (
-        anthropicKeyStorage === 'keychain'
+      const suffix = cloudKey ? '••••' + cloudKey.slice(-4) : '(not set)';
+      const storageLabel =
+        cloudKeyStorage === 'keychain'
           ? 'stored in keychain'
-          : anthropicKeyStorage === 'config'
+          : cloudKeyStorage === 'config'
             ? 'saved in config'
-            : 'not set'
-      );
+            : 'not set';
       console.log(`    API key   : ${chalk.cyan(`${suffix} (${storageLabel})`)}`);
     }
     const autonomyLabels = ['Supervised', 'Balanced', 'Autonomous'];
@@ -394,16 +634,19 @@ export async function runOnboarding(): Promise<void> {
     }
 
     // Persist config
-    await saveConfig({
-      'provider.active': provider,
-      ...(provider === 'lmx'
-        ? { 'connection.host': lmxHost, 'connection.port': lmxPort }
-        : { 'provider.anthropic.apiKey': anthropicKeyForConfig }),
-      'autonomy.level': autonomyLevel,
-      'tui.default': tuiDefault,
+    await applyOnboardingProfile({
+      provider,
+      lmxHost,
+      lmxPort,
+      lmxAdminKey: provider === 'lmx' ? lmxAdminKey : undefined,
+      anthropicApiKey: provider === 'anthropic' ? cloudKeyForConfig : undefined,
+      geminiApiKey: provider === 'gemini' ? cloudKeyForConfig : undefined,
+      openaiApiKey: provider === 'openai' ? cloudKeyForConfig : undefined,
+      opencodeZenApiKey: provider === 'opencode_zen' ? cloudKeyForConfig : undefined,
+      providerKeyStorage: cloudKeyStorage,
+      autonomyLevel,
+      tuiDefault,
     });
-
-    await markOnboarded();
 
     console.log('');
     console.log(chalk.green('  ✓ Configuration saved'));

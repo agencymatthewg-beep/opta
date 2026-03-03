@@ -268,9 +268,7 @@ class RunScheduler:
         with self._db_lock:
             con = sqlite3.connect(path)
             try:
-                row = con.execute(
-                    "SELECT COUNT(1) FROM run_queue WHERE status='queued'"
-                ).fetchone()
+                row = con.execute("SELECT COUNT(1) FROM run_queue WHERE status='queued'").fetchone()
                 if row is None:
                     return 0
                 return int(row[0])

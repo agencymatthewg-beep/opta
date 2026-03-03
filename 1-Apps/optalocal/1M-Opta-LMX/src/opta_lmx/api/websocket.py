@@ -11,6 +11,7 @@ from typing import Any
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from opta_lmx.api.stream_handlers import _StreamEndMarker
 from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.schema import ChatMessage
 from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
@@ -20,6 +21,22 @@ from opta_lmx.presets.manager import PRESET_PREFIX
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _message_text(message: ChatMessage) -> str:
+    """Best-effort text projection for token-estimation paths."""
+    content = message.content
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        text_parts: list[str] = []
+        for part in content:
+            part_type = getattr(part, "type", None)
+            part_text = getattr(part, "text", None)
+            if part_type == "text" and isinstance(part_text, str):
+                text_parts.append(part_text)
+        return " ".join(text_parts)
+    return ""
 
 
 @router.websocket("/v1/chat/stream")
@@ -61,6 +78,7 @@ async def websocket_chat(websocket: WebSocket) -> None:
                 # Clean up completed tasks
                 def _cleanup(t: asyncio.Task[None], rid: str = request_id) -> None:
                     active_tasks.pop(rid, None)
+
                 task.add_done_callback(_cleanup)
 
             elif msg_type == "chat.cancel":
@@ -70,16 +88,21 @@ async def websocket_chat(websocket: WebSocket) -> None:
                     logger.info("ws_generation_cancelled", extra={"request_id": request_id})
 
             else:
-                await websocket.send_json({
-                    "type": "chat.error",
-                    "request_id": None,
-                    "error": f"Unknown message type: {msg_type}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "chat.error",
+                        "request_id": None,
+                        "error": f"Unknown message type: {msg_type}",
+                    }
+                )
 
     except WebSocketDisconnect:
-        logger.info("ws_client_disconnected", extra={
-            "active_tasks": len(active_tasks),
-        })
+        logger.info(
+            "ws_client_disconnected",
+            extra={
+                "active_tasks": len(active_tasks),
+            },
+        )
     except Exception as e:
         logger.error("ws_connection_error", extra={"error": str(e)})
     finally:
@@ -112,15 +135,17 @@ async def _handle_chat_request(
 
     # Resolve preset (e.g. "preset:code-assistant") — apply defaults + swap model
     if model.startswith(PRESET_PREFIX):
-        preset_name = model[len(PRESET_PREFIX):]
+        preset_name = model[len(PRESET_PREFIX) :]
         preset_mgr = websocket.app.state.preset_manager
         preset = preset_mgr.get(preset_name)
         if preset is None:
-            await websocket.send_json({
-                "type": "chat.error",
-                "request_id": request_id,
-                "error": f"Preset '{preset_name}' not found",
-            })
+            await websocket.send_json(
+                {
+                    "type": "chat.error",
+                    "request_id": request_id,
+                    "error": f"Preset '{preset_name}' not found",
+                }
+            )
             return
         model = preset.model
         if preset.parameters:
@@ -143,16 +168,18 @@ async def _handle_chat_request(
             model = task_router.resolve(model, loaded_ids)
 
             if not engine.is_model_loaded(model):
-                await websocket.send_json({
-                    "type": "chat.error",
-                    "request_id": request_id,
-                    "error": f"Model '{data.get('model', '')}' is not loaded",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "chat.error",
+                        "request_id": request_id,
+                        "error": f"Model '{data.get('model', '')}' is not loaded",
+                    }
+                )
                 return
 
         if stream:
             completion_tokens = 0
-            prompt_text = " ".join(m.content or "" for m in messages)
+            prompt_text = " ".join(_message_text(message) for message in messages)
             prompt_tokens = max(1, len(prompt_text) // 4)
             saw_tool_calls = False
 
@@ -170,52 +197,64 @@ async def _handle_chat_request(
             if tools:
                 chunk_stream = wrap_stream_with_tool_parsing(token_stream, tools=tools)
                 async for chunk in chunk_stream:
+                    if isinstance(chunk, _StreamEndMarker):
+                        continue
                     completion_tokens += 1
                     if chunk.content is not None:
-                        await websocket.send_json({
-                            "type": "chat.token",
-                            "request_id": request_id,
-                            "content": chunk.content,
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "chat.token",
+                                "request_id": request_id,
+                                "content": chunk.content,
+                            }
+                        )
                     elif chunk.tool_call_delta is not None:
                         saw_tool_calls = True
                         tc = chunk.tool_call_delta
-                        await websocket.send_json({
-                            "type": "chat.tool_call",
-                            "request_id": request_id,
-                            "tool_call": {
-                                "index": tc.index,
-                                "id": tc.id,
-                                "name": tc.name,
-                                "arguments": tc.arguments_delta,
-                            },
-                        })
+                        await websocket.send_json(
+                            {
+                                "type": "chat.tool_call",
+                                "request_id": request_id,
+                                "tool_call": {
+                                    "index": tc.index,
+                                    "id": tc.id,
+                                    "name": tc.name,
+                                    "arguments": tc.arguments_delta,
+                                },
+                            }
+                        )
             else:
                 async for token in token_stream:
                     completion_tokens += 1
-                    await websocket.send_json({
-                        "type": "chat.token",
-                        "request_id": request_id,
-                        "content": token,
-                    })
+                    await websocket.send_json(
+                        {
+                            "type": "chat.token",
+                            "request_id": request_id,
+                            "content": token,
+                        }
+                    )
 
-            websocket.app.state.metrics.record(RequestMetric(
-                model_id=model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                stream=True,
-            ))
+            websocket.app.state.metrics.record(
+                RequestMetric(
+                    model_id=model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    stream=True,
+                )
+            )
 
-            await websocket.send_json({
-                "type": "chat.done",
-                "request_id": request_id,
-                "finish_reason": "tool_calls" if saw_tool_calls else "stop",
-                "usage": {
-                    "prompt_tokens": prompt_tokens,
-                    "completion_tokens": completion_tokens,
-                },
-            })
+            await websocket.send_json(
+                {
+                    "type": "chat.done",
+                    "request_id": request_id,
+                    "finish_reason": "tool_calls" if saw_tool_calls else "stop",
+                    "usage": {
+                        "prompt_tokens": prompt_tokens,
+                        "completion_tokens": completion_tokens,
+                    },
+                }
+            )
         else:
             response = await engine.generate(
                 model_id=model,
@@ -228,51 +267,64 @@ async def _handle_chat_request(
                 response_format=response_format,
             )
 
-            websocket.app.state.metrics.record(RequestMetric(
-                model_id=model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=response.usage.prompt_tokens,
-                completion_tokens=response.usage.completion_tokens,
-                stream=False,
-            ))
+            websocket.app.state.metrics.record(
+                RequestMetric(
+                    model_id=model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    stream=False,
+                )
+            )
 
-            await websocket.send_json({
-                "type": "chat.done",
-                "request_id": request_id,
-                "finish_reason": response.choices[0].finish_reason,
-                "content": response.choices[0].message.content,
-                "usage": {
-                    "prompt_tokens": response.usage.prompt_tokens,
-                    "completion_tokens": response.usage.completion_tokens,
-                },
-            })
+            await websocket.send_json(
+                {
+                    "type": "chat.done",
+                    "request_id": request_id,
+                    "finish_reason": response.choices[0].finish_reason,
+                    "content": response.choices[0].message.content,
+                    "usage": {
+                        "prompt_tokens": response.usage.prompt_tokens,
+                        "completion_tokens": response.usage.completion_tokens,
+                    },
+                }
+            )
 
     except asyncio.CancelledError:
         # Client cancelled — send acknowledgment if connection still open
         with contextlib.suppress(Exception):
-            await websocket.send_json({
-                "type": "chat.done",
-                "request_id": request_id,
-                "finish_reason": "cancelled",
-                "usage": {"prompt_tokens": 0, "completion_tokens": 0},
-            })
+            await websocket.send_json(
+                {
+                    "type": "chat.done",
+                    "request_id": request_id,
+                    "finish_reason": "cancelled",
+                    "usage": {"prompt_tokens": 0, "completion_tokens": 0},
+                }
+            )
     except Exception as e:
-        logger.error("ws_chat_error", extra={
-            "request_id": request_id,
-            "error": str(e),
-        })
-        with contextlib.suppress(Exception):
-            websocket.app.state.metrics.record(RequestMetric(
-                model_id=model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0,
-                completion_tokens=0,
-                stream=stream,
-                error=True,
-            ))
-        with contextlib.suppress(Exception):
-            await websocket.send_json({
-                "type": "chat.error",
+        logger.error(
+            "ws_chat_error",
+            extra={
                 "request_id": request_id,
                 "error": str(e),
-            })
+            },
+        )
+        with contextlib.suppress(Exception):
+            websocket.app.state.metrics.record(
+                RequestMetric(
+                    model_id=model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=stream,
+                    error=True,
+                )
+            )
+        with contextlib.suppress(Exception):
+            await websocket.send_json(
+                {
+                    "type": "chat.error",
+                    "request_id": request_id,
+                    "error": str(e),
+                }
+            )

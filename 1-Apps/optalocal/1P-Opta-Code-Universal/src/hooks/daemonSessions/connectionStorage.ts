@@ -7,7 +7,9 @@ type RuntimeConnectionHints = typeof globalThis & {
   __OPTA_DAEMON_CONNECTION__?: Partial<DaemonConnectionOptions>;
 };
 
-function parseDaemonUrl(urlRaw: string): Partial<DaemonConnectionOptions> | null {
+function parseDaemonUrl(
+  urlRaw: string,
+): Partial<DaemonConnectionOptions> | null {
   const trimmed = urlRaw.trim();
   if (!trimmed) return null;
   try {
@@ -43,11 +45,16 @@ function resolveDefaultConnection(): DaemonConnectionOptions {
     ...(hintedConn?.protocol ? { protocol: hintedConn.protocol } : {}),
   };
 
-  const env = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
-  const hintedUrl = runtime.__OPTA_DAEMON_URL__ ?? env?.VITE_OPTA_DAEMON_URL ?? "";
+  const env = (
+    import.meta as ImportMeta & { env?: Record<string, string | undefined> }
+  ).env;
+  const hintedUrl =
+    runtime.__OPTA_DAEMON_URL__ ?? env?.VITE_OPTA_DAEMON_URL ?? "";
   const parsedUrl = parseDaemonUrl(hintedUrl);
 
-  return parsedUrl ? { ...withConnectionHint, ...parsedUrl } : withConnectionHint;
+  return parsedUrl
+    ? { ...withConnectionHint, ...parsedUrl }
+    : withConnectionHint;
 }
 
 export const DEFAULT_CONNECTION: DaemonConnectionOptions =
@@ -59,9 +66,14 @@ export function loadStoredConnection(): DaemonConnectionOptions {
     if (!raw) return DEFAULT_CONNECTION;
     const parsed = JSON.parse(raw) as Partial<DaemonConnectionOptions>;
     return {
-      host: typeof parsed.host === "string" ? parsed.host : DEFAULT_CONNECTION.host,
-      port: typeof parsed.port === "number" ? parsed.port : DEFAULT_CONNECTION.port,
-      token: typeof parsed.token === "string" ? parsed.token : DEFAULT_CONNECTION.token,
+      host:
+        typeof parsed.host === "string" ? parsed.host : DEFAULT_CONNECTION.host,
+      port:
+        typeof parsed.port === "number" ? parsed.port : DEFAULT_CONNECTION.port,
+      token:
+        typeof parsed.token === "string"
+          ? parsed.token
+          : DEFAULT_CONNECTION.token,
       protocol: parsed.protocol ?? DEFAULT_CONNECTION.protocol,
     };
   } catch {

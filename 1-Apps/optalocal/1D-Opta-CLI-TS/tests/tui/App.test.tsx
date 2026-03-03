@@ -1067,6 +1067,54 @@ describe('App component', () => {
     expect(onCancelTurn).toHaveBeenCalledTimes(1);
   });
 
+  it('cancels active turn with Escape even when settings overlay is open', async () => {
+    const emitter = createTuiEmitter();
+    const onCancelTurn = vi.fn();
+    const { stdin } = render(
+      <App
+        model="test-model"
+        sessionId="abc123"
+        emitter={emitter}
+        onSubmit={() => {}}
+        onCancelTurn={onCancelTurn}
+      />
+    );
+    await flush();
+    emitter.emit('turn:start');
+    await flush();
+
+    stdin.write('\x13'); // Ctrl+S opens settings
+    await flush();
+    stdin.write('\x1B'); // Escape should prioritize turn cancel
+    await flush();
+
+    expect(onCancelTurn).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels active turn with Ctrl+C even when settings overlay is open', async () => {
+    const emitter = createTuiEmitter();
+    const onCancelTurn = vi.fn();
+    const { stdin } = render(
+      <App
+        model="test-model"
+        sessionId="abc123"
+        emitter={emitter}
+        onSubmit={() => {}}
+        onCancelTurn={onCancelTurn}
+      />
+    );
+    await flush();
+    emitter.emit('turn:start');
+    await flush();
+
+    stdin.write('\x13'); // Ctrl+S opens settings
+    await flush();
+    stdin.write('\x03'); // Ctrl+C should prioritize turn cancel over overlay close
+    await flush();
+
+    expect(onCancelTurn).toHaveBeenCalledTimes(1);
+  });
+
   it('preserves spaces when streamed token chunks end with whitespace', async () => {
     const emitter = createTuiEmitter();
     const { lastFrame } = render(

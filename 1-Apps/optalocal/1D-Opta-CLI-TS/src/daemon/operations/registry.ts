@@ -39,8 +39,22 @@ import { diff } from '../../commands/diff.js';
 import { envCommand } from '../../commands/env.js';
 import { init } from '../../commands/init.js';
 import { benchmark } from '../../commands/benchmark.js';
+import { runCeoBenchmark } from '../../benchmark/ceo/runner.js';
 import { embed } from '../../commands/embed.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
+import { models } from '../../commands/models/index.js';
+import {
+  FAST_DISCOVERY_REQUEST_OPTS,
+  type LibraryModelEntry,
+  type LocalModelSnapshot,
+} from '../../commands/models/types.js';
+import {
+  fetchHuggingFaceModels,
+  getModelOptions,
+  mergeCatalogEntries,
+  rankCatalogEntries,
+  sortCatalogEntries,
+} from '../../commands/models/inventory.js';
 import { keyCopy, keyCreate, keyShow } from '../../commands/key.js';
 import { applyOnboardingProfile } from '../../commands/onboard.js';
 import { rerank } from '../../commands/rerank.js';
@@ -48,12 +62,19 @@ import { serve } from '../../commands/serve.js';
 import { sessions } from '../../commands/sessions.js';
 import { updateCommand } from '../../commands/update.js';
 import { fetchLatestVersion } from '../../commands/version.js';
+import { LmxClient } from '../../lmx/client.js';
 import {
   deleteAnthropicKey,
+  deleteGeminiKey,
   deleteLmxKey,
+  deleteOpenaiKey,
+  deleteOpencodeZenKey,
   keychainStatus,
   storeAnthropicKey,
+  storeGeminiKey,
   storeLmxKey,
+  storeOpenaiKey,
+  storeOpencodeZenKey,
 } from '../../keychain/api-keys.js';
 import {
   OPERATION_IDS,
@@ -155,13 +176,20 @@ async function runDoctorOperation(): Promise<{
   };
 }> {
   const config = await loadConfig();
-  const { host, port, adminKey, fallbackHosts } = config.connection;
+  const { host, port, adminKey, fallbackHosts, adminKeysByHost } = config.connection;
   const cwd = process.cwd();
 
   const nodeCheck = checkNode();
   const asyncChecks = await Promise.all([
-    checkLmxConnection(host, port, adminKey, fallbackHosts),
-    checkActiveModel(config.model.default, host, port, adminKey, fallbackHosts),
+    checkLmxConnection(host, port, adminKey, fallbackHosts, adminKeysByHost),
+    checkActiveModel(
+      config.model.default,
+      host,
+      port,
+      adminKey,
+      fallbackHosts,
+      adminKeysByHost
+    ),
     checkConfig(config),
     checkOpis(cwd),
     checkMcpServers(config.mcp.servers as Parameters<typeof checkMcpServers>[0]),
@@ -205,6 +233,42 @@ async function runVersionCheckOperation(): Promise<{
     upToDate,
     updateAvailable: !upToDate,
   };
+}
+
+function clampBrowseLimit(limit: number | undefined): number {
+  if (typeof limit !== 'number' || Number.isNaN(limit)) return 120;
+  return Math.max(1, Math.min(500, Math.trunc(limit)));
+}
+
+function makeModelsClient(config: Awaited<ReturnType<typeof loadConfig>>): LmxClient {
+  return new LmxClient({
+    host: config.connection.host,
+    fallbackHosts: config.connection.fallbackHosts,
+    port: config.connection.port,
+    adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
+  });
+}
+
+async function buildLibraryBrowseEntries(
+  client: LmxClient,
+  query: string | undefined,
+  limit: number
+): Promise<LibraryModelEntry[]> {
+  const [loadedRes, available, hfEntries] = await Promise.all([
+    client.models(FAST_DISCOVERY_REQUEST_OPTS).catch(() => ({ models: [] })),
+    client.available(FAST_DISCOVERY_REQUEST_OPTS).catch(() => []),
+    fetchHuggingFaceModels(query, Math.min(Math.max(limit * 2, 120), 250)).catch(() => []),
+  ]);
+
+  const snapshot: LocalModelSnapshot = {
+    loadedIds: new Set(loadedRes.models.map((model) => model.model_id)),
+    availableById: new Map(available.map((model) => [model.repo_id, model] as const)),
+    historyById: new Map(),
+  };
+  const catalog = mergeCatalogEntries(snapshot, hfEntries);
+  const ranked = query?.trim() ? rankCatalogEntries(catalog, query) : sortCatalogEntries(catalog);
+  return ranked.slice(0, limit);
 }
 
 function toConfigValueString(value: unknown): string {
@@ -264,11 +328,18 @@ export const operationRegistry = {
   ),
   'env.save': defineOperation('env.save', async (input) =>
     runCommandForJson('env.save', async () => {
+      const serializedAdminKeysByHost =
+        input.adminKeysByHost === undefined
+          ? undefined
+          : typeof input.adminKeysByHost === 'string'
+            ? input.adminKeysByHost
+            : JSON.stringify(input.adminKeysByHost);
       await envCommand('save', input.name, {
         json: true,
         host: input.host,
         port: input.port === undefined ? undefined : String(input.port),
         adminKey: input.adminKey,
+        adminKeysByHost: serializedAdminKeysByHost,
         model: input.model,
         provider: input.provider,
         mode: input.mode,
@@ -451,7 +522,12 @@ export const operationRegistry = {
       provider: input.provider,
       lmxHost: input.lmxHost,
       lmxPort: input.lmxPort === undefined ? undefined : Number(input.lmxPort),
+      lmxAdminKey: input.lmxAdminKey,
       anthropicApiKey: input.anthropicApiKey,
+      geminiApiKey: input.geminiApiKey,
+      openaiApiKey: input.openaiApiKey,
+      opencodeZenApiKey: input.opencodeZenApiKey,
+      providerKeyStorage: input.providerKeyStorage,
       autonomyLevel: input.autonomyLevel,
       tuiDefault: input.tuiDefault,
     })
@@ -603,6 +679,123 @@ export const operationRegistry = {
       });
     })
   ),
+  'ceo.benchmark': defineOperation('ceo.benchmark', async (input) =>
+    runCommandForJson('ceo.benchmark', async () => {
+      await runCeoBenchmark({
+        filter: input.filter,
+        model: input.model,
+        json: true,
+      });
+    })
+  ),
+  'models.history': defineOperation('models.history', async () =>
+    runCommandForJson('models.history', async () => {
+      await models('history', undefined, undefined, { json: true });
+    })
+  ),
+  'models.aliases.list': defineOperation('models.aliases.list', async () =>
+    runCommandForJson('models.aliases.list', async () => {
+      await models('aliases', undefined, undefined, { json: true });
+    })
+  ),
+  'models.aliases.set': defineOperation('models.aliases.set', async (input) =>
+    runCommandForText(async () => {
+      await models('alias', input.alias, input.model, { json: true });
+    })
+  ),
+  'models.aliases.delete': defineOperation('models.aliases.delete', async (input) =>
+    runCommandForText(async () => {
+      await models('unalias', input.alias, undefined, { json: true });
+    })
+  ),
+  'models.dashboard': defineOperation('models.dashboard', async () =>
+    runCommandForJson('models.dashboard', async () => {
+      await models('dashboard', undefined, undefined, { json: true });
+    })
+  ),
+  'models.predictor': defineOperation('models.predictor', async () =>
+    runCommandForJson('models.predictor', async () => {
+      await models('predictor', undefined, undefined, { json: true });
+    })
+  ),
+  'models.helpers': defineOperation('models.helpers', async () =>
+    runCommandForJson('models.helpers', async () => {
+      await models('helpers', undefined, undefined, { json: true });
+    })
+  ),
+  'models.quantize': defineOperation('models.quantize', async (input) =>
+    runCommandForJson('models.quantize', async () => {
+      await models('quantize', input.args, undefined, { json: true });
+    })
+  ),
+  'models.agents': defineOperation('models.agents', async (input) =>
+    runCommandForJson('models.agents', async () => {
+      await models('agents', input.args, undefined, { json: true });
+    })
+  ),
+  'models.skills': defineOperation('models.skills', async (input) =>
+    runCommandForJson('models.skills', async () => {
+      await models('skills', input.args, undefined, { json: true });
+    })
+  ),
+  'models.rag': defineOperation('models.rag', async (input) =>
+    runCommandForJson('models.rag', async () => {
+      await models('rag', input.args, undefined, { json: true });
+    })
+  ),
+  'models.health': defineOperation('models.health', async (input) =>
+    runCommandForJson('models.health', async () => {
+      await models('health', input.args, undefined, { json: true });
+    })
+  ),
+  'models.scan': defineOperation('models.scan', async (input) =>
+    runCommandForJson('models.scan', async () => {
+      await models('scan', undefined, undefined, {
+        json: true,
+        full: input.full,
+      });
+    })
+  ),
+  'models.browse.local': defineOperation('models.browse.local', async (input) => {
+    const config = await loadConfig();
+    const client = makeModelsClient(config);
+    const options = await getModelOptions(client);
+    const query = input.query?.trim().toLowerCase();
+    const limit = clampBrowseLimit(input.limit);
+    const filter = (id: string): boolean => (!query ? true : id.toLowerCase().includes(query));
+    const loaded = options.loaded.filter((entry) => filter(entry.id)).slice(0, limit);
+    const onDisk = options.onDisk.filter((entry) => filter(entry.id)).slice(0, limit);
+
+    return {
+      query: input.query ?? null,
+      limit,
+      defaultModel: config.model.default,
+      counts: {
+        loaded: options.loaded.length,
+        onDisk: options.onDisk.length,
+      },
+      loaded,
+      onDisk,
+    };
+  }),
+  'models.browse.library': defineOperation('models.browse.library', async (input) => {
+    const config = await loadConfig();
+    const client = makeModelsClient(config);
+    const limit = clampBrowseLimit(input.limit);
+    const entries = await buildLibraryBrowseEntries(client, input.query, limit);
+
+    return {
+      query: input.query ?? null,
+      limit,
+      defaultModel: config.model.default,
+      counts: {
+        total: entries.length,
+        loaded: entries.filter((entry) => entry.loaded).length,
+        downloaded: entries.filter((entry) => entry.downloaded).length,
+      },
+      entries,
+    };
+  }),
   'keychain.status': defineOperation('keychain.status', async () => keychainStatus()),
   'keychain.set-anthropic': defineOperation('keychain.set-anthropic', async (input) => {
     const stored = await storeAnthropicKey(input.apiKey);
@@ -614,12 +807,39 @@ export const operationRegistry = {
     const status = await keychainStatus();
     return { stored, status };
   }),
+  'keychain.set-gemini': defineOperation('keychain.set-gemini', async (input) => {
+    const stored = await storeGeminiKey(input.apiKey);
+    const status = await keychainStatus();
+    return { stored, status };
+  }),
+  'keychain.set-openai': defineOperation('keychain.set-openai', async (input) => {
+    const stored = await storeOpenaiKey(input.apiKey);
+    const status = await keychainStatus();
+    return { stored, status };
+  }),
+  'keychain.set-opencode-zen': defineOperation('keychain.set-opencode-zen', async (input) => {
+    const stored = await storeOpencodeZenKey(input.apiKey);
+    const status = await keychainStatus();
+    return { stored, status };
+  }),
   'keychain.delete-anthropic': defineOperation('keychain.delete-anthropic', async () => {
     await deleteAnthropicKey();
     return { deleted: true, status: await keychainStatus() };
   }),
   'keychain.delete-lmx': defineOperation('keychain.delete-lmx', async () => {
     await deleteLmxKey();
+    return { deleted: true, status: await keychainStatus() };
+  }),
+  'keychain.delete-gemini': defineOperation('keychain.delete-gemini', async () => {
+    await deleteGeminiKey();
+    return { deleted: true, status: await keychainStatus() };
+  }),
+  'keychain.delete-openai': defineOperation('keychain.delete-openai', async () => {
+    await deleteOpenaiKey();
+    return { deleted: true, status: await keychainStatus() };
+  }),
+  'keychain.delete-opencode-zen': defineOperation('keychain.delete-opencode-zen', async () => {
+    await deleteOpencodeZenKey();
     return { deleted: true, status: await keychainStatus() };
   }),
 } satisfies { [K in OperationId]: OperationRegistryEntry<K> };

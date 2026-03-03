@@ -48,7 +48,7 @@ describe('applyOnboardingProfile autodiscovery defaults', () => {
     expect(mocks.saveConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         'connection.host': 'mono512.local',
-        'connection.port': 1234,
+        'connection.port': '1234',
       })
     );
   });
@@ -61,7 +61,7 @@ describe('applyOnboardingProfile autodiscovery defaults', () => {
     expect(mocks.saveConfig).toHaveBeenCalledWith(
       expect.objectContaining({
         'connection.host': 'localhost',
-        'connection.port': 1234,
+        'connection.port': '1234',
       })
     );
   });

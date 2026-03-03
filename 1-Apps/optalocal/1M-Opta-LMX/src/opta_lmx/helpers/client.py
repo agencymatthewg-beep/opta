@@ -58,9 +58,14 @@ class HelperNodeClient:
         self._last_check_at: float = 0.0
         self._last_error: str | None = None
         self.circuit_breaker = CircuitBreaker()
-        logger.info("helper_node_created", extra={
-            "url": config.url, "model": config.model, "timeout": config.timeout_sec,
-        })
+        logger.info(
+            "helper_node_created",
+            extra={
+                "url": config.url,
+                "model": config.model,
+                "timeout": config.timeout_sec,
+            },
+        )
 
     @property
     def url(self) -> str:
@@ -117,11 +122,14 @@ class HelperNodeClient:
             self.circuit_breaker.record_success()
 
             embeddings = [item["embedding"] for item in data["data"]]
-            logger.info("helper_node_embed_success", extra={
-                "url": self._config.url,
-                "count": len(texts),
-                "dimensions": len(embeddings[0]) if embeddings else 0,
-            })
+            logger.info(
+                "helper_node_embed_success",
+                extra={
+                    "url": self._config.url,
+                    "count": len(texts),
+                    "dimensions": len(embeddings[0]) if embeddings else 0,
+                },
+            )
             return embeddings
         except Exception as e:
             self._healthy = False
@@ -129,11 +137,14 @@ class HelperNodeClient:
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
             self.circuit_breaker.record_failure()
-            logger.error("helper_node_embed_failed", extra={
-                "url": self._config.url,
-                "error": str(e),
-                "fallback": self._config.fallback,
-            })
+            logger.error(
+                "helper_node_embed_failed",
+                extra={
+                    "url": self._config.url,
+                    "error": str(e),
+                    "fallback": self._config.fallback,
+                },
+            )
             raise HelperNodeError(
                 f"Helper node embedding failed at {self._config.url}: {e}",
                 fallback=self._config.fallback,
@@ -183,12 +194,20 @@ class HelperNodeClient:
             self._latencies.append(time.monotonic() - start)
             self.circuit_breaker.record_success()
 
-            results = data.get("results", [])
-            logger.info("helper_node_rerank_success", extra={
-                "url": self._config.url,
-                "doc_count": len(documents),
-                "result_count": len(results),
-            })
+            raw_results = data.get("results", [])
+            results: list[dict[str, Any]] = []
+            if isinstance(raw_results, list):
+                for item in raw_results:
+                    if isinstance(item, dict):
+                        results.append(item)
+            logger.info(
+                "helper_node_rerank_success",
+                extra={
+                    "url": self._config.url,
+                    "doc_count": len(documents),
+                    "result_count": len(results),
+                },
+            )
             return results
         except Exception as e:
             self._healthy = False
@@ -196,11 +215,14 @@ class HelperNodeClient:
             self._last_error = str(e)
             self._latencies.append(time.monotonic() - start)
             self.circuit_breaker.record_failure()
-            logger.error("helper_node_rerank_failed", extra={
-                "url": self._config.url,
-                "error": str(e),
-                "fallback": self._config.fallback,
-            })
+            logger.error(
+                "helper_node_rerank_failed",
+                extra={
+                    "url": self._config.url,
+                    "error": str(e),
+                    "fallback": self._config.fallback,
+                },
+            )
             raise HelperNodeError(
                 f"Helper node reranking failed at {self._config.url}: {e}",
                 fallback=self._config.fallback,
@@ -238,9 +260,7 @@ class HelperNodeClient:
             p95_latency = avg_latency
 
         success_rate = (
-            self._success_count / self._total_requests * 100
-            if self._total_requests > 0
-            else 100.0
+            self._success_count / self._total_requests * 100 if self._total_requests > 0 else 100.0
         )
 
         return {

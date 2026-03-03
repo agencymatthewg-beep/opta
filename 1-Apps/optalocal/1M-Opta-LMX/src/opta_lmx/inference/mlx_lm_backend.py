@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +77,8 @@ class MLXLMBackend:
             except Exception as exc:  # pragma: no cover - import failure path depends on env
                 raise RuntimeError(f"mlx-lm backend unavailable: {exc}") from exc
 
-            model, tokenizer = await asyncio.to_thread(mlx_load, self._model_id)
+            loaded = cast(tuple[Any, Any], await asyncio.to_thread(mlx_load, self._model_id))
+            model, tokenizer = loaded
             self._model = model
             self._tokenizer = tokenizer
             self._generate_fn = mlx_generate
@@ -99,10 +100,14 @@ class MLXLMBackend:
         async with self._draft_load_lock:
             if self._draft_model is not None:
                 return self._draft_model
-            draft_model, draft_tokenizer = await asyncio.to_thread(
-                self._load_fn,
-                self._draft_model_id,
+            draft_loaded = cast(
+                tuple[Any, Any],
+                await asyncio.to_thread(
+                    self._load_fn,
+                    self._draft_model_id,
+                ),
             )
+            draft_model, draft_tokenizer = draft_loaded
             self._draft_model = draft_model
             self._draft_tokenizer = draft_tokenizer
             return self._draft_model
@@ -132,6 +137,7 @@ class MLXLMBackend:
 
         prompt = _messages_to_prompt(messages)
         from mlx_lm.sample_utils import make_sampler
+
         sampler = make_sampler(temp=temperature, top_p=top_p)
         generate_kwargs: dict[str, Any] = {
             "prompt": prompt,
@@ -217,10 +223,7 @@ class MLXLMBackend:
 
                     generation_tokens = getattr(response, "generation_tokens", None)
                     new_tokens = 0
-                    if (
-                        isinstance(generation_tokens, int)
-                        and generation_tokens > generated_seen
-                    ):
+                    if isinstance(generation_tokens, int) and generation_tokens > generated_seen:
                         new_tokens = generation_tokens - generated_seen
                         generated_seen = generation_tokens
 

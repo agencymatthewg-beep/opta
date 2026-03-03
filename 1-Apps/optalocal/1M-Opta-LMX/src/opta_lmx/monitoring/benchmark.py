@@ -144,10 +144,13 @@ class BenchmarkStore:
         with open(self._persist_path, "w") as f:
             json.dump(data, f, indent=2)
 
-        logger.info("benchmarks_saved", extra={
-            "path": str(self._persist_path),
-            "suites": len(self._suites),
-        })
+        logger.info(
+            "benchmarks_saved",
+            extra={
+                "path": str(self._persist_path),
+                "suites": len(self._suites),
+            },
+        )
 
     def load(self) -> int:
         """Load benchmark results from JSON. Returns count of suites loaded."""
@@ -165,18 +168,20 @@ class BenchmarkStore:
                 completed_at=suite_data.get("completed_at", 0),
             )
             for run_data in suite_data.get("runs", []):
-                suite.runs.append(BenchmarkRun(
-                    model_id=run_data["model_id"],
-                    prompt_name=run_data.get("prompt_name", "unknown"),
-                    prompt="",  # Don't store full prompts
-                    max_tokens=run_data.get("max_tokens", 128),
-                    tokens_generated=run_data["tokens_generated"],
-                    time_to_first_token_ms=run_data["time_to_first_token_ms"],
-                    total_time_ms=run_data["total_time_ms"],
-                    tokens_per_second=run_data["tokens_per_second"],
-                    temperature=run_data.get("temperature", 0.7),
-                    timestamp=run_data.get("timestamp", 0),
-                ))
+                suite.runs.append(
+                    BenchmarkRun(
+                        model_id=run_data["model_id"],
+                        prompt_name=run_data.get("prompt_name", "unknown"),
+                        prompt="",  # Don't store full prompts
+                        max_tokens=run_data.get("max_tokens", 128),
+                        tokens_generated=run_data["tokens_generated"],
+                        time_to_first_token_ms=run_data["time_to_first_token_ms"],
+                        total_time_ms=run_data["total_time_ms"],
+                        tokens_per_second=run_data["tokens_per_second"],
+                        temperature=run_data.get("temperature", 0.7),
+                        timestamp=run_data.get("timestamp", 0),
+                    )
+                )
             self._suites.append(suite)
 
         return len(self._suites)
@@ -320,9 +325,7 @@ class BenchmarkResultStore:
         results: list[BenchmarkResult] = []
         for path in sorted(self._dir.glob("*.json")):
             try:
-                result = BenchmarkResult.model_validate_json(
-                    path.read_text(encoding="utf-8")
-                )
+                result = BenchmarkResult.model_validate_json(path.read_text(encoding="utf-8"))
                 if model_id is None or result.model_id == model_id:
                     results.append(result)
             except Exception:

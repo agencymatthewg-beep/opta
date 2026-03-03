@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml  # type: ignore[import-untyped]
+import yaml
 
 from opta_lmx.inference.schema import ChatCompletionRequest
 
@@ -114,8 +114,14 @@ class PresetManager:
 
         # F4: Extended parameter list — covers all tunable inference fields
         for param_key in (
-            "temperature", "top_p", "max_tokens", "stop",
-            "frequency_penalty", "presence_penalty", "response_format", "num_ctx",
+            "temperature",
+            "top_p",
+            "max_tokens",
+            "stop",
+            "frequency_penalty",
+            "presence_penalty",
+            "response_format",
+            "num_ctx",
         ):
             request_val = getattr(request, param_key, None)
             preset_val = params.get(param_key)

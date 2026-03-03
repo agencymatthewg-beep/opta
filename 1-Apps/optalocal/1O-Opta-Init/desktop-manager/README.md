@@ -1,6 +1,6 @@
 # Opta Init Desktop Manager
 
-This is the Tauri native application for Opta Init. It serves as the "Core Cluster" dashboard for managing the entire Opta Local stack on macOS and Windows. 
+This is the Tauri native application for the Opta Initializer runtime (Opta Init). It serves as the "Core Cluster" dashboard for managing the entire Opta Local stack on macOS and Windows. 
 
 > **Note on Architecture:** This desktop application is distributed via the web landing page located at the root of `1O-Opta-Init`. The website (`init.optalocal.com`) serves as the marketing and download portal, while this `desktop-manager` directory contains the actual Rust/Tauri source code for the tool users install.
 

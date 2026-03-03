@@ -14,7 +14,9 @@ from opta_lmx.main import create_app
 
 @pytest.fixture
 async def anthropic_client(
-    mock_engine, mock_model_manager, tmp_path,
+    mock_engine,
+    mock_model_manager,
+    tmp_path,
 ) -> AsyncIterator[AsyncClient]:
     """Test client with mock engine for Anthropic endpoint tests."""
     from opta_lmx.config import RoutingConfig
@@ -49,16 +51,21 @@ class TestAnthropicNonStreaming:
 
     @pytest.mark.asyncio
     async def test_basic_response_shape(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """Response matches Anthropic Messages format."""
         await mock_engine.load_model("test-model")
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -74,16 +81,21 @@ class TestAnthropicNonStreaming:
 
     @pytest.mark.asyncio
     async def test_usage_fields(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """Usage has input_tokens and output_tokens (not prompt/completion)."""
         await mock_engine.load_model("test-model")
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         data = response.json()
         assert "usage" in data
@@ -95,30 +107,39 @@ class TestAnthropicNonStreaming:
 
     @pytest.mark.asyncio
     async def test_system_prompt(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """System field is accepted as top-level parameter."""
         await mock_engine.load_model("test-model")
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "system": "You are a helpful assistant.",
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "system": "You are a helpful assistant.",
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_model_not_loaded(
-        self, anthropic_client: AsyncClient,
+        self,
+        anthropic_client: AsyncClient,
     ) -> None:
         """Unloaded model returns 404 in Anthropic error format."""
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "nonexistent-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "nonexistent-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -131,17 +152,22 @@ class TestAnthropicStreaming:
 
     @pytest.mark.asyncio
     async def test_streaming_event_types(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """Streaming returns correct SSE event sequence."""
         await mock_engine.load_model("test-model")
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-            "stream": True,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+                "stream": True,
+            },
+        )
 
         assert response.status_code == 200
         assert "text/event-stream" in response.headers["content-type"]
@@ -161,17 +187,22 @@ class TestAnthropicStreaming:
 
     @pytest.mark.asyncio
     async def test_streaming_message_start_shape(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """message_start event contains proper message structure."""
         await mock_engine.load_model("test-model")
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-            "stream": True,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+                "stream": True,
+            },
+        )
 
         # Find message_start data
         lines = response.text.split("\n")
@@ -190,7 +221,9 @@ class TestAnthropicPresetAndRouting:
 
     @pytest.mark.asyncio
     async def test_preset_resolves_model(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """preset:name model references are resolved to the preset's model."""
         from opta_lmx.presets.manager import Preset
@@ -205,11 +238,14 @@ class TestAnthropicPresetAndRouting:
         )
         anthropic_client._transport.app.state.preset_manager._presets["my-preset"] = preset
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "preset:my-preset",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "preset:my-preset",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 200
         data = response.json()
@@ -217,14 +253,18 @@ class TestAnthropicPresetAndRouting:
 
     @pytest.mark.asyncio
     async def test_preset_not_found(
-        self, anthropic_client: AsyncClient,
+        self,
+        anthropic_client: AsyncClient,
     ) -> None:
         """Unknown preset returns 404."""
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "preset:nonexistent",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "preset:nonexistent",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 404
         data = response.json()
@@ -232,7 +272,9 @@ class TestAnthropicPresetAndRouting:
 
     @pytest.mark.asyncio
     async def test_alias_routing(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """Alias model names are resolved via TaskRouter."""
         from opta_lmx.config import RoutingConfig
@@ -243,17 +285,22 @@ class TestAnthropicPresetAndRouting:
         routing_config = RoutingConfig(aliases={"chat": ["preferred-model"]})
         anthropic_client._transport.app.state.router.update_config(routing_config)
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "chat",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "chat",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 200
 
     @pytest.mark.asyncio
     async def test_preset_system_prompt(
-        self, anthropic_client: AsyncClient, mock_engine,
+        self,
+        anthropic_client: AsyncClient,
+        mock_engine,
     ) -> None:
         """Preset system prompt is used when request has no system field."""
         from opta_lmx.presets.manager import Preset
@@ -267,10 +314,13 @@ class TestAnthropicPresetAndRouting:
         )
         anthropic_client._transport.app.state.preset_manager._presets["sys-preset"] = preset
 
-        response = await anthropic_client.post("/v1/messages", json={
-            "model": "preset:sys-preset",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "max_tokens": 100,
-        })
+        response = await anthropic_client.post(
+            "/v1/messages",
+            json={
+                "model": "preset:sys-preset",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "max_tokens": 100,
+            },
+        )
 
         assert response.status_code == 200

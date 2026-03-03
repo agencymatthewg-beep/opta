@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Opta Models Page - Prototype 1 (Deep Obsidian)</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --opta-bg: #09090b;
+      --opta-surface: #0c0c12;
+      --opta-primary: #8b5cf6;
+      --opta-primary-glow: #a855f7;
+      --opta-glass-bg: rgba(10, 10, 10, 0.65);
+      --opta-glass-border: rgba(255, 255, 255, 0.08);
+      --text: #fafafa;
+      --text-soft: #a1a1aa;
+    }
+    body {
+      background: var(--opta-bg);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      padding: 2rem;
+      margin: 0;
+    }
+    .models-page { max-width: 800px; margin: 0 auto; display: grid; gap: 1.5rem; }
+    
+    /* Global Section Header */
+    h3 { font-family: 'Sora', sans-serif; font-size: 1rem; color: #fff; display: flex; align-items: center; gap: 8px; margin: 0 0 1rem 0; }
+    
+    /* Memory Bar */
+    .models-memory {
+      background: var(--opta-glass-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--opta-glass-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    .memory-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+    .memory-pct { font-size: 1.5rem; color: var(--opta-primary-glow); font-weight: 700; text-shadow: 0 0 15px rgba(168,85,247,0.5); }
+    .memory-bar-container { height: 12px; background: rgba(255,255,255,0.05); border-radius: 99px; overflow: hidden; box-shadow: inset 0 2px 4px rgba(0,0,0,0.5); margin-bottom: 0.5rem; }
+    .memory-bar-fill { height: 100%; width: 75%; background: linear-gradient(90deg, var(--opta-primary), var(--opta-primary-glow)); border-radius: 99px; box-shadow: 0 0 10px var(--opta-primary-glow); position: relative; }
+    .memory-label { font-size: 0.8rem; color: var(--text-soft); }
+
+    /* Advanced Tools */
+    .models-tools {
+      background: var(--opta-glass-bg);
+      backdrop-filter: blur(8px);
+      border: 1px solid var(--opta-glass-border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    .tools-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+    .action-btn {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: var(--text);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 0.6rem 1.25rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .action-btn:hover { background: rgba(168,85,247,0.15); border-color: var(--opta-primary); box-shadow: 0 0 15px rgba(168,85,247,0.2); }
+  </style>
+</head>
+<body>
+  <div class="models-page">
+    <div class="models-memory">
+      <div class="memory-header">
+        <h3>Unified Memory</h3>
+        <span class="memory-pct">75%</span>
+      </div>
+      <div class="memory-bar-container">
+        <div class="memory-bar-fill"></div>
+      </div>
+      <div class="memory-label">24.0 GB used of 32.0 GB total</div>
+    </div>
+
+    <div class="models-tools">
+      <h3>Advanced Model Controls</h3>
+      <div class="tools-row">
+        <button class="action-btn">Run History</button>
+        <button class="action-btn">Run Health Check</button>
+        <button class="action-btn">Full Scan</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

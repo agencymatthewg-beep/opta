@@ -108,6 +108,7 @@ If `npm run -s start` exits during startup, the usual cause is: no reachable LMX
 - Prefer `opta tui` (or `npm run dev -- tui`) for interactive local testing.
 - Configure LMX endpoint(s): `connection.host` and optional `connection.fallbackHosts`.
 - If you want cloud fallback when LMX is unavailable, set `ANTHROPIC_API_KEY`.
+- For in-session diagnostics, run `/debug` (quick snapshot) then `/doctor` for full checks.
 
 ## Features
 

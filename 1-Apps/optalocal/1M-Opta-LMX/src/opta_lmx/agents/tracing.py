@@ -66,7 +66,7 @@ class OpenTelemetryTracer:
     def __init__(self, *, service_name: str = "opta-lmx") -> None:
         self._tracer = None
         try:
-            from opentelemetry import trace  # type: ignore[import-not-found]
+            from opentelemetry import trace
 
             self._tracer = trace.get_tracer(f"{service_name}.agents")
         except Exception:
@@ -106,11 +106,11 @@ class AuditEvent:
     """Actor-level audit event for governance and compliance."""
 
     timestamp: float = field(default_factory=time.time)
-    actor: str = ""           # "user", "agent:<role>", "service:<name>", "system"
-    action: str = ""          # "run_created", "run_cancelled", "skill_executed", "approval_granted"
-    resource_type: str = ""   # "agent_run", "skill", "model"
-    resource_id: str = ""     # run_id or skill_name
-    trace_id: str = ""        # From traceparent
+    actor: str = ""  # "user", "agent:<role>", "service:<name>", "system"
+    action: str = ""  # "run_created", "run_cancelled", "skill_executed", "approval_granted"
+    resource_type: str = ""  # "agent_run", "skill", "model"
+    resource_id: str = ""  # run_id or skill_name
+    trace_id: str = ""  # From traceparent
     details: dict[str, str] = field(default_factory=dict)
 
 
@@ -130,7 +130,7 @@ class AuditTrail:
         with self._lock:
             self._events.append(event)
             if len(self._events) > self._max_events:
-                self._events = self._events[-self._max_events:]
+                self._events = self._events[-self._max_events :]
             if self._persist_path:
                 self._write_to_disk()
 
@@ -168,10 +168,15 @@ class AuditTrail:
             if isinstance(data, list):
                 for item in data:
                     if isinstance(item, dict):
-                        self._events.append(AuditEvent(**{
-                            k: v for k, v in item.items()
-                            if k in AuditEvent.__dataclass_fields__
-                        }))
+                        self._events.append(
+                            AuditEvent(
+                                **{
+                                    k: v
+                                    for k, v in item.items()
+                                    if k in AuditEvent.__dataclass_fields__
+                                }
+                            )
+                        )
         except Exception:
             logger.warning("audit_trail_load_failed")
 
@@ -180,6 +185,7 @@ class AuditTrail:
         if not self._persist_path:
             return
         import dataclasses
+
         payload = [dataclasses.asdict(e) for e in self._events]
         self._persist_path.parent.mkdir(parents=True, exist_ok=True)
         temp = self._persist_path.with_suffix(".tmp")

@@ -364,8 +364,13 @@ class TestEventCategory:
     def test_all_values(self) -> None:
         values = {e.value for e in EventCategory}
         expected = {
-            "inference", "model_lifecycle", "admin",
-            "agent", "skill", "security", "system",
+            "inference",
+            "model_lifecycle",
+            "admin",
+            "agent",
+            "skill",
+            "security",
+            "system",
         }
         assert values == expected
 

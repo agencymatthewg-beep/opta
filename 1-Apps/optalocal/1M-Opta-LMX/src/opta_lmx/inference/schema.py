@@ -93,7 +93,9 @@ class ChatCompletionRequest(BaseModel):
     presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
     # F5: Per-request context window override (Ollama-compatible)
     num_ctx: int | None = Field(
-        None, ge=512, le=131072,
+        None,
+        ge=512,
+        le=131072,
         description=(
             "Override the model's context window for this request. "
             "Trims conversation to fit within this budget. "
@@ -465,16 +467,20 @@ class AdminDownloadRequest(BaseModel):
     """Request to download a model from HuggingFace."""
 
     repo_id: str = Field(
-        ..., description="HuggingFace repo ID (e.g., 'mlx-community/Mistral-7B-Instruct-4bit')",
+        ...,
+        description="HuggingFace repo ID (e.g., 'mlx-community/Mistral-7B-Instruct-4bit')",
     )
     revision: str | None = Field(
-        None, description="Git revision (branch, tag, or commit SHA)",
+        None,
+        description="Git revision (branch, tag, or commit SHA)",
     )
     allow_patterns: list[str] | None = Field(
-        None, description="Only download files matching these globs",
+        None,
+        description="Only download files matching these globs",
     )
     ignore_patterns: list[str] | None = Field(
-        None, description="Skip files matching these globs",
+        None,
+        description="Skip files matching these globs",
     )
 
 

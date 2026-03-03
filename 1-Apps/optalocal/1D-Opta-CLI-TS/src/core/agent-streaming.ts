@@ -168,6 +168,7 @@ async function maybeCreateLmxWsStream(
         fallbackHosts: transport.config.connection.fallbackHosts,
         port: transport.config.connection.port,
         adminKey: transport.config.connection.adminKey,
+    adminKeysByHost: transport.config.connection.adminKeysByHost,
       },
       { timeoutMs: 1_500 }
     );

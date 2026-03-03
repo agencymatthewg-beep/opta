@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from httpx import AsyncClient, ASGITransport
+from httpx import ASGITransport, AsyncClient
 
 from opta_lmx.config import LMXConfig, RoutingConfig
 from opta_lmx.inference.embedding_engine import EmbeddingEngine
@@ -21,7 +21,7 @@ async def _setup_rate_limited_client(
     mock_engine: InferenceEngine,
     mock_model_manager: ModelManager,
     tmp_path,
-    limit: str = "2/minute"
+    limit: str = "2/minute",
 ) -> AsyncClient:
     """Setup a client with rate limiting enabled and a specific limit."""
     config = LMXConfig()
@@ -29,9 +29,9 @@ async def _setup_rate_limited_client(
     config.security.rate_limit.default_limit = limit
     config.security.rate_limit.chat_completions_limit = limit
     config.security.inference_api_key = "valid-key"
-    
+
     test_app = create_app(config)
-    
+
     # We must properly initialize the app state just like in conftest.py
     test_app.state.engine = mock_engine
     test_app.state.memory_monitor = MemoryMonitor(max_percent=90)
@@ -54,7 +54,7 @@ async def _setup_rate_limited_client(
 
     # Actually mock a loaded model in the engine so the route can proceed
     await mock_engine.load_model("test-model")
-    
+
     return AsyncClient(transport=ASGITransport(app=test_app), base_url="http://test")
 
 
@@ -62,30 +62,36 @@ async def _setup_rate_limited_client(
 async def test_rate_limit_exceeded(mock_engine, mock_model_manager, tmp_path):
     """Test that exceeding the rate limit returns a 429 Too Many Requests."""
     from opta_lmx.api.rate_limit import SLOWAPI_AVAILABLE
+
     if not SLOWAPI_AVAILABLE:
         pytest.skip("slowapi is not installed")
 
-    client = await _setup_rate_limited_client(mock_engine, mock_model_manager, tmp_path, limit="2/minute")
-    
+    client = await _setup_rate_limited_client(
+        mock_engine,
+        mock_model_manager,
+        tmp_path,
+        limit="2/minute",
+    )
+
     headers = {"Authorization": "Bearer valid-key"}
     payload = {
         "model": "test-model",
-        "messages": [{"role": "user", "content": "Hello"}]
+        "messages": [{"role": "user", "content": "Hello"}],
     }
-    
+
     # Request 1: OK
     resp1 = await client.post("/v1/chat/completions", json=payload, headers=headers)
     assert resp1.status_code != 429, f"Got unexpected 429: {resp1.json()}"
-    
+
     # Request 2: OK
     resp2 = await client.post("/v1/chat/completions", json=payload, headers=headers)
     assert resp2.status_code != 429, f"Got unexpected 429: {resp2.json()}"
-    
+
     # Request 3: Exceeds rate limit
     resp3 = await client.post("/v1/chat/completions", json=payload, headers=headers)
     assert resp3.status_code == 429
     assert "Rate limit exceeded" in resp3.json()["error"]
-    
+
     await client.aclose()
 
 
@@ -93,27 +99,37 @@ async def test_rate_limit_exceeded(mock_engine, mock_model_manager, tmp_path):
 async def test_invalid_auth_rejected_before_rate_limit(mock_engine, mock_model_manager, tmp_path):
     """Test that invalid auth is rejected (401) without consuming the rate limit."""
     from opta_lmx.api.rate_limit import SLOWAPI_AVAILABLE
+
     if not SLOWAPI_AVAILABLE:
         pytest.skip("slowapi is not installed")
 
     # Limit is 1/minute
-    client = await _setup_rate_limited_client(mock_engine, mock_model_manager, tmp_path, limit="1/minute")
-    
+    client = await _setup_rate_limited_client(
+        mock_engine,
+        mock_model_manager,
+        tmp_path,
+        limit="1/minute",
+    )
+
     valid_headers = {"Authorization": "Bearer valid-key"}
     invalid_headers = {"Authorization": "Bearer bad-key"}
     payload = {
         "model": "test-model",
-        "messages": [{"role": "user", "content": "Hello"}]
+        "messages": [{"role": "user", "content": "Hello"}],
     }
-    
+
     # Send 5 requests with invalid auth, should all return 401
     for _ in range(5):
-        resp_invalid = await client.post("/v1/chat/completions", json=payload, headers=invalid_headers)
+        resp_invalid = await client.post(
+            "/v1/chat/completions",
+            json=payload,
+            headers=invalid_headers,
+        )
         assert resp_invalid.status_code == 401
-    
-    # The valid request should still pass since the invalid ones didn't hit the route and trigger the limiter
+
+    # The valid request should still pass; invalid auth fails before limiter checks.
     resp_valid = await client.post("/v1/chat/completions", json=payload, headers=valid_headers)
     assert resp_valid.status_code != 429
     assert resp_valid.status_code == 200
-    
+
     await client.aclose()

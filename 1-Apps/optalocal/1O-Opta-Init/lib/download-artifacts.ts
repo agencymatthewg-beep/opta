@@ -23,7 +23,11 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
         platformKeys: ["darwin-aarch64", "darwin-x86_64"],
         fallbackUrl: "/downloads/opta-init/latest/opta-init-mac.dmg",
       },
-      windows: null,
+      windows: {
+        manifestUrl: "/desktop-updates/beta.json",
+        platformKeys: ["windows-x86_64"],
+        fallbackUrl: null,
+      },
     },
   },
 };
@@ -81,12 +85,19 @@ async function findManifestAsset(
 
 function labelFor(url: string | null, available: boolean) {
   if (!url || !available) return "Coming Soon";
-  if (url.endsWith(".pkg") || url.endsWith(".dmg")) return "Installer Ready";
+  if (
+    url.endsWith(".pkg") ||
+    url.endsWith(".dmg") ||
+    url.endsWith(".exe") ||
+    url.endsWith(".msi") ||
+    url.endsWith(".zip")
+  )
+    return "Installer Ready";
   return "Package Ready";
 }
 
 function isInstallerAsset(url: string) {
-  return url.endsWith(".pkg") || url.endsWith(".dmg");
+  return url.endsWith(".pkg") || url.endsWith(".dmg") || url.endsWith(".exe") || url.endsWith(".msi") || url.endsWith(".zip");
 }
 
 async function resolvePlatformAvailability(

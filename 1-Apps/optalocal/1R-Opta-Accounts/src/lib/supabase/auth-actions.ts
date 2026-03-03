@@ -79,6 +79,32 @@ export async function signInWithApple(redirectAfter?: string) {
 }
 
 /**
+ * GitHub OAuth — redirects to GitHub consent screen.
+ */
+export async function signInWithGithub(redirectAfter?: string) {
+  const supabase = await createClient();
+  if (!supabase) throw new Error('Supabase is not configured');
+
+  const callbackUrl = new URL(
+    '/auth/callback',
+    process.env.NEXT_PUBLIC_SITE_URL,
+  );
+  if (redirectAfter) {
+    callbackUrl.searchParams.set('next', redirectAfter);
+  }
+
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: 'github',
+    options: {
+      redirectTo: callbackUrl.toString(),
+      scopes: 'repo user:email read:org',
+    },
+  });
+  if (error) throw error;
+  if (data.url) redirect(data.url);
+}
+
+/**
  * Email/phone + password sign-in.
  */
 export async function signInWithPassword(

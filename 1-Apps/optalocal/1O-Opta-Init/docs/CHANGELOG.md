@@ -1,5 +1,29 @@
 # Opta Init — Changelog
 
+## [1.1.1] - 2026-03-03 ✅ Docs Hygiene + Promotion Governance
+
+### Added
+
+- Added promotion matrix + stable-readiness gate script:
+  - `scripts/promotion-status-report.mjs`
+- Added CI publication of promotion status artifact:
+  - `opta-init-promotion-status` from `/.github/workflows/opta-init-release-manifest-checks.yml`
+
+### Changed
+
+- Added conditional stable hard-gate in release-manifest CI:
+  - runs `npm run validate:stable-promotion` when stable feed files change.
+- Archived superseded install-gap audit document to:
+  - `docs/archive/2026-02/AUDIT-2026-02-28-DEVICE-INSTALL-GAPS.md`
+- Updated active docs (`INDEX`, `WORKFLOWS`, `ROADMAP`, `GO-LIVE-CHECKLIST`) to reflect current promotion system and live known gaps.
+
+### Added (Follow-up)
+
+- Added active-docs reference validator:
+  - `scripts/validate-docs-references.mjs`
+- Added docs consistency CI workflow:
+  - `/.github/workflows/opta-init-docs-checks.yml`
+
 ## [1.1.0] - 2026-03-02 ✅ Release Control Plane Contract
 
 ### Added

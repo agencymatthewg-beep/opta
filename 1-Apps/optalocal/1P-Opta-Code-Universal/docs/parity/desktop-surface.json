@@ -1,0 +1,280 @@
+{
+  "generatedAt": "2026-03-03T20:55:53.540Z",
+  "source": {
+    "desktopRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal",
+    "cliRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
+    "cliSurfacePath": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS/docs/parity/cli-surface.json",
+    "desktopSurfacePath": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/docs/parity/desktop-surface.json"
+  },
+  "desktop": {
+    "sessionModes": [
+      "chat",
+      "do",
+      "plan",
+      "research",
+      "review"
+    ],
+    "sessionOverrideKeys": [
+      "auto",
+      "autonomyLevel",
+      "autonomyMode",
+      "dangerous",
+      "format",
+      "model",
+      "noCheckpoints",
+      "noCommit",
+      "provider"
+    ],
+    "cliOperationScopes": [
+      "account.*",
+      "benchmark",
+      "completions.generate",
+      "config.*",
+      "daemon.*",
+      "diff",
+      "doctor",
+      "embed",
+      "env.*",
+      "init.run",
+      "key.*",
+      "keychain.*",
+      "mcp.*",
+      "models.*",
+      "onboard.apply",
+      "rerank",
+      "serve.*",
+      "sessions.*",
+      "update.run",
+      "version.check"
+    ],
+    "hasOperationCatalogParitySignal": true,
+    "commandCoverage": [
+      {
+        "command": "account",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated account controls page."
+      },
+      {
+        "command": "benchmark",
+        "status": "covered",
+        "required": true,
+        "rationale": "Available through CLI Operations page."
+      },
+      {
+        "command": "ceo-bench",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Autonomy benchmarking is represented through benchmark operations and runtime/autonomy telemetry."
+      },
+      {
+        "command": "chat",
+        "status": "covered",
+        "required": true,
+        "rationale": "Main session runtime in desktop timeline."
+      },
+      {
+        "command": "completions",
+        "status": "covered",
+        "required": true,
+        "rationale": "completions.generate available via CLI Operations page."
+      },
+      {
+        "command": "config",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated Config Studio page."
+      },
+      {
+        "command": "daemon",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated daemon panel + daemon.* operations."
+      },
+      {
+        "command": "diff",
+        "status": "covered",
+        "required": true,
+        "rationale": "diff operation available via CLI Operations page."
+      },
+      {
+        "command": "do",
+        "status": "covered",
+        "required": true,
+        "rationale": "Do mode supported in composer + submit API."
+      },
+      {
+        "command": "doctor",
+        "status": "covered",
+        "required": true,
+        "rationale": "doctor operation available via CLI Operations page."
+      },
+      {
+        "command": "embed",
+        "status": "covered",
+        "required": true,
+        "rationale": "Available through CLI Operations page."
+      },
+      {
+        "command": "env",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated Environment Profiles page (env.*)."
+      },
+      {
+        "command": "init",
+        "status": "covered",
+        "required": true,
+        "rationale": "init.run available via CLI Operations page."
+      },
+      {
+        "command": "key",
+        "status": "covered",
+        "required": true,
+        "rationale": "Exposed in account/local key controls."
+      },
+      {
+        "command": "keychain",
+        "status": "covered",
+        "required": true,
+        "rationale": "keychain.* operations available."
+      },
+      {
+        "command": "mcp",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated MCP management page (mcp.*)."
+      },
+      {
+        "command": "memory",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Session persistence and recovery semantics are represented through timeline + sessions operations."
+      },
+      {
+        "command": "models",
+        "status": "covered",
+        "required": true,
+        "rationale": "Dedicated Models page + models.* operations."
+      },
+      {
+        "command": "onboard",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Setup wizard + onboard.apply operation, not full TTY wizard parity."
+      },
+      {
+        "command": "rerank",
+        "status": "covered",
+        "required": true,
+        "rationale": "Available through CLI Operations page."
+      },
+      {
+        "command": "serve",
+        "status": "covered",
+        "required": true,
+        "rationale": "serve.* operations available via CLI Operations page."
+      },
+      {
+        "command": "server",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Legacy server behavior is adapted through daemon lifecycle + serve controls in desktop."
+      },
+      {
+        "command": "sessions",
+        "status": "covered",
+        "required": true,
+        "rationale": "Session rail + sessions.* operations."
+      },
+      {
+        "command": "setup",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Alias handled by setup wizard + onboard.apply operation."
+      },
+      {
+        "command": "status",
+        "status": "covered",
+        "required": true,
+        "rationale": "Model + daemon status are available in dedicated pages."
+      },
+      {
+        "command": "tui",
+        "status": "adapted",
+        "required": true,
+        "rationale": "Desktop replaces terminal TUI; equivalent runtime controls are present."
+      },
+      {
+        "command": "update",
+        "status": "covered",
+        "required": true,
+        "rationale": "update.run available via CLI Operations page."
+      },
+      {
+        "command": "version",
+        "status": "covered",
+        "required": true,
+        "rationale": "version.check operation available."
+      }
+    ],
+    "commandStatusCounts": {
+      "covered": 22,
+      "adapted": 6
+    },
+    "operationScopeCoverage": {
+      "totalCliOperations": 76,
+      "scopedMatches": 75,
+      "unmatched": [
+        "ceo.benchmark"
+      ]
+    }
+  },
+  "checks": {
+    "requiredSessionModes": [
+      "chat",
+      "do",
+      "plan",
+      "review",
+      "research"
+    ],
+    "requiredSessionOverrideKeys": [
+      "model",
+      "provider",
+      "dangerous",
+      "auto",
+      "noCommit",
+      "noCheckpoints",
+      "format"
+    ],
+    "requiredCliOperationScopes": [
+      "doctor",
+      "env.*",
+      "config.*",
+      "account.*",
+      "key.*",
+      "version.check",
+      "completions.generate",
+      "daemon.*",
+      "mcp.*",
+      "serve.*",
+      "sessions.*",
+      "diff",
+      "embed",
+      "rerank",
+      "benchmark",
+      "models.*",
+      "keychain.*"
+    ],
+    "missingRequiredSessionModes": [],
+    "missingRequiredOverrideKeys": [],
+    "missingRequiredScopes": [],
+    "missingRequiredCommands": [],
+    "requiredFailures": [],
+    "pass": true
+  },
+  "serverStance": {
+    "status": "adapted_via_daemon_and_serve",
+    "rationale": "`opta server` runtime behavior is represented in desktop via daemon panel and serve operation controls."
+  }
+}

@@ -382,6 +382,8 @@ describe('LSP tool routing', () => {
     expect(names).toContain('lsp_hover');
     expect(names).toContain('lsp_symbols');
     expect(names).toContain('lsp_document_symbols');
+    expect(names).toContain('lsp_diagnostics');
+    expect(names).toContain('lsp_code_actions');
     expect(names).toContain('lsp_rename');
   });
 
@@ -393,6 +395,8 @@ describe('LSP tool routing', () => {
     const names = registry.schemas.map((s: any) => s.function.name);
     expect(names).not.toContain('lsp_definition');
     expect(names).not.toContain('lsp_references');
+    expect(names).not.toContain('lsp_diagnostics');
+    expect(names).not.toContain('lsp_code_actions');
   });
 
   it('routes lsp_* calls through LspManager instead of Unknown tool', async () => {

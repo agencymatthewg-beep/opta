@@ -52,11 +52,12 @@ Local stack health:
 
 Mono512 (Mac Studio) verification from MacBook control plane:
 - `http://mono512.local:1234/healthz` -> `200`
-- `http://mono512.local:1234/readyz` -> `200`
-- `http://mono512.local:1234/v1/models` -> loaded inference + embedding models
+- `http://mono512.local:1234/readyz` -> `503` (`no models loaded`)
+- `http://mono512.local:1234/v1/models` -> embedding model only
 - CLI check against Mono512:
   - `OPTA_HOST=mono512.local OPTA_PORT=1234 node dist/index.js status --json`
   - Confirmed device identity: `Mono512`, `Apple M3 Ultra`, `512GB RAM`.
+  - Confirmed `models: []` for inference path (not chat-ready yet).
 
 ## Peekaboo E2E Evidence
 Automation method:
@@ -76,12 +77,36 @@ Artifacts:
 
 All Safari-driven `peekaboo app launch ... --open` calls succeeded for the full URL matrix.
 
+## Interactive E2E (Accessibility-enabled)
+- Accessibility permission is now granted for Peekaboo.
+- Executed keyboard-driven interactions across all pages with successful action responses:
+  - Home (`pagedown`)
+  - Init (`pagedown`)
+  - Accounts (`tab x2`)
+  - Status (`end`, `home`)
+  - Help (`pagedown`)
+  - Learn (`pagedown`, `pageup`)
+  - Code (`tab x3`)
+- Artifacts:
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/home.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/init.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/accounts.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/status.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/help.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/learn.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/code.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/lmx-health.png`
+  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/lmx-ready.png`
+
 ## Remaining Constraint
-- `peekaboo` Accessibility permission is not granted in this environment.
-- Screen capture/open flows worked, but coordinate-level click/type interactions are not reliable without granting:
-  - System Settings -> Privacy & Security -> Accessibility -> enable Peekaboo runtime.
+- Mono512 model provisioning is blocked by remote filesystem permissions.
+- Attempted from MacBook control plane:
+  - `opta models download mlx-community/Qwen2.5-0.5B-Instruct-4bit --device mono512.local:1234`
+  - Failure: `Permission denied: /Users/Shared/LMX-Models/gguf/opta-lmx-models/...`
+- This prevents automatic loading of an inference model on Mono512 from this session.
 
 ## Conclusion
 - Opta Local ecosystem runtime endpoints are operational across all local apps.
 - Critical runtime instability uncovered during dev-mode testing was mitigated for reliable operation.
-- MacBook is validated as control/coding plane; inference target verification confirms Mono512 is reachable and model-ready.
+- MacBook is validated as control/coding plane.
+- Mono512 is reachable and admin-accessible, but not inference-ready until model directory permissions are corrected and at least one inference model is downloaded/loaded.

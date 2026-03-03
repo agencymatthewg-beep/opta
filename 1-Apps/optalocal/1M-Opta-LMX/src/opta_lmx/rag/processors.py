@@ -8,11 +8,13 @@ chunking pipeline.
 from __future__ import annotations
 
 import html
+import importlib
 import logging
 import re
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, cast
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,25 @@ _MARKDOWN_LINK_RE = re.compile(r"\[([^\]]+)\]\([^)]+\)")
 _WHITESPACE_COLLAPSE_RE = re.compile(r"\n{3,}")
 _HTML_SCRIPT_STYLE_RE = re.compile(r"<(script|style)[^>]*>.*?</\1>", re.DOTALL | re.IGNORECASE)
 _SPACES_COLLAPSE_RE = re.compile(r"[ \t]+")
+
+
+class _PdfPage(Protocol):
+    """Structural type for pypdf page objects."""
+
+    def extract_text(self) -> str | None:
+        """Extract text from a page."""
+
+
+class _PdfReaderLike(Protocol):
+    """Structural type for pypdf PdfReader."""
+
+    pages: Sequence[_PdfPage]
+
+
+class _PyPdfModule(Protocol):
+    """Structural type for the optional pypdf module."""
+
+    PdfReader: Callable[[str], _PdfReaderLike]
 
 
 @dataclass
@@ -139,7 +160,8 @@ def process_pdf(path: Path) -> ProcessedDocument:
     with a warning if pypdf is not installed.
     """
     try:
-        from pypdf import PdfReader
+        module = cast(_PyPdfModule, importlib.import_module("pypdf"))
+        pdf_reader_cls = module.PdfReader
     except ImportError:
         logger.warning("pypdf_not_installed_cannot_process_pdf")
         return ProcessedDocument(
@@ -150,7 +172,7 @@ def process_pdf(path: Path) -> ProcessedDocument:
         )
 
     try:
-        reader = PdfReader(str(path))
+        reader = pdf_reader_cls(str(path))
         pages: list[str] = []
         for page in reader.pages:
             text = page.extract_text()
@@ -169,9 +191,13 @@ def process_pdf(path: Path) -> ProcessedDocument:
             processor="pdf",
         )
     except Exception as e:
-        logger.error("pdf_processing_failed", extra={
-            "path": str(path), "error": str(e),
-        })
+        logger.error(
+            "pdf_processing_failed",
+            extra={
+                "path": str(path),
+                "error": str(e),
+            },
+        )
         return ProcessedDocument(
             text="",
             metadata={"error": str(e), "filename": path.name},

@@ -62,9 +62,7 @@ class FakeEngine:
     def is_model_loaded(self, model_id: str) -> bool:
         return model_id == self.model
 
-    def get_model_load_snapshot(
-        self, model_ids: list[str] | None = None
-    ) -> dict[str, float]:
+    def get_model_load_snapshot(self, model_ids: list[str] | None = None) -> dict[str, float]:
         return {self.model: 1.0}
 
     async def generate(
@@ -171,9 +169,7 @@ async def test_slo_queue_wait_p95_under_1500ms(tmp_path: Path) -> None:
 
         for _ in range(20):
             t0 = time.monotonic()
-            submitted = await runtime.submit(
-                _make_request(priority=RunPriority.INTERACTIVE)
-            )
+            submitted = await runtime.submit(_make_request(priority=RunPriority.INTERACTIVE))
             submit_times[submitted.id] = t0
             run_ids.append(submitted.id)
 
@@ -253,8 +249,7 @@ async def test_slo_skill_success_rate_above_99_percent() -> None:
 
     success_rate = successes / total
     assert success_rate >= 0.99, (
-        f"Skill success rate {success_rate:.2%} is below 99% SLO "
-        f"({successes}/{total} succeeded)"
+        f"Skill success rate {success_rate:.2%} is below 99% SLO ({successes}/{total} succeeded)"
     )
 
 
@@ -280,9 +275,7 @@ async def test_slo_recovery_time_under_5_seconds(tmp_path: Path) -> None:
 
     # Verify all 20 are persisted in incomplete states
     all_runs = store.list_runs()
-    incomplete_count = sum(
-        1 for r in all_runs if r.status in {RunStatus.RUNNING, RunStatus.QUEUED}
-    )
+    incomplete_count = sum(1 for r in all_runs if r.status in {RunStatus.RUNNING, RunStatus.QUEUED})
     assert incomplete_count == 20
 
     # Now create a new runtime from this state, measuring recovery time
@@ -302,9 +295,7 @@ async def test_slo_recovery_time_under_5_seconds(tmp_path: Path) -> None:
     # All incomplete runs should now be FAILED
     runs = runtime.list()
     failed_count = sum(1 for r in runs if r.status == RunStatus.FAILED)
-    assert failed_count == 20, (
-        f"Expected 20 FAILED runs after recovery, got {failed_count}"
-    )
+    assert failed_count == 20, f"Expected 20 FAILED runs after recovery, got {failed_count}"
 
     # Verify each has the recovery error message
     for run in runs:
@@ -312,9 +303,7 @@ async def test_slo_recovery_time_under_5_seconds(tmp_path: Path) -> None:
             assert run.error is not None
             assert "interrupted" in run.error.lower() or "marked failed" in run.error.lower()
 
-    assert recovery_elapsed < 5.0, (
-        f"Recovery time {recovery_elapsed:.3f}s exceeds 5s SLO"
-    )
+    assert recovery_elapsed < 5.0, f"Recovery time {recovery_elapsed:.3f}s exceeds 5s SLO"
 
 
 @pytest.mark.asyncio
@@ -328,18 +317,14 @@ async def test_slo_interactive_priority_beats_batch(tmp_path: Path) -> None:
     try:
         batch_ids: list[str] = []
         for _ in range(5):
-            submitted = await runtime.submit(
-                _make_request(priority=RunPriority.BATCH)
-            )
+            submitted = await runtime.submit(_make_request(priority=RunPriority.BATCH))
             batch_ids.append(submitted.id)
 
         # Small yield so scheduler picks up initial batch items
         await asyncio.sleep(0.01)
 
         # Submit interactive priority run
-        interactive = await runtime.submit(
-            _make_request(priority=RunPriority.INTERACTIVE)
-        )
+        interactive = await runtime.submit(_make_request(priority=RunPriority.INTERACTIVE))
 
         # Wait for interactive to complete
         interactive_run = await _wait_for_status(
@@ -396,12 +381,9 @@ async def test_slo_concurrent_5_agents_no_starvation(tmp_path: Path) -> None:
 
         # All should reach terminal within 10s
         for rid in run_ids:
-            run = await _wait_for_status(
-                runtime, rid, TERMINAL_RUN_STATES, timeout_sec=10.0
-            )
+            run = await _wait_for_status(runtime, rid, TERMINAL_RUN_STATES, timeout_sec=10.0)
             assert run.status == RunStatus.COMPLETED, (
-                f"Run {rid} ended with {run.status} instead of COMPLETED "
-                f"(error: {run.error})"
+                f"Run {rid} ended with {run.status} instead of COMPLETED (error: {run.error})"
             )
 
         # Verify none stayed QUEUED
@@ -579,8 +561,6 @@ def test_skill_policy_blocks_all_high_risk_without_approval() -> None:
     )
 
     # Execute WITH approval — should succeed
-    result_approved = executor.execute(
-        manifest, arguments={"action": "delete all"}, approved=True
-    )
+    result_approved = executor.execute(manifest, arguments={"action": "delete all"}, approved=True)
     assert result_approved.ok is True
     assert result_approved.denied is False

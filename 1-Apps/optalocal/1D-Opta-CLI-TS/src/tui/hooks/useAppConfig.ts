@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo } from 'react';
-import { DEFAULT_CONFIG } from '../../core/config.js';
+import { DEFAULT_CONFIG, type OptaConfig } from '../../core/config.js';
 import {
   loadKeybindings,
   mergeKeybindings,
@@ -45,6 +45,7 @@ export interface UseAppConfigReturn {
   connectionAutoDiscover: boolean;
   connectionPort: number;
   connectionAdminKey: string | undefined;
+  connectionAdminKeysByHost: Record<string, string>;
   connectionSshUser: string;
   connectionSshIdentityFile: string;
   connectionSshConnectTimeoutSec: number;
@@ -76,6 +77,9 @@ export interface UseAppConfigReturn {
 
   // Reconnect
   reconnectLmx: () => Promise<void>;
+  // Full config snapshot + refresh
+  configSnapshot: OptaConfig;
+  refreshConfig: () => Promise<void>;
 }
 
 export interface UseAppConfigDeps {
@@ -111,6 +115,9 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   );
   const [connectionPort, setConnectionPort] = useState(1234);
   const [connectionAdminKey, setConnectionAdminKey] = useState<string | undefined>(undefined);
+  const [connectionAdminKeysByHost, setConnectionAdminKeysByHost] = useState<Record<string, string>>(
+    {}
+  );
   const [connectionSshUser, setConnectionSshUser] = useState('opta');
   const [connectionSshIdentityFile, setConnectionSshIdentityFile] = useState('~/.ssh/id_ed25519');
   const [connectionSshConnectTimeoutSec, setConnectionSshConnectTimeoutSec] = useState(20);
@@ -129,6 +136,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
   const [responseIntentTone, setResponseIntentTone] = useState<ResponseIntentTone>(
     DEFAULT_CONFIG.tui.responseIntentTone
   );
+  const [configSnapshot, setConfigSnapshot] = useState<OptaConfig>(DEFAULT_CONFIG);
 
   // --- Keybinding overrides ---
   const [keybindingOverrides, setKeybindingOverrides] = useState<KeybindingOverrides>({});
@@ -151,63 +159,54 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
       .catch(() => {});
   }, [setRegisteredToolCount]);
 
-  // --- Main config loading ---
-  useEffect(() => {
-    import('../../core/config.js')
-      .then(({ loadConfig }) => {
-        loadConfig()
-          .then((cfg) => {
-            setConnectionHost(cfg.connection.host);
-            setConnectionFallbackHosts(cfg.connection.fallbackHosts);
-            setConnectionAutoDiscover(cfg.connection.autoDiscover);
-            setConnectionPort(cfg.connection.port);
-            setConnectionAdminKey(cfg.connection.adminKey);
-            setConnectionSshUser(cfg.connection.ssh.user);
-            setConnectionSshIdentityFile(cfg.connection.ssh.identityFile);
-            setConnectionSshConnectTimeoutSec(cfg.connection.ssh.connectTimeoutSec);
-            setAutonomyLevel(cfg.autonomy.level);
-            setAutonomyMode(cfg.autonomy.mode);
-            setBrowserPolicyConfig(cfg.browser.policy);
-            setTriggerDefinitions(
-              cfg.tui.triggerModes.length > 0
-                ? cfg.tui.triggerModes
-                : DEFAULT_TRIGGER_MODE_DEFINITIONS
-            );
-            setSkillRuntimeSettings({
-              dynamicLoading: cfg.tui.skillRuntime.dynamicLoading,
-              unloadInactive: cfg.tui.skillRuntime.unloadInactive,
-              ttlMinutes: cfg.tui.skillRuntime.ttlMinutes,
-              maxActiveSkills: cfg.tui.skillRuntime.maxActiveSkills,
-            });
-            setResponseIntentTone(cfg.tui.responseIntentTone);
-          })
-          .catch((err: unknown) => {
-            // Log to stderr so failures surface without breaking the Ink render.
-            process.stderr.write(
-              `[useAppConfig] Failed to apply config: ${errorMessage(err)}\n`
-            );
-          });
-      })
-      .catch((err: unknown) => {
-        process.stderr.write(
-          `[useAppConfig] Failed to import config module: ${errorMessage(err)}\n`
-        );
-      });
+  const applyLoadedConfig = useCallback((cfg: OptaConfig) => {
+    setConnectionHost(cfg.connection.host);
+    setConnectionFallbackHosts(cfg.connection.fallbackHosts);
+    setConnectionAutoDiscover(cfg.connection.autoDiscover);
+    setConnectionPort(cfg.connection.port);
+    setConnectionAdminKey(cfg.connection.adminKey);
+    setConnectionAdminKeysByHost(cfg.connection.adminKeysByHost);
+    setConnectionSshUser(cfg.connection.ssh.user);
+    setConnectionSshIdentityFile(cfg.connection.ssh.identityFile);
+    setConnectionSshConnectTimeoutSec(cfg.connection.ssh.connectTimeoutSec);
+    setAutonomyLevel(cfg.autonomy.level);
+    setAutonomyMode(cfg.autonomy.mode);
+    setBrowserPolicyConfig(cfg.browser.policy);
+    setTriggerDefinitions(
+      cfg.tui.triggerModes.length > 0
+        ? cfg.tui.triggerModes
+        : DEFAULT_TRIGGER_MODE_DEFINITIONS
+    );
+    setSkillRuntimeSettings({
+      dynamicLoading: cfg.tui.skillRuntime.dynamicLoading,
+      unloadInactive: cfg.tui.skillRuntime.unloadInactive,
+      ttlMinutes: cfg.tui.skillRuntime.ttlMinutes,
+      maxActiveSkills: cfg.tui.skillRuntime.maxActiveSkills,
+    });
+    setResponseIntentTone(cfg.tui.responseIntentTone);
+    setConfigSnapshot(cfg);
   }, [
     setAutonomyLevel,
     setAutonomyMode,
     setBrowserPolicyConfig,
-    setConnectionHost,
-    setConnectionFallbackHosts,
-    setConnectionPort,
-    setConnectionAdminKey,
-    setConnectionAutoDiscover,
-    setConnectionSshUser,
-    setConnectionSshIdentityFile,
-    setConnectionSshConnectTimeoutSec,
-    setTriggerDefinitions,
-    setSkillRuntimeSettings,
-    setResponseIntentTone,
+  ]);
+
+  const refreshConfig = useCallback(async () => {
+    const { loadConfig } = await import('../../core/config.js');
+    const cfg = await loadConfig();
+    applyLoadedConfig(cfg);
+  }, [applyLoadedConfig]);
+
+  // --- Main config loading ---
+  useEffect(() => {
+    void refreshConfig().catch((err: unknown) => {
+      // Log to stderr so failures surface without breaking the Ink render.
+      process.stderr.write(
+        `[useAppConfig] Failed to apply config: ${errorMessage(err)}\n`
+      );
+    });
+  }, [
+    refreshConfig,
   ]);
 
   // --- Keybindings override loading ---
@@ -256,6 +255,8 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
         const { probeLmxConnection } = await import('../../lmx/connection.js');
         const result = await probeLmxConnection(connectionHost, connectionPort, {
           timeoutMs: 2_000,
+          adminKey: connectionAdminKey,
+          adminKeysByHost: connectionAdminKeysByHost,
         });
         setConnectionState(result.state !== 'disconnected' ? 'connected' : 'error');
       } catch {
@@ -266,7 +267,13 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
       void checkConnection();
     }, 30_000);
     return () => clearInterval(interval);
-  }, [connectionHost, connectionPort, setConnectionState]);
+  }, [
+    connectionHost,
+    connectionPort,
+    connectionAdminKey,
+    connectionAdminKeysByHost,
+    setConnectionState,
+  ]);
 
   // --- Studio SSH connectivity check ---
   useEffect(() => {
@@ -367,6 +374,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
     connectionAutoDiscover,
     connectionPort,
     connectionAdminKey,
+    connectionAdminKeysByHost,
     connectionSshUser,
     connectionSshIdentityFile,
     connectionSshConnectTimeoutSec,
@@ -384,5 +392,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
     setContextLimit,
     setRegisteredToolCount,
     reconnectLmx,
+    configSnapshot,
+    refreshConfig,
   };
 }

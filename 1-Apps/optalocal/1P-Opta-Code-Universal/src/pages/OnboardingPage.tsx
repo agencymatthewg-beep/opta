@@ -61,7 +61,11 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
                 Repair daemon connection
               </button>
               <p className="step-note">
-                Opta is currently targeting <code>{host}:{port}</code>.
+                Opta is currently targeting{" "}
+                <code>
+                  {host}:{port}
+                </code>
+                .
               </p>
             </div>
           </li>
@@ -85,7 +89,11 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
             onClick={() => setShowRemote((v) => !v)}
             aria-expanded={showRemote}
           >
-            {showRemote ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
+            {showRemote ? (
+              <ChevronDown size={13} />
+            ) : (
+              <ChevronRight size={13} />
+            )}
             Using a remote or non-default daemon?
           </button>
           {showRemote && (

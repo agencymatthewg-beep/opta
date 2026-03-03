@@ -62,6 +62,12 @@ jobs:
         working-directory: ${{ env.APP_DIR }}
         run: npm run test:run
 
+      - name: CLI parity check
+        id: parity
+        continue-on-error: true
+        working-directory: ${{ env.APP_DIR }}
+        run: npm run parity:check
+
       - name: Install Playwright browsers
         id: playwright
         working-directory: ${{ env.APP_DIR }}
@@ -96,6 +102,16 @@ jobs:
           path: 1-Apps/optalocal/1P-Opta-Code-Universal/playwright-report
           if-no-files-found: ignore
 
+      - name: Upload parity reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-code-parity-reports
+          path: |
+            1-Apps/optalocal/1P-Opta-Code-Universal/docs/parity/*.json
+            1-Apps/optalocal/1D-Opta-CLI-TS/docs/parity/*.json
+          if-no-files-found: ignore
+
       - name: Aggregate strict gate
         if: always()
         env:
@@ -103,6 +119,7 @@ jobs:
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           BUILD_OUTCOME: ${{ steps.build.outcome }}
           UNIT_OUTCOME: ${{ steps.unit.outcome }}
+          PARITY_OUTCOME: ${{ steps.parity.outcome }}
           E2E_OUTCOME: ${{ steps.e2e.outcome }}
           PW_AVAILABLE: ${{ steps.playwright.outputs.available }}
         run: |
@@ -112,6 +129,7 @@ jobs:
           echo "lint:      ${LINT_OUTCOME}"
           echo "build:     ${BUILD_OUTCOME}"
           echo "unit:      ${UNIT_OUTCOME}"
+          echo "parity:    ${PARITY_OUTCOME}"
           echo "e2e:       ${E2E_OUTCOME}"
           echo "pw avail:  ${PW_AVAILABLE}"
 
@@ -119,6 +137,7 @@ jobs:
           [ "${LINT_OUTCOME}" = "success" ] || fail=1
           [ "${BUILD_OUTCOME}" = "success" ] || fail=1
           [ "${UNIT_OUTCOME}" = "success" ] || fail=1
+          [ "${PARITY_OUTCOME}" = "success" ] || fail=1
 
           if [ "${PW_AVAILABLE}" = "true" ]; then
             [ "${E2E_OUTCOME}" = "success" ] || fail=1

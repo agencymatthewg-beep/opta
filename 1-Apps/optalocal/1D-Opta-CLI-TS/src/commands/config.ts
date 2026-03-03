@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { loadConfig, getConfigStore, OptaConfigSchema } from '../core/config.js';
 import { EXIT, ExitError, OptaError } from '../core/errors.js';
+import { parseAdminKeysByHost } from '../lmx/admin-keys.js';
 import { errorMessage } from '../utils/errors.js';
 import { box, kv } from '../ui/box.js';
 import type { PaneMenuSection } from '../ui/pane-menu.js';
@@ -164,6 +165,15 @@ async function setConfig(key?: string, value?: string): Promise<void> {
         .map((item) => item.trim())
         .filter((item) => item.length > 0);
     }
+  } else if (key === 'connection.adminKeysByHost') {
+    const parsedMap = parseAdminKeysByHost(value);
+    if (parsedMap === null) {
+      throw new OptaError(
+        `Invalid value for "${key}": expected JSON object or host=key pairs`,
+        EXIT.MISUSE
+      );
+    }
+    parsed = parsedMap;
   } else if (value === 'true') parsed = true;
   else if (value === 'false') parsed = false;
   else if (/^\d+$/.test(value)) parsed = parseInt(value, 10);

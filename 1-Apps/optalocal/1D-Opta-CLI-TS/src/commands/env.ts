@@ -2,6 +2,7 @@ import chalk from 'chalk';
 import { getConfigStore, loadConfig, saveConfig } from '../core/config.js';
 import type { OptaConfig } from '../core/config.js';
 import { EXIT, ExitError } from '../core/errors.js';
+import { parseAdminKeysByHost } from '../lmx/admin-keys.js';
 import { lookupContextLimit } from '../lmx/client.js';
 import { normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
 
@@ -10,6 +11,7 @@ interface EnvCommandOptions {
   host?: string;
   port?: string;
   adminKey?: string;
+  adminKeysByHost?: string;
   model?: string;
   provider?: string;
   mode?: string;
@@ -24,6 +26,7 @@ export interface EnvProfile {
     port: number;
     adminKey?: string;
     apiKey?: string;
+    adminKeysByHost?: Record<string, string>;
     protocol?: 'http';
   };
   modelDefault: string;
@@ -75,6 +78,19 @@ function parseMode(value: string | undefined, fallback: DefaultMode): DefaultMod
   return normalized;
 }
 
+function sanitizeAdminKeysByHostMap(raw: unknown): Record<string, string> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  const normalized: Record<string, string> = {};
+  for (const [hostKey, keyValue] of Object.entries(raw as Record<string, unknown>)) {
+    if (typeof keyValue !== 'string') continue;
+    const host = hostKey.trim();
+    const key = keyValue.trim();
+    if (!host || !key) continue;
+    normalized[host] = key;
+  }
+  return normalized;
+}
+
 export function normalizeEnvProfileName(name: string): string {
   return name
     .trim()
@@ -106,6 +122,10 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
       typeof obj.connection === 'object' && obj.connection !== null
         ? (obj.connection as Record<string, unknown>).apiKey
         : undefined;
+    const adminKeysByHost =
+      typeof obj.connection === 'object' && obj.connection !== null
+        ? (obj.connection as Record<string, unknown>).adminKeysByHost
+        : undefined;
     const modelDefault = obj.modelDefault;
     const providerRaw = obj.provider;
     const defaultMode = obj.defaultMode;
@@ -129,6 +149,10 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
         port: Math.max(1, Math.floor(port)),
         ...(typeof adminKey === 'string' && adminKey.length > 0 ? { adminKey } : {}),
         ...(typeof apiKey === 'string' && apiKey.length > 0 ? { apiKey } : {}),
+        ...(() => {
+          const hostKeyMap = sanitizeAdminKeysByHostMap(adminKeysByHost);
+          return Object.keys(hostKeyMap).length > 0 ? { adminKeysByHost: hostKeyMap } : {};
+        })(),
       },
       modelDefault: normalizedModelDefault,
       provider,
@@ -189,7 +213,9 @@ function printHelp(): void {
   console.log(`  ${chalk.reset('opta env delete <name>')}           remove a profile`);
   console.log('');
   console.log(
-    chalk.dim('Flags for save: --host --port --admin-key --model --provider --mode --json')
+    chalk.dim(
+      'Flags for save: --host --port --admin-key --admin-keys-by-host \'{\"host\":\"key\"}\' --model --provider --mode --json'
+    )
   );
 }
 
@@ -253,6 +279,11 @@ async function showProfile(name: string | undefined, opts: EnvCommandOptions): P
   console.log(`  Host:        ${profile.connection.host}`);
   console.log(`  Port:        ${profile.connection.port}`);
   console.log(`  LMX key:     ${profile.connection.apiKey || profile.connection.adminKey ? chalk.green('set') : chalk.dim('not set')}`);
+  console.log(
+    `  Host keys:   ${profile.connection.adminKeysByHost && Object.keys(profile.connection.adminKeysByHost).length > 0
+      ? chalk.green(`${Object.keys(profile.connection.adminKeysByHost).length} configured`)
+      : chalk.dim('none')}`
+  );
   console.log(`  Provider:    ${profile.provider}`);
   console.log(`  Mode:        ${profile.defaultMode}`);
   console.log(`  Model:       ${profile.modelDefault || chalk.dim('(empty)')}`);
@@ -276,6 +307,16 @@ async function saveProfile(name: string | undefined, opts: EnvCommandOptions): P
     throw new ExitError(EXIT.MISUSE);
   }
 
+  let adminKeysByHostOverride: Record<string, string> | undefined;
+  if (opts.adminKeysByHost !== undefined) {
+    const parsed = parseAdminKeysByHost(opts.adminKeysByHost);
+    if (parsed === null) {
+      console.error(chalk.red('✗') + ' Invalid admin-keys-by-host format');
+      throw new ExitError(EXIT.MISUSE);
+    }
+    adminKeysByHostOverride = parsed;
+  }
+
   const profile: EnvProfile = {
     name: profileName,
     connection: {
@@ -290,6 +331,13 @@ async function saveProfile(name: string | undefined, opts: EnvCommandOptions): P
             ...(config.connection.adminKey ? { adminKey: config.connection.adminKey } : {}),
             ...(config.connection.apiKey ? { apiKey: config.connection.apiKey } : {}),
           }
+          : {}),
+      ...(adminKeysByHostOverride !== undefined
+        ? (Object.keys(adminKeysByHostOverride).length > 0
+          ? { adminKeysByHost: adminKeysByHostOverride }
+          : {})
+        : config.connection.adminKeysByHost && Object.keys(config.connection.adminKeysByHost).length > 0
+          ? { adminKeysByHost: config.connection.adminKeysByHost }
           : {}),
     },
     modelDefault: normalizeConfiguredModelId(opts.model?.trim() ?? config.model.default),
@@ -349,6 +397,12 @@ async function useProfile(name: string | undefined, opts: EnvCommandOptions): Pr
   } else {
     store.delete('connection.adminKey');
     store.delete('connection.apiKey');
+  }
+  const profileHostKeys = profile.connection.adminKeysByHost ?? {};
+  if (Object.keys(profileHostKeys).length > 0) {
+    store.set('connection.adminKeysByHost', profileHostKeys);
+  } else {
+    store.delete('connection.adminKeysByHost');
   }
   await setCurrentProfileName(profile.name);
 

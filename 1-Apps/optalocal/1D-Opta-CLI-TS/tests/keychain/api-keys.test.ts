@@ -43,6 +43,7 @@ import {
 
 beforeEach(() => {
   mockGetSecret.mockReset();
+  mockGetSecret.mockResolvedValue(null);
   mockSetSecret.mockReset();
   mockDeleteSecret.mockReset();
   mockKeychainAvailable = true;
@@ -206,7 +207,15 @@ describe('keychainStatus', () => {
 
     const status = await keychainStatus();
 
-    expect(status).toEqual({ available: true, anthropic: true, lmx: true });
+    expect(status).toEqual({
+      available: true,
+      anthropic: true,
+      lmx: true,
+      gemini: false,
+      openai: false,
+      opencodeZen: false,
+      github: false,
+    });
   });
 
   it('reports anthropic false when anthropic key is null', async () => {
@@ -216,7 +225,15 @@ describe('keychainStatus', () => {
 
     const status = await keychainStatus();
 
-    expect(status).toEqual({ available: true, anthropic: false, lmx: true });
+    expect(status).toEqual({
+      available: true,
+      anthropic: false,
+      lmx: true,
+      gemini: false,
+      openai: false,
+      opencodeZen: false,
+      github: false,
+    });
   });
 
   it('reports both false when neither key is stored', async () => {
@@ -226,7 +243,15 @@ describe('keychainStatus', () => {
 
     const status = await keychainStatus();
 
-    expect(status).toEqual({ available: true, anthropic: false, lmx: false });
+    expect(status).toEqual({
+      available: true,
+      anthropic: false,
+      lmx: false,
+      gemini: false,
+      openai: false,
+      opencodeZen: false,
+      github: false,
+    });
   });
 
   it('reports available false when keychain is unavailable (no reads)', async () => {
@@ -234,7 +259,15 @@ describe('keychainStatus', () => {
 
     const status = await keychainStatus();
 
-    expect(status).toEqual({ available: false, anthropic: false, lmx: false });
+    expect(status).toEqual({
+      available: false,
+      anthropic: false,
+      lmx: false,
+      gemini: false,
+      openai: false,
+      opencodeZen: false,
+      github: false,
+    });
     expect(mockGetSecret).not.toHaveBeenCalled();
   });
 

@@ -9,6 +9,7 @@
 import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './base.js';
 import type { OptaConfig } from '../core/config.js';
 import { errorMessage } from '../utils/errors.js';
+import { instantiateOrInvoke } from '../utils/newable.js';
 
 type AnthropicKeySource = 'config' | 'env' | 'keychain' | 'cloud' | 'none';
 
@@ -69,7 +70,7 @@ export class AnthropicProvider implements ProviderClient {
     }
 
     // Use Anthropic's OpenAI-compatible endpoint
-    this.client = new OpenAI({
+    this.client = instantiateOrInvoke<import('openai').default>(OpenAI, {
       baseURL: 'https://api.anthropic.com/v1/',
       apiKey,
       defaultHeaders: {

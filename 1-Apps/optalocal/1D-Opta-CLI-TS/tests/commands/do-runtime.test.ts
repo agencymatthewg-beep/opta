@@ -72,10 +72,43 @@ describe('executeTask runtime daemon paths', () => {
     await executeTask(['ship', 'the', 'fix'], {});
 
     expect(daemonConnect).toHaveBeenCalledTimes(1);
-    expect(legacyChat).toHaveBeenCalledWith('ship the fix');
+    expect(legacyChat).toHaveBeenCalledWith('ship the fix', undefined, {
+      mode: 'do',
+      overrides: undefined,
+    });
     expect(agentLoop).not.toHaveBeenCalled();
     expect(logs.join('\n')).toContain('daemon completed task');
     expect(logs.join('\n')).toContain('2 tool call');
+  });
+
+  it('passes CEO autonomy override through daemon legacy chat path', async () => {
+    const legacyChat = vi.fn().mockResolvedValue({
+      response: 'ceo daemon completed task',
+      stats: { toolCalls: 1 },
+      model: 'daemon-model',
+    });
+
+    const { executeTask, daemonConnect } = await loadExecuteTaskWithMocks({
+      daemonLegacyChat: legacyChat,
+    });
+
+    await executeTask(['optimize', 'the', 'release', 'pipeline'], {
+      mode: 'ceo',
+      format: 'json',
+    });
+
+    expect(daemonConnect).toHaveBeenCalledTimes(1);
+    expect(legacyChat).toHaveBeenCalledWith(
+      'optimize the release pipeline',
+      undefined,
+      {
+        mode: 'do',
+        overrides: expect.objectContaining({
+          autonomyMode: 'ceo',
+          format: 'json',
+        }),
+      }
+    );
   });
 
   it('falls back to local agent loop when daemon path fails', async () => {

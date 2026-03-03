@@ -77,13 +77,15 @@ def _collect_recent_errors(request: Request, limit: int = 10) -> list[dict[str, 
         event_type = entry.get("event_type", "")
         _, severity = classify_event(event_type, entry.get("data"))
         if severity in ("error", "critical"):
-            errors.append({
-                "timestamp": entry.get("timestamp"),
-                "event_type": event_type,
-                "message": entry.get("message", entry.get("data", {}).get("message", "")),
-                "model_id": entry.get("model_id", entry.get("data", {}).get("model_id")),
-                "severity": severity,
-            })
+            errors.append(
+                {
+                    "timestamp": entry.get("timestamp"),
+                    "event_type": event_type,
+                    "message": entry.get("message", entry.get("data", {}).get("message", "")),
+                    "model_id": entry.get("model_id", entry.get("data", {}).get("model_id")),
+                    "severity": severity,
+                }
+            )
             if len(errors) >= limit:
                 break
 
@@ -154,22 +156,23 @@ async def get_diagnostics(
     readiness_snap = engine.readiness_snapshot()
 
     quarantined_count = sum(
-        1 for row in readiness_snap.values()
-        if row.get("state") == "quarantined"
+        1 for row in readiness_snap.values() if row.get("state") == "quarantined"
     )
 
     model_entries: list[dict[str, Any]] = []
     for model in loaded_models:
         model_id = model.model_id
         readiness = readiness_snap.get(model_id, {}).get("state", "unknown")
-        model_entries.append({
-            "id": model_id,
-            "readiness": readiness,
-            "loaded_at": model.loaded_at,
-            "requests_total": model.request_count,
-            "backend_type": getattr(model, "backend_type", "unknown"),
-            "memory_gb": round(model.estimated_memory_gb, 2),
-        })
+        model_entries.append(
+            {
+                "id": model_id,
+                "readiness": readiness,
+                "loaded_at": model.loaded_at,
+                "requests_total": model.request_count,
+                "backend_type": getattr(model, "backend_type", "unknown"),
+                "memory_gb": round(model.estimated_memory_gb, 2),
+            }
+        )
 
     models_info: dict[str, Any] = {
         "loaded_count": len(loaded_models),
@@ -192,9 +195,8 @@ async def get_diagnostics(
         total_latency = sum(metrics._latency_sum.values())
         avg_latency_ms = round((total_latency / total_requests) * 1000, 1)
 
-    total_tokens = (
-        metrics_summary.get("total_completion_tokens", 0)
-        + metrics_summary.get("total_prompt_tokens", 0)
+    total_tokens = metrics_summary.get("total_completion_tokens", 0) + metrics_summary.get(
+        "total_prompt_tokens", 0
     )
 
     inference_info: dict[str, Any] = {
@@ -221,12 +223,14 @@ async def get_diagnostics(
         crash_loop=crash_loop,
     )
 
-    return JSONResponse(content={
-        "timestamp": now,
-        "system": system_info,
-        "models": models_info,
-        "inference": inference_info,
-        "agents": agents_info,
-        "recent_errors": recent_errors,
-        "health_verdict": verdict,
-    })
+    return JSONResponse(
+        content={
+            "timestamp": now,
+            "system": system_info,
+            "models": models_info,
+            "inference": inference_info,
+            "agents": agents_info,
+            "recent_errors": recent_errors,
+            "health_verdict": verdict,
+        }
+    )

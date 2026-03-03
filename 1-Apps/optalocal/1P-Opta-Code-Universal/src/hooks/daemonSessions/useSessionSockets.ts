@@ -22,11 +22,14 @@ interface UseSessionSocketsArgs {
   mountedRef: MutableRefObject<boolean>;
   seqCursorRef: MutableRefObject<Record<string, number>>;
   wsHandlesRef: MutableRefObject<Map<string, WsHandle>>;
-  setTimelineBySession: Dispatch<SetStateAction<Record<string, TimelineItem[]>>>;
+  setTimelineBySession: Dispatch<
+    SetStateAction<Record<string, TimelineItem[]>>
+  >;
   setStreamingBySession: Dispatch<SetStateAction<Record<string, boolean>>>;
   setPendingPermissionsBySession: Dispatch<
     SetStateAction<Record<string, PermissionRequest[]>>
   >;
+  setRawEventsBySession: Dispatch<SetStateAction<Record<string, V3Envelope[]>>>;
 }
 
 export function useSessionSockets({
@@ -38,6 +41,7 @@ export function useSessionSockets({
   setTimelineBySession,
   setStreamingBySession,
   setPendingPermissionsBySession,
+  setRawEventsBySession,
 }: UseSessionSocketsArgs) {
   const sessionIdsKey = sessionIds.join(",");
   const connectionIdentityRef = useRef<string | null>(null);
@@ -62,7 +66,10 @@ export function useSessionSockets({
 
     setTimelineBySession((prev) => {
       const existing = prev[sessionId] ?? [];
-      if (existing.length > 0 && existing[existing.length - 1].kind === "assistant") {
+      if (
+        existing.length > 0 &&
+        existing[existing.length - 1].kind === "assistant"
+      ) {
         const last = existing[existing.length - 1];
         const merged = { ...last, body: (last.body ?? "") + chunk };
         return { ...prev, [sessionId]: [...existing.slice(0, -1), merged] };
@@ -160,6 +167,11 @@ export function useSessionSockets({
           seqCursorRef.current[sessionId] = envelope.seq;
         }
 
+        setRawEventsBySession?.((prev) => ({
+          ...prev,
+          [sessionId]: [...(prev[sessionId] || []), envelope].slice(-200), // Keep last 200 events for telemetry
+        }));
+
         const invoke = getTauriInvoke();
         if (invoke) {
           invoke("append_session_event", {
@@ -190,7 +202,9 @@ export function useSessionSockets({
         flushTokenBuffer(sessionId);
 
         if (kind === "permission.request") {
-          const requestId = String(payload.requestId ?? payload.request_id ?? "");
+          const requestId = String(
+            payload.requestId ?? payload.request_id ?? "",
+          );
           const toolName = String(
             payload.toolName ?? payload.tool_name ?? payload.name ?? "",
           );
@@ -204,7 +218,10 @@ export function useSessionSockets({
               if (existing.some((p) => p.requestId === requestId)) return prev;
               return {
                 ...prev,
-                [sessionId]: [...existing, { requestId, toolName, args, sessionId }],
+                [sessionId]: [
+                  ...existing,
+                  { requestId, toolName, args, sessionId },
+                ],
               };
             });
           }
@@ -212,7 +229,9 @@ export function useSessionSockets({
         }
 
         if (kind === "permission.resolved") {
-          const requestId = String(payload.requestId ?? payload.request_id ?? "");
+          const requestId = String(
+            payload.requestId ?? payload.request_id ?? "",
+          );
           if (requestId) {
             setPendingPermissionsBySession((prev) => {
               const existing = prev[sessionId];
@@ -276,46 +295,51 @@ export function useSessionSockets({
           cursor.seq = persistedCursor;
         }
 
-        innerHandle = daemonClient.connectWebSocket(conn, sessionId, cursor.seq, {
-          onOpen: () => {
-            if (!isCurrentGeneration()) return;
-            attempts = 0;
-          },
-          onEvent: (envelope) => {
-            if (!mountedRef.current || !isCurrentGeneration()) return;
-            handleEnvelope(envelope);
-          },
-          onClose: (_code) => {
-            innerHandle = null;
-            if (!isCurrentGeneration()) return;
-
-            flushTokenBuffer(sessionId);
-            setStreamingBySession((prev) => {
-              if (!prev[sessionId]) return prev;
-              return { ...prev, [sessionId]: false };
-            });
-
-            if (
-              !mountedRef.current ||
-              !wsHandlesRef.current.has(sessionId) ||
-              closeRequestedLocally
-            ) {
-              return;
-            }
-
-            const baseDelay = Math.min(1000 * Math.pow(2, attempts), 10_000);
-            const jitter = Math.floor(baseDelay * 0.2 * Math.random());
-            const delay = Math.min(10_000, baseDelay + jitter);
-            attempts = Math.min(attempts + 1, 10);
-            reconnectTimer = window.setTimeout(() => {
+        innerHandle = daemonClient.connectWebSocket(
+          conn,
+          sessionId,
+          cursor.seq,
+          {
+            onOpen: () => {
               if (!isCurrentGeneration()) return;
-              open();
-            }, delay);
+              attempts = 0;
+            },
+            onEvent: (envelope) => {
+              if (!mountedRef.current || !isCurrentGeneration()) return;
+              handleEnvelope(envelope);
+            },
+            onClose: (_code) => {
+              innerHandle = null;
+              if (!isCurrentGeneration()) return;
+
+              flushTokenBuffer(sessionId);
+              setStreamingBySession((prev) => {
+                if (!prev[sessionId]) return prev;
+                return { ...prev, [sessionId]: false };
+              });
+
+              if (
+                !mountedRef.current ||
+                !wsHandlesRef.current.has(sessionId) ||
+                closeRequestedLocally
+              ) {
+                return;
+              }
+
+              const baseDelay = Math.min(1000 * Math.pow(2, attempts), 10_000);
+              const jitter = Math.floor(baseDelay * 0.2 * Math.random());
+              const delay = Math.min(10_000, baseDelay + jitter);
+              attempts = Math.min(attempts + 1, 10);
+              reconnectTimer = window.setTimeout(() => {
+                if (!isCurrentGeneration()) return;
+                open();
+              }, delay);
+            },
+            onError: () => {
+              // onClose handles recovery path.
+            },
           },
-          onError: () => {
-            // onClose handles recovery path.
-          },
-        });
+        );
       };
 
       const handle: WsHandle = {

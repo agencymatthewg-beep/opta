@@ -53,9 +53,9 @@ vi.mock('../../src/core/agent.js', () => ({
 }));
 
 vi.mock('../../src/lmx/client.js', () => ({
-  LmxClient: vi.fn(() => ({
-    models: lmxModelsMock,
-  })),
+  LmxClient: vi.fn(function() {
+    return { models: lmxModelsMock };
+  }),
 }));
 
 async function waitFor(predicate: () => boolean, timeoutMs = 200): Promise<void> {

@@ -183,7 +183,7 @@ export const lmxCommands: SlashCommandDef[] = [
   },
   {
     command: 'metrics',
-    aliases: ['stats'],
+    aliases: ['lmx-metrics'],
     description: 'LMX request metrics summary',
     handler: metricsHandler,
     category: 'server',

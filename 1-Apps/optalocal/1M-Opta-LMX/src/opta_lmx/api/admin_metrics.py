@@ -33,7 +33,10 @@ admin_metrics_router = APIRouter()
     responses={403: {"model": ErrorResponse}},
 )
 async def prometheus_metrics(
-    _auth: AdminAuth, metrics: Metrics, engine: Engine, memory: Memory,
+    _auth: AdminAuth,
+    metrics: Metrics,
+    engine: Engine,
+    memory: Memory,
 ) -> PlainTextResponse:
     """Prometheus-compatible metrics endpoint.
 
@@ -123,7 +126,8 @@ async def prometheus_metrics(
 
 @admin_metrics_router.get("/admin/metrics/json", responses={403: {"model": ErrorResponse}})
 async def metrics_json(
-    _auth: AdminAuth, metrics: Metrics,
+    _auth: AdminAuth,
+    metrics: Metrics,
 ) -> dict[str, Any]:
     """JSON metrics summary for admin dashboards."""
     return metrics.summary()
@@ -131,7 +135,9 @@ async def metrics_json(
 
 @admin_metrics_router.get("/admin/events", responses={403: {"model": ErrorResponse}})
 async def admin_event_stream(
-    _auth: AdminAuth, event_bus: Events, request: Request,
+    _auth: AdminAuth,
+    event_bus: Events,
+    request: Request,
 ) -> StreamingResponse:
     """Server-Sent Events feed for real-time admin monitoring.
 
@@ -147,10 +153,7 @@ async def admin_event_stream(
             while True:
                 try:
                     event = await asyncio.wait_for(queue.get(), timeout=heartbeat_sec)
-                    yield (
-                        f"event: {event.event_type}\n"
-                        f"data: {json.dumps(event.data)}\n\n"
-                    )
+                    yield (f"event: {event.event_type}\ndata: {json.dumps(event.data)}\n\n")
                 except TimeoutError:
                     yield f"event: heartbeat\ndata: {json.dumps({'timestamp': time.time()})}\n\n"
         except asyncio.CancelledError:

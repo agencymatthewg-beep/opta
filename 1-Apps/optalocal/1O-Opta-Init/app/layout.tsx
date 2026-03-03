@@ -25,20 +25,20 @@ const jetbrains = localFont({
 })
 
 export const metadata: Metadata = {
-  title: 'Opta Init \u2014 App manager, updater, and launcher for Opta Local',
-  description: 'Manage Opta apps, updates, and daemon operations from one control surface. Opta Init handles lifecycle operations while Opta Local platform powers day-to-day workflows.',
-  keywords: 'Opta Init, app manager, updater, daemon control, local AI, Opta Local, macOS, Apple Silicon',
+  title: 'Opta Initializer (Opta Init) \u2014 App manager and launcher for Opta Local',
+  description: 'Manage Opta apps, updates, and daemon operations from one control surface. Opta Init (Opta Initializer) handles lifecycle operations while Opta Local platform powers day-to-day workflows.',
+  keywords: 'Opta Initializer, Opta Init, app manager, updater, daemon control, local AI, Opta Local, macOS, Apple Silicon',
   openGraph: {
-    title: 'Opta Init \u2014 App manager for Opta Local',
-    description: 'Manage apps, updates, and daemon lifecycle for your Opta Local stack.',
+    title: 'Opta Initializer (Opta Init) \u2014 App manager for Opta Local',
+    description: 'Use Opta Init (the Opta Initializer) to manage apps, updates, and daemon lifecycle for your Opta Local stack.',
     url: 'https://init.optalocal.com',
-    siteName: 'Opta Init',
+    siteName: 'Opta Init (Opta Initializer)',
     locale: 'en_US',
     type: 'website',
   },
   twitter: {
     card: 'summary',
-    title: 'Opta Init \u2014 App manager for Opta Local',
+    title: 'Opta Initializer (Opta Init) \u2014 App manager for Opta Local',
     description: 'Manage apps, updates, and daemon lifecycle from one place.',
   },
 }

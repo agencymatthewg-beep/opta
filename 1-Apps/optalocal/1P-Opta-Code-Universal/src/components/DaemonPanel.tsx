@@ -211,7 +211,8 @@ export function DaemonPanel({
       ) : (
         <>
           <p className="text-secondary" style={{ marginTop: 12, fontSize: 12 }}>
-            Web runtime: daemon control actions are unavailable; HTTP/WS client mode is active.
+            Web runtime: daemon control actions are unavailable; HTTP/WS client
+            mode is active.
           </p>
           {onOpenDaemonOperations ? (
             <button

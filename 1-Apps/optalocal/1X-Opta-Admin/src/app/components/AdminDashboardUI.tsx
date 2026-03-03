@@ -9,6 +9,8 @@ import type {
   WebsiteRuntimeStatus,
 } from '../lib/types';
 
+const CLI_MASTERCLASS_SLUG = 'cli';
+
 interface AdminDashboardUIProps {
   initialGuides: GuideRecord[];
   websites: WebsiteHealthSnapshot[];
@@ -240,16 +242,22 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
               </div>
               <div className="flex items-center gap-4 border-l border-white/10 pl-6">
                 {selectedGuide.status === 'draft' ? (
-                  <button
-                    onClick={() => handlePromote(selectedGuide.slug)}
-                    disabled={promoting === selectedGuide.slug}
-                    className="bg-admin text-black font-bold font-mono text-sm px-8 py-3.5 rounded-xl hover:bg-yellow-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all disabled:opacity-50"
-                  >
-                    {promoting === selectedGuide.slug ? 'PROMOTING...' : 'APPROVE & PUBLISH TO MAIN'}
-                  </button>
+                  selectedGuide.slug !== CLI_MASTERCLASS_SLUG ? (
+                    <span className="bg-zinc-800 text-zinc-300 font-bold font-mono text-sm px-8 py-3.5 rounded-xl border border-zinc-700">
+                      PROMOTION LOCKED (CLI MASTERCLASS ONLY)
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => handlePromote(selectedGuide.slug)}
+                      disabled={promoting === selectedGuide.slug}
+                      className="bg-admin text-black font-bold font-mono text-sm px-8 py-3.5 rounded-xl hover:bg-yellow-400 shadow-[0_0_20px_rgba(245,158,11,0.2)] transition-all disabled:opacity-50"
+                    >
+                      {promoting === selectedGuide.slug ? 'PROMOTING...' : 'APPROVE & PUBLISH TO MAIN'}
+                    </button>
+                  )
                 ) : (
                   <a
-                    href={`http://localhost:3007/guides/${selectedGuide.slug}`}
+                    href={`https://learn.optalocal.com/guides/${selectedGuide.slug}`}
                     target="_blank"
                     rel="noreferrer"
                     className="bg-surface border border-white/20 text-white font-bold font-mono text-sm px-6 py-3 rounded-xl hover:bg-white/10 transition-all cursor-pointer"
@@ -335,6 +343,7 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
                       </section>
                     ) : null}
                   </div>
+
                 </div>
               </div>
             </div>

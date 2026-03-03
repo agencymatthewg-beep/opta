@@ -3,9 +3,9 @@ import { getConfigDir } from '../platform/paths.js';
 import { loadConfig, saveConfig } from '../core/config.js';
 import { agentLoop, buildSystemPrompt } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
-import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
+import { formatError, OptaError, ExitError, EXIT, ensureModel } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
-import { errorMessage, NO_MODEL_ERROR } from '../utils/errors.js';
+import { errorMessage } from '../utils/errors.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom, isStorageRelatedError } from '../utils/disk.js';
 import { modelIdsEqual, normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
 import {
@@ -26,6 +26,14 @@ import type { Session } from '../memory/store.js';
 import { runMenuPrompt } from '../ui/prompt-nav.js';
 import type { TuiMessage } from '../tui/App.js';
 import type { TuiErrorEvent, TuiErrorPayload } from '../tui/adapter.js';
+
+// Narrowed client type used for LMX model preflight/load path.
+type LmxLifecycleClient = {
+  models(): Promise<{ models: Array<{ model_id: string }> }>;
+  loadModel(modelId: string, options?: { timeoutMs?: number; maxRetries?: number; [key: string]: unknown }): Promise<{ status?: string; confirmation_token?: string; download_id?: string }>;
+  confirmLoad(token: string, options?: { timeoutMs?: number; maxRetries?: number }): Promise<{ download_id?: string; status?: string }>;
+  downloadProgress(downloadId: string, options?: { timeoutMs?: number; maxRetries?: number }): Promise<{ status: string; error?: string }>;
+};
 
 interface ChatOptions {
   resume?: string;
@@ -134,6 +142,87 @@ function toTuiTurnError(payload: unknown): TuiErrorEvent {
   return structured;
 }
 
+type LmxClientOptions = {
+  host: string;
+  fallbackHosts: string[];
+  port: number;
+  adminKey: string | undefined;
+  adminKeysByHost?: Record<string, string>;
+  timeoutMs: number;
+  maxRetries: number;
+};
+
+type LmxClientLike = {
+  models: (options?: {
+    timeoutMs?: number;
+    maxRetries?: number;
+  }) => Promise<{ models: Array<{ model_id: string }> }>;
+};
+
+async function createLmxClient(options: LmxClientOptions): Promise<LmxClientLike> {
+  const { LmxClient } = await import('../lmx/client.js');
+  try {
+    return new (LmxClient as unknown as new (options: LmxClientOptions) => LmxClientLike)(options);
+  } catch (err) {
+    if (
+      err instanceof TypeError &&
+      typeof err.message === 'string' &&
+      err.message.includes('is not a constructor')
+    ) {
+      return (LmxClient as unknown as (options: LmxClientOptions) => LmxClientLike)(options);
+    }
+    throw err;
+  }
+}
+
+async function ensureModelLoadedOnLmxStartup(
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  modelId: string,
+  preflight: ModelPreflightStatus
+): Promise<ModelPreflightStatus> {
+  if ((config.provider?.active ?? 'lmx') === 'anthropic') {
+    return preflight;
+  }
+
+  if (preflight.modelLoaded) return preflight;
+
+  try {
+    const lifecycleModule = await import('../lmx/model-lifecycle.js');
+    const lmxClient = (await createLmxClient({
+      host: config.connection.host,
+      fallbackHosts: config.connection.fallbackHosts,
+      port: config.connection.port,
+      adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
+      timeoutMs: 8_000,
+      maxRetries: 0,
+    })) as LmxLifecycleClient;
+
+    const preloadedModelId = preflight.loadedModelIds.find((candidate) =>
+      modelIdsEqual(candidate, modelId)
+    );
+    const ensureId = await lifecycleModule.ensureModelLoaded(lmxClient as never, modelId, {
+      preloadedModelId,
+      timeoutMs: 120_000,
+      onProgress: () => {},
+    });
+
+    return {
+      modelLoaded: true,
+      loadedModelIds: [...new Set([ensureId, ...preflight.loadedModelIds])],
+    };
+  } catch (err) {
+    const previousError = preflight.error;
+    const nextError = errorMessage(err);
+    return {
+      ...preflight,
+      modelLoaded: false,
+      loadedModelIds: preflight.loadedModelIds,
+      error: previousError ? `${previousError} | ${nextError}` : nextError,
+    };
+  }
+}
+
 async function probeModelPreflight(
   config: Awaited<ReturnType<typeof loadConfig>>,
   modelId: string
@@ -145,12 +234,12 @@ async function probeModelPreflight(
   }
 
   try {
-    const { LmxClient } = await import('../lmx/client.js');
-    const lmx = new LmxClient({
+    const lmx = await createLmxClient({
       host: config.connection.host,
       fallbackHosts: config.connection.fallbackHosts,
       port: config.connection.port,
       adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       timeoutMs: 8_000,
       maxRetries: 0,
     });
@@ -189,11 +278,21 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   let config = await loadConfig(overrides);
   await runChatDiskPreflight(config, jsonMode);
 
-  // First-run onboarding
+  // First-run onboarding + project scaffold.
   if (!jsonMode) {
     const { isFirstRun, runOnboarding } = await import('./onboard.js');
     if (await isFirstRun()) {
       await runOnboarding();
+      const { ensureInitScaffold } = await import('./init.js');
+      await ensureInitScaffold(
+        {
+          yes: true,
+          force: false,
+          createApp: true,
+        },
+        process.cwd(),
+      );
+
       // Reload config in case onboarding changed connection settings
       config = await loadConfig(overrides);
     }
@@ -251,12 +350,13 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
   if (!effectiveModel) {
     try {
-      const { LmxClient, lookupContextLimit } = await import('../lmx/client.js');
-      const lmx = new LmxClient({
+      const { lookupContextLimit } = await import('../lmx/client.js');
+      const lmx = await createLmxClient({
         host: config.connection.host,
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
         timeoutMs: 5_000,
         maxRetries: 0,
       });
@@ -285,20 +385,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     }
   }
 
-  if (!effectiveModel) {
-    console.error(chalk.red('✗') + ' ' + NO_MODEL_ERROR);
-    console.error('');
-    console.error(chalk.dim('  Fix options:'));
-    console.error(
-      chalk.dim('    1. Set a default model:  ') +
-        chalk.cyan('opta config set model.default <model-name>')
-    );
-    console.error(chalk.dim('    2. Discover models:      ') + chalk.cyan('opta models'));
-    console.error(chalk.dim('    3. Check LMX status:     ') + chalk.cyan('opta status'));
-    console.error(chalk.dim('    4. Run diagnostics:      ') + chalk.cyan('opta doctor'));
-    console.error('');
-    throw new ExitError(EXIT.NO_CONNECTION);
-  }
+  ensureModel(effectiveModel);
 
   // Capability gate — mirrors opta do's cli.run check for chat access control.
   // Only applies when the user is authenticated; unauthenticated users are allowed
@@ -368,7 +455,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         throw new ExitError(EXIT.NOT_FOUND);
       }
     }
-    const startupPreflight = await probeModelPreflight(config, session.model);
+    const startupPreflight = await ensureModelLoadedOnLmxStartup(
+      config,
+      session.model,
+      await probeModelPreflight(config, session.model),
+    );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
 
@@ -398,7 +489,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     session.messages = [{ role: 'system', content: systemPrompt }];
     await saveSession(session);
 
-    const startupPreflight = await probeModelPreflight(config, session.model);
+    const startupPreflight = await ensureModelLoadedOnLmxStartup(
+      config,
+      session.model,
+      await probeModelPreflight(config, session.model),
+    );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
 
@@ -519,6 +614,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     let currentTuiMode = 'normal';
     let turnInFlight = false;
     let activeTurnId: string | undefined;
+    let localCancelRequested = false;
     let lastSeq = 0;
     let closed = false;
     let closeSocket = () => {};
@@ -561,21 +657,25 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               break;
             }
             case 'turn.start':
+              if (localCancelRequested) break;
               activeTurnId =
                 typeof payload['turnId'] === 'string' ? payload['turnId'] : activeTurnId;
               emitter.emit('turn:start');
               break;
             case 'turn.token':
+              if (localCancelRequested) break;
               if (typeof payload['text'] === 'string') {
                 emitter.emit('token', payload['text']);
               }
               break;
             case 'turn.thinking':
+              if (localCancelRequested) break;
               if (typeof payload['text'] === 'string') {
                 emitter.emit('thinking', payload['text']);
               }
               break;
             case 'tool.start':
+              if (localCancelRequested) break;
               emitter.emit(
                 'tool:start',
                 typeof payload['name'] === 'string' ? payload['name'] : 'tool',
@@ -584,6 +684,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               );
               break;
             case 'tool.end':
+              if (localCancelRequested) break;
               emitter.emit(
                 'tool:end',
                 typeof payload['name'] === 'string' ? payload['name'] : 'tool',
@@ -599,6 +700,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               });
               break;
             case 'turn.done': {
+              localCancelRequested = false;
               turnInFlight = false;
               activeTurnId = undefined;
               const stats = payload['stats'] as Record<string, unknown> | undefined;
@@ -628,12 +730,18 @@ export async function startChat(opts: ChatOptions): Promise<void> {
             case 'turn.error':
               turnInFlight = false;
               activeTurnId = undefined;
-              emitter.emit('error', toTuiTurnError(payload));
+              if (!localCancelRequested) {
+                emitter.emit('error', toTuiTurnError(payload));
+              }
+              localCancelRequested = false;
               break;
             case 'session.cancelled':
               turnInFlight = false;
               activeTurnId = undefined;
-              emitter.emit('error', '⏹ Turn cancelled');
+              if (!localCancelRequested) {
+                emitter.emit('error', '⏹ Turn cancelled');
+              }
+              localCancelRequested = false;
               break;
             default:
               break;
@@ -675,14 +783,15 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       },
       onCancelTurn: () => {
         if (!turnInFlight) return;
+        const turnIdToCancel = activeTurnId;
+        turnInFlight = false;
+        activeTurnId = undefined;
+        localCancelRequested = true;
+        emitter.emit('error', '⏹ Turn cancelled');
         void daemon
-          .cancel(session.id, { turnId: activeTurnId, writerId })
-          .then((res) => {
-            if (res.cancelled > 0) {
-              emitter.emit('error', '⏹ Turn cancelled');
-            }
-          })
+          .cancel(session.id, { turnId: turnIdToCancel, writerId })
           .catch((err: unknown) => {
+            localCancelRequested = false;
             emitter.emit('error', `Cancel failed: ${errorMessage(err)}`);
           });
       },
@@ -870,8 +979,13 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       if (handled === 'model-switched') {
         // Reload config to pick up model change
         config = await loadConfig(overrides);
+        continue;
       }
-      continue;
+      if (typeof handled === 'object' && handled !== null && 'type' in handled && handled.type === 'generate') {
+        userInput = handled.prompt;
+      } else {
+        continue;
+      }
     }
 
     // Shell mode: !command executes directly
@@ -949,6 +1063,23 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         chatState.thinkingExpanded = false;
       }
       await saveSession(session);
+      
+      const assistantMessage = result.messages[result.messages.length - 1];
+      if (assistantMessage?.role === 'assistant' && typeof assistantMessage.content === 'string') {
+        const { handleGenUIResponse } = await import('../ui/genui-manager.js');
+        const genuiEnabled = config.genui?.enabled !== false;
+        const autoOpen = config.genui?.autoOpenBrowser !== false;
+        
+        if (genuiEnabled) {
+          const genuiResult = await handleGenUIResponse(assistantMessage.content, 'genui', autoOpen);
+          if (genuiResult) {
+            console.log(chalk.dim(`\n  GenUI Artifact saved: ${genuiResult.filePath}`));
+            if (genuiResult.opened) {
+              console.log(chalk.dim(`  Opened automatically in browser.`));
+            }
+          }
+        }
+      }
 
       if (jsonMode) {
         console.log(formatChatJsonLine(result.messages));

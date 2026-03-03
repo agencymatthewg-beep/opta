@@ -6,35 +6,45 @@ import { ArrowRight } from "lucide-react";
 
 const coreApps = [
   {
-    name: "Opta LMX",
-    role: "Inference Engine",
+    name: "Opta Init",
+    role: "Distribution + lifecycle",
     description:
-      "High-performance local inference server and management dashboard. Load, quantize, and serve open weights with drop-in OpenAI API compatibility.",
+      "Single canonical onboarding surface and desktop manager lifecycle for the full stack. Install once, then onboard CLI, LMX, and Code through signed manifests.",
+    icon: "/logos/opta-init-mark.svg",
+    href: "https://init.optalocal.com",
+  },
+  {
+    name: "Opta LMX",
+    role: "Inference + dashboard",
+    description:
+      "Your private Apple Silicon inference daemon, OpenAI-compatible API, and local model management path for bots and tools.",
     icon: "/logos/opta-lmx-mark.svg",
     href: "https://lmx.optalocal.com",
   },
   {
     name: "Opta CLI",
-    role: "Control Plane",
+    role: "Control plane",
     description:
-      "A powerful terminal interface for your AI stack. Manage models, monitor resources, and orchestrate environments directly from your command line.",
+      "Terminal-first control for the stack. Connects your local tools and projects to your local inference engine for agentic workflows.",
     icon: "/logos/opta-cli-mark.svg",
-    href: "#cli",
+    href: "https://help.optalocal.com/docs/cli",
   },
   {
     name: "Opta Code",
-    role: "IDE Assistant",
+    role: "Desktop IDE",
     description:
-      "Your local coding co-pilot. Powered by your models, connected to your codebase, with zero telemetry and no API limits.",
+      "Daemon-powered desktop workflow for session telemetry, multi-mode interaction, and local context execution at visual speed.",
     icon: "/logos/opta-code-mark.svg",
-    href: "#code",
+    href: "https://help.optalocal.com/docs/opta-code",
   },
 ];
 
 const mgmtApps = [
-  { name: "Opta Accounts", desc: "Unified auth & SSO",          href: "https://accounts.optalocal.com" },
-  { name: "Opta Status",   desc: "System health monitoring",    href: "https://status.optalocal.com"   },
-  { name: "Opta Help",     desc: "Documentation & guides",      href: "https://help.optalocal.com"     },
+  { name: "Opta Accounts", desc: "Identity, security, and sync policy control", href: "https://accounts.optalocal.com" },
+  { name: "Opta Status", desc: "Fleet health and incident transparency", href: "https://status.optalocal.com" },
+  { name: "Opta Learn", desc: "Guides, patterns, and ecosystem discovery", href: "https://learn.optalocal.com" },
+  { name: "Opta Help", desc: "Reference docs for CLI, APIs, and setup", href: "https://help.optalocal.com" },
+  { name: "Opta Admin", desc: "Private site controls and managed feature toggles", href: "https://admin.optalocal.com" },
 ];
 
 export function Ecosystem() {
@@ -53,23 +63,23 @@ export function Ecosystem() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Three apps. One ecosystem.
+            Four local apps. One architecture.
           </h2>
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            Each core app does exactly one job at production grade. Together they form a complete local AI environment.
+            The stack is separated by role, not hype: one installer, one inference core, one control surface, and one desktop workflow.
           </p>
         </motion.div>
 
-        {/* Core apps — 3 columns */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+        {/* Core apps — 4 columns */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
           {coreApps.map((app, i) => (
             <motion.a
               key={app.name}
               href={app.href}
               className="obsidian-interactive rounded-2xl p-8 group cursor-pointer border border-white/5"
               initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ duration: 0.6, delay: 0.1 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
+              animate={i % 2 === 0 ? (isInView ? { opacity: 1, y: 0 } : {}) : (isInView ? { opacity: 1, y: 0 } : {})}
+              transition={{ duration: 0.6, delay: 0.1 + (i * 0.1), ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="flex items-start justify-between mb-6">
                 <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
@@ -102,7 +112,7 @@ export function Ecosystem() {
               <a
                 key={app.name}
                 href={app.href}
-                className="sm:flex-1 sm:px-8 first:pl-0 last:pr-0 group"
+                className="sm:flex-1 sm:px-6 first:pl-0 last:pr-0 group"
               >
                 <div className="text-sm font-semibold text-text-secondary group-hover:text-white transition-colors">
                   {app.name}

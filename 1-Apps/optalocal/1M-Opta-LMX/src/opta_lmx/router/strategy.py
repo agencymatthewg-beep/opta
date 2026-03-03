@@ -58,9 +58,13 @@ class TaskRouter:
         if model_id == "auto":
             resolved = self._resolve_auto(loaded_set)
             if resolved:
-                logger.info("route_resolved", extra={
-                    "alias": "auto", "resolved_to": resolved,
-                })
+                logger.info(
+                    "route_resolved",
+                    extra={
+                        "alias": "auto",
+                        "resolved_to": resolved,
+                    },
+                )
                 return resolved
             return model_id
 
@@ -69,17 +73,24 @@ class TaskRouter:
             preferences = self._aliases[model_id]
             for candidate in preferences:
                 if candidate in loaded_set:
-                    logger.info("route_resolved", extra={
-                        "alias": model_id, "resolved_to": candidate,
-                    })
+                    logger.info(
+                        "route_resolved",
+                        extra={
+                            "alias": model_id,
+                            "resolved_to": candidate,
+                        },
+                    )
                     return candidate
 
             # Alias known but no preferred model is loaded
-            logger.warning("route_no_match", extra={
-                "alias": model_id,
-                "preferences": preferences,
-                "loaded": loaded_model_ids,
-            })
+            logger.warning(
+                "route_no_match",
+                extra={
+                    "alias": model_id,
+                    "preferences": preferences,
+                    "loaded": loaded_model_ids,
+                },
+            )
             return model_id
 
         # Not an alias — return as-is (caller checks if loaded)
@@ -104,7 +115,10 @@ class TaskRouter:
         """Hot-reload routing configuration."""
         self._aliases = dict(config.aliases)
         self._default_model = config.default_model
-        logger.info("routing_config_updated", extra={
-            "alias_count": len(self._aliases),
-            "default_model": self._default_model,
-        })
+        logger.info(
+            "routing_config_updated",
+            extra={
+                "alias_count": len(self._aliases),
+                "default_model": self._default_model,
+            },
+        )

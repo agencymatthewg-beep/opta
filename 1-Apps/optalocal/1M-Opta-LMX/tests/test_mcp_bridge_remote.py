@@ -20,15 +20,21 @@ async def test_remote_mcp_retries_transient_failures() -> None:
         failure_threshold=3,
     )
     bridge._client = AsyncMock()
-    bridge._client.get = AsyncMock(side_effect=[
-        httpx.ConnectError("boom", request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools")),
-        httpx.ConnectError("boom", request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools")),
-        httpx.Response(
-            200,
-            json={"ok": True, "tools": []},
-            request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools"),
-        ),
-    ])
+    bridge._client.get = AsyncMock(
+        side_effect=[
+            httpx.ConnectError(
+                "boom", request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools")
+            ),
+            httpx.ConnectError(
+                "boom", request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools")
+            ),
+            httpx.Response(
+                200,
+                json={"ok": True, "tools": []},
+                request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools"),
+            ),
+        ]
+    )
 
     payload = await bridge.tools_list()
     assert payload["ok"] is True
@@ -46,10 +52,12 @@ async def test_remote_mcp_opens_circuit_after_repeated_failures() -> None:
         reset_timeout_sec=60.0,
     )
     bridge._client = AsyncMock()
-    bridge._client.get = AsyncMock(side_effect=httpx.ConnectError(
-        "down",
-        request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools"),
-    ))
+    bridge._client.get = AsyncMock(
+        side_effect=httpx.ConnectError(
+            "down",
+            request=httpx.Request("GET", "http://remote/v1/skills/mcp/tools"),
+        )
+    )
 
     first = await bridge.tools_list()
     second = await bridge.tools_list()

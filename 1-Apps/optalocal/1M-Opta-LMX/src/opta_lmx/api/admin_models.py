@@ -93,9 +93,7 @@ def _normalize_load_backend(raw_backend: str | None) -> str | None:
     normalized = _LEGACY_LOAD_BACKEND_ALIASES.get(normalized, normalized)
     if normalized not in _ALLOWED_LOAD_BACKENDS:
         allowed = ", ".join(sorted(_ALLOWED_LOAD_BACKENDS))
-        raise ValueError(
-            f"Invalid backend '{raw_backend}'. Expected one of: {allowed}."
-        )
+        raise ValueError(f"Invalid backend '{raw_backend}'. Expected one of: {allowed}.")
     return normalized
 
 
@@ -249,7 +247,8 @@ admin_models_router = APIRouter()
 
 @admin_models_router.get("/admin/models", responses={403: {"model": ErrorResponse}})
 async def list_admin_models(
-    _auth: AdminAuth, engine: Engine,
+    _auth: AdminAuth,
+    engine: Engine,
 ) -> AdminModelsResponse:
     """List all loaded models with detailed statistics."""
     loaded = engine.get_loaded_models_detailed()
@@ -291,7 +290,9 @@ async def list_admin_models(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_model_performance(
-    model_id: str, _auth: AdminAuth, engine: Engine,
+    model_id: str,
+    _auth: AdminAuth,
+    engine: Engine,
 ) -> AdminModelPerformanceResponse | JSONResponse:
     """Get active performance configuration for a loaded model."""
     if not engine.is_model_loaded(model_id):
@@ -339,8 +340,12 @@ async def get_model_performance(
     },
 )
 async def load_model(
-    body: AdminLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
-    preset_mgr: Presets, request: Request,
+    body: AdminLoadRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+    manager: Manager,
+    preset_mgr: Presets,
+    request: Request,
 ) -> AdminLoadResponse | JSONResponse:
     """Load a model into memory.
 
@@ -393,9 +398,7 @@ async def load_model(
                         candidate_backend = failed_rows[0].get("backend")
                         if isinstance(candidate_backend, str):
                             failed_backend = candidate_backend
-                allow_backend_switch = bool(
-                    failed_backend and preferred_backend != failed_backend
-                )
+                allow_backend_switch = bool(failed_backend and preferred_backend != failed_backend)
 
             if allow_backend_switch:
                 logger.info(
@@ -458,8 +461,9 @@ async def load_model(
 
                 # Clean up expired pending downloads
                 now = time.time()
-                expired = [k for k, v in pending.items()
-                           if now - v["created_at"] > _TOKEN_EXPIRY_SEC]
+                expired = [
+                    k for k, v in pending.items() if now - v["created_at"] > _TOKEN_EXPIRY_SEC
+                ]
                 for k in expired:
                     pending.pop(k, None)
 
@@ -932,8 +936,12 @@ async def get_model_autotune(
     },
 )
 async def confirm_and_load(
-    body: ConfirmLoadRequest, _auth: AdminAuth, engine: Engine, manager: Manager,
-    preset_mgr: Presets, request: Request,
+    body: ConfirmLoadRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+    manager: Manager,
+    preset_mgr: Presets,
+    request: Request,
 ) -> JSONResponse:
     """Confirm a pending download and start download + auto-load.
 
@@ -1025,7 +1033,10 @@ async def confirm_and_load(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def unload_model(
-    body: AdminUnloadRequest, _auth: AdminAuth, engine: Engine, request: Request,
+    body: AdminUnloadRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+    request: Request,
 ) -> AdminUnloadResponse | JSONResponse:
     """Unload a model and free memory."""
     try:
@@ -1062,7 +1073,8 @@ async def unload_model(
 
 @admin_models_router.get("/admin/models/available", responses={403: {"model": ErrorResponse}})
 async def list_available_models(
-    _auth: AdminAuth, manager: Manager,
+    _auth: AdminAuth,
+    manager: Manager,
 ) -> list[AvailableModel]:
     """List all models available on disk (downloaded but not necessarily loaded)."""
     models = await manager.list_available()
@@ -1086,7 +1098,9 @@ async def list_available_models(
     responses={403: {"model": ErrorResponse}},
 )
 async def start_download(
-    body: AdminDownloadRequest, _auth: AdminAuth, manager: Manager,
+    body: AdminDownloadRequest,
+    _auth: AdminAuth,
+    manager: Manager,
 ) -> AdminDownloadResponse | JSONResponse:
     """Start an async model download from HuggingFace Hub."""
     try:
@@ -1148,7 +1162,9 @@ async def list_downloads(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_download_progress(
-    download_id: str, _auth: AdminAuth, manager: Manager,
+    download_id: str,
+    _auth: AdminAuth,
+    manager: Manager,
 ) -> DownloadProgressResponse | JSONResponse:
     """Get the progress of a model download."""
     task = manager.get_download_progress(download_id)
@@ -1179,7 +1195,10 @@ async def get_download_progress(
     },
 )
 async def delete_model(
-    model_id: str, _auth: AdminAuth, engine: Engine, manager: Manager,
+    model_id: str,
+    _auth: AdminAuth,
+    engine: Engine,
+    manager: Manager,
 ) -> AdminDeleteResponse | JSONResponse:
     """Delete a model from disk. Returns 409 if the model is currently loaded."""
     # Path traversal validation

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+from typing import Protocol, cast
 
 import psutil
 from starlette.types import ASGIApp, Receive, Scope, Send
@@ -10,6 +11,13 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 logger = logging.getLogger(__name__)
 
 EXEMPT_PATHS = {"/healthz", "/readyz", "/admin/health"}
+
+
+class _MemoryMonitorLike(Protocol):
+    """Subset of memory monitor used by load shedding."""
+
+    def usage_percent(self) -> float:
+        """Return memory usage percentage."""
 
 
 class LoadSheddingMiddleware:
@@ -25,8 +33,8 @@ class LoadSheddingMiddleware:
         if app is not None:
             monitor = getattr(getattr(app, "state", None), "memory_monitor", None)
             if monitor is not None:
-                return monitor.usage_percent()
-        return psutil.virtual_memory().percent
+                return cast(_MemoryMonitorLike, monitor).usage_percent()
+        return float(psutil.virtual_memory().percent)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] == "http":
@@ -34,11 +42,14 @@ class LoadSheddingMiddleware:
             if path not in EXEMPT_PATHS:
                 mem_percent = self._get_memory_percent(scope)
                 if mem_percent >= self.threshold:
-                    logger.warning("load_shedding_triggered", extra={
-                        "memory_percent": mem_percent,
-                        "threshold": self.threshold,
-                        "path": path,
-                    })
+                    logger.warning(
+                        "load_shedding_triggered",
+                        extra={
+                            "memory_percent": mem_percent,
+                            "threshold": self.threshold,
+                            "path": path,
+                        },
+                    )
                     await self._send_503(send)
                     return
         await self.app(scope, receive, send)
@@ -48,15 +59,19 @@ class LoadSheddingMiddleware:
             b'{"error": {"message": "Server under memory pressure",'
             b' "type": "server_error", "code": "overloaded"}}'
         )
-        await send({
-            "type": "http.response.start",
-            "status": 503,
-            "headers": [
-                [b"content-type", b"application/json"],
-                [b"retry-after", b"30"],
-            ],
-        })
-        await send({
-            "type": "http.response.body",
-            "body": body,
-        })
+        await send(
+            {
+                "type": "http.response.start",
+                "status": 503,
+                "headers": [
+                    [b"content-type", b"application/json"],
+                    [b"retry-after", b"30"],
+                ],
+            }
+        )
+        await send(
+            {
+                "type": "http.response.body",
+                "body": body,
+            }
+        )

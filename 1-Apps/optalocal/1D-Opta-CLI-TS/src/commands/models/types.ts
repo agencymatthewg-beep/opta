@@ -242,7 +242,7 @@ export function parseCsvList(raw: string | undefined): string[] {
 export function formatModelInventoryWarning(scope: string, err: unknown): string {
   if (err instanceof LmxApiError) {
     if (err.code === 'unauthorized' || err.status === 403) {
-      return `LMX denied access to ${scope} (403 unauthorized). Check connection.adminKey.`;
+      return `LMX denied access to ${scope} (403 unauthorized). Check connection.adminKey / connection.adminKeysByHost.`;
     }
     if (err.code === 'connection_error') {
       return `LMX unreachable while fetching ${scope}: ${err.message}`;

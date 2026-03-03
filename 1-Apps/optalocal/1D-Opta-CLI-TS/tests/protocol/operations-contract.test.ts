@@ -61,11 +61,33 @@ describe('v3 operations contract', () => {
       'embed',
       'rerank',
       'benchmark',
+      'ceo.benchmark',
+      'models.history',
+      'models.aliases.list',
+      'models.aliases.set',
+      'models.aliases.delete',
+      'models.dashboard',
+      'models.predictor',
+      'models.helpers',
+      'models.quantize',
+      'models.agents',
+      'models.skills',
+      'models.rag',
+      'models.health',
+      'models.scan',
+      'models.browse.local',
+      'models.browse.library',
       'keychain.status',
       'keychain.set-anthropic',
       'keychain.set-lmx',
+      'keychain.set-gemini',
+      'keychain.set-openai',
+      'keychain.set-opencode-zen',
       'keychain.delete-anthropic',
       'keychain.delete-lmx',
+      'keychain.delete-gemini',
+      'keychain.delete-openai',
+      'keychain.delete-opencode-zen',
     ]);
   });
 
@@ -236,6 +258,48 @@ describe('v3 operations contract', () => {
         input: { shell: 'zsh', install: true },
       })
     ).toMatchObject({ id: 'completions.generate' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'ceo.benchmark',
+        input: { filter: 'failing-test' },
+      })
+    ).toMatchObject({ id: 'ceo.benchmark' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'models.aliases.set',
+        input: { alias: 'mini', model: 'demo/model' },
+      })
+    ).toMatchObject({ id: 'models.aliases.set' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'models.aliases.set',
+        input: { alias: 'mini' },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'models.scan',
+        input: { full: true },
+      })
+    ).toMatchObject({ id: 'models.scan' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'models.quantize',
+        input: { args: 'list' },
+      })
+    ).toMatchObject({ id: 'models.quantize' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'models.browse.library',
+        input: { query: 'qwen', limit: 25 },
+      })
+    ).toMatchObject({ id: 'models.browse.library' });
   });
 
   it('validates typed execute/list responses', () => {

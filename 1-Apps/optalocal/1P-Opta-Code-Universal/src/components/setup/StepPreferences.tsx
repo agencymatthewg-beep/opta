@@ -1,14 +1,11 @@
-import { useRef } from "react";
 import type { Platform } from "../../hooks/usePlatform.js";
-import { isNativeDesktop } from "../../lib/runtime";
 import {
   MonoLabel,
   SegControl,
-  TextInput,
   Toggle,
   type WizardFormSetter,
 } from "./controls";
-import { type WizardFormData, wizardInvoke, WIZARD_THEME } from "./shared";
+import { type WizardFormData, WIZARD_THEME } from "./shared";
 
 export function StepPreferences({
   form,
@@ -19,36 +16,6 @@ export function StepPreferences({
   setForm: WizardFormSetter;
   platform: Platform | null;
 }) {
-  const configDirRowRef = useRef<HTMLDivElement>(null);
-  const nativeDesktop = isNativeDesktop();
-
-  const focusConfigInput = () => {
-    const input = configDirRowRef.current?.querySelector<HTMLInputElement>("input");
-    if (input) {
-      input.focus();
-      input.select();
-    }
-  };
-
-  const openBrowserFolderPicker = () => {
-    const input = document.createElement("input");
-    input.type = "file";
-    input.multiple = true;
-    (input as HTMLInputElement & { webkitdirectory?: boolean }).webkitdirectory =
-      true;
-    input.onchange = () => {
-      const firstFile = input.files?.[0];
-      const relativePath = firstFile?.webkitRelativePath;
-      const folderName = relativePath?.split("/")[0];
-      if (folderName) {
-        setForm((prev) => ({ ...prev, configDir: `~/${folderName}` }));
-        return;
-      }
-      focusConfigInput();
-    };
-    input.click();
-  };
-
   const prefGroup = (children: React.ReactNode) => (
     <div style={{ marginBottom: 20 }}>{children}</div>
   );
@@ -66,59 +33,27 @@ export function StepPreferences({
       >
         Preferences
       </h2>
-      <p style={{ fontSize: 12.5, color: WIZARD_THEME.text2, marginBottom: 20 }}>
+      <p
+        style={{ fontSize: 12.5, color: WIZARD_THEME.text2, marginBottom: 20 }}
+      >
         Tune Opta to your workflow
       </p>
 
       {prefGroup(
         <>
-          <MonoLabel>Config folder</MonoLabel>
-          <div ref={configDirRowRef} style={{ display: "flex", gap: 7 }}>
-            <TextInput
-              value={form.configDir}
-              onChange={(nextValue) =>
-                setForm((prev) => ({ ...prev, configDir: nextValue }))
-              }
-            />
-            <button
-              type="button"
-              onClick={async () => {
-                if (nativeDesktop) {
-                  try {
-                    const chosen = await wizardInvoke<string | null>(
-                      "pick_folder",
-                    );
-                    if (chosen) {
-                      setForm((prev) => ({ ...prev, configDir: chosen }));
-                      return;
-                    }
-                  } catch {
-                    // Native picker unavailable - fall through.
-                  }
-                }
-                if (!nativeDesktop) {
-                  openBrowserFolderPicker();
-                  return;
-                }
-                focusConfigInput();
-              }}
-              style={{
-                fontFamily: "'Bricolage Grotesque', sans-serif",
-                fontSize: 11.5,
-                fontWeight: 600,
-                background: "rgba(255,255,255,0.055)",
-                border: "1px solid rgba(255,255,255,0.1)",
-                color: WIZARD_THEME.text2,
-                borderRadius: 8,
-                padding: "0 13px",
-                cursor: "pointer",
-                whiteSpace: "nowrap",
-                transition: "all 0.18s",
-                flexShrink: 0,
-              }}
-            >
-              Browse
-            </button>
+          <MonoLabel>Config folder (CLI canonical)</MonoLabel>
+          <div
+            style={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11.5,
+              background: "rgba(0,0,0,0.28)",
+              border: "1px solid rgba(255,255,255,0.09)",
+              borderRadius: 8,
+              color: WIZARD_THEME.text1,
+              padding: "8px 11px",
+            }}
+          >
+            {form.configDir}
           </div>
         </>,
       )}
@@ -160,12 +95,24 @@ export function StepPreferences({
             }
           />
           {platform === "macos" && form.shell === "zsh" ? (
-            <p style={{ margin: "6px 0 0", fontSize: 11, color: WIZARD_THEME.text3 }}>
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: 11,
+                color: WIZARD_THEME.text3,
+              }}
+            >
               Default shell since macOS Catalina
             </p>
           ) : null}
           {platform === "windows" && form.shell === "powershell" ? (
-            <p style={{ margin: "6px 0 0", fontSize: 11, color: WIZARD_THEME.text3 }}>
+            <p
+              style={{
+                margin: "6px 0 0",
+                fontSize: 11,
+                color: WIZARD_THEME.text3,
+              }}
+            >
               Recommended for Windows
             </p>
           ) : null}

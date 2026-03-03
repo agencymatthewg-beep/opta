@@ -1,6 +1,35 @@
 import { useState } from "react";
 import { isNativeDesktop } from "../../lib/runtime";
+import { daemonClient } from "../../lib/daemonClient";
+import type { DaemonConnectionOptions } from "../../types";
 import { type WizardFormData, wizardInvoke, WIZARD_THEME } from "./shared";
+
+interface BootstrapMetadata {
+  host?: string;
+  port?: number;
+}
+
+function providerEndpointLabel(provider: WizardFormData["provider"]): string {
+  switch (provider) {
+    case "lmx":
+      return "local-lmx";
+    case "anthropic":
+      return "api.anthropic.com";
+    case "gemini":
+      return "generativelanguage.googleapis.com";
+    case "openai":
+      return "api.openai.com";
+    case "opencode_zen":
+      return "provider endpoint (opencode_zen)";
+    default:
+      return provider;
+  }
+}
+
+function providerIdLabel(provider: WizardFormData["provider"]): string {
+  if (provider === "opencode_zen") return "opencode_zen";
+  return provider;
+}
 
 export function StepReady({
   form,
@@ -24,8 +53,14 @@ export function StepReady({
   const connLabel =
     form.provider === "lmx"
       ? `${form.lmxHost}:${form.lmxPort}`
-      : "api.anthropic.com";
-  const providerLabel = form.provider === "lmx" ? "local-lmx" : "anthropic";
+      : providerEndpointLabel(form.provider);
+  const providerLabel = providerIdLabel(form.provider);
+  const apiKeyLabel = form.cloudApiKey.trim()
+    ? `••••${form.cloudApiKey.trim().slice(-4)}`
+    : "(not set)";
+  const lmxAdminKeyLabel = form.lmxAdminKey.trim()
+    ? `••••${form.lmxAdminKey.trim().slice(-4)}`
+    : "(not set)";
 
   async function launch() {
     if (launching || launched) return;
@@ -33,23 +68,60 @@ export function StepReady({
     setSaveError(null);
 
     try {
-      await wizardInvoke("save_setup_config", {
-        provider: form.provider,
-        lmxHost: form.lmxHost,
-        lmxPort: form.lmxPort,
-        anthropicKey: form.anthropicKey,
-        configDir: form.configDir,
-        autonomyLevel: form.autonomyLevel,
-        shell: form.shell,
-        tuiDefault: form.tuiDefault,
+      const bootstrap = await wizardInvoke<BootstrapMetadata>(
+        "bootstrap_daemon_connection",
+        { startIfNeeded: true },
+      );
+      const host = bootstrap?.host?.trim();
+      const port = Math.trunc(Number(bootstrap?.port));
+      if (!host || !Number.isFinite(port) || port <= 0 || port > 65_535) {
+        throw new Error("Unable to resolve daemon connection for onboarding");
+      }
+      const token = await wizardInvoke<string>("get_connection_secret", {
+        host,
+        port,
       });
+      const connection: DaemonConnectionOptions = {
+        host,
+        port,
+        token: typeof token === "string" ? token : "",
+      };
+
+      const cloudKey = form.cloudApiKey.trim();
+      const response = await daemonClient.runOperation(
+        connection,
+        "onboard.apply",
+        {
+          input: {
+            provider: form.provider,
+            lmxHost: form.lmxHost,
+            lmxPort: form.lmxPort,
+            lmxAdminKey:
+              form.provider === "lmx" ? form.lmxAdminKey.trim() : undefined,
+            anthropicApiKey:
+              form.provider === "anthropic" ? cloudKey : undefined,
+            geminiApiKey: form.provider === "gemini" ? cloudKey : undefined,
+            openaiApiKey: form.provider === "openai" ? cloudKey : undefined,
+            opencodeZenApiKey:
+              form.provider === "opencode_zen" ? cloudKey : undefined,
+            providerKeyStorage:
+              form.provider === "lmx" ? undefined : form.providerKeyStorage,
+            autonomyLevel: form.autonomyLevel,
+            tuiDefault: form.tuiDefault,
+          },
+        },
+      );
+
+      if (!response.ok) {
+        throw new Error(`[${response.error.code}] ${response.error.message}`);
+      }
     } catch (error) {
       if (nativeDesktop) {
         setLaunching(false);
         setSaveError(
           error instanceof Error
             ? error.message
-            : "Unable to save setup config",
+            : "Unable to apply onboarding profile",
         );
         return;
       }
@@ -153,7 +225,16 @@ export function StepReady({
       >
         {srow("provider", providerLabel, WIZARD_THEME.primaryBright)}
         {srow("connection", connLabel, WIZARD_THEME.ok)}
+        {form.provider === "lmx"
+          ? srow("lmx_admin_key", lmxAdminKeyLabel, WIZARD_THEME.primaryBright)
+          : null}
         {srow("config_dir", form.configDir)}
+        {form.provider !== "lmx"
+          ? srow("api_key", apiKeyLabel, WIZARD_THEME.primaryBright)
+          : null}
+        {form.provider !== "lmx"
+          ? srow("key_storage", form.providerKeyStorage)
+          : null}
         {srow("autonomy", autonomyLabel)}
         {srow("shell", shellLabel)}
         <div
@@ -226,9 +307,9 @@ export function StepReady({
           }}
         >
           {launched ? (
-            "Config saved - starting Opta"
+            "Onboarding saved - starting Opta"
           ) : launching ? (
-            "Writing config..."
+            "Applying onboarding..."
           ) : (
             <>
               Launch Opta

@@ -41,9 +41,13 @@ export function BackgroundJobsPage({
 
   const noticeTimerRef = useRef<number | null>(null);
   const showNotice = useCallback((msg: string) => {
-    if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+    if (noticeTimerRef.current !== null)
+      window.clearTimeout(noticeTimerRef.current);
     setActionNotice(msg);
-    noticeTimerRef.current = window.setTimeout(() => setActionNotice(null), 3000);
+    noticeTimerRef.current = window.setTimeout(
+      () => setActionNotice(null),
+      3000,
+    );
   }, []);
 
   useEffect(() => {
@@ -52,16 +56,16 @@ export function BackgroundJobsPage({
   }, [defaultSessionId]);
 
   const refresh = useCallback(async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await daemonClient.listBackground(connection);
-        setJobs((response.processes ?? []) as BackgroundJob[]);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
-      } finally {
-        setLoading(false);
-      }
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await daemonClient.listBackground(connection);
+      setJobs((response.processes ?? []) as BackgroundJob[]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setLoading(false);
+    }
   }, [connection]);
 
   const fetchOutput = useCallback(
@@ -70,8 +74,8 @@ export function BackgroundJobsPage({
       try {
         const response: DaemonBackgroundOutputResponse =
           await daemonClient.backgroundOutput(connection, processId, {
-          limit: 200,
-        });
+            limit: 200,
+          });
         const lines = response.chunks.map((c) => c.text).filter(Boolean);
         setOutput({ processId, lines });
       } catch (err) {
@@ -154,8 +158,10 @@ export function BackgroundJobsPage({
       void refresh();
     }, 5000);
     return () => {
-      if (refreshTimerRef.current !== null) window.clearInterval(refreshTimerRef.current);
-      if (noticeTimerRef.current !== null) window.clearTimeout(noticeTimerRef.current);
+      if (refreshTimerRef.current !== null)
+        window.clearInterval(refreshTimerRef.current);
+      if (noticeTimerRef.current !== null)
+        window.clearTimeout(noticeTimerRef.current);
     };
   }, [refresh]);
 
@@ -181,7 +187,11 @@ export function BackgroundJobsPage({
           disabled={loading}
           aria-label="Refresh background jobs"
         >
-          <RefreshCw size={13} className={loading ? "spin" : ""} aria-hidden="true" />
+          <RefreshCw
+            size={13}
+            className={loading ? "spin" : ""}
+            aria-hidden="true"
+          />
           {loading ? "Loading…" : "Refresh"}
         </button>
       </header>

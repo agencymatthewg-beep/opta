@@ -73,12 +73,14 @@ async def test_ws_chat_request_non_streaming(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "test-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "stream": False,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "test-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "stream": False,
+            }
+        )
 
         response = ws.receive_json()
         assert response["type"] == "chat.done"
@@ -124,12 +126,14 @@ async def test_ws_chat_request_streaming(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "stream-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "stream": True,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "stream-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "stream": True,
+            }
+        )
 
         # Collect all messages
         messages = []
@@ -156,11 +160,13 @@ async def test_ws_model_not_loaded(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "nonexistent-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "nonexistent-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+            }
+        )
 
         response = ws.receive_json()
         assert response["type"] == "chat.error"
@@ -186,10 +192,12 @@ async def test_ws_cancel_nonexistent_request(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.cancel",
-            "request_id": "chatcmpl-doesnotexist",
-        })
+        ws.send_json(
+            {
+                "type": "chat.cancel",
+                "request_id": "chatcmpl-doesnotexist",
+            }
+        )
         # Should not crash — just silently ignored
 
 
@@ -238,12 +246,14 @@ async def test_ws_preset_resolution(ws_app, tmp_path) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "preset:test-preset",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "stream": False,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "preset:test-preset",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "stream": False,
+            }
+        )
 
         response = ws.receive_json()
         assert response["type"] == "chat.done"
@@ -256,11 +266,13 @@ async def test_ws_preset_not_found(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "preset:nonexistent",
-            "messages": [{"role": "user", "content": "Hello"}],
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "preset:nonexistent",
+                "messages": [{"role": "user", "content": "Hello"}],
+            }
+        )
 
         response = ws.receive_json()
         assert response["type"] == "chat.error"
@@ -282,12 +294,14 @@ async def test_ws_records_metrics_non_streaming(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "metrics-model",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "stream": False,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "metrics-model",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "stream": False,
+            }
+        )
         ws.receive_json()  # chat.done
 
     assert metrics._total_requests == 1
@@ -330,12 +344,14 @@ async def test_ws_records_metrics_streaming(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "stream-metrics",
-            "messages": [{"role": "user", "content": "Hello"}],
-            "stream": True,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "stream-metrics",
+                "messages": [{"role": "user", "content": "Hello"}],
+                "stream": True,
+            }
+        )
         msgs = []
         while True:
             msg = ws.receive_json()
@@ -385,13 +401,15 @@ async def test_ws_tools_passed_to_engine(ws_app) -> None:
 
     client = TestClient(ws_app)
     with client.websocket_connect("/v1/chat/stream") as ws:
-        ws.send_json({
-            "type": "chat.request",
-            "model": "tools-model",
-            "messages": [{"role": "user", "content": "What time is it?"}],
-            "tools": tools,
-            "stream": False,
-        })
+        ws.send_json(
+            {
+                "type": "chat.request",
+                "model": "tools-model",
+                "messages": [{"role": "user", "content": "What time is it?"}],
+                "tools": tools,
+                "stream": False,
+            }
+        )
 
         response = ws.receive_json()
         assert response["type"] == "chat.done"

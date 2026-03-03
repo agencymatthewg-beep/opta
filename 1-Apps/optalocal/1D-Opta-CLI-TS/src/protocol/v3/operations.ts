@@ -51,11 +51,33 @@ export const OPERATION_IDS = [
   'embed',
   'rerank',
   'benchmark',
+  'ceo.benchmark',
+  'models.history',
+  'models.aliases.list',
+  'models.aliases.set',
+  'models.aliases.delete',
+  'models.dashboard',
+  'models.predictor',
+  'models.helpers',
+  'models.quantize',
+  'models.agents',
+  'models.skills',
+  'models.rag',
+  'models.health',
+  'models.scan',
+  'models.browse.local',
+  'models.browse.library',
   'keychain.status',
   'keychain.set-anthropic',
   'keychain.set-lmx',
+  'keychain.set-gemini',
+  'keychain.set-openai',
+  'keychain.set-opencode-zen',
   'keychain.delete-anthropic',
   'keychain.delete-lmx',
+  'keychain.delete-gemini',
+  'keychain.delete-openai',
+  'keychain.delete-opencode-zen',
 ] as const;
 
 export type OperationId = (typeof OPERATION_IDS)[number];
@@ -91,6 +113,9 @@ export const OperationInputSchemaById = {
       host: z.string().min(1).optional(),
       port: z.union([z.string().min(1), z.number().int().min(1).max(65_535)]).optional(),
       adminKey: z.string().optional(),
+      adminKeysByHost: z
+        .union([z.string(), z.record(z.string().min(1), z.string().min(1))])
+        .optional(),
       model: z.string().min(1).optional(),
       provider: ProviderOverrideSchema.optional(),
       mode: z.enum(['safe', 'auto', 'plan', 'review', 'research', 'dangerous', 'ci']).optional(),
@@ -196,10 +221,15 @@ export const OperationInputSchemaById = {
   'daemon.uninstall': EmptyInputSchema,
   'onboard.apply': z
     .object({
-      provider: z.enum(['lmx', 'anthropic']).optional(),
+      provider: z.enum(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']).optional(),
       lmxHost: z.string().min(1).optional(),
       lmxPort: z.union([z.string().min(1), z.number().int().min(1).max(65_535)]).optional(),
+      lmxAdminKey: z.string().optional(),
       anthropicApiKey: z.string().optional(),
+      geminiApiKey: z.string().optional(),
+      openaiApiKey: z.string().optional(),
+      opencodeZenApiKey: z.string().optional(),
+      providerKeyStorage: z.enum(['none', 'config', 'keychain']).optional(),
       autonomyLevel: z.number().int().min(1).max(5).optional(),
       tuiDefault: z.boolean().optional(),
     })
@@ -312,6 +342,70 @@ export const OperationInputSchemaById = {
       force: z.boolean().optional(),
     })
     .strict(),
+  'ceo.benchmark': z
+    .object({
+      filter: z.string().min(1).optional(),
+      model: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.history': EmptyInputSchema,
+  'models.aliases.list': EmptyInputSchema,
+  'models.aliases.set': z
+    .object({
+      alias: z.string().min(1),
+      model: z.string().min(1),
+    })
+    .strict(),
+  'models.aliases.delete': z
+    .object({
+      alias: z.string().min(1),
+    })
+    .strict(),
+  'models.dashboard': EmptyInputSchema,
+  'models.predictor': EmptyInputSchema,
+  'models.helpers': EmptyInputSchema,
+  'models.quantize': z
+    .object({
+      args: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.agents': z
+    .object({
+      args: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.skills': z
+    .object({
+      args: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.rag': z
+    .object({
+      args: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.health': z
+    .object({
+      args: z.string().min(1).optional(),
+    })
+    .strict(),
+  'models.scan': z
+    .object({
+      full: z.boolean().optional(),
+    })
+    .strict(),
+  'models.browse.local': z
+    .object({
+      query: z.string().min(1).optional(),
+      limit: z.number().int().min(1).max(500).optional(),
+    })
+    .strict(),
+  'models.browse.library': z
+    .object({
+      query: z.string().min(1).optional(),
+      limit: z.number().int().min(1).max(500).optional(),
+    })
+    .strict(),
   'keychain.status': EmptyInputSchema,
   'keychain.set-anthropic': z
     .object({
@@ -323,8 +417,26 @@ export const OperationInputSchemaById = {
       apiKey: z.string().min(1),
     })
     .strict(),
+  'keychain.set-gemini': z
+    .object({
+      apiKey: z.string().min(1),
+    })
+    .strict(),
+  'keychain.set-openai': z
+    .object({
+      apiKey: z.string().min(1),
+    })
+    .strict(),
+  'keychain.set-opencode-zen': z
+    .object({
+      apiKey: z.string().min(1),
+    })
+    .strict(),
   'keychain.delete-anthropic': EmptyInputSchema,
   'keychain.delete-lmx': EmptyInputSchema,
+  'keychain.delete-gemini': EmptyInputSchema,
+  'keychain.delete-openai': EmptyInputSchema,
+  'keychain.delete-opencode-zen': EmptyInputSchema,
 } as const satisfies Record<OperationId, z.ZodTypeAny>;
 
 export type OperationInputById = {
@@ -472,7 +584,7 @@ export const OperationOutputSchemaById = {
   'onboard.apply': z
     .object({
       ok: z.literal(true),
-      provider: z.enum(['lmx', 'anthropic']),
+      provider: z.enum(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']),
       connection: z
         .object({
           host: z.string().min(1),
@@ -481,7 +593,18 @@ export const OperationOutputSchemaById = {
         .strict(),
       autonomyLevel: z.number().int().min(1).max(5),
       tuiDefault: z.boolean(),
-      anthropicKeyConfigured: z.boolean(),
+      keyConfigured: z
+        .array(
+          z
+            .object({
+              provider: z.enum(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']),
+              configured: z.boolean(),
+              storage: z.enum(['none', 'config', 'keychain']),
+              maskedSuffix: z.string().min(1).optional(),
+            })
+            .strict()
+        )
+        .default([]),
       onboarded: z.literal(true),
     })
     .strict(),
@@ -509,11 +632,33 @@ export const OperationOutputSchemaById = {
   embed: z.unknown(),
   rerank: z.unknown(),
   benchmark: z.unknown(),
+  'ceo.benchmark': z.unknown(),
+  'models.history': z.unknown(),
+  'models.aliases.list': z.unknown(),
+  'models.aliases.set': TextCommandOutputSchema,
+  'models.aliases.delete': TextCommandOutputSchema,
+  'models.dashboard': z.unknown(),
+  'models.predictor': z.unknown(),
+  'models.helpers': z.unknown(),
+  'models.quantize': z.unknown(),
+  'models.agents': z.unknown(),
+  'models.skills': z.unknown(),
+  'models.rag': z.unknown(),
+  'models.health': z.unknown(),
+  'models.scan': z.unknown(),
+  'models.browse.local': z.unknown(),
+  'models.browse.library': z.unknown(),
   'keychain.status': z.unknown(),
   'keychain.set-anthropic': z.unknown(),
   'keychain.set-lmx': z.unknown(),
+  'keychain.set-gemini': z.unknown(),
+  'keychain.set-openai': z.unknown(),
+  'keychain.set-opencode-zen': z.unknown(),
   'keychain.delete-anthropic': z.unknown(),
   'keychain.delete-lmx': z.unknown(),
+  'keychain.delete-gemini': z.unknown(),
+  'keychain.delete-openai': z.unknown(),
+  'keychain.delete-opencode-zen': z.unknown(),
 } as const satisfies Record<OperationId, z.ZodTypeAny>;
 
 export type OperationOutputById = {
@@ -580,11 +725,33 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('embed'),
   makeExecuteRequestVariant('rerank'),
   makeExecuteRequestVariant('benchmark'),
+  makeExecuteRequestVariant('ceo.benchmark'),
+  makeExecuteRequestVariant('models.history'),
+  makeExecuteRequestVariant('models.aliases.list'),
+  makeExecuteRequestVariant('models.aliases.set'),
+  makeExecuteRequestVariant('models.aliases.delete'),
+  makeExecuteRequestVariant('models.dashboard'),
+  makeExecuteRequestVariant('models.predictor'),
+  makeExecuteRequestVariant('models.helpers'),
+  makeExecuteRequestVariant('models.quantize'),
+  makeExecuteRequestVariant('models.agents'),
+  makeExecuteRequestVariant('models.skills'),
+  makeExecuteRequestVariant('models.rag'),
+  makeExecuteRequestVariant('models.health'),
+  makeExecuteRequestVariant('models.scan'),
+  makeExecuteRequestVariant('models.browse.local'),
+  makeExecuteRequestVariant('models.browse.library'),
   makeExecuteRequestVariant('keychain.status'),
   makeExecuteRequestVariant('keychain.set-anthropic'),
   makeExecuteRequestVariant('keychain.set-lmx'),
+  makeExecuteRequestVariant('keychain.set-gemini'),
+  makeExecuteRequestVariant('keychain.set-openai'),
+  makeExecuteRequestVariant('keychain.set-opencode-zen'),
   makeExecuteRequestVariant('keychain.delete-anthropic'),
   makeExecuteRequestVariant('keychain.delete-lmx'),
+  makeExecuteRequestVariant('keychain.delete-gemini'),
+  makeExecuteRequestVariant('keychain.delete-openai'),
+  makeExecuteRequestVariant('keychain.delete-opencode-zen'),
 ]);
 export type OperationExecuteRequest = z.infer<typeof OperationExecuteRequestSchema>;
 
@@ -941,6 +1108,102 @@ export const OPERATION_TAXONOMY = [
     safety: 'dangerous',
   },
   {
+    id: 'ceo.benchmark',
+    title: 'CEO Benchmark Suite',
+    description: 'Run CEO autonomy benchmark tasks and verification scripts.',
+    safety: 'dangerous',
+  },
+  {
+    id: 'models.history',
+    title: 'Models History',
+    description: 'Show recent model activity history.',
+    safety: 'read',
+  },
+  {
+    id: 'models.aliases.list',
+    title: 'Models Aliases List',
+    description: 'List configured model aliases.',
+    safety: 'read',
+  },
+  {
+    id: 'models.aliases.set',
+    title: 'Models Alias Set',
+    description: 'Create or update a model alias mapping.',
+    safety: 'write',
+  },
+  {
+    id: 'models.aliases.delete',
+    title: 'Models Alias Delete',
+    description: 'Remove a model alias mapping.',
+    safety: 'write',
+  },
+  {
+    id: 'models.dashboard',
+    title: 'Models Dashboard',
+    description: 'Inspect loaded, on-disk, and alias model state.',
+    safety: 'read',
+  },
+  {
+    id: 'models.predictor',
+    title: 'Models Predictor',
+    description: 'View model predictor statistics and recommendation data.',
+    safety: 'read',
+  },
+  {
+    id: 'models.helpers',
+    title: 'Models Helpers Health',
+    description: 'Inspect helper-node health summary.',
+    safety: 'read',
+  },
+  {
+    id: 'models.quantize',
+    title: 'Models Quantize',
+    description: 'Run quantize list/status/start actions via args payload.',
+    safety: 'write',
+  },
+  {
+    id: 'models.agents',
+    title: 'Models Agents',
+    description: 'Run agents list/start/status/cancel/watch actions via args payload.',
+    safety: 'write',
+  },
+  {
+    id: 'models.skills',
+    title: 'Models Skills',
+    description: 'Run skills list/show/run/mcp-call/openclaw actions via args payload.',
+    safety: 'write',
+  },
+  {
+    id: 'models.rag',
+    title: 'Models RAG',
+    description: 'Run RAG query/list/delete/ingest/context actions via args payload.',
+    safety: 'write',
+  },
+  {
+    id: 'models.health',
+    title: 'Models Health',
+    description: 'Run model health/liveness/readiness checks via args payload.',
+    safety: 'read',
+  },
+  {
+    id: 'models.scan',
+    title: 'Models Scan',
+    description: 'Scan loaded/on-disk/cloud model inventory.',
+    safety: 'read',
+  },
+  {
+    id: 'models.browse.local',
+    title: 'Models Browse Local Metadata',
+    description: 'Return non-interactive metadata for local model browser views.',
+    safety: 'read',
+  },
+  {
+    id: 'models.browse.library',
+    title: 'Models Browse Library Metadata',
+    description: 'Return non-interactive metadata for library browser views.',
+    safety: 'read',
+  },
+  {
     id: 'keychain.status',
     title: 'Keychain Status',
     description: 'Inspect keychain availability and stored provider keys.',
@@ -959,6 +1222,24 @@ export const OPERATION_TAXONOMY = [
     safety: 'write',
   },
   {
+    id: 'keychain.set-gemini',
+    title: 'Keychain Set Gemini',
+    description: 'Store Gemini API key in system keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'keychain.set-openai',
+    title: 'Keychain Set OpenAI',
+    description: 'Store OpenAI API key in system keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'keychain.set-opencode-zen',
+    title: 'Keychain Set Opencode Zen',
+    description: 'Store Opencode Zen API key in system keychain.',
+    safety: 'write',
+  },
+  {
     id: 'keychain.delete-anthropic',
     title: 'Keychain Delete Anthropic',
     description: 'Delete Anthropic API key from system keychain.',
@@ -968,6 +1249,24 @@ export const OPERATION_TAXONOMY = [
     id: 'keychain.delete-lmx',
     title: 'Keychain Delete LMX',
     description: 'Delete LMX API key from system keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'keychain.delete-gemini',
+    title: 'Keychain Delete Gemini',
+    description: 'Delete Gemini API key from system keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'keychain.delete-openai',
+    title: 'Keychain Delete OpenAI',
+    description: 'Delete OpenAI API key from system keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'keychain.delete-opencode-zen',
+    title: 'Keychain Delete Opencode Zen',
+    description: 'Delete Opencode Zen API key from system keychain.',
     safety: 'write',
   },
 ] as const satisfies readonly OperationDescriptor[];

@@ -313,6 +313,7 @@ export const loadHandler = async (args: string, ctx: SlashContext): Promise<Slas
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -364,6 +365,7 @@ export const unloadHandler = async (args: string, ctx: SlashContext): Promise<Sl
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -429,6 +431,7 @@ export const serveHandler = async (args: string, ctx: SlashContext): Promise<Sla
       fallbackHosts: ctx.config.connection.fallbackHosts,
       port,
       adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
     });
 
     try {
@@ -466,6 +469,7 @@ export const serveHandler = async (args: string, ctx: SlashContext): Promise<Sla
       fallbackHosts: ctx.config.connection.fallbackHosts,
       port,
       adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
     });
     try {
       const result = await lmx.reloadConfig(FAST_SLASH_REQUEST_OPTS);
@@ -552,6 +556,7 @@ export const deleteModelHandler = async (args: string, ctx: SlashContext): Promi
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -582,6 +587,7 @@ export const downloadsHandler = async (args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {

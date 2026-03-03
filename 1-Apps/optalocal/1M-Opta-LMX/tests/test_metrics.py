@@ -17,13 +17,15 @@ def test_empty_metrics_has_zero_counters() -> None:
 def test_record_increments_counters() -> None:
     """Recording a request increments total and per-model counts."""
     mc = MetricsCollector()
-    mc.record(RequestMetric(
-        model_id="test-model",
-        latency_sec=0.5,
-        prompt_tokens=10,
-        completion_tokens=20,
-        stream=False,
-    ))
+    mc.record(
+        RequestMetric(
+            model_id="test-model",
+            latency_sec=0.5,
+            prompt_tokens=10,
+            completion_tokens=20,
+            stream=False,
+        )
+    )
     summary = mc.summary()
     assert summary["total_requests"] == 1
     assert summary["total_prompt_tokens"] == 10
@@ -35,13 +37,15 @@ def test_record_increments_counters() -> None:
 def test_record_stream_request() -> None:
     """Streaming requests are counted separately."""
     mc = MetricsCollector()
-    mc.record(RequestMetric(
-        model_id="test-model",
-        latency_sec=0.1,
-        prompt_tokens=5,
-        completion_tokens=0,
-        stream=True,
-    ))
+    mc.record(
+        RequestMetric(
+            model_id="test-model",
+            latency_sec=0.1,
+            prompt_tokens=5,
+            completion_tokens=0,
+            stream=True,
+        )
+    )
     summary = mc.summary()
     assert summary["total_stream_requests"] == 1
 
@@ -49,14 +53,16 @@ def test_record_stream_request() -> None:
 def test_record_error() -> None:
     """Errors increment both total and per-model error counts."""
     mc = MetricsCollector()
-    mc.record(RequestMetric(
-        model_id="test-model",
-        latency_sec=0.1,
-        prompt_tokens=5,
-        completion_tokens=0,
-        stream=False,
-        error=True,
-    ))
+    mc.record(
+        RequestMetric(
+            model_id="test-model",
+            latency_sec=0.1,
+            prompt_tokens=5,
+            completion_tokens=0,
+            stream=False,
+            error=True,
+        )
+    )
     summary = mc.summary()
     assert summary["total_errors"] == 1
     assert summary["per_model"]["test-model"]["errors"] == 1

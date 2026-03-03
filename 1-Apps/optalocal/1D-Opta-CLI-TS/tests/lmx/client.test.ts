@@ -161,6 +161,32 @@ describe('LmxClient', () => {
     });
   });
 
+  it('includes transport cause details for generic fetch failures', async () => {
+    globalThis.fetch = vi.fn().mockRejectedValue(
+      new TypeError('fetch failed', {
+        cause: {
+          code: 'ECONNREFUSED',
+          address: '127.0.0.1',
+          port: 1234,
+          message: 'connect ECONNREFUSED 127.0.0.1:1234',
+        },
+      }),
+    ) as unknown as typeof fetch;
+
+    const client = new LmxClient({
+      host: 'localhost',
+      port: 1234,
+      maxRetries: 0,
+    });
+
+    await expect(client.health()).rejects.toMatchObject({
+      message: expect.stringContaining('ECONNREFUSED'),
+    });
+    await expect(client.health()).rejects.toMatchObject({
+      message: expect.stringContaining('127.0.0.1:1234'),
+    });
+  });
+
   it('serializes advanced loadModel payload config fields', async () => {
     const fetchMock = vi.fn().mockResolvedValue(
       jsonResponse({

@@ -13,20 +13,24 @@ vi.mock('../../src/platform/index.js', async () => {
 
 // Mock LspClient
 vi.mock('../../src/lsp/client.js', () => ({
-  LspClient: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn().mockResolvedValue(undefined),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-    openDocument: vi.fn().mockResolvedValue(undefined),
-    closeDocument: vi.fn(),
-    notifyChange: vi.fn(),
-    isDocumentOpen: vi.fn().mockReturnValue(false),
-    definition: vi.fn().mockResolvedValue([]),
-    references: vi.fn().mockResolvedValue([]),
-    hover: vi.fn().mockResolvedValue(null),
-    workspaceSymbols: vi.fn().mockResolvedValue([]),
-    documentSymbols: vi.fn().mockResolvedValue([]),
-    rename: vi.fn().mockResolvedValue({ changes: {} }),
-  })),
+  LspClient: vi.fn().mockImplementation(function() {
+    return {
+      initialize: vi.fn().mockResolvedValue(undefined),
+      shutdown: vi.fn().mockResolvedValue(undefined),
+      openDocument: vi.fn().mockResolvedValue(undefined),
+      closeDocument: vi.fn(),
+      notifyChange: vi.fn(),
+      isDocumentOpen: vi.fn().mockReturnValue(false),
+      definition: vi.fn().mockResolvedValue([]),
+      references: vi.fn().mockResolvedValue([]),
+      hover: vi.fn().mockResolvedValue(null),
+      workspaceSymbols: vi.fn().mockResolvedValue([]),
+      documentSymbols: vi.fn().mockResolvedValue([]),
+      diagnostics: vi.fn().mockResolvedValue([]),
+      codeActions: vi.fn().mockResolvedValue([]),
+      rename: vi.fn().mockResolvedValue({ changes: {} }),
+    };
+  }),
 }));
 
 // Mock fs/promises for readFile
@@ -223,6 +227,22 @@ describe('LspManager', () => {
         new_name: 'newName',
       });
       expect(result).toBe('No changes.');
+    });
+
+    it('routes lsp_diagnostics correctly', async () => {
+      const result = await manager.execute('lsp_diagnostics', {
+        path: 'src/app.ts',
+      });
+      expect(result).toBe('No diagnostics found.');
+    });
+
+    it('routes lsp_code_actions correctly', async () => {
+      const result = await manager.execute('lsp_code_actions', {
+        path: 'src/app.ts',
+        line: 5,
+        character: 10,
+      });
+      expect(result).toBe('No code actions available.');
     });
 
     it('returns error for unknown LSP tool', async () => {

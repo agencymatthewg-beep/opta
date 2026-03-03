@@ -59,6 +59,9 @@ const SessionSchema = z.object({
   compacted: z.boolean(),
 });
 
+const SEARCH_PREVIEW_MESSAGE_LIMIT = 6;
+const SEARCH_PREVIEW_CHAR_LIMIT = 2000;
+
 function parseSession(data: string): Session | null {
   try {
     const parsed: unknown = JSON.parse(data);
@@ -68,6 +71,33 @@ function parseSession(data: string): Session | null {
   } catch {
     return null;
   }
+}
+
+function buildSessionSearchPreview(messages: AgentMessage[]): string {
+  const previewParts: string[] = [];
+  for (const message of messages) {
+    if (previewParts.length >= SEARCH_PREVIEW_MESSAGE_LIMIT) break;
+    if (message.role === 'system' || message.role === 'tool') continue;
+    if (typeof message.content === 'string') {
+      const value = message.content.trim();
+      if (value.length > 0) previewParts.push(value);
+      continue;
+    }
+    if (Array.isArray(message.content)) {
+      const chunks: string[] = [];
+      for (const part of message.content) {
+        if (part.type !== 'text') continue;
+        const value = part.text.trim();
+        if (value.length > 0) chunks.push(value);
+      }
+      const text = chunks.join(' ').trim();
+      if (text.length > 0) previewParts.push(text);
+    }
+  }
+
+  if (previewParts.length === 0) return '';
+  const normalized = previewParts.join('\n').replace(/\s+/g, ' ').trim();
+  return normalized.slice(0, SEARCH_PREVIEW_CHAR_LIMIT);
 }
 
 export interface SessionSummary {
@@ -94,32 +124,31 @@ function sessionPath(id: string): string {
 
 const INDEX_FILE = 'index.json';
 
-interface SessionIndex {
-  entries: Record<
-    string,
-    {
-      title: string;
-      model: string;
-      tags: string[];
-      created: string;
-      messageCount: number;
-      toolCallCount?: number;
-    }
-  >;
-  updatedAt: string;
-}
+const SessionIndexSchema = z.object({
+  entries: z.record(
+    z.string(),
+    z.object({
+      title: z.string(),
+      model: z.string(),
+      tags: z.array(z.string()),
+      created: z.string(),
+      messageCount: z.number(),
+      toolCallCount: z.number().optional(),
+      preview: z.string().optional(),
+    })
+  ),
+  updatedAt: z.string(),
+});
+
+export type SessionIndex = z.infer<typeof SessionIndexSchema>;
 
 async function loadIndex(): Promise<SessionIndex> {
   try {
     const data = await readFile(join(sessionsDir(), INDEX_FILE), 'utf-8');
     const parsed: unknown = JSON.parse(data);
-    if (
-      parsed !== null &&
-      typeof parsed === 'object' &&
-      'entries' in parsed &&
-      typeof (parsed as Record<string, unknown>).entries === 'object'
-    ) {
-      return parsed as SessionIndex;
+    const result = SessionIndexSchema.safeParse(parsed);
+    if (result.success) {
+      return result.data;
     }
     return { entries: {}, updatedAt: new Date().toISOString() };
   } catch {
@@ -142,6 +171,7 @@ export async function updateSessionIndex(id: string, session: Session): Promise<
     created: session.created,
     messageCount: session.messages.filter((m) => m.role !== 'system').length,
     toolCallCount: session.toolCallCount ?? 0,
+    preview: buildSessionSearchPreview(session.messages),
   };
   await saveIndex(index);
 }
@@ -211,6 +241,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
   const fileIds = new Set(sessionFiles.map((file) => file.slice(0, -5)));
   const summaries: SessionSummary[] = [];
   let indexMutated = false;
+  const previewBackfillIds: string[] = [];
 
   // Remove stale index entries that no longer have a backing session file.
   for (const id of Object.keys(index.entries)) {
@@ -233,6 +264,9 @@ export async function listSessions(): Promise<SessionSummary[]> {
         messageCount: entry.messageCount ?? 0,
         toolCallCount: entry.toolCallCount ?? 0,
       });
+      if (typeof entry.preview !== 'string') {
+        previewBackfillIds.push(id);
+      }
       continue;
     }
     missingIds.push(id);
@@ -255,6 +289,7 @@ export async function listSessions(): Promise<SessionSummary[]> {
             created: session.created,
             messageCount,
             toolCallCount: session.toolCallCount ?? 0,
+            preview: buildSessionSearchPreview(session.messages),
           };
 
           summaries.push({
@@ -266,6 +301,25 @@ export async function listSessions(): Promise<SessionSummary[]> {
             messageCount,
             toolCallCount: session.toolCallCount ?? 0,
           });
+          indexMutated = true;
+        } catch {
+          // Skip unreadable session files
+        }
+      })
+    );
+  }
+
+  // Backfill search previews for legacy index entries.
+  if (previewBackfillIds.length > 0) {
+    await Promise.all(
+      previewBackfillIds.map(async (id) => {
+        try {
+          const data = await readFile(sessionPath(id), 'utf-8');
+          const session = parseSession(data);
+          if (!session) return;
+          const entry = index.entries[id];
+          if (!entry) return;
+          entry.preview = buildSessionSearchPreview(session.messages);
           indexMutated = true;
         } catch {
           // Skip unreadable session files
@@ -301,20 +355,41 @@ export async function exportSession(id: string): Promise<string> {
 export async function searchSessions(query: string): Promise<SessionSummary[]> {
   const all = await listSessions();
   const q = query.toLowerCase();
+  const index = await loadIndex();
+  const previewById = new Map<string, string>();
+  let indexMutated = false;
 
-  // Build a map of session ID -> full session (for content matching)
-  const sessionContentMap = new Map<string, Session>();
-  await Promise.all(
-    all.map(async (summary) => {
+  const missingPreviewIds = all
+    .filter((summary) => !index.entries[summary.id]?.preview)
+    .map((summary) => summary.id);
+  if (missingPreviewIds.length > 0) {
+    await Promise.all(
+      missingPreviewIds.map(async (id) => {
         try {
-          const data = await readFile(sessionPath(summary.id), 'utf-8');
+          const data = await readFile(sessionPath(id), 'utf-8');
           const session = parseSession(data);
-          if (session) sessionContentMap.set(session.id, session);
+          if (!session) return;
+          const preview = buildSessionSearchPreview(session.messages);
+          const entry = index.entries[id];
+          if (!entry) return;
+          entry.preview = preview;
+          previewById.set(id, preview);
+          indexMutated = true;
         } catch {
-          // Skip unreadable files
+          // Skip unreadable session files
         }
       })
-  );
+    );
+  }
+
+  for (const [id, entry] of Object.entries(index.entries)) {
+    if (typeof entry.preview === 'string') {
+      previewById.set(id, entry.preview);
+    }
+  }
+  if (indexMutated) {
+    await saveIndex(index);
+  }
 
   const scored = all.map((summary) => {
     let score = 0;
@@ -354,17 +429,10 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
       score += 30;
     }
 
-    // Search message content (first 6 messages only for performance)
-    const fullSession = sessionContentMap.get(summary.id);
-    if (fullSession) {
-      const contentMessages = fullSession.messages.slice(0, 6);
-      for (const msg of contentMessages) {
-        const content = typeof msg.content === 'string' ? msg.content : '';
-        if (content.toLowerCase().includes(q)) {
-          score += 40; // content match
-          break; // one match is enough
-        }
-      }
+    // Search indexed message preview (first N user/assistant messages).
+    const preview = previewById.get(summary.id);
+    if (preview && preview.toLowerCase().includes(q)) {
+      score += 40;
     }
 
     return { session: summary, score };

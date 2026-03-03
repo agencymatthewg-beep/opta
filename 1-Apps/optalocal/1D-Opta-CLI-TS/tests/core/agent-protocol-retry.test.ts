@@ -116,4 +116,22 @@ describe('agent protocol retry path', () => {
       }),
     );
   });
+
+  it('passes a completion budget derived from context limit', async () => {
+    const { agentLoop } = await import('../../src/core/agent.js');
+    const config = structuredClone(DEFAULT_CONFIG);
+    config.model.default = 'test-model';
+    config.model.contextLimit = 4096;
+
+    await agentLoop('Give a short summary', config, {
+      silent: true,
+    });
+
+    expect(streamingState.createStreamWithRetry.mock.calls.length).toBeGreaterThan(0);
+    const firstRequest = streamingState.createStreamWithRetry.mock.calls[0]?.[1] as { max_tokens?: number };
+    expect(firstRequest).toBeDefined();
+    expect(firstRequest.max_tokens).toBeTypeOf('number');
+    expect(firstRequest.max_tokens).toBeGreaterThan(0);
+    expect(firstRequest.max_tokens).toBeLessThan(1_000_000);
+  });
 });

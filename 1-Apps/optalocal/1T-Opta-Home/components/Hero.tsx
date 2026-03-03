@@ -4,9 +4,10 @@ import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
 const coreApps = [
+  { name: "Opta Init", role: "Distribution", icon: "/logos/opta-init-mark.svg" },
   { name: "Opta LMX", role: "Inference Engine", icon: "/logos/opta-lmx-mark.svg" },
   { name: "Opta CLI", role: "Control Plane",    icon: "/logos/opta-cli-mark.svg" },
-  { name: "Opta Code", role: "IDE Assistant",   icon: "/logos/opta-code-mark.svg" },
+  { name: "Opta Code", role: "Developer Desktop",   icon: "/logos/opta-code-mark.svg" },
 ];
 
 export function Hero() {
@@ -32,9 +33,11 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <span className="text-white">The complete local</span>
+          <span className="text-white">Own the stack.</span>
           <br />
-          <span className="text-white">AI stack for </span><span className="text-moonlight">developers.</span>
+          <span className="text-white">Own the data.</span>
+          <br />
+          <span className="text-white">Ship local AI at </span><span className="text-moonlight">your scale.</span>
         </motion.h1>
 
         {/* Subhead */}
@@ -44,8 +47,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
         >
-          A unified ecosystem to serve, manage, and code with open-weight models.
-          Drop-in OpenAI API compatibility, entirely on your own hardware.
+          A local-first platform to serve, manage, and code with open-weight models. One install surface, one identity layer, zero dependence on cloud copilots for private workloads.
         </motion.p>
 
         {/* CTAs */}

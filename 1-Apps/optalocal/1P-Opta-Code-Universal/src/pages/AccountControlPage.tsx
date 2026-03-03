@@ -98,7 +98,10 @@ function compactValue(value: unknown): string {
   }
 }
 
-function parseInputObject(input: string, label: string): Record<string, unknown> {
+function parseInputObject(
+  input: string,
+  label: string,
+): Record<string, unknown> {
   const trimmed = input.trim();
   if (!trimmed) return {};
 
@@ -116,7 +119,10 @@ function parseInputObject(input: string, label: string): Record<string, unknown>
   return parsed;
 }
 
-function toOperationError(error: unknown, operationId: string): AccountOperationError {
+function toOperationError(
+  error: unknown,
+  operationId: string,
+): AccountOperationError {
   if (error instanceof Error) {
     const cast = error as AccountOperationError;
     if (cast.code) return cast;
@@ -130,7 +136,8 @@ function toOperationError(error: unknown, operationId: string): AccountOperation
   }
 
   if (isRecord(error)) {
-    const code = typeof error.code === "string" ? error.code : "operation_error";
+    const code =
+      typeof error.code === "string" ? error.code : "operation_error";
     const message =
       typeof error.message === "string"
         ? error.message
@@ -193,7 +200,10 @@ function extractOperationIds(response: unknown): Set<string> {
   return ids;
 }
 
-function firstString(record: Record<string, unknown>, keys: string[]): string | null {
+function firstString(
+  record: Record<string, unknown>,
+  keys: string[],
+): string | null {
   for (const key of keys) {
     const value = record[key];
     if (typeof value === "string" && value.trim()) {
@@ -203,18 +213,39 @@ function firstString(record: Record<string, unknown>, keys: string[]): string | 
   return null;
 }
 
-function normalizeKeyRecord(record: Record<string, unknown>, index: number): AccountKeySummary {
+function normalizeKeyRecord(
+  record: Record<string, unknown>,
+  index: number,
+): AccountKeySummary {
   const id =
-    firstString(record, ["id", "keyId", "key_id", "name", "key", "fingerprint"]) ??
-    `key-${index + 1}`;
+    firstString(record, [
+      "id",
+      "keyId",
+      "key_id",
+      "name",
+      "key",
+      "fingerprint",
+    ]) ?? `key-${index + 1}`;
 
   const label =
-    firstString(record, ["name", "label", "title", "key", "id", "fingerprint"]) ??
-    id;
+    firstString(record, [
+      "name",
+      "label",
+      "title",
+      "key",
+      "id",
+      "fingerprint",
+    ]) ?? id;
 
   const summarySource =
-    firstString(record, ["scope", "createdAt", "updatedAt", "type", "status", "project"]) ??
-    compactValue(record);
+    firstString(record, [
+      "scope",
+      "createdAt",
+      "updatedAt",
+      "type",
+      "status",
+      "project",
+    ]) ?? compactValue(record);
 
   return {
     id,
@@ -258,7 +289,8 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
 
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
-  const [availableOperationIds, setAvailableOperationIds] = useState<Set<string> | null>(null);
+  const [availableOperationIds, setAvailableOperationIds] =
+    useState<Set<string> | null>(null);
 
   const [signupInput, setSignupInput] = useState(
     '{\n  "identifier": "",\n  "password": "",\n  "name": ""\n}',
@@ -320,9 +352,13 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
 
   const runAccountOperation = useCallback(
     async (operationId: string, input: Record<string, unknown> = {}) => {
-      const response = await daemonClient.runOperation(connection, operationId, {
-        input,
-      });
+      const response = await daemonClient.runOperation(
+        connection,
+        operationId,
+        {
+          input,
+        },
+      );
 
       if (response.ok) {
         return response.result;
@@ -354,7 +390,10 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
       setBusyOperation(operationId);
 
       try {
-        const result = await runAccountOperation(operationId, options.input ?? {});
+        const result = await runAccountOperation(
+          operationId,
+          options.input ?? {},
+        );
         options.onSuccess?.(result);
         setNotice({
           tone: "success",
@@ -506,13 +545,17 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
 
   const requiredMissing = useMemo(() => {
     if (availableOperationIds === null) return [];
-    return REQUIRED_OPERATION_IDS.filter((id) => !availableOperationIds.has(id));
+    return REQUIRED_OPERATION_IDS.filter(
+      (id) => !availableOperationIds.has(id),
+    );
   }, [availableOperationIds]);
 
   const availableLocalCount = useMemo(() => {
-    if (availableOperationIds === null) return OPTIONAL_LOCAL_OPERATION_IDS.length;
-    return OPTIONAL_LOCAL_OPERATION_IDS.filter((id) => availableOperationIds.has(id))
-      .length;
+    if (availableOperationIds === null)
+      return OPTIONAL_LOCAL_OPERATION_IDS.length;
+    return OPTIONAL_LOCAL_OPERATION_IDS.filter((id) =>
+      availableOperationIds.has(id),
+    ).length;
   }, [availableOperationIds]);
 
   const noticeDetails = notice ? prettyValue(notice.details) : "";
@@ -533,10 +576,16 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
 
         <div className="account-control-meta">
           <span>
-            Catalog: {catalogLoading ? "loading…" : availableOperationIds ? `${availableOperationIds.size} ops` : "unknown"}
+            Catalog:{" "}
+            {catalogLoading
+              ? "loading…"
+              : availableOperationIds
+                ? `${availableOperationIds.size} ops`
+                : "unknown"}
           </span>
           <span>
-            Local shortcuts: {availableLocalCount}/{OPTIONAL_LOCAL_OPERATION_IDS.length}
+            Local shortcuts: {availableLocalCount}/
+            {OPTIONAL_LOCAL_OPERATION_IDS.length}
           </span>
         </div>
       </header>
@@ -564,7 +613,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             <span>{notice.message}</span>
           </div>
           {notice.action ? (
-            <p className="account-op-notice-action">Next step: {notice.action}</p>
+            <p className="account-op-notice-action">
+              Next step: {notice.action}
+            </p>
           ) : null}
           {noticeDetails ? <pre>{noticeDetails}</pre> : null}
         </div>
@@ -575,8 +626,8 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
           <header>
             <h3>Account Session</h3>
             <p>
-              Operations: {OP_ACCOUNT_STATUS}, {OP_ACCOUNT_SIGNUP}, {OP_ACCOUNT_LOGIN}, {" "}
-              {OP_ACCOUNT_LOGOUT}
+              Operations: {OP_ACCOUNT_STATUS}, {OP_ACCOUNT_SIGNUP},{" "}
+              {OP_ACCOUNT_LOGIN}, {OP_ACCOUNT_LOGOUT}
             </p>
           </header>
 
@@ -585,15 +636,21 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
               type="button"
               className="action-btn"
               onClick={() => void handleStatus()}
-              disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_STATUS)}
+              disabled={
+                isRunningAny || isOperationUnavailable(OP_ACCOUNT_STATUS)
+              }
             >
-              {busyOperation === OP_ACCOUNT_STATUS ? "Loading…" : "Refresh status"}
+              {busyOperation === OP_ACCOUNT_STATUS
+                ? "Loading…"
+                : "Refresh status"}
             </button>
             <button
               type="button"
               className="action-btn"
               onClick={() => void handleLogout()}
-              disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_LOGOUT)}
+              disabled={
+                isRunningAny || isOperationUnavailable(OP_ACCOUNT_LOGOUT)
+              }
             >
               {busyOperation === OP_ACCOUNT_LOGOUT ? "Logging out…" : "Logout"}
             </button>
@@ -615,7 +672,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             onClick={() => void handleSignup()}
             disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_SIGNUP)}
           >
-            {busyOperation === OP_ACCOUNT_SIGNUP ? "Running signup…" : "Run signup"}
+            {busyOperation === OP_ACCOUNT_SIGNUP
+              ? "Running signup…"
+              : "Run signup"}
           </button>
 
           <label className="account-json-label">
@@ -634,7 +693,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             onClick={() => void handleLogin()}
             disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_LOGIN)}
           >
-            {busyOperation === OP_ACCOUNT_LOGIN ? "Running login…" : "Run login"}
+            {busyOperation === OP_ACCOUNT_LOGIN
+              ? "Running login…"
+              : "Run login"}
           </button>
 
           <div className="account-result-block">
@@ -651,7 +712,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             {authResult !== null ? (
               <pre>{prettyValue(authResult)}</pre>
             ) : (
-              <p className="account-empty">No signup/login/logout action yet.</p>
+              <p className="account-empty">
+                No signup/login/logout action yet.
+              </p>
             )}
           </div>
         </section>
@@ -660,7 +723,7 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
           <header>
             <h3>Account Keys</h3>
             <p>
-              Operations: {OP_ACCOUNT_KEYS_LIST}, {OP_ACCOUNT_KEYS_PUSH}, {" "}
+              Operations: {OP_ACCOUNT_KEYS_LIST}, {OP_ACCOUNT_KEYS_PUSH},{" "}
               {OP_ACCOUNT_KEYS_DELETE}
             </p>
           </header>
@@ -670,9 +733,13 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
               type="button"
               className="action-btn"
               onClick={() => void handleListKeys()}
-              disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_LIST)}
+              disabled={
+                isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_LIST)
+              }
             >
-              {busyOperation === OP_ACCOUNT_KEYS_LIST ? "Loading keys…" : "List keys"}
+              {busyOperation === OP_ACCOUNT_KEYS_LIST
+                ? "Loading keys…"
+                : "List keys"}
             </button>
           </div>
 
@@ -700,7 +767,8 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             </ul>
           ) : (
             <p className="account-empty">
-              No account keys loaded yet. Run <code>{OP_ACCOUNT_KEYS_LIST}</code>.
+              No account keys loaded yet. Run{" "}
+              <code>{OP_ACCOUNT_KEYS_LIST}</code>.
             </p>
           )}
 
@@ -718,9 +786,13 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             type="button"
             className="action-btn"
             onClick={() => void handlePushKey()}
-            disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_PUSH)}
+            disabled={
+              isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_PUSH)
+            }
           >
-            {busyOperation === OP_ACCOUNT_KEYS_PUSH ? "Pushing key…" : "Push key"}
+            {busyOperation === OP_ACCOUNT_KEYS_PUSH
+              ? "Pushing key…"
+              : "Push key"}
           </button>
 
           <label className="account-json-label">
@@ -737,9 +809,13 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             type="button"
             className="action-btn delete"
             onClick={() => void handleDeleteKey()}
-            disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_DELETE)}
+            disabled={
+              isRunningAny || isOperationUnavailable(OP_ACCOUNT_KEYS_DELETE)
+            }
           >
-            {busyOperation === OP_ACCOUNT_KEYS_DELETE ? "Deleting key…" : "Delete key"}
+            {busyOperation === OP_ACCOUNT_KEYS_DELETE
+              ? "Deleting key…"
+              : "Delete key"}
           </button>
 
           <div className="account-result-block">
@@ -747,7 +823,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             {keysResult !== null ? (
               <pre>{prettyValue(keysResult)}</pre>
             ) : (
-              <p className="account-empty">No account keys operation result yet.</p>
+              <p className="account-empty">
+                No account keys operation result yet.
+              </p>
             )}
           </div>
         </section>
@@ -756,7 +834,7 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
           <header>
             <h3>Local Key Shortcuts (optional)</h3>
             <p>
-              Operations: {OP_LOCAL_KEY_SHOW}, {OP_LOCAL_KEY_CREATE}, {" "}
+              Operations: {OP_LOCAL_KEY_SHOW}, {OP_LOCAL_KEY_CREATE},{" "}
               {OP_LOCAL_KEY_COPY}
             </p>
           </header>
@@ -783,7 +861,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             onClick={() => void handleLocalShow()}
             disabled={isRunningAny || isOperationUnavailable(OP_LOCAL_KEY_SHOW)}
           >
-            {busyOperation === OP_LOCAL_KEY_SHOW ? "Running key.show…" : "Run local key.show"}
+            {busyOperation === OP_LOCAL_KEY_SHOW
+              ? "Running key.show…"
+              : "Run local key.show"}
           </button>
 
           <label className="account-json-label">
@@ -800,9 +880,13 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             type="button"
             className="action-btn"
             onClick={() => void handleLocalCreate()}
-            disabled={isRunningAny || isOperationUnavailable(OP_LOCAL_KEY_CREATE)}
+            disabled={
+              isRunningAny || isOperationUnavailable(OP_LOCAL_KEY_CREATE)
+            }
           >
-            {busyOperation === OP_LOCAL_KEY_CREATE ? "Running key.create…" : "Run local key.create"}
+            {busyOperation === OP_LOCAL_KEY_CREATE
+              ? "Running key.create…"
+              : "Run local key.create"}
           </button>
 
           <button
@@ -811,7 +895,9 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             onClick={() => void handleLocalCopy()}
             disabled={isRunningAny || isOperationUnavailable(OP_LOCAL_KEY_COPY)}
           >
-            {busyOperation === OP_LOCAL_KEY_COPY ? "Running key.copy…" : "Run local key.copy"}
+            {busyOperation === OP_LOCAL_KEY_COPY
+              ? "Running key.copy…"
+              : "Run local key.copy"}
           </button>
 
           <div className="account-result-block">

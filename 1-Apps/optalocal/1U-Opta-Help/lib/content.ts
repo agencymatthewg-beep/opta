@@ -104,6 +104,13 @@ export const navigation: NavSection[] = [
     ],
   },
   {
+    title: "Support",
+    slug: "support",
+    items: [
+      { title: "FAQ", href: "/docs/support/faq/", description: "Answers to common setup and runtime questions" },
+    ],
+  },
+  {
     title: "Feature Status",
     slug: "feature-status",
     items: [

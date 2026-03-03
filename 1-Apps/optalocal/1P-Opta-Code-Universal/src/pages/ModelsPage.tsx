@@ -65,9 +65,7 @@ interface TrackedLoadDownload {
   error?: string;
 }
 
-function getLocalStorage():
-  | Pick<Storage, "getItem" | "setItem">
-  | null {
+function getLocalStorage(): Pick<Storage, "getItem" | "setItem"> | null {
   try {
     const storage = window.localStorage as Partial<Storage> | undefined;
     if (!storage) return null;
@@ -146,6 +144,9 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
     unloadModel,
     deleteModel,
     downloadModel,
+    runModelHistory,
+    runModelHealth,
+    runModelScan,
     refreshLmx,
   } = useModels(connection);
 
@@ -158,6 +159,15 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
   const [trackedDownloads, setTrackedDownloads] = useState<
     Record<string, TrackedLoadDownload>
   >({});
+  const [healthArgs, setHealthArgs] = useState("");
+  const [scanFull, setScanFull] = useState(false);
+  const [modelToolsBusy, setModelToolsBusy] = useState<
+    "history" | "health" | "scan" | null
+  >(null);
+  const [modelToolsResult, setModelToolsResult] = useState<{
+    operation: string;
+    payload: unknown;
+  } | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [loadBackendByModel, setLoadBackendByModel] = useState<
     Record<string, string>
@@ -166,9 +176,15 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
   const downloadPollMissesRef = useRef<Record<string, number>>({});
   const trackedDownloadsRef = useRef<Record<string, TrackedLoadDownload>>({});
 
-  const usedPct = memory ? memPct(memory.used_gb, memory.total_unified_memory_gb) : 0;
+  const usedPct = memory
+    ? memPct(memory.used_gb, memory.total_unified_memory_gb)
+    : 0;
   const memBarColor =
-    usedPct > 85 ? "var(--opta-danger)" : usedPct > 65 ? "var(--opta-warning)" : "var(--opta-primary)";
+    usedPct > 85
+      ? "var(--opta-danger)"
+      : usedPct > 65
+        ? "var(--opta-warning)"
+        : "var(--opta-primary)";
 
   const trackedDownloadsKey = useMemo(
     () => Object.keys(trackedDownloads).sort().join("|"),
@@ -194,7 +210,9 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
     () =>
       trackedDownloadIds
         .map((downloadId) => trackedDownloads[downloadId])
-        .filter((download): download is TrackedLoadDownload => Boolean(download)),
+        .filter((download): download is TrackedLoadDownload =>
+          Boolean(download),
+        ),
     [trackedDownloadIds, trackedDownloads],
   );
 
@@ -326,24 +344,73 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
     [applyLoadResponse, loadBackendByModel, loadModel],
   );
 
-  const doUnload = useCallback(async (modelId: string) => {
-    setPendingAction(modelId);
-    await unloadModel(modelId);
-    setPendingAction(null);
-  }, [unloadModel]);
+  const doUnload = useCallback(
+    async (modelId: string) => {
+      setPendingAction(modelId);
+      await unloadModel(modelId);
+      setPendingAction(null);
+    },
+    [unloadModel],
+  );
 
-  const doDelete = useCallback(async (modelId: string) => {
-    setPendingAction(modelId);
-    await deleteModel(modelId);
-    setPendingAction(null);
-  }, [deleteModel]);
+  const doDelete = useCallback(
+    async (modelId: string) => {
+      setPendingAction(modelId);
+      await deleteModel(modelId);
+      setPendingAction(null);
+    },
+    [deleteModel],
+  );
+
+  const runHistory = useCallback(async () => {
+    setModelToolsBusy("history");
+    const result = await runModelHistory();
+    setModelToolsBusy(null);
+    if (result !== null) {
+      setModelToolsResult({ operation: "models.history", payload: result });
+    }
+  }, [runModelHistory]);
+
+  const runHealth = useCallback(async () => {
+    setModelToolsBusy("health");
+    const result = await runModelHealth(healthArgs);
+    setModelToolsBusy(null);
+    if (result !== null) {
+      setModelToolsResult({ operation: "models.health", payload: result });
+    }
+  }, [healthArgs, runModelHealth]);
+
+  const runScan = useCallback(async () => {
+    setModelToolsBusy("scan");
+    const result = await runModelScan({ full: scanFull });
+    setModelToolsBusy(null);
+    if (result !== null) {
+      setModelToolsResult({ operation: "models.scan", payload: result });
+      const summary = (
+        result as { summary?: { loadedCount?: number; onDiskCount?: number } }
+      ).summary;
+      if (summary) {
+        const loadedCount =
+          typeof summary.loadedCount === "number" ? summary.loadedCount : 0;
+        const onDiskCount =
+          typeof summary.onDiskCount === "number" ? summary.onDiskCount : 0;
+        setTimedNotice(
+          `Scan complete · ${loadedCount} loaded · ${onDiskCount} on disk`,
+        );
+      } else {
+        setTimedNotice("Scan complete");
+      }
+    }
+  }, [runModelScan, scanFull, setTimedNotice]);
 
   useEffect(() => {
     trackedDownloadsRef.current = trackedDownloads;
   }, [trackedDownloads]);
 
   useEffect(() => {
-    setTrackedDownloads(loadTrackedDownloadsFromStorage(trackedDownloadsStorage));
+    setTrackedDownloads(
+      loadTrackedDownloadsFromStorage(trackedDownloadsStorage),
+    );
     downloadPollMissesRef.current = {};
   }, [trackedDownloadsStorage]);
 
@@ -374,23 +441,23 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
             progress_percent:
               typeof download.progress_percent === "number"
                 ? download.progress_percent
-                : existing?.progress_percent ?? 0,
+                : (existing?.progress_percent ?? 0),
             downloaded_bytes:
               typeof download.downloaded_bytes === "number"
                 ? download.downloaded_bytes
-                : existing?.downloaded_bytes ?? 0,
+                : (existing?.downloaded_bytes ?? 0),
             total_bytes:
               typeof download.total_bytes === "number"
                 ? download.total_bytes
-                : existing?.total_bytes ?? 0,
+                : (existing?.total_bytes ?? 0),
             files_completed:
               typeof download.files_completed === "number"
                 ? download.files_completed
-                : existing?.files_completed ?? 0,
+                : (existing?.files_completed ?? 0),
             files_total:
               typeof download.files_total === "number"
                 ? download.files_total
-                : existing?.files_total ?? 0,
+                : (existing?.files_total ?? 0),
             error:
               typeof download.error === "string"
                 ? download.error
@@ -560,7 +627,9 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
         <div className="status-header">
           <Brain size={16} className="models-icon" aria-hidden="true" />
           <h2>LMX Inference Server</h2>
-          <span className={`status-badge ${lmxReachable ? "online" : "offline"}`}>
+          <span
+            className={`status-badge ${lmxReachable ? "online" : "offline"}`}
+          >
             {lmxReachable ? "Online" : "Offline"}
           </span>
           <button
@@ -569,7 +638,11 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
             onClick={() => void refreshLmx()}
             disabled={loading}
           >
-            <RefreshCw size={12} className={loading ? "spin" : ""} aria-hidden="true" />
+            <RefreshCw
+              size={12}
+              className={loading ? "spin" : ""}
+              aria-hidden="true"
+            />
             {loading ? "Refreshing…" : "Refresh"}
           </button>
           {onOpenSettings ? (
@@ -600,12 +673,17 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
             ) : null}
             <div>
               <dt>Loaded</dt>
-              <dd>{loadedModels.length} model{loadedModels.length !== 1 ? "s" : ""}</dd>
+              <dd>
+                {loadedModels.length} model
+                {loadedModels.length !== 1 ? "s" : ""}
+              </dd>
             </div>
             {lmxTarget ? (
               <div>
                 <dt>LMX Target</dt>
-                <dd>{lmxTarget.host}:{lmxTarget.port}</dd>
+                <dd>
+                  {lmxTarget.host}:{lmxTarget.port}
+                </dd>
               </div>
             ) : null}
             {lmxTarget ? (
@@ -627,7 +705,10 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
             {memory ? (
               <div>
                 <dt>Memory</dt>
-                <dd>{fmtGb(memory.used_gb)} / {fmtGb(memory.total_unified_memory_gb)}</dd>
+                <dd>
+                  {fmtGb(memory.used_gb)} /{" "}
+                  {fmtGb(memory.total_unified_memory_gb)}
+                </dd>
               </div>
             ) : null}
           </dl>
@@ -654,12 +735,16 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
             />
           </div>
           <p className="memory-label">
-            {fmtGb(memory.used_gb)} used of {fmtGb(memory.total_unified_memory_gb)} total
+            {fmtGb(memory.used_gb)} used of{" "}
+            {fmtGb(memory.total_unified_memory_gb)} total
           </p>
           {Object.keys(memory.models).length > 0 ? (
             <div className="memory-breakdown">
               {Object.entries(memory.models).map(([modelId, info]) => {
-                const pct = memPct(info.memory_gb, memory.total_unified_memory_gb);
+                const pct = memPct(
+                  info.memory_gb,
+                  memory.total_unified_memory_gb,
+                );
                 return (
                   <div key={modelId} className="memory-model-row">
                     <span className="memory-model-bar-wrap">
@@ -669,7 +754,9 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
                       />
                     </span>
                     <span className="memory-model-name">{modelId}</span>
-                    <span className="memory-model-size">{fmtGb(info.memory_gb)}</span>
+                    <span className="memory-model-size">
+                      {fmtGb(info.memory_gb)}
+                    </span>
                   </div>
                 );
               })}
@@ -677,6 +764,93 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
           ) : null}
         </div>
       ) : null}
+
+      {/* Advanced model controls */}
+      <div className="models-tools glass-subtle">
+        <div className="models-section-header">
+          <Zap size={13} aria-hidden="true" />
+          <h3>Advanced Model Controls</h3>
+        </div>
+        <p className="download-hint">
+          Run frequent advanced CLI model flows directly from Opta Code.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gap: 10,
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              flexWrap: "wrap",
+            }}
+          >
+            <button
+              type="button"
+              className="action-btn load"
+              onClick={() => void runHistory()}
+              disabled={modelToolsBusy !== null}
+            >
+              {modelToolsBusy === "history" ? "Running…" : "Run History"}
+            </button>
+            <button
+              type="button"
+              className="action-btn load"
+              onClick={() => void runHealth()}
+              disabled={modelToolsBusy !== null}
+            >
+              {modelToolsBusy === "health" ? "Running…" : "Run Health"}
+            </button>
+            <label
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                fontSize: 12,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={scanFull}
+                onChange={(event) => setScanFull(event.target.checked)}
+                disabled={modelToolsBusy !== null}
+              />
+              Full scan
+            </label>
+            <button
+              type="button"
+              className="action-btn load"
+              onClick={() => void runScan()}
+              disabled={modelToolsBusy !== null}
+            >
+              {modelToolsBusy === "scan" ? "Running…" : "Run Scan"}
+            </button>
+          </div>
+          <input
+            type="text"
+            className="download-input"
+            placeholder='Health args (optional), e.g. "liveness --json"'
+            value={healthArgs}
+            onChange={(event) => setHealthArgs(event.target.value)}
+            aria-label="Model health args"
+            spellCheck={false}
+          />
+          {modelToolsResult ? (
+            <details open>
+              <summary>
+                Last result: <code>{modelToolsResult.operation}</code>
+              </summary>
+              <pre className="model-tools-result">
+                {JSON.stringify(modelToolsResult.payload, null, 2)}
+              </pre>
+            </details>
+          ) : (
+            <p className="models-empty">No advanced operation executed yet.</p>
+          )}
+        </div>
+      </div>
 
       {/* Loaded Models */}
       <div className="models-loaded glass-subtle">
@@ -688,11 +862,16 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
           ) : null}
         </div>
         {loadedModels.length === 0 ? (
-          <p className="models-empty">No models loaded. Load one from disk below.</p>
+          <p className="models-empty">
+            No models loaded. Load one from disk below.
+          </p>
         ) : (
           <div className="model-cards">
             {loadedModels.map((model) => (
-              <div key={model.model_id} className="model-card model-card-loaded">
+              <div
+                key={model.model_id}
+                className="model-card model-card-loaded"
+              >
                 <div className="model-card-name">{model.model_id}</div>
                 <div className="model-card-meta">
                   {model.memory_bytes ? (
@@ -750,7 +929,9 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
                     </span>
                   ) : null}
                   {model.quantization ? (
-                    <span className="model-quant-tag">{model.quantization}</span>
+                    <span className="model-quant-tag">
+                      {model.quantization}
+                    </span>
                   ) : null}
                 </div>
                 <div className="model-card-actions">
@@ -803,9 +984,14 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
           <h3>Download from HuggingFace</h3>
         </div>
         <p className="download-hint">
-          Enter a HuggingFace repo ID (e.g. <code>mlx-community/Qwen2.5-7B-Instruct-4bit</code>) to queue a download via the daemon.
+          Enter a HuggingFace repo ID (e.g.{" "}
+          <code>mlx-community/Qwen2.5-7B-Instruct-4bit</code>) to queue a
+          download via the daemon.
         </p>
-        <form className="download-form" onSubmit={(e) => void triggerDownload(e)}>
+        <form
+          className="download-form"
+          onSubmit={(e) => void triggerDownload(e)}
+        >
           <input
             type="text"
             className="download-input"

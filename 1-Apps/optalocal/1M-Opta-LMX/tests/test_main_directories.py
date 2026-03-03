@@ -10,27 +10,30 @@ from opta_lmx.main import _configure_hf_cache_environment, _ensure_runtime_direc
 
 
 def test_ensure_runtime_directories_creates_required_paths(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """Startup provisioning should create all required filesystem directories."""
     fake_home = tmp_path / "home"
     monkeypatch.setenv("HOME", str(fake_home))
 
-    config = LMXConfig.model_validate({
-        "models": {"models_directory": str(tmp_path / "models")},
-        "presets": {"directory": str(tmp_path / "presets")},
-        "rag": {"persist_path": str(tmp_path / "rag" / "rag-store.json")},
-        "logging": {"file": str(tmp_path / "logs" / "opta-lmx.log")},
-        "journaling": {
-            "session_logs_dir": str(tmp_path / "session-logs"),
-            "update_logs_dir": str(tmp_path / "update-logs"),
-        },
-        "workers": {"skill_queue_persist_path": str(tmp_path / "queues" / "skills-queue.db")},
-        "agents": {
-            "queue_persist_path": str(tmp_path / "queues" / "agents-queue.db"),
-            "state_store_path": str(tmp_path / "state" / "agents-runs.json"),
-        },
-    })
+    config = LMXConfig.model_validate(
+        {
+            "models": {"models_directory": str(tmp_path / "models")},
+            "presets": {"directory": str(tmp_path / "presets")},
+            "rag": {"persist_path": str(tmp_path / "rag" / "rag-store.json")},
+            "logging": {"file": str(tmp_path / "logs" / "opta-lmx.log")},
+            "journaling": {
+                "session_logs_dir": str(tmp_path / "session-logs"),
+                "update_logs_dir": str(tmp_path / "update-logs"),
+            },
+            "workers": {"skill_queue_persist_path": str(tmp_path / "queues" / "skills-queue.db")},
+            "agents": {
+                "queue_persist_path": str(tmp_path / "queues" / "agents-queue.db"),
+                "state_store_path": str(tmp_path / "state" / "agents-runs.json"),
+            },
+        }
+    )
 
     _ensure_runtime_directories(config)
 
@@ -53,7 +56,8 @@ def test_ensure_runtime_directories_creates_required_paths(
 
 
 def test_configure_hf_cache_environment_uses_models_directory(
-    tmp_path: Path, monkeypatch,
+    tmp_path: Path,
+    monkeypatch,
 ) -> None:
     """Startup should align HF cache env vars to configured models_directory."""
     monkeypatch.delenv("HF_HOME", raising=False)

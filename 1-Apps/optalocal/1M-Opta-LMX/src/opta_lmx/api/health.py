@@ -54,8 +54,11 @@ async def readyz(request: Request) -> JSONResponse:
 
 @router.get("/admin/health")
 async def health_check(
-    _auth: AdminAuth, engine: Engine, memory: Memory,
-    remote_embedding: RemoteEmbedding, remote_reranking: RemoteReranking,
+    _auth: AdminAuth,
+    engine: Engine,
+    memory: Memory,
+    remote_embedding: RemoteEmbedding,
+    remote_reranking: RemoteReranking,
 ) -> dict[str, Any]:
     """Detailed health check with memory, Metal, engine, and helper node status.
 

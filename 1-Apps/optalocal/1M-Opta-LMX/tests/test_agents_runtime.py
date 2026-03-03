@@ -167,11 +167,13 @@ async def test_runtime_fails_run_when_no_models_loaded(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="Do work",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="Do work",
+                roles=["planner"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         run = runtime.get(submitted.id)
         assert run is not None
@@ -187,12 +189,14 @@ async def test_runtime_parallel_map_executes_all_roles(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.PARALLEL_MAP,
-            prompt="Evaluate this plan",
-            roles=["researcher", "coder", "reviewer"],
-            max_parallelism=2,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.PARALLEL_MAP,
+                prompt="Evaluate this plan",
+                roles=["researcher", "coder", "reviewer"],
+                max_parallelism=2,
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
 
         run = runtime.get(submitted.id)
@@ -211,11 +215,13 @@ async def test_runtime_router_uses_role_ordering(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.ROUTER,
-            prompt="Sequence roles",
-            roles=["reviewer", "planner", "coder"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.ROUTER,
+                prompt="Sequence roles",
+                roles=["reviewer", "planner", "coder"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
 
         run = runtime.get(submitted.id)
@@ -233,11 +239,13 @@ async def test_runtime_handoff_chains_outputs_between_steps(
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="seed",
-            roles=["alpha", "beta", "gamma"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="seed",
+                roles=["alpha", "beta", "gamma"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
 
         run = runtime.get(submitted.id)
@@ -258,11 +266,13 @@ async def test_runtime_cancel_marks_running_run_cancelled(
     runtime = _make_runtime(tmp_path, engine=engine, workers=1)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="slow",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="slow",
+                roles=["planner"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, {RunStatus.RUNNING})
         cancelled = await runtime.cancel(submitted.id)
         assert cancelled is True
@@ -281,16 +291,20 @@ async def test_runtime_reports_queue_saturation_in_failed_run(tmp_path: Path) ->
     runtime = _make_runtime(tmp_path, engine=engine, queue_size=1, workers=1)
     await runtime.start()
     try:
-        await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="first",
-            roles=["planner"],
-        ))
-        overflow = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="second",
-            roles=["planner"],
-        ))
+        await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="first",
+                roles=["planner"],
+            )
+        )
+        overflow = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="second",
+                roles=["planner"],
+            )
+        )
     finally:
         await runtime.stop()
 
@@ -306,12 +320,14 @@ async def test_runtime_passes_submitted_by_as_client_id(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="route this fairly",
-            roles=["planner"],
-            submitted_by="cli-user-123",
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="route this fairly",
+                roles=["planner"],
+                submitted_by="cli-user-123",
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
 
         run = runtime.get(submitted.id)
@@ -327,13 +343,15 @@ async def test_runtime_resolves_role_specific_models(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="multi model",
-            roles=["planner", "coder"],
-            model="model-a",
-            role_models={"coder": "model-b"},
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="multi model",
+                roles=["planner", "coder"],
+                model="model-a",
+                role_models={"coder": "model-b"},
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
 
         run = runtime.get(submitted.id)
@@ -351,12 +369,14 @@ async def test_runtime_interactive_priority_maps_to_high_inference_priority(
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="priority test",
-            roles=["planner"],
-            priority="interactive",
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="priority test",
+                roles=["planner"],
+                priority="interactive",
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         assert engine.priorities[-1] == "high"
     finally:
@@ -369,14 +389,16 @@ async def test_runtime_emits_trace_context_metadata(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine, tracer=tracer)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="trace",
-            roles=["planner"],
-            traceparent="00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
-            tracestate="vendor=value",
-            submitted_by="qa-user",
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="trace",
+                roles=["planner"],
+                traceparent="00-4bf92f3577b34da6a3ce929d0e0e4736-00f067aa0ba902b7-01",
+                tracestate="vendor=value",
+                submitted_by="qa-user",
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
     finally:
         await runtime.stop()
@@ -473,11 +495,13 @@ async def test_runtime_retries_transient_step_failures(tmp_path: Path) -> None:
     )
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="retry test",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="retry test",
+                roles=["planner"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         run = runtime.get(submitted.id)
     finally:
@@ -493,20 +517,22 @@ async def test_runtime_applies_role_prompts_and_tools(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="tools",
-            roles=["planner"],
-            role_system_prompts={"planner": "You are a strict planner."},
-            role_tools={
-                "planner": [
-                    {
-                        "type": "function",
-                        "function": {"name": "lookup"},
-                    }
-                ]
-            },
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="tools",
+                roles=["planner"],
+                role_system_prompts={"planner": "You are a strict planner."},
+                role_tools={
+                    "planner": [
+                        {
+                            "type": "function",
+                            "function": {"name": "lookup"},
+                        }
+                    ]
+                },
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         run = runtime.get(submitted.id)
     finally:
@@ -559,12 +585,14 @@ async def test_runtime_enforces_token_budget(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="budget test",
-            roles=["alpha", "beta"],
-            token_budget=10,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="budget test",
+                roles=["alpha", "beta"],
+                token_budget=10,
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         run = runtime.get(submitted.id)
     finally:
@@ -603,12 +631,14 @@ async def test_runtime_enforces_cost_budget(tmp_path: Path) -> None:
         # Submit a two-step run with a tiny cost budget.
         # We inject estimated_cost_usd on the run after the first step
         # by using a wrapper that mutates the run.
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="cost test",
-            roles=["alpha", "beta"],
-            cost_budget_usd=0.001,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="cost test",
+                roles=["alpha", "beta"],
+                cost_budget_usd=0.001,
+            )
+        )
 
         # Manually set estimated_cost_usd high on the run to trigger budget check
         # before the second step executes.  Access the internal run directly.
@@ -638,11 +668,13 @@ async def test_runtime_tracks_token_usage(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="accumulate",
-            roles=["alpha", "beta", "gamma"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="accumulate",
+                roles=["alpha", "beta", "gamma"],
+            )
+        )
         await _wait_for_status(runtime, submitted.id, TERMINAL_RUN_STATES)
         run = runtime.get(submitted.id)
     finally:

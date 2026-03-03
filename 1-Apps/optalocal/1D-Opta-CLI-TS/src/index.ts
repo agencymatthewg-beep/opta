@@ -3,7 +3,7 @@
 import { Command, InvalidArgumentError } from 'commander';
 import chalk from 'chalk';
 import { VERSION } from './core/version.js';
-import { EXIT, ExitError } from './core/errors.js';
+import { EXIT, ExitError, OptaError, formatError } from './core/errors.js';
 import { setVerbose, setDebug } from './core/debug.js';
 import {
   parseProviderOverride,
@@ -244,6 +244,7 @@ interface EnvCommandOptions {
   host?: string;
   port?: string;
   adminKey?: string;
+  adminKeysByHost?: string;
   model?: string;
   provider?: string;
   mode?: string;
@@ -300,9 +301,26 @@ interface McpAddCommandOptions {
   env?: string;
 }
 
+interface McpHealthCommandOptions {
+  json?: boolean;
+  watch?: string;
+  probeStdio?: boolean;
+  timeoutMs?: string;
+}
+
 interface InitCommandOptions {
   yes?: boolean;
   force?: boolean;
+}
+
+interface MemoryCommandOptions {
+  scope?: 'all' | 'provider' | 'main' | 'atpo' | 'model';
+  provider?: string;
+  model?: string;
+  force?: boolean;
+  dryRun?: boolean;
+  json?: boolean;
+  policy?: 'skip' | 'append' | 'replace';
 }
 
 interface DiffCommandOptions {
@@ -396,6 +414,7 @@ program
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('-q, --quiet', 'suppress output (exit code only, errors to stderr)')
   .option('-o, --output <path>', 'write result to file')
+  .option('--mode <slug>', 'Override the agent autonomy mode (e.g. ceo)')
   .option('--no-commit', 'disable auto-commit at task end')
   .option('--no-checkpoints', 'disable checkpoint creation')
   .option('-a, --auto', 'auto-accept file edits without prompting')
@@ -498,6 +517,28 @@ Examples:
     await benchmark(opts);
   });
 
+// --- Register CEO Bench ---
+program
+  .command('ceo-bench')
+  .description('Run internal autonomous CEO benchmarking suite against the active model')
+  .option('--model <id>', 'Override model to benchmark')
+  .option('--filter <string>', 'Filter tasks by id')
+  .option('--json', 'Output results as JSON')
+  .action(async (opts: any) => {
+    const { runCeoBenchmark } = await import('./benchmark/ceo/runner.js');
+    const { ExitError, EXIT } = await import('./core/errors.js');
+    try {
+      await runCeoBenchmark(opts);
+    } catch (err) {
+      if (!opts.json) {
+        console.error('\\x1b[31m✗\\x1b[0m Benchmark failed:', err instanceof Error ? err.message : String(err));
+      } else {
+        console.log(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+      }
+      throw new ExitError(EXIT.ERROR);
+    }
+  });
+
 program
   .command('status')
   .description('Check Opta LMX server health and loaded models')
@@ -583,6 +624,10 @@ program
   .option('--host <host>', 'override connection host when saving')
   .option('--port <port>', 'override connection port when saving')
   .option('--admin-key <key>', 'override connection admin key when saving (empty string clears)')
+  .option(
+    '--admin-keys-by-host <json>',
+    'override host-specific admin keys map when saving, e.g. {"192.168.188.11":"keyA"}'
+  )
   .option('--model <id>', 'override default model when saving')
   .option('--provider <name>', 'provider for profile (lmx|anthropic|gemini|openai|opencode_zen)')
   .option('--mode <name>', 'default mode (safe|auto|plan|review|research|dangerous|ci)')
@@ -594,6 +639,7 @@ Examples:
   $ opta env                         List all environment profiles
   $ opta env save laptop             Save current settings as "laptop"
   $ opta env save mono --host 192.168.188.11 --port 1234
+  $ opta env save mono --admin-keys-by-host '{"192.168.188.11":"keyA","192.168.188.8":"keyB"}'
   $ opta env use laptop              Apply a saved profile
   $ opta env show laptop             Show profile details
   $ opta env delete old-server       Remove a profile
@@ -844,6 +890,23 @@ mcpCmd
     await mcpTest(name);
   });
 
+mcpCmd
+  .command('health')
+  .description('Monitor MCP server connectivity and tool availability')
+  .option('--json', 'machine-readable output')
+  .option('--watch <seconds>', 'refresh interval in seconds (continuous mode)')
+  .option('--probe-stdio', 'actively probe stdio servers (default: skipped)')
+  .option('--timeout-ms <ms>', 'per-server probe timeout in milliseconds (default: 5000)')
+  .action(async (opts: McpHealthCommandOptions) => {
+    const { mcpHealth } = await import('./commands/mcp.js');
+    await mcpHealth({
+      json: opts.json,
+      watch: opts.watch ? Number(opts.watch) : undefined,
+      probeStdio: opts.probeStdio,
+      timeoutMs: opts.timeoutMs ? Number(opts.timeoutMs) : undefined,
+    });
+  });
+
 program
   .command('onboard')
   .description('Run guided setup wizard to configure Opta CLI')
@@ -875,6 +938,21 @@ program
   .action(async (opts: InitCommandOptions) => {
     const { init } = await import('./commands/init.js');
     await init(opts);
+  });
+
+program
+  .command('memory')
+  .description('Manage Opta memory scaffold and synchronization')
+  .option('--scope <scope>', 'scope to sync: all | provider | main | atpo | model', 'all')
+  .option('--provider <provider>', 'provider name for provider-scope target')
+  .option('--model <name>', 'model name for model-scope target')
+  .option('--policy <policy>', 'conflict policy for existing files: skip | append | replace (default: skip)')
+  .option('--force', 'overwrite non-empty destination files')
+  .option('--dry-run', 'preview changes without writing')
+  .option('--json', 'machine-readable output')
+  .action(async (opts: MemoryCommandOptions) => {
+    const { memorySync } = await import('./commands/memory.js');
+    await memorySync(opts);
   });
 
 program
@@ -1074,6 +1152,30 @@ keychainCmd
   });
 
 keychainCmd
+  .command('set-gemini <key>')
+  .description('Store a Gemini API key in the OS keychain')
+  .action(async (key: string) => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('set-gemini', key);
+  });
+
+keychainCmd
+  .command('set-openai <key>')
+  .description('Store an OpenAI API key in the OS keychain')
+  .action(async (key: string) => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('set-openai', key);
+  });
+
+keychainCmd
+  .command('set-opencode-zen <key>')
+  .description('Store an Opencode Zen API key in the OS keychain')
+  .action(async (key: string) => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('set-opencode-zen', key);
+  });
+
+keychainCmd
   .command('delete-anthropic')
   .description('Remove the Anthropic API key from the OS keychain')
   .action(async () => {
@@ -1089,9 +1191,39 @@ keychainCmd
     await runKeychainCommand('delete-lmx');
   });
 
+keychainCmd
+  .command('delete-gemini')
+  .description('Remove the Gemini API key from the OS keychain')
+  .action(async () => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('delete-gemini');
+  });
+
+keychainCmd
+  .command('delete-openai')
+  .description('Remove the OpenAI API key from the OS keychain')
+  .action(async () => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('delete-openai');
+  });
+
+keychainCmd
+  .command('delete-opencode-zen')
+  .description('Remove the Opencode Zen API key from the OS keychain')
+  .action(async () => {
+    const { runKeychainCommand } = await import('./commands/keychain.js');
+    await runKeychainCommand('delete-opencode-zen');
+  });
+
+// --- Global Error Handling ---
+
 program.parseAsync().catch((err: unknown) => {
   if (err instanceof ExitError) {
     process.exit(err.exitCode);
+  }
+  if (err instanceof OptaError) {
+    console.error(formatError(err));
+    process.exit(err.code);
   }
   throw err;
 });

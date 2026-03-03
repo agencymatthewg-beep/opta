@@ -38,20 +38,20 @@ def _iter_local_ipv4_addresses() -> Iterable[str]:
     seen: set[str] = set()
     try:
         hostname = socket.gethostname()
-        for _name, _aliases, addresses in socket.gethostbyname_ex(hostname):
-            for candidate in addresses:
-                if candidate in seen:
-                    continue
-                try:
-                    ip = ipaddress.ip_address(candidate)
-                except ValueError:
-                    continue
-                if not isinstance(ip, ipaddress.IPv4Address):
-                    continue
-                if ip.is_loopback:
-                    continue
-                seen.add(candidate)
-                yield candidate
+        _name, _aliases, addresses = socket.gethostbyname_ex(hostname)
+        for candidate in addresses:
+            if candidate in seen:
+                continue
+            try:
+                ip = ipaddress.ip_address(candidate)
+            except ValueError:
+                continue
+            if not isinstance(ip, ipaddress.IPv4Address):
+                continue
+            if ip.is_loopback:
+                continue
+            seen.add(candidate)
+            yield candidate
     except Exception:
         return
 
@@ -102,7 +102,7 @@ def _pick_preferred_host(hosts: list[str]) -> str:
     return hosts[0]
 
 
-def _build_hardware_summary() -> dict:
+def _build_hardware_summary() -> dict[str, Any]:
     """Return a lightweight hardware summary for discovery documents."""
     try:
         hw = _hw_probe()

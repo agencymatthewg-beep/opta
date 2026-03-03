@@ -14,11 +14,14 @@ import { getUnsafeExecutableReason } from '../utils/command-safety.js';
 import {
   filePathToUri,
   toPosition,
+  toRange,
   formatLocations,
   formatHoverContent,
   formatSymbolInformation,
   formatDocumentSymbols,
   formatWorkspaceEdit,
+  formatDiagnostics,
+  formatCodeActions,
 } from './protocol.js';
 import type { LspServerConfig } from './servers.js';
 import { isBinaryAvailable } from '../platform/index.js';
@@ -73,6 +76,10 @@ export class LspManager {
       return this.executeDocumentSymbols(path);
     }
 
+    if (toolName === 'lsp_diagnostics') {
+      return this.executeDiagnostics(path);
+    }
+
     // All other tools need path, line, character
     const line = Number(args['line'] ?? 1);
     const character = Number(args['character'] ?? 0);
@@ -84,6 +91,22 @@ export class LspManager {
         return this.executeReferences(path, line, character, args['include_declaration'] !== false);
       case 'lsp_hover':
         return this.executeHover(path, line, character);
+      case 'lsp_code_actions': {
+        const endLine = Number(args['end_line'] ?? line);
+        const endCharacter = Number(args['end_character'] ?? character);
+        const onlyKind =
+          typeof args['only_kind'] === 'string' && args['only_kind'].trim().length > 0
+            ? args['only_kind'].trim()
+            : undefined;
+        return this.executeCodeActions(
+          path,
+          line,
+          character,
+          endLine,
+          endCharacter,
+          onlyKind
+        );
+      }
       case 'lsp_rename': {
         const newNameVal = args['new_name'];
         const newName =
@@ -224,6 +247,34 @@ export class LspManager {
     const pos = toPosition(line, character);
     const result = await client.rename(uri, pos, newName);
     return formatWorkspaceEdit(result, this.cwd);
+  }
+
+  private async executeDiagnostics(path: string): Promise<string> {
+    const client = await this.getClientForFile(path);
+    if (typeof client === 'string') return client;
+
+    const uri = this.resolveUri(path);
+    const diagnostics = await client.diagnostics(uri);
+    return formatDiagnostics(diagnostics, this.cwd, uri);
+  }
+
+  private async executeCodeActions(
+    path: string,
+    line: number,
+    character: number,
+    endLine: number,
+    endCharacter: number,
+    onlyKind?: string
+  ): Promise<string> {
+    const client = await this.getClientForFile(path);
+    if (typeof client === 'string') return client;
+
+    const uri = this.resolveUri(path);
+    const range = toRange(line, character, endLine, endCharacter);
+    const result = await client.codeActions(uri, range, {
+      only: onlyKind ? [onlyKind] : undefined,
+    });
+    return formatCodeActions(result, this.cwd);
   }
 
   // --- Private: Client Management ---

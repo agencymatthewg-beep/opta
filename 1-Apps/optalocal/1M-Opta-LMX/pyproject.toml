@@ -63,6 +63,12 @@ packages = ["src/opta_lmx"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+filterwarnings = [
+    "ignore:builtin type SwigPyPacked has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type SwigPyObject has no __module__ attribute:DeprecationWarning",
+    "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
+    "ignore:Support for class-based `config` is deprecated, use ConfigDict instead:DeprecationWarning:vllm_mlx\\.api\\.models",
+]
 
 [tool.ruff]
 line-length = 100
@@ -87,5 +93,15 @@ module = [
     "rerankers.*",
     "slowapi",
     "slowapi.*",
+    "yaml",
+    "yaml.*",
+    "psutil",
+    "psutil.*",
+    "jsonschema",
+    "jsonschema.*",
+    "opentelemetry",
+    "opentelemetry.*",
+    "tqdm",
+    "tqdm.*",
 ]
 ignore_missing_imports = true

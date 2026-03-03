@@ -57,11 +57,64 @@ function listCandidateHosts(primaryHost: string, fallbackHosts: readonly string[
   return hosts.length > 0 ? hosts : [primaryHost];
 }
 
-function formatModelPickerLoadError(err: unknown, host: string, port: number, fallbackHosts: readonly string[]): string {
+function isConnectionLikeError(message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    lower.includes('connection_error') ||
+    lower.includes('fetch failed') ||
+    lower.includes('timed out') ||
+    lower.includes('timeout') ||
+    lower.includes('econn') ||
+    lower.includes('enotfound') ||
+    lower.includes('unreachable')
+  );
+}
+
+function formatEndpointLabel(host: string, port: number, fallbackHosts: readonly string[]): string {
   const candidates = listCandidateHosts(host, fallbackHosts);
-  const hostLabel = candidates.length > 1
-    ? `${host}:${port} (fallbacks: ${candidates.slice(1).join(', ')})`
-    : `${host}:${port}`;
+  if (candidates.length <= 1) {
+    return `${host}:${port}`;
+  }
+  return `${host}:${port} (fallbacks: ${candidates.slice(1).join(', ')})`;
+}
+
+async function buildModelPickerDebugHints(
+  message: string,
+  host: string,
+  port: number,
+  fallbackHosts: readonly string[],
+): Promise<string[]> {
+  const hints: string[] = [
+    `Configured endpoint: ${formatEndpointLabel(host, port, fallbackHosts)}`,
+  ];
+
+  if (!isConnectionLikeError(message)) {
+    return hints;
+  }
+
+  hints.push('Press r to retry. Close picker and run /debug, /doctor, or /lmx status --full.');
+  hints.push('If LMX is remote, update connection.host/fallbackHosts in Settings.');
+
+  if (host.toLowerCase() !== 'localhost' || fallbackHosts.length > 0) {
+    return hints;
+  }
+
+  try {
+    const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
+    const discovered = await discoverLmxHosts(1200);
+    const discoveredHosts = Array.from(new Set(discovered.map((item) => item.host))).slice(0, 3);
+    if (discoveredHosts.length > 0) {
+      hints.push(`LAN LMX hosts detected: ${discoveredHosts.join(', ')}`);
+    }
+  } catch {
+    // best-effort diagnostics only
+  }
+
+  return hints;
+}
+
+function formatModelPickerLoadError(err: unknown, host: string, port: number, fallbackHosts: readonly string[]): string {
+  const hostLabel = formatEndpointLabel(host, port, fallbackHosts);
   if (isTimeoutError(err)) {
     return `connection to ${hostLabel} timed out while loading model inventory`;
   }
@@ -82,6 +135,8 @@ export function ModelPicker({
   const [loading, setLoading] = useState(true);
   const [switching, setSwitching] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [debugHints, setDebugHints] = useState<string[]>([]);
+  const [reloadNonce, setReloadNonce] = useState(0);
   const { stdout } = useStdout();
   const fallbackHostsKey = (connectionFallbackHosts ?? [])
     .map((host) => host.trim().toLowerCase())
@@ -101,6 +156,7 @@ export function ModelPicker({
     const loadModels = async () => {
       setLoading(true);
       setError(null);
+      setDebugHints([]);
       try {
         const [{ LmxClient }, { normalizeModelIdKey }] = await Promise.all([
           import('../lmx/client.js'),
@@ -186,7 +242,11 @@ export function ModelPicker({
         setSelectedIdx(currentIdx >= 0 ? currentIdx : 0);
       } catch (err) {
         if (cancelled) return;
-        setError(formatModelPickerLoadError(err, connectionHost, connectionPort, fallbackHosts));
+        const message = formatModelPickerLoadError(err, connectionHost, connectionPort, fallbackHosts);
+        const hints = await buildModelPickerDebugHints(message, connectionHost, connectionPort, fallbackHosts);
+        if (cancelled) return;
+        setError(message);
+        setDebugHints(hints);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -199,7 +259,7 @@ export function ModelPicker({
     return () => {
       cancelled = true;
     };
-  }, [connectionAdminKey, connectionHost, fallbackHosts, connectionPort, currentModel]);
+  }, [connectionAdminKey, connectionHost, fallbackHosts, connectionPort, currentModel, reloadNonce]);
 
   useEffect(() => {
     setSelectedIdx((prev) => {
@@ -234,6 +294,11 @@ export function ModelPicker({
     }
     if (key.leftArrow || key.backspace || key.delete) {
       onClose();
+      return;
+    }
+
+    if (input.toLowerCase() === 'r') {
+      setReloadNonce((value) => value + 1);
       return;
     }
 
@@ -289,7 +354,7 @@ export function ModelPicker({
     >
       <Box marginBottom={1}>
         <Text bold color={TUI_COLORS.accentSoft}>Model Picker</Text>
-        <Text color={TUI_COLORS.dim}>  (Enter to switch, Esc/←/Backspace to close)</Text>
+        <Text color={TUI_COLORS.dim}>  (Enter to switch, r retry, Esc/←/Backspace to close)</Text>
       </Box>
       <Box marginBottom={1}>
         <Text color={TUI_COLORS.dim}>Loaded first, then on-disk. Selecting an on-disk model will auto-load it.</Text>
@@ -297,7 +362,14 @@ export function ModelPicker({
 
       {loading && <Text color={TUI_COLORS.dim}>Loading model inventory...</Text>}
       {switching && <Text color={TUI_COLORS.info}>Switching model…</Text>}
-      {error && <Text color={TUI_COLORS.danger}>Failed to load models: {error}</Text>}
+      {error && (
+        <Box flexDirection="column">
+          <Text color={TUI_COLORS.danger}>Failed to load models: {error}</Text>
+          {debugHints.map((hint) => (
+            <Text key={hint} color={TUI_COLORS.dim}>  {hint}</Text>
+          ))}
+        </Box>
+      )}
 
       {!loading && !error && models.length === 0 && (
         <Text color={TUI_COLORS.dim}>No models available</Text>

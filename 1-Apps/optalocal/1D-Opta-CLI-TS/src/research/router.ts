@@ -74,6 +74,7 @@ function resolveOrderedProviders(
 async function executeWithTimeout(
   provider: ResearchProvider,
   query: ResearchQuery,
+  signal?: AbortSignal
 ): Promise<ResearchProviderResult> {
   const timeoutMs = provider.timeoutMs > 0 ? provider.timeoutMs : 10_000;
 
@@ -92,18 +93,41 @@ async function executeWithTimeout(
       );
     }, timeoutMs);
 
+    const abortHandler = () => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeoutHandle);
+      resolve(
+        makeProviderFailure(
+          provider.id,
+          'TIMEOUT',
+          `Provider ${provider.id} was aborted.`,
+        ),
+      );
+    };
+
+    if (signal) {
+      if (signal.aborted) {
+        abortHandler();
+        return;
+      }
+      signal.addEventListener('abort', abortHandler, { once: true });
+    }
+
     provider
       .search(query)
       .then((result) => {
         if (settled) return;
         settled = true;
         clearTimeout(timeoutHandle);
+        if (signal) signal.removeEventListener('abort', abortHandler);
         resolve(result);
       })
       .catch((error: unknown) => {
         if (settled) return;
         settled = true;
         clearTimeout(timeoutHandle);
+        if (signal) signal.removeEventListener('abort', abortHandler);
         resolve(
           makeProviderFailure(
             provider.id,
@@ -118,6 +142,7 @@ async function executeWithTimeout(
 export async function routeResearchQuery(
   query: ResearchQuery,
   options: RouteResearchOptions = {},
+  signal?: AbortSignal
 ): Promise<ResearchRouteResult> {
   const availableProviders = options.providers ?? createResearchRegistry(options.config);
   const orderedProviders = resolveOrderedProviders(availableProviders, query.intent, options.providerOrder);
@@ -135,7 +160,8 @@ export async function routeResearchQuery(
   const attempts: ResearchRouteAttempt[] = [];
 
   for (const provider of orderedProviders) {
-    const result = await executeWithTimeout(provider, query);
+    if (signal?.aborted) break;
+    const result = await executeWithTimeout(provider, query, signal);
 
     if (result.ok) {
       return {

@@ -1016,7 +1016,8 @@ async def test_delete_404_for_missing_model(client: AsyncClient) -> None:
         side_effect=KeyError("not found"),
     ):
         response = await client.request(
-            "DELETE", "/admin/models/nonexistent/model",
+            "DELETE",
+            "/admin/models/nonexistent/model",
         )
     assert response.status_code == 404
 
@@ -1040,7 +1041,8 @@ async def test_delete_success(client: AsyncClient) -> None:
         return_value=4_000_000_000,
     ):
         response = await client.request(
-            "DELETE", "/admin/models/mlx-community/some-model",
+            "DELETE",
+            "/admin/models/mlx-community/some-model",
         )
     assert response.status_code == 200
     data = response.json()
@@ -1072,7 +1074,8 @@ async def test_downloads_list_requires_auth(client_with_auth: AsyncClient) -> No
 async def test_delete_requires_auth(client_with_auth: AsyncClient) -> None:
     """DELETE /admin/models/{id} rejects without X-Admin-Key."""
     response = await client_with_auth.request(
-        "DELETE", "/admin/models/test-model",
+        "DELETE",
+        "/admin/models/test-model",
     )
     assert response.status_code == 403
 

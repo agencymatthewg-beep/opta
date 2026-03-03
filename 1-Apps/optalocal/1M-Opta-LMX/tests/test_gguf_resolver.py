@@ -1,4 +1,5 @@
 """Tests for GGUF equivalence resolver — local GGUF file discovery."""
+
 from __future__ import annotations
 
 from pathlib import Path

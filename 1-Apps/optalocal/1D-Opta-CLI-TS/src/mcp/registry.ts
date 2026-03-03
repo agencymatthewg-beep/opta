@@ -8,10 +8,12 @@ import type { OptaConfig } from '../core/config.js';
 import type { SubAgentContext } from '../core/subagent.js';
 import { LspManager } from '../lsp/manager.js';
 import { resolve } from 'node:path';
+import { instantiateOrInvoke } from '../utils/newable.js';
 import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } from '../core/tools/custom.js';
 import { createPlaywrightMcpServerConfig } from '../browser/mcp-bootstrap.js';
 import { normalizeStringList } from '../utils/text.js';
 import * as lmxApiKey from '../lmx/api-key.js';
+import { resolveAdminKeyForHost } from '../lmx/admin-keys.js';
 
 interface ToolSchema {
   type: 'function';
@@ -167,7 +169,8 @@ export async function buildToolRegistry(
   const lspEnabled = config.lsp?.enabled ?? true;
   const LSP_TOOL_NAMES = new Set([
     'lsp_definition', 'lsp_references', 'lsp_hover',
-    'lsp_symbols', 'lsp_document_symbols', 'lsp_rename',
+    'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics',
+    'lsp_code_actions', 'lsp_rename',
   ]);
 
   // Initialize LspManager if LSP is enabled
@@ -236,7 +239,7 @@ export async function buildToolRegistry(
   };
 
   // TTL cache for read-only tool results (avoids redundant file reads in multi-turn convos)
-  const cache = new ToolResultCache();
+  const cache = instantiateOrInvoke<ToolResultCache>(ToolResultCache);
 
   const registry: ToolRegistry = {
     schemas: filteredSchemas,
@@ -434,8 +437,12 @@ async function resolveLmxModel(config: OptaConfig): Promise<string> {
   // Model has a cloud provider prefix — query LMX for the loaded model
   try {
     const headers: Record<string, string> = {};
-    if (config.connection.adminKey) {
-      headers['X-Admin-Key'] = config.connection.adminKey;
+    const adminKey = resolveAdminKeyForHost(config.connection.host, config.connection.port, {
+      defaultAdminKey: config.connection.adminKey,
+      adminKeysByHost: config.connection.adminKeysByHost,
+    });
+    if (adminKey) {
+      headers['X-Admin-Key'] = adminKey;
     }
     const resp = await fetch(
       `http://${config.connection.host}:${config.connection.port}/admin/models`,
@@ -496,7 +503,7 @@ async function execSubAgentTool(
   const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(config.connection);
 
   const { default: OpenAI } = await import('openai');
-  const client = new OpenAI({
+  const client = instantiateOrInvoke<import('openai').default>(OpenAI, {
     baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
     apiKey,
   });

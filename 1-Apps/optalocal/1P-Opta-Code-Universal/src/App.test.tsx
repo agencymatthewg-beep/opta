@@ -155,7 +155,7 @@ describe("App account controls wiring", () => {
     render(<App />);
 
     const paletteTrigger = await screen.findByRole("button", {
-      name: "Palette (Cmd/Ctrl+K)",
+      name: /Palette/i,
     });
     fireEvent.click(paletteTrigger);
 
@@ -205,7 +205,7 @@ describe("App account controls wiring", () => {
     );
 
     const view = render(<App />);
-    await waitFor(() => expect(screen.getByText("Live")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
 
     stateRef.current = makeDaemonState({
       connectionState: "disconnected",
@@ -218,18 +218,25 @@ describe("App account controls wiring", () => {
 
   it("shows auto-repair action instead of command-only daemon instructions", async () => {
     const repairConnection = vi.fn().mockResolvedValue(undefined);
-    vi.mocked(useDaemonSessions).mockReturnValue(
-      makeDaemonState({
-        connectionState: "disconnected",
-        connectionError: "daemon unreachable",
-        repairConnection,
-      }),
+    const stateRef = {
+      current: makeDaemonState({ connectionState: "connected" }),
+    };
+    vi.mocked(useDaemonSessions).mockImplementation(
+      () => stateRef.current as never,
     );
 
-    render(<App />);
+    const view = render(<App />);
+    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
+
+    stateRef.current = makeDaemonState({
+      connectionState: "disconnected",
+      connectionError: "daemon unreachable",
+      repairConnection,
+    });
+    view.rerender(<App />);
 
     expect(
-      await screen.findByText(/Daemon offline\. Run auto-repair/i),
+      await screen.findByText(/Daemon connection lost/i),
     ).toBeInTheDocument();
     const repairButton = screen.getByRole("button", {
       name: /Repair daemon connection/i,
@@ -288,14 +295,16 @@ describe("App account controls wiring", () => {
     );
 
     const view = render(<App />);
-    await waitFor(() => expect(screen.getByText("Live")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
     stateRef.current = makeDaemonState({
       connectionState: "disconnected",
       connectionError: "daemon unreachable",
     });
     view.rerender(<App />);
 
-    expect(await screen.findByText("Daemon connection lost")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Daemon connection lost"),
+    ).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /copy diagnostics/i }));
 
     await waitFor(() => expect(writeText).toHaveBeenCalledTimes(1));

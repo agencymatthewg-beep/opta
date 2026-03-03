@@ -6,6 +6,7 @@ import asyncio
 import json
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -42,11 +43,11 @@ def test_session_filename_and_frontmatter_generation(tmp_path: Path) -> None:
     assert path.name == "2026-02-23-1405-mbp-1-startup-check.md"
     content = path.read_text(encoding="utf-8")
     assert "date: 2026-02-23" in content
-    assert "time: \"14:05 UTC\"" in content
-    assert "device: \"mbp-1\"" in content
-    assert "user: \"alice\"" in content
-    assert "model: \"opta-lmx-test\"" in content
-    assert "duration: \"00:05:00\"" in content
+    assert 'time: "14:05 UTC"' in content
+    assert 'device: "mbp-1"' in content
+    assert 'user: "alice"' in content
+    assert 'model: "opta-lmx-test"' in content
+    assert 'duration: "00:05:00"' in content
 
 
 def test_event_summary_counting(tmp_path: Path) -> None:
@@ -143,12 +144,22 @@ async def test_lifespan_journaling_smoke(tmp_path: Path) -> None:
     )  # type: ignore[arg-type]
     app = create_app(config)
 
-    async with app.router.lifespan_context(app):
-        await app.state.event_bus.publish(ServerEvent(
-            event_type="model_loaded",
-            data={"model_id": "smoke-model", "memory_gb": 1.0},
-        ))
-        await asyncio.sleep(0.05)
+    fake_runtime_state = MagicMock()
+    fake_runtime_state.load.return_value = {
+        "last_clean_shutdown": True,
+        "loaded_models": [],
+    }
+    fake_runtime_state.is_crash_loop.return_value = False
+
+    with patch("opta_lmx.main.RuntimeState", return_value=fake_runtime_state):
+        async with app.router.lifespan_context(app):
+            await app.state.event_bus.publish(
+                ServerEvent(
+                    event_type="model_loaded",
+                    data={"model_id": "smoke-model", "memory_gb": 1.0},
+                )
+            )
+            await asyncio.sleep(0.05)
 
     session_files = sorted((tmp_path / "12-Session-Logs").glob("*.md"))
     assert len(session_files) == 1

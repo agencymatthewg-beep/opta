@@ -288,11 +288,16 @@ export async function checkConnection(emitter: TuiEmitter, config: OptaConfig): 
     fallbackHosts: config.connection.fallbackHosts,
     port: config.connection.port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   }, { timeoutMs: 1_500 });
   const result = await probeLmxConnection(
     endpoint.host,
     config.connection.port,
-    { timeoutMs: 5000, adminKey: config.connection.adminKey }
+    {
+      timeoutMs: 5000,
+      adminKey: config.connection.adminKey,
+      adminKeysByHost: config.connection.adminKeysByHost,
+    }
   );
   if (result.state === 'connected') {
     emitter.emit('connection:status', 'connected');

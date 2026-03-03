@@ -39,14 +39,16 @@ import { cliMasterclass } from './cli-masterclass';
 import { accountsSync } from './accounts-sync';
 import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
+import { deepDiveTemplate } from './template-deep-dive';
 
 export const allGuides: RegisteredGuide[] = [
-  { ...optaLocalIntro, status: 'verified' },
-  { ...lmxOverview, status: 'verified' },
+  { ...optaLocalIntro, status: 'draft' },
+  { ...lmxOverview, status: 'draft' },
   { ...cliMasterclass, status: 'verified' },
-  { ...browserAutomationGuide, status: 'verified' },
-  { ...codeDesktopOverview, status: 'verified' },
-  { ...accountsSync, status: 'verified' },
+  { ...browserAutomationGuide, status: 'draft' },
+  { ...codeDesktopOverview, status: 'draft' },
+  { ...accountsSync, status: 'draft' },
+  { ...deepDiveTemplate, status: 'draft' },
 ];
 
 function extractGuideLinks(content: string): string[] {

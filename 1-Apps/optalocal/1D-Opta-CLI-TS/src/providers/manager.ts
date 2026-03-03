@@ -8,8 +8,8 @@
  *
  * Zero-config fallback:
  * probeProvider() performs a fast LMX health check (≤2s) before the first
- * agent turn. If LMX is unreachable it silently returns an Anthropic provider.
- * This lets fresh installs work immediately when ANTHROPIC_API_KEY is set.
+ * agent turn. If LMX is unreachable it returns the first available cloud
+ * provider (Anthropic/Gemini/OpenAI/Opencode Zen) using configured keys.
  */
 
 import type { ProviderClient } from './base.js';
@@ -17,6 +17,7 @@ import type { OptaConfig } from '../core/config.js';
 import { resolveLmxApiKey } from '../lmx/api-key.js';
 import { verbose } from '../core/debug.js';
 import { errorMessage } from '../utils/errors.js';
+import { instantiateOrInvoke } from '../utils/newable.js';
 
 let cachedProvider: ProviderClient | null = null;
 let cachedProviderKey = '';
@@ -51,17 +52,17 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
 
   if (active === 'anthropic') {
     const { AnthropicProvider } = await import('./anthropic.js');
-    cachedProvider = new AnthropicProvider(config);
+    cachedProvider = instantiateOrInvoke<ProviderClient>(AnthropicProvider, config);
   } else if (active === 'gemini' || active === 'openai' || active === 'opencode_zen') {
     const { CloudProvider } = await import('./cloud.js');
-    cachedProvider = new CloudProvider(active, config);
+    cachedProvider = instantiateOrInvoke<ProviderClient>(CloudProvider, active, config);
   } else {
     const { LmxProvider } = await import('./lmx.js');
-    const lmx = new LmxProvider(config);
+    const lmx = instantiateOrInvoke<ProviderClient>(LmxProvider, config);
 
     if (config.provider.fallbackOnFailure) {
       const { FallbackProvider } = await import('./fallback.js');
-      cachedProvider = new FallbackProvider(lmx, config);
+      cachedProvider = instantiateOrInvoke<ProviderClient>(FallbackProvider, lmx, config);
     } else {
       cachedProvider = lmx;
     }
@@ -96,11 +97,17 @@ export function resetProviderCache(): void {
 export async function probeProvider(config: OptaConfig): Promise<ProviderClient> {
   const active = config.provider.active;
 
-  // When the user has explicitly configured Anthropic, honour that.
-  if (active === 'anthropic') {
-    verbose('Provider probe: user configured Anthropic, skipping LMX probe');
-    const { AnthropicProvider } = await import('./anthropic.js');
-    return new AnthropicProvider(config);
+  // When the user has explicitly configured a cloud provider, honour that.
+  if (active !== 'lmx') {
+    const providerLabel = active;
+    verbose(`Provider probe: user configured ${providerLabel}, skipping LMX probe`);
+    if (active === 'anthropic') {
+      const { AnthropicProvider } = await import('./anthropic.js');
+      return instantiateOrInvoke<ProviderClient>(AnthropicProvider, config);
+    }
+
+    const { CloudProvider } = await import('./cloud.js');
+    return instantiateOrInvoke<ProviderClient>(CloudProvider, active, config);
   }
 
   // Probe LMX with a short timeout budget so startup stays responsive.
@@ -151,13 +158,33 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
     }
   }
 
-  // LMX is unreachable — check for Anthropic fallback.
-  const anthropicKey = config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY'] || '';
+  // LMX is unreachable — check cloud fallback keys in preference order.
+  const cloudCandidates: Array<{ provider: 'anthropic' | 'gemini' | 'openai' | 'opencode_zen'; envVar: string }> = [
+    { provider: 'anthropic', envVar: 'ANTHROPIC_API_KEY' },
+    { provider: 'gemini', envVar: 'GEMINI_API_KEY' },
+    { provider: 'openai', envVar: 'OPENAI_API_KEY' },
+    { provider: 'opencode_zen', envVar: 'OPENCODE_ZEN_API_KEY' },
+  ];
 
-  if (anthropicKey) {
-    verbose('Provider probe: falling back to Anthropic (LMX unreachable, ANTHROPIC_API_KEY present)');
-    const { AnthropicProvider } = await import('./anthropic.js');
-    return new AnthropicProvider(config);
+  for (const candidate of cloudCandidates) {
+    let configured = false;
+    if (candidate.provider === 'anthropic') {
+      configured = !!(config.provider.anthropic.apiKey || process.env[candidate.envVar]);
+    } else if (candidate.provider === 'gemini') {
+      configured = !!(config.provider.gemini.apiKey || process.env[candidate.envVar]);
+    } else if (candidate.provider === 'openai') {
+      configured = !!(config.provider.openai.apiKey || process.env[candidate.envVar]);
+    } else if (candidate.provider === 'opencode_zen') {
+      configured = !!(config.provider.opencode_zen.apiKey || process.env[candidate.envVar]);
+    }
+
+    if (configured) {
+      verbose(
+        `Provider probe: falling back to ${candidate.provider} (LMX unreachable, key available)`
+      );
+      const { CloudProvider } = await import('./cloud.js');
+      return instantiateOrInvoke<ProviderClient>(CloudProvider, candidate.provider, config);
+    }
   }
 
   // No fallback available — throw machine-readable remediation metadata.
@@ -172,7 +199,7 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
       autoActions: ['discover_hosts', 'try_fallback', 'launch_onboarding'],
       humanHint: 'Run opta onboard to repair connection automatically.',
       noCloudFallbackConfigured: true,
-      cloudFallbackEnvVar: 'ANTHROPIC_API_KEY',
+      cloudFallbackEnvVar: ['ANTHROPIC_API_KEY', 'GEMINI_API_KEY', 'OPENAI_API_KEY', 'OPENCODE_ZEN_API_KEY'],
       target: `${primaryHost}:${port}`,
       fallbackHostsConfigured: probeTargets.length > 1,
     })

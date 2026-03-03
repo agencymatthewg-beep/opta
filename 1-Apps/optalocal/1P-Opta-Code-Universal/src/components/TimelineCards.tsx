@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Virtuoso, VirtuosoHandle } from "react-virtuoso";
+import { useStreamingMarkdown } from "../hooks/useStreamingMarkdown";
 import {
   AlertTriangle,
   CheckCircle,
@@ -38,7 +40,7 @@ export function TimelineCards({
   browserVisualState,
   onResolvePermission,
 }: TimelineCardsProps) {
-  const feedRef = useRef<HTMLDivElement | null>(null);
+  const virtuosoRef = useRef<VirtuosoHandle>(null);
   const planState = useMemo(() => detectPlanState(items), [items]);
   const browserActivity = useMemo(
     () =>
@@ -49,19 +51,43 @@ export function TimelineCards({
         pendingPermissions,
         timelineItems: items,
       }),
-    [browserVisualState, connectionState, isStreaming, pendingPermissions, items],
+    [
+      browserVisualState,
+      connectionState,
+      isStreaming,
+      pendingPermissions,
+      items,
+    ],
   );
 
   useEffect(() => {
-    const feed = feedRef.current;
-    if (!feed) return;
-    feed.scrollTo({
-      top: feed.scrollHeight,
-      behavior: isStreaming ? "instant" : "smooth",
-    });
-    // items (not items.length) so the effect re-fires on token merges
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [items, isStreaming]);
+    // Autoscroll logic handled by Virtuoso followOutput property
+    if (isStreaming && virtuosoRef.current) {
+      virtuosoRef.current.scrollToIndex({
+        index: items.length - 1,
+        align: "end",
+        behavior: "auto",
+      });
+    }
+  }, [items.length, isStreaming]);
+
+  const renderItem = (_index: number, item: TimelineItem) => {
+    if (item.kind === "thinking")
+      return <ThinkingCard key={item.id} item={item} />;
+    if (item.kind === "tool") {
+      return <ToolCard key={item.id} item={item} />;
+    }
+    if (item.kind === "system") return <SystemCard key={item.id} item={item} />;
+    if (item.kind === "assistant")
+      return (
+        <AssistantCard
+          key={item.id}
+          item={item}
+          isStreaming={isStreaming && _index === items.length - 1}
+        />
+      );
+    return <GenericCard key={item.id} item={item} />;
+  };
 
   return (
     <section className="timeline-panel">
@@ -75,7 +101,9 @@ export function TimelineCards({
             className={`plan-state-badge plan-state-${planState}`}
             aria-label={`Plan state: ${planState === "drift" ? "drift risk" : "up to date"}`}
           >
-            {planState === "drift" ? "Plan state: drift risk" : "Plan state: up to date"}
+            {planState === "drift"
+              ? "Plan state: drift risk"
+              : "Plan state: up to date"}
           </p>
         ) : null}
         <p
@@ -98,19 +126,21 @@ export function TimelineCards({
         </div>
       )}
 
-      <div className="timeline-feed" ref={feedRef}>
+      <div className="timeline-feed">
         {items.length === 0 ? (
-          <p className="empty">No timeline events yet. Send a prompt to begin.</p>
+          <p className="empty">
+            No timeline events yet. Send a prompt to begin.
+          </p>
         ) : (
-          items.map((item) => {
-            if (item.kind === "thinking") return <ThinkingCard key={item.id} item={item} />;
-            if (item.kind === "tool") {
-              return <ToolCard key={item.id} item={item} />;
-            }
-            if (item.kind === "system") return <SystemCard key={item.id} item={item} />;
-            if (item.kind === "assistant") return <AssistantCard key={item.id} item={item} />;
-            return <GenericCard key={item.id} item={item} />;
-          })
+          <Virtuoso
+            ref={virtuosoRef}
+            data={items}
+            itemContent={renderItem}
+            followOutput={"smooth"}
+            atBottomThreshold={100}
+            initialItemCount={items.length}
+            style={{ height: "100%", flex: 1 }}
+          />
         )}
 
         {isStreaming ? (
@@ -127,15 +157,28 @@ export function TimelineCards({
 
 // ── Card components ────────────────────────────────────────────────────────
 
-function AssistantCard({ item }: { item: TimelineItem }) {
+function AssistantCard({
+  item,
+  isStreaming,
+}: {
+  item: TimelineItem;
+  isStreaming?: boolean;
+}) {
+  const debouncedBody = useStreamingMarkdown(
+    item.body ?? "",
+    Boolean(isStreaming),
+  );
+
   return (
     <article className="timeline-card kind-assistant">
       <div className="timeline-meta">
         <span>assistant</span>
-        <span>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}</span>
+        <span>
+          {item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}
+        </span>
       </div>
-      {item.body ? (
-        <MarkdownMessage content={item.body} />
+      {debouncedBody ? (
+        <MarkdownMessage content={debouncedBody} />
       ) : (
         <p className="empty-body">…</p>
       )}
@@ -170,9 +213,17 @@ function ToolCard({ item }: { item: TimelineItem }) {
         </span>
         {hasBody &&
           (expanded ? (
-            <ChevronDown size={12} className="tool-chevron" aria-hidden="true" />
+            <ChevronDown
+              size={12}
+              className="tool-chevron"
+              aria-hidden="true"
+            />
           ) : (
-            <ChevronRight size={12} className="tool-chevron" aria-hidden="true" />
+            <ChevronRight
+              size={12}
+              className="tool-chevron"
+              aria-hidden="true"
+            />
           ))}
       </button>
       {expanded && hasBody ? (
@@ -187,12 +238,22 @@ function SystemCard({ item }: { item: TimelineItem }) {
   const isDone = item.title === "Turn complete";
 
   return (
-    <article className={`timeline-card kind-system ${isError ? "system-error" : isDone ? "system-done" : ""}`}>
+    <article
+      className={`timeline-card kind-system ${isError ? "system-error" : isDone ? "system-done" : ""}`}
+    >
       <div className="system-header">
         {isError ? (
-          <XCircle size={13} className="system-icon icon-error" aria-hidden="true" />
+          <XCircle
+            size={13}
+            className="system-icon icon-error"
+            aria-hidden="true"
+          />
         ) : isDone ? (
-          <CheckCircle size={13} className="system-icon icon-done" aria-hidden="true" />
+          <CheckCircle
+            size={13}
+            className="system-icon icon-done"
+            aria-hidden="true"
+          />
         ) : (
           <Zap size={13} className="system-icon" aria-hidden="true" />
         )}
@@ -218,7 +279,9 @@ function TurnStatsRow({ stats }: { stats: TurnStats }) {
         <span title="Elapsed time">{(stats.elapsed / 1000).toFixed(1)}s</span>
       )}
       {stats.toolCalls > 0 && (
-        <span title="Tool calls">{stats.toolCalls} tool{stats.toolCalls !== 1 ? "s" : ""}</span>
+        <span title="Tool calls">
+          {stats.toolCalls} tool{stats.toolCalls !== 1 ? "s" : ""}
+        </span>
       )}
     </div>
   );
@@ -229,7 +292,9 @@ function GenericCard({ item }: { item: TimelineItem }) {
     <article className={`timeline-card kind-${item.kind}`}>
       <div className="timeline-meta">
         <span>{item.kind}</span>
-        <span>{item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}</span>
+        <span>
+          {item.createdAt ? new Date(item.createdAt).toLocaleTimeString() : ""}
+        </span>
       </div>
       <h3>{item.title}</h3>
       {item.body ? (
@@ -280,7 +345,11 @@ function PermissionCard({
   return (
     <div className="permission-card" role="alert">
       <div className="permission-header">
-        <AlertTriangle className="permission-icon" size={16} aria-hidden="true" />
+        <AlertTriangle
+          className="permission-icon"
+          size={16}
+          aria-hidden="true"
+        />
         <strong>Permission Required</strong>
       </div>
       <dl className="permission-details">
@@ -292,7 +361,9 @@ function PermissionCard({
           <div>
             <dt>Args</dt>
             <dd>
-              <pre>{JSON.stringify(permission.args, null, 2).slice(0, 300)}</pre>
+              <pre>
+                {JSON.stringify(permission.args, null, 2).slice(0, 300)}
+              </pre>
             </dd>
           </div>
         )}

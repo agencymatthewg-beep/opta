@@ -74,19 +74,43 @@ _PREFIX_CATEGORY_MAP: list[tuple[str, EventCategory]] = [
 ]
 
 # Substrings that indicate elevated severity regardless of prefix.
-_ERROR_SUBSTRINGS: frozenset[str] = frozenset({
-    "error", "failed", "crashed", "timeout", "quarantined", "oom",
-    "rejected", "denied", "invalid", "exceeded",
-})
+_ERROR_SUBSTRINGS: frozenset[str] = frozenset(
+    {
+        "error",
+        "failed",
+        "crashed",
+        "timeout",
+        "quarantined",
+        "oom",
+        "rejected",
+        "denied",
+        "invalid",
+        "exceeded",
+    }
+)
 
-_WARNING_SUBSTRINGS: frozenset[str] = frozenset({
-    "warning", "degraded", "skipped", "retry", "slow", "pressure",
-    "evict", "unloaded", "dropped",
-})
+_WARNING_SUBSTRINGS: frozenset[str] = frozenset(
+    {
+        "warning",
+        "degraded",
+        "skipped",
+        "retry",
+        "slow",
+        "pressure",
+        "evict",
+        "unloaded",
+        "dropped",
+    }
+)
 
-_CRITICAL_SUBSTRINGS: frozenset[str] = frozenset({
-    "crash_loop", "fatal", "sigabrt", "critical",
-})
+_CRITICAL_SUBSTRINGS: frozenset[str] = frozenset(
+    {
+        "crash_loop",
+        "fatal",
+        "sigabrt",
+        "critical",
+    }
+)
 
 
 def _classify_severity(event_type: str) -> Literal["info", "warning", "error", "critical"]:

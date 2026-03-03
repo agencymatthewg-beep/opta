@@ -68,7 +68,11 @@ export function eventsToTimelineItems(
 
     if (STOP_EVENT_KINDS.has(kind)) {
       let stats: TurnStats | undefined;
-      if (kind === "turn.done" && payload.stats && typeof payload.stats === "object") {
+      if (
+        kind === "turn.done" &&
+        payload.stats &&
+        typeof payload.stats === "object"
+      ) {
         const rawStats = payload.stats as Record<string, unknown>;
         stats = {
           tokens: Number(rawStats.tokens ?? rawStats.completionTokens ?? 0),
@@ -111,7 +115,10 @@ export function eventsToTimelineItems(
         id: `${sessionId}-tool-${String(seq ?? Date.now())}`,
         kind: "tool",
         title: toolName,
-        body: args != null ? JSON.stringify(args, null, 2).slice(0, 600) : undefined,
+        body:
+          args != null
+            ? JSON.stringify(args, null, 2).slice(0, 600)
+            : undefined,
         createdAt: nowIso(),
       });
       continue;

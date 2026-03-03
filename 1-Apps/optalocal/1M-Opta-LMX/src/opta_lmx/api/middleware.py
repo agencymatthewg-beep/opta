@@ -11,7 +11,7 @@ import json
 import logging
 import secrets
 import time
-from typing import Any
+from typing import Any, cast
 
 import structlog
 from starlette.datastructures import MutableHeaders
@@ -26,7 +26,12 @@ _QUIET_PATHS = frozenset({"/healthz", "/admin/events"})
 def _get_header(scope: Scope, name: str) -> str | None:
     """Extract a header value from the ASGI scope (case-insensitive)."""
     name_lower = name.lower().encode("latin-1")
-    for key, value in scope.get("headers", []):
+    headers_obj = scope.get("headers", [])
+    if not isinstance(headers_obj, list):
+        return None
+    for key_obj, value_obj in headers_obj:
+        key = cast(bytes, key_obj)
+        value = cast(bytes, value_obj)
         if key == name_lower:
             return value.decode("latin-1")
     return None
@@ -34,7 +39,8 @@ def _get_header(scope: Scope, name: str) -> str | None:
 
 def _get_path(scope: Scope) -> str:
     """Extract the request path from the ASGI scope."""
-    return scope.get("path", "")
+    path = scope.get("path", "")
+    return path if isinstance(path, str) else ""
 
 
 class RequestIDMiddleware:
@@ -140,9 +146,7 @@ class MTLSMiddleware:
         self.mode = normalized_mode if normalized_mode in {"off", "optional", "required"} else "off"
         self.client_subject_header = client_subject_header.strip()
         self.allowed_subjects = {
-            subject.strip()
-            for subject in (allowed_subjects or [])
-            if subject.strip()
+            subject.strip() for subject in (allowed_subjects or []) if subject.strip()
         }
 
     async def _reject(self, send: Send, *, status_code: int, detail: str) -> None:
@@ -191,7 +195,7 @@ class MTLSMiddleware:
 def _get_otel_trace_api() -> Any | None:
     """Best-effort import for OpenTelemetry trace API."""
     try:
-        from opentelemetry import trace  # type: ignore[import-not-found]
+        from opentelemetry import trace
 
         return trace
     except Exception:

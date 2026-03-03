@@ -1,5 +1,5 @@
 /**
- * Debug and info slash commands: /history, /cost, /stats
+ * Debug and info slash commands: /debug, /history, /cost, /stats
  */
 
 import chalk from 'chalk';
@@ -7,8 +7,166 @@ import { box, kv, progressBar } from '../../ui/box.js';
 import { formatTokens } from '../../utils/tokens.js';
 import { estimateTokens } from '../../utils/tokens.js';
 import { estimateCost, formatCost } from '../../utils/pricing.js';
+import { errorMessage } from '../../utils/errors.js';
 import type { AgentMessage } from '../../core/agent.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
+import { parseSlashArgs, renderJson } from './lmx/types.js';
+
+interface DebugSnapshot {
+  sessionId: string;
+  messageCount: number;
+  toolCallCount: number;
+  provider: string;
+  fallbackOnFailure: boolean;
+  endpoint: {
+    host: string;
+    fallbackHosts: string[];
+    port: number;
+    activeHost: string;
+    adminKeyConfigured: boolean;
+    hostSpecificAdminKeys: number;
+  };
+  auth: {
+    anthropicKeyConfigured: boolean;
+    optaApiKeyConfigured: boolean;
+  };
+  lmx: {
+    reachable: boolean;
+    latencyMs: number | null;
+    error?: string;
+  };
+}
+
+async function collectDebugSnapshot(ctx: SlashContext): Promise<DebugSnapshot> {
+  const { host, port, fallbackHosts, adminKey, adminKeysByHost } = ctx.config.connection;
+  const startedAt = Date.now();
+  let reachable = false;
+  let latencyMs: number | null = null;
+  let activeHost = host;
+  let connectionError: string | undefined;
+
+  try {
+    const { LmxClient } = await import('../../lmx/client.js');
+    const lmx = new LmxClient({
+      host,
+      fallbackHosts,
+      port,
+      adminKey,
+      adminKeysByHost,
+      timeoutMs: 2_500,
+      maxRetries: 0,
+    });
+    await lmx.health({ timeoutMs: 2_500, maxRetries: 0 });
+    reachable = true;
+    latencyMs = Date.now() - startedAt;
+    activeHost = lmx.getActiveHost();
+  } catch (err) {
+    connectionError = errorMessage(err);
+  }
+
+  const anthropicConfigKey = ctx.config.provider.anthropic.apiKey.trim();
+  const anthropicEnvKey = process.env['ANTHROPIC_API_KEY']?.trim() ?? '';
+  const optaApiEnvKey = process.env['OPTA_API_KEY']?.trim() ?? '';
+  const optaApiConfigKey = ctx.config.connection.apiKey?.trim() ?? '';
+
+  return {
+    sessionId: ctx.session.id,
+    messageCount: ctx.session.messages.length,
+    toolCallCount: ctx.session.toolCallCount ?? 0,
+    provider: ctx.config.provider.active,
+    fallbackOnFailure: ctx.config.provider.fallbackOnFailure,
+    endpoint: {
+      host,
+      fallbackHosts,
+      port,
+      activeHost,
+      adminKeyConfigured: Boolean(adminKey?.trim()),
+      hostSpecificAdminKeys: Object.keys(adminKeysByHost ?? {}).length,
+    },
+    auth: {
+      anthropicKeyConfigured: Boolean(anthropicConfigKey || anthropicEnvKey),
+      optaApiKeyConfigured: Boolean(optaApiConfigKey || optaApiEnvKey),
+    },
+    lmx: {
+      reachable,
+      latencyMs,
+      ...(connectionError ? { error: connectionError } : {}),
+    },
+  };
+}
+
+const debugHandler = async (args: string, ctx: SlashContext): Promise<SlashResult> => {
+  const tokens = parseSlashArgs(args);
+  const asJson = tokens.includes('--json');
+  const includeDoctor = tokens.includes('--doctor');
+  const unknown = tokens.filter((token) => token.startsWith('--') && token !== '--json' && token !== '--doctor');
+  if (unknown.length > 0) {
+    console.log(chalk.yellow(`  Unknown options: ${unknown.join(', ')}`));
+    console.log(chalk.dim('  Usage: /debug [--json] [--doctor]'));
+    return 'handled';
+  }
+
+  const snapshot = await collectDebugSnapshot(ctx);
+
+  if (asJson) {
+    console.log(renderJson(snapshot));
+  } else {
+    const endpointLabel = `${snapshot.endpoint.host}:${snapshot.endpoint.port}`;
+    const fallbackLabel =
+      snapshot.endpoint.fallbackHosts.length > 0
+        ? snapshot.endpoint.fallbackHosts.join(', ')
+        : '(none)';
+
+    const lines: string[] = [
+      kv('Session', snapshot.sessionId),
+      kv('Messages', String(snapshot.messageCount)),
+      kv('Tool Calls', String(snapshot.toolCallCount)),
+      '',
+      kv('Provider', snapshot.provider),
+      kv('Fallback', snapshot.fallbackOnFailure ? chalk.cyan('enabled') : chalk.dim('disabled')),
+      '',
+      kv('Configured Host', endpointLabel),
+      kv('Fallback Hosts', fallbackLabel),
+      kv('Active Host', `${snapshot.endpoint.activeHost}:${snapshot.endpoint.port}`),
+      kv('Admin Key', snapshot.endpoint.adminKeyConfigured ? '(set)' : chalk.dim('(unset)')),
+      kv('Host Admin Keys', String(snapshot.endpoint.hostSpecificAdminKeys)),
+      '',
+      kv(
+        'Anthropic Key',
+        snapshot.auth.anthropicKeyConfigured ? '(set)' : chalk.dim('(unset)'),
+      ),
+      kv(
+        'OPTA_API_KEY',
+        snapshot.auth.optaApiKeyConfigured ? '(set)' : chalk.dim('(unset)'),
+      ),
+      '',
+    ];
+
+    if (snapshot.lmx.reachable) {
+      lines.push(
+        kv(
+          'LMX',
+          chalk.green(`reachable (${snapshot.lmx.latencyMs ?? 0}ms)`),
+        ),
+      );
+    } else {
+      lines.push(kv('LMX', chalk.red('unreachable')));
+      if (snapshot.lmx.error) {
+        lines.push(chalk.dim(`  ${snapshot.lmx.error}`));
+      }
+      lines.push(chalk.dim('  Next: /doctor, /lmx status --full, /lmx reconnect'));
+    }
+
+    console.log('\n' + box('Debug Snapshot', lines));
+  }
+
+  if (includeDoctor) {
+    const { runDoctor } = await import('../doctor.js');
+    await runDoctor({ fix: false });
+  }
+
+  return 'handled';
+};
 
 const historyHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const userMessages = ctx.session.messages.filter(
@@ -101,6 +259,14 @@ const statsHandler = async (_args: string, _ctx: SlashContext): Promise<SlashRes
 };
 
 export const debugCommands: SlashCommandDef[] = [
+  {
+    command: 'debug',
+    description: 'Runtime debug snapshot (LMX/provider/session)',
+    handler: debugHandler,
+    category: 'info',
+    usage: '/debug [--json] [--doctor]',
+    examples: ['/debug', '/debug --json', '/debug --doctor'],
+  },
   {
     command: 'history',
     description: 'Conversation summary',

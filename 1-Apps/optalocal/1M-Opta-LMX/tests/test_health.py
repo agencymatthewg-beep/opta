@@ -115,7 +115,8 @@ class TestAdminHealth:
         assert response.status_code == 403
 
         response = await client_with_auth.get(
-            "/admin/health", headers={"x-admin-key": "test-secret-key"},
+            "/admin/health",
+            headers={"x-admin-key": "test-secret-key"},
         )
         assert response.status_code == 200
 

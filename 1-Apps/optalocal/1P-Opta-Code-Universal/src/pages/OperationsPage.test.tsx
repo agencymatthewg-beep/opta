@@ -57,8 +57,12 @@ describe("OperationsPage", () => {
     expect(screen.getByText("doctor (1)")).toBeInTheDocument();
     expect(screen.getByText("env (2)")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "all (3)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "read (2)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "write (1)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "read (2)" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "write (1)" }),
+    ).toBeInTheDocument();
   });
 
   it("shows a parity warning when daemon operations are missing", () => {
@@ -118,8 +122,12 @@ describe("OperationsPage", () => {
     expect(screen.getByText("env (2)")).toBeInTheDocument();
     expect(screen.queryByText("doctor (1)")).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "all (2)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "read (1)" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "write (1)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "read (1)" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "write (1)" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/CLI parity:/)).not.toBeInTheDocument();
   });
 });

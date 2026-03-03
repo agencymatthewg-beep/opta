@@ -25,8 +25,8 @@ afterEach(async () => {
 });
 
 describe('tool schemas', () => {
-  it('defines exactly 29 tools', () => {
-    expect(TOOL_SCHEMAS).toHaveLength(29);
+  it('defines exactly 31 tools', () => {
+    expect(TOOL_SCHEMAS).toHaveLength(31);
   });
 
   it('has all expected tool names', () => {
@@ -63,13 +63,15 @@ describe('tool schemas', () => {
     expect(names).toContain('learning_retrieve');
   });
 
-  it('has all 6 LSP tool names', () => {
+  it('has all 8 LSP tool names', () => {
     const names = getToolNames();
     expect(names).toContain('lsp_definition');
     expect(names).toContain('lsp_references');
     expect(names).toContain('lsp_hover');
     expect(names).toContain('lsp_symbols');
     expect(names).toContain('lsp_document_symbols');
+    expect(names).toContain('lsp_diagnostics');
+    expect(names).toContain('lsp_code_actions');
     expect(names).toContain('lsp_rename');
   });
 
@@ -79,6 +81,8 @@ describe('tool schemas', () => {
     expect(resolvePermission('lsp_hover', DEFAULT_CONFIG)).toBe('allow');
     expect(resolvePermission('lsp_symbols', DEFAULT_CONFIG)).toBe('allow');
     expect(resolvePermission('lsp_document_symbols', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_diagnostics', DEFAULT_CONFIG)).toBe('allow');
+    expect(resolvePermission('lsp_code_actions', DEFAULT_CONFIG)).toBe('allow');
   });
 
   it('lsp_rename requires ask permission', () => {
@@ -396,8 +400,24 @@ describe('save_memory', () => {
     expect(result).toContain('decision');
 
     // Verify file was created
+    const memoryPathCandidates = [
+      join(TEST_DIR, '.opta', 'memory.md'),
+      join(TEST_DIR, '.opta', 'memory', 'main.md'),
+      join(TEST_DIR, '.opta', 'memory', 'lmx.md'),
+    ];
+    const fs = await import('node:fs/promises');
+    let memoryPath = memoryPathCandidates[0];
+    for (const candidate of memoryPathCandidates) {
+      try {
+        await fs.access(candidate);
+        memoryPath = candidate;
+        break;
+      } catch {
+        // keep searching
+      }
+    }
     const content = await executeTool('read_file', JSON.stringify({
-      path: join(TEST_DIR, '.opta', 'memory.md'),
+      path: memoryPath,
     }));
     expect(content).toContain('# Project Memory');
     expect(content).toContain('[decision]');
@@ -414,8 +434,24 @@ describe('save_memory', () => {
       category: 'lesson',
     }));
 
+    const memoryPathCandidates = [
+      join(TEST_DIR, '.opta', 'memory.md'),
+      join(TEST_DIR, '.opta', 'memory', 'main.md'),
+      join(TEST_DIR, '.opta', 'memory', 'lmx.md'),
+    ];
+    const fs = await import('node:fs/promises');
+    let memoryPath = memoryPathCandidates[0];
+    for (const candidate of memoryPathCandidates) {
+      try {
+        await fs.access(candidate);
+        memoryPath = candidate;
+        break;
+      } catch {
+        // keep searching
+      }
+    }
     const content = await executeTool('read_file', JSON.stringify({
-      path: join(TEST_DIR, '.opta', 'memory.md'),
+      path: memoryPath,
     }));
     expect(content).toContain('First entry');
     expect(content).toContain('Second entry');

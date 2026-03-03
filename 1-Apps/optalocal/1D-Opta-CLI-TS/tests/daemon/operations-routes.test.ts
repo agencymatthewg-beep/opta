@@ -107,6 +107,9 @@ describe('daemon operations routes', () => {
         expect.objectContaining({ id: 'sessions.delete', safety: 'write' }),
         expect.objectContaining({ id: 'diff', safety: 'read' }),
         expect.objectContaining({ id: 'benchmark', safety: 'dangerous' }),
+        expect.objectContaining({ id: 'models.history', safety: 'read' }),
+        expect.objectContaining({ id: 'models.aliases.list', safety: 'read' }),
+        expect.objectContaining({ id: 'models.aliases.set', safety: 'write' }),
       ])
     );
   });
@@ -265,6 +268,54 @@ describe('daemon operations routes', () => {
       result: {
         stdout: expect.any(String),
         stderr: expect.any(String),
+      },
+    });
+
+    const modelsHistory = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/models.history',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(modelsHistory.statusCode).toBe(200);
+    expect(modelsHistory.json()).toMatchObject({
+      ok: true,
+      id: 'models.history',
+      safety: 'read',
+      result: {
+        history: expect.any(Array),
+      },
+    });
+
+    const modelsAliasesSet = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/models.aliases.set',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: { alias: 'mini', model: 'demo/model' } },
+    });
+    expect(modelsAliasesSet.statusCode).toBe(200);
+    expect(modelsAliasesSet.json()).toMatchObject({
+      ok: true,
+      id: 'models.aliases.set',
+      safety: 'write',
+      result: {
+        stdout: expect.any(String),
+      },
+    });
+
+    const modelsAliasesList = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/models.aliases.list',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(modelsAliasesList.statusCode).toBe(200);
+    expect(modelsAliasesList.json()).toMatchObject({
+      ok: true,
+      id: 'models.aliases.list',
+      safety: 'read',
+      result: {
+        aliases: expect.any(Object),
       },
     });
 

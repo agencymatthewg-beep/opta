@@ -31,6 +31,7 @@ export const presetHandler = async (args: string, ctx: SlashContext): Promise<Sl
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -87,6 +88,7 @@ export const presetsHandler = async (args: string, ctx: SlashContext): Promise<S
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   if (action === 'reload') {
@@ -186,6 +188,7 @@ export const probeHandler = async (args: string, ctx: SlashContext): Promise<Sla
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -323,6 +326,7 @@ export const compatibilityHandler = async (args: string, ctx: SlashContext): Pro
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -483,6 +487,7 @@ export const autotuneHandler = async (args: string, ctx: SlashContext): Promise<
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   console.log(chalk.dim(`  Running autotune for ${modelId}...`));
@@ -570,6 +575,7 @@ export const autotuneStatusHandler = async (args: string, ctx: SlashContext): Pr
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -611,6 +617,7 @@ export const quantizeHandler = async (args: string, ctx: SlashContext): Promise<
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   if (action === 'list') {

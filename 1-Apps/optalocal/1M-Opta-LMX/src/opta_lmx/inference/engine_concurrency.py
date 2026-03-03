@@ -67,9 +67,7 @@ class ConcurrencyController:
 
         self._adaptive_concurrency_enabled = adaptive_concurrency_enabled
         self._adaptive_latency_target_sec = max(0.1, adaptive_latency_target_ms / 1000.0)
-        self._adaptive_latency_samples: deque[float] = deque(
-            maxlen=max(8, adaptive_latency_window)
-        )
+        self._adaptive_latency_samples: deque[float] = deque(maxlen=max(8, adaptive_latency_window))
         self._adaptive_min_concurrent = max(1, adaptive_min_concurrent_requests)
         self._last_adapt_reason = "startup"
 
@@ -88,11 +86,7 @@ class ConcurrencyController:
     @property
     def waiting_queue_count(self) -> int:
         """Number of requests currently waiting for any inference slot."""
-        return (
-            self._waiting_global_slot
-            + self._waiting_model_slot
-            + self._waiting_client_slot
-        )
+        return self._waiting_global_slot + self._waiting_model_slot + self._waiting_client_slot
 
     @property
     def latency_p95_sec(self) -> float | None:
@@ -196,14 +190,17 @@ class ConcurrencyController:
         try:
             await asyncio.wait_for(semaphore.acquire(), timeout=self._semaphore_timeout)
         except TimeoutError:
-            logger.warning("semaphore_timeout", extra={
-                "queue_kind": queue_kind,
-                "model_id": model_id,
-                "client_id": client_key,
-                "timeout_sec": self._semaphore_timeout,
-                "in_flight": self._in_flight,
-                "waiting_total": self.waiting_queue_count,
-            })
+            logger.warning(
+                "semaphore_timeout",
+                extra={
+                    "queue_kind": queue_kind,
+                    "model_id": model_id,
+                    "client_id": client_key,
+                    "timeout_sec": self._semaphore_timeout,
+                    "in_flight": self._in_flight,
+                    "waiting_total": self.waiting_queue_count,
+                },
+            )
             raise
         finally:
             if queue_kind == "global":
@@ -337,19 +334,25 @@ class ConcurrencyController:
                 self._inference_semaphore = asyncio.Semaphore(target)
                 self._current_concurrency_limit = target
                 self._last_adapt_reason = reason
-                logger.info("concurrency_adapted", extra={
-                    "new_limit": target,
-                    "memory_usage_pct": round(memory_usage_pct, 1),
-                    "latency_p95_sec": self.latency_p95_sec,
-                    "reason": reason,
-                    "in_flight": self._in_flight,
-                })
+                logger.info(
+                    "concurrency_adapted",
+                    extra={
+                        "new_limit": target,
+                        "memory_usage_pct": round(memory_usage_pct, 1),
+                        "latency_p95_sec": self.latency_p95_sec,
+                        "reason": reason,
+                        "in_flight": self._in_flight,
+                    },
+                )
             else:
-                logger.debug("concurrency_adaptation_deferred", extra={
-                    "target": target,
-                    "reason": reason,
-                    "in_flight": self._in_flight,
-                })
+                logger.debug(
+                    "concurrency_adaptation_deferred",
+                    extra={
+                        "target": target,
+                        "reason": reason,
+                        "in_flight": self._in_flight,
+                    },
+                )
         else:
             self._last_adapt_reason = reason
 
@@ -388,9 +391,13 @@ class ConcurrencyController:
         try:
             await asyncio.wait_for(self._drain_event.wait(), timeout=timeout_sec)
         except TimeoutError:
-            logger.warning("drain_timeout", extra={
-                "remaining": self._in_flight, "timeout_sec": timeout_sec,
-            })
+            logger.warning(
+                "drain_timeout",
+                extra={
+                    "remaining": self._in_flight,
+                    "timeout_sec": timeout_sec,
+                },
+            )
             return False
 
         logger.info("drain_complete")
@@ -420,11 +427,7 @@ class ConcurrencyController:
             utilization = active / capacity
             queue_ratio = waiting / capacity
             snapshot[model_id] = (
-                float(active)
-                + float(waiting)
-                + utilization
-                + queue_ratio
-                + global_pressure
+                float(active) + float(waiting) + utilization + queue_ratio + global_pressure
             )
 
         return snapshot

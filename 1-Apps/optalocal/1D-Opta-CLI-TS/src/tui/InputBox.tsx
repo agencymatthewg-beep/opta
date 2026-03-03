@@ -60,20 +60,30 @@ function getSlashCommands(): SlashCommandDef[] {
  * Returns matching commands sorted by command name.
  */
 function matchSlashCommands(partial: string): SlashCommandDef[] {
-  const commands = getSlashCommands();
-  const lower = partial.toLowerCase();
+  const safePartial = typeof partial === 'string' ? partial : '';
+  const commandsRaw = getSlashCommands();
+  const commands = Array.isArray(commandsRaw) ? commandsRaw : [];
+  const lower = safePartial.toLowerCase();
 
-  if (!lower) {
-    // Show all commands when just "/" is typed
-    return commands.slice(0, MAX_SLASH_SUGGESTIONS);
+  try {
+    if (!lower) {
+      // Show all commands when just "/" is typed
+      return commands.slice(0, MAX_SLASH_SUGGESTIONS);
+    }
+
+    return commands
+      .filter(cmd => {
+        const command = cmd?.command;
+        if (typeof command !== 'string') return false;
+        if (command.toLowerCase().startsWith(lower)) return true;
+        return cmd.aliases?.some((alias) =>
+          typeof alias === 'string' && alias.startsWith(lower),
+        ) ?? false;
+      })
+      .slice(0, MAX_SLASH_SUGGESTIONS);
+  } catch {
+    return [];
   }
-
-  return commands
-    .filter(cmd => {
-      if (cmd.command.startsWith(lower)) return true;
-      return cmd.aliases?.some(a => a.startsWith(lower)) ?? false;
-    })
-    .slice(0, MAX_SLASH_SUGGESTIONS);
 }
 
 /**
@@ -306,7 +316,15 @@ export function InputBox({
       // Slash command completion takes priority
       if (slashSuggestions.length > 0) {
         const idx = Math.min(selectedSlash, slashSuggestions.length - 1);
-        const cmd = `/${slashSuggestions[idx]!.command} `;
+        const suggestion = slashSuggestions[idx];
+        const command = typeof suggestion?.command === 'string' ? suggestion.command : '';
+        if (!command) {
+          setSlashSuggestions([]);
+          setSuggestions([]);
+          rerender();
+          return;
+        }
+        const cmd = `/${command} `;
         editor.setBuffer(cmd);
         setSlashSuggestions([]);
         setSelectedSlash(0);
@@ -588,9 +606,11 @@ export function InputBox({
         <Box flexDirection="column" paddingLeft={modeDisplay ? 4 : 2}>
           {slashSuggestions.map((cmd, i) => {
             const isSelected = i === selectedSlash;
+            const commandText = cmd.command;
+            const key = commandText ?? `command-${i}`;
             return (
-              <Text key={cmd.command} color={isSelected ? TUI_COLORS.prompt : TUI_COLORS.dim} bold={isSelected}>
-                {isSelected ? '▸ ' : '  '}/{cmd.command.padEnd(14)} {cmd.description}
+              <Text key={key} color={isSelected ? TUI_COLORS.prompt : TUI_COLORS.dim} bold={isSelected}>
+                {isSelected ? '▸ ' : '  '}/{(commandText ?? 'help').padEnd(14)} {cmd.description}
               </Text>
             );
           })}

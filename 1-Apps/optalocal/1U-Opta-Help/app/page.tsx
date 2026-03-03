@@ -45,8 +45,8 @@ export default function HomePage() {
                 Opta Help
               </h1>
               <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto mb-6 sm:mb-8">
-                Comprehensive documentation for the Opta Local private AI stack.
-                CLI, Daemon, LMX inference, Local Web, and more.
+                Technical documentation for the Opta Local ecosystem.
+                Covers the 4 core apps, plus daemon, web, and management surfaces.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
                 <Link
@@ -124,7 +124,7 @@ export default function HomePage() {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-moonlight mb-2">The Opta Local Stack</h2>
             <p className="text-text-secondary">
-              Three components form a layered local-inference pipeline
+              Four core components and one control surface form a layered local-first stack
             </p>
           </div>
           <div className="glass rounded-xl p-6 font-mono text-sm space-y-3">

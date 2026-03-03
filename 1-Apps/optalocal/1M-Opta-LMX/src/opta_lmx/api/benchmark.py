@@ -7,13 +7,14 @@ import logging
 import statistics
 import time
 from datetime import UTC, datetime
-from typing import Any
+from typing import Any, Literal, cast
 
 from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from opta_lmx import __version__
 from opta_lmx.api.deps import AdminAuth, Engine
+from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.schema import ChatMessage
 from opta_lmx.monitoring.benchmark import (
     BenchmarkResult,
@@ -58,9 +59,12 @@ def _detect_hardware() -> str:
         return _hardware_cache
     try:
         import subprocess
+
         result = subprocess.run(
             ["sysctl", "-n", "machdep.cpu.brand_string"],
-            capture_output=True, text=True, timeout=2,
+            capture_output=True,
+            text=True,
+            timeout=2,
         )
         brand = result.stdout.strip()
         if brand:
@@ -73,7 +77,7 @@ def _detect_hardware() -> str:
 
 
 async def _run_single(
-    engine: Any,
+    engine: InferenceEngine,
     model_id: str,
     messages: list[ChatMessage],
     num_output_tokens: int,
@@ -116,7 +120,12 @@ async def _run_single(
     completed_naturally = output_tokens < num_output_tokens
 
     # Prompt token count: approximate from message content (streaming path has no usage object)
-    prompt_tokens = sum(len(m.content.split()) for m in messages if m.content)
+    prompt_tokens = sum(
+        len(content.split())
+        for message in messages
+        for content in [message.content if isinstance(message.content, str) else ""]
+        if content
+    )
 
     return real_ttft, toks_per_sec, output_tokens, output_text, completed_naturally, prompt_tokens
 
@@ -167,18 +176,23 @@ async def run_benchmark(
             continue
 
     runs_completed = len(ttfts)
-    status: str = "ok" if runs_completed >= 2 else "insufficient_data"
+    status: Literal["ok", "insufficient_data"] = (
+        "ok" if runs_completed >= 2 else "insufficient_data"
+    )
 
     if runs_completed == 0:
         ttfts = [0.0]
         tpss = [0.0]
 
     rep_ratio = compute_repetition_ratio(output_text)
-    coherence = classify_coherence(
-        output_text=output_text,
-        completed_naturally=completed_naturally,
-        output_token_count=output_token_count,
-        num_output_tokens=request_body.num_output_tokens,
+    coherence = cast(
+        Literal["ok", "truncated", "repetitive", "garbled"],
+        classify_coherence(
+            output_text=output_text,
+            completed_naturally=completed_naturally,
+            output_token_count=output_token_count,
+            num_output_tokens=request_body.num_output_tokens,
+        ),
     )
 
     stats = BenchmarkRunStats(
@@ -229,11 +243,14 @@ async def run_benchmark(
     store: BenchmarkResultStore = request.app.state.benchmark_store
     store.save(result)
 
-    logger.info("benchmark_run_complete", extra={
-        "model_id": request_body.model_id,
-        "status": status,
-        "toks_per_sec_mean": stats.toks_per_sec_mean,
-    })
+    logger.info(
+        "benchmark_run_complete",
+        extra={
+            "model_id": request_body.model_id,
+            "status": status,
+            "toks_per_sec_mean": stats.toks_per_sec_mean,
+        },
+    )
     return result.model_dump()
 
 

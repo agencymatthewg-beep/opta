@@ -134,6 +134,8 @@ describe('startChat startup handling', () => {
   async function loadStartChatTuiWithPreflight(params: {
     loadedModelIds: string[];
     preflightError?: Error;
+    ensureLoadError?: Error;
+    ensureLoadId?: string;
   }) {
     const loadConfig = vi.fn().mockResolvedValue({ ...BASE_CONFIG, tui: { default: true } });
     const buildSystemPrompt = vi.fn().mockResolvedValue('system prompt');
@@ -179,15 +181,20 @@ describe('startChat startup handling', () => {
       : vi.fn().mockResolvedValue({
           models: params.loadedModelIds.map((modelId) => ({ model_id: modelId })),
         });
+    const ensureModelLoaded = params.ensureLoadError
+      ? vi.fn().mockRejectedValue(params.ensureLoadError)
+      : vi.fn().mockResolvedValue(params.ensureLoadId ?? 'test-model');
     const ensureDiskHeadroom = vi.fn().mockResolvedValue({
       path: '/tmp',
       totalBytes: 1024,
       freeBytes: 1024,
       availableBytes: 1024,
     });
-    const LmxClient = vi.fn().mockImplementation(() => ({
-      models: lmxModels,
-    }));
+    const LmxClient = vi.fn().mockImplementation(function() {
+      return {
+        models: lmxModels,
+      };
+    });
 
     vi.doMock('../../src/core/config.js', () => ({
       loadConfig,
@@ -214,6 +221,11 @@ describe('startChat startup handling', () => {
     vi.doMock('../../src/lmx/client.js', () => ({
       LmxClient,
       lookupContextLimit: vi.fn().mockReturnValue(32768),
+    }));
+    vi.doMock('../../src/lmx/model-lifecycle.js', () => ({
+      ensureModelLoaded,
+      modelIdsEqual: vi.fn().mockReturnValue(true),
+      normalizeConfiguredModelId: (modelId: string) => modelId,
     }));
     vi.doMock('../../src/tui/render.js', () => ({
       renderTUI,
@@ -246,6 +258,7 @@ describe('startChat startup handling', () => {
       daemon,
       emitter,
       lmxModels,
+      ensureModelLoaded,
       wsHandlersRef: () => wsHandlers,
       writeSessionLog,
       ensureDiskHeadroom,
@@ -318,12 +331,32 @@ describe('startChat startup handling', () => {
     expect(renderOpts.initialMessages[0].content).toContain('What do you want to do next?');
   });
 
-  it('passes no-model startup preflight state into TUI render options', async () => {
+  it('attempts to auto-load model on startup when not already loaded', async () => {
     const mocks = await loadStartChatTuiWithPreflight({ loadedModelIds: [] });
 
     await mocks.startChat({ tui: true });
 
     expect(mocks.lmxModels).toHaveBeenCalledTimes(1);
+    expect(mocks.ensureModelLoaded).toHaveBeenCalledTimes(1);
+    expect(mocks.renderTUI).toHaveBeenCalledTimes(1);
+    const renderOpts = mocks.renderTUI.mock.calls[0]?.[0];
+    expect(renderOpts.requireLoadedModel).toBe(true);
+    expect(renderOpts.initialModelLoaded).toBe(true);
+    expect(renderOpts.initialMessages[0].role).toBe('assistant');
+    expect(renderOpts.initialMessages[0].content).toContain('Connected to test-model and ready.');
+    expect(renderOpts.initialMessages[0].content).toContain('What do you want to do next?');
+  });
+
+  it('shows load failure when model startup auto-load fails', async () => {
+    const mocks = await loadStartChatTuiWithPreflight({
+      loadedModelIds: [],
+      ensureLoadError: new Error('Unable to load model'),
+    });
+
+    await mocks.startChat({ tui: true });
+
+    expect(mocks.lmxModels).toHaveBeenCalledTimes(1);
+    expect(mocks.ensureModelLoaded).toHaveBeenCalledTimes(1);
     expect(mocks.renderTUI).toHaveBeenCalledTimes(1);
     const renderOpts = mocks.renderTUI.mock.calls[0]?.[0];
     expect(renderOpts.requireLoadedModel).toBe(true);

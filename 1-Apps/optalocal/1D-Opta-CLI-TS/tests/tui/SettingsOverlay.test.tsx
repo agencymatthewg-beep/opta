@@ -59,7 +59,9 @@ describe('SettingsOverlay', () => {
   it('saves and closes on Ctrl+S control-code input', async () => {
     const onClose = vi.fn();
     const onSave = vi.fn();
-    const { stdin } = render(<SettingsOverlay {...baseProps} onClose={onClose} onSave={onSave} />);
+    const { stdin } = render(
+      <SettingsOverlay {...baseProps} onClose={onClose} onSave={onSave} autoSave={false} />
+    );
     await flush();
     // Cover both legacy Ctrl+S and CSI-u key-reporting terminals.
     stdin.write('\x13');
@@ -67,6 +69,24 @@ describe('SettingsOverlay', () => {
     await flush(60);
     expect(onSave).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('auto-saves text edits immediately on commit', async () => {
+    const onSave = vi.fn();
+    const { stdin } = render(<SettingsOverlay {...baseProps} onSave={onSave} />);
+    await flush();
+
+    // First row on Connection page is "LMX Host".
+    stdin.write(ENTER);
+    await flush();
+    stdin.write('1');
+    await flush();
+    stdin.write(ENTER);
+    await flush();
+
+    expect(onSave).toHaveBeenCalledWith(
+      expect.objectContaining({ 'connection.host': 'localhost1' }),
+    );
   });
 
   it('shows response intent tone option on Advanced page', async () => {

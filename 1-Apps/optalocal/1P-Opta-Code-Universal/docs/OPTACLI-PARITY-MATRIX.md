@@ -1,75 +1,63 @@
 # Opta CLI -> Opta Code Parity Matrix
 
-Date: 2026-03-01
+Date: 2026-03-03  
 Scope:
 - CLI engine: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS`
-- Universal UI: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
+- Desktop/web client: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
 
-## Canonical Unified Architecture
-- Frontend: `1P-Opta-Code-Universal/src` (React/Vite, deployable web + native shell UI)
-- Native shell: `1P-Opta-Code-Universal/src-tauri` (desktop integration/permissions)
-- Runtime engine: `1D-Opta-CLI-TS` (daemon, protocol, CLI command execution)
+## Investigation Inputs (Local)
 
-## Newest CLI Updates Verified (Local)
-- Release baseline: `0.5.0-alpha.1` in `1D-Opta-CLI-TS/CHANGELOG.md`.
-- Notable additions in this update window:
-  - v3 daemon operations and protocol hardening
-  - browser automation/live-view improvements
-  - `completions` + `version.check`
-  - account cloud key flows
-  - daemon service install/uninstall paths
-  - capability-evaluator runtime enforcement hooks
+- `npx tsx src/index.ts --help` in `1D-Opta-CLI-TS`
+- `npx tsx src/index.ts account --help`
+- `npx tsx src/index.ts mcp --help`
+- `npx tsx src/index.ts daemon --help`
+- `src/protocol/v3/operations.ts` (operation contract)
+- `1P` pages/components/hooks (`App.tsx`, `OperationsPage.tsx`, `CliOperationsPage.tsx`, `useModels.ts`, `Composer.tsx`)
 
-## Capability Coverage
+## Canonical Architecture Boundary
+
+- `1D-Opta-CLI-TS` owns runtime behavior and command execution.
+- `1P-Opta-Code-Universal` is a daemon client/operator surface.
+- Command-family parity should be delivered through daemon operations first, then UI.
+
+## Current Coverage Summary
+
 Legend:
-- `Dedicated` = purpose-built Opta Code page/UX
-- `Console` = available through Operations Console (`/v3/operations`)
-- `Native` = available through Tauri bridge only
-- `Gap` = not represented yet
+- `Dedicated` = purpose-built page/workflow in Opta Code
+- `Console` = available via Operations Console / CLI Operations page
+- `Adapted` = capability is intentionally represented via a context-optimized Opta Code pathway
+- `Partial` = some behavior present, but not full CLI parity
 
-| CLI Capability Family | Coverage in Opta Code | Implementation Path |
-|---|---|---|
-| Session orchestration (`opta`, `do`, live turns, permissions, cancel) | Dedicated | Sessions cockpit (`WorkspaceRail`, `TimelineCards`, `Composer`, `useDaemonSessions`) |
-| Model control (`status`, `models` core load/unload/download/delete/memory) | Dedicated | Models page + LMX daemon endpoints |
-| Generic daemon operations catalog | Dedicated | Operations page (`useOperations`, schema-driven runner) |
-| Config management (`config get/set/list/reset`, full flattened keys) | Dedicated | Config Studio page |
-| Account auth (`account status/signup/login/logout`) | Dedicated + Console | Account Controls page + daemon operations |
-| Account cloud keys (`account keys list/push/delete`) | Dedicated + Console | Account Controls page + daemon operations |
-| Local inference keys (`key create/show/copy`) | Dedicated + Console | Account Controls shortcuts + operations |
-| Daemon lifecycle (`daemon start/stop/status/logs/install/uninstall`) | Dedicated + Console | Daemon panel + operations |
-| LMX service lifecycle (`serve status/start/stop/restart/logs`) | Console | Added typed operations (`serve.*`) |
-| Project bootstrap (`init --yes/--force`) | Console | Added typed operation (`init.run`) |
-| Update runner (`update ...`) | Console | Added typed operation (`update.run`) |
-| MCP registry flows (`mcp list/add/add-playwright/remove/test`) | Console | Existing + typed operations |
-| Retrieval tools (`embed`, `rerank`, `benchmark`) | Console | Existing typed operations |
-| Shell completions (`completions`) | Console | Existing typed operation |
-| Version checks (`version --check`) | Console | Existing typed operation |
-| Keychain (`keychain status/set/delete`) | Console | Existing typed operations |
-| CLI-only onboarding wizard (`onboard`, `setup`) | Gap | Interactive TTY wizard; no daemon op mapping yet |
-| Raw CLI HTTP server command (`server`) | Gap | Daemon already provides server; no separate UI command surface |
+| CLI Feature Family | Opta Code Coverage | Notes |
+| --- | --- | --- |
+| Session orchestration (`opta`, `chat`, `do`, live timeline, permissions, cancel) | Dedicated | Sessions cockpit (`WorkspaceRail`, `TimelineCards`, `Composer`) with Chat/Do/Plan/Review/Research modes |
+| Core model lifecycle (`status`, `models` load/unload/download/delete/list/memory) | Dedicated | `ModelsPage` + daemon LMX endpoints |
+| Daemon operation catalog (`/v3/operations`) | Dedicated | `OperationsPage` imports `OPERATION_IDS` from shared protocol and shows parity meter |
+| Config operations (`config.get/set/list/reset`) | Dedicated | `ConfigStudioPage` |
+| Account auth + cloud keys (`account.*`) | Dedicated | `AccountControlPage` |
+| Local keys (`key.create/show/copy`) | Dedicated | `AccountControlPage` local shortcut panel |
+| Daemon lifecycle (`daemon.*`) | Dedicated + Console | `DaemonPanel` + operations |
+| CLI utility ops (`doctor`, `version.check`, `completions.generate`, `keychain.*`, `serve.*`, `init.run`, `update.run`, `sessions.*`, `diff`, `embed`, `rerank`, `benchmark`, `mcp.*`) | Console | `CliOperationsPage` scoped families |
+| Onboarding (`onboard`, `setup`) | Adapted | In-app setup wizard now routes through canonical `onboard.apply` (all providers, key storage mode, marker write) instead of separate config writer |
+| HTTP server command (`server`) | Adapted | Legacy server runtime behavior is represented by desktop daemon panel + `serve.*` operations |
+| Chat mode flags (`--plan`, `--review`, `--research`) | Dedicated | Composer/runtime submit API supports all CLI intent modes |
+| Per-run control flags (`--auto`, `--dangerous`, `--no-commit`, `--no-checkpoints`, `--provider`, `--model`, `--format`) | Dedicated | Composer forwards full turn override contract to daemon runtime with mode/git/provider/model/output adaptation |
+| Advanced `opta models` suite (`history`, `aliases`, `predictor`, `helpers`, `quantize`, `agents`, `skills`, `rag`, `health`, `scan`, `browse-*`, `dashboard` parity) | Console + Dedicated | `models.*` operations are daemon-addressable; `ModelsPage` adds dedicated `history`/`health`/`scan` controls and the rest run via operation console |
 
-## Settings Coverage Statement
-`OptaConfigSchema` settings are centrally represented through daemon-backed config operations:
-- `config.list` (resolved config tree)
-- `config.get` (single key)
-- `config.set` (single key, typed via JSON/string coercion)
-- `config.reset` (single key or full reset)
+## Parity Verdict
 
-This provides broad settings parity in Opta Code via Config Studio without creating per-setting bespoke UI.
+Opta Code does **not** currently contain all Opta CLI features.
 
-## Runtime Adaptation Contract
-- Native desktop detection is centralized via `isNativeDesktop()`.
-- Native path:
-  - uses Tauri invokes for OS-level actions (setup/lifecycle/log access/secure storage)
-  - renders native-capable browser controls where applicable
-- Web path:
-  - hides native-only controls
-  - uses HTTP/WebSocket daemon communication
-  - uses browser-safe storage/input fallbacks
+It has strong parity for:
+- session runtime workflows,
+- core model lifecycle,
+- daemon operation families in `OPERATION_IDS`,
+- advanced models capability via operation + targeted dedicated UI.
 
-## Remaining Competitive Gaps (Next)
-1. Dedicated MCP management page (currently Console only).
-2. Dedicated Env Profiles page (currently Console only).
-3. Dedicated Serve/Update workspace (currently Console only).
-4. Optional API route/deep-link routing for page state sharing.
-5. Optional onboarding op surface for non-interactive daemon clients.
+Known intentional / partial differences:
+- Onboarding remains a desktop-native flow (form-based), but it now executes the same backend profile application path as CLI (`onboard.apply`).
+
+## Immediate Next Gaps To Close
+
+1. Keep parity artifacts (`docs/parity/*.json`) fresh during release prep and CI.
+2. Add dedicated UI affordances for additional high-frequency advanced model actions as usage data warrants.

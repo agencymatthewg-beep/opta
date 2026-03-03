@@ -11,6 +11,7 @@ vi.mock("../lib/daemonClient", () => ({
     connectWebSocket: vi.fn(() => ({ close: vi.fn(), send: vi.fn() })),
     health: vi.fn(),
     metrics: vi.fn(),
+    sessionsList: vi.fn(),
     createSession: vi.fn(),
     sessionEvents: vi.fn(),
     submitTurn: vi.fn(),
@@ -59,7 +60,10 @@ describe("useDaemonSessions secure connection persistence", () => {
     delete (globalThis as { __TAURI__?: unknown }).__TAURI__;
     vi.mocked(daemonClient.health).mockResolvedValue({ status: "ok" } as never);
     vi.mocked(daemonClient.metrics).mockResolvedValue(null as never);
-    vi.mocked(daemonClient.sessionEvents).mockResolvedValue({ events: [] } as never);
+    vi.mocked(daemonClient.sessionsList).mockResolvedValue([] as never);
+    vi.mocked(daemonClient.sessionEvents).mockResolvedValue({
+      events: [],
+    } as never);
   });
 
   afterEach(() => {
@@ -88,8 +92,28 @@ describe("useDaemonSessions secure connection persistence", () => {
     expect(result.current.connection.protocol).toBe("https");
     expect(result.current.connection.token).toBe("legacy-token");
 
+    await waitFor(() => expect(daemonClient.health).toHaveBeenCalledTimes(1));
+  });
+
+  it("merges daemon sessions list into local state during refresh", async () => {
+    vi.mocked(daemonClient.sessionsList).mockResolvedValue([
+      {
+        sessionId: "sess-remote",
+        title: "Remote Session",
+        workspace: "Workspace",
+        updatedAt: "2026-03-03T00:00:00.000Z",
+      },
+    ] as never);
+
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await waitFor(() => expect(daemonClient.sessionsList).toHaveBeenCalled());
     await waitFor(() =>
-      expect(daemonClient.health).toHaveBeenCalledTimes(1),
+      expect(
+        result.current.sessions.some(
+          (session) => session.sessionId === "sess-remote",
+        ),
+      ).toBe(true),
     );
   });
 
@@ -132,19 +156,21 @@ describe("useDaemonSessions secure connection persistence", () => {
       port: 9999,
       token: "",
     });
-    const invoke = vi.fn(async (command: string, args?: Record<string, unknown>) => {
-      if (command === "bootstrap_daemon_connection") {
-        return { host: "127.0.0.1", port: 10999 };
-      }
-      if (
-        command === "get_connection_secret" &&
-        args?.host === "127.0.0.1" &&
-        args?.port === 10999
-      ) {
-        return "bootstrap-token";
-      }
-      return "";
-    });
+    const invoke = vi.fn(
+      async (command: string, args?: Record<string, unknown>) => {
+        if (command === "bootstrap_daemon_connection") {
+          return { host: "127.0.0.1", port: 10999 };
+        }
+        if (
+          command === "get_connection_secret" &&
+          args?.host === "127.0.0.1" &&
+          args?.port === 10999
+        ) {
+          return "bootstrap-token";
+        }
+        return "";
+      },
+    );
     (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
       core: { invoke },
     };
@@ -152,7 +178,9 @@ describe("useDaemonSessions secure connection persistence", () => {
     const { result } = renderHook(() => useDaemonSessions());
 
     await waitFor(() => expect(result.current.connection.port).toBe(10999));
-    await waitFor(() => expect(result.current.connection.token).toBe("bootstrap-token"));
+    await waitFor(() =>
+      expect(result.current.connection.token).toBe("bootstrap-token"),
+    );
     expect(invoke).toHaveBeenCalledWith("bootstrap_daemon_connection", {
       startIfNeeded: true,
     });
@@ -170,9 +198,7 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
 
     const { result } = renderHook(() => useDaemonSessions());
-    await waitFor(() =>
-      expect(daemonClient.health).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(daemonClient.health).toHaveBeenCalledTimes(1));
     expect(result.current.connection.token).toBe("local-token");
 
     act(() => {
@@ -197,16 +223,18 @@ describe("useDaemonSessions secure connection persistence", () => {
       port: 9999,
       token: "",
     });
-    const invoke = vi.fn(async (command: string, args?: Record<string, unknown>) => {
-      if (
-        command === "get_connection_secret" &&
-        args?.host === "10.0.0.8" &&
-        args?.port === 7007
-      ) {
-        return "stored-token";
-      }
-      return "";
-    });
+    const invoke = vi.fn(
+      async (command: string, args?: Record<string, unknown>) => {
+        if (
+          command === "get_connection_secret" &&
+          args?.host === "10.0.0.8" &&
+          args?.port === 7007
+        ) {
+          return "stored-token";
+        }
+        return "";
+      },
+    );
     (globalThis as { __TAURI__?: unknown }).__TAURI__ = {
       core: { invoke },
     };
@@ -272,14 +300,18 @@ describe("useDaemonSessions secure connection persistence", () => {
       await result.current.trackSession("sess-stream");
     });
 
-    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("connected"),
+    );
     expect(onCloseBySession.has("sess-stream")).toBe(true);
 
     act(() => {
       onCloseBySession.get("sess-stream")?.(1006);
     });
 
-    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("connected"),
+    );
   });
 
   it("resumes websocket from max persisted seq after restart", async () => {
@@ -294,7 +326,11 @@ describe("useDaemonSessions secure connection persistence", () => {
     const invoke = vi.fn(async (command: string) => {
       if (command === "load_session_events") {
         return [
-          JSON.stringify({ event: "turn.token", seq: 38, payload: { token: "A" } }),
+          JSON.stringify({
+            event: "turn.token",
+            seq: 38,
+            payload: { token: "A" },
+          }),
           JSON.stringify({ event: "turn.done", seq: 40, payload: {} }),
         ];
       }
@@ -356,7 +392,9 @@ describe("useDaemonSessions secure connection persistence", () => {
     await waitFor(() => expect(connectAfterSeq[0]).toBe(3));
     await waitFor(() => {
       const timeline = result.current.timelineBySession["sess-gap"] ?? [];
-      expect(timeline.some((item) => item.title === "Turn complete")).toBe(true);
+      expect(timeline.some((item) => item.title === "Turn complete")).toBe(
+        true,
+      );
     });
   });
 
@@ -365,7 +403,10 @@ describe("useDaemonSessions secure connection persistence", () => {
     const onEventBySession = new Map<string, (envelope: unknown) => void>();
     vi.mocked(daemonClient.connectWebSocket).mockImplementation(
       (_connection, sessionId, _afterSeq, handlers) => {
-        onEventBySession.set(sessionId, handlers.onEvent as (envelope: unknown) => void);
+        onEventBySession.set(
+          sessionId,
+          handlers.onEvent as (envelope: unknown) => void,
+        );
         return { close: vi.fn(), send: vi.fn() } as never;
       },
     );
@@ -406,7 +447,10 @@ describe("useDaemonSessions secure connection persistence", () => {
     const onEventBySession = new Map<string, (envelope: unknown) => void>();
     vi.mocked(daemonClient.connectWebSocket).mockImplementation(
       (_connection, sessionId, _afterSeq, handlers) => {
-        onEventBySession.set(sessionId, handlers.onEvent as (envelope: unknown) => void);
+        onEventBySession.set(
+          sessionId,
+          handlers.onEvent as (envelope: unknown) => void,
+        );
         return { close: vi.fn(), send: vi.fn() } as never;
       },
     );
@@ -453,7 +497,9 @@ describe("useDaemonSessions secure connection persistence", () => {
       await result.current.trackSession("sess-reconnect");
     });
     await waitFor(() =>
-      expect(connectCalls.filter((id) => id === "sess-reconnect")).toHaveLength(1),
+      expect(connectCalls.filter((id) => id === "sess-reconnect")).toHaveLength(
+        1,
+      ),
     );
 
     act(() => {
@@ -462,7 +508,9 @@ describe("useDaemonSessions secure connection persistence", () => {
 
     await waitFor(
       () =>
-        expect(connectCalls.filter((id) => id === "sess-reconnect")).toHaveLength(2),
+        expect(
+          connectCalls.filter((id) => id === "sess-reconnect"),
+        ).toHaveLength(2),
       { timeout: 2_500 },
     );
     randomSpy.mockRestore();
@@ -477,7 +525,9 @@ describe("useDaemonSessions secure connection persistence", () => {
     await act(async () => {
       await result.current.trackSession("sess-submit");
     });
-    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("connected"),
+    );
 
     let thrown: unknown;
     await act(async () => {
@@ -501,7 +551,9 @@ describe("useDaemonSessions secure connection persistence", () => {
     await act(async () => {
       await result.current.trackSession("sess-transport-error");
     });
-    await waitFor(() => expect(result.current.connectionState).toBe("connected"));
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("connected"),
+    );
 
     let thrown: unknown;
     await act(async () => {
@@ -513,6 +565,70 @@ describe("useDaemonSessions secure connection persistence", () => {
     });
     expect(thrown).toBeInstanceOf(Error);
     expect((thrown as Error).message).toContain("ECONNREFUSED");
-    await waitFor(() => expect(result.current.connectionState).toBe("disconnected"));
+    await waitFor(() =>
+      expect(result.current.connectionState).toBe("disconnected"),
+    );
+  });
+
+  it("forwards plan/review/research submission modes to daemon submitTurn", async () => {
+    vi.mocked(daemonClient.submitTurn).mockResolvedValue({
+      turnId: "turn-1",
+    } as never);
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-modes");
+    });
+
+    await act(async () => {
+      await result.current.submitMessage("make a plan", "plan");
+      await result.current.submitMessage("review this", "review");
+      await result.current.submitMessage("research this", "research");
+    });
+
+    const calls = vi.mocked(daemonClient.submitTurn).mock.calls;
+    const modes = calls
+      .map((call) => (call[2] as { mode?: string }).mode)
+      .filter((mode): mode is string => Boolean(mode));
+    expect(modes).toEqual(
+      expect.arrayContaining(["plan", "review", "research"]),
+    );
+  });
+
+  it("forwards extended turn overrides to daemon submitTurn", async () => {
+    vi.mocked(daemonClient.submitTurn).mockResolvedValue({
+      turnId: "turn-2",
+    } as never);
+    const { result } = renderHook(() => useDaemonSessions());
+
+    await act(async () => {
+      await result.current.trackSession("sess-overrides");
+    });
+
+    await act(async () => {
+      await result.current.submitMessage("run with turn overrides", "chat", {
+        provider: "anthropic",
+        model: "claude-3-7-sonnet-latest",
+        auto: true,
+        dangerous: true,
+        noCommit: true,
+        noCheckpoints: true,
+        format: "json",
+      });
+    });
+
+    const calls = vi.mocked(daemonClient.submitTurn).mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall).toBeDefined();
+    const payload = lastCall?.[2] as { overrides?: Record<string, unknown> };
+    expect(payload.overrides).toMatchObject({
+      provider: "anthropic",
+      model: "claude-3-7-sonnet-latest",
+      auto: true,
+      dangerous: true,
+      noCommit: true,
+      noCheckpoints: true,
+      format: "json",
+    });
   });
 });

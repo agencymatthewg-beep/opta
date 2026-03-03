@@ -65,6 +65,8 @@ async function initMarkdownRenderer(): Promise<void> {
     const chalk = (await import('chalk')).default;
     const { Marked } = await import('marked');
     const { markedTerminal } = await import('marked-terminal');
+    const { initShiki, highlightCodeAnsiSync } = await import('../ui/shiki-highlighter.js');
+    await initShiki();
 
     // Create a renderer factory for a given width
     const createRenderer = (width: number): ((md: string) => string) => {
@@ -93,6 +95,18 @@ async function initMarkdownRenderer(): Promise<void> {
           tab: 2,
         })
       );
+
+      marked.use({
+        renderer: {
+          code(token: { text: string; lang?: string }) {
+            const lang = token.lang || 'text';
+            const highlighted = highlightCodeAnsiSync(token.text, lang);
+            const lines = highlighted.split('\n');
+            const indented = lines.map(l => '  ' + l).join('\n');
+            return '\n' + indented + '\n\n';
+          }
+        }
+      });
 
       return (md: string) => {
         try {

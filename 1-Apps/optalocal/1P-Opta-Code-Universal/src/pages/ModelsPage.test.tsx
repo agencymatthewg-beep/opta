@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ModelsPage } from "./ModelsPage";
 import { useModels, type UseModelsResult } from "../hooks/useModels";
@@ -45,6 +51,9 @@ function createUseModelsState(
     unloadModel: vi.fn().mockResolvedValue(undefined),
     deleteModel: vi.fn().mockResolvedValue(undefined),
     downloadModel: vi.fn().mockResolvedValue(null),
+    runModelHistory: vi.fn().mockResolvedValue(null),
+    runModelHealth: vi.fn().mockResolvedValue(null),
+    runModelScan: vi.fn().mockResolvedValue(null),
     saveLmxTarget: vi.fn().mockResolvedValue(false),
     refreshLmx: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -84,18 +93,16 @@ describe("ModelsPage", () => {
       download_id: "download-123",
       message: "Download started",
     });
-    const downloadProgress = vi
-      .fn()
-      .mockResolvedValue({
-        download_id: "download-123",
-        repo_id: modelId,
-        status: "completed",
-        progress_percent: 100,
-        downloaded_bytes: 1000,
-        total_bytes: 1000,
-        files_completed: 4,
-        files_total: 4,
-      });
+    const downloadProgress = vi.fn().mockResolvedValue({
+      download_id: "download-123",
+      repo_id: modelId,
+      status: "completed",
+      progress_percent: 100,
+      downloaded_bytes: 1000,
+      total_bytes: 1000,
+      files_completed: 4,
+      files_total: 4,
+    });
     const refreshLmx = vi.fn().mockResolvedValue(undefined);
 
     vi.mocked(useModels).mockReturnValue(
@@ -262,45 +269,47 @@ describe("ModelsPage", () => {
         files_total: 10,
       },
     ]);
-    const downloadProgress = vi.fn().mockImplementation(async (downloadId: string) => {
-      if (downloadId === "download-conflict") {
-        return {
-          download_id: "download-conflict",
-          repo_id: modelId,
-          status: "downloading",
-          progress_percent: 68,
-          downloaded_bytes: 680,
-          total_bytes: 1000,
-          files_completed: 7,
-          files_total: 10,
-        };
-      }
-      if (downloadId === "download-server-only") {
-        return {
-          download_id: "download-server-only",
-          repo_id: "mlx-community/server-only",
-          status: "downloading",
-          progress_percent: 15,
-          downloaded_bytes: 150,
-          total_bytes: 1000,
-          files_completed: 1,
-          files_total: 10,
-        };
-      }
-      if (downloadId === "download-local-only") {
-        return {
-          download_id: "download-local-only",
-          repo_id: "mlx-community/local-only",
-          status: "downloading",
-          progress_percent: 21,
-          downloaded_bytes: 210,
-          total_bytes: 1000,
-          files_completed: 2,
-          files_total: 10,
-        };
-      }
-      return null;
-    });
+    const downloadProgress = vi
+      .fn()
+      .mockImplementation(async (downloadId: string) => {
+        if (downloadId === "download-conflict") {
+          return {
+            download_id: "download-conflict",
+            repo_id: modelId,
+            status: "downloading",
+            progress_percent: 68,
+            downloaded_bytes: 680,
+            total_bytes: 1000,
+            files_completed: 7,
+            files_total: 10,
+          };
+        }
+        if (downloadId === "download-server-only") {
+          return {
+            download_id: "download-server-only",
+            repo_id: "mlx-community/server-only",
+            status: "downloading",
+            progress_percent: 15,
+            downloaded_bytes: 150,
+            total_bytes: 1000,
+            files_completed: 1,
+            files_total: 10,
+          };
+        }
+        if (downloadId === "download-local-only") {
+          return {
+            download_id: "download-local-only",
+            repo_id: "mlx-community/local-only",
+            status: "downloading",
+            progress_percent: 21,
+            downloaded_bytes: 210,
+            total_bytes: 1000,
+            files_completed: 2,
+            files_total: 10,
+          };
+        }
+        return null;
+      });
 
     vi.mocked(useModels).mockReturnValue(
       createUseModelsState({
@@ -333,6 +342,57 @@ describe("ModelsPage", () => {
       expect(downloadProgress).toHaveBeenCalledWith("download-conflict");
       expect(downloadProgress).toHaveBeenCalledWith("download-local-only");
       expect(downloadProgress).toHaveBeenCalledWith("download-server-only");
+    });
+  });
+
+  it("runs advanced model controls and renders last operation output", async () => {
+    const runModelHistory = vi.fn().mockResolvedValue({
+      history: [{ id: modelId, lastAction: "loaded" }],
+    });
+    const runModelHealth = vi.fn().mockResolvedValue({
+      all_healthy: true,
+      configured_count: 1,
+    });
+    const runModelScan = vi.fn().mockResolvedValue({
+      summary: { loadedCount: 2, onDiskCount: 5 },
+    });
+
+    vi.mocked(useModels).mockReturnValue(
+      createUseModelsState({
+        runModelHistory,
+        runModelHealth,
+        runModelScan,
+      }),
+    );
+
+    render(<ModelsPage connection={connection} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Run History" }));
+    await waitFor(() => {
+      expect(runModelHistory).toHaveBeenCalledTimes(1);
+    });
+    await waitFor(() => {
+      expect(screen.getByText("models.history")).toBeInTheDocument();
+    });
+
+    fireEvent.change(screen.getByLabelText("Model health args"), {
+      target: { value: "liveness --strict" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Run Health" }));
+    await waitFor(() => {
+      expect(runModelHealth).toHaveBeenCalledWith("liveness --strict");
+    });
+    await waitFor(() => {
+      expect(screen.getByText("models.health")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Full scan" }));
+    fireEvent.click(screen.getByRole("button", { name: "Run Scan" }));
+    await waitFor(() => {
+      expect(runModelScan).toHaveBeenCalledWith({ full: true });
+    });
+    await waitFor(() => {
+      expect(screen.getByText("models.scan")).toBeInTheDocument();
     });
   });
 });

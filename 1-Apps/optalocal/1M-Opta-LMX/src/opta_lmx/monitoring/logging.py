@@ -17,7 +17,12 @@ import structlog
 
 # Substrings whose presence in a key name triggers redaction (C01/C02 guardrail).
 _SENSITIVE_SUBSTRINGS: tuple[str, ...] = (
-    "key", "token", "secret", "password", "credential", "auth",
+    "key",
+    "token",
+    "secret",
+    "password",
+    "credential",
+    "auth",
 )
 
 

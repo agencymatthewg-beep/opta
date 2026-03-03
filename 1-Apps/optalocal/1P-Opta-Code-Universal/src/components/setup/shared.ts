@@ -1,10 +1,12 @@
 import { invokeNative } from "../../lib/runtime";
 
 export interface WizardFormData {
-  provider: "lmx" | "anthropic";
+  provider: "lmx" | "anthropic" | "gemini" | "openai" | "opencode_zen";
   lmxHost: string;
   lmxPort: number;
-  anthropicKey: string;
+  lmxAdminKey: string;
+  cloudApiKey: string;
+  providerKeyStorage: "keychain" | "config";
   configDir: string;
   autonomyLevel: 1 | 2 | 3;
   shell: "auto" | "bash" | "zsh" | "powershell";
@@ -56,7 +58,9 @@ export const DEFAULT_FORM: WizardFormData = {
   provider: "lmx",
   lmxHost: "127.0.0.1",
   lmxPort: 1234,
-  anthropicKey: "",
+  lmxAdminKey: "",
+  cloudApiKey: "",
+  providerKeyStorage: "keychain",
   configDir: "~/.config/opta",
   autonomyLevel: 2,
   shell: "auto",

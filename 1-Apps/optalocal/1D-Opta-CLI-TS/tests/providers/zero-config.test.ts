@@ -27,34 +27,40 @@ vi.mock('../../src/lmx/connection.js', () => ({
 
 // Mock providers so we don't need real API clients.
 vi.mock('../../src/providers/lmx.js', () => ({
-  LmxProvider: vi.fn().mockImplementation((config: OptaConfig) => ({
+  LmxProvider: vi.fn().mockImplementation(function(config: OptaConfig) {
+    return {
     name: 'lmx',
     config,
     getClient: vi.fn().mockResolvedValue({}),
     listModels: vi.fn().mockResolvedValue([{ id: 'test-model' }]),
     health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 }),
-  })),
+  };
+  }),
 }));
 
 vi.mock('../../src/providers/anthropic.js', () => ({
-  AnthropicProvider: vi.fn().mockImplementation((config: OptaConfig) => ({
+  AnthropicProvider: vi.fn().mockImplementation(function(config: OptaConfig) {
+    return {
     name: 'anthropic',
     config,
     getClient: vi.fn().mockResolvedValue({}),
     listModels: vi.fn().mockResolvedValue([{ id: 'claude-sonnet-4-5-20250929' }]),
     health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 50 }),
-  })),
+  };
+  }),
 }));
 
 vi.mock('../../src/providers/fallback.js', () => ({
-  FallbackProvider: vi.fn().mockImplementation((primary: unknown, config: OptaConfig) => ({
+  FallbackProvider: vi.fn().mockImplementation(function(primary: unknown, config: OptaConfig) {
+    return {
     name: 'lmx+fallback',
     primary,
     config,
     getClient: vi.fn().mockResolvedValue({}),
     listModels: vi.fn().mockResolvedValue([]),
     health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 10 }),
-  })),
+  };
+  }),
 }));
 
 vi.mock('../../src/lmx/api-key.js', () => ({
@@ -251,7 +257,14 @@ describe('probeProvider — LMX unreachable + ANTHROPIC_API_KEY set', () => {
   });
 });
 
+
 describe('probeProvider — LMX unreachable + no API key', () => {
+  beforeEach(() => {
+    delete process.env['GEMINI_API_KEY'];
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['OPENCODE_ZEN_API_KEY'];
+  });
+
   it('throws a descriptive error when LMX is down and no ANTHROPIC_API_KEY', async () => {
     delete process.env['ANTHROPIC_API_KEY'];
     const probeLmx = await getProbeLmxConnection();
@@ -263,7 +276,7 @@ describe('probeProvider — LMX unreachable + no API key', () => {
       connection: { ...DEFAULT_CONFIG.connection, host: 'localhost', port: 1234 },
     });
 
-    await expect(probeProvider(config)).rejects.toThrow(/LMX unreachable.*localhost:1234/);
+    await expect(probeProvider(config)).rejects.toThrow(/"code":"lmx_unreachable".*"localhost:1234"/);
   });
 
   it('error message mentions ANTHROPIC_API_KEY as a fix option', async () => {

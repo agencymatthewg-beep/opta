@@ -40,7 +40,15 @@ function parseSession(value: unknown): SupabaseSession | null {
   if (typeof value['refresh_token'] !== 'string') return null;
   if (typeof value['token_type'] !== 'string') return null;
   if (typeof value['expires_in'] !== 'number') return null;
-  return value as SupabaseSession;
+
+  const parsed = value as SupabaseSession;
+  if (typeof value['provider_token'] === 'string') {
+    parsed.provider_token = value['provider_token'];
+  }
+  if (typeof value['provider_refresh_token'] === 'string') {
+    parsed.provider_refresh_token = value['provider_refresh_token'];
+  }
+  return parsed;
 }
 
 function parseProjectFromUrl(url: string): string {
@@ -261,9 +269,9 @@ export async function loginWithPassword(
 
   const session: SupabaseSession | null =
     typeof accessToken === 'string' &&
-    typeof refreshToken === 'string' &&
-    typeof tokenType === 'string' &&
-    typeof expiresIn === 'number'
+      typeof refreshToken === 'string' &&
+      typeof tokenType === 'string' &&
+      typeof expiresIn === 'number'
       ? {
         access_token: accessToken,
         refresh_token: refreshToken,
@@ -310,17 +318,17 @@ export async function refreshSession(
 
   const session: SupabaseSession | null =
     typeof accessToken === 'string' &&
-    typeof newRefreshToken === 'string' &&
-    typeof tokenType === 'string' &&
-    typeof expiresIn === 'number'
+      typeof newRefreshToken === 'string' &&
+      typeof tokenType === 'string' &&
+      typeof expiresIn === 'number'
       ? {
-          access_token: accessToken,
-          refresh_token: newRefreshToken,
-          token_type: tokenType,
-          expires_in: expiresIn,
-          ...(typeof expiresAt === 'number' ? { expires_at: expiresAt } : {}),
-          ...(user ? { user } : {}),
-        }
+        access_token: accessToken,
+        refresh_token: newRefreshToken,
+        token_type: tokenType,
+        expires_in: expiresIn,
+        ...(typeof expiresAt === 'number' ? { expires_at: expiresAt } : {}),
+        ...(user ? { user } : {}),
+      }
       : null;
 
   return { session, user: user ?? session?.user ?? null };
@@ -353,20 +361,24 @@ export async function exchangeAuthCodeForSession(
   const tokenType = parsed['token_type'];
   const expiresIn = parsed['expires_in'];
   const expiresAt = parsed['expires_at'];
+  const providerToken = parsed['provider_token'];
+  const providerRefreshToken = parsed['provider_refresh_token'];
 
   const session: SupabaseSession | null =
     typeof accessToken === 'string' &&
-    typeof refreshToken === 'string' &&
-    typeof tokenType === 'string' &&
-    typeof expiresIn === 'number'
+      typeof refreshToken === 'string' &&
+      typeof tokenType === 'string' &&
+      typeof expiresIn === 'number'
       ? {
-          access_token: accessToken,
-          refresh_token: refreshToken,
-          token_type: tokenType,
-          expires_in: expiresIn,
-          ...(typeof expiresAt === 'number' ? { expires_at: expiresAt } : {}),
-          ...(user ? { user } : {}),
-        }
+        access_token: accessToken,
+        refresh_token: refreshToken,
+        token_type: tokenType,
+        expires_in: expiresIn,
+        ...(typeof expiresAt === 'number' ? { expires_at: expiresAt } : {}),
+        ...(typeof providerToken === 'string' ? { provider_token: providerToken } : {}),
+        ...(typeof providerRefreshToken === 'string' ? { provider_refresh_token: providerRefreshToken } : {}),
+        ...(user ? { user } : {}),
+      }
       : null;
 
   return { session, user: user ?? session?.user ?? null };

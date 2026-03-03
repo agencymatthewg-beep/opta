@@ -60,11 +60,13 @@ async def sse_client(tmp_path: Path) -> AsyncIterator[AsyncClient]:
         "object": "chat.completion",
         "created": 0,
         "model": "test-model",
-        "choices": [{
-            "index": 0,
-            "message": {"role": "assistant", "content": "Hello!"},
-            "finish_reason": "stop",
-        }],
+        "choices": [
+            {
+                "index": 0,
+                "message": {"role": "assistant", "content": "Hello!"},
+                "finish_reason": "stop",
+            }
+        ],
         "usage": {"prompt_tokens": 10, "completion_tokens": 1, "total_tokens": 11},
     }
     mock_response.usage = MagicMock(prompt_tokens=10, completion_tokens=1)
@@ -156,7 +158,8 @@ class TestSSEIntegration:
 
         # Content events are events[1] through events[4] (4 tokens)
         content_events = [
-            e for e in events
+            e
+            for e in events
             if e.data != "[DONE]" and json.loads(e.data)["choices"][0]["delta"].get("content")
         ]
         tokens = [json.loads(e.data)["choices"][0]["delta"]["content"] for e in content_events]

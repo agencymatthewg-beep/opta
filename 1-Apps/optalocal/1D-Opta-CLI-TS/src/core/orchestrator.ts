@@ -1,4 +1,6 @@
 import { nanoid } from 'nanoid';
+import { join } from 'node:path';
+import { mkdir, writeFile } from 'node:fs/promises';
 import type { OptaConfig } from './config.js';
 import type { SubAgentTask, SubAgentResult, SubAgentContext } from './subagent.js';
 import type { ToolRegistry } from '../mcp/registry.js';
@@ -109,10 +111,25 @@ export async function executeDelegation(
         } else {
           const depResult = results[subtask.depends_on];
           if (depResult) {
-            if (depResult.status === 'budget_exceeded' || depResult.status === 'timeout') {
-              description = `${subtask.task}\n\nContext from previous subtask (${depResult.status} — results may be incomplete):\n${depResult.response}`;
-            } else {
-              description = `${subtask.task}\n\nContext from previous subtask:\n${depResult.response}`;
+            // Write handoff artifact to prevent context bloat
+            const handoffDir = join(process.cwd(), '.opta', 'handoffs');
+            const handoffFile = join(handoffDir, `task_${subtask.depends_on}_result.md`);
+            try {
+              await mkdir(handoffDir, { recursive: true });
+              await writeFile(handoffFile, depResult.response, 'utf8');
+              
+              if (depResult.status === 'budget_exceeded' || depResult.status === 'timeout') {
+                description = `${subtask.task}\n\nContext from previous subtask (${depResult.status} — results may be incomplete) is saved to:\n${handoffFile}\n\nYou must read this file to understand the prior context.`;
+              } else {
+                description = `${subtask.task}\n\nContext from previous subtask is saved to:\n${handoffFile}\n\nYou must read this file to understand the prior context.`;
+              }
+            } catch {
+              // Fallback to inline if filesystem fails
+              if (depResult.status === 'budget_exceeded' || depResult.status === 'timeout') {
+                description = `${subtask.task}\n\nContext from previous subtask (${depResult.status} — results may be incomplete):\n${depResult.response}`;
+              } else {
+                description = `${subtask.task}\n\nContext from previous subtask:\n${depResult.response}`;
+              }
             }
           }
         }

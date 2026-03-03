@@ -273,7 +273,9 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
           </span>
         </div>
 
-        <div style={{ position: "relative", minHeight: 390, overflow: "hidden" }}>
+        <div
+          style={{ position: "relative", minHeight: 390, overflow: "hidden" }}
+        >
           <div
             key={animKey}
             style={{

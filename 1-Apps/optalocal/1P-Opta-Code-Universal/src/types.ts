@@ -45,7 +45,14 @@ export interface TurnStats {
 
 export interface TimelineItem {
   id: string;
-  kind: "user" | "assistant" | "tool" | "system" | "event" | "permission" | "thinking";
+  kind:
+    | "user"
+    | "assistant"
+    | "tool"
+    | "system"
+    | "event"
+    | "permission"
+    | "thinking";
   title: string;
   body?: string;
   createdAt?: string;
@@ -60,4 +67,21 @@ export interface RuntimeSnapshot {
   activeTurnCount: number;
   queuedTurnCount: number;
   subscriberCount: number;
+}
+
+export type SessionSubmitMode = "chat" | "do" | "plan" | "review" | "research";
+
+export type SessionOutputFormat = "markdown" | "text" | "json";
+export type SessionAutonomyMode = "execution" | "ceo";
+
+export interface SessionTurnOverrides {
+  model?: string;
+  provider?: string;
+  dangerous?: boolean;
+  auto?: boolean;
+  noCommit?: boolean;
+  noCheckpoints?: boolean;
+  format?: SessionOutputFormat;
+  autonomyMode?: SessionAutonomyMode;
+  autonomyLevel?: number;
 }

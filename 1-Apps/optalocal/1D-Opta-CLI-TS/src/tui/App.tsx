@@ -41,6 +41,7 @@ import type { AgentPickerSelection } from './AgentPickerOverlay.js';
 import { AgentMonitorPanel } from './AgentMonitorPanel.js';
 import { deriveOptimiserIntent } from './optimiser-intent.js';
 import { TUI_COLORS } from './palette.js';
+import { errorMessage } from '../utils/errors.js';
 
 /** Chrome rows: Header(3) + BrowserManagerRail(3) + StatusBar(3) + HintBar(1) + InputBox(3) = 13 */
 const CHROME_HEIGHT = LAYOUT.totalChromeWithRail;
@@ -54,6 +55,21 @@ const SAFE_OVERLAY_CHROME_RECOVERY_ROWS = 3;
 export function computeMessageAreaHeight(totalRows: number, safeMode: boolean): number {
   const chromeHeight = safeMode ? SAFE_MODE_CHROME_HEIGHT : CHROME_HEIGHT;
   return Math.max(totalRows - chromeHeight, 0);
+}
+
+function flattenConfigSnapshot(
+  obj: Record<string, unknown>,
+  prefix = '',
+  target: Record<string, unknown> = {},
+): Record<string, unknown> {
+  for (const [key, value] of Object.entries(obj)) {
+    const fullKey = prefix ? `${prefix}.${key}` : key;
+    target[fullKey] = value;
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      flattenConfigSnapshot(value as Record<string, unknown>, fullKey, target);
+    }
+  }
+  return target;
 }
 
 /** Workflow modes cycled by Shift+Tab. */
@@ -219,12 +235,15 @@ function AppInner({
     connectionAutoDiscover,
     connectionPort,
     connectionAdminKey,
+    connectionAdminKeysByHost,
     studioConnectivity,
     accountState,
     triggerDefinitions,
     skillRuntimeSettings,
     responseIntentTone,
     keybindings,
+    configSnapshot,
+    refreshConfig,
     reconnectLmx,
   } = appConfig;
 
@@ -265,6 +284,24 @@ function AppInner({
     tokenRateWindowRef,
   } = appActions;
 
+  const persistAndApplySettings = useCallback((changes: Record<string, unknown>) => {
+    void (async () => {
+      try {
+        const { saveConfig } = await import('../core/config.js');
+        await saveConfig(changes);
+        await refreshConfig();
+      } catch (err: unknown) {
+        appendAction({
+          kind: 'error',
+          status: 'error',
+          icon: '⛔',
+          label: 'Failed to save settings',
+          detail: errorMessage(err),
+        });
+      }
+    })();
+  }, [appendAction, refreshConfig]);
+
   // Imperative scroll handle -- filled by ScrollView via MessageList scrollRef prop
   const scrollRef = useRef<ScrollViewHandle | null>(null);
 
@@ -280,6 +317,7 @@ function AppInner({
     setWorkflowMode,
     onModeChange,
     setResponseIntentTone: appConfig.setResponseIntentTone,
+    onSettingsSave: persistAndApplySettings,
   });
 
   const {
@@ -617,31 +655,8 @@ function AppInner({
     && messageAreaHeight >= 20
     && messageAreaWidth >= 96;
   const settingsConfig = useMemo<Record<string, unknown>>(
-    () => ({
-      'connection.host': connectionHost,
-      'connection.fallbackHosts': connectionFallbackHosts,
-      'connection.autoDiscover': connectionAutoDiscover,
-      'connection.port': connectionPort,
-      'connection.adminKey': connectionAdminKey ?? '',
-      'connection.apiKey': connectionAdminKey ?? '',
-      'model.default': currentModel,
-      'model.contextLimit': contextLimit,
-      'autonomy.level': autonomyLevel,
-      'autonomy.mode': autonomyMode,
-      'tui.responseIntentTone': responseIntentTone,
-    }),
-    [
-      connectionHost,
-      connectionFallbackHosts,
-      connectionAutoDiscover,
-      connectionPort,
-      connectionAdminKey,
-      currentModel,
-      contextLimit,
-      autonomyLevel,
-      autonomyMode,
-      responseIntentTone,
-    ],
+    () => flattenConfigSnapshot(configSnapshot as unknown as Record<string, unknown>),
+    [configSnapshot],
   );
   const reservedRows = (showInsightBlock ? 2 : 0) + (showOptimiserPanel ? 6 : 0);
   const messageViewportHeight = messageAreaHeight > 0

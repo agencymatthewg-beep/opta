@@ -117,9 +117,10 @@ class TestSetupLogging:
         log_path = str(tmp_path / "opta.log")
         setup_logging(level="INFO", log_file=log_path)
         root = logging.getLogger()
-        assert not any(isinstance(h, logging.StreamHandler)
-                       and not hasattr(h, "baseFilename")
-                       for h in root.handlers)
+        assert not any(
+            isinstance(h, logging.StreamHandler) and not hasattr(h, "baseFilename")
+            for h in root.handlers
+        )
 
     def test_parent_dirs_created(self, tmp_path: Path) -> None:
         """Nested log path parent directories are created automatically."""

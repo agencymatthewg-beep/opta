@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import subprocess
 import sys
 from datetime import datetime
@@ -51,6 +50,14 @@ _BLUE = "\033[94m"
 _PURPLE = "\033[95m"
 _RESET = "\033[0m"
 _DIM = "\033[2m"
+
+
+def _stdout(message: str) -> None:
+    sys.stdout.write(f"{message}\n")
+
+
+def _stderr(message: str) -> None:
+    sys.stderr.write(f"{message}\n")
 
 
 # ---------------------------------------------------------------------------
@@ -391,9 +398,7 @@ def _render_html(comparisons: list[ModelComparison]) -> str:
                 sign = "+" if delta >= 0 else ""
                 cls = "delta-pos" if delta > 0 else ("delta-neg" if delta < -5 else "delta-neutral")
                 comp_cells += (
-                    f'<td>{comp_tps:.1f} '
-                    f'<span class="{cls}">'
-                    f'{sign}{delta:.0f}%</span></td>'
+                    f'<td>{comp_tps:.1f} <span class="{cls}">{sign}{delta:.0f}%</span></td>'
                 )
             else:
                 comp_cells += "<td>&mdash;</td>"
@@ -408,9 +413,7 @@ def _render_html(comparisons: list[ModelComparison]) -> str:
 
     # Competitor column headers
     comp_headers = "".join(
-        f"<th>{html_mod.escape(c)}<br>"
-        f"<small>tok/s (delta)</small></th>"
-        for c in all_competitors
+        f"<th>{html_mod.escape(c)}<br><small>tok/s (delta)</small></th>" for c in all_competitors
     )
 
     return f"""<!DOCTYPE html>
@@ -525,11 +528,11 @@ examples:
 
     lmx_results = _load_lmx_results(dirs)
     if not _YAML_AVAILABLE:
-        print("Warning: pyyaml not installed -- pip install pyyaml", file=sys.stderr)
+        _stderr("Warning: pyyaml not installed -- pip install pyyaml")
     reference = _load_reference(args.reference)
 
     if not lmx_results and not reference:
-        print("No benchmark results or reference data found.", file=sys.stderr)
+        _stderr("No benchmark results or reference data found.")
         sys.exit(1)
 
     comparisons = _build_comparisons(lmx_results, reference)
@@ -550,18 +553,18 @@ examples:
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(output, encoding="utf-8")
-        print(f"Written to {args.output}", file=sys.stderr)
+        _stderr(f"Written to {args.output}")
         if args.format == "html" and not args.no_open:
             subprocess.run(["open", str(args.output)], check=False)
     elif args.format == "html":
         # Default HTML output path
         html_path = Path("/tmp/opta-lmx-comparison.html")
         html_path.write_text(output, encoding="utf-8")
-        print(f"Written to {html_path}", file=sys.stderr)
+        _stderr(f"Written to {html_path}")
         if not args.no_open:
             subprocess.run(["open", str(html_path)], check=False)
     else:
-        print(output)
+        _stdout(output)
 
 
 if __name__ == "__main__":

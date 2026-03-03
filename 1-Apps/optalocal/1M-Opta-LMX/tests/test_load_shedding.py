@@ -49,6 +49,7 @@ async def test_load_shedding_uses_memory_monitor_when_available(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Middleware should use app memory monitor and avoid direct psutil polling."""
+
     def fail_virtual_memory():  # type: ignore[no-untyped-def]
         raise AssertionError("psutil.virtual_memory should not be called")
 
@@ -67,6 +68,7 @@ async def test_load_shedding_exempts_health_endpoints(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """Health routes should bypass load shedding checks."""
+
     def fail_virtual_memory():  # type: ignore[no-untyped-def]
         raise AssertionError("psutil.virtual_memory should not be called")
 

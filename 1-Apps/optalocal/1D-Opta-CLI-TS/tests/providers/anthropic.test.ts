@@ -37,7 +37,7 @@ describe('AnthropicProvider', () => {
     delete process.env['ANTHROPIC_API_KEY'];
 
     mocks.getAnthropicKey.mockResolvedValue(null);
-    mocks.openaiCtor.mockImplementation((opts: unknown) => ({ opts }));
+    mocks.openaiCtor.mockImplementation(function(opts: unknown) { return { opts }; });
   });
 
   it('prefers config key over env and keychain', async () => {

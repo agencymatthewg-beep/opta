@@ -13,37 +13,37 @@ export const FEATURES = [
     icon: "shield",
     title: "Central App Manager",
     description:
-      "One control layer for install, launch, and maintenance across your Opta Local applications.",
+      "The single native initializer surface needed to install, launch, and manage Opta Code, Opta CLI, and Opta LMX.",
   },
   {
     icon: "layout",
-    title: "Launcher Workflows",
+    title: "Daemon Supervisor Drawer",
     description:
-      "Start Opta Code, open the Opta Local platform, and route into account controls from one place.",
+      "A sleek sliding glass drawer to monitor, kill, or restart background inference processes completely out-of-band from your code editor.",
   },
   {
     icon: "layers",
-    title: "Update Orchestration",
+    title: "Manifest-Driven Updates",
     description:
-      "Coordinate version-safe updates for apps and runtime components without manual dependency juggling.",
+      "Say goodbye to broken dependencies. Roll out safe, cryptographically signed updates across the entire stack simultaneously.",
   },
   {
     icon: "activity",
-    title: "Daemon Operations",
+    title: "Stable & Beta Channels",
     description:
-      "Monitor daemon health, restart services, and recover runtime state when authentication or sessions drift.",
+      "Safely opt-in to bleeding-edge developer features or stay on the proven stable track, managed from one trusted control plane.",
   },
   {
     icon: "cpu",
     title: "Apple Silicon Native",
     description:
-      "Built for M1, M2, M3, and M4 environments where the Opta Local stack runs with local acceleration.",
+      "Built as a blazingly fast Rust/Tauri desktop application specifically optimized for M1, M2, M3, and M4 hardware.",
   },
   {
     icon: "plug",
-    title: "Platform Separation",
+    title: "Zero-Server Static Edge",
     description:
-      "Opta Init manages and updates the stack; Opta Local platform delivers day-to-day app and model workflows.",
+      "The initial distribution site is served globally via edge CDNs with zero backend logic, guaranteeing instant and secure availability.",
   },
 ] as const;
 
@@ -51,7 +51,7 @@ export const SHOWCASE_CONTENT = {
   welcome: {
     heading: "Manager Home",
     caption:
-      "Open Opta Init and choose a workflow: launch apps, run updates, or control daemon services.",
+      "Open Opta Init (the Opta Initializer, short for `opta init`) and choose a workflow: launch apps, run updates, or control daemon services.",
     logo: ["  OPTA CODE"],
     menuItems: [
       { label: "Launch Opta Code", shortcut: "Enter" },

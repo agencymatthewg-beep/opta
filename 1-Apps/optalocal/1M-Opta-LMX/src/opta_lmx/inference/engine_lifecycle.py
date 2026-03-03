@@ -89,6 +89,11 @@ def _runtime_backend_versions() -> dict[str, str | None]:
     return versions
 
 
+def _set_loaded_runtime_attr(loaded: LoadedModel, attr_name: str, value: object) -> None:
+    """Set runtime-only LoadedModel attributes not declared on the dataclass."""
+    setattr(loaded, attr_name, value)
+
+
 def _detect_runtime_incompatibility(model_id: str) -> dict[str, Any] | None:
     """Detect known architecture/runtime incompatibilities from local model config."""
     config = _load_model_config(model_id)
@@ -151,9 +156,13 @@ def _resolve_context_length(model_id: str) -> int | None:
             if isinstance(value, int):
                 return value
     except Exception as e:
-        logger.debug("context_length_resolve_failed", extra={
-            "model_id": model_id, "error": str(e),
-        })
+        logger.debug(
+            "context_length_resolve_failed",
+            extra={
+                "model_id": model_id,
+                "error": str(e),
+            },
+        )
     return None
 
 
@@ -183,9 +192,13 @@ def _resolve_engine_model_name(model_id: str) -> str:
             if snapshot_dir.exists():
                 return str(snapshot_dir)
     except Exception as e:
-        logger.debug("model_source_resolve_failed", extra={
-            "model_id": model_id, "error": str(e),
-        })
+        logger.debug(
+            "model_source_resolve_failed",
+            extra={
+                "model_id": model_id,
+                "error": str(e),
+            },
+        )
     return model_id
 
 
@@ -439,7 +452,8 @@ class ModelLifecycleManager:
         return default
 
     def _resolve_speculative_config(
-        self, performance_overrides: dict[str, Any],
+        self,
+        performance_overrides: dict[str, Any],
     ) -> tuple[bool, str | None, int | None, bool]:
         raw_spec = performance_overrides.get("speculative", {})
         spec_config = raw_spec if isinstance(raw_spec, dict) else {}
@@ -474,9 +488,7 @@ class ModelLifecycleManager:
     @staticmethod
     def _engine_constructor_capabilities(engine_cls: type[Any]) -> tuple[set[str], bool]:
         params = inspect.signature(engine_cls.__init__).parameters
-        has_var_kwargs = any(
-            p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values()
-        )
+        has_var_kwargs = any(p.kind == inspect.Parameter.VAR_KEYWORD for p in params.values())
         supported = {name for name in params if name != "self"}
         return supported, has_var_kwargs
 
@@ -538,11 +550,13 @@ class ModelLifecycleManager:
         for bkend in candidates:
             if bkend == "vllm-mlx":
                 if not self._loader_isolation_enabled:
-                    outcomes.append({
-                        "backend": bkend,
-                        "outcome": "unknown",
-                        "reason": "loader_isolation_disabled",
-                    })
+                    outcomes.append(
+                        {
+                            "backend": bkend,
+                            "outcome": "unknown",
+                            "reason": "loader_isolation_disabled",
+                        }
+                    )
                     continue
                 try:
                     outcome = await run_loader_supervisor(
@@ -556,11 +570,13 @@ class ModelLifecycleManager:
                         timeout_sec=float(timeout_sec),
                     )
                 except Exception as exc:
-                    outcomes.append({
-                        "backend": bkend,
-                        "outcome": "fail",
-                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
-                    })
+                    outcomes.append(
+                        {
+                            "backend": bkend,
+                            "outcome": "fail",
+                            "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
+                        }
+                    )
                     continue
                 if outcome.ok:
                     outcomes.append({"backend": bkend, "outcome": "pass", "reason": None})
@@ -579,11 +595,13 @@ class ModelLifecycleManager:
                 if resolved:
                     outcomes.append({"backend": bkend, "outcome": "pass", "reason": None})
                 else:
-                    outcomes.append({
-                        "backend": bkend,
-                        "outcome": "fail",
-                        "reason": "no_local_gguf_equivalent",
-                    })
+                    outcomes.append(
+                        {
+                            "backend": bkend,
+                            "outcome": "fail",
+                            "reason": "no_local_gguf_equivalent",
+                        }
+                    )
                 continue
 
             if bkend == "mlx-lm":
@@ -594,17 +612,21 @@ class ModelLifecycleManager:
                         await backend_instance.probe()
                     outcomes.append({"backend": bkend, "outcome": "pass", "reason": None})
                 except TimeoutError:
-                    outcomes.append({
-                        "backend": bkend,
-                        "outcome": "fail",
-                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:probe_timeout",
-                    })
+                    outcomes.append(
+                        {
+                            "backend": bkend,
+                            "outcome": "fail",
+                            "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:probe_timeout",
+                        }
+                    )
                 except Exception as exc:
-                    outcomes.append({
-                        "backend": bkend,
-                        "outcome": "fail",
-                        "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
-                    })
+                    outcomes.append(
+                        {
+                            "backend": bkend,
+                            "outcome": "fail",
+                            "reason": f"{ErrorCodes.MODEL_PROBE_FAILED}:{exc}",
+                        }
+                    )
                 finally:
                     if backend_instance is not None:
                         backend_instance.close()
@@ -613,11 +635,7 @@ class ModelLifecycleManager:
             outcomes.append({"backend": bkend, "outcome": "unknown", "reason": "not_probed"})
 
         recommended_backend = next(
-            (
-                row["backend"]
-                for row in outcomes
-                if row.get("outcome") in {"pass", "unknown"}
-            ),
+            (row["backend"] for row in outcomes if row.get("outcome") in {"pass", "unknown"}),
             None,
         )
         return {
@@ -641,8 +659,7 @@ class ModelLifecycleManager:
         """Load an MLX model into memory with admission control."""
         if ".." in model_id:
             raise ValueError(
-                f"Invalid model ID: '{model_id}'. "
-                "Path traversal sequences are not allowed."
+                f"Invalid model ID: '{model_id}'. Path traversal sequences are not allowed."
             )
 
         while True:
@@ -680,9 +697,8 @@ class ModelLifecycleManager:
                 reservation_usage = self._memory_percent_from_gb(reservation_gb)
                 projected_usage = current_usage + reserved_usage + reservation_usage
 
-                admitted = (
-                    projected_usage <= self._memory.threshold_percent
-                    and (used_estimate or reservation_gb > 0)
+                admitted = projected_usage <= self._memory.threshold_percent and (
+                    used_estimate or reservation_gb > 0
                 )
                 if admitted:
                     self._loading_models.add(model_id)
@@ -692,9 +708,7 @@ class ModelLifecycleManager:
                 should_evict = self._auto_evict_lru and bool(self._models)
                 if not should_evict:
                     reserved_reason = (
-                        "in-flight load reservations"
-                        if reserved_usage > 0
-                        else "current usage"
+                        "in-flight load reservations" if reserved_usage > 0 else "current usage"
                     )
                     raise MemoryError(
                         f"Insufficient memory headroom for loading '{model_id}': "
@@ -708,19 +722,24 @@ class ModelLifecycleManager:
             if should_evict:
                 evicted_id = await self._evict_least_recently_used()
                 if evicted_id:
-                    logger.info("lru_evicted_for_load", extra={
-                        "evicted": evicted_id,
-                        "loading": model_id,
-                        "current_usage_percent": round(current_usage, 1),
-                        "reserved_usage_percent": round(reserved_usage, 1),
-                        "projected_usage_percent": round(projected_usage, 1),
-                    })
+                    logger.info(
+                        "lru_evicted_for_load",
+                        extra={
+                            "evicted": evicted_id,
+                            "loading": model_id,
+                            "current_usage_percent": round(current_usage, 1),
+                            "reserved_usage_percent": round(reserved_usage, 1),
+                            "projected_usage_percent": round(projected_usage, 1),
+                        },
+                    )
                 continue
 
         await self._set_readiness_state(model_id, "admitted")
         try:
             return await self._do_load(
-                model_id, use_batching, performance_overrides,
+                model_id,
+                use_batching,
+                performance_overrides,
                 keep_alive_sec=keep_alive_sec,
                 allow_unsupported_runtime=allow_unsupported_runtime,
                 preferred_backend=preferred_backend,
@@ -777,18 +796,19 @@ class ModelLifecycleManager:
                 if isinstance(version, str) and version
             ]
             version_hint = (
-                ", ".join(version_hint_parts)
-                if version_hint_parts
-                else "unknown versions"
+                ", ".join(version_hint_parts) if version_hint_parts else "unknown versions"
             )
             if not allow_unsupported_runtime:
-                logger.warning("model_runtime_incompatible_blocked", extra={
-                    "model_id": model_id,
-                    "matched_signature": runtime_issue.get("matched_signature"),
-                    "model_type": runtime_issue.get("model_type"),
-                    "architectures": runtime_issue.get("architectures"),
-                    "runtime_versions": runtime_versions,
-                })
+                logger.warning(
+                    "model_runtime_incompatible_blocked",
+                    extra={
+                        "model_id": model_id,
+                        "matched_signature": runtime_issue.get("matched_signature"),
+                        "model_type": runtime_issue.get("model_type"),
+                        "architectures": runtime_issue.get("architectures"),
+                        "runtime_versions": runtime_versions,
+                    },
+                )
                 await self._set_readiness_state(
                     model_id,
                     "quarantined",
@@ -810,13 +830,16 @@ class ModelLifecycleManager:
                     "Use a supported model variant or retry with "
                     "`allow_unsupported_runtime=true` if you explicitly accept crash risk."
                 )
-            logger.warning("model_runtime_incompatibility_override", extra={
-                "model_id": model_id,
-                "matched_signature": runtime_issue.get("matched_signature"),
-                "model_type": runtime_issue.get("model_type"),
-                "architectures": runtime_issue.get("architectures"),
-                "runtime_versions": runtime_versions,
-            })
+            logger.warning(
+                "model_runtime_incompatibility_override",
+                extra={
+                    "model_id": model_id,
+                    "matched_signature": runtime_issue.get("matched_signature"),
+                    "model_type": runtime_issue.get("model_type"),
+                    "architectures": runtime_issue.get("architectures"),
+                    "runtime_versions": runtime_versions,
+                },
+            )
 
         batching = use_batching if use_batching is not None else self._use_batching
 
@@ -829,12 +852,15 @@ class ModelLifecycleManager:
                 if performance_overrides:
                     merged.update(performance_overrides)
                 perf = merged
-                logger.info("autotune_profile_applied", extra={
-                    "model_id": model_id,
-                    "backend": selected_backend,
-                    "tuned_keys": sorted(tuned_profile.keys()),
-                    "override_keys": sorted((performance_overrides or {}).keys()),
-                })
+                logger.info(
+                    "autotune_profile_applied",
+                    extra={
+                        "model_id": model_id,
+                        "backend": selected_backend,
+                        "tuned_keys": sorted(tuned_profile.keys()),
+                        "override_keys": sorted((performance_overrides or {}).keys()),
+                    },
+                )
             else:
                 perf = performance_overrides or {}
         else:
@@ -868,9 +894,7 @@ class ModelLifecycleManager:
 
             if outcome is None or not outcome.ok:
                 failure = (
-                    fallback_failure
-                    if outcome is None
-                    else (outcome.failure or fallback_failure)
+                    fallback_failure if outcome is None else (outcome.failure or fallback_failure)
                 )
                 failure_reason = f"{failure.code}:{failure.message}"
                 await self._mark_readiness_failure(
@@ -910,12 +934,15 @@ class ModelLifecycleManager:
                 speculative_status["reason"] = (
                     f"backend_disabled:moe_architecture:{_normalize_signature(moe_signature)}"
                 )
-                logger.warning("speculative_disabled_moe_architecture", extra={
-                    "model_id": model_id,
-                    "backend": "mlx-lm",
-                    "matched_signature": moe_signature,
-                    "reason": speculative_status["reason"],
-                })
+                logger.warning(
+                    "speculative_disabled_moe_architecture",
+                    extra={
+                        "model_id": model_id,
+                        "backend": "mlx-lm",
+                        "matched_signature": moe_signature,
+                        "reason": speculative_status["reason"],
+                    },
+                )
             else:
                 speculative_status["active"] = True
                 speculative_status["reason"] = None
@@ -943,11 +970,14 @@ class ModelLifecycleManager:
                 if spec_requested:
                     speculative_status["active"] = False
                     speculative_status["reason"] = "backend_unsupported:gguf"
-                    logger.warning("speculative_not_supported_backend", extra={
-                        "model_id": model_id,
-                        "backend_type": "gguf",
-                        "reason": speculative_status["reason"],
-                    })
+                    logger.warning(
+                        "speculative_not_supported_backend",
+                        extra={
+                            "model_id": model_id,
+                            "backend_type": "gguf",
+                            "reason": speculative_status["reason"],
+                        },
+                    )
                 from opta_lmx.inference.gguf_backend import GGUFBackend
 
                 backend_instance = GGUFBackend(
@@ -958,7 +988,9 @@ class ModelLifecycleManager:
                 engine = None
             else:
                 created = await self._create_engine(
-                    model_id, batching, performance_overrides=perf or None,
+                    model_id,
+                    batching,
+                    performance_overrides=perf or None,
                 )
                 if isinstance(created, tuple) and len(created) == 2:
                     engine, speculative_status = created
@@ -977,9 +1009,14 @@ class ModelLifecycleManager:
         except OSError:
             raise
         except Exception as e:
-            logger.error("model_load_failed", extra={
-                "model_id": model_id, "format": fmt, "error": str(e),
-            })
+            logger.error(
+                "model_load_failed",
+                extra={
+                    "model_id": model_id,
+                    "format": fmt,
+                    "error": str(e),
+                },
+            )
             raise RuntimeError(f"Failed to load model {model_id}: {e}") from e
 
         elapsed = time.monotonic() - start
@@ -1023,7 +1060,7 @@ class ModelLifecycleManager:
             speculative_draft_model=cast(str | None, speculative_status.get("draft_model")),
             speculative_num_tokens=cast(int | None, speculative_status.get("num_tokens")),
         )
-        loaded.readiness_state = "canary_pending"
+        _set_loaded_runtime_attr(loaded, "readiness_state", "canary_pending")
         await self._set_readiness_state(model_id, "canary_pending")
         async with self._load_lock:
             self._models[model_id] = loaded
@@ -1065,8 +1102,8 @@ class ModelLifecycleManager:
         )
         try:
             await self._run_load_canary(model_id)
-            loaded.readiness_state = "routable"
-            loaded.readiness_reason = None
+            _set_loaded_runtime_attr(loaded, "readiness_state", "routable")
+            _set_loaded_runtime_attr(loaded, "readiness_reason", None)
             await self._set_readiness_state(model_id, "routable")
             await self._record_compatibility(
                 model_id=model_id,
@@ -1084,8 +1121,12 @@ class ModelLifecycleManager:
                 },
             )
         except Exception as e:
-            loaded.readiness_state = "quarantined"
-            loaded.readiness_reason = f"{ErrorCodes.MODEL_CANARY_FAILED}:{e}"
+            _set_loaded_runtime_attr(loaded, "readiness_state", "quarantined")
+            _set_loaded_runtime_attr(
+                loaded,
+                "readiness_reason",
+                f"{ErrorCodes.MODEL_CANARY_FAILED}:{e}",
+            )
             await self._mark_readiness_failure(
                 model_id,
                 reason=str(e),
@@ -1135,11 +1176,12 @@ class ModelLifecycleManager:
             allow_failed=allow_failed,
         )
         resolved_version = backend_version_value or self._autotune_backend_version(resolved_backend)
-        return self._autotune.get_best(
+        profile = self._autotune.get_best(
             model_id=model_id,
             backend=resolved_backend,
             backend_version=resolved_version,
         )
+        return cast(dict[str, Any] | None, profile)
 
     # ── Engine creation ────────────────────────────────────────────────
 
@@ -1151,9 +1193,13 @@ class ModelLifecycleManager:
     ) -> tuple[Any, dict[str, Any]]:
         resolved_model_name = _resolve_engine_model_name(model_id)
         if resolved_model_name != model_id:
-            logger.info("model_source_resolved_local", extra={
-                "model_id": model_id, "resolved_model_name": resolved_model_name,
-            })
+            logger.info(
+                "model_source_resolved_local",
+                extra={
+                    "model_id": model_id,
+                    "resolved_model_name": resolved_model_name,
+                },
+            )
 
         perf = performance_overrides or {}
         spec_requested, draft_model, spec_num_tokens, spec_require_supported = (
@@ -1183,10 +1229,13 @@ class ModelLifecycleManager:
             optional_kwargs["prefix_cache"] = False
 
         if perf:
-            logger.info("performance_overrides_applied", extra={
-                "model_id": model_id,
-                "overrides": {k: v for k, v in perf.items() if k != "memory_estimate_gb"},
-            })
+            logger.info(
+                "performance_overrides_applied",
+                extra={
+                    "model_id": model_id,
+                    "overrides": {k: v for k, v in perf.items() if k != "memory_estimate_gb"},
+                },
+            )
 
         if use_batching:
             from vllm_mlx.engine.batched import BatchedEngine
@@ -1195,29 +1244,35 @@ class ModelLifecycleManager:
             sched_overrides = perf.get("scheduler", {})
             scheduler_config = SchedulerConfig(
                 max_num_seqs=sched_overrides.get(
-                    "max_num_seqs", self._scheduler_max_num_seqs,
+                    "max_num_seqs",
+                    self._scheduler_max_num_seqs,
                 ),
                 prefill_batch_size=sched_overrides.get(
-                    "prefill_batch_size", self._scheduler_prefill_batch_size,
+                    "prefill_batch_size",
+                    self._scheduler_prefill_batch_size,
                 ),
                 completion_batch_size=sched_overrides.get(
-                    "completion_batch_size", self._scheduler_completion_batch_size,
+                    "completion_batch_size",
+                    self._scheduler_completion_batch_size,
                 ),
                 cache_memory_percent=sched_overrides.get(
-                    "cache_memory_percent", self._scheduler_cache_memory_percent,
+                    "cache_memory_percent",
+                    self._scheduler_cache_memory_percent,
                 ),
                 enable_prefix_cache=(
-                    prefix_cache if isinstance(prefix_cache, bool)
-                    else self._prefix_cache_enabled
+                    prefix_cache if isinstance(prefix_cache, bool) else self._prefix_cache_enabled
                 ),
             )
             supported_params, has_var_kwargs = self._engine_constructor_capabilities(BatchedEngine)
             engine_kwargs, unsupported_kwargs, mapped_names = self._resolve_supported_engine_kwargs(
-                optional_kwargs, supported_params, has_var_kwargs,
+                optional_kwargs,
+                supported_params,
+                has_var_kwargs,
             )
 
             missing_spec = [
-                key for key in ("speculative_model", "num_speculative_tokens")
+                key
+                for key in ("speculative_model", "num_speculative_tokens")
                 if key in unsupported_kwargs
             ]
             if spec_requested and missing_spec:
@@ -1229,30 +1284,35 @@ class ModelLifecycleManager:
                         "`speculative.require_supported=false`, or update vllm-mlx."
                     )
                 speculative_status["active"] = False
-                speculative_status["reason"] = (
-                    "backend_constructor_unsupported:BatchedEngine"
+                speculative_status["reason"] = "backend_constructor_unsupported:BatchedEngine"
+                logger.warning(
+                    "speculative_constructor_unsupported",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "BatchedEngine",
+                        "missing_kwargs": missing_spec,
+                        "reason": speculative_status["reason"],
+                    },
                 )
-                logger.warning("speculative_constructor_unsupported", extra={
-                    "model_id": model_id,
-                    "engine": "BatchedEngine",
-                    "missing_kwargs": missing_spec,
-                    "reason": speculative_status["reason"],
-                })
             elif spec_requested:
                 speculative_status["active"] = True
                 speculative_status["reason"] = None
 
             unsupported_non_spec = {
-                key: value for key, value in unsupported_kwargs.items()
+                key: value
+                for key, value in unsupported_kwargs.items()
                 if key not in ("speculative_model", "num_speculative_tokens")
             }
             if unsupported_non_spec:
-                logger.warning("engine_optional_kwargs_unsupported", extra={
-                    "model_id": model_id,
-                    "engine": "BatchedEngine",
-                    "unsupported_kwargs": sorted(unsupported_non_spec.keys()),
-                    "supported_params": sorted(supported_params),
-                })
+                logger.warning(
+                    "engine_optional_kwargs_unsupported",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "BatchedEngine",
+                        "unsupported_kwargs": sorted(unsupported_non_spec.keys()),
+                        "supported_params": sorted(supported_params),
+                    },
+                )
 
             engine = BatchedEngine(
                 model_name=resolved_model_name,
@@ -1262,22 +1322,28 @@ class ModelLifecycleManager:
             )
             await engine.start()
             if mapped_names:
-                logger.debug("engine_kwargs_mapped", extra={
-                    "model_id": model_id,
-                    "engine": "BatchedEngine",
-                    "mapped": mapped_names,
-                })
+                logger.debug(
+                    "engine_kwargs_mapped",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "BatchedEngine",
+                        "mapped": mapped_names,
+                    },
+                )
             return engine, speculative_status
         else:
             from vllm_mlx.engine.simple import SimpleEngine
 
             supported_params, has_var_kwargs = self._engine_constructor_capabilities(SimpleEngine)
             engine_kwargs, unsupported_kwargs, mapped_names = self._resolve_supported_engine_kwargs(
-                optional_kwargs, supported_params, has_var_kwargs,
+                optional_kwargs,
+                supported_params,
+                has_var_kwargs,
             )
 
             missing_spec = [
-                key for key in ("speculative_model", "num_speculative_tokens")
+                key
+                for key in ("speculative_model", "num_speculative_tokens")
                 if key in unsupported_kwargs
             ]
             if spec_requested and missing_spec:
@@ -1289,36 +1355,44 @@ class ModelLifecycleManager:
                         "`speculative.require_supported=false`, or update vllm-mlx."
                     )
                 speculative_status["active"] = False
-                speculative_status["reason"] = (
-                    "backend_constructor_unsupported:SimpleEngine"
+                speculative_status["reason"] = "backend_constructor_unsupported:SimpleEngine"
+                logger.warning(
+                    "speculative_constructor_unsupported",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "SimpleEngine",
+                        "missing_kwargs": missing_spec,
+                        "reason": speculative_status["reason"],
+                    },
                 )
-                logger.warning("speculative_constructor_unsupported", extra={
-                    "model_id": model_id,
-                    "engine": "SimpleEngine",
-                    "missing_kwargs": missing_spec,
-                    "reason": speculative_status["reason"],
-                })
             elif spec_requested:
                 speculative_status["active"] = True
                 speculative_status["reason"] = None
 
             unsupported_non_spec = {
-                key: value for key, value in unsupported_kwargs.items()
+                key: value
+                for key, value in unsupported_kwargs.items()
                 if key not in ("speculative_model", "num_speculative_tokens")
             }
             if unsupported_non_spec:
-                logger.warning("engine_optional_kwargs_unsupported", extra={
-                    "model_id": model_id,
-                    "engine": "SimpleEngine",
-                    "unsupported_kwargs": sorted(unsupported_non_spec.keys()),
-                    "supported_params": sorted(supported_params),
-                })
+                logger.warning(
+                    "engine_optional_kwargs_unsupported",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "SimpleEngine",
+                        "unsupported_kwargs": sorted(unsupported_non_spec.keys()),
+                        "supported_params": sorted(supported_params),
+                    },
+                )
             if mapped_names:
-                logger.debug("engine_kwargs_mapped", extra={
-                    "model_id": model_id,
-                    "engine": "SimpleEngine",
-                    "mapped": mapped_names,
-                })
+                logger.debug(
+                    "engine_kwargs_mapped",
+                    extra={
+                        "model_id": model_id,
+                        "engine": "SimpleEngine",
+                        "mapped": mapped_names,
+                    },
+                )
 
             return SimpleEngine(model_name=resolved_model_name, **engine_kwargs), speculative_status
 
@@ -1337,9 +1411,13 @@ class ModelLifecycleManager:
             if loaded.backend is not None:
                 loaded.backend.close()
         except Exception as e:
-            logger.warning("backend_close_failed", extra={
-                "model_id": model_id, "error": str(e),
-            })
+            logger.warning(
+                "backend_close_failed",
+                extra={
+                    "model_id": model_id,
+                    "error": str(e),
+                },
+            )
         finally:
             if loaded.engine is not None:
                 del loaded.engine
@@ -1362,14 +1440,16 @@ class ModelLifecycleManager:
         )
 
         if self._event_bus:
-            await self._event_bus.publish(ServerEvent(
-                event_type="model_unloaded",
-                data={
-                    "model_id": model_id,
-                    "memory_freed_gb": round(freed, 2),
-                    "reason": reason,
-                },
-            ))
+            await self._event_bus.publish(
+                ServerEvent(
+                    event_type="model_unloaded",
+                    data={
+                        "model_id": model_id,
+                        "memory_freed_gb": round(freed, 2),
+                        "reason": reason,
+                    },
+                )
+            )
 
         self._adapt_concurrency()
 
@@ -1388,21 +1468,36 @@ class ModelLifecycleManager:
         try:
             if loaded.backend is not None:
                 await loaded.backend.generate(
-                    messages=warmup_messages, temperature=0.0, max_tokens=16,
-                    top_p=1.0, stop=None, tools=None, response_format=None,
+                    messages=warmup_messages,
+                    temperature=0.0,
+                    max_tokens=16,
+                    top_p=1.0,
+                    stop=None,
+                    tools=None,
+                    response_format=None,
                 )
             elif loaded.engine is not None:
                 await loaded.engine.chat(
-                    messages=warmup_messages, temperature=0.0, max_tokens=16,
+                    messages=warmup_messages,
+                    temperature=0.0,
+                    max_tokens=16,
                 )
             elapsed = time.monotonic() - start
-            logger.info("model_warmup_complete", extra={
-                "model_id": model_id, "warmup_ms": round(elapsed * 1000, 1),
-            })
+            logger.info(
+                "model_warmup_complete",
+                extra={
+                    "model_id": model_id,
+                    "warmup_ms": round(elapsed * 1000, 1),
+                },
+            )
         except Exception as e:
-            logger.warning("model_warmup_failed", extra={
-                "model_id": model_id, "error": str(e),
-            })
+            logger.warning(
+                "model_warmup_failed",
+                extra={
+                    "model_id": model_id,
+                    "error": str(e),
+                },
+            )
 
     async def _run_load_canary(self, model_id: str) -> None:
         loaded = self._models.get(model_id)
@@ -1437,11 +1532,14 @@ class ModelLifecycleManager:
         lru_model = min(self._models.values(), key=lambda m: m.last_used_at)
         model_id = lru_model.model_id
 
-        logger.info("lru_eviction", extra={
-            "model_id": model_id,
-            "last_used_at": lru_model.last_used_at,
-            "request_count": lru_model.request_count,
-        })
+        logger.info(
+            "lru_eviction",
+            extra={
+                "model_id": model_id,
+                "last_used_at": lru_model.last_used_at,
+                "request_count": lru_model.request_count,
+            },
+        )
 
         await self.unload_model(model_id, reason="lru")
         return model_id
@@ -1459,24 +1557,33 @@ class ModelLifecycleManager:
             last_used_at = loaded.last_used_at if loaded.last_used_at > 0 else loaded.loaded_at
             idle_time = now - last_used_at
             if idle_time > effective_ttl:
-                logger.info("ttl_eviction", extra={
-                    "model_id": model_id,
-                    "idle_seconds": round(idle_time, 1),
-                    "ttl_seconds": effective_ttl,
-                    "per_model_override": loaded.keep_alive_sec is not None,
-                })
+                logger.info(
+                    "ttl_eviction",
+                    extra={
+                        "model_id": model_id,
+                        "idle_seconds": round(idle_time, 1),
+                        "ttl_seconds": effective_ttl,
+                        "per_model_override": loaded.keep_alive_sec is not None,
+                    },
+                )
                 try:
                     await self.unload_model(model_id, reason="ttl")
                     evicted.append(model_id)
                     if self._event_bus:
-                        await self._event_bus.publish(ServerEvent(
-                            event_type="model_ttl_evicted",
-                            data={"model_id": model_id, "idle_seconds": round(idle_time, 1)},
-                        ))
+                        await self._event_bus.publish(
+                            ServerEvent(
+                                event_type="model_ttl_evicted",
+                                data={"model_id": model_id, "idle_seconds": round(idle_time, 1)},
+                            )
+                        )
                 except Exception as e:
-                    logger.error("ttl_eviction_failed", extra={
-                        "model_id": model_id, "error": str(e),
-                    })
+                    logger.error(
+                        "ttl_eviction_failed",
+                        extra={
+                            "model_id": model_id,
+                            "error": str(e),
+                        },
+                    )
 
         return evicted
 

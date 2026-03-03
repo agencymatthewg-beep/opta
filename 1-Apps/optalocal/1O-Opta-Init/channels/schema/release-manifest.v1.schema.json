@@ -147,10 +147,7 @@
         "platform",
         "arch",
         "packageType",
-        "url",
-        "sizeBytes",
-        "checksum",
-        "signature"
+        "url"
       ],
       "properties": {
         "platform": {
@@ -239,7 +236,7 @@
           "properties": {
             "macos": {
               "type": "array",
-              "minItems": 1,
+              "minItems": 0,
               "items": {
                 "allOf": [
                   {
@@ -258,7 +255,7 @@
             },
             "windows": {
               "type": "array",
-              "minItems": 1,
+              "minItems": 0,
               "items": {
                 "allOf": [
                   {

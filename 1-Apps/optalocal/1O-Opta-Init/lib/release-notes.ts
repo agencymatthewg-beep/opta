@@ -49,6 +49,11 @@ function toReleaseNotes(manifest: ChannelManifest): ReleaseNotes {
 
 const NOTES = [toReleaseNotes(stableManifest as ChannelManifest), toReleaseNotes(betaManifest as ChannelManifest)];
 
+function toTimestamp(value: string): number {
+  const ts = Date.parse(value);
+  return Number.isNaN(ts) ? 0 : ts;
+}
+
 export function getReleaseNotesById(releaseIdOrSlug: string): ReleaseNotes | null {
   return (
     NOTES.find(
@@ -58,5 +63,13 @@ export function getReleaseNotesById(releaseIdOrSlug: string): ReleaseNotes | nul
 }
 
 export function getAllReleaseIds(): string[] {
-  return NOTES.map((entry) => entry.notesSlug);
+  return getAllReleaseNotes().map((entry) => entry.notesSlug);
+}
+
+export function getAllReleaseNotes(): ReleaseNotes[] {
+  return [...NOTES].sort((a, b) => {
+    const delta = toTimestamp(b.publishedAt) - toTimestamp(a.publishedAt);
+    if (delta !== 0) return delta;
+    return b.releaseId.localeCompare(a.releaseId);
+  });
 }

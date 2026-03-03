@@ -110,23 +110,27 @@ export function useKeyboardSetup(options: UseKeyboardSetupOptions): void {
   const hasActiveTurn = isLoading || turnPhase === 'waiting' || turnPhase === 'streaming' || turnPhase === 'tool-call' || turnPhase === 'connecting';
 
   const handleEscape = useCallback(() => {
-    // Let active overlays own Escape semantics (cancel edit, back out, etc.).
-    // Global Escape should only cancel an active turn when no overlay is mounted.
-    if (overlayActive) {
-      return;
-    }
+    // Cancellation takes priority over overlay semantics so accidental prompts
+    // can always be stopped instantly.
     if (hasActiveTurn && onCancelTurn) {
       onCancelTurn();
+      return;
+    }
+    // Let active overlays own Escape semantics (cancel edit, back out, etc.)
+    // when there is no active turn to cancel.
+    if (overlayActive) {
+      return;
     }
   }, [overlayActive, hasActiveTurn, onCancelTurn]);
 
   const handleInterrupt = useCallback(() => {
-    if (overlayActive) {
-      closeOverlay();
-      return;
-    }
+    // Cancellation takes priority over overlay close on Ctrl+C.
     if (hasActiveTurn && onCancelTurn) {
       onCancelTurn();
+      return;
+    }
+    if (overlayActive) {
+      closeOverlay();
       return;
     }
     exit();

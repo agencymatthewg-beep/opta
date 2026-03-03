@@ -2,8 +2,25 @@ import { z } from 'zod';
 
 export const V3_VERSION = '3' as const;
 
-export const SessionModeSchema = z.enum(['chat', 'do']);
+export const SessionModeSchema = z.enum(['chat', 'do', 'plan', 'review', 'research']);
 export type SessionMode = z.infer<typeof SessionModeSchema>;
+export const TurnOutputFormatSchema = z.enum(['markdown', 'text', 'json']);
+export type TurnOutputFormat = z.infer<typeof TurnOutputFormatSchema>;
+export const TurnAutonomyModeSchema = z.enum(['execution', 'ceo']);
+export type TurnAutonomyMode = z.infer<typeof TurnAutonomyModeSchema>;
+
+export const TurnOverridesSchema = z.object({
+  model: z.string().optional(),
+  provider: z.string().optional(),
+  dangerous: z.boolean().optional(),
+  auto: z.boolean().optional(),
+  noCommit: z.boolean().optional(),
+  noCheckpoints: z.boolean().optional(),
+  format: TurnOutputFormatSchema.optional(),
+  autonomyMode: TurnAutonomyModeSchema.optional(),
+  autonomyLevel: z.number().int().min(1).max(5).optional(),
+});
+export type TurnOverrides = z.infer<typeof TurnOverridesSchema>;
 
 export const V3EventSchema = z.enum([
   'session.snapshot',
@@ -23,6 +40,8 @@ export const V3EventSchema = z.enum([
   'background.output',
   'background.status',
   'browser.action',
+  'agent.phase',
+  'atpo.intervene',
 ]);
 export type V3Event = z.infer<typeof V3EventSchema>;
 
@@ -43,6 +62,7 @@ export const ClientSubmitTurnSchema = z.object({
   mode: SessionModeSchema,
   metadata: z.record(z.string(), z.unknown()).optional(),
   lastSeenSeq: z.number().int().min(0).optional(),
+  overrides: TurnOverridesSchema.optional(),
 });
 export type ClientSubmitTurn = z.infer<typeof ClientSubmitTurnSchema>;
 
@@ -97,6 +117,28 @@ export interface BrowserActionEventPayload {
   risk: string;
   /** Whether the action was allowed outright (`allow`) or required gate approval (`gate`). */
   disposition: 'allow' | 'gate';
+}
+
+/** Payload for `agent.phase` events — emitted as sub-agents enter/exit execution phases. */
+export interface AgentPhaseEventPayload {
+  turnId: string;
+  phase: string;
+  agentId?: string;
+  agentType?: string;
+  taskDescription?: string;
+  toolName?: string;
+  toolCallCount?: number;
+  elapsedMs?: number;
+  dependsOn?: number;
+  resultPreview?: string;
+}
+
+/** Payload for `atpo.intervene` events — emitted when ATPO actively intervenes in a run. */
+export interface AtpoInterveneEventPayload {
+  turnId: string;
+  status: 'intervening';
+  provider?: 'anthropic' | 'gemini' | 'openai' | 'opencode_zen' | 'local';
+  reason?: string;
 }
 
 export const TurnErrorCodeSchema = z.enum([

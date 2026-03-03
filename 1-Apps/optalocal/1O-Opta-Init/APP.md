@@ -39,7 +39,7 @@ opis_mode: ecosystem
 
 ### What It Does
 
-Opta Init is the front door for the **Opta Init Desktop Manager**. The website does three things (distinct from the desktop app):
+Opta Init (**Opta Initializer**, short: **`opta init`** / `/init` in coding references) is the front door for the **Opta Init Desktop Manager**. The website does three things (distinct from the desktop app):
 
 1. Position Opta Init as the managed app manager/updater for the Opta stack.
 2. Provide the single user-facing download path for the desktop manager (macOS + Windows).
@@ -95,7 +95,7 @@ and future apps through signed manifests.
 
 No backend. No user DB. No auth.
 
-Distribution invariant: Opta Init Desktop Manager is the only user-downloadable app from OptaLocal websites.
+Distribution invariant: Opta Init (the **Opta Initializer**, short: **Opta Init**) is the only user-downloadable app from OptaLocal websites. It is the **Opta Initializer** for the stack.
 
 ---
 

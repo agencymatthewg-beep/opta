@@ -70,7 +70,9 @@ function flattenConfigObject(value: unknown, prefix = ""): ConfigEntry[] {
   }
 
   const entries: ConfigEntry[] = [];
-  for (const key of Object.keys(value).sort((left, right) => left.localeCompare(right))) {
+  for (const key of Object.keys(value).sort((left, right) =>
+    left.localeCompare(right),
+  )) {
     const nextKey = prefix ? `${prefix}.${key}` : key;
     const nextValue = value[key];
 
@@ -152,7 +154,10 @@ function parseEditorValue(input: string): unknown {
   }
 }
 
-function readPath(source: unknown, keyPath: string): { found: boolean; value: unknown } {
+function readPath(
+  source: unknown,
+  keyPath: string,
+): { found: boolean; value: unknown } {
   const segments = keyPath
     .split(".")
     .map((segment) => segment.trim())
@@ -226,7 +231,9 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
 
     return entries.filter((entry) => {
       const keyMatch = entry.key.toLowerCase().includes(normalizedQuery);
-      const valueMatch = entry.valueText.toLowerCase().includes(normalizedQuery);
+      const valueMatch = entry.valueText
+        .toLowerCase()
+        .includes(normalizedQuery);
       return keyMatch || valueMatch;
     });
   }, [entries, searchQuery]);
@@ -245,7 +252,9 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
       return;
     }
 
-    const stillVisible = filteredEntries.some((entry) => entry.key === selectedKey);
+    const stillVisible = filteredEntries.some(
+      (entry) => entry.key === selectedKey,
+    );
     if (!stillVisible) {
       setSelectedKey(filteredEntries[0]?.key ?? null);
     }
@@ -253,9 +262,13 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
 
   const runConfigOperation = useCallback(
     async (operationId: string, input: Record<string, unknown> = {}) => {
-      const response = await daemonClient.runOperation(connection, operationId, {
-        input,
-      });
+      const response = await daemonClient.runOperation(
+        connection,
+        operationId,
+        {
+          input,
+        },
+      );
 
       if (response.ok) return response.result;
 
@@ -394,7 +407,13 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
     } finally {
       setActionState(null);
     }
-  }, [editorValue, loadConfig, runConfigOperation, selectedKey, updateEntryValue]);
+  }, [
+    editorValue,
+    loadConfig,
+    runConfigOperation,
+    selectedKey,
+    updateEntryValue,
+  ]);
 
   const handleResetSelected = useCallback(async () => {
     if (!selectedKey) return;
@@ -465,7 +484,8 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
           <h2>Config Studio</h2>
           <p>
             Full daemon config management via {CONFIG_LIST_OPERATION},{" "}
-            {CONFIG_GET_OPERATION}, {CONFIG_SET_OPERATION}, and {CONFIG_RESET_OPERATION}.
+            {CONFIG_GET_OPERATION}, {CONFIG_SET_OPERATION}, and{" "}
+            {CONFIG_RESET_OPERATION}.
           </p>
         </div>
 
@@ -512,7 +532,10 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
       ) : null}
 
       {notice ? (
-        <div className={`config-op-notice config-op-notice-${notice.tone}`} role="status">
+        <div
+          className={`config-op-notice config-op-notice-${notice.tone}`}
+          role="status"
+        >
           <div className="config-op-notice-head">
             <strong>{notice.operationId}</strong>
             <span>{notice.message}</span>
@@ -529,12 +552,17 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
 
           {!catalogLoading && entries.length === 0 && !catalogError ? (
             <p className="operations-empty">
-              No config entries available. Ensure daemon operations include config.list.
+              No config entries available. Ensure daemon operations include
+              config.list.
             </p>
           ) : null}
 
-          {!catalogLoading && entries.length > 0 && filteredEntries.length === 0 ? (
-            <p className="operations-empty">No config entries match the current search.</p>
+          {!catalogLoading &&
+          entries.length > 0 &&
+          filteredEntries.length === 0 ? (
+            <p className="operations-empty">
+              No config entries match the current search.
+            </p>
           ) : null}
 
           <ul className="config-key-list">
@@ -574,7 +602,8 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
               </label>
 
               <p className="config-editor-hint">
-                Input accepts JSON when valid; otherwise the raw text is submitted.
+                Input accepts JSON when valid; otherwise the raw text is
+                submitted.
               </p>
 
               <div className="config-editor-actions">

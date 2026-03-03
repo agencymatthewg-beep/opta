@@ -335,16 +335,28 @@ class GenerationExecutor:
             try:
                 return await asyncio.wait_for(
                     self._do_generate(
-                        loaded, msg_dicts, messages, temperature,
-                        max_tokens, top_p, stop, tools, response_format,
-                        frequency_penalty, presence_penalty,
+                        loaded,
+                        msg_dicts,
+                        messages,
+                        temperature,
+                        max_tokens,
+                        top_p,
+                        stop,
+                        tools,
+                        response_format,
+                        frequency_penalty,
+                        presence_penalty,
                     ),
                     timeout=self._inference_timeout,
                 )
             except TimeoutError:
-                logger.error("inference_timeout", extra={
-                    "model_id": model_id, "timeout_sec": self._inference_timeout,
-                })
+                logger.error(
+                    "inference_timeout",
+                    extra={
+                        "model_id": model_id,
+                        "timeout_sec": self._inference_timeout,
+                    },
+                )
                 raise RuntimeError(
                     f"Inference timed out after {self._inference_timeout}s"
                 ) from None
@@ -384,11 +396,16 @@ class GenerationExecutor:
             _cleaned, parsed_json, is_valid, error = parse_json_output(content, response_format)
             if parsed_json is not None:
                 import json as _json
+
                 content = _json.dumps(parsed_json)
             if not is_valid:
-                logger.warning("structured_output_validation_failed", extra={
-                    "model_id": model_id, "error": error,
-                })
+                logger.warning(
+                    "structured_output_validation_failed",
+                    extra={
+                        "model_id": model_id,
+                        "error": error,
+                    },
+                )
 
         response_message: ResponseMessage
         finish_reason: str = "stop"
@@ -405,7 +422,8 @@ class GenerationExecutor:
                             id=tc.id,
                             type="function",
                             function=FunctionCall(
-                                name=tc.name, arguments=tc.arguments,
+                                name=tc.name,
+                                arguments=tc.arguments,
                             ),
                         )
                         for tc in parsed.tool_calls
@@ -414,11 +432,13 @@ class GenerationExecutor:
                 finish_reason = "tool_calls"
             else:
                 response_message = ResponseMessage(
-                    role="assistant", content=content,
+                    role="assistant",
+                    content=content,
                 )
         else:
             response_message = ResponseMessage(
-                role="assistant", content=content,
+                role="assistant",
+                content=content,
             )
 
         if (
@@ -470,6 +490,7 @@ class GenerationExecutor:
 
         if loaded.backend is not None:
             from typing import cast
+
             backend_result = await loaded.backend.generate(
                 messages=effective_msgs,
                 temperature=temperature,
@@ -483,10 +504,12 @@ class GenerationExecutor:
             backend_payload = self._pop_backend_speculative_payload(loaded.backend)
             if backend_payload is not None:
                 SpeculativeTelemetryHelper.update_speculative_from_payload(
-                    speculative_telemetry, backend_payload,
+                    speculative_telemetry,
+                    backend_payload,
                 )
             SpeculativeTelemetryHelper.finalize_speculative_telemetry(
-                speculative_telemetry, completion_tokens,
+                speculative_telemetry,
+                completion_tokens,
             )
             return content, prompt_tokens, completion_tokens, speculative_telemetry
 
@@ -508,23 +531,19 @@ class GenerationExecutor:
 
         if hasattr(result, "text"):
             content = result.text
-            prompt_tokens = (
-                getattr(result, "prompt_tokens", 0)
-                or estimate_prompt_tokens(messages)
-            )
-            completion_tokens = (
-                getattr(result, "completion_tokens", 0)
-                or max(1, len(content) // 4)
-            )
+            prompt_tokens = getattr(result, "prompt_tokens", 0) or estimate_prompt_tokens(messages)
+            completion_tokens = getattr(result, "completion_tokens", 0) or max(1, len(content) // 4)
         else:
             content = result if isinstance(result, str) else str(result)
             prompt_tokens = estimate_prompt_tokens(messages)
             completion_tokens = max(1, len(content) // 4)
         SpeculativeTelemetryHelper.update_speculative_from_payload(
-            speculative_telemetry, result,
+            speculative_telemetry,
+            result,
         )
         SpeculativeTelemetryHelper.finalize_speculative_telemetry(
-            speculative_telemetry, completion_tokens,
+            speculative_telemetry,
+            completion_tokens,
         )
         return content, prompt_tokens, completion_tokens, speculative_telemetry
 
@@ -592,7 +611,8 @@ class GenerationExecutor:
                                 delta, payload = self._coerce_backend_stream_chunk(chunk)
                                 if payload is not None:
                                     SpeculativeTelemetryHelper.update_speculative_from_payload(
-                                        speculative_telemetry, payload,
+                                        speculative_telemetry,
+                                        payload,
                                     )
                                 if delta:
                                     completion_units += 1
@@ -600,7 +620,8 @@ class GenerationExecutor:
                             backend_payload = self._pop_backend_speculative_payload(loaded.backend)
                             if backend_payload is not None:
                                 SpeculativeTelemetryHelper.update_speculative_from_payload(
-                                    speculative_telemetry, backend_payload,
+                                    speculative_telemetry,
+                                    backend_payload,
                                 )
                         else:
                             chat_kwargs: dict[str, Any] = {
@@ -620,7 +641,8 @@ class GenerationExecutor:
                             stream = loaded.engine.stream_chat(**chat_kwargs)
                             async for chunk in stream:
                                 SpeculativeTelemetryHelper.update_speculative_from_payload(
-                                    speculative_telemetry, chunk,
+                                    speculative_telemetry,
+                                    chunk,
                                 )
                                 delta = chunk.new_text if hasattr(chunk, "new_text") else str(chunk)
                                 if delta:
@@ -630,9 +652,13 @@ class GenerationExecutor:
                     logger.info("stream_cancelled", extra={"model_id": model_id})
                     raise
                 except TimeoutError:
-                    logger.error("stream_timeout", extra={
-                        "model_id": model_id, "timeout_sec": self._inference_timeout,
-                    })
+                    logger.error(
+                        "stream_timeout",
+                        extra={
+                            "model_id": model_id,
+                            "timeout_sec": self._inference_timeout,
+                        },
+                    )
                     raise RuntimeError(
                         f"Stream inference timed out after {self._inference_timeout}s"
                     ) from None
@@ -653,7 +679,8 @@ class GenerationExecutor:
                     self._concurrency.exit_inference(model_id)
         finally:
             SpeculativeTelemetryHelper.finalize_speculative_telemetry(
-                speculative_telemetry, completion_units,
+                speculative_telemetry,
+                completion_units,
             )
             self._speculative_telemetry_ctx.set(speculative_telemetry)
             self._concurrency._record_latency_sample(time.monotonic() - request_started)

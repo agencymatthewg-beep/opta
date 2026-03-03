@@ -9,11 +9,11 @@ import shutil
 import threading
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from huggingface_hub import HfApi, scan_cache_dir, snapshot_download
 from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
-from tqdm.auto import tqdm
+from tqdm import tqdm
 
 from opta_lmx.inference.types import DownloadTask
 from opta_lmx.monitoring.events import EventBus, ServerEvent
@@ -27,8 +27,8 @@ logger = logging.getLogger(__name__)
 _task_local: threading.local = threading.local()
 
 
-class _DownloadProgressTracker(tqdm):  # type: ignore[type-arg]
-    """Custom tqdm subclass that writes progress to a DownloadTask.
+class _DownloadProgressTracker:
+    """tqdm-compatible wrapper that writes progress to a DownloadTask.
 
     Passed to snapshot_download via tqdm_class so we capture
     real-time byte and file progress without patching internals.
@@ -36,22 +36,45 @@ class _DownloadProgressTracker(tqdm):  # type: ignore[type-arg]
     concurrent downloads on different threads never share state.
     """
 
+    _lock: Any | None = None
+
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         # Prefer an explicit kwarg; fall back to thread-local set by the runner.
         self._download_task: DownloadTask | None = kwargs.pop("download_task", None)
         if self._download_task is None:
             self._download_task = getattr(_task_local, "task", None)
-        super().__init__(*args, **kwargs)
+        self._inner = tqdm(*args, **kwargs)
 
-    def update(self, n: int = 1) -> bool | None:  # type: ignore[override]
-        result = super().update(n)
-        if self._download_task is not None and self.total:
-            self._download_task.downloaded_bytes = int(self.n)
-            self._download_task.total_bytes = int(self.total)
-            self._download_task.progress_percent = round(
-                (self.n / self.total) * 100, 1
-            )
+    @classmethod
+    def get_lock(cls) -> Any:
+        return tqdm.get_lock()
+
+    @classmethod
+    def set_lock(cls, lock: Any) -> None:
+        tqdm.set_lock(lock)
+
+    def __iter__(self) -> Any:
+        return iter(self._inner)
+
+    def __enter__(self) -> _DownloadProgressTracker:
+        self._inner.__enter__()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> bool | None:
+        return cast(bool | None, self._inner.__exit__(exc_type, exc_value, traceback))
+
+    def update(self, n: int = 1) -> bool | None:
+        result = cast(bool | None, self._inner.update(n))
+        total = getattr(self._inner, "total", None)
+        completed = getattr(self._inner, "n", 0)
+        if self._download_task is not None and total:
+            self._download_task.downloaded_bytes = int(completed)
+            self._download_task.total_bytes = int(total)
+            self._download_task.progress_percent = round((completed / total) * 100, 1)
         return result
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
 
 
 class ModelManager:
@@ -133,9 +156,7 @@ class ModelManager:
 
         # Spawn background download
         task.task = asyncio.create_task(
-            self._run_download(
-                download_id, repo_id, revision, allow_patterns, ignore_patterns
-            )
+            self._run_download(download_id, repo_id, revision, allow_patterns, ignore_patterns)
         )
 
         logger.info(
@@ -216,7 +237,7 @@ class ModelManager:
             def _run() -> str:
                 _task_local.task = task
                 try:
-                    return snapshot_download(  # type: ignore[return-value]
+                    return snapshot_download(
                         repo_id=repo_id,
                         revision=revision,
                         cache_dir=self._resolved_cache_dir(),
@@ -325,9 +346,7 @@ class ModelManager:
         """Return True when a download task is actively running."""
         if task.status != "downloading":
             return False
-        if task.task is not None and task.task.done():
-            return False
-        return True
+        return not (task.task is not None and task.task.done())
 
     def list_downloads(self, include_inactive: bool = False) -> list[DownloadTask]:
         """List known download tasks.
@@ -419,18 +438,21 @@ class ModelManager:
                 if latest_revision is None or rev.last_modified > latest_revision.last_modified:
                     latest_revision = rev
 
-            models.append({
-                "repo_id": repo.repo_id,
-                "local_path": str(repo.repo_path),
-                "size_bytes": repo.size_on_disk,
-                "downloaded_at": (
-                    float(latest_revision.last_modified.timestamp())
-                    if latest_revision and hasattr(latest_revision.last_modified, "timestamp")
-                    else float(latest_revision.last_modified)
-                    if latest_revision and isinstance(latest_revision.last_modified, (float, int))
-                    else 0.0
-                ),
-            })
+            models.append(
+                {
+                    "repo_id": repo.repo_id,
+                    "local_path": str(repo.repo_path),
+                    "size_bytes": repo.size_on_disk,
+                    "downloaded_at": (
+                        float(latest_revision.last_modified.timestamp())
+                        if latest_revision and hasattr(latest_revision.last_modified, "timestamp")
+                        else float(latest_revision.last_modified)
+                        if latest_revision
+                        and isinstance(latest_revision.last_modified, (float, int))
+                        else 0.0
+                    ),
+                }
+            )
 
         return models
 

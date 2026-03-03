@@ -4,7 +4,7 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
 const stats = [
-  { value: "512", label: "GB", sub: "Unified memory" },
+  { value: "512", label: "GB", sub: "Maximum Unified Memory" },
   { value: "22.2", label: "tok/s", sub: "Inference speed" },
   { value: "836", label: "GB", sub: "Largest model" },
   { value: "0", label: "ms", sub: "Cloud latency" },
@@ -24,7 +24,7 @@ export function HardwareStats() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Built for 512GB unified memory.
+            Built for Apple Silicon-scale workloads.
           </h2>
         </motion.div>
 
@@ -54,7 +54,7 @@ export function HardwareStats() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          Kimi K2.5 running live on M3 Ultra. No GPU. No cloud. No waiting.
+          From stack boot to inference and code workflow, everything remains local-first.
         </motion.p>
       </div>
     </section>

@@ -139,6 +139,14 @@ function queueLearningCapture(
     .catch(() => {});
 }
 
+function estimateCompletionBudget(contextLimit: number, messages: AgentMessage[]): number {
+  const promptTokens = estimateMessageTokens(messages);
+  const reservedTokens = 1024;
+  const maxBudget = contextLimit > 0 ? contextLimit - promptTokens - reservedTokens : Number.MAX_SAFE_INTEGER;
+  const budget = Math.max(256, Math.floor(maxBudget));
+  return Number.isFinite(budget) ? budget : 2048;
+}
+
 async function buildLearningRetrievalBlock(
   task: string,
   config: OptaConfig
@@ -265,6 +273,8 @@ export async function agentLoop(
 
   let toolCallCount = 0;
   let toolCallTurns = 0;
+  let stagnationCounter = 0;
+  let lastTurnSignature = '';
   const enforceAutonomyStages = effectiveConfig.autonomy.level >= 3;
   const objectiveReassessmentEnabled = effectiveConfig.autonomy.objectiveReassessment;
   let forcedFinalReassessmentTriggered = false;
@@ -445,6 +455,7 @@ export async function agentLoop(
       fallbackHosts: effectiveConfig.connection.fallbackHosts,
       port: effectiveConfig.connection.port,
       adminKey: effectiveConfig.connection.adminKey,
+    adminKeysByHost: effectiveConfig.connection.adminKeysByHost,
       timeoutMs: 4_000,
       maxRetries: 0,
     });
@@ -486,7 +497,7 @@ export async function agentLoop(
 
       // --- OPTA SUPERVISOR CHECK ---
       if (atpo.isEnabled && await atpo.checkThresholds(messages)) {
-        const intervention = await atpo.intervene(messages);
+        const intervention = await atpo.intervene(messages, options?.signal);
         if (intervention) {
           messages.push(intervention);
           continue; // Restart loop with the Atpo correction in context
@@ -532,7 +543,8 @@ export async function agentLoop(
           messages,
           client,
           model,
-          effectiveConfig.model.contextLimit
+          effectiveConfig.model.contextLimit,
+          options?.signal
         );
         const recoveredTokens = tokenEstimate - estimateMessageTokens(compacted);
         messages.splice(0, messages.length, ...compacted);
@@ -592,6 +604,7 @@ export async function agentLoop(
           messages: messages as Parameters<typeof client.chat.completions.create>[0]['messages'],
           tools: activeSchemas as Parameters<typeof client.chat.completions.create>[0]['tools'],
           tool_choice: 'auto',
+          max_tokens: estimateCompletionBudget(effectiveConfig.model.contextLimit, messages),
         },
         effectiveConfig.connection.retry,
         reconnectHandler,
@@ -822,9 +835,31 @@ export async function agentLoop(
         checkpointCount
       );
 
-      // Inspect tool results for Atpo
+      // Inspect tool results for Atpo & Stagnation
+      const addedMsgs = messages.slice(msgsLenBefore);
+      
+      if (addedMsgs.length > 0) {
+        // Compute structural hash of this turn's actions + outcomes
+        const turnSignature = 
+          JSON.stringify(toolCalls.map(tc => ({ name: tc.name, args: tc.args }))) + 
+          JSON.stringify(addedMsgs.map(m => m.content).join('|'));
+        
+        if (turnSignature === lastTurnSignature) {
+          stagnationCounter++;
+        } else {
+          stagnationCounter = 0;
+          lastTurnSignature = turnSignature;
+        }
+
+        if (stagnationCounter >= 3) {
+          if (!silent) console.log(chalk.red('\n  \u26a0 Stagnation detected: Agent is caught in a repetitive tool-error loop. Aborting ATPO cycle.'));
+          completionStatus = 'error';
+          completionMessage = 'Agent got stuck in a repetitive loop and was aborted by stagnation circuit breaker.';
+          break;
+        }
+      }
+
       if (atpo.isEnabled) {
-        const addedMsgs = messages.slice(msgsLenBefore);
         for (const m of addedMsgs) {
           if (m.role === 'tool') {
             atpo.onToolStart();

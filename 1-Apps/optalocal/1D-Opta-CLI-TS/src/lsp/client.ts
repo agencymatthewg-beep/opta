@@ -9,13 +9,17 @@ import { spawn, type ChildProcess } from 'node:child_process';
 import { readFile } from 'node:fs/promises';
 import type {
   Position,
+  Range,
   Location,
   SymbolInformation,
   DocumentSymbol,
+  Diagnostic,
+  CodeAction,
   WorkspaceEdit,
 } from './protocol.js';
 import { uriToFilePath } from './protocol.js';
 import { assertSafeExecutableCommand } from '../utils/command-safety.js';
+import { errorMessage } from '../utils/errors.js';
 
 export interface LspClientOptions {
   command: string;
@@ -89,6 +93,8 @@ export class LspClient {
               dynamicRegistration: false,
               hierarchicalDocumentSymbolSupport: true,
             },
+            codeAction: { dynamicRegistration: false },
+            diagnostic: { dynamicRegistration: false },
             rename: { dynamicRegistration: false },
           },
           workspace: {
@@ -239,6 +245,53 @@ export class LspClient {
       newName,
     });
     return (result as WorkspaceEdit) ?? { changes: {} };
+  }
+
+  async diagnostics(uri: string): Promise<Diagnostic[]> {
+    this.assertInitialized();
+    await this.ensureDocumentOpen(uri);
+
+    try {
+      const result = await this.sendRequest('textDocument/diagnostic', {
+        textDocument: { uri },
+      });
+      return this.normalizeDiagnostics(result);
+    } catch (err) {
+      if (this.isMethodUnsupported(err)) {
+        return [];
+      }
+      throw err;
+    }
+  }
+
+  async codeActions(
+    uri: string,
+    range: Range,
+    options?: { only?: string[] }
+  ): Promise<CodeAction[]> {
+    this.assertInitialized();
+    await this.ensureDocumentOpen(uri);
+
+    const context: { diagnostics: Diagnostic[]; only?: string[] } = {
+      diagnostics: [],
+    };
+    if (options?.only && options.only.length > 0) {
+      context.only = options.only;
+    }
+
+    try {
+      const result = await this.sendRequest('textDocument/codeAction', {
+        textDocument: { uri },
+        range,
+        context,
+      });
+      return this.normalizeCodeActions(result);
+    } catch (err) {
+      if (this.isMethodUnsupported(err)) {
+        return [];
+      }
+      throw err;
+    }
   }
 
   // --- Internal JSON-RPC ---
@@ -405,5 +458,59 @@ export class LspClient {
       return [result as Location];
     }
     return [];
+  }
+
+  private normalizeDiagnostics(result: unknown): Diagnostic[] {
+    if (!result) return [];
+    if (Array.isArray(result)) return result as Diagnostic[];
+
+    if (typeof result === 'object' && result && 'items' in (result as Record<string, unknown>)) {
+      const items = (result as Record<string, unknown>)['items'];
+      if (Array.isArray(items)) return items as Diagnostic[];
+    }
+
+    return [];
+  }
+
+  private normalizeCodeActions(result: unknown): CodeAction[] {
+    if (!result || !Array.isArray(result)) return [];
+
+    return result
+      .filter((entry): entry is Record<string, unknown> => !!entry && typeof entry === 'object')
+      .map((entry) => {
+        const title = typeof entry['title'] === 'string' ? entry['title'] : '(untitled action)';
+        const kind = typeof entry['kind'] === 'string' ? entry['kind'] : undefined;
+        const isPreferred = entry['isPreferred'] === true;
+        const disabled =
+          entry['disabled'] && typeof entry['disabled'] === 'object'
+            ? { reason: String((entry['disabled'] as Record<string, unknown>)['reason'] ?? '') }
+            : undefined;
+        const edit =
+          entry['edit'] && typeof entry['edit'] === 'object'
+            ? (entry['edit'] as WorkspaceEdit)
+            : undefined;
+        const command =
+          entry['command'] && typeof entry['command'] === 'object'
+            ? (entry['command'] as { title?: string; command?: string })
+            : undefined;
+
+        return {
+          title,
+          kind,
+          isPreferred,
+          disabled,
+          edit,
+          command,
+        };
+      });
+  }
+
+  private isMethodUnsupported(err: unknown): boolean {
+    const message = errorMessage(err).toLowerCase();
+    return (
+      message.includes('method not found') ||
+      message.includes('unsupported') ||
+      message.includes('not implemented')
+    );
   }
 }

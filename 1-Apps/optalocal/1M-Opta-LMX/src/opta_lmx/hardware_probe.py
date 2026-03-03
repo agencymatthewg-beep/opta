@@ -13,6 +13,15 @@ _cache_at: float = 0.0
 _CACHE_TTL = 300.0  # 5 minutes
 
 
+def _coerce_float(value: object) -> float | None:
+    """Convert numeric values to float; return None for non-numeric values."""
+    if isinstance(value, bool):
+        return float(int(value))
+    if isinstance(value, (int, float)):
+        return float(value)
+    return None
+
+
 def probe() -> dict[str, Any]:
     """Return hardware identity dict. Cached for 5 minutes."""
     global _cache, _cache_at
@@ -40,12 +49,12 @@ def probe() -> dict[str, Any]:
             info = mx.device_info()
             result["chip_name"] = info.get("device_name")
             result["architecture"] = info.get("architecture")
-            mem = info.get("memory_size", 0)
-            wset = info.get("max_recommended_working_set_size", 0)
+            mem = _coerce_float(info.get("memory_size", 0))
+            wset = _coerce_float(info.get("max_recommended_working_set_size", 0))
             result["memory_gb"] = round(mem / 1_073_741_824, 0) if mem else None
             result["max_working_set_gb"] = round(wset / 1_073_741_824, 1) if wset else None
             # GPU family from architecture string (e.g. applegpu_g15d -> g15d)
-            arch = result["architecture"] or ""
+            arch = result["architecture"] if isinstance(result["architecture"], str) else ""
             if "_" in arch:
                 result["gpu_family"] = arch.split("_", 1)[-1]
     except Exception:

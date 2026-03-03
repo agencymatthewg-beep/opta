@@ -50,7 +50,7 @@ export function SearchBar({ guides }: SearchBarProps) {
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
-          className="mt-3 space-y-2"
+          className="mt-3 space-y-2 relative z-50"
         >
           {results.length === 0 ? (
             <div className="obsidian rounded-xl border border-white/5 px-5 py-4">
@@ -62,16 +62,17 @@ export function SearchBar({ guides }: SearchBarProps) {
         </motion.div>
       )}
 
+      {/* Render all guides when not searching */}
       {!query && (
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.25 }}
-          className="mt-8 space-y-2"
+          className="mt-8 space-y-2 text-left"
         >
-          <p className="mb-4 text-xs font-mono text-text-muted">All guides</p>
+          <p className="mb-4 text-xs font-mono text-text-muted uppercase tracking-widest pl-2">Available Guides ({guides.length})</p>
           {guides.map((guide) => (
-            <GuideCard key={guide.slug} guide={guide} compact />
+            <GuideCard key={guide.slug} guide={guide} compact={false} />
           ))}
         </motion.div>
       )}

@@ -30,6 +30,9 @@ import { manageCommands } from './manage.js';
 import { browserCommands } from './browser.js';
 import { accountCommands } from './account.js';
 import { reportCommands } from './report.js';
+import { genuiCommands } from './genui.js';
+import { contextCommands } from './context.js';
+import { graphCommands } from './graph.js';
 
 // --- Build the registry ---
 
@@ -46,6 +49,9 @@ const allCommandDefs: SlashCommandDef[] = [
   ...browserCommands,
   ...accountCommands,
   ...reportCommands,
+  ...genuiCommands,
+  ...contextCommands,
+  ...graphCommands,
 ];
 
 /** Map from command/alias name (without slash) to the command definition. */

@@ -48,6 +48,7 @@ export interface UseOverlayManagerOptions {
   setWorkflowMode: React.Dispatch<React.SetStateAction<WorkflowMode>>;
   onModeChange?: (mode: WorkflowMode) => void;
   setResponseIntentTone: React.Dispatch<React.SetStateAction<ResponseIntentTone>>;
+  onSettingsSave?: (changes: Record<string, unknown>) => void;
 }
 
 export interface UseOverlayManagerReturn {
@@ -110,6 +111,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
     setWorkflowMode,
     onModeChange,
     setResponseIntentTone,
+    onSettingsSave,
   } = options;
 
   // --- Overlay state ---
@@ -319,6 +321,10 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
       if (isResponseIntentTone(toneValue)) {
         setResponseIntentTone(toneValue);
       }
+      if (onSettingsSave) {
+        onSettingsSave(changes);
+        return;
+      }
       import('../../core/config.js')
         .then(({ saveConfig }) => {
           saveConfig(changes).catch(() => {
@@ -329,7 +335,7 @@ export function useOverlayManager(options: UseOverlayManagerOptions): UseOverlay
           /* ignore */
         });
     },
-    [setResponseIntentTone]
+    [onSettingsSave, setResponseIntentTone]
   );
 
   const handleToggleSafeMode = useCallback(() => {

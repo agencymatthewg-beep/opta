@@ -6,23 +6,93 @@ search. Uses the rank-bm25 library (BM25Okapi) for scoring.
 
 from __future__ import annotations
 
+import importlib
 import logging
 import re
+from collections.abc import Iterable
 from dataclasses import dataclass, field
+from typing import Protocol, cast
 
 logger = logging.getLogger(__name__)
 
 # Common English stop words for filtering
-_STOP_WORDS = frozenset({
-    "a", "an", "the", "is", "it", "in", "on", "at", "to", "of", "for",
-    "and", "or", "but", "not", "with", "as", "by", "this", "that", "from",
-    "be", "are", "was", "were", "been", "have", "has", "had", "do", "does",
-    "did", "will", "would", "could", "should", "may", "might", "can",
-    "i", "you", "he", "she", "we", "they", "me", "him", "her", "us", "them",
-})
+_STOP_WORDS = frozenset(
+    {
+        "a",
+        "an",
+        "the",
+        "is",
+        "it",
+        "in",
+        "on",
+        "at",
+        "to",
+        "of",
+        "for",
+        "and",
+        "or",
+        "but",
+        "not",
+        "with",
+        "as",
+        "by",
+        "this",
+        "that",
+        "from",
+        "be",
+        "are",
+        "was",
+        "were",
+        "been",
+        "have",
+        "has",
+        "had",
+        "do",
+        "does",
+        "did",
+        "will",
+        "would",
+        "could",
+        "should",
+        "may",
+        "might",
+        "can",
+        "i",
+        "you",
+        "he",
+        "she",
+        "we",
+        "they",
+        "me",
+        "him",
+        "her",
+        "us",
+        "them",
+    }
+)
 
 # Simple tokenizer: split on non-alphanumeric, lowercase, filter short/stop words
 _TOKEN_RE = re.compile(r"[a-zA-Z0-9_]+")
+
+
+class _BM25Model(Protocol):
+    """Structural type for rank_bm25 models used by this module."""
+
+    def get_scores(self, query_tokens: list[str]) -> Iterable[float]:
+        """Return per-document relevance scores."""
+
+
+class _BM25Factory(Protocol):
+    """Callable constructor for a BM25 model implementation."""
+
+    def __call__(self, corpus: list[list[str]]) -> _BM25Model:
+        """Build a BM25 model from tokenized documents."""
+
+
+class _RankBm25Module(Protocol):
+    """Structural type for the optional rank_bm25 module."""
+
+    BM25Okapi: _BM25Factory
 
 
 def tokenize(text: str) -> list[str]:
@@ -46,7 +116,7 @@ class BM25Index:
     """
 
     _corpus: list[list[str]] = field(default_factory=list)
-    _bm25: object | None = field(default=None, repr=False)
+    _bm25: _BM25Model | None = field(default=None, repr=False)
 
     def add(self, texts: list[str]) -> None:
         """Add documents to the BM25 index.
@@ -64,9 +134,7 @@ class BM25Index:
         Args:
             indices: Set of document indices to remove.
         """
-        self._corpus = [
-            doc for i, doc in enumerate(self._corpus) if i not in indices
-        ]
+        self._corpus = [doc for i, doc in enumerate(self._corpus) if i not in indices]
         self._rebuild()
 
     def clear(self) -> None:
@@ -91,12 +159,10 @@ class BM25Index:
         if not query_tokens:
             return []
 
-        scores = self._bm25.get_scores(query_tokens)  # type: ignore[union-attr]
+        scores = self._bm25.get_scores(query_tokens)
 
         # Get top-k indices with positive scores
-        indexed_scores = [
-            (i, float(s)) for i, s in enumerate(scores) if s > 0
-        ]
+        indexed_scores = [(i, float(s)) for i, s in enumerate(scores) if s > 0]
         indexed_scores.sort(key=lambda x: x[1], reverse=True)
         return indexed_scores[:top_k]
 
@@ -118,10 +184,9 @@ class BM25Index:
             return
 
         try:
-            from rank_bm25 import BM25Okapi
-
-            self._bm25 = BM25Okapi(self._corpus)
-        except (ImportError, ZeroDivisionError):
+            module = cast(_RankBm25Module, importlib.import_module("rank_bm25"))
+            self._bm25 = module.BM25Okapi(self._corpus)
+        except (ImportError, AttributeError, ZeroDivisionError):
             self._bm25 = None
 
 

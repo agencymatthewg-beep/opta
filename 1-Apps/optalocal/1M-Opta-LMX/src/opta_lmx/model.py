@@ -7,12 +7,13 @@ import json
 import logging
 import secrets
 import shutil
+import threading
 import time
 from pathlib import Path
 from typing import Any, cast
 
 from huggingface_hub import HfApi, scan_cache_dir, snapshot_download
-from tqdm.auto import tqdm  # type: ignore[import-untyped]
+from tqdm.auto import tqdm
 
 from opta_lmx.inference.types import DownloadTask
 from opta_lmx.monitoring.events import EventBus, ServerEvent
@@ -26,32 +27,57 @@ _MIN_FREE_DISK_BYTES = 5 * (1024**3)
 _DownloadKey = tuple[str, str | None, tuple[str, ...], tuple[str, ...]]
 
 
-class _DownloadProgressTracker(tqdm):  # type: ignore[misc]
-    """Custom tqdm subclass that writes progress to a DownloadTask.
+# Thread-local storage: each asyncio.to_thread worker sets this before
+# calling snapshot_download so _DownloadProgressTracker can pick it up
+# without requiring a dynamically created subclass per download.
+_task_local: threading.local = threading.local()
+
+
+class _DownloadProgressTracker:
+    """tqdm-compatible wrapper that writes progress to a DownloadTask.
 
     Passed to snapshot_download via tqdm_class so we capture
     real-time byte and file progress without patching internals.
     """
 
-    _download_task: DownloadTask | None = None
-    _default_download_task: DownloadTask | None = None
+    _lock: Any | None = None
 
     def __init__(self, *args: Any, **kwargs: Any) -> None:
-        # Store and remove our custom kwarg before passing to tqdm
-        self._download_task = kwargs.pop("download_task", None)
+        self._download_task: DownloadTask | None = kwargs.pop("download_task", None)
         if self._download_task is None:
-            self._download_task = getattr(self.__class__, "_default_download_task", None)
-        super().__init__(*args, **kwargs)
+            self._download_task = getattr(_task_local, "task", None)
+        self._inner = tqdm(*args, **kwargs)
+
+    @classmethod
+    def get_lock(cls) -> Any:
+        return tqdm.get_lock()
+
+    @classmethod
+    def set_lock(cls, lock: Any) -> None:
+        tqdm.set_lock(lock)
+
+    def __iter__(self) -> Any:
+        return iter(self._inner)
+
+    def __enter__(self) -> _DownloadProgressTracker:
+        self._inner.__enter__()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_value: Any, traceback: Any) -> bool | None:
+        return cast(bool | None, self._inner.__exit__(exc_type, exc_value, traceback))
 
     def update(self, n: int = 1) -> bool | None:
-        result = cast(bool | None, super().update(n))
-        if self._download_task is not None and self.total:
-            self._download_task.downloaded_bytes = int(self.n)
-            self._download_task.total_bytes = int(self.total)
-            self._download_task.progress_percent = round(
-                (self.n / self.total) * 100, 1
-            )
+        result = cast(bool | None, self._inner.update(n))
+        total = getattr(self._inner, "total", None)
+        completed = getattr(self._inner, "n", 0)
+        if self._download_task is not None and total:
+            self._download_task.downloaded_bytes = int(completed)
+            self._download_task.total_bytes = int(total)
+            self._download_task.progress_percent = round((completed / total) * 100, 1)
         return result
+
+    def __getattr__(self, name: str) -> Any:
+        return getattr(self._inner, name)
 
 
 class ModelManager:
@@ -176,9 +202,7 @@ class ModelManager:
 
         # Spawn background download
         download_handle = asyncio.create_task(
-            self._run_download(
-                download_id, repo_id, revision, allow_patterns, ignore_patterns
-            )
+            self._run_download(download_id, repo_id, revision, allow_patterns, ignore_patterns)
         )
         task.task = download_handle
 
@@ -250,24 +274,24 @@ class ModelManager:
         task = self._downloads[download_id]
 
         try:
-            # tqdm_class must be a class (not a function), otherwise HF internals
-            # can break on class-level lock access ("...get_lock" errors).
-            progress_tracker_cls = type(
-                f"_DownloadProgressTracker_{download_id}",
-                (_DownloadProgressTracker,),
-                {"_default_download_task": task},
-            )
+            # Set the task in the worker thread via thread-local storage so
+            # _DownloadProgressTracker can find it without dynamic subclasses.
+            def _run() -> str:
+                _task_local.task = task
+                try:
+                    return snapshot_download(
+                        repo_id=repo_id,
+                        revision=revision,
+                        allow_patterns=allow_patterns,
+                        ignore_patterns=ignore_patterns,
+                        token=self._hf_token,
+                        tqdm_class=_DownloadProgressTracker,
+                        cache_dir=self._cache_dir(),
+                    )
+                finally:
+                    _task_local.task = None
 
-            local_path: str = await asyncio.to_thread(
-                snapshot_download,  # type: ignore[arg-type]
-                repo_id=repo_id,
-                revision=revision,
-                allow_patterns=allow_patterns,
-                ignore_patterns=ignore_patterns,
-                token=self._hf_token,
-                tqdm_class=progress_tracker_cls,
-                cache_dir=self._cache_dir(),
-            )
+            local_path: str = await asyncio.to_thread(_run)
 
             task.status = "completed"
             task.local_path = local_path
@@ -296,15 +320,17 @@ class ModelManager:
             )
 
             if self._event_bus:
-                await self._event_bus.publish(ServerEvent(
-                    event_type="download_completed",
-                    data={
-                        "download_id": download_id,
-                        "repo_id": repo_id,
-                        "local_path": local_path,
-                        "duration_sec": round(time.time() - task.started_at, 1),
-                    },
-                ))
+                await self._event_bus.publish(
+                    ServerEvent(
+                        event_type="download_completed",
+                        data={
+                            "download_id": download_id,
+                            "repo_id": repo_id,
+                            "local_path": local_path,
+                            "duration_sec": round(time.time() - task.started_at, 1),
+                        },
+                    )
+                )
         except asyncio.CancelledError:
             task.status = "failed"
             task.error = "cancelled"
@@ -332,14 +358,16 @@ class ModelManager:
             )
 
             if self._event_bus:
-                await self._event_bus.publish(ServerEvent(
-                    event_type="download_failed",
-                    data={
-                        "download_id": download_id,
-                        "repo_id": repo_id,
-                        "error": str(e),
-                    },
-                ))
+                await self._event_bus.publish(
+                    ServerEvent(
+                        event_type="download_failed",
+                        data={
+                            "download_id": download_id,
+                            "repo_id": repo_id,
+                            "error": str(e),
+                        },
+                    )
+                )
 
     def get_download_progress(self, download_id: str) -> DownloadTask | None:
         """Get the current state of a download.
@@ -442,18 +470,21 @@ class ModelManager:
                 continue
 
             local_path = self._resolve_repo_local_path(repo, latest_revision)
-            models.append({
-                "repo_id": repo.repo_id,
-                "local_path": local_path,
-                "size_bytes": repo.size_on_disk,
-                "downloaded_at": (
-                    float(latest_revision.last_modified.timestamp())
-                    if latest_revision and hasattr(latest_revision.last_modified, "timestamp")
-                    else float(latest_revision.last_modified)
-                    if latest_revision and isinstance(latest_revision.last_modified, (float, int))
-                    else 0.0
-                ),
-            })
+            models.append(
+                {
+                    "repo_id": repo.repo_id,
+                    "local_path": local_path,
+                    "size_bytes": repo.size_on_disk,
+                    "downloaded_at": (
+                        float(latest_revision.last_modified.timestamp())
+                        if latest_revision and hasattr(latest_revision.last_modified, "timestamp")
+                        else float(latest_revision.last_modified)
+                        if latest_revision
+                        and isinstance(latest_revision.last_modified, (float, int))
+                        else 0.0
+                    ),
+                }
+            )
 
         self._available_cache = list(models)
         self._available_cache_at = time.monotonic()
@@ -601,11 +632,13 @@ class ModelManager:
         if not isinstance(weight_map, dict):
             return True, None
 
-        missing_files = sorted({
-            filename
-            for filename in weight_map.values()
-            if isinstance(filename, str) and not (snapshot_path / filename).exists()
-        })
+        missing_files = sorted(
+            {
+                filename
+                for filename in weight_map.values()
+                if isinstance(filename, str) and not (snapshot_path / filename).exists()
+            }
+        )
         if missing_files:
             preview = ",".join(missing_files[:5])
             return False, f"missing_weight_files:{len(missing_files)}:{preview}"

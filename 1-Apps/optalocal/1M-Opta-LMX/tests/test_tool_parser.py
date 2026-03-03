@@ -64,12 +64,12 @@ TYPED_TOOLS: list[dict[str, Any]] = [
 
 
 SIMPLE_TOOL_CALL_XML = (
-    '<minimax:tool_call>\n'
+    "<minimax:tool_call>\n"
     '<invoke name="get_weather">\n'
     '<parameter name="location">San Francisco</parameter>\n'
     '<parameter name="unit">celsius</parameter>\n'
-    '</invoke>\n'
-    '</minimax:tool_call>'
+    "</invoke>\n"
+    "</minimax:tool_call>"
 )
 
 
@@ -100,14 +100,14 @@ class TestNonStreamingParsing:
     def test_multiple_invokes_in_one_block(self) -> None:
         """Parse two invokes in a single <minimax:tool_call> block."""
         xml = (
-            '<minimax:tool_call>\n'
+            "<minimax:tool_call>\n"
             '<invoke name="get_weather">\n'
             '<parameter name="location">Tokyo</parameter>\n'
-            '</invoke>\n'
+            "</invoke>\n"
             '<invoke name="get_weather">\n'
             '<parameter name="location">London</parameter>\n'
-            '</invoke>\n'
-            '</minimax:tool_call>'
+            "</invoke>\n"
+            "</minimax:tool_call>"
         )
         parser = MiniMaxToolParser()
         result = parser.parse_tool_calls(xml, WEATHER_TOOLS)
@@ -157,10 +157,7 @@ class TestNonStreamingParsing:
 
     def test_tool_calls_with_thinking(self) -> None:
         """<think>...</think> blocks stripped before tool calls."""
-        text = (
-            "<think>I need to check the weather.</think>\n"
-            f"{SIMPLE_TOOL_CALL_XML}"
-        )
+        text = f"<think>I need to check the weather.</think>\n{SIMPLE_TOOL_CALL_XML}"
         parser = MiniMaxToolParser()
         result = parser.parse_tool_calls(text, WEATHER_TOOLS)
 
@@ -202,11 +199,11 @@ class TestNonStreamingParsing:
     def test_unquoted_attribute_names(self) -> None:
         """Handle unquoted attribute values in invoke/parameter tags."""
         xml = (
-            '<minimax:tool_call>\n'
-            '<invoke name=get_weather>\n'
-            '<parameter name=location>Paris</parameter>\n'
-            '</invoke>\n'
-            '</minimax:tool_call>'
+            "<minimax:tool_call>\n"
+            "<invoke name=get_weather>\n"
+            "<parameter name=location>Paris</parameter>\n"
+            "</invoke>\n"
+            "</minimax:tool_call>"
         )
         parser = MiniMaxToolParser()
         result = parser.parse_tool_calls(xml, WEATHER_TOOLS)
@@ -269,7 +266,7 @@ class TestTypeCoercion:
     def test_typed_tool_call_parsing(self) -> None:
         """Full tool call with typed parameters parsed correctly."""
         xml = (
-            '<minimax:tool_call>\n'
+            "<minimax:tool_call>\n"
             '<invoke name="search">\n'
             '<parameter name="query">python tutorials</parameter>\n'
             '<parameter name="limit">10</parameter>\n'
@@ -277,8 +274,8 @@ class TestTypeCoercion:
             '<parameter name="active">true</parameter>\n'
             '<parameter name="tags">["python", "beginner"]</parameter>\n'
             '<parameter name="metadata">{"source": "web"}</parameter>\n'
-            '</invoke>\n'
-            '</minimax:tool_call>'
+            "</invoke>\n"
+            "</minimax:tool_call>"
         )
         parser = MiniMaxToolParser()
         result = parser.parse_tool_calls(xml, TYPED_TOOLS)
@@ -315,9 +312,7 @@ class TestThinkStripping:
         assert result == "Just regular content."
 
     def test_multiple_think_blocks(self) -> None:
-        result = strip_thinking(
-            "<think>first</think>A<think>second</think>B"
-        )
+        result = strip_thinking("<think>first</think>A<think>second</think>B")
         assert result == "AB"
 
     def test_empty_after_strip(self) -> None:
@@ -368,10 +363,15 @@ class TestStreamingParser:
 
         # Split the XML into realistic token-sized chunks
         chunks = [
-            "<minimax", ":tool_call", ">\n<invoke",
-            ' name="get_weather"', ">\n<parameter",
-            ' name="location">', "San Francisco",
-            "</parameter>\n</invoke>", "\n</minimax:tool_call>",
+            "<minimax",
+            ":tool_call",
+            ">\n<invoke",
+            ' name="get_weather"',
+            ">\n<parameter",
+            ' name="location">',
+            "San Francisco",
+            "</parameter>\n</invoke>",
+            "\n</minimax:tool_call>",
         ]
 
         for chunk in chunks:
@@ -394,7 +394,9 @@ class TestStreamingParser:
         tool_deltas = []
 
         chunks = [
-            "Let me ", "check ", "the weather",
+            "Let me ",
+            "check ",
+            "the weather",
             f".\n\n{SIMPLE_TOOL_CALL_XML}",
         ]
 
@@ -438,14 +440,14 @@ class TestStreamingParser:
     def test_multiple_tools_streamed(self) -> None:
         """Two invokes in one block parsed sequentially."""
         xml = (
-            '<minimax:tool_call>\n'
+            "<minimax:tool_call>\n"
             '<invoke name="get_weather">\n'
             '<parameter name="location">Tokyo</parameter>\n'
-            '</invoke>\n'
+            "</invoke>\n"
             '<invoke name="get_weather">\n'
             '<parameter name="location">London</parameter>\n'
-            '</invoke>\n'
-            '</minimax:tool_call>'
+            "</invoke>\n"
+            "</minimax:tool_call>"
         )
         parser = StreamingToolParser(tools=WEATHER_TOOLS)
         all_deltas = []
@@ -472,7 +474,9 @@ class TestStreamingParser:
         tool_deltas = []
 
         chunks = [
-            "<think>", "Let me think...", "</think>",
+            "<think>",
+            "Let me think...",
+            "</think>",
             SIMPLE_TOOL_CALL_XML,
         ]
 
@@ -519,6 +523,7 @@ class TestWrapStreamWithToolParsing:
     @pytest.mark.asyncio
     async def test_content_passthrough(self) -> None:
         """Plain content passes through as StreamChunk with content."""
+
         async def token_gen() -> AsyncIterator[str]:
             for t in ["Hello", " world"]:
                 yield t
@@ -533,12 +538,17 @@ class TestWrapStreamWithToolParsing:
     @pytest.mark.asyncio
     async def test_tool_call_yields_delta(self) -> None:
         """Tool call XML yields StreamChunk with tool_call_delta."""
+
         async def token_gen() -> AsyncIterator[str]:
             yield SIMPLE_TOOL_CALL_XML
 
-        chunks = [c async for c in wrap_stream_with_tool_parsing(
-            token_gen(), tools=WEATHER_TOOLS,
-        )]
+        chunks = [
+            c
+            async for c in wrap_stream_with_tool_parsing(
+                token_gen(),
+                tools=WEATHER_TOOLS,
+            )
+        ]
 
         tool_chunks = [c for c in chunks if c.tool_call_delta is not None]
         assert len(tool_chunks) == 1
@@ -548,13 +558,18 @@ class TestWrapStreamWithToolParsing:
     @pytest.mark.asyncio
     async def test_mixed_content_and_tools(self) -> None:
         """Content followed by tool call yields both types."""
+
         async def token_gen() -> AsyncIterator[str]:
             yield "Here's the weather: "
             yield SIMPLE_TOOL_CALL_XML
 
-        chunks = [c async for c in wrap_stream_with_tool_parsing(
-            token_gen(), tools=WEATHER_TOOLS,
-        )]
+        chunks = [
+            c
+            async for c in wrap_stream_with_tool_parsing(
+                token_gen(),
+                tools=WEATHER_TOOLS,
+            )
+        ]
 
         content_chunks = [c for c in chunks if c.content is not None]
         tool_chunks = [c for c in chunks if c.tool_call_delta is not None]
@@ -573,7 +588,8 @@ class TestEngineIntegration:
 
     @pytest.mark.asyncio
     async def test_generate_with_tool_calls(
-        self, mock_engine: Any,
+        self,
+        mock_engine: Any,
     ) -> None:
         """engine.generate() returns tool_calls when XML detected."""
         from opta_lmx.inference.engine import InferenceEngine
@@ -625,7 +641,8 @@ class TestEngineIntegration:
 
     @pytest.mark.asyncio
     async def test_generate_without_tools_no_parsing(
-        self, mock_engine: Any,
+        self,
+        mock_engine: Any,
     ) -> None:
         """engine.generate() without tools returns raw content."""
         from opta_lmx.inference.engine import InferenceEngine
@@ -669,7 +686,8 @@ class TestEngineIntegration:
 
     @pytest.mark.asyncio
     async def test_generate_with_tools_but_no_xml(
-        self, mock_engine: Any,
+        self,
+        mock_engine: Any,
     ) -> None:
         """Tools requested but model responds without XML — returns content."""
         from opta_lmx.inference.engine import InferenceEngine

@@ -18,6 +18,8 @@ export const CACHEABLE_TOOLS = new Set([
   'lsp_hover',
   'lsp_symbols',
   'lsp_document_symbols',
+  'lsp_diagnostics',
+  'lsp_code_actions',
   'git_status',
   'git_diff',
   'git_log',

@@ -35,9 +35,7 @@ def _write_session(sessions_dir: Path, session_id: str, **kwargs: object) -> Non
         "toolCallCount": 0,
         "compacted": False,
     }
-    (sessions_dir / f"{session_id}.json").write_text(
-        json.dumps(data), encoding="utf-8"
-    )
+    (sessions_dir / f"{session_id}.json").write_text(json.dumps(data), encoding="utf-8")
 
 
 @pytest.fixture
@@ -167,7 +165,8 @@ async def test_get_session_found(
 ) -> None:
     client, sessions_dir = sessions_client
     _write_session(
-        sessions_dir, "s1",
+        sessions_dir,
+        "s1",
         title="Full Session",
         messages=[{"role": "user", "content": "hello"}],
     )

@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 
-import { readFile } from 'node:fs/promises';
+import { readFile, access } from 'node:fs/promises';
+import { constants as fsConstants } from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
@@ -314,12 +315,27 @@ async function readJsonFile(filePath) {
 }
 
 async function detectManagerVersion() {
-  const cargoRaw = await readFile(defaultCargoTomlPath, 'utf-8');
-  const match = cargoRaw.match(/^version\s*=\s*"([^"]+)"/m);
-  if (!match) {
-    throw new Error(`Could not determine manager version from ${path.relative(repoRoot, defaultCargoTomlPath)}`);
+  try {
+    await access(defaultCargoTomlPath, fsConstants.F_OK);
+    const cargoRaw = await readFile(defaultCargoTomlPath, 'utf-8');
+    const match = cargoRaw.match(/^version\s*=\s*"([^"]+)"/m);
+    if (!match) {
+      throw new Error(`Could not determine manager version from ${path.relative(repoRoot, defaultCargoTomlPath)}`);
+    }
+    return match[1];
+  } catch (error) {
+    const fallbackPath = path.join(repoRoot, 'channels', 'manager-updates', 'stable.json');
+    const fallback = await readJsonFile(fallbackPath).catch(() => null);
+    const fallbackVersion = fallback?.version;
+    if (typeof fallbackVersion === 'string' && fallbackVersion.length > 0) {
+      console.warn(
+        `WARN: Could not read ${path.relative(repoRoot, defaultCargoTomlPath)} (${error instanceof Error ? error.message : String(error)}). ` +
+          `Falling back to stable manifest version ${fallbackVersion} for URL validation checks.`
+      );
+      return fallbackVersion;
+    }
+    throw new Error(`Could not determine manager version from ${path.relative(repoRoot, defaultCargoTomlPath)} and no fallback manifest version available`);
   }
-  return match[1];
 }
 
 function normalizeManifestInputs(manifestInputs) {

@@ -77,21 +77,25 @@ async def execute_quantize_spec(
     try:
         size = await impl(spec)
     except FileExistsError as exc:
-        raise QuantizeWorkerError(LoaderFailure(
-            code="output_path_exists",
-            message=str(exc),
-            metadata={"output_path": spec.output_path},
-        )) from exc
+        raise QuantizeWorkerError(
+            LoaderFailure(
+                code="output_path_exists",
+                message=str(exc),
+                metadata={"output_path": spec.output_path},
+            )
+        ) from exc
     except Exception as exc:
         # Best-effort cleanup for partially-written output on worker-side failures.
         out = Path(spec.output_path)
         if await asyncio.to_thread(out.exists):
             await asyncio.to_thread(lambda: shutil.rmtree(out, ignore_errors=True))
-        raise QuantizeWorkerError(LoaderFailure(
-            code="quantize_failed",
-            message=str(exc) or exc.__class__.__name__,
-            metadata={"output_path": spec.output_path, "source_model": spec.source_model},
-        )) from exc
+        raise QuantizeWorkerError(
+            LoaderFailure(
+                code="quantize_failed",
+                message=str(exc) or exc.__class__.__name__,
+                metadata={"output_path": spec.output_path, "source_model": spec.source_model},
+            )
+        ) from exc
 
     return QuantizeResult(ok=True, output_path=spec.output_path, output_size_bytes=size)
 
@@ -116,10 +120,13 @@ def main() -> int:
     """Read one JSON QuantizeSpec payload from stdin and emit one JSON response line."""
     raw = sys.stdin.read()
     if not raw.strip():
-        _write_json_line(sys.stderr, LoaderFailure(
-            code="quantize_failed",
-            message="missing_quantize_spec",
-        ).to_dict())
+        _write_json_line(
+            sys.stderr,
+            LoaderFailure(
+                code="quantize_failed",
+                message="missing_quantize_spec",
+            ).to_dict(),
+        )
         return 2
 
     try:

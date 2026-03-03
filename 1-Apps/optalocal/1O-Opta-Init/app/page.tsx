@@ -14,6 +14,8 @@ import {
 import { DOWNLOAD_TARGETS, resolveDownloadAvailability, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
 import { OptaRing } from "@/components/OptaRing";
 
+type Platform = "macos" | "windows" | "linux" | "other";
+
 // Icon mapper for features
 const getIcon = (name: string) => {
   switch (name) {
@@ -29,6 +31,7 @@ const getIcon = (name: string) => {
 
 export default function Home() {
   const [downloadState, setDownloadState] = useState<DownloadAvailabilityMap | null>(null);
+  const [detectedPlatform, setDetectedPlatform] = useState<Platform>("other");
 
   useEffect(() => {
     let mounted = true;
@@ -43,6 +46,14 @@ export default function Home() {
     };
 
     void detectAssets();
+    if (typeof navigator !== "undefined") {
+      const ua = navigator.userAgent.toLowerCase();
+      if (ua.includes("mac")) setDetectedPlatform("macos");
+      else if (ua.includes("win")) setDetectedPlatform("windows");
+      else if (ua.includes("linux")) setDetectedPlatform("linux");
+      else setDetectedPlatform("other");
+    }
+
     return () => {
       mounted = false;
     };
@@ -106,9 +117,12 @@ export default function Home() {
           </div>
           <nav className="hidden md:flex gap-10 text-xs tracking-[0.2em] uppercase font-medium text-text-secondary">
             <a href="#features" className="hover:text-primary transition-colors">Features</a>
+            <a href="/setup" className="hover:text-primary transition-colors">Setup</a>
             <a href="#showcase" className="hover:text-primary transition-colors">Manager</a>
             <a href="#install" className="hover:text-primary transition-colors">Install</a>
             <a href="#downloads" className="hover:text-primary transition-colors text-primary">Download</a>
+            <a href="/changelog" className="hover:text-primary transition-colors">Changelog</a>
+            <a href="/api-reference" className="hover:text-primary transition-colors">API</a>
             <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>
           </nav>
         </div>
@@ -128,7 +142,7 @@ export default function Home() {
             <div className="absolute top-20 right-1/3 w-1.5 h-1.5 bg-primary/40 rounded-full animate-[ping_6s_cubic-bezier(0,0,0.2,1)_infinite]"></div>
 
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-primary/30 bg-primary/10 text-xs text-primary uppercase tracking-widest mb-8">
-              <Zap className="w-3 h-3" /> Opta Init App Manager
+              <Zap className="w-3 h-3" /> Opta Init (Opta Initializer)
             </div>
 
             <h1 className="text-[10vw] leading-[0.9] font-bold tracking-tighter uppercase">
@@ -149,7 +163,7 @@ export default function Home() {
           <div className="md:col-span-4 md:col-start-2">
             <motion.div variants={lineRevealX} className="h-px bg-white/10 w-full mb-8" />
             <motion.p variants={textUp} className="text-lg font-light leading-relaxed text-text-secondary">
-              Opta Init is the manager, updater, and launcher for your Opta Local stack. Install apps, roll updates safely, and control daemon lifecycle from one native surface.
+              Opta Init (Opta Initializer) is your local stack initializer, manager, updater, and launcher. Install apps, roll updates safely, and control daemon lifecycle from one native surface.
             </motion.p>
 
             <motion.a href="#install" variants={textUp} className="mt-12 group cursor-pointer inline-flex items-center gap-4 obsidian-interactive p-3 rounded-full pr-8 border border-white/10">
@@ -183,7 +197,7 @@ export default function Home() {
             <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Manager Interface</h2>
             <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Visual Operations Surface.</h3>
             <p className="mt-6 text-lg text-text-secondary font-light max-w-2xl mx-auto">
-              Opta Init coordinates stack operations with guided menus for app launch, update workflows, and daemon controls.
+              Opta Init (Opta Initializer) coordinates stack operations with guided menus for app launch, update workflows, and daemon controls.
             </p>
           </motion.div>
 
@@ -302,14 +316,14 @@ export default function Home() {
                 </div>
                 <h2 className="text-4xl font-bold mb-6 text-moonlight">One Command.<br />Full Stack.</h2>
                 <p className="text-text-secondary mb-10 font-light leading-relaxed">
-                  Run bootstrap once, then Opta Init takes over as your lifecycle manager. It installs stack components, tracks versions, and keeps app + daemon state synchronized.
+                  Run bootstrap once, then Opta Init (short: `opta init`, alias `/init` in coding workflows) takes over as your lifecycle initializer. It installs stack components, tracks versions, and keeps app + daemon state synchronized.
                 </p>
                 <div className="space-y-4">
                   <div className="flex items-center gap-3 text-sm text-text-muted">
-                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> Requires macOS 13.0+
+                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> macOS: requires 13.0+ and Apple Silicon
                   </div>
                   <div className="flex items-center gap-3 text-sm text-text-muted">
-                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> M1/M2/M3/M4 Apple Silicon
+                    <CheckCircle2 className="w-4 h-4 text-neon-green" /> Windows: 64-bit supported via installer package
                   </div>
                   <div className="flex items-center gap-3 text-sm text-text-muted">
                     <CheckCircle2 className="w-4 h-4 text-neon-amber" /> 16GB Unified Memory minimum
@@ -329,7 +343,7 @@ export default function Home() {
                   <div className="p-6 text-sm text-text-secondary space-y-3 relative z-10">
                     <p className="flex items-center gap-3">
                       <span className="text-primary">❯</span>
-                      <span className="text-white">curl -fsSL https://optalocal.com/init | bash</span>
+                      <span className="text-white">curl -fsSL https://init.optalocal.com/init | bash</span>
                     </p>
                     <div className="pt-4 space-y-1 opacity-70">
                       <p className="text-neon-blue">==&gt; Starting Opta Init manager...</p>
@@ -339,7 +353,7 @@ export default function Home() {
                       <p>==&gt; Verifying daemon service + auth recovery hooks</p>
                       <p>==&gt; Syncing runtime status with Opta Local platform</p>
                       <p className="text-neon-green mt-2">✔ Manager ready. Apps, updates, and daemon are now coordinated.</p>
-                      <p className="text-text-muted mt-2">Run `opta init` any time to launch manager workflows.</p>
+                      <p className="text-text-muted mt-2">Run `opta init` (or `/init` shorthand when scripting) any time to launch initializer workflows.</p>
                     </div>
                   </div>
                 </div>
@@ -453,6 +467,23 @@ export default function Home() {
             <h2 className="text-sm text-primary uppercase tracking-[0.2em] mb-4">Direct Access</h2>
             <h3 className="text-4xl md:text-5xl font-bold text-moonlight">Download Manager Packages</h3>
             <p className="mt-4 text-text-secondary font-light">Prefer manual installation? Grab the latest Opta Init manager packages below.</p>
+            <p className="mt-3 text-sm text-text-muted">
+              Detected platform:{" "}
+              <span className="font-semibold text-text-primary">
+                {detectedPlatform === "macos"
+                  ? "macOS"
+                  : detectedPlatform === "windows"
+                    ? "Windows"
+                    : detectedPlatform === "linux"
+                      ? "Linux"
+                      : "Unknown"}
+              </span>
+              . Use the{" "}
+              <a href="/setup" className="text-primary hover:text-primary-glow">
+                interactive setup wizard
+              </a>{" "}
+              for guided installation.
+            </p>
           </motion.div>
 
           <div className="grid grid-cols-1 gap-8 max-w-2xl mx-auto">
@@ -468,22 +499,41 @@ export default function Home() {
                   {data.description}
                 </p>
 
-                {data.macos.available && data.macos.url ? (
-                  <a href={data.macos.url} className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors">
-                    <Download className="w-4 h-4" />
-                    {data.macos.label === "Installer Ready" ? "Open macOS Installer" : "Download for macOS"}
-                  </a>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    className="w-full h-12 rounded-lg bg-surface text-text-muted font-semibold flex items-center justify-center gap-2 border border-white/10 cursor-not-allowed"
-                  >
-                    <Download className="w-4 h-4" /> macOS — {data.macos.label}
-                  </button>
-                )}
-                <div className="text-center mt-4 text-xs text-text-muted uppercase tracking-widest">
-                  Windows — {data.windows.label}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {data.macos.available && data.macos.url ? (
+                    <a
+                      href={data.macos.url}
+                      className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {data.macos.label === "Installer Ready" ? "Download macOS" : "Download macOS"}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full h-12 rounded-lg bg-surface text-text-muted font-semibold flex items-center justify-center gap-2 border border-white/10 cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" /> macOS — {data.macos.label}
+                    </button>
+                  )}
+                  {data.windows.available && data.windows.url ? (
+                    <a
+                      href={data.windows.url}
+                      className="w-full h-12 rounded-lg bg-white/10 text-white font-semibold flex items-center justify-center gap-2 hover:bg-white/15 border border-white/20 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      {data.windows.label === "Installer Ready" ? "Download Windows" : "Download Windows"}
+                    </a>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      className="w-full h-12 rounded-lg bg-surface text-text-muted font-semibold flex items-center justify-center gap-2 border border-white/10 cursor-not-allowed"
+                    >
+                      <Download className="w-4 h-4" /> Windows — {data.windows.label}
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -508,7 +558,7 @@ export default function Home() {
               <div className="relative z-10">
                 <h2 className="text-3xl md:text-5xl font-bold mb-6 text-moonlight">Manage apps, updates, and daemon from one surface.</h2>
                 <p className="text-lg text-text-secondary font-light max-w-xl mx-auto mb-10">
-                  Opta Init is your lifecycle manager and launcher. Use Opta Local platform for product workflows, with daemon state kept healthy underneath.
+                  Opta Init is your stack initializer and lifecycle manager. Use the Opta Local platform for product workflows, with daemon state kept healthy underneath.
                 </p>
                 <div className="flex flex-col items-center gap-4">
                   <a href={PLATFORM_URL} className="inline-flex h-14 px-8 items-center justify-center gap-2 rounded-xl bg-white text-void font-bold text-lg hover:bg-white/90 transition-colors shadow-[0_0_30px_rgba(255,255,255,0.2)]">
@@ -530,11 +580,24 @@ export default function Home() {
 
       <footer className="border-t border-white/5 bg-[#05030a] mt-24 relative z-20">
         <div className="max-w-7xl mx-auto px-[8%] py-12 flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center gap-2 text-text-muted">
-            <Lock className="w-4 h-4" />
-            <span className="text-sm font-light">Opta Operations © 2026. Secure by design.</span>
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2 text-text-muted">
+              <Lock className="w-4 h-4" />
+              <span className="text-sm font-light">Opta Operations © 2026. Secure by design.</span>
+            </div>
+            <a href="https://status.optalocal.com" className="inline-flex">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://img.shields.io/website?url=https%3A%2F%2Fstatus.optalocal.com&style=flat-square&label=status.optalocal.com&up_message=live&down_message=degraded"
+                alt="status.optalocal.com live health badge"
+              />
+            </a>
           </div>
-          <div className="flex gap-8 text-sm font-medium tracking-wide text-text-secondary">
+          <div className="flex flex-wrap justify-center gap-6 text-sm font-medium tracking-wide text-text-secondary">
+            <a href="/setup" className="hover:text-primary transition-colors">Setup Wizard</a>
+            <a href="/changelog" className="hover:text-primary transition-colors">Changelog</a>
+            <a href="/api-reference" className="hover:text-primary transition-colors">API Reference</a>
+            <a href="/rss.xml" className="hover:text-primary transition-colors">RSS</a>
             <a href={PLATFORM_URL} className="hover:text-primary transition-colors">Opta Local</a>
             <a href={DASHBOARD_URL} className="hover:text-primary transition-colors">Dashboard</a>
             <a href={ACCOUNTS_URL} className="hover:text-primary transition-colors">Account</a>

@@ -51,6 +51,14 @@ _COHERENCE_ICONS = {
 }
 
 
+def _stdout(message: str) -> None:
+    sys.stdout.write(f"{message}\n")
+
+
+def _stderr(message: str) -> None:
+    sys.stderr.write(f"{message}\n")
+
+
 # ---------------------------------------------------------------------------
 # Data loading
 # ---------------------------------------------------------------------------
@@ -63,10 +71,10 @@ def _load_results_from_api(base_url: str, api_key: str) -> list[dict[str, Any]]:
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             results: list[dict[str, Any]] = json.loads(resp.read().decode())
-            print(f"  Fetched {len(results)} result(s) from {url}")
+            _stdout(f"  Fetched {len(results)} result(s) from {url}")
             return results
     except Exception as exc:
-        print(f"Error: could not fetch from {url}: {exc}", file=sys.stderr)
+        _stderr(f"Error: could not fetch from {url}: {exc}")
         sys.exit(1)
 
 
@@ -138,11 +146,11 @@ def _load_results(directory: Path) -> list[dict[str, Any]]:
             normalized = _normalize_legacy_result(raw)
             if normalized is not None:
                 results.append(normalized)
-                print(f"  Loaded {path.name}")
+                _stdout(f"  Loaded {path.name}")
             else:
-                print(f"  Skipped {path.name} (unrecognized format)", file=sys.stderr)
+                _stderr(f"  Skipped {path.name} (unrecognized format)")
         except Exception as exc:
-            print(f"  Warning: could not load {path.name}: {exc}", file=sys.stderr)
+            _stderr(f"  Warning: could not load {path.name}: {exc}")
     return results
 
 
@@ -151,12 +159,12 @@ def _load_reference(path: Path) -> dict[str, Any]:
     if not path.exists():
         return {}
     if not _YAML_AVAILABLE:
-        print("Warning: pyyaml not installed, reference data unavailable", file=sys.stderr)
+        _stderr("Warning: pyyaml not installed, reference data unavailable")
         return {}
     try:
         return yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     except Exception as exc:
-        print(f"Warning: could not load reference data: {exc}", file=sys.stderr)
+        _stderr(f"Warning: could not load reference data: {exc}")
         return {}
 
 
@@ -319,20 +327,15 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
         runs = s.get("runs_completed", 0)
 
         vs_lms_tps = (
-            _delta_span(_pct_diff(tps, _safe_float(lms.get("toks_per_sec"))))
-            if lms else "&mdash;"
+            _delta_span(_pct_diff(tps, _safe_float(lms.get("toks_per_sec")))) if lms else "&mdash;"
         )
         vs_oll_tps = (
-            _delta_span(_pct_diff(tps, _safe_float(oll.get("toks_per_sec"))))
-            if oll else "&mdash;"
+            _delta_span(_pct_diff(tps, _safe_float(oll.get("toks_per_sec")))) if oll else "&mdash;"
         )
 
         has_tools = s.get("tool_call") and s["tool_call"].get("call_produced")
         tools = "&#10003;" if has_tools else "&mdash;"
-        skills_ok = sum(
-            1 for sk in s.get("skills", [])
-            if sk.get("skill_invoked_successfully")
-        )
+        skills_ok = sum(1 for sk in s.get("skills", []) if sk.get("skill_invoked_successfully"))
         skills_total = len(s.get("skills", []))
         skills = f"{skills_ok}/{skills_total}" if skills_total > 0 else "&mdash;"
 
@@ -348,7 +351,7 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
         summary_rows += f"""
         <tr>
           <td title="{html_mod.escape(model_id)}">{html_mod.escape(short_name)}</td>
-          <td>{html_mod.escape(latest.get('backend', ''))}</td>
+          <td>{html_mod.escape(latest.get("backend", ""))}</td>
           <td><strong>{tps:.1f}</strong></td>
           <td>{ttft * 1000:.0f}ms</td>
           <td>{vs_lms_tps}</td>
@@ -384,19 +387,23 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
 
             vs_lms_tps = (
                 _delta_span(_pct_diff(tps, _safe_float(lms.get("toks_per_sec"))))
-                if lms else "&mdash;"
+                if lms
+                else "&mdash;"
             )
             vs_lms_ttft = (
                 _delta_span(_pct_diff_ttft(ttft, _safe_float(lms.get("ttft_sec"))))
-                if lms else "&mdash;"
+                if lms
+                else "&mdash;"
             )
             vs_oll_tps = (
                 _delta_span(_pct_diff(tps, _safe_float(oll.get("toks_per_sec"))))
-                if oll else "&mdash;"
+                if oll
+                else "&mdash;"
             )
             vs_oll_ttft = (
                 _delta_span(_pct_diff_ttft(ttft, _safe_float(oll.get("ttft_sec"))))
-                if oll else "&mdash;"
+                if oll
+                else "&mdash;"
             )
 
             # Percentiles
@@ -422,10 +429,8 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
                 sk_ok = sk.get("skill_invoked_successfully")
                 sk_icon = "&#10003;" if sk_ok else "&#10007;"
                 err = f" &mdash; {html_mod.escape(str(sk['error']))}" if sk.get("error") else ""
-                sk_name = html_mod.escape(str(sk.get('skill_name', '')))
-                skills_rows += (
-                    f"<li>Skill ({sk_name}): {sk_icon}{err}</li>"
-                )
+                sk_name = html_mod.escape(str(sk.get("skill_name", "")))
+                skills_rows += f"<li>Skill ({sk_name}): {sk_icon}{err}</li>"
 
             coherence = s.get("coherence_flag", "ok")
             coherence_icon = _COHERENCE_ICONS.get(coherence, "?")
@@ -441,7 +446,7 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
       <div class="card glass">
         <div class="card-header">
           <span class="model-id">{html_mod.escape(model_id)}</span>
-          <span class="badge">{html_mod.escape(result.get('backend', ''))}</span>
+          <span class="badge">{html_mod.escape(result.get("backend", ""))}</span>
           <span class="badge-status {status_cls}">{status}</span>
           <span class="ts">{ts_display} &nbsp;|&nbsp; {hw}</span>
         </div>
@@ -460,9 +465,9 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
           <table class="inner-table">
             <tr><td>tok/s</td><td>p50: {tps_p50:.1f} | p95: {tps_p95:.1f} |
               mean: <strong>{tps:.1f}</strong></td></tr>
-            <tr><td>TTFT</td><td>p50: {ttft_p50*1000:.0f}ms |
-              p95: {ttft_p95*1000:.0f}ms |
-              mean: <strong>{ttft*1000:.0f}ms</strong></td></tr>
+            <tr><td>TTFT</td><td>p50: {ttft_p50 * 1000:.0f}ms |
+              p95: {ttft_p95 * 1000:.0f}ms |
+              mean: <strong>{ttft * 1000:.0f}ms</strong></td></tr>
           </table>
           <div class="deltas">
             vs LM Studio: {vs_lms_tps} tok/s / {vs_lms_ttft} TTFT &nbsp;|&nbsp;
@@ -479,11 +484,13 @@ def _render_report(results: list[dict[str, Any]], reference: dict[str, Any]) -> 
           </ul>
         </div>
 
-        {"<details class='output-section'>"
-         "<summary>Output preview</summary>"
-         "<pre class='output-text'>"
-         + output_preview +
-         "</pre></details>" if output_preview else ""}
+        {
+                "<details class='output-section'>"
+                "<summary>Output preview</summary>"
+                "<pre class='output-text'>" + output_preview + "</pre></details>"
+                if output_preview
+                else ""
+            }
       </div>"""
 
     return f"""<!DOCTYPE html>
@@ -578,12 +585,12 @@ examples:
     # Load results from API or files
     if args.api:
         if not args.api_key:
-            print("Error: --api requires --api-key or LMX_ADMIN_KEY env var", file=sys.stderr)
+            _stderr("Error: --api requires --api-key or LMX_ADMIN_KEY env var")
             sys.exit(1)
-        print(f"Fetching results from {args.api}...")
+        _stdout(f"Fetching results from {args.api}...")
         results = _load_results_from_api(args.api, args.api_key)
     else:
-        print(f"Loading results from {args.results_dir}...")
+        _stdout(f"Loading results from {args.results_dir}...")
         results = _load_results(args.results_dir)
 
         # Also scan project benchmarks/ if using default dir and it differs
@@ -598,17 +605,17 @@ examples:
                     seen.add(key)
 
     if not results:
-        print("No benchmark results found.")
+        _stdout("No benchmark results found.")
         sys.exit(0)
 
-    print(f"Loading reference data from {args.reference}...")
+    _stdout(f"Loading reference data from {args.reference}...")
     reference = _load_reference(args.reference)
 
-    print(f"Generating report for {len(results)} result(s)...")
+    _stdout(f"Generating report for {len(results)} result(s)...")
     report_html = _render_report(results, reference)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(report_html, encoding="utf-8")
-    print(f"Report saved to {args.output}")
+    _stdout(f"Report saved to {args.output}")
 
     if not args.no_open:
         subprocess.run(["open", str(args.output)], check=False)

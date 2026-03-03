@@ -165,12 +165,14 @@ class GraphExecutor:
         step.status = StepStatus.RUNNING
         step.started_at = time.time()
         await update_hook(step)
-        self._tracer.emit(TraceEvent(
-            run_id=run_id,
-            step_id=step.id,
-            event="step_started",
-            metadata=dict(trace_metadata),
-        ))
+        self._tracer.emit(
+            TraceEvent(
+                run_id=run_id,
+                step_id=step.id,
+                event="step_started",
+                metadata=dict(trace_metadata),
+            )
+        )
 
         try:
             output = await runner(step.role, input_text)
@@ -188,13 +190,15 @@ class GraphExecutor:
         finally:
             step.completed_at = time.time()
             await update_hook(step)
-            self._tracer.emit(TraceEvent(
-                run_id=run_id,
-                step_id=step.id,
-                event="step_finished",
-                status=step.status,
-                metadata=dict(trace_metadata),
-            ))
+            self._tracer.emit(
+                TraceEvent(
+                    run_id=run_id,
+                    step_id=step.id,
+                    event="step_finished",
+                    status=step.status,
+                    metadata=dict(trace_metadata),
+                )
+            )
 
 
 async def _noop_update(step: AgentStep) -> None:

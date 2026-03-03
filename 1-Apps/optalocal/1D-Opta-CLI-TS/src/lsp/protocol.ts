@@ -48,6 +48,28 @@ export interface WorkspaceEdit {
   changes?: Record<string, TextEdit[]>;
 }
 
+export interface Diagnostic {
+  range: Range;
+  severity?: number;
+  code?: string | number;
+  source?: string;
+  message: string;
+}
+
+export interface CodeActionCommand {
+  title?: string;
+  command?: string;
+}
+
+export interface CodeAction {
+  title: string;
+  kind?: string;
+  isPreferred?: boolean;
+  disabled?: { reason?: string };
+  edit?: WorkspaceEdit;
+  command?: CodeActionCommand;
+}
+
 // --- Symbol Kind Names ---
 
 const SYMBOL_KIND_NAMES: Record<number, string> = {
@@ -79,6 +101,13 @@ const SYMBOL_KIND_NAMES: Record<number, string> = {
   26: 'TypeParameter',
 };
 
+const DIAGNOSTIC_SEVERITY_NAMES: Record<number, string> = {
+  1: 'Error',
+  2: 'Warning',
+  3: 'Information',
+  4: 'Hint',
+};
+
 function symbolKindName(kind: number): string {
   return SYMBOL_KIND_NAMES[kind] ?? `Kind(${kind})`;
 }
@@ -107,6 +136,17 @@ export function toPosition(line: number, character: number): Position {
     line: Math.max(0, line - 1),
     character,
   };
+}
+
+export function toRange(
+  startLine: number,
+  startCharacter: number,
+  endLine: number,
+  endCharacter: number
+): Range {
+  const start = toPosition(startLine, startCharacter);
+  const end = toPosition(endLine, endCharacter);
+  return { start, end };
 }
 
 // --- Formatting ---
@@ -237,4 +277,65 @@ export function formatWorkspaceEdit(edit: WorkspaceEdit | null | undefined, cwd:
   }
 
   return lines.join('\n');
+}
+
+function diagnosticSeverityName(severity?: number): string {
+  if (!severity) return 'Unknown';
+  return DIAGNOSTIC_SEVERITY_NAMES[severity] ?? `Severity(${severity})`;
+}
+
+export function formatDiagnostics(
+  diagnostics: Diagnostic[] | null | undefined,
+  cwd: string,
+  uri?: string
+): string {
+  if (!diagnostics || diagnostics.length === 0) return 'No diagnostics found.';
+
+  const filePrefix = uri ? `${relative(cwd, uriToFilePath(uri))}:` : '';
+  return diagnostics
+    .map((diag) => {
+      const line = diag.range.start.line + 1;
+      const char = diag.range.start.character;
+      const severity = diagnosticSeverityName(diag.severity);
+      const source = diag.source ? `${diag.source}` : '';
+      const code = diag.code !== undefined ? `${diag.code}` : '';
+      const meta = [source, code].filter(Boolean).join(':');
+      return `${filePrefix}${line}:${char} [${severity}] ${diag.message}${meta ? ` (${meta})` : ''}`;
+    })
+    .join('\n');
+}
+
+export function formatCodeActions(
+  actions: CodeAction[] | null | undefined,
+  _cwd: string
+): string {
+  if (!actions || actions.length === 0) return 'No code actions available.';
+
+  return actions
+    .map((action, index) => {
+      const details: string[] = [];
+      if (action.kind) details.push(action.kind);
+      if (action.isPreferred) details.push('preferred');
+      if (action.disabled?.reason) details.push(`disabled: ${action.disabled.reason}`);
+
+      if (action.edit?.changes) {
+        const changedFiles = Object.keys(action.edit.changes).length;
+        const totalEdits = Object.values(action.edit.changes).reduce(
+          (sum, edits) => sum + edits.length,
+          0
+        );
+        details.push(
+          `${totalEdits} edit${totalEdits === 1 ? '' : 's'} in ${changedFiles} file${changedFiles === 1 ? '' : 's'}`
+        );
+      }
+
+      const commandName = action.command?.command;
+      if (commandName) {
+        details.push(`command: ${commandName}`);
+      }
+
+      const base = `${index + 1}. ${action.title}`;
+      return details.length > 0 ? `${base} (${details.join('; ')})` : base;
+    })
+    .join('\n');
 }

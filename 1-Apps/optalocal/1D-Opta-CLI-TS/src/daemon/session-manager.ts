@@ -19,6 +19,8 @@ import { TurnQueue, type QueuedTurn } from './turn-queue.js';
 import { makeEnvelope } from '../protocol/v3/events.js';
 import { ToolWorkerPool } from './worker-pool.js';
 import type {
+  AgentPhaseEventPayload,
+  AtpoInterveneEventPayload,
   BackgroundOutputSlice,
   BackgroundProcessSnapshot,
   BackgroundSignal,
@@ -29,6 +31,7 @@ import type {
   TurnDonePayload,
   TurnErrorCode,
   TurnErrorPayload,
+  TurnOutputFormat,
   V3Envelope,
 } from '../protocol/v3/types.js';
 import { logDaemonEvent } from './telemetry.js';
@@ -41,6 +44,7 @@ import { errorMessage } from '../utils/errors.js';
 
 const CHARS_PER_TOKEN = 4;
 const PREFLIGHT_CACHE_TTL_MS = 10_000;
+const PROVIDER_OVERRIDE_SET = new Set(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']);
 
 class LatencyWindow {
   private readonly samples: number[] = [];
@@ -286,6 +290,7 @@ export class SessionManager {
       content: payload.content,
       mode: payload.mode,
       metadata: payload.metadata,
+      overrides: payload.overrides,
       createdAt: new Date().toISOString(),
     };
 
@@ -662,6 +667,7 @@ export class SessionManager {
           fallbackHosts: config.connection.fallbackHosts,
           port: config.connection.port,
           adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
           timeoutMs: LMX_PREFLIGHT_TIMEOUT_MS,
           maxRetries: 0,
         });
@@ -725,7 +731,8 @@ export class SessionManager {
     let toolCalls = 0;
 
     try {
-      const cfg = await this.getConfig();
+      const baseCfg = await this.getConfig();
+      const cfg = this.buildTurnConfig(baseCfg, session, turn);
       await this.runTurnModelPreflight(session, cfg);
       this.throwIfTurnAborted(session);
 
@@ -736,13 +743,46 @@ export class SessionManager {
         mode: turn.mode,
       });
 
-      const run = await agentLoop(turn.content, cfg, {
+      const formattedTask = this.buildTurnTask(turn.content, turn.overrides?.format);
+      const run = await agentLoop(formattedTask, cfg, {
+        mode: cfg.defaultMode,
         existingMessages: session.messages,
         sessionId,
         silent: true,
         signal: session.activeAbort.signal,
         toolExecutor: (name, argsJson, signal) =>
           this.runToolWithCache(session, name, argsJson, signal),
+        onSubAgentSpawn: (id, label, dependsOn) => {
+          const payload: AgentPhaseEventPayload = {
+            turnId: turn.turnId,
+            phase: 'spawn_subagent',
+            agentId: id,
+            agentType: label,
+            dependsOn,
+          };
+          void this.emit(session, 'agent.phase', payload);
+        },
+        onSubAgentProgress: (progress) => {
+          const payload: AgentPhaseEventPayload = {
+            turnId: turn.turnId,
+            phase: progress.phase,
+            agentId: progress.agentId,
+            taskDescription: progress.taskDescription,
+            toolName: progress.toolName,
+            toolCallCount: progress.toolCallCount,
+            elapsedMs: progress.elapsedMs,
+          };
+          void this.emit(session, 'agent.phase', payload);
+        },
+        onSubAgentDone: (agentId, result) => {
+          const payload: AgentPhaseEventPayload = {
+            turnId: turn.turnId,
+            phase: 'return_to_main',
+            agentId,
+            resultPreview: result.slice(0, 280),
+          };
+          void this.emit(session, 'agent.phase', payload);
+        },
         onStream: {
           // NOTE: these streaming callbacks are synchronous, so emit() cannot
           // be awaited inline.  Events are fire-and-forget here; sequence
@@ -766,6 +806,24 @@ export class SessionManager {
           },
           onUsage: (usage) => {
             promptTokens = usage.promptTokens;
+          },
+          onAtpoState: (state) => {
+            if (state.status === 'intervening') {
+              const payload: AtpoInterveneEventPayload = {
+                turnId: turn.turnId,
+                status: 'intervening',
+                provider: state.provider,
+                reason: state.message,
+              };
+              void this.emit(session, 'atpo.intervene', payload);
+              return;
+            }
+            void this.emit(session, 'turn.progress', {
+              turnId: turn.turnId,
+              phase: `atpo.${state.status}`,
+              message: state.message ?? null,
+              provider: state.provider ?? null,
+            });
           },
           onPermissionRequest: async (toolName, args) => {
             const { request, decision } = this.permissionCoordinator.request(
@@ -923,5 +981,112 @@ export class SessionManager {
         }
       }
     }
+  }
+
+  private buildTurnConfig(config: OptaConfig, session: ManagedSession, turn: QueuedTurn): OptaConfig {
+    const normalizedTurnMode = this.normalizeTurnMode(turn.mode);
+    const overrides = turn.overrides ?? {};
+    const providerOverride = this.normalizeProviderOverride(overrides.provider);
+    const modelOverride = this.normalizeModelOverride(overrides.model);
+    const autonomyModeOverride = this.normalizeAutonomyModeOverride(overrides.autonomyMode);
+    const autonomyLevelOverride = this.normalizeAutonomyLevelOverride(overrides.autonomyLevel);
+
+    // Model override is treated as the active session model for subsequent turns.
+    if (modelOverride) {
+      session.model = modelOverride;
+      session.updatedAt = new Date().toISOString();
+    }
+
+    const defaultMode =
+      overrides.dangerous === true
+        ? 'dangerous'
+        : overrides.auto === true
+          ? 'auto'
+          : normalizedTurnMode ?? config.defaultMode;
+
+    const gitOverrides = {
+      autoCommit: overrides.noCommit === true ? false : (config.git?.autoCommit ?? true),
+      checkpoints: overrides.noCheckpoints === true ? false : (config.git?.checkpoints ?? true),
+    };
+
+    return {
+      ...config,
+      defaultMode,
+      git: gitOverrides,
+      provider: providerOverride ? { ...config.provider, active: providerOverride } : config.provider,
+      model: modelOverride ? { ...config.model, default: modelOverride } : config.model,
+      autonomy:
+        autonomyModeOverride !== null || autonomyLevelOverride !== null
+          ? {
+              ...config.autonomy,
+              mode: autonomyModeOverride ?? config.autonomy.mode,
+              level: autonomyLevelOverride ?? config.autonomy.level,
+            }
+          : config.autonomy,
+    };
+  }
+
+  private normalizeTurnMode(mode: QueuedTurn['mode']): OptaConfig['defaultMode'] | null {
+    switch (mode) {
+      case 'do':
+        return 'auto';
+      case 'plan':
+      case 'review':
+      case 'research':
+        return mode;
+      case 'chat':
+      default:
+        return null;
+    }
+  }
+
+  private normalizeProviderOverride(provider?: string): OptaConfig['provider']['active'] | null {
+    if (!provider) return null;
+    const normalized = provider.trim().toLowerCase();
+    if (!normalized) return null;
+    if (!PROVIDER_OVERRIDE_SET.has(normalized)) return null;
+    return normalized as OptaConfig['provider']['active'];
+  }
+
+  private normalizeModelOverride(model?: string): string | null {
+    if (!model) return null;
+    const normalized = normalizeConfiguredModelId(model.trim());
+    return normalized || null;
+  }
+
+  private normalizeAutonomyModeOverride(mode?: string): OptaConfig['autonomy']['mode'] | null {
+    if (!mode) return null;
+    const normalized = mode.trim().toLowerCase();
+    if (normalized === 'execution' || normalized === 'ceo') {
+      return normalized;
+    }
+    return null;
+  }
+
+  private normalizeAutonomyLevelOverride(level?: number): number | null {
+    if (typeof level !== 'number' || !Number.isFinite(level)) return null;
+    const clamped = Math.max(1, Math.min(5, Math.trunc(level)));
+    return clamped;
+  }
+
+  private normalizeTurnFormat(format?: string): TurnOutputFormat | null {
+    if (!format) return null;
+    switch (format.trim().toLowerCase()) {
+      case 'markdown':
+      case 'text':
+      case 'json':
+        return format.trim().toLowerCase() as TurnOutputFormat;
+      default:
+        return null;
+    }
+  }
+
+  private buildTurnTask(content: string, format?: string): string {
+    const normalizedFormat = this.normalizeTurnFormat(format);
+    if (!normalizedFormat || normalizedFormat === 'markdown') return content;
+    if (normalizedFormat === 'text') {
+      return `${content}\n\nOutput requirement: respond in plain text only. Avoid markdown formatting.`;
+    }
+    return `${content}\n\nOutput requirement: return valid JSON only. Do not use markdown fences or explanatory prose outside JSON.`;
   }
 }

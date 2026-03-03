@@ -85,6 +85,7 @@ export async function rerank(
     fallbackHosts: config.connection.fallbackHosts,
     port: config.connection.port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
 
   try {

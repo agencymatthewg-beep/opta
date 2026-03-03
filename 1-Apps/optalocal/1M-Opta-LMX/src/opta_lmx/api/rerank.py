@@ -79,18 +79,20 @@ def _build_rerank_response(
     est_tokens: int,
 ) -> JSONResponse:
     """Build Cohere/Jina-compatible rerank response payload."""
-    return JSONResponse(content=RerankResponse(
-        results=[
-            RerankResult(
-                index=int(r["index"]),
-                relevance_score=float(r[score_key]),
-                document=RerankDocument(text=documents[int(r["index"])]),
-            )
-            for r in results
-        ],
-        model=model,
-        usage=RerankUsage(total_tokens=est_tokens),
-    ).model_dump())
+    return JSONResponse(
+        content=RerankResponse(
+            results=[
+                RerankResult(
+                    index=int(r["index"]),
+                    relevance_score=float(r[score_key]),
+                    document=RerankDocument(text=documents[int(r["index"])]),
+                )
+                for r in results
+            ],
+            model=model,
+            usage=RerankUsage(total_tokens=est_tokens),
+        ).model_dump()
+    )
 
 
 @router.post("/v1/rerank", response_model=None)
@@ -154,10 +156,13 @@ async def rerank_documents(
                     code="helper_node_unavailable",
                 )
             # fallback == "local" — fall through to local engine
-            logger.info("helper_node_rerank_fallback_to_local", extra={
-                "remote_url": remote_client.url,
-                "reason": str(e),
-            })
+            logger.info(
+                "helper_node_rerank_fallback_to_local",
+                extra={
+                    "remote_url": remote_client.url,
+                    "reason": str(e),
+                },
+            )
 
     # Local reranking engine fallback / primary path
     if reranker is None:

@@ -1,6 +1,10 @@
 import WebSocket, { type RawData } from 'ws';
 import type OpenAI from 'openai';
 import type { LmxDiscoveryDoc } from './types.js';
+import {
+  type AdminKeysByHost,
+  resolveAdminKeyForHost,
+} from './admin-keys.js';
 
 export type LmxConnectionState = 'connected' | 'degraded' | 'disconnected';
 
@@ -15,6 +19,7 @@ export interface LmxConnectionResult {
 interface ProbeOptions {
   timeoutMs?: number;
   adminKey?: string;
+  adminKeysByHost?: AdminKeysByHost;
 }
 
 interface LmxWsStreamOptions {
@@ -387,7 +392,15 @@ export async function probeLmxConnection(
   const base = `http://${host}:${port}`;
   const started = Date.now();
 
-  const result = await runLmxProbes(base, started, timeoutMs, options?.adminKey);
+  const result = await runLmxProbes(
+    base,
+    started,
+    timeoutMs,
+    resolveAdminKeyForHost(host, port, {
+      defaultAdminKey: options?.adminKey,
+      adminKeysByHost: options?.adminKeysByHost,
+    })
+  );
 
   if (result.state !== 'disconnected') {
     const doc = await fetchLmxDiscovery(host, port, Math.min(timeoutMs, 2000));

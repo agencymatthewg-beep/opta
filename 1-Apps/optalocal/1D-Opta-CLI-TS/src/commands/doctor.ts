@@ -30,6 +30,8 @@ interface LmxDoctorSnapshot {
   source: 'primary' | 'fallback';
   latencyMs: number;
   loadedModelIds: string[];
+  adminAccess: 'ok' | 'unauthorized' | 'unknown';
+  adminError?: string;
   error?: string;
 }
 
@@ -73,11 +75,12 @@ async function collectLmxDoctorSnapshot(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = []
+  fallbackHosts: string[] = [],
+  adminKeysByHost: Record<string, string> = {}
 ): Promise<LmxDoctorSnapshot> {
   const start = Date.now();
   try {
-    const [{ resolveLmxEndpoint }, { LmxClient }] = await Promise.all([
+    const [{ resolveLmxEndpoint }, { LmxApiError, LmxClient }] = await Promise.all([
       import('../lmx/endpoints.js'),
       import('../lmx/client.js'),
     ]);
@@ -86,6 +89,7 @@ async function collectLmxDoctorSnapshot(
         host,
         port,
         adminKey,
+        adminKeysByHost,
         fallbackHosts,
       },
       {
@@ -96,18 +100,38 @@ async function collectLmxDoctorSnapshot(
       host: resolved.host,
       port,
       adminKey,
+      adminKeysByHost,
       fallbackHosts: [],
       timeoutMs: 2_500,
       maxRetries: 0,
     });
     await lmx.health(FAST_DOCTOR_REQUEST_OPTS);
-    const models = await lmx.models(FAST_DOCTOR_REQUEST_OPTS).catch(() => ({ models: [] }));
+    let loadedModelIds: string[] = [];
+    let adminAccess: LmxDoctorSnapshot['adminAccess'] = 'ok';
+    let adminError: string | undefined;
+    try {
+      const models = await lmx.models(FAST_DOCTOR_REQUEST_OPTS);
+      loadedModelIds = models.models.map((model) => model.model_id);
+    } catch (err) {
+      if (
+        err instanceof LmxApiError &&
+        (err.code === 'unauthorized' || err.status === 401 || err.status === 403)
+      ) {
+        adminAccess = 'unauthorized';
+        adminError = errorMessage(err);
+      } else {
+        adminAccess = 'unknown';
+        adminError = errorMessage(err);
+      }
+    }
     return {
       reachable: true,
       host: resolved.host,
       source: resolved.source,
       latencyMs: Date.now() - start,
-      loadedModelIds: models.models.map((model) => model.model_id),
+      loadedModelIds,
+      adminAccess,
+      adminError,
     };
   } catch (err) {
     return {
@@ -116,6 +140,7 @@ async function collectLmxDoctorSnapshot(
       source: 'primary',
       latencyMs: Date.now() - start,
       loadedModelIds: [],
+      adminAccess: 'unknown',
       error: errorMessage(err),
     };
   }
@@ -128,6 +153,21 @@ function lmxConnectionResultFromSnapshot(
   fallbackHosts: string[] = []
 ): CheckResult {
   if (snapshot.reachable) {
+    if (snapshot.adminAccess === 'unauthorized') {
+      return {
+        name: 'LMX Connection',
+        status: 'warn',
+        message: `LMX reachable at ${snapshot.host}:${port} (${snapshot.latencyMs}ms) but admin endpoints are unauthorized`,
+        detail: [
+          `Auth detail: ${snapshot.adminError ?? 'invalid or missing admin key'}.`,
+          "Check key: 'opta config get connection.adminKey'.",
+          "Check host-key map: 'opta config get connection.adminKeysByHost'.",
+          "Set/clear key: 'opta config set connection.adminKey <key>' or 'opta config delete connection.adminKey'.",
+          "Set host-key map: opta config set connection.adminKeysByHost '{\"host\":\"key\"}'.",
+        ].join(' '),
+      };
+    }
+
     const modelCount = snapshot.loadedModelIds.length;
     const modelSuffix =
       modelCount > 0 ? `, ${modelCount} model${modelCount !== 1 ? 's' : ''} loaded` : '';
@@ -160,6 +200,18 @@ function activeModelResultFromSnapshot(
   configModel: string,
   snapshot: LmxDoctorSnapshot
 ): CheckResult {
+  if (snapshot.reachable && snapshot.adminAccess === 'unauthorized') {
+    return {
+      name: 'Active Model',
+      status: 'warn',
+      message: configModel
+        ? `Cannot verify model "${configModel}" (admin auth required)`
+        : 'Cannot verify active model (admin auth required)',
+      detail:
+        "Grant admin access first: set 'connection.adminKey' to the LMX admin key (or clear stale key).",
+    };
+  }
+
   if (!configModel) {
     return {
       name: 'Active Model',
@@ -221,9 +273,16 @@ export async function checkLmxConnection(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = []
+  fallbackHosts: string[] = [],
+  adminKeysByHost: Record<string, string> = {}
 ): Promise<CheckResult> {
-  const snapshot = await collectLmxDoctorSnapshot(host, port, adminKey, fallbackHosts);
+  const snapshot = await collectLmxDoctorSnapshot(
+    host,
+    port,
+    adminKey,
+    fallbackHosts,
+    adminKeysByHost
+  );
   return lmxConnectionResultFromSnapshot(snapshot, host, port, fallbackHosts);
 }
 
@@ -232,9 +291,16 @@ export async function checkActiveModel(
   host: string,
   port: number,
   adminKey?: string,
-  fallbackHosts: string[] = []
+  fallbackHosts: string[] = [],
+  adminKeysByHost: Record<string, string> = {}
 ): Promise<CheckResult> {
-  const snapshot = await collectLmxDoctorSnapshot(host, port, adminKey, fallbackHosts);
+  const snapshot = await collectLmxDoctorSnapshot(
+    host,
+    port,
+    adminKey,
+    fallbackHosts,
+    adminKeysByHost
+  );
   if (!snapshot.reachable) {
     debug('doctor: could not verify model against LMX');
   }
@@ -770,7 +836,13 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     configDirsResult,
     lmxDiscoveryResult,
   ] = await Promise.all([
-    collectLmxDoctorSnapshot(host, port, adminKey, config.connection.fallbackHosts),
+    collectLmxDoctorSnapshot(
+      host,
+      port,
+      adminKey,
+      config.connection.fallbackHosts,
+      config.connection.adminKeysByHost
+    ),
     checkConfig(config),
     checkOpis(cwd),
     checkMcpServers(config.mcp.servers as Parameters<typeof checkMcpServers>[0]),

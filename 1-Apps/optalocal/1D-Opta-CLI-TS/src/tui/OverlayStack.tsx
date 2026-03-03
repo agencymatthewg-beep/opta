@@ -300,6 +300,7 @@ export function OverlayStack(props: OverlayStackProps): React.ReactElement | nul
               props.closeOverlay();
               void props.handleSubmit(command);
             }}
+            onOpenModelPicker={() => props.setActiveOverlay('model-picker')}
             onClose={props.closeOverlay}
             onSave={(changes) => {
               props.handleSettingsSave(changes);

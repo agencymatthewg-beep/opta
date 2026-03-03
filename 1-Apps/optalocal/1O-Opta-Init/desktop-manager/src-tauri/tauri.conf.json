@@ -36,5 +36,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
+  },
+  "plugins": {
+    "updater": {
+      "endpoints": [
+        "https://init.optalocal.com/desktop-updates/stable.json"
+      ],
+      "pubkey": "dW50cnVzdGVk"
+    }
   }
 }

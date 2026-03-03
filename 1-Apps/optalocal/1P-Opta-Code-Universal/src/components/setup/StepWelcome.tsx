@@ -9,14 +9,22 @@ export function StepWelcome({ platform }: { platform: Platform | null }) {
 
   return (
     <div>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 9, marginBottom: 28 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          gap: 9,
+          marginBottom: 28,
+        }}
+      >
         <span
           style={{
             fontSize: 44,
             fontWeight: 800,
             letterSpacing: "-0.05em",
             lineHeight: 1,
-            background: "linear-gradient(130deg, #fff 0%, #c4b5fd 60%, #8b5cf6 100%)",
+            background:
+              "linear-gradient(130deg, #fff 0%, #c4b5fd 60%, #8b5cf6 100%)",
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",

@@ -126,7 +126,7 @@ _opta_completions() {
       return 0
       ;;
     mcp)
-      COMPREPLY=( $(compgen -W "add add-playwright remove test list --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "add add-playwright remove test list health --help" -- "\${cur}") )
       return 0
       ;;
     init)
@@ -305,7 +305,7 @@ _opta() {
           _arguments '1:action:(list resume delete export search)' '--json[machine-readable output]'
           ;;
         mcp)
-          _arguments '1:action:(add add-playwright remove test list)' '--json[machine-readable output]'
+          _arguments '1:action:(add add-playwright remove test list health)' '--json[machine-readable output]'
           ;;
         init)
           _arguments \\
@@ -511,7 +511,7 @@ complete -c opta -n '__fish_seen_subcommand_from sessions' -a 'list resume delet
 complete -c opta -n '__fish_seen_subcommand_from sessions' -l json -d 'Machine-readable output'
 
 # mcp subcommands
-complete -c opta -n '__fish_seen_subcommand_from mcp' -a 'add add-playwright remove test list' -d 'Action'
+complete -c opta -n '__fish_seen_subcommand_from mcp' -a 'add add-playwright remove test list health' -d 'Action'
 complete -c opta -n '__fish_seen_subcommand_from mcp' -l json -d 'Machine-readable output'
 
 # init flags

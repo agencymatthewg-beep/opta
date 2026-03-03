@@ -1,5 +1,9 @@
 import { z } from 'zod';
 import { normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
+import {
+  ADMIN_KEYS_BY_HOST_ENV_VAR,
+  parseAdminKeysByHost,
+} from '../lmx/admin-keys.js';
 import { DEFAULT_BROWSER_ADAPTATION_CONFIG } from '../browser/adaptation.js';
 
 const ToolPermission = z.enum(['allow', 'ask', 'deny']);
@@ -116,6 +120,7 @@ export const OptaConfigSchema = z.object({
       port: z.number().default(1234),
       protocol: z.literal('http').default('http'),
       adminKey: z.string().optional(),
+      adminKeysByHost: z.record(z.string(), z.string()).default({}),
       apiKey: z.string().optional(),
       ssh: z
         .object({
@@ -134,6 +139,12 @@ export const OptaConfigSchema = z.object({
           backoffMultiplier: z.number().min(1).default(2),
         })
         .default({}),
+    })
+    .default({}),
+  genui: z
+    .object({
+      enabled: z.boolean().default(true),
+      autoOpenBrowser: z.boolean().default(true),
     })
     .default({}),
   model: z
@@ -238,6 +249,8 @@ export const OptaConfigSchema = z.object({
     lsp_hover: 'allow',
     lsp_symbols: 'allow',
     lsp_document_symbols: 'allow',
+    lsp_diagnostics: 'allow',
+    lsp_code_actions: 'allow',
     lsp_rename: 'ask',
     // Sub-agents
     spawn_agent: 'ask',
@@ -625,6 +638,7 @@ function buildLoadConfigCacheKey(overrides?: Record<string, unknown>): string {
     process.env['OPTA_HOST'] ?? '',
     process.env['OPTA_PORT'] ?? '',
     process.env['OPTA_ADMIN_KEY'] ?? '',
+    process.env[ADMIN_KEYS_BY_HOST_ENV_VAR] ?? '',
     process.env['OPTA_API_KEY'] ?? '',
     process.env['OPTA_MODEL'] ?? '',
     process.env['OPTA_DISK_HEADROOM_MB'] ?? '',
@@ -639,6 +653,13 @@ function applyProcessEnvFromConfig(config: OptaConfig): void {
   const apiKey = config.connection.apiKey?.trim();
   if (apiKey && !process.env['OPTA_API_KEY']) {
     process.env['OPTA_API_KEY'] = apiKey;
+  }
+
+  if (!process.env[ADMIN_KEYS_BY_HOST_ENV_VAR]) {
+    const hostMap = config.connection.adminKeysByHost;
+    if (hostMap && Object.keys(hostMap).length > 0) {
+      process.env[ADMIN_KEYS_BY_HOST_ENV_VAR] = JSON.stringify(hostMap);
+    }
   }
 }
 
@@ -787,6 +808,12 @@ export async function loadConfig(overrides?: Record<string, unknown>): Promise<O
   if (process.env['OPTA_HOST']) connectionPatch['host'] = process.env['OPTA_HOST'];
   if (process.env['OPTA_PORT']) connectionPatch['port'] = parseInt(process.env['OPTA_PORT'], 10);
   if (process.env['OPTA_ADMIN_KEY']) connectionPatch['adminKey'] = process.env['OPTA_ADMIN_KEY'];
+  if (process.env[ADMIN_KEYS_BY_HOST_ENV_VAR]) {
+    const parsedAdminKeysByHost = parseAdminKeysByHost(process.env[ADMIN_KEYS_BY_HOST_ENV_VAR]);
+    if (parsedAdminKeysByHost) {
+      connectionPatch['adminKeysByHost'] = parsedAdminKeysByHost;
+    }
+  }
   if (process.env['OPTA_API_KEY']) connectionPatch['apiKey'] = process.env['OPTA_API_KEY'];
   if (Object.keys(connectionPatch).length > 0) {
     raw['connection'] = {
@@ -967,12 +994,65 @@ export async function healConfig(): Promise<ConfigIssue[]> {
   return issues;
 }
 
+
+function getDefaultValueAtPath(path: string): unknown {
+  const segments = path.split('.').filter(Boolean);
+  let cursor: unknown = DEFAULT_CONFIG as unknown;
+  for (const segment of segments) {
+    if (!cursor || typeof cursor !== 'object' || Array.isArray(cursor)) return undefined;
+    cursor = (cursor as Record<string, unknown>)[segment];
+  }
+  return cursor;
+}
+
+function coerceConfigValue(path: string, rawValue: unknown): unknown {
+  if (typeof rawValue !== 'string') return rawValue;
+
+  if (path === 'connection.fallbackHosts') {
+    const trimmed = rawValue.trim();
+    if (!trimmed) return [];
+    if (trimmed.startsWith('[')) {
+      try {
+        const parsed: unknown = JSON.parse(trimmed);
+        if (Array.isArray(parsed)) {
+          return parsed.map((item) => String(item).trim()).filter((item) => item.length > 0);
+        }
+      } catch {
+        return rawValue;
+      }
+    }
+    return trimmed
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item.length > 0);
+  }
+
+  if (path === 'connection.adminKeysByHost') {
+    const parsed = parseAdminKeysByHost(rawValue);
+    return parsed ?? rawValue;
+  }
+
+  const defaultValue = getDefaultValueAtPath(path);
+  if (typeof defaultValue === 'boolean') {
+    if (rawValue === 'true') return true;
+    if (rawValue === 'false') return false;
+    return rawValue;
+  }
+
+  if (typeof defaultValue === 'number') {
+    const parsed = Number(rawValue);
+    return Number.isFinite(parsed) ? parsed : rawValue;
+  }
+
+  return rawValue;
+}
+
 export async function saveConfig(updates: Record<string, unknown>): Promise<void> {
   clearLoadConfigCache();
   const store = await getConfigStore();
 
   for (const [key, rawValue] of Object.entries(updates)) {
-    let value = rawValue;
+    let value = coerceConfigValue(key, rawValue);
     if (key === 'model.default' && typeof rawValue === 'string') {
       value = normalizeConfiguredModelId(rawValue);
     } else if (

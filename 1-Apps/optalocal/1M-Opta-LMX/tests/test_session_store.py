@@ -151,10 +151,12 @@ class TestListSessions:
         assert result.sessions[0].id == "s1"
 
     def test_filter_by_since(self, tmp_path: Path) -> None:
-        _write_session(tmp_path, "old", created="2024-01-01T00:00:00Z",
-                       updated="2024-01-01T00:00:00Z")
-        _write_session(tmp_path, "new", created="2024-06-01T00:00:00Z",
-                       updated="2024-06-01T00:00:00Z")
+        _write_session(
+            tmp_path, "old", created="2024-01-01T00:00:00Z", updated="2024-01-01T00:00:00Z"
+        )
+        _write_session(
+            tmp_path, "new", created="2024-06-01T00:00:00Z", updated="2024-06-01T00:00:00Z"
+        )
         store = SessionStore(tmp_path)
         result = store.list_sessions(since="2024-03-01T00:00:00Z")
         assert result.total == 1
@@ -168,10 +170,18 @@ class TestListSessions:
         assert result.sessions[0].id == "newer"
 
     def test_uses_index_when_present(self, tmp_path: Path) -> None:
-        _write_index(tmp_path, {
-            "s1": {"title": "Session 1", "model": "claude", "tags": [],
-                   "created": "2024-01-01T00:00:00Z", "messageCount": 5},
-        })
+        _write_index(
+            tmp_path,
+            {
+                "s1": {
+                    "title": "Session 1",
+                    "model": "claude",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "messageCount": 5,
+                },
+            },
+        )
         store = SessionStore(tmp_path)
         result = store.list_sessions()
         assert result.total == 1
@@ -185,7 +195,8 @@ class TestListSessions:
 class TestGetSession:
     def test_returns_full_session(self, tmp_path: Path) -> None:
         _write_session(
-            tmp_path, "s1",
+            tmp_path,
+            "s1",
             title="My Session",
             model="claude-3",
             messages=[{"role": "user", "content": "Hello"}],
@@ -214,12 +225,15 @@ class TestGetSession:
 
     def test_parses_tool_calls(self, tmp_path: Path) -> None:
         _write_session(
-            tmp_path, "s1",
-            messages=[{
-                "role": "assistant",
-                "content": None,
-                "tool_calls": [{"id": "call_1", "type": "function"}],
-            }],
+            tmp_path,
+            "s1",
+            messages=[
+                {
+                    "role": "assistant",
+                    "content": None,
+                    "tool_calls": [{"id": "call_1", "type": "function"}],
+                }
+            ],
         )
         store = SessionStore(tmp_path)
         session = store.get_session("s1")
@@ -254,12 +268,25 @@ class TestDeleteSession:
 
     def test_removes_from_index(self, tmp_path: Path) -> None:
         _write_session(tmp_path, "s1")
-        _write_index(tmp_path, {
-            "s1": {"title": "S1", "model": "m", "tags": [],
-                   "created": "2024-01-01T00:00:00Z", "messageCount": 0},
-            "s2": {"title": "S2", "model": "m", "tags": [],
-                   "created": "2024-01-01T00:00:00Z", "messageCount": 0},
-        })
+        _write_index(
+            tmp_path,
+            {
+                "s1": {
+                    "title": "S1",
+                    "model": "m",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "messageCount": 0,
+                },
+                "s2": {
+                    "title": "S2",
+                    "model": "m",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "messageCount": 0,
+                },
+            },
+        )
         store = SessionStore(tmp_path)
         store.delete_session("s1")
 
@@ -298,7 +325,8 @@ class TestSearchSessions:
 
     def test_matches_first_user_message(self, tmp_path: Path) -> None:
         _write_session(
-            tmp_path, "s1",
+            tmp_path,
+            "s1",
             title="No title clue",
             model="unknown",
             messages=[{"role": "user", "content": "explain the quantum entanglement"}],
@@ -333,11 +361,19 @@ class TestLoadFromIndex:
         assert result.total == 1
 
     def test_skips_non_dict_entries(self, tmp_path: Path) -> None:
-        _write_index(tmp_path, {
-            "good": {"title": "OK", "model": "m", "tags": [],
-                     "created": "2024-01-01T00:00:00Z", "messageCount": 1},
-            "bad": "not a dict",
-        })
+        _write_index(
+            tmp_path,
+            {
+                "good": {
+                    "title": "OK",
+                    "model": "m",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "messageCount": 1,
+                },
+                "bad": "not a dict",
+            },
+        )
         store = SessionStore(tmp_path)
         result = store.list_sessions()
         assert result.total == 1
@@ -353,9 +389,7 @@ class TestScanSessionFiles:
         _write_session(tmp_path, "s1")
         # Create a minimal index.json manually (not via _write_index which adds
         # an entry) — it should be excluded from the file scan even when empty.
-        (tmp_path / "index.json").write_text(
-            json.dumps({"entries": {}}), encoding="utf-8"
-        )
+        (tmp_path / "index.json").write_text(json.dumps({"entries": {}}), encoding="utf-8")
         # Because index.json is present, _load_summaries uses _load_from_index,
         # which returns 0 entries (empty). The scan path is taken only when
         # index.json is absent. Verify no session is returned from empty index.
@@ -386,15 +420,20 @@ class TestEdgeCases:
     def test_parse_skips_non_dict_messages(self, tmp_path: Path) -> None:
         """Non-dict entries in the messages list are silently skipped."""
         path = tmp_path / "s1.json"
-        path.write_text(json.dumps({
-            "id": "s1",
-            "title": "T",
-            "model": "m",
-            "tags": [],
-            "created": "2024-01-01T00:00:00Z",
-            "updated": "2024-01-01T00:00:00Z",
-            "messages": ["not a dict", {"role": "user", "content": "hi"}],
-        }), encoding="utf-8")
+        path.write_text(
+            json.dumps(
+                {
+                    "id": "s1",
+                    "title": "T",
+                    "model": "m",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "updated": "2024-01-01T00:00:00Z",
+                    "messages": ["not a dict", {"role": "user", "content": "hi"}],
+                }
+            ),
+            encoding="utf-8",
+        )
         store = SessionStore(tmp_path)
         session = store.get_session("s1")
         assert session is not None
@@ -403,14 +442,17 @@ class TestEdgeCases:
     def test_search_matches_list_content_type(self, tmp_path: Path) -> None:
         """search finds query in multi-part (list) content messages."""
         _write_session(
-            tmp_path, "s1",
+            tmp_path,
+            "s1",
             title="unrelated",
-            messages=[{
-                "role": "user",
-                "content": [
-                    {"type": "text", "text": "Please explain neural networks"},
-                ],
-            }],
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": "Please explain neural networks"},
+                    ],
+                }
+            ],
         )
         store = SessionStore(tmp_path)
         results = store.search_sessions("neural")
@@ -418,10 +460,18 @@ class TestEdgeCases:
 
     def test_remove_from_index_noop_when_not_present(self, tmp_path: Path) -> None:
         """_remove_from_index is a no-op when session_id not in entries."""
-        _write_index(tmp_path, {
-            "other": {"title": "O", "model": "m", "tags": [],
-                      "created": "2024-01-01T00:00:00Z", "messageCount": 0},
-        })
+        _write_index(
+            tmp_path,
+            {
+                "other": {
+                    "title": "O",
+                    "model": "m",
+                    "tags": [],
+                    "created": "2024-01-01T00:00:00Z",
+                    "messageCount": 0,
+                },
+            },
+        )
         _write_session(tmp_path, "s1")
         store = SessionStore(tmp_path)
         store.delete_session("s1")  # s1 not in index — should not corrupt it
@@ -432,7 +482,8 @@ class TestEdgeCases:
         """Deep message search stops at limit."""
         for i in range(5):
             _write_session(
-                tmp_path, f"s{i}",
+                tmp_path,
+                f"s{i}",
                 title="no-match",
                 messages=[{"role": "user", "content": f"deep content keyword {i}"}],
             )

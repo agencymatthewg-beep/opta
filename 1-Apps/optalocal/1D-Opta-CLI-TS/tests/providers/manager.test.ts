@@ -370,6 +370,11 @@ describe('probeProvider — explicit Anthropic config skips LMX probe', () => {
 });
 
 describe('probeProvider — LMX unreachable + no API key', () => {
+  beforeEach(() => {
+    delete process.env['GEMINI_API_KEY'];
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['OPENCODE_ZEN_API_KEY'];
+  });
   it('throws structured remediation metadata when LMX is unreachable and no ANTHROPIC_API_KEY is set', async () => {
     delete process.env['ANTHROPIC_API_KEY'];
     const probeMock = await getProbeMock();

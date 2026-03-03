@@ -15,6 +15,10 @@
     "darwin-x86_64": {
       "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/opta-init-mac.dmg",
       "signature": "MEUCICQvRHRoV0N3Q3dQSEY4eFhNQjRkSkxjSFZjc2h4NjhTRHBnL0d4MktTAiEA5a1hM3hRWWs4d2JkRlYxQjF6Ym0wUTB1Q3hkd1lMS1l6M2I5MUE9"
+    },
+    "windows-x86_64": {
+      "url": "https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_x64-setup.nsis.zip",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWCtvVkJ4eUEvbG8rRmF6WGVMM0pWTWppRlF3dzlOcTA0NkpTaGU5UzYzeE93OWcxRWRUVUxxSEI1Vm5aMUhkUlpLZ0ZCQWZpMDc3R1dwVXR5Nko1d0FvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNTE5NDgyCWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyXzAuNi4xX3g2NC1zZXR1cC5uc2lzLnppcAp"
     }
   }
 }

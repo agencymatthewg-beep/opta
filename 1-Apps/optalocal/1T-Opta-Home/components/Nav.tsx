@@ -16,17 +16,29 @@ export function Nav() {
         {/* Core app links */}
         <div className="hidden md:flex items-center gap-6 text-sm">
           <a
+            href="https://init.optalocal.com"
+            className="text-text-secondary hover:text-text-primary transition-colors"
+          >
+            Init
+          </a>
+          <a
             href="https://lmx.optalocal.com"
             className="text-text-secondary hover:text-text-primary transition-colors"
           >
             LMX
           </a>
-          <span className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+          <a
+            href="https://help.optalocal.com/docs/cli"
+            className="text-text-secondary hover:text-text-primary transition-colors"
+          >
             CLI
-          </span>
-          <span className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer">
+          </a>
+          <a
+            href="https://help.optalocal.com/docs/opta-code"
+            className="text-text-secondary hover:text-text-primary transition-colors"
+          >
             Code
-          </span>
+          </a>
           <span className="w-px h-4 bg-white/10" />
           <a
             href="https://accounts.optalocal.com"

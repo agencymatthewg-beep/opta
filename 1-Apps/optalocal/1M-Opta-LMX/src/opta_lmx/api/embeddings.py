@@ -91,14 +91,13 @@ async def create_embeddings(
             total_chars = sum(len(t) for t in texts)
             est_tokens = max(1, total_chars // 4)
 
-            return JSONResponse(content=EmbeddingResponse(
-                data=[
-                    EmbeddingData(embedding=vec, index=i)
-                    for i, vec in enumerate(vectors)
-                ],
-                model=remote_client.model,
-                usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
-            ).model_dump())
+            return JSONResponse(
+                content=EmbeddingResponse(
+                    data=[EmbeddingData(embedding=vec, index=i) for i, vec in enumerate(vectors)],
+                    model=remote_client.model,
+                    usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
+                ).model_dump()
+            )
         except HelperNodeError as e:
             if e.fallback == "skip":
                 return openai_error(
@@ -108,10 +107,13 @@ async def create_embeddings(
                     code="helper_node_unavailable",
                 )
             # fallback == "local" — fall through to local engine
-            logger.info("helper_node_embed_fallback_to_local", extra={
-                "remote_url": remote_client.url,
-                "reason": str(e),
-            })
+            logger.info(
+                "helper_node_embed_fallback_to_local",
+                extra={
+                    "remote_url": remote_client.url,
+                    "reason": str(e),
+                },
+            )
 
     # Local embedding engine
     if embedding_engine is None:
@@ -142,11 +144,10 @@ async def create_embeddings(
     total_chars = sum(len(t) for t in texts)
     est_tokens = max(1, total_chars // 4)
 
-    return JSONResponse(content=EmbeddingResponse(
-        data=[
-            EmbeddingData(embedding=vec, index=i)
-            for i, vec in enumerate(vectors)
-        ],
-        model=embedding_engine.model_id or body.model,
-        usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
-    ).model_dump())
+    return JSONResponse(
+        content=EmbeddingResponse(
+            data=[EmbeddingData(embedding=vec, index=i) for i, vec in enumerate(vectors)],
+            model=embedding_engine.model_id or body.model,
+            usage=EmbeddingUsage(prompt_tokens=est_tokens, total_tokens=est_tokens),
+        ).model_dump()
+    )

@@ -17,6 +17,7 @@
 11. docs/RELEASE-CONTROL-WORKFLOW.md — channel manifest contract + promotion steps
 12. docs/CHANGELOG.md — version history
 13. docs/GO-LIVE-CHECKLIST.md — release readiness checklist with owners
+14. docs/archive/README.md — historical/superseded docs location
 
 ## File Map
 
@@ -25,14 +26,20 @@
 | APP.md                    | 2026-02-28   | Project identity and purpose       |
 | CLAUDE.md                 | 2026-02-28   | AI coding instructions             |
 | ARCHITECTURE.md           | 2026-02-28   | System design                      |
-| docs/INDEX.md             | 2026-03-02   | This file                          |
+| docs/INDEX.md             | 2026-03-03   | This file                          |
 | docs/COMPONENT-LOCATION-CONTRACT.md | 2026-03-02 | Website/app location + required files |
-| docs/ROADMAP.md           | 2026-03-02   | Build phases                       |
+| docs/ROADMAP.md           | 2026-03-03   | Build phases                       |
 | docs/GUARDRAILS.md        | 2026-02-28   | Hard rules                         |
 | docs/ECOSYSTEM.md         | 2026-02-28   | Ecosystem relationships            |
 | docs/KNOWLEDGE.md         | 2026-02-27   | Research + references              |
-| docs/WORKFLOWS.md         | 2026-02-28   | Dev + deploy flows                 |
+| docs/WORKFLOWS.md         | 2026-03-03   | Dev + deploy + docs consistency flows |
 | docs/DECISIONS.md         | 2026-02-28   | Locked decisions                   |
-| docs/RELEASE-CONTROL-WORKFLOW.md | 2026-03-02 | Release control contract + operations |
-| docs/CHANGELOG.md         | 2026-03-02   | Version history                    |
-| docs/GO-LIVE-CHECKLIST.md | 2026-02-28   | Download and run go-live readiness |
+| docs/RELEASE-CONTROL-WORKFLOW.md | 2026-03-03 | Release control contract + operations |
+| docs/CHANGELOG.md         | 2026-03-03   | Version history                    |
+| docs/GO-LIVE-CHECKLIST.md | 2026-03-03   | Download and run go-live readiness |
+| docs/archive/README.md    | 2026-03-03   | Archive policy and historical docs |
+
+## Historical Docs
+
+- Archived documents live under `docs/archive/` in dated folders.
+- Current operational source of truth remains the root `docs/*.md` files listed above.

@@ -1,5 +1,7 @@
 import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { loadConfig } from '../core/config.js';
+import { readSharedMemoryContext } from './memory.js';
 
 // --- Types ---
 
@@ -263,22 +265,22 @@ export async function loadOpisContext(cwd: string): Promise<OpisContext> {
 
 /**
  * Load fallback context when no OPIS scaffold is found.
- * Chain: .opta/memory.md -> CLAUDE.md -> empty
+ * Chain: memory shards by provider/main/atpo -> CLAUDE.md -> empty
  */
 async function loadFallbackContext(cwd: string, docsDir: string): Promise<OpisContext> {
-  // Try .opta/memory.md
-  const memoryContent = await safeReadFile(join(cwd, '.opta', 'memory.md'));
-  if (memoryContent) {
+  const config = await loadConfigSafe();
+  const memoryContext = await readSharedMemoryContext(cwd, config);
+  const claudeContent = await safeReadFile(join(cwd, 'CLAUDE.md'));
+
+  if (memoryContext) {
     return {
       summary: '',
       hasOpis: false,
       docsDir,
-      fallbackMemory: memoryContent,
+      fallbackMemory: memoryContext,
     };
   }
 
-  // Try CLAUDE.md
-  const claudeContent = await safeReadFile(join(cwd, 'CLAUDE.md'));
   if (claudeContent) {
     return {
       summary: '',
@@ -294,4 +296,12 @@ async function loadFallbackContext(cwd: string, docsDir: string): Promise<OpisCo
     hasOpis: false,
     docsDir,
   };
+}
+
+async function loadConfigSafe() {
+  try {
+    return await loadConfig();
+  } catch {
+    return null;
+  }
 }

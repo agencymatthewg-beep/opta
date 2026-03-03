@@ -18,7 +18,7 @@ vi.mock('../../src/core/subagent.js', () => ({
 }));
 
 vi.mock('openai', () => ({
-  default: vi.fn(() => ({ chat: { completions: { create: vi.fn() } } })),
+  default: vi.fn(function() { return { chat: { completions: { create: vi.fn() } } }; }),
 }));
 
 vi.mock('../../src/mcp/registry.js', () => ({

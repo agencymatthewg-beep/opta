@@ -104,10 +104,12 @@ async def test_sse_endpoint_returns_event_stream(client: AsyncClient) -> None:
     # StreamingResponse never ends — test the bus + format separately)
     queue = event_bus.subscribe()
 
-    await event_bus.publish(ServerEvent(
-        event_type="model_loaded",
-        data={"model_id": "test"},
-    ))
+    await event_bus.publish(
+        ServerEvent(
+            event_type="model_loaded",
+            data={"model_id": "test"},
+        )
+    )
 
     event = queue.get_nowait()
     assert event.event_type == "model_loaded"
@@ -127,10 +129,12 @@ async def test_sse_receives_published_event(client: AsyncClient) -> None:
     # Subscribe manually to verify events flow through the bus
     queue = event_bus.subscribe()
 
-    await event_bus.publish(ServerEvent(
-        event_type="model_loaded",
-        data={"model_id": "test/model", "memory_gb": 4.2},
-    ))
+    await event_bus.publish(
+        ServerEvent(
+            event_type="model_loaded",
+            data={"model_id": "test/model", "memory_gb": 4.2},
+        )
+    )
 
     event = queue.get_nowait()
     assert event.event_type == "model_loaded"
@@ -159,7 +163,10 @@ async def test_engine_publishes_model_loaded_event() -> None:
 
     monitor = MemoryMonitor(max_percent=90)
     engine = InferenceEngine(
-        memory_monitor=monitor, use_batching=False, event_bus=bus, warmup_on_load=False,
+        memory_monitor=monitor,
+        use_batching=False,
+        event_bus=bus,
+        warmup_on_load=False,
     )
 
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:
@@ -200,7 +207,10 @@ async def test_engine_publishes_model_unloaded_event() -> None:
 
     monitor = MemoryMonitor(max_percent=90)
     engine = InferenceEngine(
-        memory_monitor=monitor, use_batching=False, event_bus=bus, warmup_on_load=False,
+        memory_monitor=monitor,
+        use_batching=False,
+        event_bus=bus,
+        warmup_on_load=False,
     )
 
     async def mock_create(model_id: str, use_batching: bool, **_kw: object) -> MagicMock:

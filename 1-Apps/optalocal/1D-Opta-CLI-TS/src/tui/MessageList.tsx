@@ -238,6 +238,11 @@ function buildMarkdownEstimateText(text: string, width: number): string {
   return formatMarkdownTables(sanitizeTerminalText(text), Math.max(1, width));
 }
 
+function hasMarkdownSyntax(text: string): boolean {
+  if (!text) return false;
+  return /[`*_]{2}|```|^#{1,6}\s+|^\s*([-*+]\s+|\d+\.\s+)|^\|.+\||^>\s+/m.test(text);
+}
+
 function MetaTimestamp({ timestamp }: { timestamp: string }) {
   return (
     <Box justifyContent="flex-end">
@@ -272,8 +277,11 @@ export function ChatMessage({
     ? formatAssistantDisplayText(msg.content, { streaming: isStreaming })
     : '';
   const bodyWidth = safeMode ? safeAssistantBodyWidth : assistantBodyWidth;
+  const useMarkdownAssistant = isAssistant && hasMarkdownSyntax(formattedAssistantText);
   const assistantEstimateText = isAssistant
-    ? buildMarkdownEstimateText(formattedAssistantText, bodyWidth)
+    ? (useMarkdownAssistant
+        ? buildMarkdownEstimateText(formattedAssistantText, bodyWidth)
+        : sanitizeTerminalText(formattedAssistantText))
     : '';
   const completionMeta = isAssistant && !isStreaming ? msg.responseMeta : undefined;
 
@@ -308,12 +316,16 @@ export function ChatMessage({
                 />
               </Box>
             )}
-            <MarkdownText
-              text={formattedAssistantText}
-              isStreaming={isStreaming}
-              width={safeAssistantBodyWidth}
-              estimatedText={assistantEstimateText}
-            />
+            {useMarkdownAssistant ? (
+              <MarkdownText
+                text={formattedAssistantText}
+                isStreaming={isStreaming}
+                width={safeAssistantBodyWidth}
+                estimatedText={assistantEstimateText}
+              />
+            ) : (
+              <Text wrap="wrap">{assistantEstimateText}</Text>
+            )}
           </Box>
         </Box>
       );
@@ -352,12 +364,16 @@ export function ChatMessage({
                 />
               </Box>
             )}
-            <MarkdownText
-              text={formattedAssistantText}
-              isStreaming={isStreaming}
-              width={assistantBodyWidth}
-              estimatedText={assistantEstimateText}
-            />
+            {useMarkdownAssistant ? (
+              <MarkdownText
+                text={formattedAssistantText}
+                isStreaming={isStreaming}
+                width={assistantBodyWidth}
+                estimatedText={assistantEstimateText}
+              />
+            ) : (
+              <Text wrap="wrap">{assistantEstimateText}</Text>
+            )}
           </Box>
         </Box>
       </Box>

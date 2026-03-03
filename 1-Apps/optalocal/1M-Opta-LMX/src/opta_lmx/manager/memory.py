@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import time
+from typing import Protocol
 
 import psutil
 
@@ -14,6 +15,13 @@ logger = logging.getLogger(__name__)
 # Cache psutil.virtual_memory() for this many seconds to reduce syscall overhead.
 # Memory stats don't change fast enough to warrant per-call polling.
 _CACHE_TTL_SEC = 1.0
+
+
+class _VirtualMemorySnapshot(Protocol):
+    total: int
+    used: int
+    available: int
+    percent: float
 
 
 class MemoryMonitor:
@@ -31,10 +39,10 @@ class MemoryMonitor:
 
     def __init__(self, max_percent: int = 90) -> None:
         self.threshold_percent = max_percent
-        self._cached_vm: psutil._common.svmem | None = None  # type: ignore[name-defined]
+        self._cached_vm: _VirtualMemorySnapshot | None = None
         self._cache_time: float = 0.0
 
-    def _vm(self) -> psutil._common.svmem:  # type: ignore[name-defined]
+    def _vm(self) -> _VirtualMemorySnapshot:
         """Get virtual memory stats, cached for _CACHE_TTL_SEC."""
         now = time.monotonic()
         if self._cached_vm is None or (now - self._cache_time) > _CACHE_TTL_SEC:

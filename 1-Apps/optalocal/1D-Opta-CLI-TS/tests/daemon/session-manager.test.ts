@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SessionManager } from '../../src/daemon/session-manager.js';
 import type { OptaConfig } from '../../src/core/config.js';
+import { agentLoop } from '../../src/core/agent.js';
 
 // ---------------------------------------------------------------------------
 // Mocks
@@ -18,24 +19,29 @@ vi.mock('../../src/daemon/session-store.js', () => ({
 }));
 
 vi.mock('../../src/daemon/worker-pool.js', () => ({
-  ToolWorkerPool: vi.fn().mockImplementation(() => ({
-    runTool: vi.fn().mockResolvedValue('ok'),
-    getStats: vi.fn().mockReturnValue({ workers: 0, busy: 0, queued: 0 }),
-    close: vi.fn().mockResolvedValue(undefined),
-  })),
+  ToolWorkerPool: vi.fn().mockImplementation(function() {
+    return {
+      runTool: vi.fn().mockResolvedValue('ok'),
+      getStats: vi.fn().mockReturnValue({ workers: 0, busy: 0, queued: 0 }),
+      close: vi.fn().mockResolvedValue(undefined)
+    };
+  }),
 }));
 
 vi.mock('../../src/daemon/background-manager.js', () => ({
-  BackgroundManager: vi.fn().mockImplementation(() => ({
-    subscribe: vi.fn().mockReturnValue(() => {}),
-    list: vi.fn().mockResolvedValue([]),
+  BackgroundManager: vi.fn().mockImplementation(function() {
+    return {
+      subscribe: vi.fn().mockReturnValue(() => {}),
+      list: vi.fn().mockResolvedValue([]),
     start: vi.fn().mockResolvedValue({ processId: 'p-1', state: 'running' }),
     status: vi.fn().mockReturnValue(null),
     output: vi.fn().mockReturnValue(null),
     kill: vi.fn().mockResolvedValue(null),
     close: vi.fn().mockResolvedValue(undefined),
     updateOptions: vi.fn(),
-  })),
+  
+    };
+  }),
 }));
 
 vi.mock('../../src/daemon/telemetry.js', () => ({
@@ -50,9 +56,11 @@ vi.mock('../../src/core/agent.js', () => ({
 }));
 
 vi.mock('../../src/lmx/client.js', () => ({
-  LmxClient: vi.fn().mockImplementation(() => ({
-    models: vi.fn().mockResolvedValue({ models: [{ model_id: 'test-model' }] }),
-  })),
+  LmxClient: vi.fn().mockImplementation(function() {
+    return {
+      models: vi.fn().mockResolvedValue({ models: [{ model_id: 'test-model' }] })
+    };
+  }),
 }));
 
 vi.mock('../../src/lmx/model-lifecycle.js', () => ({
@@ -245,6 +253,213 @@ describe('SessionManager', () => {
       expect(result.turnId.length).toBeGreaterThan(0);
       // queued may be 0 if processing immediately picks it up, or 1 if still queued
       expect(typeof result.queued).toBe('number');
+    });
+
+    it('maps do mode to auto runtime mode when executing agent loop', async () => {
+      await manager.createSession({ sessionId: 'turn-do-mode' });
+      const agentLoopMock = vi.mocked(agentLoop);
+
+      await manager.submitTurn('turn-do-mode', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'run this autonomously',
+        mode: 'do',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(agentLoopMock).toHaveBeenCalled();
+      const lastCall = agentLoopMock.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [, effectiveConfig, options] = lastCall!;
+      expect((effectiveConfig as OptaConfig).defaultMode).toBe('auto');
+      expect(options?.mode).toBe('auto');
+    });
+
+    it('applies provider + dangerous overrides to runtime config', async () => {
+      await manager.createSession({ sessionId: 'turn-overrides' });
+      const agentLoopMock = vi.mocked(agentLoop);
+
+      await manager.submitTurn('turn-overrides', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'run with override policy',
+        mode: 'chat',
+        overrides: {
+          provider: 'anthropic',
+          dangerous: true,
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(agentLoopMock).toHaveBeenCalled();
+      const lastCall = agentLoopMock.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [, effectiveConfig, options] = lastCall!;
+      expect((effectiveConfig as OptaConfig).provider.active).toBe('anthropic');
+      expect((effectiveConfig as OptaConfig).defaultMode).toBe('dangerous');
+      expect(options?.mode).toBe('dangerous');
+    });
+
+    it('applies auto/no-commit/no-checkpoints overrides to runtime config', async () => {
+      await manager.createSession({ sessionId: 'turn-runtime-overrides' });
+      const agentLoopMock = vi.mocked(agentLoop);
+
+      await manager.submitTurn('turn-runtime-overrides', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'run with runtime overrides',
+        mode: 'chat',
+        overrides: {
+          auto: true,
+          noCommit: true,
+          noCheckpoints: true,
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(agentLoopMock).toHaveBeenCalled();
+      const lastCall = agentLoopMock.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [, effectiveConfig, options] = lastCall!;
+      expect((effectiveConfig as OptaConfig).defaultMode).toBe('auto');
+      expect((effectiveConfig as OptaConfig).git.autoCommit).toBe(false);
+      expect((effectiveConfig as OptaConfig).git.checkpoints).toBe(false);
+      expect(options?.mode).toBe('auto');
+    });
+
+    it('applies autonomy mode and level overrides to runtime config', async () => {
+      await manager.createSession({ sessionId: 'turn-autonomy-overrides' });
+      const agentLoopMock = vi.mocked(agentLoop);
+
+      await manager.submitTurn('turn-autonomy-overrides', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'run ceo mode',
+        mode: 'chat',
+        overrides: {
+          autonomyMode: 'ceo',
+          autonomyLevel: 5,
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(agentLoopMock).toHaveBeenCalled();
+      const lastCall = agentLoopMock.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [, effectiveConfig] = lastCall!;
+      expect((effectiveConfig as OptaConfig).autonomy.mode).toBe('ceo');
+      expect((effectiveConfig as OptaConfig).autonomy.level).toBe(5);
+    });
+
+    it('adapts json format override by enforcing JSON-only response instruction', async () => {
+      await manager.createSession({ sessionId: 'turn-format-json' });
+      const agentLoopMock = vi.mocked(agentLoop);
+
+      await manager.submitTurn('turn-format-json', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'summarize the result',
+        mode: 'chat',
+        overrides: {
+          format: 'json',
+        },
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      expect(agentLoopMock).toHaveBeenCalled();
+      const lastCall = agentLoopMock.mock.calls.at(-1);
+      expect(lastCall).toBeDefined();
+      const [effectiveTask] = lastCall!;
+      expect(typeof effectiveTask).toBe('string');
+      expect(effectiveTask).toContain('Output requirement: return valid JSON only.');
+    });
+
+    it('forwards ATPO intervention state as an atpo.intervene event', async () => {
+      await manager.createSession({ sessionId: 'turn-atpo-events' });
+      const agentLoopMock = vi.mocked(agentLoop);
+      const seenEvents: Array<{ event: string; payload: unknown }> = [];
+      const unsubscribe = manager.subscribe('turn-atpo-events', (event) => {
+        seenEvents.push({ event: event.event, payload: event.payload });
+      });
+
+      agentLoopMock.mockImplementationOnce(async (_task, _config, options) => {
+        options?.onStream?.onAtpoState?.({
+          status: 'intervening',
+          message: 'loop detected',
+          provider: 'local',
+        });
+        return {
+          messages: [{ role: 'assistant', content: 'done' }],
+          toolCallCount: 0,
+        };
+      });
+
+      await manager.submitTurn('turn-atpo-events', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'trigger atpo',
+        mode: 'chat',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const atpoEvent = seenEvents.find((event) => event.event === 'atpo.intervene');
+      expect(atpoEvent).toBeDefined();
+      expect(atpoEvent?.payload).toMatchObject({
+        status: 'intervening',
+        reason: 'loop detected',
+        provider: 'local',
+      });
+
+      unsubscribe();
+    });
+
+    it('forwards sub-agent lifecycle callbacks as agent.phase events', async () => {
+      await manager.createSession({ sessionId: 'turn-subagent-events' });
+      const agentLoopMock = vi.mocked(agentLoop);
+      const seenEvents: Array<{ event: string; payload: unknown }> = [];
+      const unsubscribe = manager.subscribe('turn-subagent-events', (event) => {
+        seenEvents.push({ event: event.event, payload: event.payload });
+      });
+
+      agentLoopMock.mockImplementationOnce(async (_task, _config, options) => {
+        options?.onSubAgentSpawn?.('agent-1', 'Research Agent', undefined);
+        options?.onSubAgentProgress?.({
+          agentId: 'agent-1',
+          phase: 'reading',
+          taskDescription: 'Read docs',
+          toolName: 'read_file',
+          toolCallCount: 1,
+          elapsedMs: 120,
+        });
+        options?.onSubAgentDone?.('agent-1', 'done');
+        return {
+          messages: [{ role: 'assistant', content: 'done' }],
+          toolCallCount: 1,
+        };
+      });
+
+      await manager.submitTurn('turn-subagent-events', {
+        clientId: 'c1',
+        writerId: 'w1',
+        content: 'trigger sub-agent',
+        mode: 'chat',
+      });
+
+      await new Promise((resolve) => setTimeout(resolve, 50));
+
+      const phaseEvents = seenEvents.filter((event) => event.event === 'agent.phase');
+      expect(phaseEvents.length).toBeGreaterThanOrEqual(3);
+      expect(phaseEvents.some((event) => (event.payload as { phase?: string }).phase === 'spawn_subagent')).toBe(true);
+      expect(phaseEvents.some((event) => (event.payload as { phase?: string }).phase === 'reading')).toBe(true);
+      expect(phaseEvents.some((event) => (event.payload as { phase?: string }).phase === 'return_to_main')).toBe(true);
+
+      unsubscribe();
     });
   });
 

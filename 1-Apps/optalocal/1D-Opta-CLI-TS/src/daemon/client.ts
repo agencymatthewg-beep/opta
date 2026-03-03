@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import WebSocket, { type RawData } from 'ws';
 import { ensureDaemonRunning } from './lifecycle.js';
 import {
@@ -16,6 +17,17 @@ import type {
 interface SessionDetail extends SessionSnapshot {
   messages: Array<{ role: string; content?: unknown }>;
 }
+
+const MinimalV3EnvelopeSchema = z.object({
+  v: z.number(),
+  event: z.string(),
+  daemonId: z.string(),
+  sessionId: z.string().optional(),
+  seq: z.number(),
+  ts: z.string().optional(),
+  timestamp: z.string().optional(),
+  payload: z.unknown(),
+}).passthrough();
 
 interface LegacyChatStats {
   toolCalls?: number;
@@ -210,13 +222,21 @@ export class DaemonClient {
     );
   }
 
-  async legacyChat(message: string, sessionId?: string): Promise<LegacyChatResponse> {
+  async legacyChat(
+    message: string,
+    sessionId?: string,
+    opts?: {
+      mode?: ClientSubmitTurn['mode'];
+      overrides?: ClientSubmitTurn['overrides'];
+    }
+  ): Promise<LegacyChatResponse> {
     const session = await this.createSession({ sessionId });
     const { turnId } = await this.submitTurn(session.sessionId, {
       clientId: 'legacy-http',
       writerId: 'legacy-http',
       content: message,
-      mode: 'do',
+      mode: opts?.mode ?? 'do',
+      overrides: opts?.overrides,
     });
 
     return new Promise((resolve, reject) => {
@@ -291,8 +311,13 @@ export class DaemonClient {
               ? Buffer.concat(data).toString()
               : Buffer.from(data).toString()
         );
-        if (typeof decoded !== 'object' || !decoded || !('event' in decoded)) return;
-        handlers.onEvent(decoded as V3Envelope);
+        const result = MinimalV3EnvelopeSchema.safeParse(decoded);
+        if (!result.success) return;
+        const envelope = {
+          ...result.data,
+          ts: result.data.ts ?? result.data.timestamp ?? new Date().toISOString(),
+        } as unknown as V3Envelope;
+        handlers.onEvent(envelope);
       } catch {
         // Ignore malformed events.
       }

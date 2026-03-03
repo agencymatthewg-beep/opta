@@ -48,7 +48,9 @@ def mock_engine() -> InferenceEngine:
 
     # The lifecycle manager's _create_engine returns tuple[engine, metadata].
     async def mock_create_lifecycle(
-        model_id: str, use_batching: bool, **_kw: object,
+        model_id: str,
+        use_batching: bool,
+        **_kw: object,
     ) -> tuple[MagicMock, dict[str, object]]:
         mock = MagicMock()
         mock.chat = AsyncMock(return_value="Hello! I'm a test response.")
@@ -118,7 +120,9 @@ async def _make_test_client(
 
 @pytest.fixture
 async def client(
-    mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+    mock_engine: InferenceEngine,
+    mock_model_manager: ModelManager,
+    tmp_path: Path,
 ) -> AsyncIterator[AsyncClient]:
     """Test HTTP client with mocked engine (no auth)."""
     async for c in _make_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -127,7 +131,9 @@ async def client(
 
 @pytest.fixture
 async def client_with_auth(
-    mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+    mock_engine: InferenceEngine,
+    mock_model_manager: ModelManager,
+    tmp_path: Path,
 ) -> AsyncIterator[AsyncClient]:
     """Test HTTP client with admin key authentication enabled."""
     async for c in _make_test_client(

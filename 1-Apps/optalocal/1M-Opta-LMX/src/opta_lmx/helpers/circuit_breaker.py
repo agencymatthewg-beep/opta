@@ -24,9 +24,7 @@ class CircuitBreaker:
         reset_timeout_sec: Seconds to wait before trying half-open.
     """
 
-    def __init__(
-        self, failure_threshold: int = 3, reset_timeout_sec: float = 60.0
-    ) -> None:
+    def __init__(self, failure_threshold: int = 3, reset_timeout_sec: float = 60.0) -> None:
         self._failure_threshold = failure_threshold
         self._reset_timeout_sec = reset_timeout_sec
         self._state = CircuitState.CLOSED
@@ -40,7 +38,7 @@ class CircuitBreaker:
             self._state == CircuitState.OPEN
             and time.monotonic() - self._last_failure_at >= self._reset_timeout_sec
         ):
-                self._state = CircuitState.HALF_OPEN
+            self._state = CircuitState.HALF_OPEN
         return self._state
 
     @property
@@ -60,10 +58,7 @@ class CircuitBreaker:
         """
         self._failure_count += 1
         self._last_failure_at = time.monotonic()
-        if (
-            self._state == CircuitState.HALF_OPEN
-            or self._failure_count >= self._failure_threshold
-        ):
+        if self._state == CircuitState.HALF_OPEN or self._failure_count >= self._failure_threshold:
             self._state = CircuitState.OPEN
 
     def reset(self) -> None:

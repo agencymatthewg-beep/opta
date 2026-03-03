@@ -6,6 +6,7 @@ import ipaddress
 import logging
 import socket
 from dataclasses import dataclass
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +62,8 @@ class MdnsAdvertiser:
     service_name: str = "_opta-lmx._tcp.local"
 
     def __post_init__(self) -> None:
-        self._zeroconf = None
-        self._service_info = None
+        self._zeroconf: Any | None = None
+        self._service_info: Any | None = None
         self._active = False
 
     def start(self) -> None:
@@ -125,4 +126,3 @@ class MdnsAdvertiser:
             self._zeroconf = None
             self._service_info = None
             self._active = False
-

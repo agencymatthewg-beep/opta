@@ -59,10 +59,7 @@ def _normalize_signature(signature: str) -> str:
     Converts to lowercase, replaces non-alphanumeric chars with underscores,
     and collapses consecutive underscores.
     """
-    normalized_chars = [
-        ch.lower() if ch.isalnum() else "_"
-        for ch in signature
-    ]
+    normalized_chars = [ch.lower() if ch.isalnum() else "_" for ch in signature]
     normalized = "".join(normalized_chars).strip("_")
     while "__" in normalized:
         normalized = normalized.replace("__", "_")

@@ -172,6 +172,7 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
         fallbackHosts: ctx.config.connection.fallbackHosts,
         port: ctx.config.connection.port,
         adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
       });
 
       const [loadedRes, available] = await Promise.all([
@@ -224,6 +225,7 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
       fallbackHosts: ctx.config.connection.fallbackHosts,
       port: ctx.config.connection.port,
       adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
     });
 
     const [loadedRes, availRes, cloudModels] = await Promise.all([

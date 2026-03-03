@@ -6,6 +6,7 @@ import asyncio
 import contextvars
 import logging
 from collections.abc import AsyncIterator
+from contextlib import AbstractAsyncContextManager
 from importlib import metadata as importlib_metadata
 from typing import Any
 
@@ -119,8 +120,8 @@ class InferenceEngine:
         self._speculative_telemetry_ctx: contextvars.ContextVar[dict[str, Any] | None] = (
             contextvars.ContextVar("speculative_telemetry", default=None)
         )
-        self._queue_wait_sec_ctx: contextvars.ContextVar[float | None] = (
-            contextvars.ContextVar("queue_wait_sec", default=None)
+        self._queue_wait_sec_ctx: contextvars.ContextVar[float | None] = contextvars.ContextVar(
+            "queue_wait_sec", default=None
         )
 
         # ── Concurrency controller ────────────────────────────────────
@@ -284,7 +285,7 @@ class InferenceEngine:
         model_id: str,
         priority: str,
         client_id: str | None,
-    ) -> AsyncIterator[None]:
+    ) -> AbstractAsyncContextManager[None]:
         """Acquire global/model/client slots for one request."""
         return self._concurrency._acquire_request_slots(
             model_id=model_id,
@@ -351,7 +352,9 @@ class InferenceEngine:
         preferred_backend: str | None = None,
     ) -> ModelInfo:
         return await self._lifecycle._do_load(
-            model_id, use_batching, performance_overrides,
+            model_id,
+            use_batching,
+            performance_overrides,
             keep_alive_sec=keep_alive_sec,
             allow_unsupported_runtime=allow_unsupported_runtime,
             preferred_backend=preferred_backend,
@@ -365,7 +368,9 @@ class InferenceEngine:
         performance_overrides: dict[str, Any] | None = None,
     ) -> tuple[Any, dict[str, Any]]:
         return await self._lifecycle._create_engine(
-            model_id, use_batching, performance_overrides=performance_overrides,
+            model_id,
+            use_batching,
+            performance_overrides=performance_overrides,
         )
 
     async def _warmup_model(self, model_id: str) -> None:
@@ -430,7 +435,9 @@ class InferenceEngine:
         quarantine_threshold: int,
     ) -> dict[str, Any]:
         return await self._lifecycle._mark_readiness_failure(
-            model_id, reason=reason, quarantine_threshold=quarantine_threshold,
+            model_id,
+            reason=reason,
+            quarantine_threshold=quarantine_threshold,
         )
 
     async def _record_compatibility(
@@ -457,7 +464,8 @@ class InferenceEngine:
         return ModelLifecycleManager._coerce_bool(value, default)
 
     def _resolve_speculative_config(
-        self, performance_overrides: dict[str, Any],
+        self,
+        performance_overrides: dict[str, Any],
     ) -> tuple[bool, str | None, int | None, bool]:
         return self._lifecycle._resolve_speculative_config(performance_overrides)
 
@@ -472,7 +480,9 @@ class InferenceEngine:
         has_var_kwargs: bool,
     ) -> tuple[dict[str, Any], dict[str, Any], dict[str, str]]:
         return ModelLifecycleManager._resolve_supported_engine_kwargs(
-            requested_kwargs, supported_params, has_var_kwargs,
+            requested_kwargs,
+            supported_params,
+            has_var_kwargs,
         )
 
     # ══════════════════════════════════════════════════════════════════
@@ -561,9 +571,17 @@ class InferenceEngine:
         presence_penalty: float = 0.0,
     ) -> tuple[str, int, int, dict[str, Any]]:
         return await self._generator._do_generate(
-            loaded, msg_dicts, messages, temperature,
-            max_tokens, top_p, stop, tools, response_format,
-            frequency_penalty, presence_penalty,
+            loaded,
+            msg_dicts,
+            messages,
+            temperature,
+            max_tokens,
+            top_p,
+            stop,
+            tools,
+            response_format,
+            frequency_penalty,
+            presence_penalty,
         )
 
     # Speculative telemetry helpers — delegated
@@ -774,7 +792,8 @@ class InferenceEngine:
             "adaptive": {
                 "enabled": self._adaptive_concurrency_enabled,
                 "latency_target_ms": round(
-                    self._concurrency._adaptive_latency_target_sec * 1000.0, 2,
+                    self._concurrency._adaptive_latency_target_sec * 1000.0,
+                    2,
                 ),
                 "latency_window_size": self._concurrency._adaptive_latency_samples.maxlen,
                 "latency_p95_sec": self.latency_p95_sec,

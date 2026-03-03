@@ -131,7 +131,8 @@ class TestRequestIDMiddleware:
     async def test_preserves_client_request_id(self, app_client: AsyncClient) -> None:
         """Client-provided X-Request-ID is preserved in response."""
         response = await app_client.get(
-            "/healthz", headers={"x-request-id": "my-custom-id"},
+            "/healthz",
+            headers={"x-request-id": "my-custom-id"},
         )
         assert response.headers["x-request-id"] == "my-custom-id"
 
@@ -143,6 +144,7 @@ class TestRequestLoggingMiddleware:
     async def test_logs_request(self, app_client: AsyncClient, caplog) -> None:
         """HTTP requests are logged with method, path, status, latency."""
         import logging
+
         with caplog.at_level(logging.INFO, logger="opta_lmx.api.middleware"):
             await app_client.get("/v1/models")
 
@@ -152,6 +154,7 @@ class TestRequestLoggingMiddleware:
     async def test_skips_healthz_logging(self, app_client: AsyncClient, caplog) -> None:
         """Healthz endpoint is not logged (noisy)."""
         import logging
+
         with caplog.at_level(logging.INFO, logger="opta_lmx.api.middleware"):
             await app_client.get("/healthz")
 

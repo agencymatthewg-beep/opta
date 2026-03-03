@@ -29,6 +29,7 @@ import {
   storeCloudApiKey,
   deleteCloudApiKey,
 } from '../accounts/cloud.js';
+import { storeGithubKey } from '../keychain/api-keys.js';
 import { EXIT, type ExitCode, ExitError } from '../core/errors.js';
 
 interface AccountAuthOptions {
@@ -274,8 +275,8 @@ async function ensureCookieJarProfileDir(cookieJarId: string): Promise<string> {
   const profileDir = join(OPTA_COOKIE_JARS_DIR, cookieJarId);
   await mkdir(profileDir, { recursive: true, mode: 0o700 });
   if (process.platform !== 'win32') {
-    await chmod(OPTA_COOKIE_JARS_DIR, 0o700).catch(() => {});
-    await chmod(profileDir, 0o700).catch(() => {});
+    await chmod(OPTA_COOKIE_JARS_DIR, 0o700).catch(() => { });
+    await chmod(profileDir, 0o700).catch(() => { });
   }
   return profileDir;
 }
@@ -295,7 +296,7 @@ async function createOAuthBrowserLauncher(options: OAuthLoginFlowOptions): Promi
       open: async (url: string) => {
         (options.browserOpener ?? openInBrowser)(url);
       },
-      close: async () => {},
+      close: async () => { },
     };
   }
 
@@ -305,7 +306,7 @@ async function createOAuthBrowserLauncher(options: OAuthLoginFlowOptions): Promi
       open: async (url: string) => {
         await options.browserOpener!(url);
       },
-      close: async () => {},
+      close: async () => { },
     };
   }
 
@@ -340,7 +341,7 @@ async function createOAuthBrowserLauncher(options: OAuthLoginFlowOptions): Promi
         waitUntil: 'domcontentloaded',
       });
       if (!navigateResult.ok) {
-        await manager.closeSession(sessionId).catch(() => {});
+        await manager.closeSession(sessionId).catch(() => { });
         sessionOpened = false;
         throw formatBrowserLaunchFailure(
           'Failed to navigate Opta browser session',
@@ -351,7 +352,7 @@ async function createOAuthBrowserLauncher(options: OAuthLoginFlowOptions): Promi
     close: async () => {
       if (!sessionOpened) return;
       sessionOpened = false;
-      await manager.closeSession(sessionId).catch(() => {});
+      await manager.closeSession(sessionId).catch(() => { });
     },
   };
 }
@@ -697,7 +698,7 @@ export async function runOAuthLoginFlow(
   } catch (error) {
     if (browserMode === 'opta-session') {
       callbackHandle.cancel('Sign-in browser did not launch successfully.');
-      await launcher.close().catch(() => {});
+      await launcher.close().catch(() => { });
       throw formatBrowserLaunchFailure('Opta browser OAuth launch failed', error);
     }
     // System-browser mode remains best effort; caller can still open URL manually.
@@ -737,7 +738,7 @@ export async function runOAuthLoginFlow(
       throw new Error('OAuth callback did not return an auth code or session tokens.');
     }
   } finally {
-    await launcher.close().catch(() => {});
+    await launcher.close().catch(() => { });
   }
 
   const state = buildState(config.project, session, user);
@@ -763,13 +764,17 @@ async function accountLoginOAuth(opts: AccountAuthOptions): Promise<void> {
     onSignInUrl: opts.json
       ? undefined
       : (url) => {
-          const target = browserMode === 'opta-session'
-            ? 'Opening Opta browser session for accounts sign-in'
-            : 'Opening system browser for accounts sign-in';
-          console.log(chalk.dim(`${target} (${new URL(url).origin})...`));
-          console.log(chalk.dim(`If browser launch is blocked, open:\n  ${url}`));
-        },
+        const target = browserMode === 'opta-session'
+          ? 'Opening Opta browser session for accounts sign-in'
+          : 'Opening system browser for accounts sign-in';
+        console.log(chalk.dim(`${target} (${new URL(url).origin})...`));
+        console.log(chalk.dim(`If browser launch is blocked, open:\n  ${url}`));
+      },
   });
+
+  if (result.session.provider_token) {
+    await storeGithubKey(result.session.provider_token).catch(() => { });
+  }
 
   const payload = {
     ok: true,

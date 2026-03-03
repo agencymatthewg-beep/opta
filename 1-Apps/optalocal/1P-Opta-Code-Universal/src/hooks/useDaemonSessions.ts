@@ -15,6 +15,8 @@ import type {
   DaemonSessionSummary,
   PermissionRequest,
   RuntimeSnapshot,
+  SessionSubmitMode,
+  SessionTurnOverrides,
   TimelineItem,
 } from "../types";
 import {
@@ -35,6 +37,27 @@ import {
 const RUNTIME_POLL_MS = 4000;
 const RUNTIME_POLL_MAX_MS = 30000;
 const AUTH_REPAIR_COOLDOWN_MS = 30000;
+
+function modeTitle(mode: SessionSubmitMode): string {
+  switch (mode) {
+    case "do":
+      return "Do";
+    case "plan":
+      return "Plan";
+    case "review":
+      return "Review";
+    case "research":
+      return "Research";
+    default:
+      return "Prompt";
+  }
+}
+
+function isoToMs(value: string | undefined): number {
+  if (!value) return 0;
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 function isLocalEndpointHost(host: string): boolean {
   const normalized = host.trim().toLowerCase();
@@ -122,8 +145,8 @@ export function useDaemonSessions() {
           if (!loadedToken) return;
           setConnectionRaw((current) =>
             current.host === next.host &&
-              current.port === next.port &&
-              !current.token
+            current.port === next.port &&
+            !current.token
               ? { ...current, token: loadedToken }
               : current,
           );
@@ -134,10 +157,19 @@ export function useDaemonSessions() {
     }
   }, []);
 
-  const [sessions, setSessions] = useLocalStorage<DaemonSessionSummary[]>("opta:sessions", []);
-  const [activeSessionId, setActiveSessionId] = useLocalStorage<string | null>("opta:activeSessionId", null);
+  const [sessions, setSessions] = useLocalStorage<DaemonSessionSummary[]>(
+    "opta:sessions",
+    [],
+  );
+  const [activeSessionId, setActiveSessionId] = useLocalStorage<string | null>(
+    "opta:activeSessionId",
+    null,
+  );
   const [timelineBySession, setTimelineBySession] = useState<
     Record<string, TimelineItem[]>
+  >({});
+  const [rawEventsBySession, setRawEventsBySession] = useState<
+    Record<string, V3Envelope[]>
   >({});
   const [connectionState, setConnectionState] = useState<
     "connected" | "connecting" | "disconnected"
@@ -152,9 +184,8 @@ export function useDaemonSessions() {
   const [streamingBySession, setStreamingBySession] = useState<
     Record<string, boolean>
   >({});
-  const [pendingPermissionsBySession, setPendingPermissionsBySession] = useState<
-    Record<string, PermissionRequest[]>
-  >({});
+  const [pendingPermissionsBySession, setPendingPermissionsBySession] =
+    useState<Record<string, PermissionRequest[]>>({});
 
   const mountedRef = useRef(true);
   const refreshInFlightRef = useRef<Promise<void> | null>(null);
@@ -210,10 +241,7 @@ export function useDaemonSessions() {
           }
         }
 
-        if (
-          !cancelled &&
-          (resolvedHost !== host || resolvedPort !== port)
-        ) {
+        if (!cancelled && (resolvedHost !== host || resolvedPort !== port)) {
           setConnectionRaw((current) =>
             current.host === host && current.port === port
               ? { ...current, host: resolvedHost, port: resolvedPort }
@@ -260,12 +288,14 @@ export function useDaemonSessions() {
     setTimelineBySession,
     setStreamingBySession,
     setPendingPermissionsBySession,
+    setRawEventsBySession,
   });
 
   // ── Runtime metrics poll (4s) ───────────────────────────────────────────────
   const runtime = useMemo<RuntimeSnapshot>(() => {
     if (runtimeOverride) return runtimeOverride;
-    const streamingCount = Object.values(streamingBySession).filter(Boolean).length;
+    const streamingCount =
+      Object.values(streamingBySession).filter(Boolean).length;
     return {
       sessionCount: sessions.length,
       activeTurnCount: streamingCount,
@@ -280,7 +310,9 @@ export function useDaemonSessions() {
     }
 
     const runRefresh = (async () => {
-      setConnectionState((prev) => (prev === "connected" ? prev : "connecting"));
+      setConnectionState((prev) =>
+        prev === "connected" ? prev : "connecting",
+      );
       try {
         const runHealthCheck = async (conn: DaemonConnectionOptions) => {
           const [health, metrics] = await Promise.all([
@@ -317,10 +349,9 @@ export function useDaemonSessions() {
             }
           }
 
-          const repairedToken = (await loadToken(
-            activeConnection.host,
-            activeConnection.port,
-          ))?.trim();
+          const repairedToken = (
+            await loadToken(activeConnection.host, activeConnection.port)
+          )?.trim();
           if (repairedToken && repairedToken !== activeConnection.token) {
             activeConnection = { ...activeConnection, token: repairedToken };
             setConnectionRaw((current) =>
@@ -342,6 +373,34 @@ export function useDaemonSessions() {
         if (result?.health.status) {
           setConnectionState("connected");
           setConnectionError(null);
+        }
+
+        const remoteSessions = await daemonClient
+          .sessionsList(activeConnection, { limit: 250 })
+          .catch(() => []);
+        if (remoteSessions.length > 0) {
+          setSessions((previous) => {
+            const byId = new Map(
+              previous.map((session) => [session.sessionId, session] as const),
+            );
+            for (const session of remoteSessions) {
+              const existing = byId.get(session.sessionId);
+              byId.set(session.sessionId, {
+                sessionId: session.sessionId,
+                title:
+                  session.title ||
+                  existing?.title ||
+                  `Session ${session.sessionId.slice(0, 7)}`,
+                workspace:
+                  session.workspace || existing?.workspace || "Workspace",
+                updatedAt: session.updatedAt ?? existing?.updatedAt,
+              });
+            }
+            return [...byId.values()].sort(
+              (left, right) =>
+                isoToMs(right.updatedAt) - isoToMs(left.updatedAt),
+            );
+          });
         }
 
         const runtimeMetrics = result?.metrics?.runtime;
@@ -536,7 +595,10 @@ export function useDaemonSessions() {
             return !persistedSeqs.has(event.seq);
           });
           if (freshGapEvents.length > 0) {
-            recoveredGapItems = eventsToTimelineItems(freshGapEvents, sessionId);
+            recoveredGapItems = eventsToTimelineItems(
+              freshGapEvents,
+              sessionId,
+            );
             for (const event of freshGapEvents) {
               if (
                 typeof event.seq === "number" &&
@@ -581,7 +643,11 @@ export function useDaemonSessions() {
   );
 
   const submitMessage = useCallback(
-    async (message: string, mode: "chat" | "do" = "chat") => {
+    async (
+      message: string,
+      mode: SessionSubmitMode = "chat",
+      overrides?: SessionTurnOverrides,
+    ) => {
       if (!activeSessionId) {
         throw new Error("No active session selected.");
       }
@@ -595,7 +661,7 @@ export function useDaemonSessions() {
             {
               id: `${activeSessionId}-user-${Date.now()}`,
               kind: "user",
-              title: mode === "do" ? "Do" : "Prompt",
+              title: modeTitle(mode),
               body: message,
               createdAt: nowIso(),
             },
@@ -609,6 +675,7 @@ export function useDaemonSessions() {
           clientId: clientIdRef.current,
           writerId: clientIdRef.current,
           mode,
+          overrides,
         });
         setConnectionState("connected");
         setConnectionError(null);
@@ -633,7 +700,9 @@ export function useDaemonSessions() {
         });
         if (isTransportFailure(error)) {
           setConnectionState("disconnected");
-          setConnectionError(error instanceof Error ? error.message : String(error));
+          setConnectionError(
+            error instanceof Error ? error.message : String(error),
+          );
         }
         throw error;
       }
@@ -683,8 +752,7 @@ export function useDaemonSessions() {
   // Derived values — backward-compatible surface for consumers that only care
   // about the currently-active session
   const isStreaming =
-    activeSessionId !== null &&
-    (streamingBySession[activeSessionId] ?? false);
+    activeSessionId !== null && (streamingBySession[activeSessionId] ?? false);
 
   const pendingPermissions =
     activeSessionId !== null
@@ -726,6 +794,7 @@ export function useDaemonSessions() {
     setConnection,
     submitMessage,
     timelineBySession,
+    rawEventsBySession,
     trackSession,
     createSession,
     initialCheckDone,

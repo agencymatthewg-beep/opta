@@ -97,16 +97,19 @@ class RerankerEngine:
         if self._reranker is None:
             # Lazy-load on first call
             self.load()
+        assert self._reranker is not None
 
         results = self._reranker.rank(query=query, docs=documents)
 
         # Convert rerankers library output to our format
         ranked: list[dict[str, Any]] = []
         for result in results.results:
-            ranked.append({
-                "index": result.doc_id,
-                "score": float(result.score),
-            })
+            ranked.append(
+                {
+                    "index": result.doc_id,
+                    "score": float(result.score),
+                }
+            )
 
         # Sort by score descending
         ranked.sort(key=lambda x: x["score"], reverse=True)

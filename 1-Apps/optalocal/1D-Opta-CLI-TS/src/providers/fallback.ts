@@ -6,6 +6,7 @@
  */
 
 import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './base.js';
+import { instantiateOrInvoke } from '../utils/newable.js';
 import type { OptaConfig } from '../core/config.js';
 
 export class FallbackProvider implements ProviderClient {
@@ -23,7 +24,7 @@ export class FallbackProvider implements ProviderClient {
   private async getFallback(): Promise<ProviderClient> {
     if (this.fallback) return this.fallback;
     const { AnthropicProvider } = await import('./anthropic.js');
-    this.fallback = new AnthropicProvider(this.config);
+    this.fallback = instantiateOrInvoke<ProviderClient>(AnthropicProvider, this.config);
     return this.fallback;
   }
 

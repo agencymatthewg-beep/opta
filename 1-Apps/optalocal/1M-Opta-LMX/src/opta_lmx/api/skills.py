@@ -163,7 +163,8 @@ class MCPResource(BaseModel):
     name: str
     description: str
     mime_type: str = Field(
-        "application/octet-stream", alias="mimeType",
+        "application/octet-stream",
+        alias="mimeType",
     )
 
 
@@ -194,7 +195,8 @@ class MCPResourceContent(BaseModel):
 
     uri: str
     mime_type: str = Field(
-        "application/octet-stream", alias="mimeType",
+        "application/octet-stream",
+        alias="mimeType",
     )
     text: str
 
@@ -450,9 +452,7 @@ async def list_mcp_tools(request: Request, registry: SkillRegistryDep) -> MCPToo
                 )
 
     ordered_tools = (
-        remote_tools + local_tools
-        if _remote_mcp_preferred(request)
-        else local_tools + remote_tools
+        remote_tools + local_tools if _remote_mcp_preferred(request) else local_tools + remote_tools
     )
     deduped: list[MCPTool] = []
     seen: set[str] = set()

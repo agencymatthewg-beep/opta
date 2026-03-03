@@ -8,10 +8,11 @@ Depends() injection pattern.
 from __future__ import annotations
 
 import secrets
-from typing import Annotated
+from typing import Annotated, cast
 
 from fastapi import Depends, Header, HTTPException, Query, Request
 
+from opta_lmx.agents.runtime import AgentsRuntime
 from opta_lmx.helpers.client import HelperNodeClient
 from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.inference.engine import InferenceEngine
@@ -20,6 +21,7 @@ from opta_lmx.manager.model import ModelManager
 from opta_lmx.monitoring.events import EventBus
 from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
+from opta_lmx.rag.reranker import RerankerEngine
 from opta_lmx.rag.store import VectorStore
 from opta_lmx.router.strategy import TaskRouter
 from opta_lmx.security.policy_hooks import (
@@ -27,46 +29,48 @@ from opta_lmx.security.policy_hooks import (
     is_sensitive_admin_request,
 )
 from opta_lmx.sessions.store import SessionStore
+from opta_lmx.skills.executors import SkillExecutor
+from opta_lmx.skills.registry import SkillsRegistry
 
 
 def get_engine(request: Request) -> InferenceEngine:
     """Get the inference engine from app state."""
-    return request.app.state.engine  # type: ignore[no-any-return]
+    return cast(InferenceEngine, request.app.state.engine)
 
 
 def get_memory(request: Request) -> MemoryMonitor:
     """Get the memory monitor from app state."""
-    return request.app.state.memory_monitor  # type: ignore[no-any-return]
+    return cast(MemoryMonitor, request.app.state.memory_monitor)
 
 
 def get_start_time(request: Request) -> float:
     """Get the server start time from app state."""
-    return request.app.state.start_time  # type: ignore[no-any-return]
+    return cast(float, request.app.state.start_time)
 
 
 def get_metrics(request: Request) -> MetricsCollector:
     """Get the metrics collector from app state."""
-    return request.app.state.metrics  # type: ignore[no-any-return]
+    return cast(MetricsCollector, request.app.state.metrics)
 
 
 def get_router(request: Request) -> TaskRouter:
     """Get the task router from app state."""
-    return request.app.state.router  # type: ignore[no-any-return]
+    return cast(TaskRouter, request.app.state.router)
 
 
 def get_model_manager(request: Request) -> ModelManager:
     """Get the model manager from app state."""
-    return request.app.state.model_manager  # type: ignore[no-any-return]
+    return cast(ModelManager, request.app.state.model_manager)
 
 
 def get_preset_manager(request: Request) -> PresetManager:
     """Get the preset manager from app state."""
-    return request.app.state.preset_manager  # type: ignore[no-any-return]
+    return cast(PresetManager, request.app.state.preset_manager)
 
 
 def get_event_bus(request: Request) -> EventBus:
     """Get the event bus from app state."""
-    return request.app.state.event_bus  # type: ignore[no-any-return]
+    return cast(EventBus, request.app.state.event_bus)
 
 
 def get_embedding_engine(request: Request) -> EmbeddingEngine | None:
@@ -86,7 +90,7 @@ def get_remote_reranking(request: Request) -> HelperNodeClient | None:
 
 def get_session_store(request: Request) -> SessionStore:
     """Get the session store from app state."""
-    return request.app.state.session_store  # type: ignore[no-any-return]
+    return cast(SessionStore, request.app.state.session_store)
 
 
 def get_rag_store(request: Request) -> VectorStore | None:
@@ -94,9 +98,10 @@ def get_rag_store(request: Request) -> VectorStore | None:
     return getattr(request.app.state, "rag_store", None)
 
 
-def get_reranker_engine(request: Request) -> object | None:
+def get_reranker_engine(request: Request) -> RerankerEngine | None:
     """Get the local reranker engine from app state, or None."""
-    return getattr(request.app.state, "reranker_engine", None)
+    value = getattr(request.app.state, "reranker_engine", None)
+    return cast(RerankerEngine | None, value)
 
 
 def verify_admin_key(
@@ -150,7 +155,7 @@ def verify_inference_key(
     jwt_enabled: bool = getattr(request.app.state, "supabase_jwt_enabled", False)
     token: str | None = None
     if authorization and authorization.startswith("Bearer "):
-        token = authorization[len("Bearer "):]
+        token = authorization[len("Bearer ") :]
 
     if jwt_enabled and token:
         verifier = getattr(request.app.state, "supabase_jwt_verifier", None)
@@ -210,24 +215,24 @@ RemoteEmbedding = Annotated[HelperNodeClient | None, Depends(get_remote_embeddin
 RemoteReranking = Annotated[HelperNodeClient | None, Depends(get_remote_reranking)]
 SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
 RagStore = Annotated[VectorStore | None, Depends(get_rag_store)]
-RerankerDep = Annotated[object | None, Depends(get_reranker_engine)]
+RerankerDep = Annotated[RerankerEngine | None, Depends(get_reranker_engine)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]
 SkillsPolicyGuard = Annotated[None, Depends(verify_sensitive_skills_policy)]
 AgentsPolicyGuard = Annotated[None, Depends(verify_sensitive_agents_policy)]
 
 
-def get_agent_runtime(request: Request) -> object:
-    return request.app.state.agent_runtime  # type: ignore[return-value]
+def get_agent_runtime(request: Request) -> AgentsRuntime:
+    return cast(AgentsRuntime, request.app.state.agent_runtime)
 
 
-def get_skill_registry(request: Request) -> object:
-    return request.app.state.skill_registry  # type: ignore[return-value]
+def get_skill_registry(request: Request) -> SkillsRegistry:
+    return cast(SkillsRegistry, request.app.state.skill_registry)
 
 
-def get_skill_executor(request: Request) -> object:
-    return request.app.state.skill_executor  # type: ignore[return-value]
+def get_skill_executor(request: Request) -> SkillExecutor:
+    return cast(SkillExecutor, request.app.state.skill_executor)
 
 
-AgentRuntimeDep = Annotated[object, Depends(get_agent_runtime)]
-SkillRegistryDep = Annotated[object, Depends(get_skill_registry)]
-SkillExecutorDep = Annotated[object, Depends(get_skill_executor)]
+AgentRuntimeDep = Annotated[AgentsRuntime, Depends(get_agent_runtime)]
+SkillRegistryDep = Annotated[SkillsRegistry, Depends(get_skill_registry)]
+SkillExecutorDep = Annotated[SkillExecutor, Depends(get_skill_executor)]

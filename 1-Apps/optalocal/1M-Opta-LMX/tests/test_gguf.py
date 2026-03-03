@@ -246,6 +246,7 @@ class TestGGUFBackend:
         sys.modules["llama_cpp"] = None
         try:
             import opta_lmx.inference.gguf_backend as mod
+
             importlib.reload(mod)
 
             with pytest.raises(ImportError, match="llama-cpp-python"):
@@ -268,9 +269,7 @@ async def test_engine_loads_gguf_model(tmp_path: Path) -> None:
     mock_backend = MagicMock()
     mock_backend.generate = AsyncMock(return_value=("OK", 1, 1))
 
-    with patch(
-        "opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend
-    ):
+    with patch("opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend):
         fake_gguf = str(tmp_path / "model.gguf")
         info = await engine.load_model(fake_gguf)
 
@@ -291,9 +290,7 @@ async def test_engine_unload_gguf_calls_close(tmp_path: Path) -> None:
     mock_backend = MagicMock()
     mock_backend.generate = AsyncMock(return_value=("OK", 1, 1))
 
-    with patch(
-        "opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend
-    ):
+    with patch("opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend):
         fake_gguf = str(tmp_path / "model.gguf")
         await engine.load_model(fake_gguf)
         await engine.unload_model(fake_gguf)
@@ -315,13 +312,12 @@ async def test_engine_gguf_generate_delegates_to_backend(tmp_path: Path) -> None
         ],
     )
 
-    with patch(
-        "opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend
-    ):
+    with patch("opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend):
         fake_gguf = str(tmp_path / "model.gguf")
         await engine.load_model(fake_gguf)
 
         from opta_lmx.inference.schema import ChatMessage
+
         response = await engine.generate(
             model_id=fake_gguf,
             messages=[ChatMessage(role="user", content="Hello")],
@@ -346,13 +342,12 @@ async def test_engine_gguf_stream_delegates_to_backend(tmp_path: Path) -> None:
     mock_backend.generate = AsyncMock(return_value=("OK", 1, 1))
     mock_backend.stream = mock_stream
 
-    with patch(
-        "opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend
-    ):
+    with patch("opta_lmx.inference.gguf_backend.GGUFBackend", return_value=mock_backend):
         fake_gguf = str(tmp_path / "model.gguf")
         await engine.load_model(fake_gguf)
 
         from opta_lmx.inference.schema import ChatMessage
+
         tokens = []
         async for token in engine.stream_generate(
             model_id=fake_gguf,
@@ -408,13 +403,17 @@ async def test_loader_supervisor_failure_stops_inprocess_load_and_marks_failure(
         message="Child loader crashed with signal 6",
         signal=6,
     )
-    with patch(
-        "opta_lmx.inference.engine_lifecycle.run_loader_supervisor",
-        AsyncMock(return_value=LoaderSupervisorOutcome(ok=False, failure=failure)),
-    ), patch(
-        "opta_lmx.inference.engine_lifecycle.backend_candidates",
-        return_value=["vllm-mlx"],
-    ), pytest.raises(RuntimeError, match=ErrorCodes.MODEL_LOADER_CRASHED):
+    with (
+        patch(
+            "opta_lmx.inference.engine_lifecycle.run_loader_supervisor",
+            AsyncMock(return_value=LoaderSupervisorOutcome(ok=False, failure=failure)),
+        ),
+        patch(
+            "opta_lmx.inference.engine_lifecycle.backend_candidates",
+            return_value=["vllm-mlx"],
+        ),
+        pytest.raises(RuntimeError, match=ErrorCodes.MODEL_LOADER_CRASHED),
+    ):
         await engine.load_model("test/model-loader-fail")
 
     create_engine.assert_not_awaited()

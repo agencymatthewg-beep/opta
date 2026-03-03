@@ -103,7 +103,8 @@ class TestClientCircuitBreaker:
         from opta_lmx.helpers.client import HelperNodeClient
 
         endpoint = HelperNodeEndpoint(
-            url="http://10.0.0.1:1234", model="test-model",
+            url="http://10.0.0.1:1234",
+            model="test-model",
         )
         client = HelperNodeClient(endpoint)
         assert hasattr(client, "circuit_breaker")
@@ -119,7 +120,8 @@ class TestClientCircuitBreaker:
         from opta_lmx.helpers.client import HelperNodeClient
 
         endpoint = HelperNodeEndpoint(
-            url="http://10.0.0.1:1234", model="test-model",
+            url="http://10.0.0.1:1234",
+            model="test-model",
         )
         client = HelperNodeClient(endpoint)
 
@@ -144,7 +146,8 @@ class TestClientCircuitBreaker:
         from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 
         endpoint = HelperNodeEndpoint(
-            url="http://10.0.0.1:1234", model="test-model",
+            url="http://10.0.0.1:1234",
+            model="test-model",
         )
         client = HelperNodeClient(endpoint)
         client._client = AsyncMock()
@@ -163,7 +166,8 @@ class TestClientCircuitBreaker:
         from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 
         endpoint = HelperNodeEndpoint(
-            url="http://10.0.0.1:1234", model="test-model",
+            url="http://10.0.0.1:1234",
+            model="test-model",
         )
         client = HelperNodeClient(endpoint)
         # Force circuit open

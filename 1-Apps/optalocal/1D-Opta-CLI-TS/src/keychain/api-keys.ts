@@ -18,6 +18,10 @@ import {
 const KEYCHAIN_SERVICE = 'opta-cli';
 const ACCOUNT_ANTHROPIC = 'anthropic-api-key';
 const ACCOUNT_LMX = 'lmx-api-key';
+const ACCOUNT_GEMINI = 'gemini-api-key';
+const ACCOUNT_OPENAI = 'openai-api-key';
+const ACCOUNT_OPENCODE_ZEN = 'opencode-zen-api-key';
+const ACCOUNT_GITHUB = 'github-api-key';
 
 // ---------------------------------------------------------------------------
 // Store
@@ -46,6 +50,51 @@ export async function storeLmxKey(apiKey: string): Promise<boolean> {
   return verify === apiKey;
 }
 
+
+/**
+ * Store a Gemini API key in the OS keychain.
+ * @returns true if the operation succeeded, false if keychain is unavailable.
+ */
+export async function storeGeminiKey(apiKey: string): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  await setSecret(KEYCHAIN_SERVICE, ACCOUNT_GEMINI, apiKey);
+  const verify = await getSecret(KEYCHAIN_SERVICE, ACCOUNT_GEMINI);
+  return verify === apiKey;
+}
+
+/**
+ * Store an OpenAI API key in the OS keychain.
+ * @returns true if the operation succeeded, false if keychain is unavailable.
+ */
+export async function storeOpenaiKey(apiKey: string): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  await setSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENAI, apiKey);
+  const verify = await getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENAI);
+  return verify === apiKey;
+}
+
+/**
+ * Store an Opencode Zen API key in the OS keychain.
+ * @returns true if the operation succeeded, false if keychain is unavailable.
+ */
+export async function storeOpencodeZenKey(apiKey: string): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  await setSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENCODE_ZEN, apiKey);
+  const verify = await getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENCODE_ZEN);
+  return verify === apiKey;
+}
+
+/**
+ * Store a GitHub API key (Personal Access Token) in the OS keychain.
+ * @returns true if the operation succeeded, false if keychain is unavailable.
+ */
+export async function storeGithubKey(apiKey: string): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  await setSecret(KEYCHAIN_SERVICE, ACCOUNT_GITHUB, apiKey);
+  const verify = await getSecret(KEYCHAIN_SERVICE, ACCOUNT_GITHUB);
+  return verify === apiKey;
+}
+
 // ---------------------------------------------------------------------------
 // Retrieve
 // ---------------------------------------------------------------------------
@@ -68,6 +117,43 @@ export async function getLmxKey(): Promise<string | null> {
   return getSecret(KEYCHAIN_SERVICE, ACCOUNT_LMX);
 }
 
+
+/**
+ * Retrieve a Gemini API key from the OS keychain.
+ * @returns The key string or null if not stored / unavailable.
+ */
+export async function getGeminiKey(): Promise<string | null> {
+  if (!isKeychainAvailable()) return null;
+  return getSecret(KEYCHAIN_SERVICE, ACCOUNT_GEMINI);
+}
+
+/**
+ * Retrieve an OpenAI API key from the OS keychain.
+ * @returns The key string or null if not stored / unavailable.
+ */
+export async function getOpenaiKey(): Promise<string | null> {
+  if (!isKeychainAvailable()) return null;
+  return getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENAI);
+}
+
+/**
+ * Retrieve an Opencode Zen API key from the OS keychain.
+ * @returns The key string or null if not stored / unavailable.
+ */
+export async function getOpencodeZenKey(): Promise<string | null> {
+  if (!isKeychainAvailable()) return null;
+  return getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENCODE_ZEN);
+}
+
+/**
+ * Retrieve a GitHub API key from the OS keychain.
+ * @returns The key string or null if not stored / unavailable.
+ */
+export async function getGithubKey(): Promise<string | null> {
+  if (!isKeychainAvailable()) return null;
+  return getSecret(KEYCHAIN_SERVICE, ACCOUNT_GITHUB);
+}
+
 // ---------------------------------------------------------------------------
 // Delete
 // ---------------------------------------------------------------------------
@@ -80,6 +166,27 @@ export async function deleteAnthropicKey(): Promise<void> {
 /** Remove the LMX API key from the OS keychain. */
 export async function deleteLmxKey(): Promise<void> {
   await deleteSecret(KEYCHAIN_SERVICE, ACCOUNT_LMX);
+}
+
+
+/** Remove a Gemini API key from the OS keychain. */
+export async function deleteGeminiKey(): Promise<void> {
+  await deleteSecret(KEYCHAIN_SERVICE, ACCOUNT_GEMINI);
+}
+
+/** Remove an OpenAI API key from the OS keychain. */
+export async function deleteOpenaiKey(): Promise<void> {
+  await deleteSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENAI);
+}
+
+/** Remove an Opencode Zen API key from the OS keychain. */
+export async function deleteOpencodeZenKey(): Promise<void> {
+  await deleteSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENCODE_ZEN);
+}
+
+/** Remove a GitHub API key from the OS keychain. */
+export async function deleteGithubKey(): Promise<void> {
+  await deleteSecret(KEYCHAIN_SERVICE, ACCOUNT_GITHUB);
 }
 
 // ---------------------------------------------------------------------------
@@ -97,21 +204,44 @@ export async function deleteLmxKey(): Promise<void> {
 export async function keychainStatus(): Promise<{
   anthropic: boolean;
   lmx: boolean;
+  gemini: boolean;
+  openai: boolean;
+  opencodeZen: boolean;
+  github: boolean;
   available: boolean;
 }> {
   const available = isKeychainAvailable();
   if (!available) {
-    return { available: false, anthropic: false, lmx: false };
+    return {
+      available: false,
+      anthropic: false,
+      lmx: false,
+      gemini: false,
+      openai: false,
+      opencodeZen: false,
+      github: false,
+    };
   }
 
-  const [anthropicKey, lmxKey] = await Promise.all([
+  const [anthropicKey, lmxKey, geminiKey, openaiKey, opencodeZenKey, githubKey] = await Promise.all([
     getSecret(KEYCHAIN_SERVICE, ACCOUNT_ANTHROPIC),
     getSecret(KEYCHAIN_SERVICE, ACCOUNT_LMX),
+    getSecret(KEYCHAIN_SERVICE, ACCOUNT_GEMINI),
+    getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENAI),
+    getSecret(KEYCHAIN_SERVICE, ACCOUNT_OPENCODE_ZEN),
+    getSecret(KEYCHAIN_SERVICE, ACCOUNT_GITHUB),
   ]);
+
+  const hasKey = (value: string | null | undefined): boolean =>
+    typeof value === 'string' && value.length > 0;
 
   return {
     available: true,
-    anthropic: anthropicKey !== null && anthropicKey.length > 0,
-    lmx: lmxKey !== null && lmxKey.length > 0,
+    anthropic: hasKey(anthropicKey),
+    lmx: hasKey(lmxKey),
+    gemini: hasKey(geminiKey),
+    openai: hasKey(openaiKey),
+    opencodeZen: hasKey(opencodeZenKey),
+    github: hasKey(githubKey),
   };
 }

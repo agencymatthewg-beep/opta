@@ -20,7 +20,12 @@ describe("TimelineCards", () => {
         sessionId="sess_1"
         items={[
           item({ id: "1", kind: "tool", title: "Tool: update_plan" }),
-          item({ id: "2", kind: "assistant", title: "Assistant", body: "ready" }),
+          item({
+            id: "2",
+            kind: "assistant",
+            title: "Assistant",
+            body: "ready",
+          }),
         ]}
       />,
     );
@@ -51,8 +56,18 @@ describe("TimelineCards", () => {
         sessionId="sess_browser"
         isStreaming={true}
         items={[
-          item({ id: "1", kind: "tool", title: "browser_navigate", body: "{}" }),
-          item({ id: "2", kind: "assistant", title: "Assistant", body: "navigating" }),
+          item({
+            id: "1",
+            kind: "tool",
+            title: "browser_navigate",
+            body: "{}",
+          }),
+          item({
+            id: "2",
+            kind: "assistant",
+            title: "Assistant",
+            body: "navigating",
+          }),
         ]}
       />,
     );
@@ -76,7 +91,14 @@ describe("TimelineCards", () => {
       <TimelineCards
         sessionId="sess_blocked"
         pendingPermissions={pendingPermissions}
-        items={[item({ id: "1", kind: "assistant", title: "Assistant", body: "waiting" })]}
+        items={[
+          item({
+            id: "1",
+            kind: "assistant",
+            title: "Assistant",
+            body: "waiting",
+          }),
+        ]}
       />,
     );
 

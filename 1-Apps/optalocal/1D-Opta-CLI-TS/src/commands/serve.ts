@@ -6,7 +6,7 @@ import { loadConfig } from '../core/config.js';
 import { OptaError, ExitError, EXIT } from '../core/errors.js';
 import { createSpinner } from '../ui/spinner.js';
 import { colorizeOptaWord } from '../ui/brand.js';
-import { LmxClient } from '../lmx/client.js';
+import { LmxApiError, LmxClient } from '../lmx/client.js';
 import { errorMessage } from '../utils/errors.js';
 import { sleep } from '../utils/common.js';
 import { homedir, requiresPosixPlatform } from '../platform/index.js';
@@ -19,6 +19,13 @@ const REMOTE_LAUNCHD_LABEL = 'com.opta.lmx';
 const STARTUP_WAIT_MS = 90_000;
 const DEFAULT_SSH_CONNECT_TIMEOUT_SECONDS = 25;
 const FAST_HEALTH_REQUEST_OPTS = { timeoutMs: 2_000, maxRetries: 0 } as const;
+
+function isAdminUnauthorized(err: unknown): boolean {
+  return (
+    err instanceof LmxApiError &&
+    (err.code === 'unauthorized' || err.status === 401 || err.status === 403)
+  );
+}
 
 export async function serve(action?: string, opts?: ServeOptions): Promise<void> {
   requiresPosixPlatform('opta serve');
@@ -224,6 +231,7 @@ async function serveStatus(opts?: ServeOptions): Promise<void> {
     fallbackHosts: config.connection.fallbackHosts,
     port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
 
   try {
@@ -231,7 +239,7 @@ async function serveStatus(opts?: ServeOptions): Promise<void> {
     const status = await client.status(FAST_HEALTH_REQUEST_OPTS);
 
     if (opts?.json) {
-      console.log(JSON.stringify({ running: true, health, status }, null, 2));
+      console.log(JSON.stringify({ running: true, adminAuthorized: true, health, status }, null, 2));
       return;
     }
 
@@ -240,7 +248,36 @@ async function serveStatus(opts?: ServeOptions): Promise<void> {
     if (status.uptime_seconds != null)
       console.log(chalk.dim(`  Uptime:  ${formatDuration(status.uptime_seconds)}`));
     console.log(chalk.dim(`  Models:  ${status.models.length} loaded`));
-  } catch {
+  } catch (err) {
+    if (isAdminUnauthorized(err)) {
+      if (opts?.json) {
+        console.log(
+          JSON.stringify(
+            {
+              running: true,
+              adminAuthorized: false,
+              host,
+              port,
+              error: errorMessage(err),
+            },
+            null,
+            2
+          )
+        );
+        return;
+      }
+      console.log(
+        chalk.yellow('●') +
+          ` ${colorizeOptaWord(`Opta LMX is reachable at ${host}:${port}, but /admin access is unauthorized`)}`
+      );
+      console.log(chalk.dim(`  Check key: opta config get connection.adminKey`));
+      console.log(chalk.dim(`  Check host-key map: opta config get connection.adminKeysByHost`));
+      console.log(chalk.dim(`  Set key:   opta config set connection.adminKey <key>`));
+      console.log(chalk.dim(`  Set map:   opta config set connection.adminKeysByHost '{"host":"key"}'`));
+      console.log(chalk.dim(`  Clear key: opta config delete connection.adminKey`));
+      return;
+    }
+
     if (opts?.json) {
       console.log(JSON.stringify({ running: false, host, port }, null, 2));
       return;
@@ -260,6 +297,7 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
     fallbackHosts: config.connection.fallbackHosts,
     port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
   const spinner = await createSpinner();
 
@@ -267,10 +305,24 @@ async function serveStart(opts?: ServeOptions): Promise<void> {
   try {
     await client.health(FAST_HEALTH_REQUEST_OPTS);
     const activeHost = client.getActiveHost();
+    let adminAuthorized = true;
+    try {
+      await client.status(FAST_HEALTH_REQUEST_OPTS);
+    } catch (err) {
+      adminAuthorized = !isAdminUnauthorized(err);
+    }
     console.log(
       chalk.yellow('!') +
         ` ${colorizeOptaWord(`Opta LMX is already running at ${activeHost}:${port}`)}`
     );
+    if (!adminAuthorized) {
+      console.log(
+        chalk.yellow('!') + ' Admin endpoints are unauthorized for this CLI profile.'
+      );
+      console.log(chalk.dim('  Set key:   opta config set connection.adminKey <key>'));
+      console.log(chalk.dim('  Set map:   opta config set connection.adminKeysByHost \'{"host":"key"}\''));
+      console.log(chalk.dim('  Clear key: opta config delete connection.adminKey'));
+    }
     return;
   } catch {
     // Not running — proceed with start

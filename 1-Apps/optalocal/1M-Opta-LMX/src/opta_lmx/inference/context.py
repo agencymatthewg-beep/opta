@@ -143,11 +143,14 @@ def fit_to_context(
     if remaining_budget <= 0:
         # Can't even fit system + last message? Return them anyway.
         trimmed = system_msgs + tail_msgs
-        logger.warning("context_severely_truncated", extra={
-            "system_tokens": system_tokens,
-            "tail_tokens": tail_tokens,
-            "budget": budget,
-        })
+        logger.warning(
+            "context_severely_truncated",
+            extra={
+                "system_tokens": system_tokens,
+                "tail_tokens": tail_tokens,
+                "budget": budget,
+            },
+        )
         return trimmed
 
     # Fill from newest middle messages backward (keep recent context)
@@ -165,12 +168,15 @@ def fit_to_context(
 
     dropped = len(messages) - len(trimmed)
     if dropped > 0:
-        logger.info("context_window_trimmed", extra={
-            "original_messages": len(messages),
-            "kept_messages": len(trimmed),
-            "dropped": dropped,
-            "estimated_tokens": trimmed_total,
-            "budget": budget,
-        })
+        logger.info(
+            "context_window_trimmed",
+            extra={
+                "original_messages": len(messages),
+                "kept_messages": len(trimmed),
+                "dropped": dropped,
+                "estimated_tokens": trimmed_total,
+                "budget": budget,
+            },
+        )
 
     return trimmed

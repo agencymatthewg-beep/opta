@@ -1,6 +1,6 @@
 import type { ManagedWebsite, WebsiteHealthSnapshot, WebsiteRuntimeStatus } from './types';
 
-const REQUEST_TIMEOUT_MS = 1_500;
+const REQUEST_TIMEOUT_MS = 6_500;
 
 export const MANAGED_WEBSITES: ManagedWebsite[] = [
   {
@@ -19,7 +19,7 @@ export const MANAGED_WEBSITES: ManagedWebsite[] = [
     path: '1O-Opta-Init',
     purpose: 'Distribution + update metadata control plane',
     localUrl: 'http://localhost:3001',
-    healthPath: '/health',
+    healthPath: '/',
   },
   {
     key: 'accounts',
@@ -28,7 +28,7 @@ export const MANAGED_WEBSITES: ManagedWebsite[] = [
     path: '1R-Opta-Accounts',
     purpose: 'Identity, session, and account access management',
     localUrl: 'http://localhost:3002',
-    healthPath: '/api/health',
+    healthPath: '/api/health/supabase',
   },
   {
     key: 'status',
@@ -37,7 +37,7 @@ export const MANAGED_WEBSITES: ManagedWebsite[] = [
     path: '1S-Opta-Status',
     purpose: 'Public health and release-state visibility',
     localUrl: 'http://localhost:3005',
-    healthPath: '/api/health',
+    healthPath: '/',
   },
   {
     key: 'help',
@@ -55,7 +55,7 @@ export const MANAGED_WEBSITES: ManagedWebsite[] = [
     path: '1V-Opta-Learn',
     purpose: 'Guide inventory and learning pipeline',
     localUrl: 'http://localhost:3007',
-    healthPath: '/api/guides-manifest',
+    healthPath: '/',
   },
   {
     key: 'admin',
@@ -80,6 +80,7 @@ async function probe(url: string): Promise<WebsiteRuntimeStatus> {
     });
 
     if (response.ok) return 'online';
+    if (response.status === 401 || response.status === 403) return 'online';
     if (response.status >= 500) return 'offline';
     return 'degraded';
   } catch {

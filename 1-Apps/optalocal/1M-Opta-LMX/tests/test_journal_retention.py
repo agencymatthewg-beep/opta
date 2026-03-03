@@ -17,7 +17,10 @@ from opta_lmx.monitoring.journal import RuntimeJournalManager
 
 
 def _make_manager(
-    tmp_path: Path, *, retention_days: int = 30, max_session_logs: int = 100,
+    tmp_path: Path,
+    *,
+    retention_days: int = 30,
+    max_session_logs: int = 100,
 ) -> RuntimeJournalManager:
     """Create a RuntimeJournalManager with a temp directory and custom retention."""
     return RuntimeJournalManager(
@@ -169,13 +172,16 @@ async def journal_client(tmp_path: Path) -> AsyncClient:
     update_dir.mkdir(parents=True, exist_ok=True)
 
     (session_dir / "2026-02-20-1000-device-session.md").write_text(
-        "# Session Log\nTest session content", encoding="utf-8",
+        "# Session Log\nTest session content",
+        encoding="utf-8",
     )
     (session_dir / "2026-02-20-1000-device-events.jsonl").write_text(
-        '{"event_type": "test"}\n', encoding="utf-8",
+        '{"event_type": "test"}\n',
+        encoding="utf-8",
     )
     (update_dir / "200_2026-02-20_test-update.md").write_text(
-        "# Update Log\nTest update content", encoding="utf-8",
+        "# Update Log\nTest update content",
+        encoding="utf-8",
     )
 
     async with AsyncClient(
@@ -208,9 +214,7 @@ async def test_list_session_logs_endpoint(journal_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_read_session_log_endpoint(journal_client: AsyncClient) -> None:
     """GET /admin/logs/sessions/{filename} returns file content."""
-    resp = await journal_client.get(
-        "/admin/logs/sessions/2026-02-20-1000-device-session.md"
-    )
+    resp = await journal_client.get("/admin/logs/sessions/2026-02-20-1000-device-session.md")
     assert resp.status_code == 200
     assert "Test session content" in resp.text
 
@@ -244,9 +248,7 @@ async def test_list_update_logs_endpoint(journal_client: AsyncClient) -> None:
 @pytest.mark.asyncio
 async def test_read_update_log_endpoint(journal_client: AsyncClient) -> None:
     """GET /admin/logs/updates/{filename} returns file content."""
-    resp = await journal_client.get(
-        "/admin/logs/updates/200_2026-02-20_test-update.md"
-    )
+    resp = await journal_client.get("/admin/logs/updates/200_2026-02-20_test-update.md")
     assert resp.status_code == 200
     assert "Test update content" in resp.text
 

@@ -2,7 +2,9 @@ import { defineConfig } from "vitest/config";
 import react from "@vitejs/plugin-react";
 
 const aliasPath = (relativePath: string): string => {
-  const pathname = decodeURIComponent(new URL(relativePath, import.meta.url).pathname);
+  const pathname = decodeURIComponent(
+    new URL(relativePath, import.meta.url).pathname,
+  );
   return /^\/[A-Za-z]:\//.test(pathname) ? pathname.slice(1) : pathname;
 };
 

@@ -98,11 +98,7 @@ async def test_openclaw_perf_regression_gate() -> None:
                 queue_waits.append(queue_wait)
             latencies.append(time.perf_counter() - started)
 
-    tasks = [
-        asyncio.create_task(_run(client_id))
-        for client_id in clients
-        for _ in range(4)
-    ]
+    tasks = [asyncio.create_task(_run(client_id)) for client_id in clients for _ in range(4)]
     started_all = time.perf_counter()
     await asyncio.gather(*tasks)
     elapsed = time.perf_counter() - started_all
@@ -169,9 +165,7 @@ def test_autotune_perf_regression_gate_uses_15_percent_threshold() -> None:
         )
 
 
-async def test_benchmark_endpoint_overhead_under_50ms(
-    mock_engine, tmp_path, monkeypatch
-) -> None:
+async def test_benchmark_endpoint_overhead_under_50ms(mock_engine, tmp_path, monkeypatch) -> None:
     """Benchmark handler bookkeeping (excluding generation) must be < 50ms."""
     from opta_lmx.monitoring.benchmark import BenchmarkResultStore
 
@@ -187,6 +181,7 @@ async def test_benchmark_endpoint_overhead_under_50ms(
     # Pre-warm hardware detection cache so subprocess latency is excluded from
     # the timed section (the cache ensures the second call is instant).
     from opta_lmx.api.benchmark import _detect_hardware
+
     await asyncio.to_thread(_detect_hardware)
 
     config = LMXConfig()
@@ -195,15 +190,16 @@ async def test_benchmark_endpoint_overhead_under_50ms(
     app.state.engine = mock_engine
     app.state.benchmark_store = store
 
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as client:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         t_start = time.perf_counter()
-        resp = await client.post("/admin/benchmark/run", json={
-            "model_id": "test/model",
-            "runs": 1,
-            "warmup_runs": 0,
-        })
+        resp = await client.post(
+            "/admin/benchmark/run",
+            json={
+                "model_id": "test/model",
+                "runs": 1,
+                "warmup_runs": 0,
+            },
+        )
         elapsed_ms = (time.perf_counter() - t_start) * 1000
 
     assert resp.status_code == 200, f"Expected 200, got {resp.status_code}: {resp.text}"

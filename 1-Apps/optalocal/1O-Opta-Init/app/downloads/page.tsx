@@ -2,9 +2,9 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Opta Init Downloads Gateway",
+  title: "Opta Initializer — Downloads Gateway",
   description:
-    "Manager-only artifact gateway for Opta Init desktop downloads and release metadata.",
+    "Downloads gateway for the Opta Initializer (Opta Init): desktop manager artifacts and signed release metadata only.",
 };
 
 export default function DownloadsGatewayPage() {
@@ -13,9 +13,9 @@ export default function DownloadsGatewayPage() {
       <p style={{ marginBottom: "0.5rem" }}>
         <Link href="/">Back to Opta Init</Link>
       </p>
-      <h1 style={{ marginBottom: "0.75rem" }}>Opta Init Downloads Gateway</h1>
+      <h1 style={{ marginBottom: "0.75rem" }}>Opta Initializer Downloads Gateway</h1>
       <p style={{ marginBottom: "1rem", lineHeight: 1.55 }}>
-        This is the canonical artifact index for the <strong>Opta Init desktop manager</strong> only.
+        This is the canonical artifact index for the <strong>Opta Initializer (Opta Init) desktop manager</strong> only.
         End users should download only this app from <strong>init.optalocal.com</strong>; all Opta stack
         components are managed inside the manager via signed manifests.
       </p>

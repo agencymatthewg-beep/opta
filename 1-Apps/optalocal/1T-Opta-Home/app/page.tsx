@@ -5,8 +5,10 @@ import { Hero } from "@/components/Hero";
 import { BenchmarkStrip } from "@/components/BenchmarkStrip";
 import { QuickStart } from "@/components/QuickStart";
 import { Ecosystem } from "@/components/Ecosystem";
+import { DataSync } from "@/components/DataSync";
 import { ArchDiagram } from "@/components/ArchDiagram";
 import { ModelGrid } from "@/components/ModelGrid";
+import { HardwareStats } from "@/components/HardwareStats";
 import { CliPreview } from "@/components/CliPreview";
 import { FeatureTrio } from "@/components/FeatureTrio";
 import { CtaBlock } from "@/components/CtaBlock";
@@ -20,7 +22,9 @@ export default function HomePage() {
         <Hero />
         <BenchmarkStrip />
         <QuickStart />
+        <HardwareStats />
         <Ecosystem />
+        <DataSync />
         <ArchDiagram />
         <ModelGrid />
         <CliPreview />

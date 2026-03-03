@@ -39,7 +39,7 @@ export const AGENT_PROFILES: AgentProfile[] = [
       'learning_log', 'learning_summary', 'learning_retrieve',
       'save_memory',
       'bg_start', 'bg_status', 'bg_output', 'bg_kill',
-      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_rename',
+      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics', 'lsp_code_actions', 'lsp_rename',
     ],
   },
   {
@@ -51,7 +51,7 @@ export const AGENT_PROFILES: AgentProfile[] = [
       'web_search', 'web_fetch',
       'research_query', 'research_health',
       'learning_summary', 'learning_retrieve',
-      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols',
+      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics', 'lsp_code_actions',
     ],
     systemPromptSuffix: `You are in READER mode. You can only read and explore files — no editing, writing, or running commands. Focus on understanding code, finding patterns, and answering questions about the codebase.`,
   },
@@ -62,7 +62,7 @@ export const AGENT_PROFILES: AgentProfile[] = [
       'read_file', 'write_file', 'edit_file', 'multi_edit', 'delete_file',
       'list_dir', 'search_files', 'find_files',
       'run_command', 'ask_user',
-      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_rename',
+      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics', 'lsp_code_actions', 'lsp_rename',
     ],
     systemPromptSuffix: `You are in CODER mode. Focus on writing and editing code. Read files before editing. Use search to understand the codebase. Run tests after making changes.`,
   },
@@ -95,7 +95,7 @@ export const AGENT_PROFILES: AgentProfile[] = [
       'learning_log', 'learning_summary', 'learning_retrieve',
       'save_memory',
       'bg_start', 'bg_status', 'bg_output', 'bg_kill',
-      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_rename',
+      'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics', 'lsp_code_actions', 'lsp_rename',
     ],
     systemPromptSuffix: `UNCENSORED MODE ACTIVE.
 

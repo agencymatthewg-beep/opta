@@ -87,6 +87,7 @@ export async function scanModels(config: OptaConfig, full = false): Promise<Scan
     fallbackHosts: config.connection.fallbackHosts,
     port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
 
   const result: ScanResult = {

@@ -96,9 +96,7 @@ describe("OperationRunner", () => {
     fireEvent.change(textarea, { target: { value: "{bad json}" } });
     fireEvent.click(screen.getByRole("button", { name: /Run/ }));
 
-    await waitFor(() =>
-      expect(screen.getByRole("alert")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(onRun).not.toHaveBeenCalled();
   });
 
@@ -244,13 +242,18 @@ describe("OperationRunner", () => {
           ok: false,
           id: "benchmark",
           safety: "dangerous",
-          error: { code: "dangerous_confirmation_required", message: "Confirm first" },
+          error: {
+            code: "dangerous_confirmation_required",
+            message: "Confirm first",
+          },
         }}
         onRun={vi.fn()}
       />,
     );
 
     expect(screen.getByText(/✗ Error/)).toBeInTheDocument();
-    expect(screen.getByText(/dangerous_confirmation_required/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/dangerous_confirmation_required/),
+    ).toBeInTheDocument();
   });
 });

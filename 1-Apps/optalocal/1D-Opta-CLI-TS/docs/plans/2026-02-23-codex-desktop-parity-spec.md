@@ -14,9 +14,11 @@ status: active
 - `docs/plans/2026-02-17-ux-phase1c-session-workflow.md`
 - `docs/plans/2026-02-17-ux-phase2-ink-migration.md`
 - `docs/plans/2026-02-17-ux-phase3-advanced-tui.md`
-- `.github/workflows/parity-macos-opta-code.yml`
+- `.github/workflows/opta-code-macos-build.yml`
 
 > Note: Requested source file `docs/plans/2026-02-23-codex-macos-parity-enforcement-plan.md` is not present in this repo snapshot. This spec derives canonical parity requirements from the available parity roadmap + enforcement workflow above.
+>
+> Update (2026-03-03): the active CI workflow file is `.github/workflows/opta-code-macos-build.yml`. Historical check-name references in this spec are parity targets and should be remapped to current job names as part of parity gate hardening.
 
 ---
 
@@ -259,14 +261,14 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 
 | Scenario IDs | Workflow | Job Name / Check Context | Command(s) | Required Outcome |
 |---|---|---|---|---|
-| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (20.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
-| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (20.x / core_smoke)` | `npm run test:core -- --run` | pass |
-| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (22.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
-| `P0-01`, `P0-02` | `parity-macos-opta-code.yml` | `P0 matrix (22.x / core_smoke)` | `npm run test:core -- --run` | pass |
-| `P0-09` | `parity-macos-opta-code.yml` | `Visual regression` | `npx vitest run tests/tui/visual-snapshots.test.tsx` | pass + snapshot integrity |
-| `P0-06` | `parity-macos-opta-code.yml` | `Reconnect parity` | `npx vitest run tests/lmx/connection.test.ts tests/core/agent-streaming.test.ts tests/core/insights.test.ts` | pass |
-| `P0-07` | `parity-macos-opta-code.yml` | `Permission race parity` | `npx vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts` | pass |
-| `P0-01..P0-10` | `parity-macos-opta-code.yml` | `Strict parity gate` | needs-check aggregator | all upstream jobs must be `success` |
+| `P0-01`, `P0-02` | `opta-code-macos-build.yml` | `P0 matrix (20.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
+| `P0-01`, `P0-02` | `opta-code-macos-build.yml` | `P0 matrix (20.x / core_smoke)` | `npm run test:core -- --run` | pass |
+| `P0-01`, `P0-02` | `opta-code-macos-build.yml` | `P0 matrix (22.x / build_lint_typecheck)` | `npm run build && npm run typecheck && npm run lint` | pass |
+| `P0-01`, `P0-02` | `opta-code-macos-build.yml` | `P0 matrix (22.x / core_smoke)` | `npm run test:core -- --run` | pass |
+| `P0-09` | `opta-code-macos-build.yml` | `Visual regression` | `npx vitest run tests/tui/visual-snapshots.test.tsx` | pass + snapshot integrity |
+| `P0-06` | `opta-code-macos-build.yml` | `Reconnect parity` | `npx vitest run tests/lmx/connection.test.ts tests/core/agent-streaming.test.ts tests/core/insights.test.ts` | pass |
+| `P0-07` | `opta-code-macos-build.yml` | `Permission race parity` | `npx vitest run tests/daemon/permission-coordinator.test.ts tests/core/permissions.test.ts` | pass |
+| `P0-01..P0-10` | `opta-code-macos-build.yml` | `Strict parity gate` | needs-check aggregator | all upstream jobs must be `success` |
 
 ### Required branch protection checks
 - `P0 matrix (20.x / build_lint_typecheck)`
@@ -282,20 +284,20 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 
 ## 6) Sign-off Checklist
 
-> **Verification audit: 2026-02-27** — All P0 test files exist and most pass locally. CI workflow exists but no remote configured. Key gaps: 5 required visual snapshot additions, TODO stubs in workflow for reconnect e2e and permission fuzz.
+> **Verification audit: 2026-02-27 (historical)** — All P0 test files exist and most pass locally. At that time, remote CI evidence was not yet attached. Key gaps: 5 required visual snapshot additions, TODO stubs in workflow for reconnect e2e and permission fuzz.
 >
 > **Update: 2026-02-28** — P0-03 alternate buffer lifecycle assertions added to `tests/tui/App.test.tsx` (cursor-hide/show lifecycle via ink direct render). P0-09 all 8 VG- snapshots captured: VG-APP-IDLE ×3 widths, VG-APP-SAFE, VG-OVERLAY-MENU ×2 widths, VG-PERMISSION, VG-SCROLL-DEEP.
 
 ## 6.1 Release-blocking sign-off (must all be true)
 - [ ] All `P0-01` through `P0-10` scenarios marked `PASS` in the parity report. — _P0-03 ✓ (cursor lifecycle assertions added); P0-09 ✓ (all 8 VG- snapshots captured); remaining gaps: P0-06 reconnect e2e, P0-07 permission stress_
-- [ ] All required workflow checks in `parity-macos-opta-code.yml` are green on the merge commit. — _Workflow exists and is correct; TODO stubs remain in reconnect + permission-race jobs; no remote to run_
+- [ ] All required workflow checks in `opta-code-macos-build.yml` are green on the merge commit. — _Workflow exists; parity-targeted reconnect/permission coverage still needs explicit job wiring and run evidence._
 - [ ] No unresolved visual diffs in `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`. — _All 8 VG- snapshots now captured: VG-APP-IDLE ×3, VG-APP-SAFE, VG-OVERLAY-MENU ×2, VG-PERMISSION, VG-SCROLL-DEEP_
 - [ ] Reconnect and permission-race suites pass without retries/flakes. — _Both test files pass; stress/fuzz scenario not yet added (TODO in workflow)_
 - [x] No live-network dependency in parity test path. — _All tests use mocks; chat integration test is skipIf(!ANTHROPIC_API_KEY)_
-- [ ] Strict parity gate job result is `success`. — _Cannot verify — no remote configured_
+- [ ] Strict parity gate job result is `success`. — _Verify from GitHub Actions check runs on the merge commit._
 
 ### 6.2 Evidence package required for sign-off
-- [ ] CI run URL(s) for all required checks. — _No remote; blocked_
+- [ ] CI run URL(s) for all required checks. — _Attach GitHub Actions run URL(s) for merge commit evidence._
 - [ ] Snapshot diff artifact links (or explicit “no diff” record). — _Snapshot file exists but artifact upload TODO in workflow_
 - [x] List of scenario IDs executed and their corresponding test files. — _Mapped below in Section 6.4_
 - [ ] If any P1 scenario is deferred: issue ID, owner, due date, and risk note.
@@ -328,5 +330,5 @@ npx vitest run tests/tui/visual-snapshots.test.tsx
 ## 7) Execution Notes
 - Canonical scenario IDs above are intended to replace placeholder TODO selectors in parity enforcement workflow and release criteria docs.
 - Any future parity expansion must add scenario IDs first, then map them to concrete tests/checks in Section 5 before enabling hard-gate enforcement.
-- **2026-02-27 audit:** All P1 scenarios have test coverage and pass. P0 gaps are: alternate buffer assertions (P0-03), 5 visual snapshot additions (P0-09), daemon reconnect e2e (P0-06 TODO), permission stress test (P0-07 TODO). CI workflow cannot be verified without git remote.
+- **2026-02-27 audit (historical):** All P1 scenarios have test coverage and pass. P0 gaps are: alternate buffer assertions (P0-03), 5 visual snapshot additions (P0-09), daemon reconnect e2e (P0-06 TODO), permission stress test (P0-07 TODO). Remote run evidence was not attached at that time.
 - **2026-02-28 update:** P0-03 resolved — 2 cursor-lifecycle assertions added using `inkRender` (debug:false) to capture raw ANSI output. P0-09 resolved — 8 VG- snapshot tests added covering all required golden captures at all specified widths. All 39 visual-snapshots tests pass.

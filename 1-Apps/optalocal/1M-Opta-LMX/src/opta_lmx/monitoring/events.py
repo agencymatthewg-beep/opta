@@ -68,10 +68,13 @@ class EventBus:
                 queue.put_nowait(event)
             except asyncio.QueueFull:
                 dead.append(queue)
-                logger.warning("sse_subscriber_dropped", extra={
-                    "reason": "queue_full",
-                    "event_type": event.event_type,
-                })
+                logger.warning(
+                    "sse_subscriber_dropped",
+                    extra={
+                        "reason": "queue_full",
+                        "event_type": event.event_type,
+                    },
+                )
         for q in dead:
             self._subscribers.remove(q)
 

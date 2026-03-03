@@ -7,9 +7,14 @@ interface CliOperationsPageProps {
 
 const CLI_OPERATION_SCOPES: string[] = [
   "doctor",
+  "env.*",
+  "config.*",
+  "account.*",
+  "key.*",
   "version.check",
   "completions.generate",
   "daemon.*",
+  "mcp.*",
   "onboard.apply",
   "serve.*",
   "init.run",
@@ -19,6 +24,7 @@ const CLI_OPERATION_SCOPES: string[] = [
   "embed",
   "rerank",
   "benchmark",
+  "models.*",
   "keychain.*",
 ];
 
@@ -28,7 +34,7 @@ export function CliOperationsPage({ connection }: CliOperationsPageProps) {
       connection={connection}
       scopedOperationIds={CLI_OPERATION_SCOPES}
       title="CLI Operations"
-      subtitle="Focused daemon/system/session command families from Opta CLI."
+      subtitle="Full Opta CLI operation-family access via daemon API."
     />
   );
 }

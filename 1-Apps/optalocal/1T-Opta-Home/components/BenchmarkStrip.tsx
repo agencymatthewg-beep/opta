@@ -7,7 +7,7 @@ const stats = [
   { value: "0",    unit: "",    label: "Cloud Calls"       },
   { value: "100%", unit: "",    label: "OpenAI Compatible" },
   { value: "∞",    unit: "",    label: "Unmetered Tokens"  },
-  { value: "3",    unit: "",    label: "Core Apps"         },
+  { value: "4",    unit: "",    label: "Core Apps"         },
   { value: "<1s",  unit: "",    label: "Stack Boot Time"   },
 ];
 

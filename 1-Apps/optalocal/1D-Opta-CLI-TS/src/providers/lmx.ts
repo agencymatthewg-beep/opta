@@ -5,6 +5,7 @@
 import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './base.js';
 import type { OptaConfig } from '../core/config.js';
 import { errorMessage } from '../utils/errors.js';
+import { instantiateOrInvoke } from '../utils/newable.js';
 import { probeLmxConnection } from '../lmx/connection.js';
 import { resolveLmxEndpoint } from '../lmx/endpoints.js';
 import * as lmxApiKey from '../lmx/api-key.js';
@@ -32,6 +33,7 @@ export class LmxProvider implements ProviderClient {
       fallbackHosts: this.config.connection.fallbackHosts,
       port: this.config.connection.port,
       adminKey: this.config.connection.adminKey,
+      adminKeysByHost: this.config.connection.adminKeysByHost,
       autoDiscover: this.config.connection.autoDiscover,
     });
     this.resolvedHost = endpoint.host;
@@ -39,7 +41,7 @@ export class LmxProvider implements ProviderClient {
     const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(this.config.connection);
 
     const { default: OpenAI } = await import('openai');
-    this.client = new OpenAI({
+    this.client = instantiateOrInvoke<import('openai').default>(OpenAI, {
       baseURL: this.baseURL,
       apiKey,
       timeout: this.config.connection.inferenceTimeout,
@@ -65,12 +67,17 @@ export class LmxProvider implements ProviderClient {
         fallbackHosts: this.config.connection.fallbackHosts,
         port: this.config.connection.port,
         adminKey: this.config.connection.adminKey,
+        adminKeysByHost: this.config.connection.adminKeysByHost,
         autoDiscover: this.config.connection.autoDiscover,
       }, { timeoutMs: 2_000 });
       const result = await probeLmxConnection(
         endpoint.host,
         this.config.connection.port,
-        { timeoutMs: 5000, adminKey: this.config.connection.adminKey }
+        {
+          timeoutMs: 5000,
+          adminKey: this.config.connection.adminKey,
+          adminKeysByHost: this.config.connection.adminKeysByHost,
+        }
       );
       return {
         ok: result.state !== 'disconnected',

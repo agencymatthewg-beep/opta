@@ -34,6 +34,7 @@ Desktop must not bypass daemon for privileged actions.
 - Keep runtime logic in CLI daemon, not in desktop app.
 - Expose new features through daemon API first, then desktop UI.
 - Treat desktop as a client of CLI, never a parallel runtime.
+- Keep `opta server` as a CLI compatibility alias; desktop controls daemon lifecycle via `daemon.*` + `serve.*` operations instead of wrapping `server` directly.
 
 ## Import Contract (Desktop → Daemon Client)
 - Desktop consumes daemon APIs via `@opta/daemon-client` package exports and explicit subpath imports.

@@ -66,7 +66,9 @@ describe("AccountControlPage", () => {
       );
     });
 
-    expect(await screen.findByText("Loaded account status.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Loaded account status."),
+    ).toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveTextContent("ops@optalocal.com");
   });
 

@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { OperationDefinition, OperationResult } from "../hooks/useOperations";
+import type {
+  OperationDefinition,
+  OperationResult,
+} from "../hooks/useOperations";
 
 interface OperationRunnerProps {
   operation: OperationDefinition;
@@ -23,9 +26,9 @@ export function OperationRunner({
     [operation],
   );
   const hasSchemaFields = schemaFields.length > 0;
-  const [schemaValues, setSchemaValues] = useState<Record<string, string | boolean>>(
-    {},
-  );
+  const [schemaValues, setSchemaValues] = useState<
+    Record<string, string | boolean>
+  >({});
   const [useRawJson, setUseRawJson] = useState(false);
   const [inputJson, setInputJson] = useState("{}");
   const [parseError, setParseError] = useState<string | null>(null);
@@ -38,7 +41,9 @@ export function OperationRunner({
     setParseError(null);
     setDangerConfirmed(false);
     setInputJson(
-      hasSchemaFields ? JSON.stringify(defaultsToInput(schemaFields, defaults), null, 2) : "{}",
+      hasSchemaFields
+        ? JSON.stringify(defaultsToInput(schemaFields, defaults), null, 2)
+        : "{}",
     );
   }, [hasSchemaFields, operation.id, schemaFields]);
 
@@ -145,7 +150,11 @@ export function OperationRunner({
                   </select>
                 ) : (
                   <input
-                    type={field.type === "number" || field.type === "integer" ? "number" : "text"}
+                    type={
+                      field.type === "number" || field.type === "integer"
+                        ? "number"
+                        : "text"
+                    }
                     step={field.type === "integer" ? "1" : "any"}
                     value={String(schemaValues[field.key] ?? "")}
                     onChange={(e) => {
@@ -216,7 +225,9 @@ export function OperationRunner({
         <button
           type="submit"
           className="operation-run-button"
-          disabled={running || (operation.safety === "dangerous" && !dangerConfirmed)}
+          disabled={
+            running || (operation.safety === "dangerous" && !dangerConfirmed)
+          }
           aria-busy={running}
         >
           {running ? "Running…" : `Run ${operation.id}`}
@@ -309,10 +320,13 @@ function resolveFieldType(
 function initializeSchemaValues(
   fields: SchemaField[],
 ): Record<string, string | boolean> {
-  return fields.reduce<Record<string, string | boolean>>((accumulator, field) => {
-    accumulator[field.key] = field.type === "boolean" ? false : "";
-    return accumulator;
-  }, {});
+  return fields.reduce<Record<string, string | boolean>>(
+    (accumulator, field) => {
+      accumulator[field.key] = field.type === "boolean" ? false : "";
+      return accumulator;
+    },
+    {},
+  );
 }
 
 function defaultsToInput(

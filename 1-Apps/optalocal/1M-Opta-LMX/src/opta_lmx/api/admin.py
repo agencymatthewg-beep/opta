@@ -81,19 +81,24 @@ async def device_identity(
 
     hw = await asyncio.to_thread(probe)
     config: LMXConfig = request.app.state.config
-    return JSONResponse(content={
-        "hardware": hw,
-        "identity": {
-            "name": config.device.name,
-            "purpose": config.device.purpose,
-            "role": config.device.role,
-        },
-    })
+    return JSONResponse(
+        content={
+            "hardware": hw,
+            "identity": {
+                "name": config.device.name,
+                "purpose": config.device.purpose,
+                "role": config.device.role,
+            },
+        }
+    )
 
 
 @router.get("/admin/status", responses={403: {"model": ErrorResponse}})
 async def get_status(
-    _auth: AdminAuth, engine: Engine, memory: Memory, start_time: StartTime,
+    _auth: AdminAuth,
+    engine: Engine,
+    memory: Memory,
+    start_time: StartTime,
     request: Request,
 ) -> AdminStatusResponse:
     """Full system status: version, uptime, models, memory."""
@@ -112,7 +117,9 @@ async def get_status(
 
 @router.get("/admin/memory", responses={403: {"model": ErrorResponse}})
 async def memory_status(
-    _auth: AdminAuth, engine: Engine, memory: Memory,
+    _auth: AdminAuth,
+    engine: Engine,
+    memory: Memory,
 ) -> AdminMemoryResponse:
     """Detailed memory breakdown including per-model usage."""
     models = engine.get_loaded_models()
@@ -145,7 +152,10 @@ async def memory_status(
     },
 )
 async def benchmark_model(
-    body: BenchmarkRequest, _auth: AdminAuth, engine: Engine, metrics: Metrics,
+    body: BenchmarkRequest,
+    _auth: AdminAuth,
+    engine: Engine,
+    metrics: Metrics,
 ) -> BenchmarkResponse | JSONResponse:
     """Run an inference benchmark on a loaded model.
 
@@ -177,9 +187,14 @@ async def benchmark_model(
                 if ttft_ms is None:
                     ttft_ms = (time.monotonic() - start) * 1000
         except Exception as e:
-            logger.error("benchmark_failed", extra={
-                "model_id": body.model_id, "run": run_idx + 1, "error": str(e),
-            })
+            logger.error(
+                "benchmark_failed",
+                extra={
+                    "model_id": body.model_id,
+                    "run": run_idx + 1,
+                    "error": str(e),
+                },
+            )
             return internal_error(f"Benchmark failed on run {run_idx + 1}: {e}")
 
         total_ms = (time.monotonic() - start) * 1000
@@ -213,30 +228,30 @@ async def benchmark_model(
             )
         acceptance_ratio_raw = metric_kwargs.get("speculative_acceptance_ratio")
         acceptance_ratio_value: float | None = (
-            float(acceptance_ratio_raw)
-            if isinstance(acceptance_ratio_raw, int | float)
-            else None
+            float(acceptance_ratio_raw) if isinstance(acceptance_ratio_raw, int | float) else None
         )
 
-        results.append(BenchmarkResult(
-            run=run_idx + 1,
-            tokens_generated=token_count,
-            time_to_first_token_ms=round(ttft_ms or 0, 2),
-            total_time_ms=round(total_ms, 2),
-            tokens_per_second=round(tok_per_sec, 2),
-            speculative=SpeculativeBenchmarkStats(
-                requested=bool(metric_kwargs.get("speculative_requested", False)),
-                active=bool(metric_kwargs.get("speculative_active", False)),
-                reason=metric_kwargs.get("speculative_reason"),
-                draft_model=metric_kwargs.get("speculative_draft_model"),
-                num_tokens=metric_kwargs.get("speculative_num_tokens"),
-                accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
-                rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
-                ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
-                acceptance_ratio=acceptance_ratio_value,
-                telemetry=str(metric_kwargs.get("speculative_telemetry", "unavailable")),
-            ),
-        ))
+        results.append(
+            BenchmarkResult(
+                run=run_idx + 1,
+                tokens_generated=token_count,
+                time_to_first_token_ms=round(ttft_ms or 0, 2),
+                total_time_ms=round(total_ms, 2),
+                tokens_per_second=round(tok_per_sec, 2),
+                speculative=SpeculativeBenchmarkStats(
+                    requested=bool(metric_kwargs.get("speculative_requested", False)),
+                    active=bool(metric_kwargs.get("speculative_active", False)),
+                    reason=metric_kwargs.get("speculative_reason"),
+                    draft_model=metric_kwargs.get("speculative_draft_model"),
+                    num_tokens=metric_kwargs.get("speculative_num_tokens"),
+                    accepted_tokens=int(metric_kwargs.get("speculative_accepted_tokens", 0)),
+                    rejected_tokens=int(metric_kwargs.get("speculative_rejected_tokens", 0)),
+                    ignored_tokens=int(metric_kwargs.get("speculative_ignored_tokens", 0)),
+                    acceptance_ratio=acceptance_ratio_value,
+                    telemetry=str(metric_kwargs.get("speculative_telemetry", "unavailable")),
+                ),
+            )
+        )
 
     # Compute averages
     avg_tps = sum(r.tokens_per_second for r in results) / len(results)
@@ -251,12 +266,15 @@ async def benchmark_model(
     if denominator > 0:
         acceptance_ratio = round(accepted_total / denominator, 6)
 
-    logger.info("benchmark_complete", extra={
-        "model_id": body.model_id,
-        "runs": body.runs,
-        "avg_tok_per_sec": round(avg_tps, 2),
-        "avg_ttft_ms": round(avg_ttft, 2),
-    })
+    logger.info(
+        "benchmark_complete",
+        extra={
+            "model_id": body.model_id,
+            "runs": body.runs,
+            "avg_tok_per_sec": round(avg_tps, 2),
+            "avg_ttft_ms": round(avg_ttft, 2),
+        },
+    )
 
     return BenchmarkResponse(
         model_id=body.model_id,
@@ -288,7 +306,8 @@ async def benchmark_model(
 
 @router.get("/admin/presets", responses={403: {"model": ErrorResponse}})
 async def list_presets(
-    _auth: AdminAuth, preset_mgr: Presets,
+    _auth: AdminAuth,
+    preset_mgr: Presets,
 ) -> PresetListResponse:
     """List all loaded presets."""
     presets = preset_mgr.list_all()
@@ -300,8 +319,6 @@ async def list_presets(
                 model=p.model,
                 parameters=p.parameters,
                 system_prompt=p.system_prompt,
-                prompt_profiles=p.prompt_profiles,
-                default_prompt_profile=p.default_prompt_profile,
                 routing_alias=p.routing_alias,
                 auto_load=p.auto_load,
                 performance=p.performance,
@@ -319,7 +336,9 @@ async def list_presets(
     responses={403: {"model": ErrorResponse}, 404: {"model": ErrorResponse}},
 )
 async def get_preset(
-    name: str, _auth: AdminAuth, preset_mgr: Presets,
+    name: str,
+    _auth: AdminAuth,
+    preset_mgr: Presets,
 ) -> PresetResponse | JSONResponse:
     """Get full details for a single preset."""
     preset = preset_mgr.get(name)
@@ -332,8 +351,6 @@ async def get_preset(
         model=preset.model,
         parameters=preset.parameters,
         system_prompt=preset.system_prompt,
-        prompt_profiles=preset.prompt_profiles,
-        default_prompt_profile=preset.default_prompt_profile,
         routing_alias=preset.routing_alias,
         auto_load=preset.auto_load,
         performance=preset.performance,
@@ -346,7 +363,8 @@ async def get_preset(
     responses={403: {"model": ErrorResponse}},
 )
 async def reload_presets(
-    _auth: AdminAuth, preset_mgr: Presets,
+    _auth: AdminAuth,
+    preset_mgr: Presets,
 ) -> dict[str, Any]:
     """Re-read preset files from disk."""
     count = preset_mgr.reload()
@@ -414,13 +432,9 @@ async def stack_status(
         "helper_nodes": helpers,
         "loaded_models": sorted(loaded_ids),
         "default_model": config.routing.default_model,
-        "backends": {
-            name: backend.model_dump()
-            for name, backend in config.backends.items()
-        },
+        "backends": {name: backend.model_dump() for name, backend in config.backends.items()},
         "stack_presets": {
-            name: preset.model_dump()
-            for name, preset in config.stack_presets.items()
+            name: preset.model_dump() for name, preset in config.stack_presets.items()
         },
     }
 
@@ -452,22 +466,24 @@ async def start_quantize(
         event_bus=event_bus,
     )
 
-    return JSONResponse(content={
-        "job_id": job.job_id,
-        "source_model": job.source_model,
-        "output_path": job.output_path,
-        "bits": job.bits,
-        "group_size": job.group_size,
-        "mode": job.mode,
-        "status": job.status,
-        "queue_position": job.queue_position,
-        "cancel_requested": job.cancel_requested,
-        "cancel_requested_at": job.cancel_requested_at,
-        "failure_code": job.failure_code,
-        "exit_code": job.exit_code,
-        "signal": job.signal,
-        "worker_pid": job.worker_pid,
-    })
+    return JSONResponse(
+        content={
+            "job_id": job.job_id,
+            "source_model": job.source_model,
+            "output_path": job.output_path,
+            "bits": job.bits,
+            "group_size": job.group_size,
+            "mode": job.mode,
+            "status": job.status,
+            "queue_position": job.queue_position,
+            "cancel_requested": job.cancel_requested,
+            "cancel_requested_at": job.cancel_requested_at,
+            "failure_code": job.failure_code,
+            "exit_code": job.exit_code,
+            "signal": job.signal,
+            "worker_pid": job.worker_pid,
+        }
+    )
 
 
 @router.get("/admin/quantize/{job_id}")
@@ -632,7 +648,5 @@ async def helpers_health(
         "helpers": helpers,
         "live_checks": check_results,
         "configured_count": len(helpers),
-        "all_healthy": all(
-            h.get("healthy", False) for h in helpers.values()
-        ) if helpers else True,
+        "all_healthy": all(h.get("healthy", False) for h in helpers.values()) if helpers else True,
     }

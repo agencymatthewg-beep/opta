@@ -161,10 +161,7 @@ async def test_chaos_inference_timeout_does_not_leak_in_flight() -> None:
 async def test_chaos_skill_queue_pressure_returns_backpressure(tmp_path: Path) -> None:
     module_path = tmp_path / "chaos_skill.py"
     module_path.write_text(
-        "import time\n"
-        "def run(delay: float) -> str:\n"
-        "    time.sleep(delay)\n"
-        "    return 'ok'\n",
+        "import time\ndef run(delay: float) -> str:\n    time.sleep(delay)\n    return 'ok'\n",
         encoding="utf-8",
     )
     manifest = SkillManifest.model_validate(

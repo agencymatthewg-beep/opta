@@ -27,12 +27,14 @@ def test_quantize_result_round_trip() -> None:
 
 
 def test_loader_failure_parses_exit_code_and_signal() -> None:
-    failure = LoaderFailure.from_dict({
-        "code": "worker_crashed",
-        "message": "crashed",
-        "exit_code": None,
-        "signal": 6,
-    })
+    failure = LoaderFailure.from_dict(
+        {
+            "code": "worker_crashed",
+            "message": "crashed",
+            "exit_code": None,
+            "signal": 6,
+        }
+    )
     assert failure.code == "worker_crashed"
     assert failure.signal == 6
     assert failure.exit_code is None

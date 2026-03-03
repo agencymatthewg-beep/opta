@@ -134,7 +134,7 @@ async def test_mcp_adapter_list_and_call(skills_client: AsyncClient) -> None:
 async def test_mcp_call_accepts_json_string_arguments(skills_client: AsyncClient) -> None:
     call_resp = await skills_client.post(
         "/v1/skills/mcp/call",
-        json={"name": "echo", "arguments": "{\"topic\":\"json\"}"},
+        json={"name": "echo", "arguments": '{"topic":"json"}'},
     )
     assert call_resp.status_code == 200
     assert call_resp.json()["output"]["echo"]["topic"] == "json"
@@ -151,7 +151,7 @@ async def test_get_namespaced_skill_reference(skills_client: AsyncClient) -> Non
 async def test_openclaw_invoke_shim(skills_client: AsyncClient) -> None:
     resp = await skills_client.post(
         "/v1/skills/openclaw/invoke",
-        json={"tool": "add", "arguments": "{\"left\":3,\"right\":4}"},
+        json={"tool": "add", "arguments": '{"left":3,"right":4}'},
     )
     assert resp.status_code == 200
     payload = resp.json()

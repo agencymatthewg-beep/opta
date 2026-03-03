@@ -26,11 +26,7 @@ def score_profile(
     Tie-breakers (lower is better):
         avg_total_ms, then queue_wait_ms
     """
-    score = (
-        float(avg_tokens_per_second)
-        - 0.015 * float(avg_ttft_ms)
-        - 50.0 * float(error_rate)
-    )
+    score = float(avg_tokens_per_second) - 0.015 * float(avg_ttft_ms) - 50.0 * float(error_rate)
     return ScoreResult(
         score=score,
         sort_key=(-score, float(avg_total_ms), float(queue_wait_ms)),

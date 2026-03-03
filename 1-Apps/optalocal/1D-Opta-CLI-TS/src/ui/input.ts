@@ -32,7 +32,8 @@ export async function checkConnection(
   host: string,
   port: number,
   fallbackHosts: string[] = [],
-  adminKey?: string
+  adminKey?: string,
+  adminKeysByHost: Record<string, string> = {}
 ): Promise<void> {
   try {
     const endpoint = await resolveLmxEndpoint(
@@ -41,10 +42,15 @@ export async function checkConnection(
         fallbackHosts,
         port,
         adminKey,
+        adminKeysByHost,
       },
       { timeoutMs: 1000 }
     );
-    const result = await probeLmxConnection(endpoint.host, port, { timeoutMs: 2000, adminKey });
+    const result = await probeLmxConnection(endpoint.host, port, {
+      timeoutMs: 2000,
+      adminKey,
+      adminKeysByHost,
+    });
     if (result.state === 'connected') {
       connectionStatus = 'connected';
       connectionStatusDetail = '';
@@ -74,10 +80,11 @@ export function startConnectionMonitor(
   host: string,
   port: number,
   fallbackHosts: string[] = [],
-  adminKey?: string
+  adminKey?: string,
+  adminKeysByHost: Record<string, string> = {}
 ): () => void {
   // Run initial check immediately
-  checkConnection(host, port, fallbackHosts, adminKey).catch((err: unknown) => {
+  checkConnection(host, port, fallbackHosts, adminKey, adminKeysByHost).catch((err: unknown) => {
     if (process.env.OPTA_DEBUG) {
       console.error('Initial connection check failed:', err);
     }
@@ -85,7 +92,7 @@ export function startConnectionMonitor(
 
   // Set up periodic checks
   connectionCheckInterval = setInterval(() => {
-    checkConnection(host, port, fallbackHosts, adminKey).catch((err: unknown) => {
+    checkConnection(host, port, fallbackHosts, adminKey, adminKeysByHost).catch((err: unknown) => {
       if (process.env.OPTA_DEBUG) {
         console.error('Periodic connection check failed:', err);
       }

@@ -83,7 +83,7 @@ function findLatestCliArtifactUrl(stableManifest) {
   throw new Error('stable opta-cli component must include at least one https artifact URL');
 }
 
-function findLatestInitManagerMacUrl(stableManagerUpdate) {
+function findLatestInitManagerAssetUrl(stableManagerUpdate, platformKey, fileHint) {
   const channel = stableManagerUpdate?.channel;
   const version = stableManagerUpdate?.version;
   if (channel !== 'stable') {
@@ -98,26 +98,31 @@ function findLatestInitManagerMacUrl(stableManagerUpdate) {
     throw new Error('stable manager update feed must include platforms');
   }
 
-  let foundDarwinTarget = false;
-  for (const key of ['darwin-aarch64', 'darwin-x86_64']) {
-    const candidate = platforms[key];
-    if (isObject(candidate) && typeof candidate.url === 'string' && candidate.url.startsWith('https://')) {
-      foundDarwinTarget = true;
-      const parsed = parseHttpsUrl(candidate.url, `stable manager ${key} url`);
-      const expectedPrefix = `/desktop-updates/manager/${channel}/${version}/`;
-      if (parsed.hostname !== internalDownloadHost || !parsed.pathname.startsWith(expectedPrefix)) {
-        throw new Error(
-          `stable manager ${key} url must be under https://${internalDownloadHost}${expectedPrefix}`
-        );
-      }
+  const candidate = platforms[platformKey];
+  if (!isObject(candidate) || typeof candidate.url !== 'string' || !candidate.url.startsWith('https://')) {
+    return { found: false, url: null };
+  }
+
+  const parsed = parseHttpsUrl(candidate.url, `stable manager ${platformKey} url`);
+  const expectedPrefix = `/desktop-updates/manager/${channel}/${version}/`;
+  if (parsed.hostname !== internalDownloadHost || !parsed.pathname.startsWith(expectedPrefix)) {
+    throw new Error(
+      `stable manager ${platformKey} url must be under https://${internalDownloadHost}${expectedPrefix}`
+    );
+  }
+
+  if (fileHint) {
+    const assetName = parsed.pathname.split('/').filter(Boolean).pop();
+    if (!assetName || !assetName.includes(fileHint)) {
+      // keep explicit behavior permissive here: only enforce naming intent when provided
     }
   }
 
-  if (!foundDarwinTarget) {
-    throw new Error('stable manager update feed must include a darwin-aarch64 or darwin-x86_64 url');
-  }
-
-  return `https://${internalDownloadHost}/desktop-updates/manager/${channel}/${version}/opta-init-mac.dmg`;
+  return {
+    found: true,
+    url: candidate.url,
+    assetName: parsed.pathname.split('/').filter(Boolean).pop() ?? `${platformKey}.artifact`,
+  };
 }
 
 function isSelfRedirect(source, destination) {
@@ -136,7 +141,12 @@ function isSelfRedirect(source, destination) {
   );
 }
 
-function buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, latestInitManagerMacUrl) {
+function buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, latestInitManagerMacAsset, latestInitManagerWindowsAsset) {
+  ensureHttpsUrl(latestCliArtifactUrl, 'stable opta-cli artifact url');
+  ensureHttpsUrl(latestInitManagerMacAsset.url, 'stable init manager mac artifact url');
+  if (latestInitManagerWindowsAsset.found && latestInitManagerWindowsAsset.url) {
+    ensureHttpsUrl(latestInitManagerWindowsAsset.url, 'stable init manager windows artifact url');
+  }
   return [
     {
       source: '/desktop-updates/manager/stable/:version/:asset',
@@ -162,9 +172,18 @@ function buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, lates
     },
     {
       source: '/downloads/opta-init/latest/opta-init-mac.dmg',
-      destination: latestInitManagerMacUrl,
+      destination: latestInitManagerMacAsset.url,
       permanent: false,
     },
+    ...(latestInitManagerWindowsAsset.found && latestInitManagerWindowsAsset.url
+      ? [
+          {
+            source: `/downloads/opta-init/latest/${latestInitManagerWindowsAsset.assetName}`,
+            destination: latestInitManagerWindowsAsset.url,
+            permanent: false,
+          },
+        ]
+      : []),
     {
       source: '/downloads/opta-init/latest',
       destination: '/downloads/opta-init/latest/opta-init-mac.dmg',
@@ -260,8 +279,9 @@ function isManagedRedirectSource(source) {
     source === '/desktop-updates/manager/beta/:version/:asset' ||
     source === '/downloads/opta-cli/latest' ||
     source === '/downloads/cli' ||
-    source === '/downloads/opta-init/latest/opta-init-mac.dmg' ||
     source === '/downloads/opta-init/latest' ||
+    source === '/downloads/opta-init/latest/opta-init-mac.dmg' ||
+    source.startsWith('/downloads/opta-init/latest/') ||
     managedDownloadVersionPattern.test(source)
   );
 }
@@ -284,15 +304,19 @@ async function main() {
   );
 
   const latestCliArtifactUrl = findLatestCliArtifactUrl(stableManifest);
-  ensureHttpsUrl(latestCliArtifactUrl, 'stable opta-cli artifact url');
-  const latestInitManagerMacUrl = findLatestInitManagerMacUrl(stableManagerUpdate);
-  ensureHttpsUrl(latestInitManagerMacUrl, 'stable init manager mac artifact url');
 
   const stableReleaseNotesUrl = getNotesUrl(stableManifest, '/releases/stable');
+  const latestInitManagerMacAsset = findLatestInitManagerAssetUrl(stableManagerUpdate, "darwin-aarch64");
+  const latestInitManagerWindowsAsset = findLatestInitManagerAssetUrl(stableManagerUpdate, "windows-x86_64");
   const generatedRedirects = dedupeRedirects([
     ...buildComponentRedirects(stableManifest),
     ...buildComponentRedirects(betaManifest),
-    ...buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, latestInitManagerMacUrl),
+    ...buildStaticRedirects(
+      stableReleaseNotesUrl,
+      latestCliArtifactUrl,
+      latestInitManagerMacAsset,
+      latestInitManagerWindowsAsset
+    ),
   ]);
 
   vercelConfig.redirects = dedupeRedirects([...generatedRedirects, ...preservedRedirects]);

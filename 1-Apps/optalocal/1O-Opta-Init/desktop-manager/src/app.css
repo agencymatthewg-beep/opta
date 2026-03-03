@@ -134,16 +134,38 @@ body {
 }
 
 /* Animations */
-.floating-1 { animation: float 6s ease-in-out infinite; }
-.floating-2 { animation: float 7s ease-in-out infinite 1s; }
-.floating-3 { animation: float 5.5s ease-in-out infinite 2s; }
-.floating-4 { animation: float 6.5s ease-in-out infinite 0.5s; }
-.floating-5 { animation: float 8s ease-in-out infinite 1.5s; }
+.floating-1 {
+  animation: float 6s ease-in-out infinite;
+}
+
+.floating-2 {
+  animation: float 7s ease-in-out infinite 1s;
+}
+
+.floating-3 {
+  animation: float 5.5s ease-in-out infinite 2s;
+}
+
+.floating-4 {
+  animation: float 6.5s ease-in-out infinite 0.5s;
+}
+
+.floating-5 {
+  animation: float 8s ease-in-out infinite 1.5s;
+}
 
 @keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
-  100% { transform: translateY(0px); }
+  0% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-15px);
+  }
+
+  100% {
+    transform: translateY(0px);
+  }
 }
 
 .fade-in {
@@ -151,8 +173,15 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(5px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Purple Circle */
@@ -179,18 +208,46 @@ body {
 }
 
 /* Sizes */
-.top-item .purple-circle { width: 140px; height: 140px; }
-.top-item .app-logo { width: 110px; height: 110px; }
+.top-item .purple-circle {
+  width: 140px;
+  height: 140px;
+}
 
-.core-row .purple-circle { width: 140px; height: 140px; }
-.core-row .app-logo { width: 110px; height: 110px; }
+.top-item .app-logo {
+  width: 110px;
+  height: 110px;
+}
 
-.support-item .purple-circle { width: 90px; height: 90px; }
-.support-item .app-logo { width: 64px; height: 64px; }
+.core-row .purple-circle {
+  width: 140px;
+  height: 140px;
+}
+
+.core-row .app-logo {
+  width: 110px;
+  height: 110px;
+}
+
+.support-item .purple-circle {
+  width: 90px;
+  height: 90px;
+}
+
+.support-item .app-logo {
+  width: 64px;
+  height: 64px;
+}
 
 /* LMX Middle is larger */
-.lmx-item .purple-circle { width: 200px; height: 200px; }
-.lmx-item .app-logo { width: 160px; height: 160px; }
+.lmx-item .purple-circle {
+  width: 200px;
+  height: 200px;
+}
+
+.lmx-item .app-logo {
+  width: 160px;
+  height: 160px;
+}
 
 .app-item:hover .purple-circle {
   opacity: 1;
@@ -214,6 +271,7 @@ body {
   border: 2px solid var(--void);
   z-index: 3;
 }
+
 .app-status-pip.active {
   background: var(--green);
   box-shadow: 0 0 10px var(--green);
@@ -226,6 +284,7 @@ body {
   background: rgba(255, 255, 255, 0.1);
   border: 1px solid rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   color: #fff;
   padding: 6px 16px;
   border-radius: 12px;
@@ -275,6 +334,7 @@ body {
   opacity: 1;
   transform: translateY(0);
 }
+
 /* Bottom Panel */
 .bottom-panel {
   position: absolute;
@@ -297,7 +357,8 @@ body {
   display: flex;
   justify-content: center;
   width: 100%;
-  min-height: 44px; /* to prevent jumping */
+  min-height: 44px;
+  /* to prevent jumping */
 }
 
 .settings-cog {
@@ -413,6 +474,7 @@ body {
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -480,17 +542,18 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(34, 197, 94, 0.1);
-  color: var(--green);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-muted);
   padding: 8px 16px;
   border-radius: 999px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  border: 1px solid rgba(34, 197, 94, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   transition: background 0.2s;
 }
+
 .status-badge:hover {
-  background: rgba(34, 197, 94, 0.15);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .manager-update-chip {
@@ -518,9 +581,9 @@ body {
 }
 
 .manager-update-chip.update-available {
-  border-color: rgba(168, 85, 247, 0.45);
-  color: #d8b4fe;
-  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+  background: rgba(34, 197, 94, 0.12);
 }
 
 .manager-update-chip.error {
@@ -543,6 +606,7 @@ body {
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.3);
 }
+
 .status-dot.active {
   background: var(--green);
   box-shadow: 0 0 8px var(--green);
@@ -579,6 +643,7 @@ body {
   color: #fff;
   box-shadow: 0 0 20px var(--purple-glow);
 }
+
 .btn.primary:hover:not(:disabled) {
   background: #b566ff;
   box-shadow: 0 0 30px var(--purple-glow);
@@ -589,6 +654,81 @@ body {
   color: #fff;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
+
 .btn.secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.text-moonlight {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168, 85, 247, 0.5) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 50px;
+  background: rgba(12, 12, 18, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 24px;
+  box-sizing: border-box;
+  z-index: 50;
+}
+
+.bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.bar-sidebar-text {
+  color: var(--purple, #a855f7);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+}
+
+.bar-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--text-muted, #a1a1aa);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.bar-badge.clickable {
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.bar-badge.clickable:hover {
+  color: #fff;
+}
+
+.header-center {
+  position: absolute;
+  top: 90px;
+  width: 100%;
+  text-align: center;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }

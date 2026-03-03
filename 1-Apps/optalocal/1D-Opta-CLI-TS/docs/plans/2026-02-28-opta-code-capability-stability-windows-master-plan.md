@@ -21,8 +21,8 @@ created: 2026-02-28
 ### Evidence used
 - `src/index.ts` (CLI command surface)
 - `packages/daemon-client/src/http-client.ts` and `types.ts`
-- `1P-Opta-Code-Desktop/src/lib/daemonClient.ts`
-- `1P-Opta-Code-Desktop/src/hooks/useDaemonSessions.ts`
+- `1P-Opta-Code-Universal/src/lib/daemonClient.ts`
+- `1P-Opta-Code-Universal/src/hooks/useDaemonSessions.ts`
 - `docs/plans/2026-02-23-codex-desktop-parity-spec.md`
 - `docs/AUDIT-INTEROP-2026-02-28.md`
 
@@ -31,7 +31,7 @@ created: 2026-02-28
 2. Daemon client already has background process APIs, but Opta Code has no UI for them.
 3. Opta Code has no local test harness/CI equivalent to CLI parity gates.
 4. Existing codex parity spec still has open P0 items (alternate-buffer assertions and additional visual captures).
-5. Current keychain implementation supports macOS/Linux only (`src/keychain/index.ts`), so Windows credential handling is missing.
+5. Windows keychain handling now exists via a DPAPI-protected fallback store in `src/keychain/index.ts`; remaining work is hardening/observability and optional Credential Manager-native integration.
 6. Several CLI operations are platform-specific (`launchctl`, `pbcopy`, macOS defaults) and need abstraction for Windows parity.
 
 ---
@@ -137,7 +137,7 @@ Expected: PASS.
 - Modify: `packages/daemon-client/src/types.ts`
 - Modify: `packages/daemon-client/src/http-client.ts`
 - Test: `packages/daemon-client/src/http-client.test.ts`
-- Modify: `1P-Opta-Code-Desktop/src/lib/daemonClient.ts`
+- Modify: `1P-Opta-Code-Universal/src/lib/daemonClient.ts`
 
 **Step 1: Write failing daemon-client tests**
 
@@ -166,11 +166,11 @@ Expected: PASS.
 ### Task 4: Add Opta Code operations console (100% command-family access)
 
 **Files:**
-- Create: `1P-Opta-Code-Desktop/src/pages/OperationsPage.tsx`
-- Create: `1P-Opta-Code-Desktop/src/hooks/useOperations.ts`
-- Create: `1P-Opta-Code-Desktop/src/components/OperationRunner.tsx`
-- Modify: `1P-Opta-Code-Desktop/src/App.tsx`
-- Modify: `1P-Opta-Code-Desktop/src/types.ts`
+- Create: `1P-Opta-Code-Universal/src/pages/OperationsPage.tsx`
+- Create: `1P-Opta-Code-Universal/src/hooks/useOperations.ts`
+- Create: `1P-Opta-Code-Universal/src/components/OperationRunner.tsx`
+- Modify: `1P-Opta-Code-Universal/src/App.tsx`
+- Modify: `1P-Opta-Code-Universal/src/types.ts`
 
 **Step 1: Add failing UI tests**
 
@@ -178,7 +178,7 @@ Create component tests asserting operation catalog loads and operation execute r
 
 **Step 2: Run failing tests**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run test -- src/pages/OperationsPage.test.tsx`  
+Run: `cd 1P-Opta-Code-Universal && npm run test -- src/pages/OperationsPage.test.tsx`  
 Expected: FAIL (test setup/page absent).
 
 **Step 3: Implement operations page + runner**
@@ -191,7 +191,7 @@ Add top-level `Operations` page route and palette command.
 
 **Step 5: Verify**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run build`  
+Run: `cd 1P-Opta-Code-Universal && npm run build`  
 Expected: PASS.
 
 ---
@@ -199,10 +199,10 @@ Expected: PASS.
 ### Task 5: Add background process control UI in Opta Code
 
 **Files:**
-- Create: `1P-Opta-Code-Desktop/src/pages/BackgroundJobsPage.tsx`
-- Modify: `1P-Opta-Code-Desktop/src/lib/daemonClient.ts`
-- Modify: `1P-Opta-Code-Desktop/src/App.tsx`
-- Test: `1P-Opta-Code-Desktop/src/pages/BackgroundJobsPage.test.tsx`
+- Create: `1P-Opta-Code-Universal/src/pages/BackgroundJobsPage.tsx`
+- Modify: `1P-Opta-Code-Universal/src/lib/daemonClient.ts`
+- Modify: `1P-Opta-Code-Universal/src/App.tsx`
+- Test: `1P-Opta-Code-Universal/src/pages/BackgroundJobsPage.test.tsx`
 
 **Step 1: Write failing tests for jobs panel**
 
@@ -210,7 +210,7 @@ Test list/start/kill/output-follow flows.
 
 **Step 2: Run failing tests**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run test -- src/pages/BackgroundJobsPage.test.tsx`  
+Run: `cd 1P-Opta-Code-Universal && npm run test -- src/pages/BackgroundJobsPage.test.tsx`  
 Expected: FAIL.
 
 **Step 3: Implement page**
@@ -223,7 +223,7 @@ Expose `Background Jobs` under runtime controls.
 
 **Step 5: Verify**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run build`  
+Run: `cd 1P-Opta-Code-Universal && npm run build`  
 Expected: PASS.
 
 ---
@@ -231,12 +231,12 @@ Expected: PASS.
 ### Task 6: Add Opta Code quality harness (unit + E2E + CI)
 
 **Files:**
-- Create: `1P-Opta-Code-Desktop/vitest.config.ts`
-- Create: `1P-Opta-Code-Desktop/src/test/setup.ts`
-- Create: `1P-Opta-Code-Desktop/playwright.config.ts`
-- Create: `1P-Opta-Code-Desktop/tests/e2e/smoke.spec.ts`
-- Modify: `1P-Opta-Code-Desktop/package.json`
-- Create: `1P-Opta-Code-Desktop/.github/workflows/opta-code-parity.yml`
+- Create: `1P-Opta-Code-Universal/vitest.config.ts`
+- Create: `1P-Opta-Code-Universal/src/test/setup.ts`
+- Create: `1P-Opta-Code-Universal/playwright.config.ts`
+- Create: `1P-Opta-Code-Universal/tests/e2e/smoke.spec.ts`
+- Modify: `1P-Opta-Code-Universal/package.json`
+- Modify: `.github/workflows/opta-local-web-ci.yml`
 
 **Step 1: Add failing CI-local command set**
 
@@ -256,7 +256,7 @@ Include build/type/lint/unit/e2e + strict aggregate gate.
 
 **Step 5: Verify**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run typecheck && npm run build`  
+Run: `cd 1P-Opta-Code-Universal && npm run typecheck && npm run build`  
 Expected: PASS.
 
 ---
@@ -267,7 +267,7 @@ Expected: PASS.
 - Modify: `tests/tui/App.test.tsx`
 - Modify: `tests/tui/visual-snapshots.test.tsx`
 - Modify: `tests/tui/__snapshots__/visual-snapshots.test.tsx.snap`
-- Modify: `.github/workflows/parity-macos-opta-code.yml`
+- Modify: `.github/workflows/opta-code-macos-build.yml`
 - Modify: `docs/plans/2026-02-23-codex-desktop-parity-spec.md`
 
 **Step 1: Add alternate buffer assertions (`P0-03`)**
@@ -307,9 +307,9 @@ Expected: PASS.
 
 Mock `process.platform === "win32"` and assert keychain + clipboard behavior.
 
-**Step 2: Implement Windows keychain backend**
+**Step 2: Harden Windows keychain backend**
 
-Add Credential Manager adapter path (or explicit secure fallback with warning if unavailable).
+Keep DPAPI fallback as baseline and add telemetry/docs + optional Credential Manager adapter path where available.
 
 **Step 3: Implement Windows clipboard adapter**
 
@@ -329,11 +329,11 @@ Expected: PASS.
 ### Task 9: Windows Opta Code desktop packaging track
 
 **Files:**
-- Create: `1P-Opta-Code-Desktop/src-tauri/Cargo.toml`
-- Create: `1P-Opta-Code-Desktop/src-tauri/src/main.rs`
-- Create: `1P-Opta-Code-Desktop/src-tauri/tauri.conf.json`
-- Create: `1P-Opta-Code-Desktop/.github/workflows/opta-code-windows-build.yml`
-- Modify: `1P-Opta-Code-Desktop/README.md`
+- Create: `1P-Opta-Code-Universal/src-tauri/Cargo.toml`
+- Create: `1P-Opta-Code-Universal/src-tauri/src/main.rs`
+- Create: `1P-Opta-Code-Universal/src-tauri/tauri.conf.json`
+- Modify: `.github/workflows/opta-code-windows-build.yml`
+- Modify: `1P-Opta-Code-Universal/README.md`
 
 **Step 1: Add shell wrapper**
 
@@ -353,7 +353,7 @@ Run packaged app startup test and basic daemon connect probe in CI.
 
 **Step 5: Verify**
 
-Run: `cd 1P-Opta-Code-Desktop && npm run build` plus Tauri build in CI  
+Run: `cd 1P-Opta-Code-Universal && npm run build` plus Tauri build in CI  
 Expected: artifact generated.
 
 ---
@@ -367,7 +367,7 @@ Expected: artifact generated.
 
 ### Lane B: Shared Client + Opta Code Operations UX
 - Owns Task 3, Task 4, Task 5.
-- Files are `packages/daemon-client/*` and `1P-Opta-Code-Desktop/src/*`.
+- Files are `packages/daemon-client/*` and `1P-Opta-Code-Universal/src/*`.
 - Coordinate with Lane A on operation IDs only.
 
 ### Lane C: Quality + Parity Gates
@@ -404,7 +404,7 @@ npm run test:parity:ws9
 npm run test:parity:visual
 
 # Opta Code desktop
-cd 1-Apps/optalocal/1P-Opta-Code-Desktop
+cd 1-Apps/optalocal/1P-Opta-Code-Universal
 npm run typecheck
 npm run build
 npm run test:run

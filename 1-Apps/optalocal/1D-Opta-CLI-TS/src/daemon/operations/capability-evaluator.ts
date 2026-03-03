@@ -15,6 +15,9 @@ const HIGH_RISK_WRITE_OPERATIONS = new Set<OperationId>([
   'update.run',
   'keychain.delete-anthropic',
   'keychain.delete-lmx',
+  'keychain.delete-gemini',
+  'keychain.delete-openai',
+  'keychain.delete-opencode-zen',
 ]);
 
 interface CapabilityDecisionPayload {

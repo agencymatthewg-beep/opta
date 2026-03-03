@@ -1,3 +1,5 @@
+import type { SessionMode, TurnOverrides } from '../protocol/v3/types.js';
+
 export interface QueuedTurn {
   turnId: string;
   ingressSeq: number;
@@ -5,9 +7,10 @@ export interface QueuedTurn {
   clientId: string;
   writerId: string;
   content: string;
-  mode: 'chat' | 'do';
+  mode: SessionMode;
   createdAt: string;
   metadata?: Record<string, unknown>;
+  overrides?: TurnOverrides;
 }
 
 /**

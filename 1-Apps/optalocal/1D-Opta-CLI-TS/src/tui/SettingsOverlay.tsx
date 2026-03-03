@@ -9,7 +9,7 @@ import { errorMessage } from '../utils/errors.js';
 
 // --- TYPES ---
 
-type SettingsPageId = 'connection' | 'models' | 'safety' | 'system' | 'advanced' | 'atpo' | 'account';
+type SettingsPageId = 'connection' | 'models' | 'safety' | 'system' | 'advanced' | 'atpo' | 'actions' | 'account';
 type SettingsDisplayProfile = 'compact' | 'opta' | 'advanced';
 
 interface SettingsPage { id: SettingsPageId; label: string; color: string; }
@@ -49,6 +49,9 @@ export interface SettingsOverlayProps {
   config?: Record<string, unknown>;
   /** Optional command runner for action rows (e.g. `/models manage`). */
   onRunCommand?: (command: string) => void;
+  onOpenModelPicker?: () => void;
+  /** Save each confirmed setting change immediately. Defaults to `true`. */
+  autoSave?: boolean;
   onClose: () => void;
   onSave: (changes: Record<string, unknown>) => void;
 }
@@ -62,15 +65,20 @@ const PAGES: SettingsPage[] = [
   { id: 'system',     label: 'System',      color: '#38bdf8' },
   { id: 'advanced',   label: 'Advanced',    color: '#22d3ee' },
   { id: 'atpo',       label: 'Atpo',        color: '#c084fc' },
+  { id: 'actions',    label: 'Actions',     color: '#ec4899' },
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
 
 const ACTION_COMMANDS: Record<string, string> = {
   __action_lmx_status: '/lmx status',
   __action_lmx_reconnect: '/lmx reconnect',
-  __action_models_manage: '/models manage',
-  __action_models_download: '/models download',
   __action_models_unload: '/models stop',
+  __action_genui_gu: '/gu',
+  __action_genui_improve: '/improve',
+  __action_genui_perfect: '/perfect',
+  __action_genui_atpo: '/atpo',
+  __action_genui_codereview: '/codereview',
+  __action_genui_plan: '/plan',
 };
 
 const PAGE_INDEX = PAGES.reduce<Record<SettingsPageId, number>>(
@@ -95,10 +103,13 @@ const COMPACT_PROFILE_KEYS = new Set<string>([
   'subAgent.enabled',
   'browser.enabled',
   'research.defaultProvider',
+  'genui.enabled',
+  'genui.autoOpenBrowser',
 ]);
 const ADVANCED_PROFILE_ONLY_KEYS = new Set<string>([
   'connection.fallbackHosts',
   'connection.autoDiscover',
+  'connection.adminKeysByHost',
   'connection.ssh.lmxPath',
   'connection.inferenceTimeout',
   'safety.circuitBreaker.pauseAt',
@@ -161,10 +172,12 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
   connection: [
     { label: 'LMX Host',            configKey: 'connection.host',              defaultValue: 'localhost',           description: 'Hostname or IP of LMX inference server',                  hint: 'e.g. 192.168.188.11 or localhost' },
     { label: 'LMX Port',            configKey: 'connection.port',              defaultValue: '1234',                description: 'Port number for LMX API',                                  hint: 'Default: 1234' },
+    { label: 'LMX Admin Key',       configKey: 'connection.adminKey',          defaultValue: '',                    description: 'Admin key for protected /admin endpoints', sensitive: true, hint: 'Used by status/models/load on secured hosts' },
     { label: 'LMX API Key',         configKey: 'connection.apiKey',            defaultValue: 'opta-lmx',            description: 'API key for LMX (if auth enabled)', sensitive: true,      hint: 'Default: opta-lmx (no auth)' },
     { label: 'Auto Discover',       configKey: 'connection.autoDiscover',      defaultValue: 'true',                description: 'Automatically discover local inference hosts',
       inputType: 'toggle', options: [{ label: 'Enabled', value: 'true'}, { label: 'Disabled', value: 'false'}] },
     { label: 'Fallback Hosts',      configKey: 'connection.fallbackHosts',     defaultValue: '',                    description: 'Comma-separated fallback LMX hosts',                       hint: 'e.g. 10.0.0.2:1234,10.0.0.3:1234' },
+    { label: 'Admin Keys by Host',  configKey: 'connection.adminKeysByHost',   defaultValue: '{}',                  description: 'Per-host admin keys override the default admin key',       hint: 'JSON: {\"192.168.188.11\":\"keyA\",\"192.168.188.8\":\"keyB\"}' },
     { label: 'Check LMX Status',    configKey: '__action_lmx_status',          defaultValue: '',                    description: 'Run an immediate LMX health check in chat',                hint: 'Runs `/lmx status`', inputType: 'action', action: () => {} },
     { label: 'Reconnect LMX',       configKey: '__action_lmx_reconnect',       defaultValue: '',                    description: 'Force reconnection against configured host(s)',            hint: 'Runs `/lmx reconnect`', inputType: 'action', action: () => {} },
     { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the Mac Studio' },
@@ -337,6 +350,16 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Auto Pause Limit',  configKey: 'atpo.limits.autoPauseThreshold', defaultValue: '5',               description: 'Pause Atpo after this much cost/percentage is reached', hint: 'Value based on payment method' },
     { label: 'Provider Failover', configKey: 'atpo.limits.providerFailover', defaultValue: 'false',             description: 'Switch providers when limit is reached instead of pausing', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
   ],
+  actions: [
+    { label: 'GenUI Output',      configKey: 'genui.enabled',               defaultValue: 'true',                description: 'Enable Generative UI output artifacts for specific commands', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
+    { label: 'Auto-Open Browser', configKey: 'genui.autoOpenBrowser',       defaultValue: 'true',                description: 'Automatically open GenUI artifacts in the default browser', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
+    { label: 'Generate UI',       configKey: '__action_genui_gu',           defaultValue: '',                    description: 'Trigger /gu to generate a UI from prompt', hint: 'Runs `/gu`', inputType: 'action', action: () => {} },
+    { label: 'Improve UI',        configKey: '__action_genui_improve',      defaultValue: '',                    description: 'Trigger /improve to iterate on a UI file', hint: 'Runs `/improve`', inputType: 'action', action: () => {} },
+    { label: 'Perfect UI',        configKey: '__action_genui_perfect',      defaultValue: '',                    description: 'Trigger /perfect for UI micro-interactions and polish', hint: 'Runs `/perfect`', inputType: 'action', action: () => {} },
+    { label: 'ATPO Dashboard',    configKey: '__action_genui_atpo',         defaultValue: '',                    description: 'Generate ATPO status dashboard via /atpo', hint: 'Runs `/atpo`', inputType: 'action', action: () => {} },
+    { label: 'Code Review',       configKey: '__action_genui_codereview',   defaultValue: '',                    description: 'Generate code review report via /codereview', hint: 'Runs `/codereview`', inputType: 'action', action: () => {} },
+    { label: 'Plan Progress',     configKey: '__action_genui_plan',         defaultValue: '',                    description: 'Generate milestone tracker via /plan', hint: 'Runs `/plan`', inputType: 'action', action: () => {} },
+  ],
   account: [
     {
       label: 'Sign In',
@@ -403,6 +426,45 @@ function getConfigHostList(config: Record<string, unknown> | undefined, key: str
     .split(',')
     .map((entry) => entry.trim())
     .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+}
+
+/**
+ * Reads a host->admin-key mapping from flat config (object or JSON string).
+ */
+function getConfigHostKeyMap(config: Record<string, unknown> | undefined, key: string): Record<string, string> {
+  if (!config) return {};
+  const raw = config[key];
+  if (raw && typeof raw === 'object' && !Array.isArray(raw)) {
+    const map: Record<string, string> = {};
+    for (const [host, value] of Object.entries(raw as Record<string, unknown>)) {
+      if (typeof value !== 'string') continue;
+      const hostTrimmed = host.trim();
+      const keyTrimmed = value.trim();
+      if (!hostTrimmed || !keyTrimmed) continue;
+      map[hostTrimmed] = keyTrimmed;
+    }
+    return map;
+  }
+  if (typeof raw !== 'string') return {};
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return {};
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return {};
+    }
+    const map: Record<string, string> = {};
+    for (const [host, value] of Object.entries(parsed as Record<string, unknown>)) {
+      if (typeof value !== 'string') continue;
+      const hostTrimmed = host.trim();
+      const keyTrimmed = value.trim();
+      if (!hostTrimmed || !keyTrimmed) continue;
+      map[hostTrimmed] = keyTrimmed;
+    }
+    return map;
+  } catch {
+    return {};
+  }
 }
 
 /**
@@ -653,6 +715,8 @@ export function SettingsOverlay({
   maxHeight,
   config,
   onRunCommand,
+  onOpenModelPicker,
+  autoSave = true,
   onClose,
   onSave,
 }: SettingsOverlayProps): React.ReactElement {
@@ -696,10 +760,14 @@ export function SettingsOverlay({
     () => getConfigHostList(config, 'connection.fallbackHosts'),
     [lmxFallbackHostsRaw],
   );
-  const lmxApiKeyForModelFetch = getConfigValue(
+  const lmxAdminKeyForModelFetch = getConfigValue(
     config,
-    'connection.apiKey',
-    getConfigValue(config, 'connection.adminKey', ''),
+    'connection.adminKey',
+    '',
+  );
+  const lmxAdminKeysByHostForModelFetch = useMemo(
+    () => getConfigHostKeyMap(config, 'connection.adminKeysByHost'),
+    [config?.['connection.adminKeysByHost']],
   );
 
   useEffect(() => {
@@ -713,7 +781,8 @@ export function SettingsOverlay({
           host: lmxHostForModelFetch,
           fallbackHosts: lmxFallbackHostsForModelFetch,
           port: lmxPortForModelFetch,
-          adminKey: lmxApiKeyForModelFetch,
+          adminKey: lmxAdminKeyForModelFetch,
+          adminKeysByHost: lmxAdminKeysByHostForModelFetch,
           timeoutMs: 3000,
           maxRetries: 0,
         });
@@ -753,7 +822,8 @@ export function SettingsOverlay({
     selectedPage,
     lmxHostForModelFetch,
     lmxPortForModelFetch,
-    lmxApiKeyForModelFetch,
+    lmxAdminKeyForModelFetch,
+    lmxAdminKeysByHostForModelFetch,
     lmxFallbackHostsForModelFetch,
   ]);
 
@@ -898,11 +968,18 @@ export function SettingsOverlay({
     return getConfigValue(config, item.configKey, item.defaultValue);
   }, [changes, config]);
 
+  const persistChange = useCallback((configKey: string, value: unknown) => {
+    setChanges(prev => ({ ...prev, [configKey]: value }));
+    if (autoSave) {
+      onSave({ [configKey]: value });
+    }
+  }, [autoSave, onSave]);
+
   const commitEdit = useCallback(() => {
     if (!editingKey) return;
-    setChanges(prev => ({ ...prev, [editingKey]: editValue }));
+    persistChange(editingKey, editValue);
     setEditingKey(null);
-  }, [editingKey, editValue]);
+  }, [editingKey, editValue, persistChange]);
 
   // Look up the editing item's metadata to determine input type
   const editingItem = useMemo(
@@ -914,15 +991,15 @@ export function SettingsOverlay({
   // Callbacks for InlineSelect and InlineSlider
   const handleSelectConfirm = useCallback((value: string) => {
     if (!editingKey) return;
-    setChanges(prev => ({ ...prev, [editingKey]: value }));
+    persistChange(editingKey, value);
     setEditingKey(null);
-  }, [editingKey]);
+  }, [editingKey, persistChange]);
 
   const handleSliderConfirm = useCallback((value: number) => {
     if (!editingKey) return;
-    setChanges(prev => ({ ...prev, [editingKey]: String(value) }));
+    persistChange(editingKey, String(value));
     setEditingKey(null);
-  }, [editingKey]);
+  }, [editingKey, persistChange]);
 
   /** Discards any in-progress inline edit and returns to the item list. */
   const handleEditCancel = useCallback(() => {
@@ -955,7 +1032,11 @@ export function SettingsOverlay({
 
     // Ctrl+S (or Ctrl+Shift+S when emitted as CSI-u) saves all changes.
     if (isCtrlSShortcut(input, key)) {
-      onSave(changes); onClose(); return;
+      if (!autoSave) {
+        onSave(changes);
+      }
+      onClose();
+      return;
     }
 
     // Explicit page switching
@@ -998,6 +1079,10 @@ export function SettingsOverlay({
       const item = items[selectedIndex];
       if (!item) return;
       if (item.inputType === 'action') {
+        if (item.configKey === '__action_models_manage' && onOpenModelPicker) {
+          onOpenModelPicker();
+          return;
+        }
         const mappedCommand = ACTION_COMMANDS[item.configKey];
         if (mappedCommand && onRunCommand) {
           onRunCommand(mappedCommand);
@@ -1015,7 +1100,7 @@ export function SettingsOverlay({
     }
   });
 
-  const unsavedCount = Object.keys(changes).length;
+  const unsavedCount = autoSave ? 0 : Object.keys(changes).length;
 
   return (
     <Box
@@ -1032,7 +1117,7 @@ export function SettingsOverlay({
         <Text color={pageColor} bold>
           {OPTA_BRAND_GLYPH} {OPTA_BRAND_NAME} Settings{unsavedCount > 0 ? ` (${unsavedCount} unsaved)` : ''}
         </Text>
-        <Text dimColor>Shift+Tab view · Ctrl+S save · Esc close</Text>
+        <Text dimColor>{autoSave ? 'Auto-save on · Esc close' : 'Shift+Tab view · Ctrl+S save · Esc close'}</Text>
       </Box>
 
       {showContent ? (
@@ -1142,7 +1227,7 @@ export function SettingsOverlay({
                         : selectLabel ?? (configVal || '(not set)');
                 const glyph = isActionItem ? '→' : statusGlyph(configVal, item.defaultValue, item.sensitive);
                 const glyphColor = isActionItem ? pageColor : statusColor(configVal, item.defaultValue, item.sensitive);
-                const isChanged = !isActionItem && changes[item.configKey] !== undefined;
+                const isChanged = !autoSave && !isActionItem && changes[item.configKey] !== undefined;
                 // Keyboard hint shown next to the active item based on its input type.
                 const interactionHint = isSelected && isActionItem
                   ? 'Enter to open'

@@ -74,9 +74,7 @@ class GGUFBackend:
         if response_format:
             kwargs["response_format"] = response_format
 
-        result = await asyncio.to_thread(
-            self._llm.create_chat_completion, **kwargs
-        )
+        result = await asyncio.to_thread(self._llm.create_chat_completion, **kwargs)
 
         content = result["choices"][0]["message"]["content"] or ""
         usage = result.get("usage", {})

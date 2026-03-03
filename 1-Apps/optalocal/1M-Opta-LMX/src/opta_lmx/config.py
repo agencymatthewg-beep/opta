@@ -24,6 +24,14 @@ DEFAULT_CONFIG_PATHS = [
 ]
 
 
+def _default_routing_aliases() -> dict[str, list[str]]:
+    return {
+        "code": [],
+        "reasoning": [],
+        "chat": [],
+    }
+
+
 class ServerConfig(BaseModel):
     """Server binding and timeout settings."""
 
@@ -42,7 +50,8 @@ class DiscoveryConfig(BaseModel):
     """Discovery and local network advertisement settings."""
 
     mdns_enabled: bool = Field(
-        True, description="Advertise Opta-LMX via mDNS for zero-config pairing",
+        True,
+        description="Advertise Opta-LMX via mDNS for zero-config pairing",
     )
     mdns_service_name: str = Field(
         "_opta-lmx._tcp.local",
@@ -61,10 +70,16 @@ class ModelsConfig(BaseModel):
     auto_load: list[str] = Field(default_factory=list)
     use_batching: bool = True
     max_concurrent_requests: int = Field(
-        4, ge=1, le=64, description="Max parallel inference requests (semaphore limit)",
+        4,
+        ge=1,
+        le=64,
+        description="Max parallel inference requests (semaphore limit)",
     )
     inference_timeout_sec: int = Field(
-        300, ge=10, le=3600, description="Max seconds per inference request before timeout",
+        300,
+        ge=10,
+        le=3600,
+        description="Max seconds per inference request before timeout",
     )
     loader_isolation_enabled: bool = Field(
         True,
@@ -77,10 +92,13 @@ class ModelsConfig(BaseModel):
         description="Timeout in seconds for child-process loader probe.",
     )
     warmup_on_load: bool = Field(
-        True, description="Run a small inference after model load to prime JIT/KV cache",
+        True,
+        description="Run a small inference after model load to prime JIT/KV cache",
     )
     semaphore_timeout_sec: float = Field(
-        30.0, ge=1.0, le=300.0,
+        30.0,
+        ge=1.0,
+        le=300.0,
         description="Max seconds to wait for inference semaphore before returning 429",
     )
     gguf_context_length: int = Field(
@@ -113,84 +131,118 @@ class ModelsConfig(BaseModel):
 
     prefix_cache_enabled: bool = Field(True, description="Enable prefix caching for multi-turn")
     embedding_model: str | None = Field(
-        None, description="Embedding model HF ID for /v1/embeddings (lazy-loaded)",
+        None,
+        description="Embedding model HF ID for /v1/embeddings (lazy-loaded)",
     )
     speculative_model: str | None = Field(
-        None, description="Draft model HF ID for speculative decoding",
+        None,
+        description="Draft model HF ID for speculative decoding",
     )
     speculative_num_tokens: int = Field(
-        5, ge=1, le=20, description="Tokens per speculative step",
+        5,
+        ge=1,
+        le=20,
+        description="Tokens per speculative step",
     )
     stream_interval: int = Field(
-        1, ge=1, le=32,
+        1,
+        ge=1,
+        le=32,
         description="Tokens to batch before SSE yield (higher = less overhead, more latency)",
     )
     metal_cache_limit_gb: float | None = Field(
-        None, ge=0.5,
+        None,
+        ge=0.5,
         description="MLX Metal buffer cache limit in GB (None = MLX default)",
     )
     # E3: Scheduler tuning for BatchedEngine
     scheduler_max_num_seqs: int = Field(
-        256, ge=1, le=1024,
+        256,
+        ge=1,
+        le=1024,
         description="Max sequences the scheduler tracks (lower = less overhead for local use)",
     )
     scheduler_prefill_batch_size: int = Field(
-        8, ge=1, le=64,
+        8,
+        ge=1,
+        le=64,
         description="Number of sequences to prefill in one batch",
     )
     scheduler_completion_batch_size: int = Field(
-        32, ge=1, le=256,
+        32,
+        ge=1,
+        le=256,
         description="Number of sequences to decode in one batch",
     )
     scheduler_cache_memory_percent: float = Field(
-        0.2, ge=0.05, le=0.8,
+        0.2,
+        ge=0.05,
+        le=0.8,
         description="Fraction of memory to use for KV cache (0.2 = 20%)",
     )
 
-
     # Speculative decoding
     speculative_require_supported: bool = Field(
-        False, description="Fail load if model doesn't support speculative decoding",
+        False,
+        description="Fail load if model doesn't support speculative decoding",
     )
     # Backend routing
     backend_preference_order: list[str] | None = Field(
-        None, description="Ordered list of inference backends (e.g. ['vllm-mlx', 'mlx-lm'])",
+        None,
+        description="Ordered list of inference backends (e.g. ['vllm-mlx', 'mlx-lm'])",
     )
     gguf_fallback_enabled: bool = Field(
-        False, description="Fall back to GGUF if MLX load fails",
+        False,
+        description="Fall back to GGUF if MLX load fails",
     )
     # Per-client and per-model concurrency
     per_client_default_concurrency: int | None = Field(
-        None, description="Default max concurrent requests per client (None = no limit)",
+        None,
+        description="Default max concurrent requests per client (None = no limit)",
     )
     per_client_concurrency_overrides: dict[str, int] = Field(
-        default_factory=dict, description="Per-client concurrency overrides {client_id: limit}",
+        default_factory=dict,
+        description="Per-client concurrency overrides {client_id: limit}",
     )
     per_model_concurrency_limits: dict[str, int] = Field(
-        default_factory=dict, description="Per-model concurrency limits {model_id: limit}",
+        default_factory=dict,
+        description="Per-model concurrency limits {model_id: limit}",
     )
     # Adaptive concurrency
     adaptive_concurrency_enabled: bool = Field(
-        True, description="Dynamically scale concurrency based on latency",
+        True,
+        description="Dynamically scale concurrency based on latency",
     )
     adaptive_latency_target_ms: float = Field(
-        2500.0, ge=100.0, description="Target p50 latency in ms for adaptive concurrency",
+        2500.0,
+        ge=100.0,
+        description="Target p50 latency in ms for adaptive concurrency",
     )
     adaptive_latency_window: int = Field(
-        128, ge=8, description="Rolling window size for latency samples",
+        128,
+        ge=8,
+        description="Rolling window size for latency samples",
     )
     adaptive_min_concurrent_requests: int = Field(
-        1, ge=1, description="Minimum concurrent requests even under high latency",
+        1,
+        ge=1,
+        description="Minimum concurrent requests even under high latency",
     )
     # Warm pool / prefetch
     warm_pool_enabled: bool = Field(
-        False, description="Pre-load frequently used models in background",
+        False,
+        description="Pre-load frequently used models in background",
     )
     prefetch_interval_sec: float = Field(
-        300.0, ge=30.0, description="How often to check for models to prefetch (seconds)",
+        300.0,
+        ge=30.0,
+        description="How often to check for models to prefetch (seconds)",
     )
     warm_pool_size: int = Field(
-        2, ge=1, le=10, description="Number of models to keep warm in the pool",
+        2,
+        ge=1,
+        le=10,
+        description="Number of models to keep warm in the pool",
     )
 
 
@@ -203,14 +255,19 @@ class MemoryConfig(BaseModel):
     ttl_seconds: int = Field(3600, ge=60, description="Idle timeout before eviction (seconds)")
     ttl_check_interval_sec: int = Field(60, ge=10, description="How often to check for idle models")
     metal_cache_maintenance: bool = Field(
-        True, description="Enable periodic Metal buffer cache clearing",
+        True,
+        description="Enable periodic Metal buffer cache clearing",
     )
     metal_cache_check_interval_sec: float = Field(
-        300.0, ge=30.0, le=3600.0,
+        300.0,
+        ge=30.0,
+        le=3600.0,
         description="How often to check Metal cache (seconds, default 5 min)",
     )
     load_shedding_percent: float = Field(
-        95.0, ge=50.0, le=99.9,
+        95.0,
+        ge=50.0,
+        le=99.9,
         description="Memory % at which to reject non-health requests with 503",
     )
 
@@ -222,7 +279,8 @@ class LoggingConfig(BaseModel):
     format: str = Field("structured", pattern="^(structured|text)$")
     file: str | None = None
     max_file_bytes: int = Field(
-        50 * 1024 * 1024, description="Max log file size before rotation (default 50MB)",
+        50 * 1024 * 1024,
+        description="Max log file size before rotation (default 50MB)",
     )
     backup_count: int = Field(5, ge=0, le=20, description="Number of rotated backup files to keep")
 
@@ -231,9 +289,7 @@ class RoutingConfig(BaseModel):
     """Smart routing aliases — map task names to model preference lists."""
 
     aliases: dict[str, list[str]] = Field(
-        default_factory=lambda: {
-            "code": [], "reasoning": [], "chat": [],
-        },
+        default_factory=_default_routing_aliases,
         description="Map alias → ordered list of preferred model IDs. First loaded match wins.",
     )
     default_model: str | None = Field(
@@ -260,7 +316,9 @@ class HelperNodeEndpoint(BaseModel):
     and may impact the Workstation's performance.
     """
 
-    url: str = Field(..., description="Base URL of the helper node (e.g. http://192.168.188.20:1234)")
+    url: str = Field(
+        ..., description="Base URL of the helper node (e.g. http://192.168.188.20:1234)"
+    )
     model: str = Field(..., description="Model name to request from the helper node")
     timeout_sec: float = Field(10.0, ge=1.0, le=120.0, description="Request timeout in seconds")
     fallback: str = Field(
@@ -278,10 +336,12 @@ class HelperNodesConfig(BaseModel):
     """
 
     embedding: HelperNodeEndpoint | None = Field(
-        None, description="Helper node embedding endpoint (proxied by /v1/embeddings)",
+        None,
+        description="Helper node embedding endpoint (proxied by /v1/embeddings)",
     )
     reranking: HelperNodeEndpoint | None = Field(
-        None, description="Helper node reranking endpoint",
+        None,
+        description="Helper node reranking endpoint",
     )
 
 
@@ -329,9 +389,7 @@ class RAGConfig(BaseModel):
     rerank_initial_k: int = Field(
         50, ge=5, le=200, description="Candidates to retrieve before reranking"
     )
-    rerank_final_k: int = Field(
-        5, ge=1, le=50, description="Results to return after reranking"
-    )
+    rerank_final_k: int = Field(5, ge=1, le=50, description="Results to return after reranking")
 
     # Phase 9: Chunking strategy
     chunking_strategy: str = Field(
@@ -379,10 +437,12 @@ class RateLimitConfig(BaseModel):
         description="Default rate limit (e.g. '60/minute', '10/second', '1000/hour')",
     )
     chat_completions_limit: str | None = Field(
-        None, description="Override limit for /v1/chat/completions (None = use default)",
+        None,
+        description="Override limit for /v1/chat/completions (None = use default)",
     )
     embeddings_limit: str | None = Field(
-        None, description="Override limit for /v1/embeddings (None = use default)",
+        None,
+        description="Override limit for /v1/embeddings (None = use default)",
     )
 
 
@@ -439,10 +499,12 @@ class SecurityConfig(BaseModel):
     """
 
     admin_key: str | None = Field(
-        None, description="Required key for /admin/* endpoints. None = no auth.",
+        None,
+        description="Required key for /admin/* endpoints. None = no auth.",
     )
     inference_api_key: str | None = Field(
-        None, description="Required key for /v1/* inference endpoints. None = no auth.",
+        None,
+        description="Required key for /v1/* inference endpoints. None = no auth.",
     )
     profile: str = Field("lan", description="Security profile: 'lan' or 'cloud'")
     cors_allowed_origins: list[str] = Field(default_factory=list)
@@ -468,12 +530,11 @@ class SecurityConfig(BaseModel):
         description="CIDR/IP list of trusted reverse proxies allowed to set X-Forwarded-For",
     )
     rate_limit: RateLimitConfig = Field(
-        default_factory=RateLimitConfig,
+        default_factory=lambda: RateLimitConfig.model_validate({}),
         description="Rate limiting configuration for inference endpoints",
     )
-
     endpoint_policy_hooks: EndpointPolicyHooksConfig = Field(
-        default_factory=EndpointPolicyHooksConfig,
+        default_factory=lambda: EndpointPolicyHooksConfig.model_validate({}),
         description="Optional policy hooks for sensitive admin/skills/agents routes",
     )
 
@@ -482,14 +543,11 @@ class SecurityConfig(BaseModel):
         """Fail-closed: cloud profile requires at least one auth mechanism."""
         if self.mtls_mode != "off" and not self.mtls_client_subject_header.strip():
             raise ValueError(
-                "mtls_client_subject_header must be set when mtls_mode is "
-                "'optional' or 'required'."
+                "mtls_client_subject_header must be set when mtls_mode is 'optional' or 'required'."
             )
 
         if self.profile == "cloud":
-            has_inference_auth = (
-                self.inference_api_key is not None or self.supabase_jwt_enabled
-            )
+            has_inference_auth = self.inference_api_key is not None or self.supabase_jwt_enabled
             if not has_inference_auth:
                 raise ValueError(
                     "Cloud security profile requires inference_api_key or "
@@ -538,7 +596,9 @@ class JournalingConfig(BaseModel):
     timezone: str = "UTC"
     retention_days: int = Field(30, ge=1, description="Delete log files older than this many days")
     max_session_logs: int = Field(
-        100, ge=1, description="Maximum number of session log files to keep",
+        100,
+        ge=1,
+        description="Maximum number of session log files to keep",
     )
 
 
@@ -547,18 +607,26 @@ class WorkersConfig(BaseModel):
 
     enabled: bool = Field(False, description="Enable background worker pool for skills")
     max_concurrent_skill_calls: int = Field(
-        4, ge=1, le=32, description="Max concurrent skill execution threads",
+        4,
+        ge=1,
+        le=32,
+        description="Max concurrent skill execution threads",
     )
     skill_queue_persist_path: str = Field(
-        "/tmp/opta-lmx-skill-queue.db", description="Path to persist skill queue",
+        "/tmp/opta-lmx-skill-queue.db",
+        description="Path to persist skill queue",
     )
     skill_queue_max_size: int = Field(
-        100, ge=10, le=1000, description="Max queued skill requests",
+        100,
+        ge=10,
+        le=1000,
+        description="Max queued skill requests",
     )
     skill_queue_backend: str = Field(
-        "sqlite", pattern="^(sqlite|redis|memory)$", description="Queue backend type",
+        "sqlite",
+        pattern="^(sqlite|redis|memory)$",
+        description="Queue backend type",
     )
-
 
 
 class DeviceConfig(BaseModel):
@@ -589,26 +657,32 @@ class LMXConfig(BaseSettings):
         env_nested_delimiter="__",
     )
 
-    server: ServerConfig = Field(default_factory=ServerConfig)  # type: ignore[arg-type]
-    discovery: DiscoveryConfig = Field(default_factory=DiscoveryConfig)  # type: ignore[arg-type]
-    models: ModelsConfig = Field(default_factory=ModelsConfig)  # type: ignore[arg-type]
-    memory: MemoryConfig = Field(default_factory=MemoryConfig)  # type: ignore[arg-type]
-    logging: LoggingConfig = Field(default_factory=LoggingConfig)  # type: ignore[arg-type]
-    routing: RoutingConfig = Field(default_factory=RoutingConfig)  # type: ignore[arg-type]
-    presets: PresetsConfig = Field(default_factory=PresetsConfig)  # type: ignore[arg-type]
-    helper_nodes: HelperNodesConfig = Field(default_factory=HelperNodesConfig)  # type: ignore[arg-type]
-    rag: RAGConfig = Field(default_factory=RAGConfig)  # type: ignore[arg-type]
-    security: SecurityConfig = Field(default_factory=SecurityConfig)  # type: ignore[arg-type]
-    agents: AgentsConfig = Field(default_factory=AgentsConfig)  # type: ignore[arg-type]
-    skills: SkillsConfig = Field(default_factory=SkillsConfig)  # type: ignore[arg-type]
-    observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)  # type: ignore[arg-type]
-    workers: WorkersConfig = Field(default_factory=WorkersConfig)
-    journaling: JournalingConfig = Field(default_factory=JournalingConfig)  # type: ignore[arg-type]
+    server: ServerConfig = Field(default_factory=lambda: ServerConfig.model_validate({}))
+    discovery: DiscoveryConfig = Field(default_factory=lambda: DiscoveryConfig.model_validate({}))
+    models: ModelsConfig = Field(default_factory=lambda: ModelsConfig.model_validate({}))
+    memory: MemoryConfig = Field(default_factory=lambda: MemoryConfig.model_validate({}))
+    logging: LoggingConfig = Field(default_factory=lambda: LoggingConfig.model_validate({}))
+    routing: RoutingConfig = Field(default_factory=lambda: RoutingConfig.model_validate({}))
+    presets: PresetsConfig = Field(default_factory=lambda: PresetsConfig.model_validate({}))
+    helper_nodes: HelperNodesConfig = Field(
+        default_factory=lambda: HelperNodesConfig.model_validate({})
+    )
+    rag: RAGConfig = Field(default_factory=lambda: RAGConfig.model_validate({}))
+    security: SecurityConfig = Field(default_factory=lambda: SecurityConfig.model_validate({}))
+    agents: AgentsConfig = Field(default_factory=AgentsConfig)
+    skills: SkillsConfig = Field(default_factory=SkillsConfig)
+    observability: ObservabilityConfig = Field(default_factory=ObservabilityConfig)
+    workers: WorkersConfig = Field(
+        default_factory=lambda: WorkersConfig.model_validate({}),
+    )
+    journaling: JournalingConfig = Field(
+        default_factory=lambda: JournalingConfig.model_validate({}),
+    )
     stack_presets: dict[str, StackPresetConfig] = Field(
         default_factory=dict,
         description="Named model stack presets mapping roles to model IDs",
     )
-    device: DeviceConfig = Field(default_factory=DeviceConfig)  # type: ignore[arg-type]
+    device: DeviceConfig = Field(default_factory=lambda: DeviceConfig.model_validate({}))
     backends: dict[str, BackendConfig] = Field(
         default_factory=dict,
         description="Named backend compute devices on the LAN",

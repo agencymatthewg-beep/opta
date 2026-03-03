@@ -24,8 +24,10 @@ def manager(tmp_path: Path) -> ModelManager:
 
 async def test_start_download_returns_download_id(manager: ModelManager) -> None:
     """start_download returns a DownloadTask with a unique ID."""
-    with patch.object(manager, "estimate_size", return_value=1000), \
-         patch.object(manager, "_run_download", return_value=None):
+    with (
+        patch.object(manager, "estimate_size", return_value=1000),
+        patch.object(manager, "_run_download", return_value=None),
+    ):
         task = await manager.start_download("mlx-community/test-model")
 
     assert task.download_id
@@ -36,8 +38,10 @@ async def test_start_download_returns_download_id(manager: ModelManager) -> None
 
 async def test_start_download_estimates_size(manager: ModelManager) -> None:
     """start_download populates total_bytes from dry run estimate."""
-    with patch.object(manager, "estimate_size", return_value=5_000_000_000), \
-         patch.object(manager, "_run_download", return_value=None):
+    with (
+        patch.object(manager, "estimate_size", return_value=5_000_000_000),
+        patch.object(manager, "_run_download", return_value=None),
+    ):
         task = await manager.start_download("mlx-community/big-model")
 
     assert task.total_bytes == 5_000_000_000
@@ -55,8 +59,10 @@ async def test_start_download_rejects_when_disk_space_insufficient(manager: Mode
 
 async def test_download_progress_tracking(manager: ModelManager) -> None:
     """get_download_progress returns the task state."""
-    with patch.object(manager, "estimate_size", return_value=100), \
-         patch.object(manager, "_run_download", return_value=None):
+    with (
+        patch.object(manager, "estimate_size", return_value=100),
+        patch.object(manager, "_run_download", return_value=None),
+    ):
         task = await manager.start_download("mlx-community/test-model")
 
     progress = manager.get_download_progress(task.download_id)
@@ -73,6 +79,7 @@ async def test_download_progress_none_for_unknown(manager: ModelManager) -> None
 async def test_download_failure_sets_error(manager: ModelManager) -> None:
     """A failed download sets status='failed' and captures the error message."""
     with patch.object(manager, "estimate_size", return_value=0):
+
         async def failing_download(*args, **kwargs):
             task = manager._downloads[args[0]]
             task.status = "failed"
@@ -201,6 +208,7 @@ async def test_delete_scans_configured_cache_dir(tmp_path: Path) -> None:
 
 async def test_cancel_active_downloads(manager: ModelManager) -> None:
     """cancel_active_downloads cancels running tasks."""
+
     # Create a fake download task with an asyncio.Task
     async def slow_download():
         await asyncio.sleep(100)

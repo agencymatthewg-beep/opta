@@ -18,6 +18,8 @@ const APPS = [
   { id: 'init', label: 'Init', name: 'Opta Init', subtitle: '1O — Setup Portal' },
   { id: 'status', label: 'Status', name: 'Opta Status', subtitle: '1S — Ecosystem Health' },
   { id: 'help', label: 'Help', name: 'Opta Help', subtitle: '1U — Docs & Support' },
+  { id: 'learn', label: 'Learn', name: 'Opta Learn', subtitle: '1V — Guides & Onboarding' },
+  { id: 'admin', label: 'Admin', name: 'Opta Admin', subtitle: '1X — Private Control Plane' },
 ] as const
 
 type AppId = (typeof APPS)[number]['id']

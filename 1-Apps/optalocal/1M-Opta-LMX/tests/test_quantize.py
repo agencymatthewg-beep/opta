@@ -200,12 +200,8 @@ class TestJobRegistry:
         assert list_jobs() == []
 
     def test_list_jobs_ordered_by_most_recent(self) -> None:
-        j1 = QuantizeJob(
-            job_id="old", source_model="m1", output_path="/o1", started_at=100.0
-        )
-        j2 = QuantizeJob(
-            job_id="new", source_model="m2", output_path="/o2", started_at=200.0
-        )
+        j1 = QuantizeJob(job_id="old", source_model="m1", output_path="/o1", started_at=100.0)
+        j2 = QuantizeJob(job_id="new", source_model="m2", output_path="/o2", started_at=200.0)
         _jobs["old"] = j1
         _jobs["new"] = j2
         result = list_jobs()
@@ -387,10 +383,12 @@ class TestRunQuantize:
         )
         fake_handle = MagicMock()
         fake_handle.pid = 1234
-        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
-            ok=True,
-            result=QuantizeResult(ok=True, output_path="/tmp/out", output_size_bytes=321),
-        ))
+        fake_handle.wait_outcome = AsyncMock(
+            return_value=QuantizeSupervisorOutcome(
+                ok=True,
+                result=QuantizeResult(ok=True, output_path="/tmp/out", output_size_bytes=321),
+            )
+        )
         event_bus = _EventBusSpy()
 
         with (
@@ -432,10 +430,12 @@ class TestRunQuantize:
         )
         fake_handle = MagicMock()
         fake_handle.pid = 777
-        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
-            ok=False,
-            failure=LoaderFailure(code="worker_exit_nonzero", message="boom", exit_code=1),
-        ))
+        fake_handle.wait_outcome = AsyncMock(
+            return_value=QuantizeSupervisorOutcome(
+                ok=False,
+                failure=LoaderFailure(code="worker_exit_nonzero", message="boom", exit_code=1),
+            )
+        )
         event_bus = _EventBusSpy()
 
         with (
@@ -479,10 +479,12 @@ class TestRunQuantize:
         fake_handle = MagicMock()
         fake_handle.pid = 222
         fake_handle.cancel = AsyncMock(return_value=True)
-        fake_handle.wait_outcome = AsyncMock(return_value=QuantizeSupervisorOutcome(
-            ok=False,
-            failure=LoaderFailure(code="worker_crashed", message="killed", signal=15),
-        ))
+        fake_handle.wait_outcome = AsyncMock(
+            return_value=QuantizeSupervisorOutcome(
+                ok=False,
+                failure=LoaderFailure(code="worker_crashed", message="killed", signal=15),
+            )
+        )
 
         async def _spawn(_spec: object) -> object:
             job.cancel_requested = True
@@ -625,6 +627,7 @@ class TestCancelQuantize:
     @pytest.mark.asyncio
     async def test_cancel_queued_job_marks_cancelled(self) -> None:
         fake_task = _FakeTask()
+
         def _create_task_and_close(coro: object) -> _FakeTask:
             close = getattr(coro, "close", None)
             if callable(close):

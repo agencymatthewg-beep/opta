@@ -28,7 +28,10 @@ function parseHostList(raw: unknown): string[] {
   if (Array.isArray(raw)) {
     return raw
       .map((entry) => String(entry).trim())
-      .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+      .filter(
+        (entry, index, list) =>
+          entry.length > 0 && list.indexOf(entry) === index,
+      );
   }
   if (typeof raw !== "string") return [];
   const trimmed = raw.trim();
@@ -39,7 +42,10 @@ function parseHostList(raw: unknown): string[] {
       if (Array.isArray(parsed)) {
         return parsed
           .map((entry) => String(entry).trim())
-          .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+          .filter(
+            (entry, index, list) =>
+              entry.length > 0 && list.indexOf(entry) === index,
+          );
       }
     } catch {
       // Fall through to CSV parsing.
@@ -48,7 +54,9 @@ function parseHostList(raw: unknown): string[] {
   return trimmed
     .split(",")
     .map((entry) => entry.trim())
-    .filter((entry, index, list) => entry.length > 0 && list.indexOf(entry) === index);
+    .filter(
+      (entry, index, list) => entry.length > 0 && list.indexOf(entry) === index,
+    );
 }
 
 function parsePort(raw: unknown, fallback: number): number {
@@ -99,6 +107,9 @@ export interface UseModelsResult {
   unloadModel: (modelId: string) => Promise<void>;
   deleteModel: (modelId: string) => Promise<void>;
   downloadModel: (repoId: string) => Promise<string | null>;
+  runModelHistory: () => Promise<unknown | null>;
+  runModelHealth: (args?: string) => Promise<unknown | null>;
+  runModelScan: (opts?: { full?: boolean }) => Promise<unknown | null>;
   saveLmxTarget: (next: Partial<LmxTargetConfig>) => Promise<boolean>;
   refreshLmx: () => Promise<void>;
 }
@@ -160,8 +171,12 @@ export function useModels(
         daemonClient.lmxAvailable(connection).catch(() => null),
         daemonClient.configGet(connection, "connection.host").catch(() => null),
         daemonClient.configGet(connection, "connection.port").catch(() => null),
-        daemonClient.configGet(connection, "connection.fallbackHosts").catch(() => []),
-        daemonClient.configGet(connection, "connection.autoDiscover").catch(() => true),
+        daemonClient
+          .configGet(connection, "connection.fallbackHosts")
+          .catch(() => []),
+        daemonClient
+          .configGet(connection, "connection.autoDiscover")
+          .catch(() => true),
       ]);
 
       if (!mountedRef.current || epoch !== refreshEpochRef.current) {
@@ -243,7 +258,9 @@ export function useModels(
   );
 
   const confirmLoad = useCallback(
-    async (confirmationToken: string): Promise<DaemonLmxLoadResponse | null> => {
+    async (
+      confirmationToken: string,
+    ): Promise<DaemonLmxLoadResponse | null> => {
       if (!connection) return null;
       try {
         const result = await daemonClient.lmxConfirmLoad(
@@ -324,6 +341,62 @@ export function useModels(
     [connection],
   );
 
+  const runModelOperation = useCallback(
+    async (
+      operationId: string,
+      input: Record<string, unknown>,
+      refreshAfter = false,
+    ): Promise<unknown | null> => {
+      if (!connection) return null;
+      try {
+        const response = await daemonClient.runOperation(
+          connection,
+          operationId,
+          {
+            input,
+          },
+        );
+        if (!response.ok) {
+          throw new Error(`[${response.error.code}] ${response.error.message}`);
+        }
+        setError(null);
+        if (refreshAfter) {
+          await refreshLmx();
+        }
+        return response.result ?? null;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+        return null;
+      }
+    },
+    [connection, refreshLmx],
+  );
+
+  const runModelHistory = useCallback(async (): Promise<unknown | null> => {
+    return runModelOperation("models.history", {});
+  }, [runModelOperation]);
+
+  const runModelHealth = useCallback(
+    async (args?: string): Promise<unknown | null> => {
+      const trimmed = args?.trim();
+      return runModelOperation("models.health", {
+        args: trimmed ? trimmed : undefined,
+      });
+    },
+    [runModelOperation],
+  );
+
+  const runModelScan = useCallback(
+    async (opts?: { full?: boolean }): Promise<unknown | null> => {
+      return runModelOperation(
+        "models.scan",
+        { full: opts?.full ?? false },
+        true,
+      );
+    },
+    [runModelOperation],
+  );
+
   const saveLmxTarget = useCallback(
     async (next: Partial<LmxTargetConfig>): Promise<boolean> => {
       if (!connection) return false;
@@ -398,6 +471,9 @@ export function useModels(
     unloadModel,
     deleteModel,
     downloadModel,
+    runModelHistory,
+    runModelHealth,
+    runModelScan,
     saveLmxTarget,
     refreshLmx,
   };

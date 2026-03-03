@@ -38,7 +38,11 @@ async def health_check_loop(
                     logger.debug("health_check_down", extra={"url": client.url})
                 # Do NOT record_failure on health check -- only real requests trip the breaker
             except Exception as e:
-                logger.warning("health_check_error", extra={
-                    "url": client.url, "error": str(e),
-                })
+                logger.warning(
+                    "health_check_error",
+                    extra={
+                        "url": client.url,
+                        "error": str(e),
+                    },
+                )
         await asyncio.sleep(interval_sec)

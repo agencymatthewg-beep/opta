@@ -54,8 +54,7 @@ class AgentsStateStore:
                 return
             self._runs.pop(run_id, None)
             stale_keys = [
-                key for key, data in self._idempotency_index.items()
-                if data.get("run_id") == run_id
+                key for key, data in self._idempotency_index.items() if data.get("run_id") == run_id
             ]
             for key in stale_keys:
                 self._idempotency_index.pop(key, None)

@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
-from opta_lmx.inference.schema import ChatCompletionRequest, ChatMessage
+from opta_lmx.inference.schema import (
+    ChatCompletionRequest,
+    ChatMessage,
+    ImageContentPart,
+    ImageUrlDetail,
+    TextContentPart,
+)
 
 
 def _chat_stream_include_logprobs_placeholder(body: ChatCompletionRequest) -> bool:
@@ -12,6 +18,7 @@ def _chat_stream_include_logprobs_placeholder(body: ChatCompletionRequest) -> bo
 
 def _parse_responses_max_tokens(body: dict[str, object]) -> tuple[int | None, str | None]:
     """Resolve `max_output_tokens`/`max_tokens` with OpenAI-style compatibility."""
+    param: str | None
     if "max_output_tokens" in body:
         raw = body.get("max_output_tokens")
         param = "max_output_tokens"
@@ -23,18 +30,29 @@ def _parse_responses_max_tokens(body: dict[str, object]) -> tuple[int | None, st
         return None, None
     if isinstance(raw, bool):
         return None, param
-    try:
+    if isinstance(raw, int):
+        value = raw
+    elif isinstance(raw, float):
+        if not raw.is_integer():
+            return None, param
         value = int(raw)
-    except (TypeError, ValueError):
+    elif isinstance(raw, str):
+        try:
+            value = int(raw)
+        except ValueError:
+            return None, param
+    else:
         return None, param
     if value <= 0:
         return None, param
     return value, None
 
 
-def _normalize_responses_content_parts(parts: list[object]) -> list[dict[str, object]]:
+def _normalize_responses_content_parts(
+    parts: list[object],
+) -> list[TextContentPart | ImageContentPart]:
     """Normalize Responses API content parts into ChatMessage multimodal parts."""
-    normalized: list[dict[str, object]] = []
+    normalized: list[TextContentPart | ImageContentPart] = []
     for part in parts:
         if not isinstance(part, dict):
             continue
@@ -42,24 +60,31 @@ def _normalize_responses_content_parts(parts: list[object]) -> list[dict[str, ob
         if part_type in {"input_text", "text"}:
             text = part.get("text")
             if isinstance(text, str):
-                normalized.append({"type": "text", "text": text})
+                normalized.append(TextContentPart(type="text", text=text))
         elif part_type in {"input_image", "image_url"}:
             image_data = part.get("image_url")
             if image_data is None:
                 image_data = part.get("image")
             if isinstance(image_data, str):
-                normalized.append({
-                    "type": "image_url",
-                    "image_url": {"url": image_data, "detail": "auto"},
-                })
+                normalized.append(
+                    ImageContentPart(
+                        type="image_url",
+                        image_url=ImageUrlDetail(url=image_data, detail="auto"),
+                    )
+                )
             elif isinstance(image_data, dict):
                 url = image_data.get("url")
                 if isinstance(url, str):
                     detail = image_data.get("detail")
-                    payload: dict[str, object] = {"url": url}
-                    if isinstance(detail, str):
-                        payload["detail"] = detail
-                    normalized.append({"type": "image_url", "image_url": payload})
+                    normalized.append(
+                        ImageContentPart(
+                            type="image_url",
+                            image_url=ImageUrlDetail(
+                                url=url,
+                                detail=detail if isinstance(detail, str) else "auto",
+                            ),
+                        )
+                    )
     return normalized
 
 

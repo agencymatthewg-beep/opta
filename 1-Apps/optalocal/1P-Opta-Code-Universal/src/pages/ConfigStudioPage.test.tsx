@@ -98,7 +98,9 @@ describe("ConfigStudioPage", () => {
       );
     });
 
-    expect(await screen.findByText("Updated connection.host.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Updated connection.host."),
+    ).toBeInTheDocument();
   });
 
   it("fetches latest key value via config.get", async () => {

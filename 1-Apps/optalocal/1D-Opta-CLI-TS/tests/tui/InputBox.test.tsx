@@ -3,6 +3,7 @@ import React from 'react';
 import { render } from 'ink-testing-library';
 import { InputBox } from '../../src/tui/InputBox.js';
 import { InputHistory } from '../../src/ui/history.js';
+import * as slashIndex from '../../src/commands/slash/index.js';
 
 // Mock fast-glob to avoid real filesystem calls in tests
 vi.mock('fast-glob', () => ({
@@ -48,6 +49,20 @@ describe('InputBox', () => {
     await flush();
     stdin.write('hello');
     expect(lastFrame()).toContain('hello');
+  });
+
+  it('defensively handles malformed slash command metadata', async () => {
+    const getAllCommandsSpy = vi.spyOn(slashIndex, 'getAllCommands').mockReturnValue([
+      { command: undefined as unknown as string, aliases: ['bad'], description: 'Malformed cmd' } as never,
+    ]);
+
+    const { lastFrame, stdin } = render(<InputBox onSubmit={() => {}} mode="normal" />);
+    await flush();
+    stdin.write('/');
+    const frame = lastFrame();
+    expect(frame).toBeTruthy();
+
+    getAllCommandsSpy.mockRestore();
   });
 
   it('should call onSubmit when return is pressed', async () => {

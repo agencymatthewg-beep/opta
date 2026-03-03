@@ -7,6 +7,7 @@ import {
   loadSession,
   saveSession,
   listSessions,
+  searchSessions,
   deleteSession,
   exportSession,
   generateTitle,
@@ -229,6 +230,48 @@ describe('session store', () => {
 
     it('handles short messages', () => {
       expect(generateTitle('fix bug')).toBe('fix bug');
+    });
+  });
+
+  describe('searchSessions', () => {
+    it('matches query against indexed message previews', async () => {
+      const session = await createSession('test-model');
+      session.title = 'Index preview search';
+      session.messages = [
+        { role: 'system', content: 'system prompt' },
+        { role: 'user', content: 'Investigate websocket reconnect failure on daemon startup' },
+        { role: 'assistant', content: 'I will inspect daemon websocket handshake logs first.' },
+      ];
+      await saveSession(session);
+
+      const matches = await searchSessions('websocket reconnect failure');
+      expect(matches.some((item) => item.id === session.id)).toBe(true);
+    });
+
+    it('backfills missing preview fields in legacy index entries', async () => {
+      const session = await createSession('test-model');
+      session.messages = [
+        { role: 'user', content: 'legacy preview token phrase alpha beta' },
+      ];
+      await saveSession(session);
+
+      const dir = join(TEST_SESSIONS_DIR, 'home', '.config', 'opta', 'sessions');
+      const indexPath = join(dir, 'index.json');
+      const index = JSON.parse(await readFile(indexPath, 'utf-8')) as {
+        entries: Record<string, { preview?: string }>;
+        updatedAt: string;
+      };
+      delete index.entries[session.id]?.preview;
+      await writeFile(indexPath, JSON.stringify(index, null, 2), 'utf-8');
+
+      const matches = await searchSessions('legacy preview token phrase');
+      expect(matches.some((item) => item.id === session.id)).toBe(true);
+
+      const refreshedIndex = JSON.parse(await readFile(indexPath, 'utf-8')) as {
+        entries: Record<string, { preview?: string }>;
+      };
+      expect(typeof refreshedIndex.entries[session.id]?.preview).toBe('string');
+      expect(refreshedIndex.entries[session.id]?.preview).toContain('legacy preview token phrase');
     });
   });
 });

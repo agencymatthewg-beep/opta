@@ -2,6 +2,7 @@ import { readdir, mkdir, writeFile, access } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import chalk from 'chalk';
 import { box, kv } from '../ui/box.js';
+import { ensureMemoryScaffold } from '../context/memory.js';
 
 // --- Types ---
 
@@ -13,6 +14,11 @@ export interface InitOptions {
 interface ProjectDetection {
   type: string;
   marker: string;
+}
+
+export interface InitScaffoldResult {
+  created: string[];
+  existed: string[];
 }
 
 // --- Constants ---
@@ -266,11 +272,92 @@ export async function detectProjectType(cwd: string): Promise<ProjectDetection |
 
 // --- Main Command ---
 
-export async function init(options: InitOptions = {}): Promise<void> {
-  const cwd = process.cwd();
-  const skipPrompts = options.yes === true;
+export interface EnsureInitScaffoldOptions {
+  yes?: boolean;
+  force?: boolean;
+  createApp?: boolean;
+  docs?: OpisDocName[];
+  projectName?: string;
+  description?: string;
+  projectType?: string;
+}
 
-  // Step 1: Check for existing APP.md
+export async function ensureInitScaffold(
+  options: EnsureInitScaffoldOptions = {},
+  cwd = process.cwd()
+): Promise<InitScaffoldResult> {
+  const skipPrompts = options.yes === true;
+  const created: string[] = [];
+  const existed: string[] = [];
+
+  const projectDetection = await detectProjectType(cwd);
+  const detectedType = options.projectType ?? projectDetection?.type ?? 'unknown';
+
+  const createApp = options.createApp ?? true;
+
+  const projectName =
+    options.projectName ??
+    basename(cwd);
+
+  const description = options.description ?? `${projectName} project.`;
+  const selectedDocs = options.docs ?? [...OPIS_DOCS];
+
+  if (projectDetection) {
+    console.log(
+      chalk.dim(`Detected project type: ${projectDetection.type} (from ${projectDetection.marker})`),
+    );
+  }
+
+  // Ensure APP.md
+  if (createApp) {
+    const appMdPath = join(cwd, 'APP.md');
+    const shouldWriteApp = options.force || !(await fileExists(appMdPath));
+    if (shouldWriteApp) {
+      if (skipPrompts) {
+        console.log(chalk.yellow('!') + ' APP.md exists and force was not set, skipping overwrite.');
+      }
+      const appContent = appMdTemplate(projectName, detectedType, description);
+      await writeFile(appMdPath, appContent, 'utf-8');
+      created.push('APP.md');
+    } else {
+      existed.push('APP.md');
+    }
+  }
+
+  // Ensure docs/ directory and selected docs
+  const docsDir = join(cwd, 'docs');
+  await mkdir(docsDir, { recursive: true });
+  for (const doc of selectedDocs) {
+    const docPath = join(docsDir, doc);
+    const template = DOC_TEMPLATES[doc];
+    if (!template) continue;
+
+    const exists = await fileExists(docPath);
+    if (exists && !options.force) {
+      existed.push(`docs/${doc}`);
+      continue;
+    }
+
+    await writeFile(docPath, template, 'utf-8');
+    if (exists) {
+      existed.push(`docs/${doc}`);
+    } else {
+      created.push(`docs/${doc}`);
+    }
+  }
+
+  // Ensure Opta memory + knowledge scaffold for model/provider separation
+  const scaffoldedMemoryFiles = await ensureMemoryScaffold(cwd);
+  created.push(...scaffoldedMemoryFiles);
+
+  return { created, existed };
+}
+
+export async function init(options: InitOptions = {}): Promise<void> {
+  const skipPrompts = options.yes === true;
+  const cwd = process.cwd();
+
+  // Step 1: Check for existing APP.md when interactive confirmation is required
   const appMdPath = join(cwd, 'APP.md');
   const appMdExists = await fileExists(appMdPath);
 
@@ -328,34 +415,21 @@ export async function init(options: InitOptions = {}): Promise<void> {
     });
   }
 
-  if (projectDetection) {
-    console.log(
-      chalk.dim(`Detected project type: ${projectDetection.type} (from ${projectDetection.marker})`),
-    );
-  }
+  // Step 4: Create files (non-overwrite mode for non-interactive run)
+  const result = await ensureInitScaffold(
+    {
+      yes: skipPrompts,
+      force: options.force,
+      projectName,
+      description,
+      projectType: detectedType,
+      docs: selectedDocs,
+      createApp: true,
+    },
+    cwd
+  );
 
-  // Step 4: Create files
-  const createdFiles: string[] = [];
-
-  // Write APP.md
-  const appContent = appMdTemplate(projectName, detectedType, description);
-  await writeFile(appMdPath, appContent, 'utf-8');
-  createdFiles.push('APP.md');
-
-  // Ensure docs/ directory exists
-  if (selectedDocs.length > 0) {
-    const docsDir = join(cwd, 'docs');
-    await mkdir(docsDir, { recursive: true });
-
-    for (const doc of selectedDocs) {
-      const docPath = join(docsDir, doc);
-      const template = DOC_TEMPLATES[doc];
-      if (template) {
-        await writeFile(docPath, template, 'utf-8');
-        createdFiles.push(`docs/${doc}`);
-      }
-    }
-  }
+  const createdFiles = result.created;
 
   // Step 5: Print summary
   console.log('');

@@ -22,20 +22,26 @@ import uuid
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from enum import Enum, auto
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from opta_lmx.api.stream_handlers import _StreamEndMarker
 
 logger = logging.getLogger(__name__)
 
 # ─── Compiled Regex Patterns ────────────────────────────────────────────────
 
 TOOL_CALL_BLOCK_RE = re.compile(
-    r"<minimax:tool_call>(.*?)</minimax:tool_call>", re.DOTALL,
+    r"<minimax:tool_call>(.*?)</minimax:tool_call>",
+    re.DOTALL,
 )
 INVOKE_RE = re.compile(
-    r'<invoke\s+name="?([^">]+)"?\s*>(.*?)</invoke>', re.DOTALL,
+    r'<invoke\s+name="?([^">]+)"?\s*>(.*?)</invoke>',
+    re.DOTALL,
 )
 PARAM_RE = re.compile(
-    r'<parameter\s+name="?([^">]+)"?\s*>(.*?)</parameter>', re.DOTALL,
+    r'<parameter\s+name="?([^">]+)"?\s*>(.*?)</parameter>',
+    re.DOTALL,
 )
 THINK_RE = re.compile(r"<think>.*?</think>", re.DOTALL)
 
@@ -72,9 +78,9 @@ class ToolCallDelta:
     """Incremental tool call data for streaming responses."""
 
     index: int
-    id: str | None = None       # Only on first chunk for this tool
-    name: str | None = None     # Only on first chunk for this tool
-    arguments_delta: str = ""   # Incremental JSON string
+    id: str | None = None  # Only on first chunk for this tool
+    name: str | None = None  # Only on first chunk for this tool
+    arguments_delta: str = ""  # Incremental JSON string
 
 
 @dataclass
@@ -126,10 +132,21 @@ def _get_param_schema(
     if not tools:
         return None
     for tool in tools:
-        func = tool.get("function", {}) if tool.get("type") == "function" else tool
+        func_obj = tool.get("function", {}) if tool.get("type") == "function" else tool
+        if not isinstance(func_obj, dict):
+            continue
+        func = func_obj
         if func.get("name") == func_name:
-            props = func.get("parameters", {}).get("properties", {})
-            return props.get(param_name)
+            parameters = func.get("parameters")
+            if not isinstance(parameters, dict):
+                return None
+            properties = parameters.get("properties")
+            if not isinstance(properties, dict):
+                return None
+            schema = properties.get(param_name)
+            if isinstance(schema, dict):
+                return schema
+            return None
     return None
 
 
@@ -233,7 +250,9 @@ class MiniMaxToolParser:
         match = TOOL_CALL_BLOCK_RE.search(text)
         if not match:
             return ParsedOutput(
-                content=text or None, tool_calls=None, has_tool_calls=False,
+                content=text or None,
+                tool_calls=None,
+                has_tool_calls=False,
             )
 
         # Extract content before tool calls
@@ -253,18 +272,23 @@ class MiniMaxToolParser:
                     param_value_str = param_match.group(2)
                     param_schema = _get_param_schema(tools, func_name, param_name)
                     params[param_name] = convert_param_value(
-                        param_value_str, param_schema,
+                        param_value_str,
+                        param_schema,
                     )
 
-                tool_calls.append(ParsedToolCall(
-                    id=_generate_call_id(),
-                    name=func_name,
-                    arguments=json.dumps(params),
-                ))
+                tool_calls.append(
+                    ParsedToolCall(
+                        id=_generate_call_id(),
+                        name=func_name,
+                        arguments=json.dumps(params),
+                    )
+                )
 
         if not tool_calls:
             return ParsedOutput(
-                content=text, tool_calls=None, has_tool_calls=False,
+                content=text,
+                tool_calls=None,
+                has_tool_calls=False,
             )
 
         return ParsedOutput(
@@ -431,7 +455,8 @@ class StreamingToolParser:
         """
         max_tag_len = len(TOOL_CALL_OPEN)  # longest sentinel tag
         search_start = max(
-            len(text) - max_tag_len, self._content_emitted_to,
+            len(text) - max_tag_len,
+            self._content_emitted_to,
         )
 
         for i in range(len(text) - 1, search_start - 1, -1):
@@ -440,8 +465,10 @@ class StreamingToolParser:
                 if any(
                     tag.startswith(suffix)
                     for tag in (
-                        TOOL_CALL_OPEN, TOOL_CALL_CLOSE,
-                        THINK_OPEN, THINK_CLOSE,
+                        TOOL_CALL_OPEN,
+                        TOOL_CALL_CLOSE,
+                        THINK_OPEN,
+                        THINK_CLOSE,
                     )
                 ):
                     return i
@@ -484,18 +511,23 @@ class StreamingToolParser:
                 param_name = param_match.group(1).strip().strip('"')
                 param_value_str = param_match.group(2)
                 param_schema = _get_param_schema(
-                    self._tools, func_name, param_name,
+                    self._tools,
+                    func_name,
+                    param_name,
                 )
                 params[param_name] = convert_param_value(
-                    param_value_str, param_schema,
+                    param_value_str,
+                    param_schema,
                 )
 
-            deltas.append(ToolCallDelta(
-                index=self._tool_index,
-                id=_generate_call_id(),
-                name=func_name,
-                arguments_delta=json.dumps(params),
-            ))
+            deltas.append(
+                ToolCallDelta(
+                    index=self._tool_index,
+                    id=_generate_call_id(),
+                    name=func_name,
+                    arguments_delta=json.dumps(params),
+                )
+            )
             self._tool_index += 1
             self._tool_calls_emitted += 1
 
@@ -506,9 +538,9 @@ class StreamingToolParser:
 
 
 async def wrap_stream_with_tool_parsing(
-    token_stream: AsyncIterator[str],
+    token_stream: AsyncIterator[str | _StreamEndMarker],
     tools: list[dict[str, Any]] | None = None,
-) -> AsyncIterator[StreamChunk]:
+) -> AsyncIterator[StreamChunk | _StreamEndMarker]:
     """Wrap a token stream with MiniMax XML tool call parsing.
 
     Converts a raw string token stream into StreamChunk objects.
@@ -524,8 +556,8 @@ async def wrap_stream_with_tool_parsing(
         tools: Tool definitions for parameter type coercion.
 
     Yields:
-        StreamChunk objects with either content or tool call data.
-        May also yield _StreamEndMarker from the input stream.
+        StreamChunk objects with either content or tool call data,
+        plus passthrough _StreamEndMarker values from the input stream.
     """
     from opta_lmx.api.stream_handlers import _StreamEndMarker
 

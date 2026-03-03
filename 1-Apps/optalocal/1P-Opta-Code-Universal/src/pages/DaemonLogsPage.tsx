@@ -156,11 +156,12 @@ export function DaemonLogsPage() {
             </thead>
             <tbody>
               {filtered.map((entry, idx) => (
-                <tr key={idx} className={`log-row log-level-${entry.level || "unknown"}`}>
+                <tr
+                  key={idx}
+                  className={`log-row log-level-${entry.level || "unknown"}`}
+                >
                   <td className="log-timestamp">
-                    {entry.timestamp
-                      ? formatTimestamp(entry.timestamp)
-                      : "--"}
+                    {entry.timestamp ? formatTimestamp(entry.timestamp) : "--"}
                   </td>
                   <td>
                     <span

@@ -1,0 +1,17 @@
+.vercel
+
+# Local run artifacts
+.e2e-artifacts/
+.tmp-apple-cert/
+1P-Opta-Code-Universal/test-results/
+1D-Opta-CLI-TS/.opta/memory/
+
+# Local patch/scratch outputs
+1R-Opta-Accounts/src/**/*.patch
+1D-Opta-CLI-TS/fix-*.js
+1D-Opta-CLI-TS/run-fix.js
+1D-Opta-CLI-TS/test_tui.js
+design-*.html
+test-accounts-design.html
+generate_*.js
+update-*-ui.js

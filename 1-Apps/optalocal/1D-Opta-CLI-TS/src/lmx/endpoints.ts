@@ -2,11 +2,13 @@ import type { LmxConnectionState } from './connection.js';
 import { probeLmxConnection } from './connection.js';
 import { discoverLmxHosts } from './mdns-discovery.js';
 import { prioritizeHostsByProfile, recordEndpointProbeOutcome } from './endpoint-profile.js';
+import type { AdminKeysByHost } from './admin-keys.js';
 
 export interface LmxEndpointConfig {
   host: string;
   port: number;
   adminKey?: string;
+  adminKeysByHost?: AdminKeysByHost;
   fallbackHosts?: string[];
   /** When true (default), scan the LAN for LMX servers if no primary is configured. */
   autoDiscover?: boolean;
@@ -332,6 +334,7 @@ export async function resolveLmxEndpoint(
       void probeLmxConnection(host, config.port, {
         timeoutMs,
         adminKey: config.adminKey,
+        adminKeysByHost: config.adminKeysByHost,
       }).then((probe) => {
         handleOutcome({
           host,

@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 const OPTA_LEARN_DIR = path.resolve(process.cwd(), '../1V-Opta-Learn');
 const GUIDES_DIR = path.join(OPTA_LEARN_DIR, 'content/guides');
 const MANIFEST_PATH = path.join(OPTA_LEARN_DIR, 'public/guides-manifest.json');
+const LEARN_MANIFEST_URL = 'https://learn.optalocal.com/api/guides-manifest';
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -71,42 +72,64 @@ function parseGuideFile(fileName: string): GuideRecord | null {
   };
 }
 
-function readGuidesManifest(): GuidesManifest {
-  if (!fs.existsSync(MANIFEST_PATH)) {
-    return { published: [], draft: [] };
-  }
-
-  const parsed = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf-8')) as Partial<GuidesManifest>;
-  return {
-    published: Array.isArray(parsed.published) ? parsed.published : [],
-    draft: Array.isArray(parsed.draft) ? parsed.draft : [],
-  };
+function normalizeManifest(input: unknown): GuidesManifest {
+  if (!isRecord(input)) return { published: [], draft: [] };
+  const published = Array.isArray(input.published) ? input.published : [];
+  const draft = Array.isArray(input.draft) ? input.draft : [];
+  return { published, draft } as GuidesManifest;
 }
 
-function getDynamicGuides(): GuideRecord[] {
-  if (!fs.existsSync(GUIDES_DIR)) return [];
+async function readGuidesManifest(): Promise<GuidesManifest> {
+  if (fs.existsSync(MANIFEST_PATH)) {
+    try {
+      const parsed = JSON.parse(fs.readFileSync(MANIFEST_PATH, 'utf-8'));
+      return normalizeManifest(parsed);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(`Local guides manifest parse failed: ${message}`);
+    }
+  }
 
-  const manifest = readGuidesManifest();
+  try {
+    const response = await fetch(LEARN_MANIFEST_URL, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const payload = await response.json();
+    return normalizeManifest(payload);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Remote guides manifest fetch failed: ${message}`);
+    return { published: [], draft: [] };
+  }
+}
+
+async function getDynamicGuides(): Promise<GuideRecord[]> {
+  const manifest = await readGuidesManifest();
   const manifestEntries: GuideManifestEntry[] = [...manifest.published, ...manifest.draft];
   const statusBySlug = new Map(manifestEntries.map((entry) => [entry.slug, entry.status]));
 
-  const files = fs
-    .readdirSync(GUIDES_DIR)
-    .filter((fileName) => fileName.endsWith('.ts') && fileName !== 'index.ts' && fileName !== 'templates.ts');
-
   const guides: GuideRecord[] = [];
-  for (const fileName of files) {
-    try {
-      const parsedGuide = parseGuideFile(fileName);
-      if (!parsedGuide) continue;
 
-      guides.push({
-        ...parsedGuide,
-        status: statusBySlug.get(parsedGuide.slug) ?? 'draft',
-      });
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
-      console.error(`Unable to parse guide ${fileName}: ${message}`);
+  if (fs.existsSync(GUIDES_DIR)) {
+    const files = fs
+      .readdirSync(GUIDES_DIR)
+      .filter((fileName) => fileName.endsWith('.ts') && fileName !== 'index.ts' && fileName !== 'templates.ts');
+
+    for (const fileName of files) {
+      try {
+        const parsedGuide = parseGuideFile(fileName);
+        if (!parsedGuide) continue;
+
+        guides.push({
+          ...parsedGuide,
+          status: statusBySlug.get(parsedGuide.slug) ?? 'draft',
+        });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        console.error(`Unable to parse guide ${fileName}: ${message}`);
+      }
     }
   }
 
@@ -127,8 +150,10 @@ function getDynamicGuides(): GuideRecord[] {
 }
 
 export default async function AdminDashboard() {
-  const guides = getDynamicGuides();
-  const websiteStatus = await Promise.all(MANAGED_WEBSITES.map((website) => checkManagedWebsiteHealth(website)));
+  const [guides, websiteStatus] = await Promise.all([
+    getDynamicGuides(),
+    Promise.all(MANAGED_WEBSITES.map((website) => checkManagedWebsiteHealth(website))),
+  ]);
 
   return (
     <main className="min-h-screen bg-void flex flex-col items-center pt-8 relative overflow-hidden admin-perimeter border-x-[3px] border-admin">

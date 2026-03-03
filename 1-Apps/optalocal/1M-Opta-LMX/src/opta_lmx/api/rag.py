@@ -18,9 +18,10 @@ from starlette.responses import Response
 
 from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RemoteEmbedding, RerankerDep
 from opta_lmx.api.errors import internal_error, openai_error
-from opta_lmx.helpers.client import HelperNodeError
+from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
+from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.rag.chunker import chunk_code, chunk_markdown, chunk_text
-from opta_lmx.rag.store import VectorStore
+from opta_lmx.rag.store import SearchResult, VectorStore
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +49,7 @@ class IngestRequest(BaseModel):
     chunk_size: int = Field(512, ge=64, le=2048, description="Target tokens per chunk")
     chunk_overlap: int = Field(64, ge=0, le=512, description="Token overlap between chunks")
     chunking: str = Field(
-        "auto", pattern="^(auto|text|code|markdown_headers|none)$",
-        description="Chunking strategy"
+        "auto", pattern="^(auto|text|code|markdown_headers|none)$", description="Chunking strategy"
     )
     model: str | None = Field(
         None, description="Embedding model (uses configured default if omitted)"
@@ -150,8 +150,8 @@ class ContextAssemblyResponse(BaseModel):
 async def _embed_texts(
     texts: list[str],
     model: str | None,
-    embedding_engine: Any,
-    remote_client: Any,
+    embedding_engine: EmbeddingEngine | None,
+    remote_client: HelperNodeClient | None,
 ) -> list[list[float]]:
     """Embed texts using helper node (if available) or local engine."""
     # Try remote first
@@ -205,36 +205,42 @@ async def ingest_documents(
             chunks = chunk_code(doc, body.chunk_size, body.chunk_overlap)
             for chunk in chunks:
                 all_chunks.append(chunk.text)
-                all_metadata.append({
-                    **doc_meta,
-                    "doc_index": i,
-                    "chunk_index": chunk.index,
-                    "start_char": chunk.start_char,
-                    "end_char": chunk.end_char,
-                })
+                all_metadata.append(
+                    {
+                        **doc_meta,
+                        "doc_index": i,
+                        "chunk_index": chunk.index,
+                        "start_char": chunk.start_char,
+                        "end_char": chunk.end_char,
+                    }
+                )
         elif body.chunking == "markdown_headers":
             chunks = chunk_markdown(doc, body.chunk_size, body.chunk_overlap)
             for chunk in chunks:
                 all_chunks.append(chunk.text)
-                all_metadata.append({
-                    **doc_meta,
-                    "doc_index": i,
-                    "chunk_index": chunk.index,
-                    "start_char": chunk.start_char,
-                    "end_char": chunk.end_char,
-                })
+                all_metadata.append(
+                    {
+                        **doc_meta,
+                        "doc_index": i,
+                        "chunk_index": chunk.index,
+                        "start_char": chunk.start_char,
+                        "end_char": chunk.end_char,
+                    }
+                )
         else:
             # "auto" or "text"
             chunks = chunk_text(doc, body.chunk_size, body.chunk_overlap)
             for chunk in chunks:
                 all_chunks.append(chunk.text)
-                all_metadata.append({
-                    **doc_meta,
-                    "doc_index": i,
-                    "chunk_index": chunk.index,
-                    "start_char": chunk.start_char,
-                    "end_char": chunk.end_char,
-                })
+                all_metadata.append(
+                    {
+                        **doc_meta,
+                        "doc_index": i,
+                        "chunk_index": chunk.index,
+                        "start_char": chunk.start_char,
+                        "end_char": chunk.end_char,
+                    }
+                )
 
     if not all_chunks:
         return openai_error(
@@ -247,7 +253,10 @@ async def ingest_documents(
     # Embed all chunks
     try:
         embeddings = await _embed_texts(
-            all_chunks, body.model, embedding_engine, remote_client,
+            all_chunks,
+            body.model,
+            embedding_engine,
+            remote_client,
         )
     except RuntimeError as e:
         return internal_error(str(e))
@@ -260,20 +269,25 @@ async def ingest_documents(
 
     elapsed_ms = (time.monotonic() - start) * 1000
 
-    logger.info("rag_ingest_complete", extra={
-        "collection": body.collection,
-        "documents": len(body.documents),
-        "chunks": len(all_chunks),
-        "duration_ms": round(elapsed_ms, 1),
-    })
+    logger.info(
+        "rag_ingest_complete",
+        extra={
+            "collection": body.collection,
+            "documents": len(body.documents),
+            "chunks": len(all_chunks),
+            "duration_ms": round(elapsed_ms, 1),
+        },
+    )
 
-    return JSONResponse(content=IngestResponse(
-        collection=body.collection,
-        documents_ingested=len(body.documents),
-        chunks_created=len(all_chunks),
-        document_ids=doc_ids,
-        duration_ms=round(elapsed_ms, 1),
-    ).model_dump())
+    return JSONResponse(
+        content=IngestResponse(
+            collection=body.collection,
+            documents_ingested=len(body.documents),
+            chunks_created=len(all_chunks),
+            document_ids=doc_ids,
+            duration_ms=round(elapsed_ms, 1),
+        ).model_dump()
+    )
 
 
 @router.post("/v1/rag/query", response_model=None)
@@ -296,7 +310,10 @@ async def query_collection(
     # Embed query
     try:
         query_embeddings = await _embed_texts(
-            [body.query], body.model, embedding_engine, remote_client,
+            [body.query],
+            body.model,
+            embedding_engine,
+            remote_client,
         )
     except RuntimeError as e:
         return internal_error(str(e))
@@ -319,7 +336,7 @@ async def query_collection(
         if reranker is not None:
             try:
                 doc_texts = [r.document.text for r in results]
-                ranked = reranker.rerank(body.query, doc_texts, top_n=body.rerank_top_k)  # type: ignore[union-attr]
+                ranked = reranker.rerank(body.query, doc_texts, top_n=body.rerank_top_k)
                 # Reorder results based on reranker scores
                 reranked_results = []
                 for entry in ranked:
@@ -327,48 +344,61 @@ async def query_collection(
                     if 0 <= idx < len(results):
                         # Replace vector score with reranker score
                         original = results[idx]
-                        reranked_results.append(type(original)(
-                            document=original.document,
-                            score=entry["score"],
-                        ))
+                        reranked_results.append(
+                            type(original)(
+                                document=original.document,
+                                score=entry["score"],
+                            )
+                        )
                 results = reranked_results
-                logger.info("rag_rerank_applied", extra={
-                    "collection": body.collection,
-                    "candidates": len(doc_texts),
-                    "reranked": len(results),
-                })
+                logger.info(
+                    "rag_rerank_applied",
+                    extra={
+                        "collection": body.collection,
+                        "candidates": len(doc_texts),
+                        "reranked": len(results),
+                    },
+                )
             except Exception as e:
-                logger.warning("rag_rerank_failed_fallback_vector", extra={
-                    "error": str(e),
-                    "collection": body.collection,
-                })
+                logger.warning(
+                    "rag_rerank_failed_fallback_vector",
+                    extra={
+                        "error": str(e),
+                        "collection": body.collection,
+                    },
+                )
                 # Fall back to vector-only results, trimmed to original top_k
-                results = results[:body.top_k]
+                results = results[: body.top_k]
         else:
-            logger.warning("rag_rerank_requested_but_no_engine", extra={
-                "collection": body.collection,
-            })
+            logger.warning(
+                "rag_rerank_requested_but_no_engine",
+                extra={
+                    "collection": body.collection,
+                },
+            )
             # No reranker available — fall back to vector-only results
-            results = results[:body.top_k]
+            results = results[: body.top_k]
 
     elapsed_ms = (time.monotonic() - start) * 1000
 
-    return JSONResponse(content=QueryResponse(
-        collection=body.collection,
-        query=body.query,
-        results=[
-            QueryResult(
-                id=r.document.id,
-                text=r.document.text,
-                score=round(r.score, 4),
-                metadata=r.document.metadata,
-                embedding=r.document.embedding.tolist() if body.include_embeddings else None,
-            )
-            for r in results
-        ],
-        total_in_collection=store.collection_count(body.collection),
-        duration_ms=round(elapsed_ms, 1),
-    ).model_dump())
+    return JSONResponse(
+        content=QueryResponse(
+            collection=body.collection,
+            query=body.query,
+            results=[
+                QueryResult(
+                    id=r.document.id,
+                    text=r.document.text,
+                    score=round(r.score, 4),
+                    metadata=r.document.metadata,
+                    embedding=r.document.embedding.tolist() if body.include_embeddings else None,
+                )
+                for r in results
+            ],
+            total_in_collection=store.collection_count(body.collection),
+            duration_ms=round(elapsed_ms, 1),
+        ).model_dump()
+    )
 
 
 @router.post("/v1/rag/context", response_model=None)
@@ -392,7 +422,10 @@ async def assemble_context(
     # Embed query once
     try:
         query_embeddings = await _embed_texts(
-            [body.query], body.model, embedding_engine, remote_client,
+            [body.query],
+            body.model,
+            embedding_engine,
+            remote_client,
         )
     except RuntimeError as e:
         return internal_error(str(e))
@@ -401,7 +434,7 @@ async def assemble_context(
     fetch_k = body.top_k_per_collection * 5 if body.rerank else body.top_k_per_collection
 
     # Search each collection
-    all_results: list[tuple[str, Any]] = []  # (collection, SearchResult)
+    all_results: list[tuple[str, SearchResult]] = []
     for collection in body.collections:
         results = store.search(
             collection=collection,
@@ -417,21 +450,29 @@ async def assemble_context(
         try:
             doc_texts = [r.document.text for collection, r in all_results]
             top_n = body.top_k_per_collection * len(body.collections)
-            ranked = reranker.rerank(body.query, doc_texts, top_n=top_n)  # type: ignore[union-attr]
-            reranked: list[tuple[str, Any]] = []
+            ranked = reranker.rerank(body.query, doc_texts, top_n=top_n)
+            reranked: list[tuple[str, SearchResult]] = []
             for entry in ranked:
                 idx = entry["index"]
                 if 0 <= idx < len(all_results):
                     collection, original = all_results[idx]
-                    reranked.append((collection, type(original)(
-                        document=original.document,
-                        score=entry["score"],
-                    )))
+                    reranked.append(
+                        (
+                            collection,
+                            type(original)(
+                                document=original.document,
+                                score=entry["score"],
+                            ),
+                        )
+                    )
             all_results = reranked
-            logger.info("rag_context_rerank_applied", extra={
-                "candidates": len(doc_texts),
-                "reranked": len(all_results),
-            })
+            logger.info(
+                "rag_context_rerank_applied",
+                extra={
+                    "candidates": len(doc_texts),
+                    "reranked": len(all_results),
+                },
+            )
         except Exception as e:
             logger.warning("rag_context_rerank_failed_fallback", extra={"error": str(e)})
     elif body.rerank and reranker is None:
@@ -454,32 +495,36 @@ async def assemble_context(
             header += f" / {result.document.metadata['source']}"
         header += f" | relevance: {result.score:.2f}]"
 
-        entry = f"{header}\n{chunk_text_str}"
-        entry_chars = len(entry) + 2  # +2 for separators
+        context_entry = f"{header}\n{chunk_text_str}"
+        entry_chars = len(context_entry) + 2  # +2 for separators
 
         if total_chars + entry_chars > max_chars:
             break
 
-        context_parts.append(entry)
-        sources.append({
-            "collection": collection,
-            "id": result.document.id,
-            "score": round(result.score, 4),
-            "metadata": result.document.metadata,
-        })
+        context_parts.append(context_entry)
+        sources.append(
+            {
+                "collection": collection,
+                "id": result.document.id,
+                "score": round(result.score, 4),
+                "metadata": result.document.metadata,
+            }
+        )
         total_chars += entry_chars
 
     context = "\n\n---\n\n".join(context_parts)
     estimated_tokens = max(1, len(context) // 4)
     elapsed_ms = (time.monotonic() - start) * 1000
 
-    return JSONResponse(content=ContextAssemblyResponse(
-        context=context,
-        sources=sources,
-        total_chunks=len(context_parts),
-        estimated_tokens=estimated_tokens,
-        duration_ms=round(elapsed_ms, 1),
-    ).model_dump())
+    return JSONResponse(
+        content=ContextAssemblyResponse(
+            context=context,
+            sources=sources,
+            total_chunks=len(context_parts),
+            estimated_tokens=estimated_tokens,
+            duration_ms=round(elapsed_ms, 1),
+        ).model_dump()
+    )
 
 
 @router.get("/v1/rag/collections")
@@ -517,8 +562,10 @@ async def delete_collection(collection: str, _auth: AdminAuth, rag_store: RagSto
             code="collection_not_found",
         )
 
-    return JSONResponse(content={
-        "success": True,
-        "collection": collection,
-        "documents_deleted": count,
-    })
+    return JSONResponse(
+        content={
+            "success": True,
+            "collection": collection,
+            "documents_deleted": count,
+        }
+    )

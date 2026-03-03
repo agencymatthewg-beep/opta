@@ -1,0 +1,20 @@
+# Keep deployment payload lean for Vercel (GitHub download surface only)
+.node_modules
+
+# Heavy local desktop app source not needed for website
+/desktop-manager/
+
+# Local build artifacts/cache directories
+/.next/
+/.turbo/
+/.vercel/
+/.DS_Store
+
+# Test artifacts and local traces
+/.e2e-artifacts/
+/.playwright/
+/.tmp-apple-cert/
+/*.log
+
+# Optional local docs/plan noise not required for website
+/docs/plans/

@@ -4,7 +4,9 @@ test("boots and supports basic shell interactions", async ({ page }) => {
   await page.goto("/");
 
   await expect(
-    page.getByRole("heading", { name: "Opta Code Desktop" }),
+    page.getByText(
+      "Operator cockpit for parallel sessions, model control, and daemon telemetry.",
+    ),
   ).toBeVisible();
   await expect(page.getByRole("button", { name: "Sessions" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Models" })).toBeVisible();
@@ -29,10 +31,12 @@ test("boots and supports basic shell interactions", async ({ page }) => {
   await page.getByRole("button", { name: "Sessions" }).click();
   await expect(page.getByText("Session timeline")).toBeVisible();
 
-  await page.getByRole("button", { name: "Hide Runtime" }).click();
-  await expect(page.getByText("Runtime hidden")).toBeVisible();
-  await page.getByRole("button", { name: "Show Runtime" }).click();
-  await expect(page.getByText("Runtime visible")).toBeVisible();
+  await page.getByRole("button", { name: "💻" }).click();
+  await expect(page.getByRole("heading", { name: "Runtime" })).toBeVisible();
+  await page.getByRole("button", { name: "🖥️" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Runtime" }),
+  ).not.toBeVisible();
 
   await page.getByRole("button", { name: /Palette \(Cmd\/Ctrl\+K\)/ }).click();
   await expect(

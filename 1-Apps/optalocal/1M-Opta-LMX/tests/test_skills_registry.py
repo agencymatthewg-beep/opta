@@ -15,7 +15,9 @@ def _write(path: Path, content: str) -> None:
 
 def test_registry_load_ignores_invalid_docs_and_collects_errors(tmp_path: Path) -> None:
     manifests = tmp_path / "manifests"
-    _write(manifests / "skills.yaml", """
+    _write(
+        manifests / "skills.yaml",
+        """
 ---
 schema: opta.skills.manifest/v1
 name: summarize
@@ -27,7 +29,8 @@ risk_tags: [low]
 ---
 name: invalid_missing_fields
 kind: prompt
-""")
+""",
+    )
 
     registry = SkillsRegistry()
     result = registry.load([manifests])
@@ -47,23 +50,27 @@ def test_registry_register_and_list_changed_timestamp() -> None:
     registry = SkillsRegistry()
     before = registry.list_changed_at
 
-    registry.register_from_data({
-        "schema": "opta.skills.manifest/v1",
-        "name": "alpha",
-        "kind": "prompt",
-        "description": "A",
-        "prompt_template": "A",
-    })
+    registry.register_from_data(
+        {
+            "schema": "opta.skills.manifest/v1",
+            "name": "alpha",
+            "kind": "prompt",
+            "description": "A",
+            "prompt_template": "A",
+        }
+    )
     first_change = registry.list_changed_at
 
     time.sleep(0.01)
-    registry.register_from_data({
-        "schema": "opta.skills.manifest/v1",
-        "name": "beta",
-        "kind": "prompt",
-        "description": "B",
-        "prompt_template": "B",
-    })
+    registry.register_from_data(
+        {
+            "schema": "opta.skills.manifest/v1",
+            "name": "beta",
+            "kind": "prompt",
+            "description": "B",
+            "prompt_template": "B",
+        }
+    )
     second_change = registry.list_changed_at
 
     assert first_change >= before

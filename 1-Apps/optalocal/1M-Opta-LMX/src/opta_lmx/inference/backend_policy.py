@@ -35,9 +35,7 @@ def _is_glm_runtime_sensitive(model_id: str) -> bool:
     architectures = config.get("architectures")
     if isinstance(architectures, list):
         hints.extend(
-            item.strip()
-            for item in architectures
-            if isinstance(item, str) and item.strip()
+            item.strip() for item in architectures if isinstance(item, str) and item.strip()
         )
 
     for hint in hints:
@@ -77,8 +75,7 @@ def backend_candidates(
     """
     if preferred_backend is not None and preferred_backend not in _ALLOWED_BACKENDS:
         raise ValueError(
-            "Unsupported backend override. Expected one of "
-            f"{', '.join(_ALLOWED_BACKENDS)}."
+            f"Unsupported backend override. Expected one of {', '.join(_ALLOWED_BACKENDS)}."
         )
 
     lowered_model_id = model_id.lower()

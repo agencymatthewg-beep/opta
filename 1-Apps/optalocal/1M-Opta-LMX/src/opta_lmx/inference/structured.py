@@ -15,6 +15,19 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+JSONLike = dict[str, Any] | list[Any]
+
+
+def _parse_json_like(value: str) -> JSONLike | None:
+    """Parse JSON and accept only object/array top-level values."""
+    try:
+        parsed = json.loads(value)
+    except json.JSONDecodeError:
+        return None
+    if isinstance(parsed, (dict, list)):
+        return parsed
+    return None
+
 
 def build_json_system_prompt(
     response_format: dict[str, Any] | None,
@@ -93,7 +106,7 @@ def inject_json_instruction(
     return messages
 
 
-def extract_json_from_text(text: str) -> dict[str, Any] | list[Any] | None:
+def extract_json_from_text(text: str) -> JSONLike | None:
     """Extract JSON from model output, trying multiple strategies.
 
     1. Parse entire text as JSON
@@ -109,26 +122,23 @@ def extract_json_from_text(text: str) -> dict[str, Any] | list[Any] | None:
     text = text.strip()
 
     # Strategy 1: whole text is JSON
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        pass
+    parsed = _parse_json_like(text)
+    if parsed is not None:
+        return parsed
 
     # Strategy 2: markdown code blocks
     for match in re.findall(r"```(?:json)?\s*([\s\S]*?)\s*```", text):
-        try:
-            return json.loads(match.strip())
-        except json.JSONDecodeError:
-            continue
+        parsed = _parse_json_like(match.strip())
+        if parsed is not None:
+            return parsed
 
     # Strategy 3: first { ... } or [ ... ]
     for pattern in (r"(\{[\s\S]*\})", r"(\[[\s\S]*\])"):
         m = re.search(pattern, text)
         if m:
-            try:
-                return json.loads(m.group(1))
-            except json.JSONDecodeError:
-                continue
+            parsed = _parse_json_like(m.group(1))
+            if parsed is not None:
+                return parsed
 
     return None
 
@@ -145,7 +155,7 @@ def validate_json_schema(
         (is_valid, error_message) — error_message is None when valid.
     """
     try:
-        from jsonschema import ValidationError, validate  # type: ignore[import-untyped]
+        from jsonschema import ValidationError, validate
 
         validate(instance=data, schema=schema)
         return True, None
@@ -159,7 +169,7 @@ def validate_json_schema(
 def parse_json_output(
     text: str,
     response_format: dict[str, Any] | None,
-) -> tuple[str, dict[str, Any] | None, bool, str | None]:
+) -> tuple[str, JSONLike | None, bool, str | None]:
     """Parse and validate JSON from model output.
 
     Args:

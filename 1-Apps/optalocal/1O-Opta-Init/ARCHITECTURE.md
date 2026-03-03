@@ -4,7 +4,7 @@
 
 The `1O-Opta-Init` project encompasses two distinct but related architectural surfaces:
 
-1. **The Web Landing Page (`init.optalocal.com`)**: A pure static Next.js site. No server. No API. No database. Vercel CDN delivers the pre-built output globally. Its sole purpose is marketing and distributing the Opta Init Desktop Manager.
+1. **The Web Landing Page (`init.optalocal.com`)**: A pure static Next.js site. No server. No API. No database. Vercel CDN delivers the pre-built output globally. Its sole purpose is the Opta Initializer entry point and distribution of the Opta Init Desktop Manager.
 2. **The Desktop Manager (`/desktop-manager`)**: A native Tauri application built with React + Vite on the frontend and Rust on the backend. It serves as the local orchestration engine (the "Core Cluster") for all Opta apps.
 
 ---
@@ -50,7 +50,7 @@ User clicks "Download Manager" -> triggers download of the Tauri .dmg/.exe
 ## 2. Desktop Manager Architecture (Tauri)
 
 ### Overview
-The Desktop Manager is the actual engine users run locally to manage their stack. It utilizes a visually rich "Core Cluster" layout with raw SVG icons, physics-based floating animations, and a centralized status bar.
+The Desktop Manager is the actual runtime engine users install via `opta init` to manage their stack. It utilizes a visually rich "Core Cluster" layout with raw SVG icons, physics-based floating animations, and a centralized status bar.
 
 ### Backend (Rust / Tauri Core)
 - **Manifest Fetching**: Pulls down `.json` release manifests from `init.optalocal.com/desktop/*`.

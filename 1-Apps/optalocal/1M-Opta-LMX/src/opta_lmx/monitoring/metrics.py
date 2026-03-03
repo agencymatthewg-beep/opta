@@ -75,8 +75,7 @@ class MetricsCollector:
     def _speculative_acceptance_ratio(self) -> float | None:
         """accepted / (accepted + rejected), or None when no token decisions exist."""
         denominator = (
-            self._total_speculative_accepted_tokens
-            + self._total_speculative_rejected_tokens
+            self._total_speculative_accepted_tokens + self._total_speculative_rejected_tokens
         )
         if denominator <= 0:
             return None
@@ -95,19 +94,14 @@ class MetricsCollector:
                 self._total_stream_requests += 1
             if metric.error:
                 self._total_errors += 1
-                self._model_errors[metric.model_id] = (
-                    self._model_errors.get(metric.model_id, 0) + 1
-                )
+                self._model_errors[metric.model_id] = self._model_errors.get(metric.model_id, 0) + 1
 
             self._total_prompt_tokens += metric.prompt_tokens
             self._total_completion_tokens += metric.completion_tokens
 
-            self._model_requests[metric.model_id] = (
-                self._model_requests.get(metric.model_id, 0) + 1
-            )
+            self._model_requests[metric.model_id] = self._model_requests.get(metric.model_id, 0) + 1
             self._model_tokens[metric.model_id] = (
-                self._model_tokens.get(metric.model_id, 0)
-                + metric.completion_tokens
+                self._model_tokens.get(metric.model_id, 0) + metric.completion_tokens
             )
 
             # Per-client tracking
@@ -201,8 +195,7 @@ class MetricsCollector:
             )
             lines.append("# TYPE lmx_speculative_accepted_tokens_total counter")
             lines.append(
-                f"lmx_speculative_accepted_tokens_total "
-                f"{self._total_speculative_accepted_tokens}",
+                f"lmx_speculative_accepted_tokens_total {self._total_speculative_accepted_tokens}",
             )
 
             lines.append(
@@ -211,8 +204,7 @@ class MetricsCollector:
             )
             lines.append("# TYPE lmx_speculative_rejected_tokens_total counter")
             lines.append(
-                f"lmx_speculative_rejected_tokens_total "
-                f"{self._total_speculative_rejected_tokens}",
+                f"lmx_speculative_rejected_tokens_total {self._total_speculative_rejected_tokens}",
             )
 
             lines.append(
@@ -221,8 +213,7 @@ class MetricsCollector:
             )
             lines.append("# TYPE lmx_speculative_ignored_tokens_total counter")
             lines.append(
-                f"lmx_speculative_ignored_tokens_total "
-                f"{self._total_speculative_ignored_tokens}",
+                f"lmx_speculative_ignored_tokens_total {self._total_speculative_ignored_tokens}",
             )
 
             lines.append(
@@ -277,7 +268,7 @@ class MetricsCollector:
                 for i, boundary in enumerate(self._latency_buckets):
                     cumulative += self._latency_bucket_counts[model_id][i]
                     lines.append(
-                        f'lmx_request_duration_seconds_bucket'
+                        f"lmx_request_duration_seconds_bucket"
                         f'{{model="{model_id}",le="{boundary}"}} {cumulative}'
                     )
                 lines.append(
@@ -426,10 +417,12 @@ def speculative_metric_kwargs(telemetry: dict[str, Any] | str | None) -> dict[st
             "speculative_num_tokens",
             telemetry.get("num_tokens"),
         ),
-        "speculative_accepted_tokens": telemetry.get("speculative_accepted_tokens",
-                                                       telemetry.get("accepted_tokens", 0)),
-        "speculative_rejected_tokens": telemetry.get("speculative_rejected_tokens",
-                                                      telemetry.get("rejected_tokens", 0)),
+        "speculative_accepted_tokens": telemetry.get(
+            "speculative_accepted_tokens", telemetry.get("accepted_tokens", 0)
+        ),
+        "speculative_rejected_tokens": telemetry.get(
+            "speculative_rejected_tokens", telemetry.get("rejected_tokens", 0)
+        ),
         "speculative_ignored_tokens": telemetry.get(
             "speculative_ignored_tokens",
             telemetry.get("ignored_tokens", 0),
@@ -438,7 +431,11 @@ def speculative_metric_kwargs(telemetry: dict[str, Any] | str | None) -> dict[st
             "speculative_acceptance_ratio",
             telemetry.get("acceptance_ratio"),
         ),
-        "speculative_telemetry": telemetry.get("speculative_telemetry", telemetry.get(
-            "telemetry", "available",
-        )),
+        "speculative_telemetry": telemetry.get(
+            "speculative_telemetry",
+            telemetry.get(
+                "telemetry",
+                "available",
+            ),
+        ),
     }

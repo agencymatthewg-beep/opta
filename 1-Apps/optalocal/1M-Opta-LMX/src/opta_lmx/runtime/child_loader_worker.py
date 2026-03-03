@@ -57,22 +57,26 @@ async def execute_load_spec(
     probes = dict(backend_probes) if backend_probes is not None else _default_backend_probes()
     probe = probes.get(spec.backend)
     if probe is None:
-        raise LoaderWorkerError(LoaderFailure(
-            code=ErrorCodes.MODEL_PROBE_FAILED,
-            message=f"Unsupported backend '{spec.backend}'",
-            metadata={"backend": spec.backend, "model_id": spec.model_id},
-        ))
+        raise LoaderWorkerError(
+            LoaderFailure(
+                code=ErrorCodes.MODEL_PROBE_FAILED,
+                message=f"Unsupported backend '{spec.backend}'",
+                metadata={"backend": spec.backend, "model_id": spec.model_id},
+            )
+        )
 
     try:
         telemetry = await probe(spec)
     except LoaderWorkerError:
         raise
     except Exception as exc:
-        raise LoaderWorkerError(LoaderFailure(
-            code=ErrorCodes.MODEL_PROBE_FAILED,
-            message=f"Probe failed for backend '{spec.backend}': {exc}",
-            metadata={"backend": spec.backend, "model_id": spec.model_id},
-        )) from exc
+        raise LoaderWorkerError(
+            LoaderFailure(
+                code=ErrorCodes.MODEL_PROBE_FAILED,
+                message=f"Probe failed for backend '{spec.backend}': {exc}",
+                metadata={"backend": spec.backend, "model_id": spec.model_id},
+            )
+        ) from exc
 
     return LoadResult(ok=True, backend=spec.backend, telemetry=telemetry)
 
@@ -97,10 +101,13 @@ def main() -> int:
     """Read one JSON LoadSpec payload from stdin and emit one JSON response line."""
     raw = sys.stdin.read()
     if not raw.strip():
-        _write_json_line(sys.stderr, LoaderFailure(
-            code=ErrorCodes.MODEL_PROBE_FAILED,
-            message="missing_load_spec",
-        ).to_dict())
+        _write_json_line(
+            sys.stderr,
+            LoaderFailure(
+                code=ErrorCodes.MODEL_PROBE_FAILED,
+                message="missing_load_spec",
+            ).to_dict(),
+        )
         return 2
 
     try:
@@ -119,4 +126,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -188,6 +188,7 @@ async def format_sse_stream(
     # Optional usage chunk — emitted when stream_options.include_usage=True
     if include_usage:
         from opta_lmx.inference.schema import Usage
+
         total = prompt_tokens + completion_tokens
         usage_chunk = ChatCompletionChunk(
             id=request_id,
@@ -397,6 +398,7 @@ async def format_sse_tool_stream(
 
     if include_usage:
         from opta_lmx.inference.schema import Usage
+
         total = prompt_tokens + completion_tokens
         usage_chunk = ChatCompletionChunk(
             id=request_id,

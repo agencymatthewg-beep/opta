@@ -35,21 +35,23 @@ export default function HomePage() {
   const publishedGuides = getPublishedGuides();
 
   return (
-    <main className="min-h-screen bg-void flex flex-col items-center justify-center px-6 bg-dot-subtle">
+    <main className="min-h-screen bg-void flex flex-col items-center pt-32 px-6 bg-dot-subtle relative overflow-hidden">
       <Nav />
+      {/* Subtle Background Glow */}
+      <div className="absolute top-0 inset-x-0 h-[400px] bg-gradient-to-b from-[#1a1a24]/50 to-transparent -z-10" />
 
       <motion.div
         variants={containerVariants}
         initial="hidden"
         animate="visible"
-        className="flex w-full max-w-4xl flex-col items-center"
+        className="flex w-full max-w-3xl flex-col items-center"
       >
-        <motion.div variants={itemVariants} className="mb-12 flex flex-col items-center gap-4">
+        <motion.div variants={itemVariants} className="mb-12 flex flex-col items-center gap-6">
           <Image
-            src="/opta-learn-logo-final.png"
+            src="/opta-learn-mark.svg"
             alt="Opta Learn"
-            width={88}
-            height={88}
+            width={72}
+            height={72}
             priority
           />
           <div className="inline-flex items-center">
@@ -66,8 +68,31 @@ export default function HomePage() {
           <SearchBar guides={publishedGuides} />
         </motion.div>
 
-        <motion.p variants={itemVariants} className="mt-8 text-xs font-mono text-text-muted">
-          {publishedGuides.length} guides available · more added continuously
+        <motion.p variants={itemVariants} className="mt-3 text-sm text-center text-text-secondary max-w-2xl">
+          Opta Learn is the knowledge surface for the 4 core apps plus management services: Init, LMX, CLI, Code, Accounts, Status, and Admin.
+        </motion.p>
+
+        <motion.div variants={itemVariants} className="mt-5 flex flex-wrap justify-center gap-2 text-xs">
+          <span className="px-3 py-1 rounded-full border border-primary/30 text-primary/90">Opta Init</span>
+          <span className="px-3 py-1 rounded-full border border-white/15 text-text-secondary">Opta LMX</span>
+          <span className="px-3 py-1 rounded-full border border-white/15 text-text-secondary">Opta CLI</span>
+          <span className="px-3 py-1 rounded-full border border-white/15 text-text-secondary">Opta Code</span>
+          <span className="px-3 py-1 rounded-full border border-white/15 text-text-secondary">Accounts</span>
+          <span className="px-3 py-1 rounded-full border border-white/15 text-text-secondary">Status</span>
+        </motion.div>
+
+        <motion.div variants={itemVariants} className="mt-5 flex flex-wrap justify-center gap-3 text-xs">
+          <a href="https://help.optalocal.com" className="text-text-muted hover:text-text-secondary">Help</a>
+          <span className="text-text-muted">•</span>
+          <a href="https://init.optalocal.com" className="text-text-muted hover:text-text-secondary">Init</a>
+          <span className="text-text-muted">•</span>
+          <a href="https://admin.optalocal.com" className="text-text-muted hover:text-text-secondary">Admin</a>
+          <span className="text-text-muted">•</span>
+          <a href="https://status.optalocal.com" className="text-text-secondary hover:text-primary">Status</a>
+        </motion.div>
+
+        <motion.p variants={itemVariants} className="mt-8 text-[11px] font-mono text-text-muted tracking-widest uppercase">
+          {publishedGuides.length} verified deep dives · synced live
         </motion.p>
       </motion.div>
     </main>

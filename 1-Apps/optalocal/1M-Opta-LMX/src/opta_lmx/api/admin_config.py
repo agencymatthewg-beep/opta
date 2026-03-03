@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
+from typing import Any, Protocol, cast
 
 from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse
@@ -23,12 +23,28 @@ from opta_lmx.security.jwt_verifier import SupabaseJWTVerifier
 logger = logging.getLogger(__name__)
 
 
-def _get_journal_manager(request: Request) -> object | None:
+class _UpdateJournalWriter(Protocol):
+    """Subset of journal manager used by admin config routes."""
+
+    def write_update_log(
+        self,
+        *,
+        title: str,
+        summary: str,
+        category: str,
+        promoted: bool | None = None,
+        command_inputs: dict[str, Any] | None = None,
+        steps: list[dict[str, Any]] | None = None,
+    ) -> None:
+        """Write an update entry."""
+
+
+def _get_journal_manager(request: Request) -> _UpdateJournalWriter | None:
     """Return runtime journal manager if available."""
     manager = getattr(request.app.state, "journal_manager", None)
     if manager is None or not hasattr(manager, "write_update_log"):
         return None
-    return manager
+    return cast(_UpdateJournalWriter, manager)
 
 
 def _write_update_journal(
@@ -46,7 +62,7 @@ def _write_update_journal(
     if journal_manager is None:
         return
     try:
-        journal_manager.write_update_log(  # type: ignore[union-attr]
+        journal_manager.write_update_log(
             title=title,
             summary=summary,
             category=category,
@@ -128,22 +144,28 @@ async def reload_config(
     # Store updated config
     request.app.state.config = new_config
 
-    logger.info("config_reloaded", extra={
-        "routing_aliases": len(new_config.routing.aliases),
-        "memory_threshold": new_config.memory.max_memory_percent,
-        "log_level": new_config.logging.level,
-    })
-
-    # Publish config_reloaded event
-    from opta_lmx.monitoring.events import ServerEvent
-    await event_bus.publish(ServerEvent(
-        event_type="config_reloaded",
-        data={
+    logger.info(
+        "config_reloaded",
+        extra={
             "routing_aliases": len(new_config.routing.aliases),
             "memory_threshold": new_config.memory.max_memory_percent,
             "log_level": new_config.logging.level,
         },
-    ))
+    )
+
+    # Publish config_reloaded event
+    from opta_lmx.monitoring.events import ServerEvent
+
+    await event_bus.publish(
+        ServerEvent(
+            event_type="config_reloaded",
+            data={
+                "routing_aliases": len(new_config.routing.aliases),
+                "memory_threshold": new_config.memory.max_memory_percent,
+                "log_level": new_config.logging.level,
+            },
+        )
+    )
 
     # Reload presets and merge routing aliases
     if new_config.presets.enabled:
@@ -193,7 +215,9 @@ async def reload_config(
         ],
     )
 
-    return JSONResponse(content={
-        "success": True,
-        "updated": ["routing", "memory", "security", "logging", "presets"],
-    })
+    return JSONResponse(
+        content={
+            "success": True,
+            "updated": ["routing", "memory", "security", "logging", "presets"],
+        }
+    )

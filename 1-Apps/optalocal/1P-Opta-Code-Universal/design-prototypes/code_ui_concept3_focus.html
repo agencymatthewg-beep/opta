@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Concept 3: Focus Flow</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --void: #09090b;
+            --surface: #0c0c12;
+            --violet: #a855f7;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--void);
+            color: #fff;
+            font-family: 'Sora', sans-serif;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle at 50% 100%, rgba(168, 85, 247, 0.1) 0%, var(--void) 50%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            height: 90vh;
+        }
+
+        .header {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.4);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            gap: 2rem;
+        }
+
+        .timeline {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            padding: 2rem 0;
+            gap: 2rem;
+        }
+
+        .bubble {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--surface);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .content {
+            flex: 1;
+            padding-top: 0.5rem;
+            line-height: 1.6;
+        }
+
+        .composer-wrap {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .composer-wrap:focus-within {
+            border-color: var(--violet);
+            box-shadow: 0 0 20px rgba(168, 85, 247, 0.2);
+        }
+
+        textarea {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'Sora', sans-serif;
+            font-size: 1.1rem;
+            outline: none;
+            resize: none;
+            min-height: 60px;
+        }
+
+        .composer-tools {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        .pill {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .pill:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <span>PRESS CMD+K TO OPEN PALETTE</span>
+            <span>•</span>
+            <span style="color:var(--violet)">DAEMON LIVE</span>
+        </div>
+        <div class="timeline">
+            <div class="bubble">
+                <div class="avatar">
+                    <svg width="20" height="20" viewBox="0 0 48 48" fill="none"
+                        style="filter: drop-shadow(0 0 6px rgba(168,85,247,0.5))">
+                        <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                        <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                    </svg>
+                </div>
+                <div class="content">
+                    <h4 style="margin:0 0 0.5rem 0; color:rgba(255,255,255,0.6); font-weight:500;">Opta AI</h4>
+                    <div>I have analyzed the current App.tsx structure. What specific component would you like to
+                        optimize next?</div>
+                </div>
+            </div>
+        </div>
+        <div class="composer-wrap">
+            <textarea placeholder="Tell Opta what to build..."></textarea>
+            <div class="composer-tools">
+                <div style="display:flex; gap: 0.5rem;">
+                    <div class="pill"><i data-lucide="paperclip" size="14"></i> Attach</div>
+                    <div class="pill"><i data-lucide="terminal-square" size="14"></i> Do Mode</div>
+                </div>
+                <div class="pill" style="background: var(--violet); color: #fff;"><i data-lucide="arrow-up"
+                        size="14"></i> Run</div>
+            </div>
+        </div>
+    </div>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

@@ -18,14 +18,23 @@ def _make_fixture_result(model_id: str, tmp_path: Path) -> Path:
         "lmx_version": "0.1.0",
         "prompt_preview": "Write a detailed explanation of how transformer...",
         "stats": {
-            "ttft_p50_sec": 1.71, "ttft_p95_sec": 1.84, "ttft_mean_sec": 1.74,
-            "toks_per_sec_p50": 23.4, "toks_per_sec_p95": 22.9, "toks_per_sec_mean": 23.1,
-            "prompt_tokens": 30, "output_tokens": 200, "runs_completed": 5,
+            "ttft_p50_sec": 1.71,
+            "ttft_p95_sec": 1.84,
+            "ttft_mean_sec": 1.74,
+            "toks_per_sec_p50": 23.4,
+            "toks_per_sec_p95": 22.9,
+            "toks_per_sec_mean": 23.1,
+            "prompt_tokens": 30,
+            "output_tokens": 200,
+            "runs_completed": 5,
             "warmup_runs_discarded": 1,
             "output_text": "Transformers are a type of neural network architecture...",
-            "output_token_count": 200, "completed_naturally": True,
-            "repetition_ratio": 0.02, "coherence_flag": "ok",
-            "tool_call": None, "skills": [],
+            "output_token_count": 200,
+            "completed_naturally": True,
+            "repetition_ratio": 0.02,
+            "coherence_flag": "ok",
+            "tool_call": None,
+            "skills": [],
         },
     }
     slugged = model_id.replace("/", "_")
@@ -41,11 +50,17 @@ def test_report_generates_valid_html(tmp_path: Path) -> None:
 
     output_path = tmp_path / "report.html"
     result = subprocess.run(
-        [sys.executable, "scripts/benchmark-report.py",
-         "--results-dir", str(results_dir),
-         "--output", str(output_path),
-         "--no-open"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            "scripts/benchmark-report.py",
+            "--results-dir",
+            str(results_dir),
+            "--output",
+            str(output_path),
+            "--no-open",
+        ],
+        capture_output=True,
+        text=True,
         cwd=str(Path(__file__).parent.parent),
     )
     assert result.returncode == 0, result.stderr
@@ -62,7 +77,8 @@ def test_report_shows_reference_data(tmp_path: Path) -> None:
     _make_fixture_result("mlx-community/Qwen2.5-72B-4bit", results_dir)
 
     ref_path = tmp_path / "published.yaml"
-    ref_path.write_text("""
+    ref_path.write_text(
+        """
 mlx-community/Qwen2.5-72B-4bit:
   lm_studio:
     toks_per_sec: 18.2
@@ -74,16 +90,25 @@ mlx-community/Qwen2.5-72B-4bit:
     ttft_sec: 2.3
     source: "ollama-benchmarks"
     hardware: "M3 Ultra 512GB"
-""", encoding="utf-8")
+""",
+        encoding="utf-8",
+    )
 
     output_path = tmp_path / "report.html"
     subprocess.run(
-        [sys.executable, "scripts/benchmark-report.py",
-         "--results-dir", str(results_dir),
-         "--reference", str(ref_path),
-         "--output", str(output_path),
-         "--no-open"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            "scripts/benchmark-report.py",
+            "--results-dir",
+            str(results_dir),
+            "--reference",
+            str(ref_path),
+            "--output",
+            str(output_path),
+            "--no-open",
+        ],
+        capture_output=True,
+        text=True,
         cwd=str(Path(__file__).parent.parent),
     )
     content = output_path.read_text(encoding="utf-8")
@@ -98,11 +123,17 @@ def test_report_handles_missing_reference_gracefully(tmp_path: Path) -> None:
 
     output_path = tmp_path / "report.html"
     result = subprocess.run(
-        [sys.executable, "scripts/benchmark-report.py",
-         "--results-dir", str(results_dir),
-         "--output", str(output_path),
-         "--no-open"],
-        capture_output=True, text=True,
+        [
+            sys.executable,
+            "scripts/benchmark-report.py",
+            "--results-dir",
+            str(results_dir),
+            "--output",
+            str(output_path),
+            "--no-open",
+        ],
+        capture_output=True,
+        text=True,
         cwd=str(Path(__file__).parent.parent),
     )
     assert result.returncode == 0

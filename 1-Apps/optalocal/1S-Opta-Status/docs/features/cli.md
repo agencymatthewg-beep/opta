@@ -19,8 +19,6 @@
 - [x] Slash command palette
 - [x] Trigger mode detection (plan/review/research words)
 - [x] TUI skill runtime with dynamic loading
-- [ ] Multi-pane split view
-- [ ] Inline diff viewer for edits
 
 ## Daemon
 - [x] Background HTTP daemon (`opta daemon start/stop/status`)
@@ -31,8 +29,8 @@
 - [x] Session management REST API
 - [x] Background job runner (`/v3/background/`)
 - [x] Operations registry (`/v3/operations/`)
-- [ ] Daemon metrics endpoint
-- [ ] Session replay API
+- [x] Daemon metrics endpoint
+- [x] Session replay API
 
 ## LMX Integration
 - [x] LMX client with auto-discovery
@@ -42,7 +40,7 @@
 - [x] `/lmx status` — health and active sessions
 - [x] Model aliases (q, f, l → quality/fast/local)
 - [x] Rerank API integration
-- [ ] Embedding pipeline
+- [x] Embedding pipeline
 
 ## Browser Automation
 - [x] Playwright MCP integration
@@ -50,14 +48,14 @@
 - [x] Policy engine (approval gating)
 - [x] Quality gates for regression detection
 - [x] Visual diff manifests
-- [ ] Headless CI mode for browser tests
+- [x] Headless CI mode for browser tests
 
 ## LSP Integration
 - [x] LSP client (go-to-definition, references, hover)
 - [x] Language server manager (start/stop per-project)
 - [x] Protocol implementation (TypeScript, Python, Rust, Go)
-- [ ] Diagnostics in TUI
-- [ ] Code actions via LSP
+- [x] Diagnostics in TUI
+- [x] Code actions via LSP
 
 ## Security & Config
 - [x] Platform abstraction (macOS/Windows/Linux)
@@ -67,10 +65,10 @@
 - [x] Per-tool permission model (allow/ask/deny)
 - [x] Autonomy level enforcement (1-5)
 - [x] Circuit breaker (warn/pause/hard-stop)
-- [ ] Policy runtime enforcement endpoint
+- [x] Policy runtime enforcement endpoint
 
 ## MCP
 - [x] MCP client (stdio + HTTP transports)
 - [x] MCP server registry
 - [x] Dynamic tool registration
-- [ ] MCP server health monitoring
+- [x] MCP server health monitoring

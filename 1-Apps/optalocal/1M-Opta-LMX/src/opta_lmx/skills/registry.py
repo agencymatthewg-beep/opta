@@ -148,9 +148,7 @@ class SkillsRegistry:
             return None
 
         candidates = [
-            manifest
-            for manifest in self._manifests.values()
-            if manifest.name == manifest_name
+            manifest for manifest in self._manifests.values() if manifest.name == manifest_name
         ]
         if namespace is not None:
             candidates = [manifest for manifest in candidates if manifest.namespace == namespace]

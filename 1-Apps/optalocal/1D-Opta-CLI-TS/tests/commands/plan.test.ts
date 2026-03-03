@@ -10,6 +10,7 @@ describe('plan mode tool filtering', () => {
     'browser_snapshot', 'browser_screenshot',
     'bg_status', 'bg_output',
     'lsp_definition', 'lsp_references', 'lsp_hover', 'lsp_symbols', 'lsp_document_symbols',
+    'lsp_diagnostics', 'lsp_code_actions',
   ]);
 
   const WRITE_TOOLS = new Set([

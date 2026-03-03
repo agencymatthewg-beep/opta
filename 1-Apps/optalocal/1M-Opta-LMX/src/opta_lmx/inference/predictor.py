@@ -110,7 +110,5 @@ class UsagePredictor:
             "unique_models": len(self._access_counts),
             "history_size": len(self._history),
             "top_models": self.get_hot_models(5),
-            "transition_count": sum(
-                sum(c.values()) for c in self._transitions.values()
-            ),
+            "transition_count": sum(sum(c.values()) for c in self._transitions.values()),
         }

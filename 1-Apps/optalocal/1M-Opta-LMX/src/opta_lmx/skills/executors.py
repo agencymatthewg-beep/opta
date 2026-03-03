@@ -76,7 +76,7 @@ class SkillExecutor:
         self._otel_tracer: Any | None = None
         if otel_enabled:
             try:
-                from opentelemetry import trace  # type: ignore[import-not-found]
+                from opentelemetry import trace
 
                 self._otel_tracer = trace.get_tracer(f"{otel_service_name}.skills")
             except Exception:

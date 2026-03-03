@@ -11,7 +11,7 @@ import json
 import logging
 import secrets
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import Any
 
 from fastapi import APIRouter, Depends
@@ -101,8 +101,7 @@ def _anthropic_to_openai(request: AnthropicRequest) -> tuple[list[ChatMessage], 
         else:
             # Extract text from content blocks
             text_parts = [
-                block.get("text", "") for block in msg.content
-                if block.get("type") == "text"
+                block.get("text", "") for block in msg.content if block.get("type") == "text"
             ]
             content = "\n".join(text_parts)
         messages.append(ChatMessage(role=msg.role, content=content))
@@ -210,14 +209,16 @@ async def _anthropic_sse_stream(
         error_occurred = True
         raise
     finally:
-        metrics.record(RequestMetric(
-            model_id=model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=input_tokens,
-            completion_tokens=output_tokens,
-            stream=True,
-            error=error_occurred,
-        ))
+        metrics.record(
+            RequestMetric(
+                model_id=model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=input_tokens,
+                completion_tokens=output_tokens,
+                stream=True,
+                error=error_occurred,
+            )
+        )
 
     # content_block_stop
     stop_event = {"type": "content_block_stop", "index": 0}
@@ -255,7 +256,7 @@ async def anthropic_messages(
 
     # Resolve preset (e.g. "preset:code-assistant")
     if model.startswith(PRESET_PREFIX):
-        preset_name = model[len(PRESET_PREFIX):]
+        preset_name = model[len(PRESET_PREFIX) :]
         preset = preset_mgr.get(preset_name)
         if preset is None:
             return _anthropic_error(404, f"Preset '{preset_name}' not found", "not_found_error")
@@ -282,14 +283,23 @@ async def anthropic_messages(
     start_time = time.monotonic()
 
     # Approximate input tokens
-    def _extract_text(content: str | list[dict[str, Any]] | None) -> str:
+    def _extract_text(content: str | Sequence[object] | None) -> str:
         if isinstance(content, str):
             return content
-        if isinstance(content, list):
-            return " ".join(
-                block.get("text", "") if isinstance(block, dict) else str(block)
-                for block in content
-            )
+        if isinstance(content, Sequence):
+            parts: list[str] = []
+            for block in content:
+                if isinstance(block, dict):
+                    if block.get("type") == "text":
+                        text = block.get("text")
+                        if isinstance(text, str):
+                            parts.append(text)
+                    continue
+                block_type = getattr(block, "type", None)
+                block_text = getattr(block, "text", None)
+                if block_type == "text" and isinstance(block_text, str):
+                    parts.append(block_text)
+            return " ".join(parts)
         return ""
 
     prompt_text = " ".join(_extract_text(m.content) for m in messages)
@@ -321,13 +331,15 @@ async def anthropic_messages(
                 messages=messages,
                 **kwargs,
             )
-            metrics.record(RequestMetric(
-                model_id=model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=response.usage.prompt_tokens,
-                completion_tokens=response.usage.completion_tokens,
-                stream=False,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=response.usage.prompt_tokens,
+                    completion_tokens=response.usage.completion_tokens,
+                    stream=False,
+                )
+            )
 
             content = response.choices[0].message.content or ""
             finish = response.choices[0].finish_reason
@@ -344,10 +356,14 @@ async def anthropic_messages(
             return JSONResponse(content=result.model_dump())
         except Exception as e:
             logger.error("anthropic_completion_error", extra={"model": model, "error": str(e)})
-            metrics.record(RequestMetric(
-                model_id=model,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=0, completion_tokens=0,
-                stream=False, error=True,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=model,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=0,
+                    completion_tokens=0,
+                    stream=False,
+                    error=True,
+                )
+            )
             return _anthropic_error(500, str(e), "api_error")

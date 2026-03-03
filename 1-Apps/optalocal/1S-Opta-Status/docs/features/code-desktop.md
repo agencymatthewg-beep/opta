@@ -53,9 +53,9 @@ Opta Code Desktop (`1P-Opta-Code-Universal`) is a native-feeling desktop client 
 
 ## Packaging & Distribution
 
-- [ ] Electron/Tauri wrapper — native desktop app packaging
+- [x] Electron/Tauri wrapper — native desktop app packaging
 - [ ] Auto-update — in-app update mechanism
-- [ ] macOS DMG — distributable installer
+- [x] macOS DMG — distributable installer
 - [ ] Code signing — Apple Developer ID signing
 
 ## Recent Updates

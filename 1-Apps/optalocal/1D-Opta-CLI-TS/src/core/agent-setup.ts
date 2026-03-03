@@ -232,7 +232,8 @@ export async function compactHistory(
   messages: AgentMessage[],
   client: OpenAI,
   model: string,
-  contextLimit: number
+  contextLimit: number,
+  signal?: AbortSignal
 ): Promise<AgentMessage[]> {
   const systemPrompt = messages[0]!;
   const recentCount = Math.max(
@@ -270,7 +271,7 @@ export async function compactHistory(
         { role: 'user', content: middleText },
       ],
       max_tokens: summaryBudget,
-    });
+    }, { signal });
 
     const summary = response.choices[0]?.message?.content ?? '';
     debug(`Compacted to ${summary.length} chars (budget: ${summaryBudget} tokens)`);

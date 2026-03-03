@@ -53,7 +53,8 @@ class FakeEngine:
         return model_id in self._loaded_models
 
     def get_model_load_snapshot(
-        self, model_ids: list[str] | None = None,
+        self,
+        model_ids: list[str] | None = None,
     ) -> dict[str, float]:
         return {m: 1.0 for m in self._loaded_models}
 
@@ -93,7 +94,7 @@ def _extract_role(messages: list[ChatMessage]) -> str:
         prefix = "You are acting as the "
         suffix = " agent."
         if content.startswith(prefix) and content.endswith(suffix):
-            return content[len(prefix):-len(suffix)]
+            return content[len(prefix) : -len(suffix)]
     return "assistant"
 
 
@@ -179,7 +180,10 @@ async def test_engine_timeout_fails_step_and_run(tmp_path: Path) -> None:
 
     class TimeoutEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             raise TimeoutError("inference timed out")
 
@@ -187,11 +191,13 @@ async def test_engine_timeout_fails_step_and_run(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="trigger timeout",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="trigger timeout",
+                roles=["planner"],
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -210,7 +216,10 @@ async def test_engine_error_fails_step_and_run(tmp_path: Path) -> None:
 
     class OOMEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             raise RuntimeError("GPU OOM")
 
@@ -218,11 +227,13 @@ async def test_engine_error_fails_step_and_run(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="trigger OOM",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="trigger OOM",
+                roles=["planner"],
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -258,7 +269,10 @@ async def test_model_unavailable_at_execution_time(tmp_path: Path) -> None:
             return super().is_model_loaded(model_id)
 
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             # Models vanish the moment execution starts; runtime calls
             # _resolve_model_for_requested -> get_loaded_model_ids first.
@@ -269,11 +283,13 @@ async def test_model_unavailable_at_execution_time(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="test vanish",
-            roles=["alpha", "beta"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="test vanish",
+                roles=["alpha", "beta"],
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -296,7 +312,10 @@ async def test_retry_exhaustion_fails_run(tmp_path: Path) -> None:
             self.attempt_count = 0
 
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             self.attempt_count += 1
             raise RuntimeError("Server is busy")
@@ -310,11 +329,13 @@ async def test_retry_exhaustion_fails_run(tmp_path: Path) -> None:
     )
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="always busy",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="always busy",
+                roles=["planner"],
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -339,7 +360,10 @@ async def test_retry_succeeds_after_transient_failure(tmp_path: Path) -> None:
             self.failures_remaining = 1
 
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             if self.failures_remaining > 0:
                 self.failures_remaining -= 1
@@ -355,11 +379,13 @@ async def test_retry_succeeds_after_transient_failure(tmp_path: Path) -> None:
     )
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="flaky test",
-            roles=["planner"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="flaky test",
+                roles=["planner"],
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -378,7 +404,10 @@ async def test_run_timeout_enforcement(tmp_path: Path) -> None:
 
     class SlowEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             await asyncio.sleep(2.0)
             return await super().generate(model_id, messages, **kw)
@@ -387,12 +416,14 @@ async def test_run_timeout_enforcement(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="slow request",
-            roles=["planner"],
-            timeout_sec=0.1,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="slow request",
+                roles=["planner"],
+                timeout_sec=0.1,
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -415,11 +446,13 @@ async def test_max_steps_per_run_enforced(tmp_path: Path) -> None:
     try:
         raised = False
         try:
-            await runtime.submit(AgentRequest(
-                strategy=ExecutionStrategy.HANDOFF,
-                prompt="too many roles",
-                roles=[f"role-{i}" for i in range(10)],
-            ))
+            await runtime.submit(
+                AgentRequest(
+                    strategy=ExecutionStrategy.HANDOFF,
+                    prompt="too many roles",
+                    roles=[f"role-{i}" for i in range(10)],
+                )
+            )
         except ValueError as exc:
             raised = True
             assert "10" in str(exc)
@@ -441,7 +474,10 @@ async def test_concurrent_runs_mixed_success_failure(tmp_path: Path) -> None:
 
     class MixedEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             role = _extract_role(messages)
             if role in fail_roles:
@@ -455,19 +491,23 @@ async def test_concurrent_runs_mixed_success_failure(tmp_path: Path) -> None:
         run_ids: list[str] = []
         # Submit 3 succeeding runs
         for i in range(3):
-            sub = await runtime.submit(AgentRequest(
-                strategy=ExecutionStrategy.HANDOFF,
-                prompt=f"ok-{i}",
-                roles=[f"ok-role-{i}"],
-            ))
+            sub = await runtime.submit(
+                AgentRequest(
+                    strategy=ExecutionStrategy.HANDOFF,
+                    prompt=f"ok-{i}",
+                    roles=[f"ok-role-{i}"],
+                )
+            )
             run_ids.append(sub.id)
         # Submit 2 failing runs
         for i in range(2):
-            sub = await runtime.submit(AgentRequest(
-                strategy=ExecutionStrategy.HANDOFF,
-                prompt=f"fail-{i}",
-                roles=[f"fail-role-{i}"],
-            ))
+            sub = await runtime.submit(
+                AgentRequest(
+                    strategy=ExecutionStrategy.HANDOFF,
+                    prompt=f"fail-{i}",
+                    roles=[f"fail-role-{i}"],
+                )
+            )
             run_ids.append(sub.id)
 
         # Wait for all to terminate
@@ -493,7 +533,10 @@ async def test_parallel_map_partial_failure_cancels_siblings(tmp_path: Path) -> 
 
     class PartialFailEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             role = _extract_role(messages)
             if role == "bad":
@@ -506,12 +549,14 @@ async def test_parallel_map_partial_failure_cancels_siblings(tmp_path: Path) -> 
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.PARALLEL_MAP,
-            prompt="parallel fault",
-            roles=["good-1", "good-2", "bad"],
-            max_parallelism=4,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.PARALLEL_MAP,
+                prompt="parallel fault",
+                roles=["good-1", "good-2", "bad"],
+                max_parallelism=4,
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -602,7 +647,10 @@ async def test_budget_exhaustion_mid_handoff(tmp_path: Path) -> None:
 
     class HighTokenEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             role = _extract_role(messages)
             self.calls.append(role)
@@ -612,12 +660,14 @@ async def test_budget_exhaustion_mid_handoff(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="budget test",
-            roles=["alpha", "beta", "gamma"],
-            token_budget=25,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="budget test",
+                roles=["alpha", "beta", "gamma"],
+                token_budget=25,
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -646,7 +696,10 @@ async def test_cancelled_run_stops_executing_steps(tmp_path: Path) -> None:
 
     class SlowHandoffEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             role = _extract_role(messages)
             self.calls.append(role)
@@ -659,11 +712,13 @@ async def test_cancelled_run_stops_executing_steps(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine, workers=1)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.HANDOFF,
-            prompt="cancel me",
-            roles=["alpha", "beta", "gamma"],
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.HANDOFF,
+                prompt="cancel me",
+                roles=["alpha", "beta", "gamma"],
+            )
+        )
         # Wait until the first step begins executing
         await asyncio.wait_for(step_started.wait(), timeout=2.0)
         # Now cancel
@@ -695,7 +750,10 @@ async def test_guardrail_max_parallelism_respected(tmp_path: Path) -> None:
 
     class TimingEngine(FakeEngine):
         async def generate(
-            self, model_id: str, messages: list[ChatMessage], **kw: object,
+            self,
+            model_id: str,
+            messages: list[ChatMessage],
+            **kw: object,
         ) -> ChatCompletionResponse:
             start = time.monotonic()
             await asyncio.sleep(0.05)  # 50ms per step
@@ -708,12 +766,14 @@ async def test_guardrail_max_parallelism_respected(tmp_path: Path) -> None:
     runtime = _make_runtime(tmp_path, engine=engine)
     await runtime.start()
     try:
-        submitted = await runtime.submit(AgentRequest(
-            strategy=ExecutionStrategy.PARALLEL_MAP,
-            prompt="parallelism test",
-            roles=["r0", "r1", "r2", "r3", "r4"],
-            max_parallelism=1,
-        ))
+        submitted = await runtime.submit(
+            AgentRequest(
+                strategy=ExecutionStrategy.PARALLEL_MAP,
+                prompt="parallelism test",
+                roles=["r0", "r1", "r2", "r3", "r4"],
+                max_parallelism=1,
+            )
+        )
         run = await _wait_terminal(runtime, submitted.id)
     finally:
         await runtime.stop()
@@ -728,6 +788,6 @@ async def test_guardrail_max_parallelism_respected(tmp_path: Path) -> None:
         prev_end = sorted_intervals[i - 1][1]
         curr_start = sorted_intervals[i][0]
         assert curr_start >= prev_end - 0.001, (
-            f"Step {i} started at {curr_start:.4f} before step {i-1} ended at {prev_end:.4f} "
+            f"Step {i} started at {curr_start:.4f} before step {i - 1} ended at {prev_end:.4f} "
             f"-- max_parallelism=1 violated"
         )

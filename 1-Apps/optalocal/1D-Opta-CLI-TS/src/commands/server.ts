@@ -1,7 +1,6 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
-import { EXIT, ExitError } from '../core/errors.js';
-import { NO_MODEL_ERROR } from '../utils/errors.js';
+import { ensureModel } from '../core/errors.js';
 import { VERSION } from '../core/version.js';
 import { runDaemon } from '../daemon/main.js';
 
@@ -74,13 +73,7 @@ export async function startServer(opts: ServerOptions): Promise<void> {
   }
   const config = await loadConfig(overrides);
 
-  if (!config.model.default) {
-    console.error(
-      chalk.red('✗') + ' ' + NO_MODEL_ERROR + '\n\n' +
-      chalk.dim('Run ') + chalk.cyan('opta status') + chalk.dim(' to check your LMX connection')
-    );
-    throw new ExitError(EXIT.NO_CONNECTION);
-  }
+  ensureModel(config.model.default);
 
   const host = opts.host ?? '127.0.0.1';
   const port = opts.port ?? 3456;

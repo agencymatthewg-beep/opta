@@ -10,10 +10,10 @@ import logging
 import os
 import socket
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Mapping
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Any, cast
+from typing import IO, Any, Literal, cast
 
 import uvicorn
 from fastapi import FastAPI
@@ -66,6 +66,37 @@ from opta_lmx.skills.registry import SkillsRegistry
 
 logger = logging.getLogger(__name__)
 _RUNTIME_STATE_SNAPSHOT_INTERVAL_SEC = 10.0
+_lock_fd: IO[str] | None = None
+
+
+class _AgentsTaskRouterAdapter:
+    """Adapter that exposes TaskRouter with AgentsRuntime's protocol shape."""
+
+    def __init__(self, router: TaskRouter) -> None:
+        self._router = router
+
+    def resolve(
+        self,
+        model_id: str,
+        loaded_model_ids: list[str],
+        *,
+        client_id: str | None = None,
+        model_load_snapshot: Mapping[str, float | int] | None = None,
+    ) -> str:
+        # Current TaskRouter does not use client affinity, but runtime may pass it.
+        del client_id
+        snapshot: dict[str, float] | None = None
+        if model_load_snapshot is not None:
+            snapshot = {
+                key: float(value)
+                for key, value in model_load_snapshot.items()
+                if isinstance(value, (int, float))
+            }
+        return self._router.resolve(
+            model_id,
+            loaded_model_ids,
+            model_load_snapshot=snapshot,
+        )
 
 
 def _expand_skill_directories(paths: list[Path | str]) -> list[Path]:
@@ -127,20 +158,19 @@ def _configure_hf_cache_environment(config: LMXConfig) -> None:
         os.environ["HF_HOME"] = hf_home
 
 
-
-
 def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
     """Block local LMX hosting on Opta48 unless explicitly overridden."""
     host = socket.gethostname().lower()
-    if host != 'opta48':
+    if host != "opta48":
         return
-    if os.environ.get('OPTA48_ALLOW_LOCAL_MODELS') == '1':
-        logger.warning('opta48_local_model_policy_override_enabled')
+    if os.environ.get("OPTA48_ALLOW_LOCAL_MODELS") == "1":
+        logger.warning("opta48_local_model_policy_override_enabled")
         return
     raise RuntimeError(
-        'Opta48 policy violation: local LMX hosting is disabled on this machine. '
-        'Use Mono512 as inference host. To override intentionally, set OPTA48_ALLOW_LOCAL_MODELS=1.'
+        "Opta48 policy violation: local LMX hosting is disabled on this machine. "
+        "Use Mono512 as inference host. To override intentionally, set OPTA48_ALLOW_LOCAL_MODELS=1."
     )
+
 
 def _build_supabase_jwt_verifier(config: LMXConfig) -> SupabaseJWTVerifier | None:
     """Build a Supabase JWT verifier instance from config, if enabled."""
@@ -213,7 +243,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         mx.metal.set_memory_limit(metal_limit)
 
         if config.models.metal_cache_limit_gb is not None:
-            cache_bytes = int(config.models.metal_cache_limit_gb * (1024 ** 3))
+            cache_bytes = int(config.models.metal_cache_limit_gb * (1024**3))
             mx.metal.set_cache_limit(cache_bytes)
 
         logger.info("metal_limits_set")
@@ -336,8 +366,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         if load_result.errors:
             if getattr(config.skills, "strict_validation", False):
                 raise RuntimeError(
-                    "Skill manifest validation failed: "
-                    + "; ".join(load_result.error_messages())
+                    "Skill manifest validation failed: " + "; ".join(load_result.error_messages())
                 )
             for error in load_result.errors:
                 logger.warning("skills_manifest_invalid", extra={"path": error.path})
@@ -366,11 +395,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             config.workers.skill_queue_persist_path,
             Path.home() / ".opta-lmx" / "skills-queue.db",
         )
+        skill_queue_backend = cast(
+            Literal["memory", "sqlite"],
+            config.workers.skill_queue_backend,
+        )
         queued_dispatcher = QueuedSkillDispatcher(
             executor=skill_executor,
             worker_count=config.workers.max_concurrent_skill_calls,
             max_queue_size=config.workers.skill_queue_max_size,
-            backend=config.workers.skill_queue_backend,
+            backend=skill_queue_backend,
             persist_path=skills_queue_path,
         )
         await queued_dispatcher.start()
@@ -387,7 +420,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     scheduler = RunScheduler(
         max_queue_size=config.agents.queue_max_size,
         worker_count=config.agents.max_parallel_agents,
-        backend=config.agents.queue_backend,
+        backend=cast(Literal["memory", "sqlite"], config.agents.queue_backend),
         persist_path=_resolve_path(
             config.agents.queue_persist_path,
             Path.home() / ".opta-lmx" / "agents-queue.db",
@@ -395,7 +428,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     agent_runtime = AgentsRuntime(
         engine=engine,
-        router=task_router,
+        router=_AgentsTaskRouterAdapter(task_router),
         state_store=AgentsStateStore(path=state_store_path),
         scheduler=scheduler,
         tracer=runtime_tracer,
@@ -408,6 +441,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await agent_runtime.start()
 
     from opta_lmx.monitoring.benchmark import BenchmarkResultStore
+
     app.state.benchmark_store = BenchmarkResultStore()
 
     app.state.engine = engine
@@ -424,7 +458,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     app.state.preset_manager = preset_manager
     app.state.event_bus = event_bus
     app.state.journal_manager = journal_manager
-    app.state.pending_downloads: dict[str, dict[str, Any]] = {}
+    pending_downloads: dict[str, dict[str, Any]] = {}
+    app.state.pending_downloads = pending_downloads
     app.state.start_time = time.time()
     app.state.admin_key = config.security.admin_key
     app.state.inference_api_key = config.security.inference_api_key
@@ -454,9 +489,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             if event.event_type == "model_loaded":
                 model_id = event.data.get("model_id")
                 duration = event.data.get("duration_sec")
-                if isinstance(model_id, str) and model_id and isinstance(
-                    duration, (int, float)
-                ):
+                if isinstance(model_id, str) and model_id and isinstance(duration, (int, float)):
                     with contextlib.suppress(TypeError, ValueError):
                         metrics.record_model_load(model_id, float(duration))
             elif event.event_type == "model_unloaded":
@@ -468,7 +501,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                     and isinstance(reason, str)
                     and reason in {"lru", "ttl"}
                 ):
-                    metrics.record_model_eviction(model_id)
+                    record_model_eviction = getattr(metrics, "record_model_eviction", None)
+                    if callable(record_model_eviction):
+                        record_model_eviction(model_id)
 
     metrics_event_task = asyncio.create_task(
         _metrics_event_bridge_loop(),
@@ -534,9 +569,11 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if safe_mode:
         logger.warning("auto_load_skipped_safe_mode")
     else:
-        auto_load_ids = list(dict.fromkeys(
-            restore_model_ids + config.models.auto_load + preset_manager.get_auto_load_models()
-        ))
+        auto_load_ids = list(
+            dict.fromkeys(
+                restore_model_ids + config.models.auto_load + preset_manager.get_auto_load_models()
+            )
+        )
         for model_id in auto_load_ids:
             try:
                 perf = preset_manager.find_performance_for_model(model_id)
@@ -585,6 +622,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
     prefetch_task: asyncio.Task[None] | None = None
     if config.models.warm_pool_enabled:
+
         async def _prefetch_loop() -> None:
             while True:
                 await asyncio.sleep(config.models.prefetch_interval_sec)
@@ -615,15 +653,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     if config.memory.metal_cache_maintenance and config.models.metal_cache_limit_gb is not None:
         from opta_lmx.maintenance.metal import metal_cache_maintenance_loop
 
-        metal_task = asyncio.create_task(metal_cache_maintenance_loop(
-            cache_limit_gb=config.models.metal_cache_limit_gb,
-            interval_sec=config.memory.metal_cache_check_interval_sec,
-        ))
+        metal_task = asyncio.create_task(
+            metal_cache_maintenance_loop(
+                cache_limit_gb=config.models.metal_cache_limit_gb,
+                interval_sec=config.memory.metal_cache_check_interval_sec,
+            )
+        )
         logger.info("metal_cache_maintenance_started")
 
     # Start TTL eviction background task if enabled
     ttl_task: asyncio.Task[None] | None = None
     if config.memory.ttl_enabled:
+
         async def _ttl_loop() -> None:
             while True:
                 await asyncio.sleep(config.memory.ttl_check_interval_sec)
@@ -770,7 +811,8 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
     from opta_lmx.api.load_shedding import LoadSheddingMiddleware
 
     app.add_middleware(
-        LoadSheddingMiddleware, threshold_percent=config.memory.load_shedding_percent,
+        LoadSheddingMiddleware,
+        threshold_percent=config.memory.load_shedding_percent,
     )
 
     # Rate limiting on inference endpoints (opt-in via config)
@@ -784,7 +826,8 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
             limiter.enabled = True
             app.state.limiter = limiter
             app.add_exception_handler(
-                RateLimitExceeded, cast(Any, _rate_limit_exceeded_handler),
+                RateLimitExceeded,
+                cast(Any, _rate_limit_exceeded_handler),
             )
         else:
             logger.warning(
@@ -793,7 +836,7 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
     # OpenTelemetry spans — wraps each request in a trace span (opt-in)
     app.add_middleware(
-        OpenTelemetryMiddleware,
+        cast(Any, OpenTelemetryMiddleware),
         enabled=config.observability.opentelemetry_enabled,
         service_name=config.observability.service_name,
     )
@@ -846,20 +889,32 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
 
 def cli() -> None:
     """CLI entry point: parse args, load config, start uvicorn."""
-    import sys
     import os
     import subprocess
+    import sys
+
     from opta_lmx.manager.quantize import SUPPORTED_QUANT_BITS, SUPPORTED_QUANT_MODES
+
+    def _stdout(message: str) -> None:
+        sys.stdout.write(f"{message}\n")
+
+    def _stderr(message: str) -> None:
+        sys.stderr.write(f"{message}\n")
 
     parser = argparse.ArgumentParser(
         prog="opta-lmx",
         description="Opta-LMX — Private AI inference engine for Apple Silicon",
     )
     subparsers = parser.add_subparsers(dest="command")
-    
+
     # Quantize Subcommand
-    quantize_parser = subparsers.add_parser("quantize", help="Quantize a HuggingFace model for MLX")
-    quantize_parser.add_argument("--model", type=str, required=True, help="HF repo ID or local path")
+    quantize_parser = subparsers.add_parser(
+        "quantize",
+        help="Quantize a HuggingFace model for MLX",
+    )
+    quantize_parser.add_argument(
+        "--model", type=str, required=True, help="HF repo ID or local path"
+    )
     quantize_parser.add_argument("--output", type=str, default=None, help="Output directory path")
     quantize_parser.add_argument(
         "--bits",
@@ -881,7 +936,7 @@ def cli() -> None:
         choices=list(SUPPORTED_QUANT_MODES),
         help="Quantization mode",
     )
-    
+
     # Global args for default serve behavior
     parser.add_argument(
         "--config",
@@ -908,9 +963,9 @@ def cli() -> None:
         choices=["DEBUG", "INFO", "WARNING", "ERROR"],
         help="Override log level",
     )
-    
+
     args = parser.parse_args()
-    
+
     if args.command == "quantize":
         from opta_lmx.manager.quantize import _do_quantize, validate_quantize_settings
 
@@ -921,7 +976,7 @@ def cli() -> None:
                 mode=args.mode,
             )
         except ValueError as e:
-            print(f"Quantization failed: {e}", file=sys.stderr)
+            _stderr(f"Quantization failed: {e}")
             sys.exit(2)
 
         # Run it synchronously since it's a CLI tool
@@ -929,12 +984,14 @@ def cli() -> None:
         if not out_path:
             safe_name = args.model.replace("/", "--")
             out_path = str(Path.home() / ".opta-lmx" / "quantized" / f"{safe_name}-{bits}bit")
-        print(f"Starting quantization of {args.model} -> {out_path} ({bits}-bit)")
+        _stdout(f"Starting quantization of {args.model} -> {out_path} ({bits}-bit)")
         try:
             size = _do_quantize(args.model, out_path, bits, group_size, mode)
-            print(f"Quantization complete. Saved {size / 1024 / 1024 / 1024:.2f} GB to {out_path}")
+            _stdout(
+                f"Quantization complete. Saved {size / 1024 / 1024 / 1024:.2f} GB to {out_path}"
+            )
         except Exception as e:
-            print(f"Quantization failed: {e}", file=sys.stderr)
+            _stderr(f"Quantization failed: {e}")
             sys.exit(1)
         sys.exit(0)
 
@@ -950,15 +1007,16 @@ def cli() -> None:
     # Prevent duplicate processes on rapid launchd restarts via exclusive file lock
     try:
         import fcntl
+
         # Keep a reference to the file descriptor so it isn't garbage collected.
         # The OS releases the lock/FD automatically when the process exits.
         global _lock_fd
-        _lock_fd = open("/tmp/opta-lmx.lock", "w")
+        _lock_fd = open("/tmp/opta-lmx.lock", "w")  # noqa: SIM115
         fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except (IOError, BlockingIOError):
-        print(
-            "Opta-LMX is already running (lock file active). Exiting to allow graceful shutdown of previous instance.",
-            file=sys.stderr,
+    except OSError:
+        _stderr(
+            "Opta-LMX is already running (lock file active). "
+            "Exiting to allow graceful shutdown of previous instance."
         )
         sys.exit(1)
 

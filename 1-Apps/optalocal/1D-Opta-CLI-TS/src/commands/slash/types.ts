@@ -12,7 +12,7 @@ import type { Session } from '../../memory/store.js';
 import type { OptaConfig } from '../../core/config.js';
 import type { ChatState } from '../chat.js';
 
-export type SlashResult = 'handled' | 'exit' | 'model-switched';
+export type SlashResult = 'handled' | 'exit' | 'model-switched' | { type: 'generate', prompt: string };
 
 export interface SlashContext {
   session: Session;

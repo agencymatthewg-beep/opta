@@ -77,6 +77,7 @@ class TestFormatSSEStream:
     @pytest.mark.asyncio
     async def test_handles_mid_stream_error(self) -> None:
         """Mid-stream error emits error content then finishes cleanly."""
+
         async def _failing_stream():
             yield "ok"
             raise RuntimeError("boom")
@@ -167,9 +168,14 @@ class TestFormatSSEToolStream:
     async def test_tool_call_delta(self) -> None:
         """Tool call deltas emit delta.tool_calls in SSE."""
         stream = _async_chunks(
-            StreamChunk(tool_call_delta=ToolCallDelta(
-                index=0, id="call-1", name="get_weather", arguments_delta='{"loc',
-            )),
+            StreamChunk(
+                tool_call_delta=ToolCallDelta(
+                    index=0,
+                    id="call-1",
+                    name="get_weather",
+                    arguments_delta='{"loc',
+                )
+            ),
         )
         chunks = []
         async for line in format_sse_tool_stream(stream, "req-1", "m"):
@@ -186,9 +192,14 @@ class TestFormatSSEToolStream:
     async def test_finish_reason_tool_calls(self) -> None:
         """finish_reason is 'tool_calls' when tool calls are present."""
         stream = _async_chunks(
-            StreamChunk(tool_call_delta=ToolCallDelta(
-                index=0, id="call-1", name="fn", arguments_delta="{}",
-            )),
+            StreamChunk(
+                tool_call_delta=ToolCallDelta(
+                    index=0,
+                    id="call-1",
+                    name="fn",
+                    arguments_delta="{}",
+                )
+            ),
         )
         chunks = []
         async for line in format_sse_tool_stream(stream, "req-1", "m"):

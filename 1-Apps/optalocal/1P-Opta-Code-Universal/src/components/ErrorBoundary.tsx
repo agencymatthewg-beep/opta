@@ -17,7 +17,10 @@ interface ErrorBoundaryState {
  * white-screening the entire app. Shows a recoverable error UI with a
  * "Try again" button that resets React's error state.
  */
-export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { error: null };
@@ -41,7 +44,9 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return (
         <div className="error-boundary">
           <div className="error-boundary__panel">
-            <h2 className="error-boundary__title">Opta encountered a runtime error</h2>
+            <h2 className="error-boundary__title">
+              Opta encountered a runtime error
+            </h2>
             <p className="error-boundary__message">
               The UI crashed while rendering. If daemon state changed underneath
               the app, reopening setup usually restores a clean state.

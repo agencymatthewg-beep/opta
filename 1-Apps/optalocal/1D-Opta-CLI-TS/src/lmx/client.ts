@@ -110,10 +110,53 @@ import {
   RETRYABLE_HTTP_STATUS,
 } from './helpers.js';
 import { recordEndpointProbeOutcome } from './endpoint-profile.js';
+import {
+  type AdminKeysByHost,
+  resolveAdminKeyForHost,
+} from './admin-keys.js';
 
 // Re-export everything from submodules for backward compatibility.
 export * from './types.js';
 export { lookupContextLimit } from './helpers.js';
+
+function describeTransportFailure(err: unknown): string {
+  const baseMessage = errorMessage(err).trim() || 'fetch failed';
+  const lower = baseMessage.toLowerCase();
+  const isGeneric = lower === 'fetch failed' || lower === 'network error';
+  if (!isGeneric) return baseMessage;
+
+  const cause = err instanceof Error ? (err as { cause?: unknown }).cause : undefined;
+  if (!cause || typeof cause !== 'object') return baseMessage;
+
+  const causeObj = cause as {
+    code?: unknown;
+    address?: unknown;
+    port?: unknown;
+  };
+  const code = typeof causeObj.code === 'string' ? causeObj.code.trim() : '';
+  const address = typeof causeObj.address === 'string' ? causeObj.address.trim() : '';
+  const port =
+    typeof causeObj.port === 'number'
+      ? String(causeObj.port)
+      : typeof causeObj.port === 'string'
+        ? causeObj.port.trim()
+        : '';
+  const target = address && port ? `${address}:${port}` : address || (port ? `:${port}` : '');
+  const causeMessage = errorMessage(cause).trim();
+  const details = [code, target]
+    .filter((part) => part.length > 0);
+
+  if (
+    causeMessage &&
+    causeMessage.toLowerCase() !== baseMessage.toLowerCase() &&
+    !details.some((part) => causeMessage.toLowerCase().includes(part.toLowerCase()))
+  ) {
+    details.push(causeMessage);
+  }
+
+  if (details.length === 0) return baseMessage;
+  return `${baseMessage} (${details.join(' · ')})`;
+}
 
 // --- LMX Admin Client ---
 
@@ -122,6 +165,8 @@ export class LmxClient {
   private readonly hosts: string[];
   private activeHostIndex: number;
   private readonly headers: Record<string, string>;
+  private readonly defaultAdminKey?: string;
+  private readonly adminKeysByHost?: AdminKeysByHost;
   private readonly timeoutMs: number;
   private readonly maxRetries: number;
   private readonly backoffMs: number;
@@ -134,6 +179,7 @@ export class LmxClient {
     fallbackHosts?: string[];
     port: number;
     adminKey?: string;
+    adminKeysByHost?: AdminKeysByHost;
     apiKey?: string;
     timeoutMs?: number;
     maxRetries?: number;
@@ -163,13 +209,12 @@ export class LmxClient {
     this.backoffMultiplier = Math.max(1, opts.backoffMultiplier ?? DEFAULT_BACKOFF_MULTIPLIER);
     this.hostFailureCooldownMs = DEFAULT_HOST_FAILURE_COOLDOWN_MS;
     this.hostCooldownUntilMs = new Map();
+    this.defaultAdminKey = opts.adminKey?.trim();
+    this.adminKeysByHost = opts.adminKeysByHost;
     const resolvedApiKey = opts.apiKey?.trim() || process.env['OPTA_API_KEY']?.trim();
     if (resolvedApiKey) {
       this.headers['Authorization'] = `Bearer ${resolvedApiKey}`;
       this.headers['X-Api-Key'] = resolvedApiKey;
-    }
-    if (opts.adminKey) {
-      this.headers['X-Admin-Key'] = opts.adminKey;
     }
   }
 
@@ -290,7 +335,15 @@ export class LmxClient {
         : Array.isArray(init?.headers)
           ? Object.fromEntries(init.headers)
           : ((init?.headers as Record<string, string> | undefined) ?? {});
-    const headers = { ...this.headers, ...initHeaders };
+    const explicitAdminKey = (() => {
+      for (const [key, value] of Object.entries(initHeaders)) {
+        if (key.toLowerCase() === 'x-admin-key') {
+          return typeof value === 'string' ? value.trim() : '';
+        }
+      }
+      return '';
+    })();
+    const baseHeaders = { ...this.headers, ...initHeaders };
     const hostFailures: HostAttemptFailure[] = [];
 
     for (const host of this.hostCandidates()) {
@@ -302,6 +355,19 @@ export class LmxClient {
         let response: Response;
         const timeoutSignal = AbortSignal.timeout(timeoutMs);
         const signal = init?.signal ? AbortSignal.any([init.signal, timeoutSignal]) : timeoutSignal;
+        const headers = { ...baseHeaders };
+        for (const key of Object.keys(headers)) {
+          if (key.toLowerCase() === 'x-admin-key') {
+            delete headers[key];
+          }
+        }
+        const resolvedAdminKey = explicitAdminKey || resolveAdminKeyForHost(host, this.port, {
+          defaultAdminKey: this.defaultAdminKey,
+          adminKeysByHost: this.adminKeysByHost,
+        });
+        if (resolvedAdminKey) {
+          headers['X-Admin-Key'] = resolvedAdminKey;
+        }
         try {
           response = await fetch(url, {
             ...init,
@@ -319,7 +385,7 @@ export class LmxClient {
           }
           const message = timedOut
             ? `request timed out after ${Math.round(timeoutMs / 1000)}s`
-            : errorMessage(err);
+            : describeTransportFailure(err);
           hostFailure = message;
           break;
         }

@@ -16,6 +16,26 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 
+def _coerce_int(value: object, default: int = 0) -> int:
+    """Parse integer-like values while preserving a safe default."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return default
+
+
+def _coerce_float(value: object, default: float = 0.0) -> float:
+    """Parse float-like values while preserving a safe default."""
+    if isinstance(value, bool):
+        return float(int(value))
+    if isinstance(value, (int, float)):
+        return float(value)
+    return default
+
+
 class RuntimeState:
     """Persist and restore runtime state across process restarts."""
 
@@ -45,9 +65,13 @@ class RuntimeState:
         }
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._path.write_text(json.dumps(data, indent=2))
-        logger.debug("runtime_state_saved", extra={
-            "models": loaded_models, "clean": clean,
-        })
+        logger.debug(
+            "runtime_state_saved",
+            extra={
+                "models": loaded_models,
+                "clean": clean,
+            },
+        )
 
     def load(self) -> dict[str, Any] | None:
         """Load state from disk.
@@ -58,7 +82,14 @@ class RuntimeState:
         if not self._path.exists():
             return None
         try:
-            return json.loads(self._path.read_text())
+            raw = json.loads(self._path.read_text())
+            if isinstance(raw, dict):
+                return {str(key): value for key, value in raw.items()}
+            logger.warning(
+                "runtime_state_invalid_payload",
+                extra={"payload_type": type(raw).__name__},
+            )
+            return None
         except (json.JSONDecodeError, OSError) as e:
             logger.warning("runtime_state_load_failed", extra={"error": str(e)})
             return None
@@ -91,8 +122,8 @@ class RuntimeState:
         data = self.load()
         if data is None:
             return False
-        count = data.get("startup_count", 0)
-        last_startup = data.get("last_startup_at", 0)
+        count = _coerce_int(data.get("startup_count", 0), 0)
+        last_startup = _coerce_float(data.get("last_startup_at", 0), 0.0)
         return count >= threshold and (time.time() - last_startup) < window_sec
 
     def clear(self) -> None:

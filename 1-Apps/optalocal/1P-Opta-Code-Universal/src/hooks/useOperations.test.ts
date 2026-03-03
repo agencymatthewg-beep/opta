@@ -17,8 +17,18 @@ vi.mock("../lib/daemonClient", () => ({
 const connection = { host: "127.0.0.1", port: 9999, token: "test" };
 
 const mockOperations = [
-  { id: "doctor", title: "Doctor", description: "Diagnostics.", safety: "read" as const },
-  { id: "benchmark", title: "Benchmark Suite", description: "Benchmark.", safety: "dangerous" as const },
+  {
+    id: "doctor",
+    title: "Doctor",
+    description: "Diagnostics.",
+    safety: "read" as const,
+  },
+  {
+    id: "benchmark",
+    title: "Benchmark Suite",
+    description: "Benchmark.",
+    safety: "dangerous" as const,
+  },
 ] satisfies DaemonListOperationsResponse["operations"];
 
 describe("useOperations", () => {

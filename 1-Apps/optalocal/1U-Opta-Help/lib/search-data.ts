@@ -18,6 +18,7 @@ const sectionKeywords: Record<string, string[]> = {
   "browser-automation": ["browser", "playwright", "automation", "recording", "visual", "diff"],
   security: ["security", "permissions", "privacy", "guardrails", "safety", "rules"],
   developer: ["developer", "mcp", "sdk", "auth", "token", "typescript", "integration"],
+  support: ["faq", "support", "help", "troubleshooting", "errors", "common issues"],
   "feature-status": ["status", "features", "roadmap", "progress"],
 };
 

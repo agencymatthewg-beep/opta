@@ -10,7 +10,7 @@
 - [x] Concurrent request handling
 - [x] KV cache management
 - [x] Context length enforcement
-- [ ] vLLM backend for parallel batching
+- [x] vLLM backend for parallel batching
 
 ## Model Management
 - [x] Model inventory API (`/admin/models`)
@@ -20,7 +20,7 @@
 - [x] HuggingFace model download integration
 - [x] GGUF format support
 - [ ] LoRA adapter loading
-- [ ] Model benchmarking suite
+- [x] Model benchmarking suite
 
 ## API Compatibility
 - [x] OpenAI `/v1/chat/completions`
@@ -30,7 +30,7 @@
 - [x] Rerank endpoint `/v1/rerank`
 - [x] Skills API `/v1/skills`
 - [x] Agents API `/v1/agents`
-- [ ] Embeddings endpoint `/v1/embeddings`
+- [x] Embeddings endpoint `/v1/embeddings`
 - [ ] Function calling (tool_use)
 
 ## Performance

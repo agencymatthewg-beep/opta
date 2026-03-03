@@ -7,6 +7,7 @@
  * continue to work unchanged after the monolith→directory split.
  */
 
+import os from 'node:os';
 import chalk from 'chalk';
 import { loadConfig } from '../../core/config.js';
 import { ExitError, EXIT } from '../../core/errors.js';
@@ -60,6 +61,26 @@ export { normalizeModelHistoryEntries, mergeModelHistoryEntries } from './histor
 
 // ── Main entry function ─────────────────────────────────────────────
 
+
+function printModelHostContext(requestedHost: string, port: number, fallbackHosts: string[]): void {
+  const currentDevice = os.hostname();
+  const normalizedHost = requestedHost.trim().toLowerCase();
+  const isLocal = normalizedHost === 'localhost' || normalizedHost === '127.0.0.1' || normalizedHost === '::1';
+  const executionContext = isLocal ? 'local' : 'remote';
+  const fallback = fallbackHosts.filter((value) => value.trim().length > 0);
+
+  console.log(chalk.dim(`
+Model host context`));
+  console.log(chalk.dim(`  Current Device: `) + chalk.bold(currentDevice));
+  console.log(chalk.dim(`  Configured LLM Host: `) + chalk.bold(`${requestedHost}:${port}`));
+  console.log(chalk.dim(`  Download Target: `) + chalk.bold(`${requestedHost}:${port}`));
+  console.log(chalk.dim(`  Execution Context: `) + chalk.bold(executionContext));
+  if (fallback.length > 0) {
+    console.log(chalk.dim(`  Fallback Hosts: `) + chalk.dim(fallback.join(', ')));
+  }
+  console.log('');
+}
+
 export async function models(
   action?: string,
   name?: string,
@@ -73,6 +94,7 @@ export async function models(
     fallbackHosts: config.connection.fallbackHosts,
     port,
     adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
   });
   const defaultModel = await resolveEffectiveDefaultModel(client, config.model.default, opts);
   const effectiveConfig = { ...config, model: { ...config.model, default: defaultModel } };
@@ -83,6 +105,11 @@ export async function models(
   };
   const resolvedName = action === 'alias' ? name : resolveWithAlias(name);
   const resolvedExtra = action === 'swap' ? resolveWithAlias(extraArg) : extraArg;
+
+  const lifecycleActions = new Set(['manage','interactive','ui','use','load','unload','stop','swap','download','browse','browse-local','library','browse-library']);
+  if (lifecycleActions.has(action ?? 'manage')) {
+    printModelHostContext(host, port, config.connection.fallbackHosts);
+  }
 
   switch (action) {
     case 'help':

@@ -7,14 +7,17 @@ import logging
 import time
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
+from typing import Any, cast
 
 from opta_lmx.api.deps import Engine
+from opta_lmx.inference.engine import InferenceEngine
 from opta_lmx.inference.schema import ChatCompletionRequest, ChatMessage
 from opta_lmx.inference.streaming import format_sse_stream, format_sse_tool_stream
-from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
+from opta_lmx.inference.tool_parser import StreamChunk, wrap_stream_with_tool_parsing
 from opta_lmx.monitoring.metrics import MetricsCollector, RequestMetric
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class _StreamEndMarker:
@@ -52,15 +55,17 @@ async def _counting_stream(
         raise
     finally:
         if metrics is not None:
-            metrics.record(RequestMetric(
-                model_id=model_id,
-                latency_sec=time.monotonic() - start_time,
-                prompt_tokens=prompt_tokens,
-                completion_tokens=completion_tokens,
-                stream=True,
-                error=error_occurred,
-                client_id=client_id,
-            ))
+            metrics.record(
+                RequestMetric(
+                    model_id=model_id,
+                    latency_sec=time.monotonic() - start_time,
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                    stream=True,
+                    error=error_occurred,
+                    client_id=client_id,
+                )
+            )
     # Only reached when stream completes without exception
     yield _StreamEndMarker(completion_tokens=completion_tokens)
 
@@ -111,9 +116,12 @@ async def _chat_completions_sse_stream_n(
             )
 
             if body.tools:
-                chunk_stream = wrap_stream_with_tool_parsing(counted_stream, tools=body.tools)
+                chunk_stream = wrap_stream_with_tool_parsing(
+                    cast(AsyncIterator[str], counted_stream),
+                    tools=body.tools,
+                )
                 async for line in format_sse_tool_stream(
-                    chunk_stream,
+                    cast(AsyncIterator[StreamChunk], chunk_stream),
                     request_id,
                     resolved_model,
                     max_tokens=body.max_tokens,
@@ -128,7 +136,7 @@ async def _chat_completions_sse_stream_n(
                     yield line
             else:
                 async for line in format_sse_stream(
-                    counted_stream,
+                    cast(AsyncIterator[str], counted_stream),
                     request_id,
                     resolved_model,
                     max_tokens=body.max_tokens,
@@ -142,14 +150,16 @@ async def _chat_completions_sse_stream_n(
                 ):
                     yield line
 
-        metrics.record(RequestMetric(
-            model_id=resolved_model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=usage_totals["prompt_tokens"],
-            completion_tokens=usage_totals["completion_tokens"],
-            stream=True,
-            client_id=client_id,
-        ))
+        metrics.record(
+            RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=usage_totals["prompt_tokens"],
+                completion_tokens=usage_totals["completion_tokens"],
+                stream=True,
+                client_id=client_id,
+            )
+        )
 
         if include_usage:
             total_tokens = usage_totals["prompt_tokens"] + usage_totals["completion_tokens"]
@@ -167,15 +177,17 @@ async def _chat_completions_sse_stream_n(
             yield f"data: {usage_chunk.model_dump_json()}\n\n"
     except Exception as e:
         logger.error("stream_error", extra={"model": resolved_model, "error": str(e)})
-        metrics.record(RequestMetric(
-            model_id=resolved_model,
-            latency_sec=time.monotonic() - start_time,
-            prompt_tokens=usage_totals["prompt_tokens"],
-            completion_tokens=usage_totals["completion_tokens"],
-            stream=True,
-            error=True,
-            client_id=client_id,
-        ))
+        metrics.record(
+            RequestMetric(
+                model_id=resolved_model,
+                latency_sec=time.monotonic() - start_time,
+                prompt_tokens=usage_totals["prompt_tokens"],
+                completion_tokens=usage_totals["completion_tokens"],
+                stream=True,
+                error=True,
+                client_id=client_id,
+            )
+        )
     yield "data: [DONE]\n\n"
 
 
@@ -288,15 +300,16 @@ async def _legacy_completions_sse_stream(
     if emit_done:
         yield "data: [DONE]\n\n"
 
+
 async def _responses_sse_stream(
-    engine: object,
+    engine: InferenceEngine,
     model_id: str,
     messages: list[ChatMessage],
     request_id: str,
     temperature: float,
     max_tokens: int | None,
     top_p: float,
-    tools: list[dict] | None,
+    tools: list[dict[str, Any]] | None,
     priority: str = "normal",
     client_id: str | None = None,
 ) -> AsyncIterator[str]:
@@ -309,7 +322,7 @@ async def _responses_sse_stream(
     created_payload = json.dumps({"id": request_id, "object": "response", "status": "in_progress"})
     yield f"event: response.created\ndata: {created_payload}\n\n"
 
-    token_stream = engine.stream_generate(  # type: ignore[union-attr]
+    token_stream = engine.stream_generate(
         model_id=model_id,
         messages=messages,
         temperature=temperature,
@@ -323,10 +336,11 @@ async def _responses_sse_stream(
     )
 
     content_parts: list[str] = []
-    tool_calls: dict[int, dict] = {}
+    tool_calls: dict[int, dict[str, Any]] = {}
 
     if tools:
         from opta_lmx.inference.tool_parser import wrap_stream_with_tool_parsing
+
         chunk_stream = wrap_stream_with_tool_parsing(token_stream, tools=tools)
         async for chunk in chunk_stream:
             if isinstance(chunk, _StreamEndMarker):
@@ -345,18 +359,24 @@ async def _responses_sse_stream(
                         "name": delta.name or "",
                         "arguments": "",
                     }
-                    item_data = json.dumps({"item": {
-                        "type": "function_call",
-                        "id": tool_calls[idx]["id"],
-                        "name": delta.name,
-                    }})
+                    item_data = json.dumps(
+                        {
+                            "item": {
+                                "type": "function_call",
+                                "id": tool_calls[idx]["id"],
+                                "name": delta.name,
+                            }
+                        }
+                    )
                     yield f"event: response.output_item.added\ndata: {item_data}\n\n"
                 if delta.arguments_delta:
                     tool_calls[idx]["arguments"] += delta.arguments_delta
-                    arg_data = json.dumps({
-                        "item_id": tool_calls[idx]["id"],
-                        "delta": delta.arguments_delta,
-                    })
+                    arg_data = json.dumps(
+                        {
+                            "item_id": tool_calls[idx]["id"],
+                            "delta": delta.arguments_delta,
+                        }
+                    )
                     yield f"event: response.function_call_arguments.delta\ndata: {arg_data}\n\n"
     else:
         async for token in token_stream:
@@ -366,22 +386,26 @@ async def _responses_sse_stream(
             yield f"event: response.output_text.delta\ndata: {json.dumps({'delta': token})}\n\n"
 
     output_text = "".join(content_parts)
-    output: list[dict] = []
+    output: list[dict[str, Any]] = []
     for idx in sorted(tool_calls.keys()):
         tc = tool_calls[idx]
-        output.append({
-            "type": "function_call",
-            "id": tc["id"],
-            "name": tc["name"],
-            "arguments": tc["arguments"],
-        })
+        output.append(
+            {
+                "type": "function_call",
+                "id": tc["id"],
+                "name": tc["name"],
+                "arguments": tc["arguments"],
+            }
+        )
 
-    completed_payload = json.dumps({
-        "id": request_id,
-        "object": "response",
-        "status": "completed",
-        "output_text": output_text or None,
-        "output": output,
-    })
+    completed_payload = json.dumps(
+        {
+            "id": request_id,
+            "object": "response",
+            "status": "completed",
+            "output_text": output_text or None,
+            "output": output,
+        }
+    )
     yield f"event: response.completed\ndata: {completed_payload}\n\n"
     yield "data: [DONE]\n\n"

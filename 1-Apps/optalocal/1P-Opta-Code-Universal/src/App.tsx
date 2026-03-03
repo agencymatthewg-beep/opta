@@ -17,10 +17,8 @@ import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { AccountControlPage } from "./pages/AccountControlPage";
 import { CliOperationsPage } from "./pages/CliOperationsPage";
 import { DaemonPanel } from "./components/DaemonPanel";
-import {
-  downloadAsFile,
-  exportToMarkdown,
-} from "./lib/sessionExporter";
+import { TelemetryPanel } from "./components/TelemetryPanel";
+import { downloadAsFile, exportToMarkdown } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
@@ -31,7 +29,11 @@ import {
   type BrowserVisualSummary,
 } from "./lib/browserVisualState";
 import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
-import type { PaletteCommand } from "./types";
+import type {
+  PaletteCommand,
+  SessionSubmitMode,
+  SessionTurnOverrides,
+} from "./types";
 
 type AppPage =
   | "sessions"
@@ -47,6 +49,36 @@ type AppPage =
 const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
 
 export type BrowserViewMode = "default" | "expanded" | "minimized";
+
+function modePillLabel(mode: SessionSubmitMode): string {
+  switch (mode) {
+    case "do":
+      return "Do mode";
+    case "plan":
+      return "Plan mode";
+    case "review":
+      return "Review mode";
+    case "research":
+      return "Research mode";
+    default:
+      return "Chat mode";
+  }
+}
+
+function modeSubmitNotice(mode: SessionSubmitMode): string {
+  switch (mode) {
+    case "do":
+      return "Task dispatched to agent";
+    case "plan":
+      return "Planning request submitted to daemon";
+    case "review":
+      return "Review request submitted to daemon";
+    case "research":
+      return "Research request submitted to daemon";
+    default:
+      return "Message submitted to daemon";
+  }
+}
 
 function App() {
   const nativeDesktop = isNativeDesktop();
@@ -69,8 +101,12 @@ function App() {
 
   const [showTerminal, setShowTerminal] = useState(false); // Changed initial state from true to false
   const [composerDraft, setComposerDraft] = useState("");
-  const [submissionMode, setSubmissionMode] = useState<"chat" | "do">("chat");
-  const [selectedWorkspace, setSelectedWorkspace] = useLocalStorage("opta:selectedWorkspace", "all");
+  const [submissionMode, setSubmissionMode] =
+    useState<SessionSubmitMode>("chat");
+  const [selectedWorkspace, setSelectedWorkspace] = useLocalStorage(
+    "opta:selectedWorkspace",
+    "all",
+  );
   const [notice, setNotice] = useState<string | null>(null);
   const [activePage, setActivePage] = useState<AppPage>("sessions");
   const [showToken, setShowToken] = useState(false);
@@ -79,7 +115,8 @@ function App() {
     null,
   );
   const [offlineSeconds, setOfflineSeconds] = useState(0);
-  const [browserViewMode, setBrowserViewMode] = useState<BrowserViewMode>("default");
+  const [browserViewMode, setBrowserViewMode] =
+    useState<BrowserViewMode>("default");
 
   const {
     activeSessionId,
@@ -100,6 +137,7 @@ function App() {
     setConnection,
     submitMessage,
     timelineBySession,
+    rawEventsBySession,
     trackSession,
     createSession,
     removeSession,
@@ -115,7 +153,9 @@ function App() {
     [activeSessionId, sessions],
   );
 
-  const activeBrowserSlot = activeSessionId ? getSlotForSession(activeSessionId) : undefined;
+  const activeBrowserSlot = activeSessionId
+    ? getSlotForSession(activeSessionId)
+    : undefined;
 
   const activeStreamCount = useMemo(
     () => Object.values(streamingBySession).filter(Boolean).length,
@@ -161,13 +201,13 @@ function App() {
   const activeBrowserVisual = useMemo(
     () =>
       activeSessionId
-        ? browserVisualBySession[activeSessionId] ??
-        deriveBrowserVisualState({
-          connectionState,
-          isStreaming,
-          pendingPermissions,
-          timelineItems,
-        })
+        ? (browserVisualBySession[activeSessionId] ??
+          deriveBrowserVisualState({
+            connectionState,
+            isStreaming,
+            pendingPermissions,
+            timelineItems,
+          }))
         : deriveBrowserVisualState({
           connectionState,
           isStreaming: false,
@@ -210,7 +250,10 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Ignore if the user is typing in an input/textarea
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement
+      ) {
         return;
       }
 
@@ -253,7 +296,10 @@ function App() {
       setOfflineSeconds(0);
       return;
     }
-    if (connectionState === "disconnected" || connectionState === "connecting") {
+    if (
+      connectionState === "disconnected" ||
+      connectionState === "connecting"
+    ) {
       setDisconnectedSinceMs((current) => current ?? Date.now());
       return;
     }
@@ -262,7 +308,9 @@ function App() {
   useEffect(() => {
     if (disconnectedSinceMs === null) return;
     const updateOfflineSeconds = () => {
-      setOfflineSeconds(Math.max(0, Math.floor((Date.now() - disconnectedSinceMs) / 1000)));
+      setOfflineSeconds(
+        Math.max(0, Math.floor((Date.now() - disconnectedSinceMs) / 1000)),
+      );
     };
     updateOfflineSeconds();
     const timer = window.setInterval(updateOfflineSeconds, 1000);
@@ -365,7 +413,16 @@ function App() {
         id: "open-operations",
         title: "Open operations console",
         description: "Run any CLI command-family operation via the daemon API",
-        keywords: ["operations", "doctor", "env", "mcp", "keychain", "benchmark", "embed", "rerank"],
+        keywords: [
+          "operations",
+          "doctor",
+          "env",
+          "mcp",
+          "keychain",
+          "benchmark",
+          "embed",
+          "rerank",
+        ],
         run: () => setActivePage("operations"),
       },
       {
@@ -411,14 +468,7 @@ function App() {
         title: "Open account controls",
         description:
           "Manage account auth and account key operations via daemon controls",
-        keywords: [
-          "account",
-          "signup",
-          "login",
-          "logout",
-          "keys",
-          "auth",
-        ],
+        keywords: ["account", "signup", "login", "logout", "keys", "auth"],
         run: () => setActivePage("account"),
       },
       {
@@ -456,7 +506,14 @@ function App() {
         },
       },
     ],
-    [activeSessionId, createSession, refreshNow, selectedWorkspace, timelineBySession, trackSession],
+    [
+      activeSessionId,
+      createSession,
+      refreshNow,
+      selectedWorkspace,
+      timelineBySession,
+      trackSession,
+    ],
   );
 
   const closePaletteRef = useRef<() => void>(() => undefined);
@@ -489,21 +546,24 @@ function App() {
     }
   }, [palette.isOpen]);
 
-  const onSubmitComposer = useCallback(async () => {
-    if (!activeSessionId) {
-      setNotice("Select or create a session first.");
-      return;
-    }
-    const outbound = composerDraft.trim();
-    if (!outbound) return;
-    try {
-      await submitMessage(outbound, submissionMode);
-      setComposerDraft("");
-      setNotice(submissionMode === "do" ? "Task dispatched to agent" : "Message submitted to daemon");
-    } catch (error) {
-      setNotice(error instanceof Error ? error.message : String(error));
-    }
-  }, [activeSessionId, composerDraft, submitMessage, submissionMode]);
+  const onSubmitComposer = useCallback(
+    async (overrides?: SessionTurnOverrides) => {
+      if (!activeSessionId) {
+        setNotice("Select or create a session first.");
+        return;
+      }
+      const outbound = composerDraft.trim();
+      if (!outbound) return;
+      try {
+        await submitMessage(outbound, submissionMode, overrides);
+        setComposerDraft("");
+        setNotice(modeSubmitNotice(submissionMode));
+      } catch (error) {
+        setNotice(error instanceof Error ? error.message : String(error));
+      }
+    },
+    [activeSessionId, composerDraft, submitMessage, submissionMode],
+  );
 
   const reconnectEndpoint = `${connection.protocol ?? "http"}://${connection.host}:${connection.port}`;
   const copyReconnectDiagnostics = useCallback(async () => {
@@ -555,357 +615,211 @@ function App() {
           className="app-shell-body"
           aria-hidden={palette.isOpen ? "true" : undefined}
         >
-          <header className="app-topbar" style={{ position: "relative" }}>
-            <div className="identity">
-              <p style={{ marginTop: "1rem" }}>
-                Operator cockpit for parallel sessions, model control, and daemon
-                telemetry.
-              </p>
-              <div className="identity-pills">
-                <span className={`signal signal-${connectionState}`}>
-                  {connectionState === "connected"
-                    ? "Live"
-                    : connectionState === "connecting"
-                      ? "Syncing"
-                      : "Offline"}
-                </span>
-                <span>{sessionCount} tracked sessions</span>
-                {activeStreamCount > 0 && (
-                  <span className="pill-active-agents">
-                    {activeStreamCount} agent{activeStreamCount !== 1 ? "s" : ""} working
-                  </span>
-                )}
-                {totalPendingPermissions > 0 && (
-                  <span className="pill-pending-perms">
-                    {totalPendingPermissions} permission{totalPendingPermissions !== 1 ? "s" : ""} waiting
-                  </span>
-                )}
-                <span
-                  className={`browser-pill browser-pill-${activeBrowserVisual.state}`}
-                >
-                  Browser {activeBrowserVisual.activityText}
-                </span>
-                {browserWorkingCount > 0 && (
-                  <span className="pill-browser-working">
-                    {browserWorkingCount} browser session{browserWorkingCount !== 1 ? "s" : ""} working
-                  </span>
-                )}
-                {browserBlockedCount > 0 && (
-                  <span className="pill-browser-blocked">
-                    {browserBlockedCount} browser session{browserBlockedCount !== 1 ? "s" : ""} blocked
-                  </span>
-                )}
-                <span className={`mode-pill mode-pill-${submissionMode}`}>
-                  {submissionMode === "do" ? "Do mode" : "Chat mode"}
-                </span>
-                <span>{showTerminal ? "Runtime visible" : "Runtime hidden"}</span>
-              </div>
-              {connectionState === "disconnected" && (
-                <div className="daemon-offline-hint">
-                  <p>Daemon offline. Run auto-repair to restart and reconnect.</p>
-                  <button type="button" onClick={() => void repairConnection()}>
-                    Repair daemon connection
-                  </button>
-                  {connectionError ? <p className="daemon-offline-hint-error">{connectionError}</p> : null}
-                </div>
-              )}
+          <header className="app-topbar glass">
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" style={{ filter: "drop-shadow(0 0 8px rgba(168,85,247,0.4))" }}>
+                <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" strokeDasharray="4 4" />
+                <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
+                <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
+              </svg>
+              <span style={{ fontWeight: 600, letterSpacing: "1px", color: "var(--opta-text-primary)" }}>OPTA CODE</span>
             </div>
 
-            <div className="app-logo-anchor" aria-hidden="true">
-              <img
-                src="/opta-code-mark.svg"
-                className="app-logo-mark"
-                alt=""
-              />
-            </div>
-
-            <div className="top-actions" style={{ alignItems: "center" }}>
-              <div className="segmented-nav-pill">
-                <button
-                  type="button"
-                  className={activePage === "sessions" ? "active" : ""}
-                  onClick={() => setActivePage("sessions")}
-                >
-                  Sessions
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "models" ? "active" : ""}
-                  onClick={() => setActivePage("models")}
-                >
-                  Models
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "operations" ? "active" : ""}
-                  onClick={() => setActivePage("operations")}
-                >
-                  Operations
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "cli" ? "active" : ""}
-                  onClick={() => setActivePage("cli")}
-                >
-                  CLI
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "env" ? "active" : ""}
-                  onClick={() => setActivePage("env")}
-                >
-                  Env
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "mcp" ? "active" : ""}
-                  onClick={() => setActivePage("mcp")}
-                >
-                  MCP
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "config" ? "active" : ""}
-                  onClick={() => setActivePage("config")}
-                >
-                  Config
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "account" ? "active" : ""}
-                  onClick={() => setActivePage("account")}
-                >
-                  Account
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "jobs" ? "active" : ""}
-                  onClick={() => setActivePage("jobs")}
-                >
-                  Jobs
-                </button>
-                <button
-                  type="button"
-                  className={activePage === "logs" ? "active" : ""}
-                  onClick={() => setActivePage("logs")}
-                >
-                  Logs
-                </button>
-                <button type="button" onClick={palette.open}>
-                  Palette (Cmd/Ctrl+K)
-                </button>
-              </div>
-            </div>
-
-            <div style={{ position: "absolute", top: "1.25rem", right: "1.5rem", zIndex: 10, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.5rem" }}>
-              <div className="minimal-tools-group" style={{ borderLeft: "none", paddingLeft: "0", margin: 0 }}>
-                <button
-                  type="button"
-                  className={`minimal-emoji-btn ${showTerminal ? "active" : ""}`}
-                  title={showTerminal ? "Hide Runtime Telemetry" : "Show Runtime Telemetry"}
-                  onClick={() => setShowTerminal((current) => !current)}
-                >
-                  {showTerminal ? "🖥️" : "💻"}
-                </button>
-                <button
-                  type="button"
-                  className="minimal-emoji-btn"
-                  title="Settings"
-                  onClick={() => setIsSettingsOpen(true)}
-                >
-                  ⚙️
-                </button>
-              </div>
-
-              <a
-                href={ACCOUNTS_PORTAL_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="accounts-btn accounts-btn-pulse"
-                aria-label="Open Opta Accounts portal"
-              >
-                Accounts
-              </a>
+            <div className="stats">
+              <span className={`signal signal-${connectionState}`}>
+                <span className="status-dot">●</span>
+                {connectionState === "connected" ? `${connection.host}:${connection.port}` : connectionState}
+              </span>
+              <span>AGENTS: {activeStreamCount}</span>
+              <span>SESSIONS: {sessionCount}</span>
+              <a href={ACCOUNTS_PORTAL_URL} target="_blank" rel="noopener noreferrer" className="accounts-btn accounts-btn-pulse" aria-label="Open Opta Accounts portal" style={{ marginLeft: "1rem" }}>ACCOUNTS</a>
             </div>
           </header>
 
-          <main
-            className={`workspace-layout ${showTerminal ? "with-terminal" : "without-terminal"}`}
-          >
-            {activePage === "models" ? (
-              <ModelsPage
-                connection={connection}
-                onOpenSettings={() => setIsSettingsOpen(true)}
-              />
-            ) : activePage === "operations" ? (
-              <OperationsPage connection={connection} />
-            ) : activePage === "cli" ? (
-              <CliOperationsPage connection={connection} />
-            ) : activePage === "env" ? (
-              <EnvProfilesPage connection={connection} />
-            ) : activePage === "mcp" ? (
-              <McpManagementPage connection={connection} />
-            ) : activePage === "config" ? (
-              <ConfigStudioPage connection={connection} />
-            ) : activePage === "account" ? (
-              <AccountControlPage connection={connection} />
-            ) : activePage === "jobs" ? (
-              <BackgroundJobsPage
-                connection={connection}
-                defaultSessionId={activeSessionId}
-              />
-            ) : activePage === "logs" ? (
-              <DaemonLogsPage />
-            ) : (
-              <>
-                <WorkspaceRail
-                  sessions={sessions}
-                  activeSessionId={activeSessionId}
-                  selectedWorkspace={selectedWorkspace}
-                  streamingBySession={streamingBySession}
-                  pendingPermissionsBySession={pendingPermissionsBySession}
-                  browserVisualBySession={browserVisualBySession}
-                  onSelectWorkspace={setSelectedWorkspace}
-                  onSelectSession={(sessionId) => {
-                    setActiveSessionId(sessionId);
-                    const next = sessions.find(
-                      (session) => session.sessionId === sessionId,
-                    );
-                    if (next) setSelectedWorkspace(next.workspace);
-                  }}
-                  onRemoveSession={removeSession}
-                />
+          <div className="main-layout">
+            <div className="panel glass nav-rail">
+              <button type="button" className={`nav-item ${activePage === "sessions" ? "active" : ""}`} onClick={() => setActivePage("sessions")}>
+                Sessions
+              </button>
+              <button type="button" className={`nav-item ${activePage === "models" ? "active" : ""}`} onClick={() => setActivePage("models")}>
+                Models
+              </button>
+              <button type="button" className={`nav-item ${activePage === "operations" ? "active" : ""}`} onClick={() => setActivePage("operations")}>
+                Operations
+              </button>
+              <button type="button" className={`nav-item ${activePage === "cli" ? "active" : ""}`} onClick={() => setActivePage("cli")}>
+                CLI
+              </button>
+              <button type="button" className={`nav-item ${activePage === "env" ? "active" : ""}`} onClick={() => setActivePage("env")}>
+                Env
+              </button>
+              <button type="button" className={`nav-item ${activePage === "mcp" ? "active" : ""}`} onClick={() => setActivePage("mcp")}>
+                MCP
+              </button>
+              <button type="button" className={`nav-item ${activePage === "config" ? "active" : ""}`} onClick={() => setActivePage("config")}>
+                Config
+              </button>
+              <button type="button" className={`nav-item ${activePage === "account" ? "active" : ""}`} onClick={() => setActivePage("account")}>
+                Account
+              </button>
+              <button type="button" className={`nav-item ${activePage === "jobs" ? "active" : ""}`} onClick={() => setActivePage("jobs")}>
+                Jobs
+              </button>
+              <button type="button" className={`nav-item ${activePage === "logs" ? "active" : ""}`} onClick={() => setActivePage("logs")}>
+                Logs
+              </button>
+              <div style={{ flex: 1 }}></div>
+              <button type="button" className="nav-item" onClick={palette.open}>
+                Palette
+              </button>
+              <button type="button" className={`nav-item ${showTerminal ? "active" : ""}`} onClick={() => setShowTerminal(c => !c)}>
+                {showTerminal ? "Hide Telemetry" : "Show Telemetry"}
+              </button>
+              <button type="button" className="nav-item" onClick={() => setIsSettingsOpen(true)}>
+                Settings
+              </button>
+            </div>
 
-                <div className={`browser-layout-row browser-mode-${browserViewMode}`}>
-                  <div className="timeline-module">
-                    {activeSessionId && timelineItems.length > 0 && (
-                      <div className="session-export-bar">
-                        <button
-                          type="button"
-                          className="session-export-btn"
-                          onClick={() => {
-                            const md = exportToMarkdown(activeSessionId, timelineItems);
-                            downloadAsFile(`opta-session-${activeSessionId}.md`, md);
-                            setNotice("Session exported as Markdown");
-                          }}
-                          title="Export session as Markdown"
-                        >
-                          <Download size={12} aria-hidden="true" />
-                          Export
-                        </button>
+            <main
+              className={`workspace-layout ${showTerminal ? "with-terminal" : "without-terminal"}`}
+            >
+              {activePage === "models" ? (
+                <ModelsPage
+                  connection={connection}
+                  onOpenSettings={() => setIsSettingsOpen(true)}
+                />
+              ) : activePage === "operations" ? (
+                <OperationsPage connection={connection} />
+              ) : activePage === "cli" ? (
+                <CliOperationsPage connection={connection} />
+              ) : activePage === "env" ? (
+                <EnvProfilesPage connection={connection} />
+              ) : activePage === "mcp" ? (
+                <McpManagementPage connection={connection} />
+              ) : activePage === "config" ? (
+                <ConfigStudioPage connection={connection} />
+              ) : activePage === "account" ? (
+                <AccountControlPage connection={connection} />
+              ) : activePage === "jobs" ? (
+                <BackgroundJobsPage
+                  connection={connection}
+                  defaultSessionId={activeSessionId}
+                />
+              ) : activePage === "logs" ? (
+                <DaemonLogsPage />
+              ) : (
+                <>
+                  <WorkspaceRail
+                    sessions={sessions}
+                    activeSessionId={activeSessionId}
+                    selectedWorkspace={selectedWorkspace}
+                    streamingBySession={streamingBySession}
+                    pendingPermissionsBySession={pendingPermissionsBySession}
+                    browserVisualBySession={browserVisualBySession}
+                    onSelectWorkspace={setSelectedWorkspace}
+                    onSelectSession={(sessionId) => {
+                      setActiveSessionId(sessionId);
+                      const next = sessions.find(
+                        (session) => session.sessionId === sessionId,
+                      );
+                      if (next) setSelectedWorkspace(next.workspace);
+                    }}
+                    onRemoveSession={removeSession}
+                  />
+
+                  <div
+                    className="workspace-center-column"
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      flex: 1,
+                      minWidth: 0,
+                      gap: "1rem",
+                      height: "calc(100vh - 120px)",
+                    }}
+                  >
+                    <div
+                      className={`browser-layout-row browser-mode-${browserViewMode}`}
+                      style={{ flex: 1, minHeight: 0 }}
+                    >
+                      <div className="timeline-module">
+                        {activeSessionId && timelineItems.length > 0 && (
+                          <div className="session-export-bar">
+                            <button
+                              type="button"
+                              className="session-export-btn"
+                              onClick={() => {
+                                const md = exportToMarkdown(
+                                  activeSessionId,
+                                  timelineItems,
+                                );
+                                downloadAsFile(
+                                  `opta-session-${activeSessionId}.md`,
+                                  md,
+                                );
+                                setNotice("Session exported as Markdown");
+                              }}
+                              title="Export session as Markdown"
+                            >
+                              <Download size={12} aria-hidden="true" />
+                              Export
+                            </button>
+                          </div>
+                        )}
+                        <TimelineCards
+                          sessionId={activeSessionId}
+                          sessionTitle={activeSession?.title}
+                          items={timelineItems}
+                          isStreaming={isStreaming}
+                          pendingPermissions={pendingPermissions}
+                          onResolvePermission={resolvePermission}
+                          connectionState={connectionState}
+                          browserVisualState={activeBrowserVisual}
+                        />
                       </div>
-                    )}
-                    <TimelineCards
-                      sessionId={activeSessionId}
-                      sessionTitle={activeSession?.title}
-                      items={timelineItems}
+                      <div className="browser-module">
+                        {activeBrowserSlot ? (
+                          <LiveBrowserView
+                            slot={activeBrowserSlot}
+                            showNativeControls={nativeDesktop}
+                          />
+                        ) : (
+                          <LiveBrowserView showNativeControls={nativeDesktop} />
+                        )}
+                      </div>
+                    </div>
+
+                    <Composer
+                      value={composerDraft}
+                      onChange={setComposerDraft}
+                      onSubmit={onSubmitComposer}
+                      onCancel={() => void cancelActiveTurn()}
                       isStreaming={isStreaming}
-                      pendingPermissions={pendingPermissions}
-                      onResolvePermission={resolvePermission}
-                      connectionState={connectionState}
-                      browserVisualState={activeBrowserVisual}
+                      disabled={!activeSessionId}
+                      mode={submissionMode}
+                      onModeChange={setSubmissionMode}
                     />
                   </div>
-                  <div className="browser-module">
-                    {activeBrowserSlot ? (
-                      <LiveBrowserView
-                        slot={activeBrowserSlot}
-                        showNativeControls={nativeDesktop}
-                      />
-                    ) : (
-                      <LiveBrowserView showNativeControls={nativeDesktop} />
-                    )}
-                  </div>
-                </div>
-              </>
-            )}
+                </>
+              )}
 
-            {showTerminal ? (
-              <aside
-                className="runtime-panel"
-                aria-label="Runtime status and stats"
-              >
-                <header>
-                  <h2>Runtime</h2>
-                  <p>Daemon telemetry + session health</p>
-                </header>
-                <dl>
-                  <div>
-                    <dt>Connection</dt>
-                    <dd className={`state-${connectionState}`}>
-                      {connectionState}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Tracked Sessions</dt>
-                    <dd>{sessionCount}</dd>
-                  </div>
-                  <div>
-                    <dt>Runtime Sessions</dt>
-                    <dd>{runtime?.sessionCount ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Active Turns</dt>
-                    <dd>{runtime?.activeTurnCount ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Queued Turns</dt>
-                    <dd>{runtime?.queuedTurnCount ?? "—"}</dd>
-                  </div>
-                  <div>
-                    <dt>Subscribers</dt>
-                    <dd>{runtime?.subscriberCount ?? "—"}</dd>
-                  </div>
-                </dl>
-                {connectionError ? (
-                  <div className="runtime-error">
-                    <strong>Connection Error</strong>
-                    <p className="runtime-error-detail">{connectionError}</p>
-                  </div>
-                ) : null}
-                <button type="button" onClick={() => void refreshNow()}>
-                  Refresh Now
-                </button>
-                <DaemonPanel
-                  connection={connection}
-                  connectionState={connectionState}
-                  onOpenDaemonOperations={() => setActivePage("cli")}
+              {showTerminal ? (
+                <TelemetryPanel
+                  metrics={{
+                    vramUtilized: 0,
+                    vramTotal: 32,
+                    tokensPerSec: 0,
+                  }}
+                  events={
+                    activeSessionId
+                      ? rawEventsBySession[activeSessionId] || []
+                      : []
+                  }
                 />
-              </aside>
-            ) : null}
-          </main>
+              ) : null}
+            </main>
 
-          <div className={`bottom-modules bottom-mode-${browserViewMode}`}>
-            <div className="bottom-modules-inner">
-              <div className="status-strip" aria-live="polite">
-                <span>State: {connectionState}</span>
-                <span>Sessions: {sessionCount}</span>
-                <span
-                  className={`status-browser status-browser-${activeBrowserVisual.state}`}
-                >
-                  Browser: {activeBrowserVisual.activityText}
-                </span>
-                <span>
-                  Active:{" "}
-                  {activeSession
-                    ? `${activeSession.title} (${activeSession.sessionId})`
-                    : "none"}
-                </span>
-                {notice ? <strong>{notice}</strong> : null}
-              </div>
-
-              <Composer
-                value={composerDraft}
-                onChange={setComposerDraft}
-                onSubmit={onSubmitComposer}
-                onCancel={() => void cancelActiveTurn()}
-                isStreaming={isStreaming}
-                disabled={!activeSessionId}
-                mode={submissionMode}
-                onModeChange={setSubmissionMode}
-              />
-            </div>
-          </div>
+          </div> {/* end main-layout */}
 
           <SettingsModal
             isOpen={isSettingsOpen}
@@ -919,12 +833,16 @@ function App() {
           />
 
           {showReconnectOverlay ? (
-            <div className="daemon-reconnect-overlay" role="status" aria-live="assertive">
+            <div
+              className="daemon-reconnect-overlay"
+              role="status"
+              aria-live="assertive"
+            >
               <div className="daemon-reconnect-overlay__panel">
                 <h2>Daemon connection lost</h2>
                 <p>
-                  Opta is retrying automatically. The session view unlocks as soon
-                  as the daemon is back online.
+                  Opta is retrying automatically. The session view unlocks as
+                  soon as the daemon is back online.
                 </p>
                 <p className="daemon-reconnect-overlay__meta">
                   Endpoint: <code>{reconnectEndpoint}</code>
@@ -934,10 +852,15 @@ function App() {
                   {Math.max(1, Math.round(runtimePollDelayMs / 1000))}s.
                 </p>
                 {connectionError ? (
-                  <p className="daemon-reconnect-overlay__error">{connectionError}</p>
+                  <p className="daemon-reconnect-overlay__error">
+                    {connectionError}
+                  </p>
                 ) : null}
                 <div className="daemon-reconnect-overlay__actions">
-                  <button type="button" onClick={() => void copyReconnectDiagnostics()}>
+                  <button
+                    type="button"
+                    onClick={() => void copyReconnectDiagnostics()}
+                  >
                     Copy diagnostics
                   </button>
                   <button type="button" onClick={() => void repairConnection()}>
@@ -950,7 +873,7 @@ function App() {
               </div>
             </div>
           ) : null}
-        </div >
+        </div>
 
         <CommandPalette
           open={palette.isOpen}

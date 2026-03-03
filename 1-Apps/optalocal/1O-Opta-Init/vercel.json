@@ -4,6 +4,11 @@
   "framework": null,
   "redirects": [
     {
+      "source": "/downloads/opta-cli/v0.5.0-alpha.15/opta-cli-npm.tgz",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
+      "permanent": false
+    },
+    {
       "source": "/desktop-updates/manager/stable/:version/:asset",
       "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v:version/:asset",
       "permanent": false
@@ -15,7 +20,7 @@
     },
     {
       "source": "/downloads/opta-cli/latest",
-      "destination": "https://init.optalocal.com/downloads/opta-cli/v0.6.2/opta-cli-0.6.2-macos-universal.pkg",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
       "permanent": false
     },
     {

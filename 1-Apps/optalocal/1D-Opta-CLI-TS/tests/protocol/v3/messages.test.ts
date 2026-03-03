@@ -50,6 +50,18 @@ describe('SessionModeSchema', () => {
     expect(SessionModeSchema.parse('do')).toBe('do');
   });
 
+  it('accepts "plan"', () => {
+    expect(SessionModeSchema.parse('plan')).toBe('plan');
+  });
+
+  it('accepts "review"', () => {
+    expect(SessionModeSchema.parse('review')).toBe('review');
+  });
+
+  it('accepts "research"', () => {
+    expect(SessionModeSchema.parse('research')).toBe('research');
+  });
+
   it('rejects invalid modes', () => {
     expect(() => SessionModeSchema.parse('shell')).toThrow();
     expect(() => SessionModeSchema.parse('')).toThrow();
@@ -75,6 +87,9 @@ describe('V3EventSchema', () => {
     'session.cancelled',
     'background.output',
     'background.status',
+    'browser.action',
+    'agent.phase',
+    'atpo.intervene',
   ];
 
   it.each(ALL_EVENTS)('accepts event "%s"', (event) => {
@@ -109,6 +124,30 @@ describe('ClientSubmitTurnSchema', () => {
     expect(result.metadata).toEqual({ key: 'value' });
   });
 
+  it('accepts turn overrides for mode/git/format controls', () => {
+    const result = ClientSubmitTurnSchema.parse({
+      ...valid,
+      overrides: {
+        provider: 'anthropic',
+        model: 'claude-3-7-sonnet-latest',
+        dangerous: true,
+        auto: true,
+        noCommit: true,
+        noCheckpoints: true,
+        format: 'json',
+      },
+    });
+    expect(result.overrides).toEqual({
+      provider: 'anthropic',
+      model: 'claude-3-7-sonnet-latest',
+      dangerous: true,
+      auto: true,
+      noCommit: true,
+      noCheckpoints: true,
+      format: 'json',
+    });
+  });
+
   it('rejects empty clientId', () => {
     expect(() => ClientSubmitTurnSchema.parse({ ...valid, clientId: '' })).toThrow();
   });
@@ -123,6 +162,15 @@ describe('ClientSubmitTurnSchema', () => {
 
   it('rejects invalid mode', () => {
     expect(() => ClientSubmitTurnSchema.parse({ ...valid, mode: 'exec' })).toThrow();
+  });
+
+  it('rejects invalid override format value', () => {
+    expect(() =>
+      ClientSubmitTurnSchema.parse({
+        ...valid,
+        overrides: { format: 'yaml' },
+      }),
+    ).toThrow();
   });
 
   it('rejects missing required fields', () => {
@@ -593,9 +641,33 @@ describe('WsTurnSubmitSchema', () => {
     expect(result.mode).toBe('do');
   });
 
+  it('accepts explicit plan/review/research modes', () => {
+    expect(WsTurnSubmitSchema.parse({ ...valid, mode: 'plan' }).mode).toBe('plan');
+    expect(WsTurnSubmitSchema.parse({ ...valid, mode: 'review' }).mode).toBe('review');
+    expect(WsTurnSubmitSchema.parse({ ...valid, mode: 'research' }).mode).toBe('research');
+  });
+
   it('accepts metadata', () => {
     const result = WsTurnSubmitSchema.parse({ ...valid, metadata: { tag: 'test' } });
     expect(result.metadata).toEqual({ tag: 'test' });
+  });
+
+  it('accepts turn overrides', () => {
+    const result = WsTurnSubmitSchema.parse({
+      ...valid,
+      overrides: {
+        auto: true,
+        noCommit: true,
+        noCheckpoints: true,
+        format: 'text',
+      },
+    });
+    expect(result.overrides).toEqual({
+      auto: true,
+      noCommit: true,
+      noCheckpoints: true,
+      format: 'text',
+    });
   });
 
   it('rejects empty content', () => {
@@ -604,6 +676,15 @@ describe('WsTurnSubmitSchema', () => {
 
   it('rejects invalid mode', () => {
     expect(() => WsTurnSubmitSchema.parse({ ...valid, mode: 'exec' })).toThrow();
+  });
+
+  it('rejects invalid override format', () => {
+    expect(() =>
+      WsTurnSubmitSchema.parse({
+        ...valid,
+        overrides: { format: 'xml' },
+      }),
+    ).toThrow();
   });
 });
 

@@ -272,6 +272,13 @@ export function buildAutonomyStageCheckpointGuidance(
     `- requirement: ${AUTONOMY_STAGE_GUIDANCE[enforcedStage]}`,
   ];
 
+  if (enforcedStage === 'planning' || enforcedStage === 'sub-planning') {
+    lines.push(
+      '- THOUGHT LEDGER REQUIRED: Before proceeding to execution, you MUST use the `write_file` tool to save your master plan to `.opta/thought_ledger.md`.',
+      '- This ledger acts as your persistent scratchpad to prevent you from forgetting your plan over long context windows. Keep it updated.'
+    );
+  }
+
   if (finalReassessment) {
     lines.push(
       '- final pass: run a final review/reassessment now before ending this task.',

@@ -215,6 +215,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const status = await lmx.status();
       return status;
@@ -233,6 +234,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const discovery = await lmx.discovery();
       return discovery;
@@ -251,6 +253,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const models = await lmx.models();
       return models;
@@ -269,6 +272,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const memory = await lmx.memory();
       return memory;
@@ -287,6 +291,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const available = await lmx.available();
       return available;
@@ -315,6 +320,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.loadModel(body.modelId, {
         backend: body.backend,
@@ -345,6 +351,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.confirmLoad(confirmationToken);
       return result;
@@ -368,6 +375,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.unloadModel(body.modelId);
       return result;
@@ -391,6 +399,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.deleteModel(params.modelId);
       return result;
@@ -414,6 +423,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.downloadModel(body.repoId);
       return {
@@ -447,6 +457,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.downloads({ includeInactive });
       return result;
@@ -470,6 +481,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
+    adminKeysByHost: config.connection.adminKeysByHost,
       });
       const result = await lmx.downloadProgress(params.downloadId);
       return {

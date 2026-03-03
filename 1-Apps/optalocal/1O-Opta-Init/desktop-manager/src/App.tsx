@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { Settings } from "lucide-react";
 import type {
   Channel,
@@ -11,6 +12,7 @@ import type {
   ManagerUpdateCheckResult,
   ManagerUpdateInstallResult,
   ManagerUpdateState,
+  AccountProfile,
 } from "./types";
 import "./app.css";
 
@@ -141,8 +143,8 @@ function parseManagerUpdateCheck(
   const statusText = typeof payload.status === "string" ? payload.status.toLowerCase() : "";
   const warningFromWarnings =
     Array.isArray(payload.warnings) &&
-    typeof payload.warnings[0] === "string" &&
-    payload.warnings[0].trim().length > 0
+      typeof payload.warnings[0] === "string" &&
+      payload.warnings[0].trim().length > 0
       ? payload.warnings[0]
       : undefined;
   const explicitWarning =
@@ -215,7 +217,7 @@ function ParticleBackground() {
     resize();
     window.addEventListener("resize", resize);
 
-    const cx = c.width / 2; 
+    const cx = c.width / 2;
     const cy = c.height / 2;
 
     const particles: any[] = [];
@@ -269,6 +271,23 @@ export function App() {
     typeof window !== "undefined" &&
     Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
   const [channel, setChannel] = useState<Channel>(resolveInitialChannel);
+  const [cmdProgress, setCmdProgress] = useState<Record<string, { line: string, pct?: number }>>({});
+
+  useEffect(() => {
+    if (!tauriAvailable) return;
+    const unlisten = listen("cmd-progress", (event: any) => {
+      const payload = event.payload as { app_id: string, line: string };
+      setCmdProgress((prev: any) => {
+        let pct = prev[payload.app_id]?.pct;
+        const match = payload.line.match(/(\d{1,3})%/);
+        if (match) pct = parseInt(match[1], 10);
+        return { ...prev, [payload.app_id]: { line: payload.line, pct } };
+      });
+    });
+    return () => {
+      unlisten.then((f: any) => f());
+    };
+  }, [tauriAvailable]);
   const [manifestResp, setManifestResp] = useState<ManifestResponse | null>(null);
   const [installedApps, setInstalledApps] = useState<InstalledApp[]>([]);
   const [daemon, setDaemon] = useState<DaemonStatus | null>(null);
@@ -276,7 +295,9 @@ export function App() {
   const [managerUpdateState, setManagerUpdateState] = useState<ManagerUpdateState>("up_to_date");
   const [managerUpdateWarning, setManagerUpdateWarning] = useState<string | null>(null);
   const [managerUpdatePending, setManagerUpdatePending] = useState(false);
-  
+  const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
+  const [accountPending, setAccountPending] = useState(false);
+
   const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
   const [showScanPrompt, setShowScanPrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -299,18 +320,21 @@ export function App() {
       });
       setInstalledApps([]);
       setDaemon({ running: false, message: "browser mode", rawOutput: "", checkedAt: "" });
+      setAccountProfile(null);
       return;
     }
 
     try {
-      const [manifestResult, installedResult, daemonResult] = await Promise.all([
+      const [manifestResult, installedResult, daemonResult, accountResult] = await Promise.all([
         invoke<ManifestResponse>("fetch_manifest", { channel }),
         invoke<InstalledApp[]>("list_installed_apps"),
         invoke<DaemonStatus>("daemon_status"),
+        invoke<AccountProfile | null>("get_account_status"),
       ]);
       setManifestResp(manifestResult);
       setInstalledApps(installedResult);
       setDaemon(daemonResult);
+      setAccountProfile(accountResult);
     } catch (e) {
       console.error("Refresh failed:", e);
     }
@@ -382,7 +406,7 @@ export function App() {
       // In the future, map these to real Tauri commands like invoke("verify_app")
       return;
     }
-    
+
     setPendingKey(`${action}:${app.id}`);
     try {
       const command = action === "install" ? "install_app" : action === "update" ? "update_app" : "launch_app";
@@ -394,6 +418,7 @@ export function App() {
       console.error(e);
     } finally {
       setPendingKey(null);
+      setCmdProgress((prev: any) => { const n = { ...prev }; delete n[app.id]; return n; });
     }
   }, [channel, managerUpdatePending, tauriAvailable]);
 
@@ -408,7 +433,7 @@ export function App() {
         }
         return;
       }
-      
+
       if (e.key.toLowerCase() === 's' && !e.ctrlKey && !e.metaKey && !hoveredApp && !managerUpdatePending) {
         setShowScanPrompt(true);
       }
@@ -423,7 +448,7 @@ export function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       const key = e.key.toLowerCase();
       const isInstalled = installedIndex.has(hoveredApp.id);
-      
+
       if (key === 'u' && isInstalled) {
         void runAppAction(hoveredApp, "update");
       } else if (key === 'l' && isInstalled) {
@@ -454,8 +479,21 @@ export function App() {
     }
   };
 
+  const runAccountAction = useCallback(async (action: "login" | "logout") => {
+    if (!tauriAvailable || accountPending || managerUpdatePending) return;
+    setAccountPending(true);
+    try {
+      await invoke(action === "login" ? "trigger_login" : "trigger_logout");
+      setAccountProfile(await invoke<AccountProfile | null>("get_account_status"));
+    } catch (e) {
+      console.error("Account action failed:", e);
+    } finally {
+      setAccountPending(false);
+    }
+  }, [accountPending, managerUpdatePending, tauriAvailable]);
+
   const apps = manifestResp?.manifest.apps ?? [];
-  
+
   // Extract top apps
   const topLocal = apps.find(a => a.id === "opta-local");
   const topDaemon = apps.find(a => a.id === "opta-daemon");
@@ -464,7 +502,7 @@ export function App() {
   const coreCli = apps.find(a => a.id === "opta-cli");
   const coreLmx = apps.find(a => a.id === "opta-lmx");
   const coreCode = apps.find(a => a.id === "opta-code-universal");
-  
+
   // Extract bottom apps
   const bottomApps = apps.filter(a => !["opta-local", "opta-daemon", "opta-cli", "opta-lmx", "opta-code-universal"].includes(a.id));
 
@@ -488,13 +526,19 @@ export function App() {
     const isAppInstalled = installedIndex.has(app.id);
     const isDaemon = app.id === "opta-daemon";
     const isActive = isDaemon ? daemon?.running : isAppInstalled;
-    
+
     return (
-      <div 
-        key={app.id} 
-        className={`app-item ${customClass} ${getFloatingClass(animIndex)}`} 
+      <div
+        key={app.id}
+        className={`app-item ${customClass} ${getFloatingClass(animIndex)}`}
         onMouseEnter={() => setHoveredApp(app)}
         onMouseLeave={() => setHoveredApp(null)}
+        onClick={() => {
+          if (app.website) {
+            invoke("open_url", { url: app.website }).catch(console.error);
+          }
+        }}
+        style={{ cursor: app.website ? "pointer" : "default" }}
       >
         <div className="tooltip">
           <div className="tooltip-title">{app.name}</div>
@@ -514,15 +558,15 @@ export function App() {
           )}
         </div>
         <div className="purple-circle"></div>
-        <img 
-          src={logoPath} 
-          className="app-logo" 
-          alt={app.name} 
-          onError={(e) => { 
+        <img
+          src={logoPath}
+          className="app-logo"
+          alt={app.name}
+          onError={(e) => {
             if (e.currentTarget.src !== LOGOS["default"]) {
-              e.currentTarget.src = LOGOS["default"]; 
+              e.currentTarget.src = LOGOS["default"];
             }
-          }} 
+          }}
         />
         {isActive && <div className="app-status-pip active"></div>}
       </div>
@@ -540,7 +584,7 @@ export function App() {
           <p className="app-desc-text fade-in">{displayApp.description}</p>
         )}
       </div>
-      
+
       <div className="cluster-container">
         {/* TOP ROW: Local & Daemon */}
         <div className="top-row">
@@ -554,7 +598,7 @@ export function App() {
           {coreLmx && renderAppNode(coreLmx, "lmx-item", 1)}
           {coreCode && renderAppNode(coreCode, "", 2)}
         </div>
-        
+
         {/* BOTTOM ROW */}
         <div className="bottom-row">
           {bottomApps.map((app, i) => {
@@ -567,7 +611,7 @@ export function App() {
       <div className="bottom-panel">
         <div className="centered-bottom-group">
           <div className="status-row">
-            <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{cursor: 'pointer'}}>
+            <div className="status-badge" onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")} style={{ cursor: 'pointer' }}>
               <div className={`status-dot ${daemon?.running ? 'active' : ''}`}></div>
               {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
               {pendingKey?.includes('daemon') && " (Working...)"}
@@ -599,8 +643,8 @@ export function App() {
             {displayApp ? (
               <div className="fade-in">
                 {displayApp.id === "opta-daemon" ? (
-                  <button 
-                    className="btn primary" 
+                  <button
+                    className="btn primary"
                     disabled={controlsDisabled}
                     onClick={() => runDaemonAction(daemon?.running ? "stop" : "start")}
                   >
@@ -609,15 +653,33 @@ export function App() {
                 ) : isInstalled ? (
                   <>
                     <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "launch")}>
-                      {isPending ? "Working..." : "Launch App"}
+                      Launch App
                     </button>
                     <button className="btn secondary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "update")}>
                       Update
                     </button>
                   </>
+                ) : isPending ? (
+                  <div className="progress-container" style={{ width: '100%', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#a1a1aa', marginBottom: '4px', fontFamily: '"JetBrains Mono", monospace' }}>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '80%' }}>
+                        {cmdProgress[displayApp.id]?.line || "Starting..."}
+                      </span>
+                      <span>{cmdProgress[displayApp.id]?.pct ? `${cmdProgress[displayApp.id].pct}%` : ''}</span>
+                    </div>
+                    <div style={{ width: '100%', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', overflow: 'hidden' }}>
+                      <div style={{
+                        height: '100%',
+                        background: '#8b5cf6',
+                        width: cmdProgress[displayApp.id]?.pct ? `${cmdProgress[displayApp.id].pct}%` : '100%',
+                        transition: 'width 0.2s ease-out',
+                        animation: cmdProgress[displayApp.id]?.pct ? 'none' : 'pulse 1.5s infinite'
+                      }} />
+                    </div>
+                  </div>
                 ) : (
                   <button className="btn primary" disabled={controlsDisabled} onClick={() => runAppAction(displayApp, "install")}>
-                    {isPending ? "Installing..." : "Install App"}
+                    Install App
                   </button>
                 )}
               </div>
@@ -629,7 +691,7 @@ export function App() {
               </div>
             )}
           </div>
-          
+
           <button className="settings-cog" onClick={() => setShowSettings(true)} title="Settings">
             <Settings size={20} />
           </button>
@@ -657,7 +719,7 @@ export function App() {
         <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowSettings(false); }}>
           <div className="settings-modal fade-in">
             <h2 className="modal-title" style={{ textAlign: 'left', marginBottom: '8px' }}>Opta Init Settings</h2>
-            
+
             <div className="settings-section">
               <h3>Update Channel</h3>
               <div className="settings-row">
@@ -681,10 +743,19 @@ export function App() {
               <h3>Opta Account</h3>
               <div className="settings-row">
                 <div className="settings-info">
-                  <div className="settings-label">Not Linked</div>
-                  <div className="settings-sub">Sync your preferences and cloud backups.</div>
+                  <div className="settings-label">{accountProfile?.email ?? "Not Linked"}</div>
+                  <div className="settings-sub">
+                    {accountProfile ? `Role: ${accountProfile.activeRole ?? "Developer"}` : "Sync significant data preferences, identity and cloud backups."}
+                  </div>
                 </div>
-                <button className="btn secondary" style={{ padding: '6px 12px', fontSize: '12px' }}>Link Account</button>
+                <button
+                  className="btn secondary"
+                  style={{ padding: '6px 12px', fontSize: '12px' }}
+                  disabled={accountPending || controlsDisabled}
+                  onClick={() => void runAccountAction(accountProfile ? "logout" : "login")}
+                >
+                  {accountPending ? "Working..." : accountProfile ? "Sign Out" : "Link Account"}
+                </button>
               </div>
             </div>
 

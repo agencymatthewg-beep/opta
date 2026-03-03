@@ -1,0 +1,171 @@
+/* DaemonDrawer.css */
+
+.drawer-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: transparent;
+    z-index: 999;
+    pointer-events: none;
+}
+
+.drawer-backdrop.open {
+    pointer-events: auto;
+}
+
+.daemon-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 500px;
+    height: 100vh;
+    background: var(--glass-bg, rgba(12, 12, 18, 0.85));
+    border-left: 1px solid var(--glass-border, rgba(255, 255, 255, 0.06));
+    -webkit-backdrop-filter: blur(50px);
+    backdrop-filter: blur(50px);
+    display: flex;
+    flex-direction: column;
+    padding: 40px;
+    box-sizing: border-box;
+    z-index: 1000;
+
+    /* Initial off-screen state */
+    transform: translateX(100%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.daemon-drawer.open {
+    transform: translateX(0%);
+}
+
+.drawer-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.drawer-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-main, #ffffff);
+    font-family: 'Sora', sans-serif;
+}
+
+.drawer-header .close-icon {
+    color: var(--text-muted, #a1a1aa);
+    cursor: pointer;
+    font-size: 24px;
+    line-height: 1;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.job-track {
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+}
+
+.job-node {
+    display: flex;
+    gap: 16px;
+    position: relative;
+    font-family: 'Sora', sans-serif;
+}
+
+/* Vertical connection line */
+.job-node:not(:last-child)::after {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 24px;
+    bottom: -24px;
+    width: 1px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.job-node .status-ring {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    margin-top: 4px;
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+}
+
+.job-node .status-ring.running {
+    background: var(--green, #22c55e);
+    box-shadow: 0 0 12px rgba(34, 197, 94, 0.5);
+    border: 2px solid var(--void, #09090b);
+}
+
+.job-node .status-ring.stopped {
+    background: transparent;
+    border: 2px solid var(--text-muted, #a1a1aa);
+}
+
+.job-node .content {
+    flex: 1;
+}
+
+.job-node .cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--text-main, #ffffff);
+    margin-bottom: 8px;
+}
+
+.job-node .meta {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-muted, #a1a1aa);
+}
+
+.job-node .action-overlay {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+    opacity: 0.3;
+    transition: opacity 0.2s;
+}
+
+.job-node:hover .action-overlay {
+    opacity: 1;
+}
+
+.job-node .a-btn {
+    background: transparent;
+    border: none;
+    color: var(--purple, #a855f7);
+    font-family: 'Sora', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.job-node .a-btn:hover {
+    text-decoration: underline;
+}
+
+.job-node .a-btn.danger {
+    color: var(--red, #ef4444);
+}
+
+.job-node .kb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    padding: 1px 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    color: var(--text-main, #ffffff);
+    text-decoration: none !important;
+}

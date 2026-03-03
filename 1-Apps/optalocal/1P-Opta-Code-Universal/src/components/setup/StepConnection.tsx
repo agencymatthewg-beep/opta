@@ -21,6 +21,7 @@ export function StepConnection({
   const [testState, setTestState] = useState<TestState>("idle");
   const [testMsg, setTestMsg] = useState("");
   const [showKey, setShowKey] = useState(false);
+  const [showLmxAdminKey, setShowLmxAdminKey] = useState(false);
   const [probeInfo, setProbeInfo] = useState<LmxProbeResult | null>(null);
 
   async function testConnection(e: React.MouseEvent) {
@@ -90,7 +91,9 @@ export function StepConnection({
         if (e.key === " " || e.key === "Enter") onClick();
       }}
       style={{
-        background: isSelected ? "rgba(139,92,246,0.06)" : WIZARD_THEME.elevated,
+        background: isSelected
+          ? "rgba(139,92,246,0.06)"
+          : WIZARD_THEME.elevated,
         border: `1.5px solid ${isSelected ? WIZARD_THEME.primary : WIZARD_THEME.border}`,
         borderRadius: 14,
         padding: "16px 18px",
@@ -143,7 +146,8 @@ export function StepConnection({
               background: WIZARD_THEME.primary,
               opacity: isSelected ? 1 : 0,
               transform: isSelected ? "scale(1)" : "scale(0)",
-              transition: "opacity 0.2s, transform 0.2s cubic-bezier(0.16,1,0.3,1)",
+              transition:
+                "opacity 0.2s, transform 0.2s cubic-bezier(0.16,1,0.3,1)",
             }}
           />
         </div>
@@ -157,7 +161,165 @@ export function StepConnection({
       >
         {desc}
       </div>
-      {isSelected ? <div onClick={(e) => e.stopPropagation()}>{detail}</div> : null}
+      {isSelected ? (
+        <div onClick={(e) => e.stopPropagation()}>{detail}</div>
+      ) : null}
+    </div>
+  );
+
+  const cloudProviders: Array<{
+    id: "anthropic" | "gemini" | "openai" | "opencode_zen";
+    title: string;
+    description: string;
+    placeholder: string;
+  }> = [
+    {
+      id: "anthropic",
+      title: "Anthropic",
+      description: "Cloud API - Claude models",
+      placeholder: "sk-ant-api03-...",
+    },
+    {
+      id: "gemini",
+      title: "Gemini",
+      description: "Google OpenAI-compatible endpoint",
+      placeholder: "AIza...",
+    },
+    {
+      id: "openai",
+      title: "OpenAI/Codex",
+      description: "OpenAI and Codex-compatible endpoint",
+      placeholder: "sk-proj-...",
+    },
+    {
+      id: "opencode_zen",
+      title: "Opencode Zen",
+      description: "Alternative cloud provider endpoint",
+      placeholder: "zen-...",
+    },
+  ];
+
+  const cloudDetail = (title: string, placeholder: string) => (
+    <div>
+      <MonoLabel>{title} API Key</MonoLabel>
+      <div style={{ position: "relative" }}>
+        <TextInput
+          value={form.cloudApiKey}
+          onChange={(nextValue) =>
+            setForm((prev) => ({ ...prev, cloudApiKey: nextValue }))
+          }
+          placeholder={placeholder}
+          type={showKey ? "text" : "password"}
+          style={{ paddingRight: 42 }}
+        />
+        <button
+          type="button"
+          tabIndex={-1}
+          onClick={() => setShowKey((current) => !current)}
+          style={{
+            position: "absolute",
+            right: 9,
+            top: "50%",
+            transform: "translateY(-50%)",
+            background: "none",
+            border: "none",
+            cursor: "pointer",
+            color: WIZARD_THEME.text3,
+            display: "flex",
+            padding: 4,
+          }}
+        >
+          {showKey ? (
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+              <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+              <line x1="1" y1="1" x2="23" y2="23" />
+            </svg>
+          ) : (
+            <svg
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              aria-hidden="true"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          )}
+        </button>
+      </div>
+
+      <div style={{ marginTop: 10 }}>
+        <MonoLabel>API key storage</MonoLabel>
+        <div
+          style={{
+            display: "flex",
+            background: "rgba(0,0,0,0.22)",
+            border: `1px solid ${WIZARD_THEME.border}`,
+            borderRadius: 10,
+            padding: 3,
+            gap: 2,
+          }}
+        >
+          {(
+            [
+              { value: "keychain", label: "OS keychain" },
+              { value: "config", label: "Config file" },
+            ] as const
+          ).map((option) => {
+            const isOn = form.providerKeyStorage === option.value;
+            return (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() =>
+                  setForm((prev) => ({
+                    ...prev,
+                    providerKeyStorage: option.value,
+                  }))
+                }
+                style={{
+                  fontFamily: "'Bricolage Grotesque', sans-serif",
+                  fontSize: 11.5,
+                  fontWeight: 500,
+                  flex: 1,
+                  background: isOn ? "rgba(139,92,246,0.14)" : "none",
+                  border: isOn ? "1px solid rgba(139,92,246,0.28)" : "none",
+                  color: isOn ? WIZARD_THEME.primaryBright : WIZARD_THEME.text3,
+                  padding: "6px 8px",
+                  borderRadius: 7,
+                  cursor: "pointer",
+                  transition: "all 0.18s",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <p
+          style={{
+            margin: "6px 0 0",
+            fontSize: 10.5,
+            color: WIZARD_THEME.text3,
+          }}
+        >
+          Keychain mode matches CLI behavior and falls back to config if secure
+          storage is unavailable.
+        </p>
+      </div>
     </div>
   );
 
@@ -174,7 +336,9 @@ export function StepConnection({
       >
         Choose a provider
       </h2>
-      <p style={{ fontSize: 12.5, color: WIZARD_THEME.text2, marginBottom: 20 }}>
+      <p
+        style={{ fontSize: 12.5, color: WIZARD_THEME.text2, marginBottom: 20 }}
+      >
         Where Opta sends your prompts
       </p>
 
@@ -272,6 +436,66 @@ export function StepConnection({
                 Test
               </button>
             </div>
+            <div style={{ marginTop: 10 }}>
+              <MonoLabel>LMX Admin Key (optional)</MonoLabel>
+              <div style={{ position: "relative" }}>
+                <TextInput
+                  value={form.lmxAdminKey}
+                  onChange={(nextValue) =>
+                    setForm((prev) => ({ ...prev, lmxAdminKey: nextValue }))
+                  }
+                  placeholder="Optional admin key for /admin endpoints"
+                  type={showLmxAdminKey ? "text" : "password"}
+                  style={{ paddingRight: 42 }}
+                />
+                <button
+                  type="button"
+                  tabIndex={-1}
+                  onClick={() => setShowLmxAdminKey((current) => !current)}
+                  style={{
+                    position: "absolute",
+                    right: 9,
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: WIZARD_THEME.text3,
+                    display: "flex",
+                    padding: 4,
+                  }}
+                >
+                  {showLmxAdminKey ? (
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
+                      <line x1="1" y1="1" x2="23" y2="23" />
+                    </svg>
+                  ) : (
+                    <svg
+                      width="13"
+                      height="13"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
             {testMsg ? (
               <div
                 style={{
@@ -355,72 +579,17 @@ export function StepConnection({
           </div>,
         )}
 
-        {modeCard(
-          form.provider === "anthropic",
-          () => setForm((prev) => ({ ...prev, provider: "anthropic" })),
-          "Cloud API",
-          "Anthropic API - no Mac Studio required",
-          <div>
-            <MonoLabel>Anthropic API Key</MonoLabel>
-            <div style={{ position: "relative" }}>
-              <TextInput
-                value={form.anthropicKey}
-                onChange={(nextValue) =>
-                  setForm((prev) => ({ ...prev, anthropicKey: nextValue }))
-                }
-                placeholder="sk-ant-api03-..."
-                type={showKey ? "text" : "password"}
-                style={{ paddingRight: 42 }}
-              />
-              <button
-                type="button"
-                tabIndex={-1}
-                onClick={() => setShowKey((current) => !current)}
-                style={{
-                  position: "absolute",
-                  right: 9,
-                  top: "50%",
-                  transform: "translateY(-50%)",
-                  background: "none",
-                  border: "none",
-                  cursor: "pointer",
-                  color: WIZARD_THEME.text3,
-                  display: "flex",
-                  padding: 4,
-                }}
-              >
-                {showKey ? (
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94" />
-                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19" />
-                    <line x1="1" y1="1" x2="23" y2="23" />
-                  </svg>
-                ) : (
-                  <svg
-                    width="13"
-                    height="13"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-                    <circle cx="12" cy="12" r="3" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>,
-        )}
+        {cloudProviders.map((provider) => (
+          <div key={provider.id}>
+            {modeCard(
+              form.provider === provider.id,
+              () => setForm((prev) => ({ ...prev, provider: provider.id })),
+              provider.title,
+              provider.description,
+              cloudDetail(provider.title, provider.placeholder),
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

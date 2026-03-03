@@ -221,9 +221,7 @@ def _job_from_dict(raw: dict[str, Any]) -> QuantizeJob | None:
                 float(raw["cancelled_at"]) if raw.get("cancelled_at") is not None else None
             ),
             queue_position=(
-                int(raw["queue_position"])
-                if raw.get("queue_position") is not None
-                else None
+                int(raw["queue_position"]) if raw.get("queue_position") is not None else None
             ),
             updated_at=float(raw.get("updated_at", 0.0)),
             failure_code=(
@@ -231,9 +229,7 @@ def _job_from_dict(raw: dict[str, Any]) -> QuantizeJob | None:
             ),
             exit_code=(int(raw["exit_code"]) if raw.get("exit_code") is not None else None),
             signal=(int(raw["signal"]) if raw.get("signal") is not None else None),
-            worker_pid=(
-                int(raw["worker_pid"]) if raw.get("worker_pid") is not None else None
-            ),
+            worker_pid=(int(raw["worker_pid"]) if raw.get("worker_pid") is not None else None),
         )
     except Exception:
         return None
@@ -491,9 +487,7 @@ async def start_quantize(
     # Auto-generate output path
     if output_path is None:
         safe_name = source_model.replace("/", "--")
-        output_path = str(
-            Path.home() / ".opta-lmx" / "quantized" / f"{safe_name}-{bits}bit"
-        )
+        output_path = str(Path.home() / ".opta-lmx" / "quantized" / f"{safe_name}-{bits}bit")
 
     now = time.time()
     job = QuantizeJob(

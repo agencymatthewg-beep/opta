@@ -95,6 +95,7 @@ export const benchmarkHandler = async (args: string, ctx: SlashContext): Promise
       fallbackHosts: ctx.config.connection.fallbackHosts,
       port: ctx.config.connection.port,
       adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
     });
 
     try {
@@ -171,6 +172,7 @@ export const benchmarkHandler = async (args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   console.log(chalk.dim(`  Benchmarking ${modelId} (3 runs \u00d7 128 tokens)...`));
@@ -266,6 +268,7 @@ export const embedHandler = async (args: string, ctx: SlashContext): Promise<Sla
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -390,6 +393,7 @@ export const rerankHandler = async (args: string, ctx: SlashContext): Promise<Sl
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {
@@ -510,6 +514,7 @@ export const modelPerfHandler = async (args: string, ctx: SlashContext): Promise
     fallbackHosts: ctx.config.connection.fallbackHosts,
     port: ctx.config.connection.port,
     adminKey: ctx.config.connection.adminKey,
+    adminKeysByHost: ctx.config.connection.adminKeysByHost,
   });
 
   try {

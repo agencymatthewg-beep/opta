@@ -5,7 +5,8 @@ import { realpathSync } from 'node:fs';
 import chalk from 'chalk';
 import { debug } from '../debug.js';
 import { errorMessage } from '../../utils/errors.js';
-import type { OptaConfig } from '../config.js';
+import { loadConfig, type OptaConfig } from '../config.js';
+import { resolveWritableMemoryPath } from '../../context/memory.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
 import { DEFAULT_IGNORE_DIRS } from '../../utils/ignore.js';
 import { shellArgs } from '../../platform/index.js';
@@ -224,7 +225,7 @@ export async function resetBrowserRuntimeForTests(): Promise<void> {
 
 // --- Tool Executors ---
 
-export async function executeTool(name: string, argsJson: string): Promise<string> {
+export async function executeTool(name: string, argsJson: string, signal?: AbortSignal): Promise<string> {
   let args: Record<string, unknown>;
   try {
     const parsed = parseArgsJson(argsJson);
@@ -253,17 +254,17 @@ export async function executeTool(name: string, argsJson: string): Promise<strin
       case 'find_files':
         return await execFindFiles(args);
       case 'run_command':
-        return await execRunCommand(args);
+        return await execRunCommand(args, signal);
       case 'ask_user':
         return await execAskUser(args);
       case 'read_project_docs':
         return await execReadProjectDocs(args);
       case 'web_search':
-        return await execWebSearch(args);
+        return await execWebSearch(args, signal);
       case 'web_fetch':
-        return await execWebFetch(args);
+        return await execWebFetch(args, signal);
       case 'research_query':
-        return await execResearchQuery(args);
+        return await execResearchQuery(args, signal);
       case 'research_health':
         return await execResearchHealth();
       case 'learning_log':
@@ -498,7 +499,7 @@ async function execFindFiles(args: Record<string, unknown>): Promise<string> {
   return files.length > 0 ? files.sort().join('\n') : 'No files found.';
 }
 
-async function execRunCommand(args: Record<string, unknown>): Promise<string> {
+async function execRunCommand(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const command = getStringArg(args, 'command');
   const timeout = Number(args['timeout'] ?? 30000);
 
@@ -508,6 +509,7 @@ async function execRunCommand(args: Record<string, unknown>): Promise<string> {
     reject: false,
     timeout,
     cwd: process.cwd(),
+    cancelSignal: signal,
   });
 
   let output = '';
@@ -533,7 +535,7 @@ async function execReadProjectDocs(args: Record<string, unknown>): Promise<strin
   return readProjectDoc(process.cwd(), file);
 }
 
-async function execWebSearch(args: Record<string, unknown>): Promise<string> {
+async function execWebSearch(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const query = getStringArg(args, 'query');
   const maxResults = Number(args['max_results'] ?? 5);
 
@@ -553,7 +555,8 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
   const url = `${searxngUrl}/search?q=${encodeURIComponent(query)}&format=json`;
 
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    const fetchSignal = signal ?? AbortSignal.timeout(10000);
+    const response = await fetch(url, { signal: fetchSignal });
     if (!response.ok) return `Error: Search returned ${response.status}`;
 
     const data = (await response.json()) as {
@@ -567,11 +570,12 @@ async function execWebSearch(args: Record<string, unknown>): Promise<string> {
       .map((r, i) => `${i + 1}. ${r.title}\n   ${r.url}\n   ${r.content.slice(0, 200)}`)
       .join('\n\n');
   } catch (err) {
+    if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) throw err;
     return `Error: Search failed — ${errorMessage(err)}`;
   }
 }
 
-async function execWebFetch(args: Record<string, unknown>): Promise<string> {
+async function execWebFetch(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const url = getStringArg(args, 'url');
   const maxChars = Number(args['max_chars'] ?? 10000);
 
@@ -581,8 +585,9 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
   }
 
   try {
+    const fetchSignal = signal ?? AbortSignal.timeout(10000);
     const response = await fetch(url, {
-      signal: AbortSignal.timeout(10000),
+      signal: fetchSignal,
       headers: { 'User-Agent': 'Opta-CLI/0.1 (web-fetch)' },
     });
     if (!response.ok) return `Error: Fetch returned ${response.status}`;
@@ -618,11 +623,12 @@ async function execWebFetch(args: Record<string, unknown>): Promise<string> {
 
     return text.slice(0, maxChars);
   } catch (err) {
+    if (signal?.aborted || (err instanceof Error && err.name === 'AbortError')) throw err;
     return `Error: Fetch failed — ${errorMessage(err)}`;
   }
 }
 
-async function execResearchQuery(args: Record<string, unknown>): Promise<string> {
+async function execResearchQuery(args: Record<string, unknown>, signal?: AbortSignal): Promise<string> {
   const query = getStringArg(args, 'query').trim();
   if (!query) return 'Error: query is required';
 
@@ -633,7 +639,7 @@ async function execResearchQuery(args: Record<string, unknown>): Promise<string>
   const { loadConfig } = await import('../config.js');
   const config = await loadConfig();
 
-  const result = await routeResearchQuery({ query, intent, maxResults }, { config, providerOrder });
+  const result = await routeResearchQuery({ query, intent, maxResults }, { config, providerOrder }, signal);
 
   if (!result.ok) {
     return JSON.stringify({
@@ -869,11 +875,8 @@ async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
   const category = getStringArg(args, 'category', 'note');
   const timestamp = new Date().toISOString().split('T')[0];
 
-  const memoryPath = resolve(process.cwd(), '.opta', 'memory.md');
-
-  const { mkdir } = await import('node:fs/promises');
-  const pathModule = await import('node:path');
-  await mkdir(pathModule.dirname(memoryPath), { recursive: true });
+  const config = await loadConfig().catch(() => null);
+  const memoryPath = await resolveWritableMemoryPath(process.cwd(), config);
 
   let existing = '';
   try {
@@ -885,7 +888,8 @@ async function execSaveMemory(args: Record<string, unknown>): Promise<string> {
   const entry = `\n## [${category}] ${timestamp}\n\n${content}\n`;
   await writeFile(memoryPath, existing + entry, 'utf-8');
 
-  return `Memory saved to .opta/memory.md (${category})`;
+  const relativePath = memoryPath.replace(process.cwd() + '/', '');
+  return `Memory saved to ${relativePath} (${category})`;
 }
 
 // --- Background Process Management ---

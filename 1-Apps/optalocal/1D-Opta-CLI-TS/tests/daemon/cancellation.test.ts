@@ -25,25 +25,30 @@ vi.mock('../../src/daemon/session-store.js', () => ({
 }));
 
 vi.mock('../../src/daemon/worker-pool.js', () => ({
-  ToolWorkerPool: vi.fn().mockImplementation(() => ({
-    runTool: vi.fn().mockResolvedValue('ok'),
-    getStats: vi.fn().mockReturnValue({ workers: 0, busy: 0, queued: 0 }),
-    close: vi.fn().mockResolvedValue(undefined),
-    warmUp: vi.fn(),
-  })),
+  ToolWorkerPool: vi.fn().mockImplementation(function() {
+    return {
+      runTool: vi.fn().mockResolvedValue('ok'),
+      getStats: vi.fn().mockReturnValue({ workers: 0, busy: 0, queued: 0 }),
+      warmUp: vi.fn(),
+      close: vi.fn().mockResolvedValue(undefined)
+    };
+  }),
 }));
 
 vi.mock('../../src/daemon/background-manager.js', () => ({
-  BackgroundManager: vi.fn().mockImplementation(() => ({
-    subscribe: vi.fn().mockReturnValue(() => {}),
-    list: vi.fn().mockResolvedValue([]),
+  BackgroundManager: vi.fn().mockImplementation(function() {
+    return {
+      subscribe: vi.fn().mockReturnValue(() => {}),
+      list: vi.fn().mockResolvedValue([]),
     start: vi.fn().mockResolvedValue({ processId: 'p-1', state: 'running' }),
     status: vi.fn().mockReturnValue(null),
     output: vi.fn().mockReturnValue(null),
     kill: vi.fn().mockResolvedValue(null),
     close: vi.fn().mockResolvedValue(undefined),
     updateOptions: vi.fn(),
-  })),
+  
+    };
+  }),
 }));
 
 vi.mock('../../src/daemon/telemetry.js', () => ({
@@ -94,11 +99,13 @@ vi.mock('../../src/core/agent.js', () => ({
 }));
 
 vi.mock('../../src/lmx/client.js', () => ({
-  LmxClient: vi.fn().mockImplementation(() => ({
-    models: vi
+  LmxClient: vi.fn().mockImplementation(function() {
+    return {
+      models: vi
       .fn()
-      .mockResolvedValue({ models: [{ model_id: 'test-model', status: 'loaded' }] }),
-  })),
+      .mockResolvedValue({ models: [{ model_id: 'test-model', status: 'loaded' }] })
+    };
+  }),
 }));
 
 // ---------------------------------------------------------------------------

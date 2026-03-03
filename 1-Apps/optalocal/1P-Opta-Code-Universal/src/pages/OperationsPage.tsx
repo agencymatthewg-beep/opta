@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { OPERATION_IDS } from "@opta/protocol-shared";
 import { OperationRunner } from "../components/OperationRunner";
-import { useOperations, type OperationDefinition } from "../hooks/useOperations";
+import {
+  useOperations,
+  type OperationDefinition,
+} from "../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../types";
 
 interface OperationsPageProps {
@@ -45,7 +48,10 @@ function compileScopeMatcher(scope: string): OperationScopeMatcher {
   return new RegExp(`^${pattern}$`);
 }
 
-function matchesScope(operationId: string, matcher: OperationScopeMatcher): boolean {
+function matchesScope(
+  operationId: string,
+  matcher: OperationScopeMatcher,
+): boolean {
   if (typeof matcher === "string") return operationId === matcher;
   return matcher.test(operationId);
 }
@@ -97,37 +103,42 @@ export function OperationsPage({
     );
   }, [scopedOperations]);
 
-  const filtered = useMemo(
-    () => {
-      const normalizedQuery = query.trim().toLowerCase();
+  const filtered = useMemo(() => {
+    const normalizedQuery = query.trim().toLowerCase();
 
-      return scopedOperations.filter((operation) => {
-        const passesSafety =
-          safetyFilter === "all" || operation.safety === safetyFilter;
-        if (!passesSafety) return false;
-        if (!normalizedQuery) return true;
+    return scopedOperations.filter((operation) => {
+      const passesSafety =
+        safetyFilter === "all" || operation.safety === safetyFilter;
+      if (!passesSafety) return false;
+      if (!normalizedQuery) return true;
 
-        const haystack = `${operation.id} ${operation.title} ${operation.description}`.toLowerCase();
-        return haystack.includes(normalizedQuery);
-      });
-    },
-    [query, safetyFilter, scopedOperations],
-  );
+      const haystack =
+        `${operation.id} ${operation.title} ${operation.description}`.toLowerCase();
+      return haystack.includes(normalizedQuery);
+    });
+  }, [query, safetyFilter, scopedOperations]);
 
   const grouped = useMemo(
     () =>
       [...groupByFamily(filtered).entries()]
-        .map(([family, entries]) => [
-          family,
-          [...entries].sort((left, right) => left.id.localeCompare(right.id)),
-        ] as const)
+        .map(
+          ([family, entries]) =>
+            [
+              family,
+              [...entries].sort((left, right) =>
+                left.id.localeCompare(right.id),
+              ),
+            ] as const,
+        )
         .sort((left, right) => left[0].localeCompare(right[0])),
     [filtered],
   );
 
   const parity = useMemo(() => {
     if (scopeMatchers) return null;
-    const available = new Set(scopedOperations.map((operation) => operation.id));
+    const available = new Set(
+      scopedOperations.map((operation) => operation.id),
+    );
     const missing = ALL_CLI_OPERATION_IDS.filter((id) => !available.has(id));
     return {
       total: ALL_CLI_OPERATION_IDS.length,
@@ -144,7 +155,9 @@ export function OperationsPage({
 
   useEffect(() => {
     if (!selectedId) return;
-    const stillVisible = filtered.some((operation) => operation.id === selectedId);
+    const stillVisible = filtered.some(
+      (operation) => operation.id === selectedId,
+    );
     if (!stillVisible) {
       setSelectedId(null);
     }
@@ -156,8 +169,8 @@ export function OperationsPage({
         <div>
           <h2>{title ?? DEFAULT_TITLE}</h2>
           <p>
-            {subtitle ?? DEFAULT_SUBTITLE}{" "}
-            {scopedOperations.length} operations available.
+            {subtitle ?? DEFAULT_SUBTITLE} {scopedOperations.length} operations
+            available.
           </p>
         </div>
 
@@ -199,14 +212,17 @@ export function OperationsPage({
           role="status"
         >
           <p>
-            <strong>CLI parity:</strong> {parity.available}/{parity.total} operations available.
+            <strong>CLI parity:</strong> {parity.available}/{parity.total}{" "}
+            operations available.
           </p>
           {parity.missing.length === 0 ? (
             <p>All Opta CLI daemon operations are available.</p>
           ) : (
             <p>
               Missing: {parity.missing.slice(0, 6).join(", ")}
-              {parity.missing.length > 6 ? ` +${parity.missing.length - 6} more` : ""}
+              {parity.missing.length > 6
+                ? ` +${parity.missing.length - 6} more`
+                : ""}
             </p>
           )}
         </div>

@@ -120,4 +120,3 @@ async def run_loader_supervisor(
     if failure.exit_code is None:
         failure.exit_code = rc
     return LoaderSupervisorOutcome(ok=False, failure=failure)
-

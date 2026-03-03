@@ -20,8 +20,8 @@ describe('runtime keychain fallback callsites', () => {
   it('LmxProvider.getClient uses keychain fallback key when env/config are absent', async () => {
     delete process.env['OPTA_API_KEY'];
 
-    const openAiCtor = vi.fn().mockReturnValue({
-      models: { list: vi.fn() },
+    const openAiCtor = vi.fn().mockImplementation(function() {
+      return { models: { list: vi.fn() } };
     });
 
     vi.doMock('openai', () => ({ default: openAiCtor }));
@@ -58,7 +58,7 @@ describe('runtime keychain fallback callsites', () => {
   it('buildToolRegistry spawn_agent path uses keychain fallback key', async () => {
     delete process.env['OPTA_API_KEY'];
 
-    const openAiCtor = vi.fn().mockReturnValue({});
+    const openAiCtor = vi.fn().mockImplementation(function() { return {}; });
     const spawnSubAgent = vi.fn().mockResolvedValue({
       taskId: 'task-1',
       status: 'completed',
@@ -129,7 +129,7 @@ describe('runtime keychain fallback callsites', () => {
   it('delegateToBrowserSubAgent uses keychain fallback key', async () => {
     delete process.env['OPTA_API_KEY'];
 
-    const openAiCtor = vi.fn().mockReturnValue({});
+    const openAiCtor = vi.fn().mockImplementation(function() { return {}; });
     const spawnSubAgent = vi.fn().mockResolvedValue({
       taskId: 'task-browser',
       status: 'completed',

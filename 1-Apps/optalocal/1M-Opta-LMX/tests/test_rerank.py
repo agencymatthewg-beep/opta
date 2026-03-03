@@ -27,15 +27,17 @@ class TestRerankerEngine:
 
     def test_load_raises_without_model_id(self) -> None:
         engine = RerankerEngine()
-        with patch.dict("sys.modules", {"rerankers": MagicMock()}), pytest.raises(
-            RuntimeError, match="No reranker model configured"
+        with (
+            patch.dict("sys.modules", {"rerankers": MagicMock()}),
+            pytest.raises(RuntimeError, match="No reranker model configured"),
         ):
             engine.load()
 
     def test_load_raises_if_rerankers_not_installed(self) -> None:
         engine = RerankerEngine("some/model")
-        with patch.dict("sys.modules", {"rerankers": None}), pytest.raises(
-            ImportError, match="rerankers library not installed"
+        with (
+            patch.dict("sys.modules", {"rerankers": None}),
+            pytest.raises(ImportError, match="rerankers library not installed"),
         ):
             engine.load()
 
@@ -145,11 +147,14 @@ async def test_rerank_no_backend(client: AsyncClient) -> None:
     app.state.remote_reranking = None
     app.state.reranker_engine = None
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
-        "query": "what is Python",
-        "documents": ["Python is a language", "Java is a language"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker",
+            "query": "what is Python",
+            "documents": ["Python is a language", "Java is a language"],
+        },
+    )
     assert resp.status_code == 503
     data = resp.json()
     assert data["error"]["code"] == "reranking_unavailable"
@@ -157,11 +162,14 @@ async def test_rerank_no_backend(client: AsyncClient) -> None:
 
 async def test_rerank_empty_query(client: AsyncClient) -> None:
     """Returns 400 for empty query."""
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
-        "query": "   ",
-        "documents": ["doc1"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker",
+            "query": "   ",
+            "documents": ["doc1"],
+        },
+    )
     assert resp.status_code == 400
     assert resp.json()["error"]["code"] == "invalid_input"
 
@@ -171,19 +179,24 @@ async def test_rerank_remote_success(client: AsyncClient) -> None:
     app = client._transport.app  # type: ignore[union-attr]
 
     mock_remote = AsyncMock(spec=HelperNodeClient)
-    mock_remote.rerank = AsyncMock(return_value=[
-        {"index": 1, "relevance_score": 0.95},
-        {"index": 0, "relevance_score": 0.72},
-    ])
+    mock_remote.rerank = AsyncMock(
+        return_value=[
+            {"index": 1, "relevance_score": 0.95},
+            {"index": 0, "relevance_score": 0.72},
+        ]
+    )
     mock_remote.model = "jina-reranker-v2-base"
     app.state.remote_reranking = mock_remote
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker-v2-base",
-        "query": "search query",
-        "documents": ["doc one", "doc two"],
-        "top_n": 2,
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker-v2-base",
+            "query": "search query",
+            "documents": ["doc one", "doc two"],
+            "top_n": 2,
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -195,7 +208,9 @@ async def test_rerank_remote_success(client: AsyncClient) -> None:
     assert data["model"] == "jina-reranker-v2-base"
     assert data["usage"]["total_tokens"] > 0
     mock_remote.rerank.assert_called_once_with(
-        query="search query", documents=["doc one", "doc two"], top_n=2,
+        query="search query",
+        documents=["doc one", "doc two"],
+        top_n=2,
     )
 
 
@@ -209,11 +224,14 @@ async def test_rerank_remote_failure_skip(client: AsyncClient) -> None:
     )
     app.state.remote_reranking = mock_remote
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
-        "query": "test",
-        "documents": ["doc1"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker",
+            "query": "test",
+            "documents": ["doc1"],
+        },
+    )
     assert resp.status_code == 502
 
 
@@ -229,11 +247,14 @@ async def test_rerank_remote_failure_local_fallback(client: AsyncClient) -> None
     app.state.remote_reranking = mock_remote
     app.state.reranker_engine = None
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
-        "query": "test",
-        "documents": ["doc1"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker",
+            "query": "test",
+            "documents": ["doc1"],
+        },
+    )
     assert resp.status_code == 503
     assert resp.json()["error"]["code"] == "reranking_unavailable"
 
@@ -250,19 +271,24 @@ async def test_rerank_remote_failure_local_fallback_success(client: AsyncClient)
     app.state.remote_reranking = mock_remote
 
     mock_local = MagicMock()
-    mock_local.rerank = MagicMock(return_value=[
-        {"index": 1, "score": 0.93},
-        {"index": 0, "score": 0.61},
-    ])
+    mock_local.rerank = MagicMock(
+        return_value=[
+            {"index": 1, "score": 0.93},
+            {"index": 0, "score": 0.61},
+        ]
+    )
     mock_local.model_id = "local-reranker-v1"
     app.state.reranker_engine = mock_local
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "ignored-when-local",
-        "query": "search query",
-        "documents": ["doc one", "doc two"],
-        "top_n": 99,
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "ignored-when-local",
+            "query": "search query",
+            "documents": ["doc one", "doc two"],
+            "top_n": 99,
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -274,10 +300,14 @@ async def test_rerank_remote_failure_local_fallback_success(client: AsyncClient)
     assert data["results"][1]["document"]["text"] == "doc one"
     assert data["usage"]["total_tokens"] > 0
     mock_remote.rerank.assert_called_once_with(
-        query="search query", documents=["doc one", "doc two"], top_n=2,
+        query="search query",
+        documents=["doc one", "doc two"],
+        top_n=2,
     )
     mock_local.rerank.assert_called_once_with(
-        "search query", ["doc one", "doc two"], top_n=2,
+        "search query",
+        ["doc one", "doc two"],
+        top_n=2,
     )
 
 
@@ -287,26 +317,33 @@ async def test_rerank_local_only_backend(client: AsyncClient) -> None:
     app.state.remote_reranking = None
 
     mock_local = MagicMock()
-    mock_local.rerank = MagicMock(return_value=[
-        {"index": 0, "score": 0.77},
-    ])
+    mock_local.rerank = MagicMock(
+        return_value=[
+            {"index": 0, "score": 0.77},
+        ]
+    )
     mock_local.model_id = "local-only-reranker"
     app.state.reranker_engine = mock_local
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "request-model",
-        "query": "test",
-        "documents": ["doc1"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "request-model",
+            "query": "test",
+            "documents": ["doc1"],
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()
     assert data["model"] == "local-only-reranker"
-    assert data["results"] == [{
-        "index": 0,
-        "relevance_score": 0.77,
-        "document": {"text": "doc1"},
-    }]
+    assert data["results"] == [
+        {
+            "index": 0,
+            "relevance_score": 0.77,
+            "document": {"text": "doc1"},
+        }
+    ]
     assert data["usage"]["total_tokens"] > 0
     mock_local.rerank.assert_called_once_with("test", ["doc1"], top_n=None)
 
@@ -316,23 +353,30 @@ async def test_rerank_top_n_clamped(client: AsyncClient) -> None:
     app = client._transport.app  # type: ignore[union-attr]
 
     mock_remote = AsyncMock(spec=HelperNodeClient)
-    mock_remote.rerank = AsyncMock(return_value=[
-        {"index": 0, "relevance_score": 0.9},
-    ])
+    mock_remote.rerank = AsyncMock(
+        return_value=[
+            {"index": 0, "relevance_score": 0.9},
+        ]
+    )
     mock_remote.model = "jina-reranker"
     app.state.remote_reranking = mock_remote
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "jina-reranker",
-        "query": "test",
-        "documents": ["only one doc"],
-        "top_n": 100,  # Much larger than doc count
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "jina-reranker",
+            "query": "test",
+            "documents": ["only one doc"],
+            "top_n": 100,  # Much larger than doc count
+        },
+    )
 
     assert resp.status_code == 200
     # Verify top_n was clamped to 1 (document count)
     mock_remote.rerank.assert_called_once_with(
-        query="test", documents=["only one doc"], top_n=1,
+        query="test",
+        documents=["only one doc"],
+        top_n=1,
     )
 
 
@@ -341,19 +385,24 @@ async def test_rerank_response_shape(client: AsyncClient) -> None:
     app = client._transport.app  # type: ignore[union-attr]
 
     mock_remote = AsyncMock(spec=HelperNodeClient)
-    mock_remote.rerank = AsyncMock(return_value=[
-        {"index": 2, "relevance_score": 0.99},
-        {"index": 0, "relevance_score": 0.85},
-        {"index": 1, "relevance_score": 0.60},
-    ])
+    mock_remote.rerank = AsyncMock(
+        return_value=[
+            {"index": 2, "relevance_score": 0.99},
+            {"index": 0, "relevance_score": 0.85},
+            {"index": 1, "relevance_score": 0.60},
+        ]
+    )
     mock_remote.model = "test-reranker"
     app.state.remote_reranking = mock_remote
 
-    resp = await client.post("/v1/rerank", json={
-        "model": "test-reranker",
-        "query": "machine learning",
-        "documents": ["deep learning", "cooking recipes", "neural networks"],
-    })
+    resp = await client.post(
+        "/v1/rerank",
+        json={
+            "model": "test-reranker",
+            "query": "machine learning",
+            "documents": ["deep learning", "cooking recipes", "neural networks"],
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()

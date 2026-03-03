@@ -65,12 +65,14 @@ def chunk_text(
         if current_len + seg_len > chars_per_chunk and current_parts:
             # Emit current chunk
             chunk_text_str = separator.join(current_parts)
-            chunks.append(Chunk(
-                text=chunk_text_str,
-                index=len(chunks),
-                start_char=chunk_start,
-                end_char=chunk_start + len(chunk_text_str),
-            ))
+            chunks.append(
+                Chunk(
+                    text=chunk_text_str,
+                    index=len(chunks),
+                    start_char=chunk_start,
+                    end_char=chunk_start + len(chunk_text_str),
+                )
+            )
 
             # Calculate overlap: keep trailing parts that fit within overlap
             overlap_parts: list[str] = []
@@ -98,12 +100,14 @@ def chunk_text(
     if current_parts:
         chunk_text_str = separator.join(current_parts)
         if chunk_text_str.strip():
-            chunks.append(Chunk(
-                text=chunk_text_str,
-                index=len(chunks),
-                start_char=chunk_start,
-                end_char=chunk_start + len(chunk_text_str),
-            ))
+            chunks.append(
+                Chunk(
+                    text=chunk_text_str,
+                    index=len(chunks),
+                    start_char=chunk_start,
+                    end_char=chunk_start + len(chunk_text_str),
+                )
+            )
 
     return chunks
 
@@ -127,7 +131,10 @@ def chunk_code(
     for chunk in chunks:
         if len(chunk.text) > chars_per_chunk * 1.5:
             sub_chunks = chunk_text(
-                chunk.text, chunk_size, chunk_overlap, separator="\n",
+                chunk.text,
+                chunk_size,
+                chunk_overlap,
+                separator="\n",
             )
             for sc in sub_chunks:
                 sc.start_char += chunk.start_char
@@ -191,11 +198,11 @@ def chunk_markdown(
             next_idx = i + 1
             if next_idx >= len(headers):
                 # H1 is the last header — everything after it is one section
-                section_text = text[match.start():].strip()
+                section_text = text[match.start() :].strip()
                 sections.append((section_text, match.start()))
             elif headers[next_idx].group(1) == "#":
                 # Next header is also H1 — this H1's content is a section
-                section_text = text[match.start():headers[next_idx].start()].strip()
+                section_text = text[match.start() : headers[next_idx].start()].strip()
                 if section_text:
                     sections.append((section_text, match.start()))
             # If next is H2, the H1 content before it will be included with the H2
@@ -203,7 +210,7 @@ def chunk_markdown(
 
         # H2 header — extract content until next H1/H2
         end_pos = headers[i + 1].start() if i + 1 < len(headers) else len(text)
-        section_text = text[match.start():end_pos].strip()
+        section_text = text[match.start() : end_pos].strip()
         if section_text:
             # Prepend parent H1 as context (if exists and not already in section)
             if parent_h1 and not section_text.startswith(parent_h1):
@@ -224,18 +231,22 @@ def chunk_markdown(
             sub_chunks = chunk_text(body, max_chunk_size, chunk_overlap)
             for sc in sub_chunks:
                 full_text = header_line + "\n" + sc.text if header_line else sc.text
-                chunks.append(Chunk(
-                    text=full_text,
-                    index=len(chunks),
-                    start_char=start_char + sc.start_char,
-                    end_char=start_char + sc.end_char,
-                ))
+                chunks.append(
+                    Chunk(
+                        text=full_text,
+                        index=len(chunks),
+                        start_char=start_char + sc.start_char,
+                        end_char=start_char + sc.end_char,
+                    )
+                )
         else:
-            chunks.append(Chunk(
-                text=section_text,
-                index=len(chunks),
-                start_char=start_char,
-                end_char=start_char + len(section_text),
-            ))
+            chunks.append(
+                Chunk(
+                    text=section_text,
+                    index=len(chunks),
+                    start_char=start_char,
+                    end_char=start_char + len(section_text),
+                )
+            )
 
     return chunks

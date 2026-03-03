@@ -20,12 +20,14 @@ from opta_lmx.model_safety import CompatibilityRegistry
 def _patch_simple(mock: Any) -> patch:
     """Patch sys.modules so _create_engine imports our mock SimpleEngine."""
     return patch.dict(
-        "sys.modules", {"vllm_mlx.engine.simple": MagicMock(SimpleEngine=mock)},
+        "sys.modules",
+        {"vllm_mlx.engine.simple": MagicMock(SimpleEngine=mock)},
     )
 
 
 def _patch_batched(mock: Any) -> patch:
     """Patch sys.modules so _create_engine imports our mock BatchedEngine."""
+
     class DummySchedulerConfig:
         def __init__(self, **kwargs: Any) -> None:
             self.kwargs = kwargs
@@ -71,7 +73,8 @@ class TestCreateEngineKwargs:
         mock_simple = MagicMock()
         with (
             patch(
-                "opta_lmx.inference.engine.SimpleEngine", mock_simple,
+                "opta_lmx.inference.engine.SimpleEngine",
+                mock_simple,
                 create=True,
             ),
             _patch_simple(mock_simple),
@@ -136,7 +139,8 @@ class TestCreateEngineKwargs:
         mock_simple = MagicMock()
         with _patch_simple(mock_simple):
             await engine_with_globals._create_engine(
-                "test/model", use_batching=False,
+                "test/model",
+                use_batching=False,
                 performance_overrides={"kv_bits": 4, "kv_group_size": 32},
             )
 
@@ -146,13 +150,15 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_preset_overrides_global_speculative(
-        self, engine_with_globals: InferenceEngine,
+        self,
+        engine_with_globals: InferenceEngine,
     ) -> None:
         """Preset speculative config overrides global."""
         mock_simple = MagicMock()
         with _patch_simple(mock_simple):
             await engine_with_globals._create_engine(
-                "test/model", use_batching=False,
+                "test/model",
+                use_batching=False,
                 performance_overrides={
                     "speculative": {"draft_model": "preset-draft", "num_tokens": 7},
                 },
@@ -164,13 +170,15 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_preset_disables_prefix_cache(
-        self, engine_with_globals: InferenceEngine,
+        self,
+        engine_with_globals: InferenceEngine,
     ) -> None:
         """Preset can disable prefix cache even if globally enabled."""
         mock_simple = MagicMock()
         with _patch_simple(mock_simple):
             await engine_with_globals._create_engine(
-                "test/model", use_batching=False,
+                "test/model",
+                use_batching=False,
                 performance_overrides={"prefix_cache": False},
             )
 
@@ -179,7 +187,8 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_batched_engine_receives_overrides(
-        self, engine: InferenceEngine,
+        self,
+        engine: InferenceEngine,
     ) -> None:
         """BatchedEngine receives performance overrides."""
         mock_batched = MagicMock()
@@ -187,7 +196,8 @@ class TestCreateEngineKwargs:
         mock_batched.return_value = mock_instance
         with _patch_batched(mock_batched):
             await engine._create_engine(
-                "test/model", use_batching=True,
+                "test/model",
+                use_batching=True,
                 performance_overrides={"kv_bits": 4},
             )
 
@@ -197,7 +207,8 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_simple_engine_disables_unsupported_speculative_by_default(
-        self, engine_with_globals: InferenceEngine,
+        self,
+        engine_with_globals: InferenceEngine,
     ) -> None:
         """Speculative request degrades to disabled when unsupported and not strict."""
 
@@ -207,7 +218,8 @@ class TestCreateEngineKwargs:
 
         with _patch_simple(SimpleNoSpec):
             _engine, status = await engine_with_globals._create_engine(
-                "test/model", use_batching=False,
+                "test/model",
+                use_batching=False,
             )
         assert status["requested"] is True
         assert status["active"] is False
@@ -215,7 +227,8 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_simple_engine_rejects_unsupported_speculative_when_required(
-        self, engine: InferenceEngine,
+        self,
+        engine: InferenceEngine,
     ) -> None:
         """Strict mode keeps fail-closed semantics for unsupported speculative config."""
 
@@ -241,7 +254,8 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_batched_engine_disables_unsupported_speculative_by_default(
-        self, engine_with_globals: InferenceEngine,
+        self,
+        engine_with_globals: InferenceEngine,
     ) -> None:
         """Batched path degrades to disabled when speculative kwargs are unsupported."""
 
@@ -263,7 +277,8 @@ class TestCreateEngineKwargs:
 
         with _patch_batched(BatchedNoSpec):
             _engine, status = await engine_with_globals._create_engine(
-                "test/model", use_batching=True,
+                "test/model",
+                use_batching=True,
             )
         assert status["requested"] is True
         assert status["active"] is False
@@ -271,7 +286,8 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_batched_engine_rejects_unsupported_speculative_when_required(
-        self, engine: InferenceEngine,
+        self,
+        engine: InferenceEngine,
     ) -> None:
         """Strict mode fails closed on unsupported BatchedEngine speculative config."""
 
@@ -309,13 +325,15 @@ class TestCreateEngineKwargs:
 
     @pytest.mark.asyncio
     async def test_memory_estimate_not_passed_to_engine(
-        self, engine: InferenceEngine,
+        self,
+        engine: InferenceEngine,
     ) -> None:
         """memory_estimate_gb from presets is NOT passed to vllm-mlx."""
         mock_simple = MagicMock()
         with _patch_simple(mock_simple):
             await engine._create_engine(
-                "test/model", use_batching=False,
+                "test/model",
+                use_batching=False,
                 performance_overrides={"memory_estimate_gb": 200, "kv_bits": 8},
             )
 
@@ -480,7 +498,10 @@ class TestBackendPolicyFallback:
         )
         registry = CompatibilityRegistry(path=tmp_path / "compat-pref.json")
         result = backend_candidates(
-            "test/model", cfg, registry, preferred_backend="mlx-lm",
+            "test/model",
+            cfg,
+            registry,
+            preferred_backend="mlx-lm",
         )
         assert result[0] == "mlx-lm"
         assert "vllm-mlx" in result
@@ -494,7 +515,10 @@ class TestBackendPolicyFallback:
         registry = CompatibilityRegistry(path=tmp_path / "compat-invalid.json")
         with pytest.raises(ValueError, match="Unsupported backend"):
             backend_candidates(
-                "test/model", cfg, registry, preferred_backend="invalid",
+                "test/model",
+                cfg,
+                registry,
+                preferred_backend="invalid",
             )
 
     def test_backend_policy_gguf_rejects_non_gguf_preferred(self, tmp_path) -> None:
@@ -506,7 +530,10 @@ class TestBackendPolicyFallback:
         registry = CompatibilityRegistry(path=tmp_path / "compat-gguf-pref.json")
         with pytest.raises(ValueError, match="GGUF model IDs can only"):
             backend_candidates(
-                "model.gguf", cfg, registry, preferred_backend="vllm-mlx",
+                "model.gguf",
+                cfg,
+                registry,
+                preferred_backend="vllm-mlx",
             )
 
     def test_backend_policy_no_gguf_when_disabled(self, tmp_path) -> None:
@@ -528,12 +555,16 @@ class TestBackendPolicyFallback:
         )
         registry = CompatibilityRegistry(path=tmp_path / "compat-all-fail.json")
         registry.record(
-            model_id="test/model", backend="vllm-mlx",
-            backend_version_value="0.2.6", outcome="fail",
+            model_id="test/model",
+            backend="vllm-mlx",
+            backend_version_value="0.2.6",
+            outcome="fail",
         )
         registry.record(
-            model_id="test/model", backend="mlx-lm",
-            backend_version_value="0.30.7", outcome="fail",
+            model_id="test/model",
+            backend="mlx-lm",
+            backend_version_value="0.30.7",
+            outcome="fail",
         )
         result = backend_candidates("test/model", cfg, registry)
         # Falls back to full list when all filtered out
@@ -552,8 +583,11 @@ class TestMLXLMFallback:
             outcome="fail",
             reason="probe_failed",
         )
+
         async def mock_create_tuple(
-            model_id: str, use_batching: bool, **_kw: object,
+            model_id: str,
+            use_batching: bool,
+            **_kw: object,
         ) -> tuple[MagicMock, dict[str, object]]:
             return MagicMock(), {}
 
@@ -566,12 +600,15 @@ class TestMLXLMFallback:
         mock_backend.generate = AsyncMock(return_value=("ok", 2, 1))
         mock_backend.stream = AsyncMock()
 
-        with patch(
-            "opta_lmx.inference.engine_lifecycle.MLXLMBackend",
-            return_value=mock_backend,
-        ) as backend_cls, patch(
-            "opta_lmx.inference.engine_lifecycle.backend_candidates",
-            return_value=["mlx-lm"],
+        with (
+            patch(
+                "opta_lmx.inference.engine_lifecycle.MLXLMBackend",
+                return_value=mock_backend,
+            ) as backend_cls,
+            patch(
+                "opta_lmx.inference.engine_lifecycle.backend_candidates",
+                return_value=["mlx-lm"],
+            ),
         ):
             info = await engine.load_model("test/model")
 
@@ -625,7 +662,9 @@ class TestAutotuneLoadTimePrecedence:
         """Create an InferenceEngine with an isolated autotune registry."""
         monitor = MemoryMonitor(max_percent=90)
         engine = InferenceEngine(
-            memory_monitor=monitor, use_batching=False, warmup_on_load=False,
+            memory_monitor=monitor,
+            use_batching=False,
+            warmup_on_load=False,
             **kwargs,
         )
         # Isolate the autotune registry to tmp_path so tests don't share state.
@@ -769,7 +808,7 @@ class TestAutotuneLoadTimePrecedence:
             )
 
         call_kwargs = mock_simple.call_args[1]
-        assert call_kwargs.get("kv_bits") == 8        # explicit wins
+        assert call_kwargs.get("kv_bits") == 8  # explicit wins
         assert call_kwargs.get("kv_group_size") == 32  # from tuned profile
 
 

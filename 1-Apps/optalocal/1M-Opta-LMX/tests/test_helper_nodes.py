@@ -208,7 +208,9 @@ class TestHelperNodeClient:
         """Health check returns True for 200 response."""
         client = HelperNodeClient(endpoint)
 
-        mock_response = httpx.Response(200, json={"status": "ok"}, request=httpx.Request("GET", "http://test"))
+        mock_response = httpx.Response(
+            200, json={"status": "ok"}, request=httpx.Request("GET", "http://test")
+        )
         client._client = AsyncMock()
         client._client.get = AsyncMock(return_value=mock_response)
 
@@ -312,10 +314,13 @@ async def test_embeddings_uses_remote_when_configured(client: AsyncClient) -> No
     mock_remote.model = "nomic-embed"
     app.state.remote_embedding = mock_remote
 
-    resp = await client.post("/v1/embeddings", json={
-        "input": "hello world",
-        "model": "nomic-embed",
-    })
+    resp = await client.post(
+        "/v1/embeddings",
+        json={
+            "input": "hello world",
+            "model": "nomic-embed",
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -343,10 +348,13 @@ async def test_embeddings_fallback_to_local(client: AsyncClient) -> None:
     mock_local.model_id = "local-embed"
     app.state.embedding_engine = mock_local
 
-    resp = await client.post("/v1/embeddings", json={
-        "input": "fallback test",
-        "model": "local-embed",
-    })
+    resp = await client.post(
+        "/v1/embeddings",
+        json={
+            "input": "fallback test",
+            "model": "local-embed",
+        },
+    )
 
     assert resp.status_code == 200
     data = resp.json()
@@ -363,10 +371,13 @@ async def test_embeddings_skip_returns_502(client: AsyncClient) -> None:
     )
     app.state.remote_embedding = mock_remote
 
-    resp = await client.post("/v1/embeddings", json={
-        "input": "skip test",
-        "model": "test-model",
-    })
+    resp = await client.post(
+        "/v1/embeddings",
+        json={
+            "input": "skip test",
+            "model": "test-model",
+        },
+    )
 
     assert resp.status_code == 502
 
@@ -377,6 +388,7 @@ async def test_embeddings_skip_returns_502(client: AsyncClient) -> None:
 async def test_stack_endpoint_shows_circuit_state(client: AsyncClient) -> None:
     """Stack endpoint includes circuit breaker state for helper nodes."""
     from opta_lmx.helpers.circuit_breaker import CircuitBreaker
+
     app = client._transport.app  # type: ignore[union-attr]
 
     mock_remote = MagicMock()

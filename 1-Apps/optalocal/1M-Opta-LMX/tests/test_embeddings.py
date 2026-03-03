@@ -59,10 +59,13 @@ async def embedding_client(
 
 async def test_embeddings_single_text(embedding_client: AsyncClient) -> None:
     """Single text input returns embedding array."""
-    response = await embedding_client.post("/v1/embeddings", json={
-        "input": "Hello world",
-        "model": "test-embedding-model",
-    })
+    response = await embedding_client.post(
+        "/v1/embeddings",
+        json={
+            "input": "Hello world",
+            "model": "test-embedding-model",
+        },
+    )
     assert response.status_code == 200
     data = response.json()
     assert data["object"] == "list"
@@ -77,10 +80,13 @@ async def test_embeddings_single_text(embedding_client: AsyncClient) -> None:
 
 async def test_embeddings_multiple_texts(embedding_client: AsyncClient) -> None:
     """Multiple text inputs return multiple embeddings."""
-    response = await embedding_client.post("/v1/embeddings", json={
-        "input": ["Hello", "World"],
-        "model": "test-embedding-model",
-    })
+    response = await embedding_client.post(
+        "/v1/embeddings",
+        json={
+            "input": ["Hello", "World"],
+            "model": "test-embedding-model",
+        },
+    )
     assert response.status_code == 200
     data = response.json()
     assert len(data["data"]) == 2
@@ -90,10 +96,13 @@ async def test_embeddings_multiple_texts(embedding_client: AsyncClient) -> None:
 
 async def test_embeddings_empty_input(embedding_client: AsyncClient) -> None:
     """Empty input list returns 400."""
-    response = await embedding_client.post("/v1/embeddings", json={
-        "input": [],
-        "model": "test-embedding-model",
-    })
+    response = await embedding_client.post(
+        "/v1/embeddings",
+        json={
+            "input": [],
+            "model": "test-embedding-model",
+        },
+    )
     assert response.status_code == 400
 
 
@@ -124,10 +133,13 @@ async def test_embeddings_no_engine(
         app.state.admin_key = None
         app.state.config = config
 
-        response = await client.post("/v1/embeddings", json={
-            "input": "Hello",
-            "model": "test-model",
-        })
+        response = await client.post(
+            "/v1/embeddings",
+            json={
+                "input": "Hello",
+                "model": "test-model",
+            },
+        )
         assert response.status_code == 503
 
 

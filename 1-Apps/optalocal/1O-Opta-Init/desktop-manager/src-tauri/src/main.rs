@@ -6,6 +6,8 @@ use std::{collections::HashSet, fs, path::PathBuf, process::Stdio, time::Duratio
 use tauri_plugin_updater::UpdaterExt;
 use thiserror::Error;
 use tokio::{io::AsyncReadExt, process::Command, time::timeout};
+use tauri::Emitter;
+use tokio::io::AsyncBufReadExt;
 
 const CLI_COMMAND_TIMEOUT_SECS: u64 = 20;
 const CLI_DISCOVERY_TIMEOUT_SECS: u64 = 5;
@@ -17,10 +19,52 @@ const DEFAULT_UPDATER_ENDPOINT_STABLE: &str =
 const DEFAULT_UPDATER_ENDPOINT_BETA: &str =
     "https://init.optalocal.com/desktop-updates/beta.json";
 
+fn extended_path() -> String {
+    let mut path = std::env::var("PATH").unwrap_or_else(|_| String::new());
+    
+    #[cfg(target_os = "windows")]
+    let delimiter = ";";
+    #[cfg(not(target_os = "windows"))]
+    let delimiter = ":";
+
+    // Common global node_modules locations for macOS/Linux
+    #[cfg(not(target_os = "windows"))]
+    let extras = ["/usr/local/bin", "/opt/homebrew/bin", "/opt/homebrew/sbin"];
+    #[cfg(target_os = "windows")]
+    let extras: [&str; 0] = [];
+
+    for p in extras {
+        if !path.contains(p) {
+            path = format!("{}{}{}", p, delimiter, path);
+        }
+    }
+
+    if let Some(home) = dirs::home_dir() {
+        // Handle Unix .npm-global
+        #[cfg(not(target_os = "windows"))]
+        let npm_global = home.join(".npm-global").join("bin");
+        // Handle Windows npm global directory (usually AppData\Roaming\npm)
+        #[cfg(target_os = "windows")]
+        let npm_global = home.join("AppData").join("Roaming").join("npm");
+
+        if let Some(p) = npm_global.to_str() {
+            if !path.contains(p) {
+                path = format!("{}{}{}", p, delimiter, path);
+            }
+        }
+    }
+
+    path
+}
+
 #[derive(Debug, Error)]
 enum ManagerError {
     #[error("required CLI `{0}` was not found in PATH")]
     MissingCli(String),
+    #[error("command wait failed: {detail}")]
+    Wait { detail: String },
+    #[error("command timed out after {0} seconds")]
+    Timeout(u64),
     #[error("failed to run command `{command}`: {detail}")]
     Spawn { command: String, detail: String },
     #[error("command `{command}` failed (exit code: {code:?}): {stderr}")]
@@ -193,6 +237,32 @@ struct DaemonStatus {
     checked_at: String,
 }
 
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct DaemonJob {
+    id: String,
+    cmd: String,
+    pid: Option<u32>,
+    status: String,
+    uptime: Option<String>,
+    exit_code: Option<i32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CLIStatePayload {
+    port: u16,
+    token: String,
+    host: String,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct CLIDaemonStatusPayload {
+    running: bool,
+    state: Option<CLIStatePayload>,
+}
+
 fn current_timestamp() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -214,6 +284,7 @@ async fn is_command_available(program: &str) -> bool {
     let status_result = timeout(
         Duration::from_secs(CLI_DISCOVERY_TIMEOUT_SECS),
         Command::new(program)
+            .env("PATH", extended_path())
             .arg("--version")
             .stdout(Stdio::null())
             .stderr(Stdio::null())
@@ -230,6 +301,7 @@ async fn run_command_capture(
 ) -> Result<CapturedOutput, ManagerError> {
     let cmd_preview = command_preview(program, args);
     let mut child = Command::new(program)
+        .env("PATH", extended_path())
         .args(args)
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
@@ -306,6 +378,92 @@ fn normalize_channel(channel: &str) -> String {
     } else {
         "stable".to_string()
     }
+}
+
+
+#[derive(Clone, Serialize)]
+struct ProgressPayload {
+    app_id: String,
+    line: String,
+}
+
+async fn run_command_stream(
+    app: &tauri::AppHandle,
+    app_id: &str,
+    program: &str,
+    args: &[String],
+) -> Result<CapturedOutput, ManagerError> {
+    let cmd_preview = command_preview(program, args);
+    let mut child = Command::new(program)
+        .env("PATH", extended_path())
+        .args(args)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
+        .map_err(|error| ManagerError::Spawn {
+            command: cmd_preview.clone(),
+            detail: error.to_string(),
+        })?;
+
+    let app_handle = app.clone();
+    let app_id_clone = app_id.to_string();
+    
+    let stdout_reader = child.stdout.take().map(|stdout| {
+        tokio::spawn(async move {
+            let mut reader = tokio::io::BufReader::new(stdout).lines();
+            let mut full_output = String::new();
+            while let Ok(Some(line)) = reader.next_line().await {
+                let _ = app_handle.emit("cmd-progress", ProgressPayload {
+                    app_id: app_id_clone.clone(),
+                    line: line.clone(),
+                });
+                full_output.push_str(&line);
+                full_output.push('\n');
+            }
+            full_output.into_bytes()
+        })
+    });
+
+    let stderr_reader = child.stderr.take().map(|mut stderr| {
+        tokio::spawn(async move {
+            let mut buf = Vec::new();
+            let _ = stderr.read_to_end(&mut buf).await;
+            buf
+        })
+    });
+
+    let status = match timeout(Duration::from_secs(CLI_COMMAND_TIMEOUT_SECS * 10), child.wait()).await {
+        Ok(Ok(status)) => status,
+        Ok(Err(e)) => return Err(ManagerError::Wait { detail: e.to_string() }),
+        Err(_) => {
+            let _ = child.kill().await;
+            return Err(ManagerError::Timeout(CLI_COMMAND_TIMEOUT_SECS * 10));
+        }
+    };
+
+    let mut stdout_bytes = Vec::new();
+    if let Some(reader) = stdout_reader {
+        if let Ok(bytes) = reader.await {
+            stdout_bytes = bytes;
+        }
+    }
+
+    let mut stderr_bytes = Vec::new();
+    if let Some(reader) = stderr_reader {
+        if let Ok(bytes) = reader.await {
+            stderr_bytes = bytes;
+        }
+    }
+
+    let captured = CapturedOutput {
+        command: cmd_preview,
+        success: status.success(),
+        exit_code: status.code(),
+        stdout: String::from_utf8_lossy(&stdout_bytes).into_owned(),
+        stderr: String::from_utf8_lossy(&stderr_bytes).into_owned(),
+    };
+
+    Ok(captured)
 }
 
 fn normalize_optional_channel(channel: Option<String>) -> String {
@@ -1254,7 +1412,7 @@ async fn execute_variants(
 }
 
 #[tauri::command]
-async fn install_app(app_id: String, channel: String) -> Result<CommandOutcome, String> {
+async fn install_app(app: tauri::AppHandle, app_id: String, channel: String) -> Result<CommandOutcome, String> {
     let normalized_channel = normalize_channel(&channel);
     if app_id.eq_ignore_ascii_case("opta-cli") && !is_command_available("opta").await {
         return bootstrap_opta_cli_install(&normalized_channel)
@@ -1276,19 +1434,26 @@ async fn install_app(app_id: String, channel: String) -> Result<CommandOutcome, 
         vec![
             "app".to_string(),
             "install".to_string(),
-            app_id,
+            app_id.clone(),
             "--channel".to_string(),
             normalized_channel,
         ],
     ];
 
-    execute_variants("opta", &variants, "Install completed.")
-        .await
-        .map_err(|error| format!("Install failed. {}", error))
+    let mut last_failure = None;
+    for args in variants {
+        let captured = run_command_stream(&app, &app_id, "opta", &args).await.map_err(|e| e.to_string())?;
+        if captured.success {
+            return Ok(outcome_from_success(captured, "Install completed."));
+        }
+        last_failure = Some(captured);
+    }
+    
+    Err(format!("Install failed: {:?}", last_failure.map(|f| if f.stderr.is_empty() { f.stdout } else { f.stderr })))
 }
 
 #[tauri::command]
-async fn update_app(app_id: String, channel: String) -> Result<CommandOutcome, String> {
+async fn update_app(app: tauri::AppHandle, app_id: String, channel: String) -> Result<CommandOutcome, String> {
     let normalized_channel = normalize_channel(&channel);
     enforce_component_policy_if_available(&normalized_channel, &app_id)
         .await
@@ -1305,20 +1470,35 @@ async fn update_app(app_id: String, channel: String) -> Result<CommandOutcome, S
         vec![
             "app".to_string(),
             "update".to_string(),
-            app_id,
+            app_id.clone(),
             "--channel".to_string(),
             normalized_channel,
         ],
     ];
 
-    execute_variants("opta", &variants, "Update completed.")
-        .await
-        .map_err(|error| format!("Update failed. {}", error))
+    let mut last_failure = None;
+    for args in variants {
+        let captured = run_command_stream(&app, &app_id, "opta", &args).await.map_err(|e| e.to_string())?;
+        if captured.success {
+            return Ok(outcome_from_success(captured, "Update completed."));
+        }
+        last_failure = Some(captured);
+    }
+    
+    Err(format!("Update failed: {:?}", last_failure.map(|f| if f.stderr.is_empty() { f.stdout } else { f.stderr })))
 }
 
 async fn os_level_launch(app_id: &str) -> Result<CommandOutcome, ManagerError> {
     #[cfg(target_os = "macos")]
-    let variants = vec![vec!["-a".to_string(), app_id.to_string()]];
+    let app_name = match app_id {
+        "opta-code-universal" => "Opta Code Desktop (Universal).app",
+        "opta-lmx" => "Opta.app",         // Adjust if LMX has a different .app name locally
+        "opta-cli" => "Opta Terminal.app",
+        _ => app_id, 
+    };
+
+    #[cfg(target_os = "macos")]
+    let variants = vec![vec!["-a".to_string(), app_name.to_string()]];
 
     #[cfg(target_os = "windows")]
     let variants = vec![vec![
@@ -1520,6 +1700,113 @@ async fn daemon_stop() -> Result<CommandOutcome, String> {
     execute_variants("opta", &variants, "Daemon stop command executed.")
         .await
         .map_err(|error| format!("Daemon stop failed. {}", error))
+}
+
+async fn fetch_daemon_connection() -> Result<(String, String), String> {
+    if !is_command_available("opta").await {
+        return Err("Opta CLI is not installed".to_string());
+    }
+    let args = vec!["daemon".to_string(), "status".to_string(), "--json".to_string()];
+    let output = run_command_capture("opta", &args)
+        .await
+        .map_err(|e| format!("Failed to get daemon status: {}", e))?;
+    
+    if !output.success {
+        return Err("Daemon is not running".to_string());
+    }
+
+    let payload: CLIDaemonStatusPayload = serde_json::from_str(&output.stdout)
+        .map_err(|e| format!("Invalid daemon status json: {}", e))?;
+    
+    if !payload.running {
+        return Err("Daemon is not running".to_string());
+    }
+    
+    let state = payload.state.ok_or_else(|| "Daemon state missing".to_string())?;
+    let endpoint = format!("http://{}:{}", state.host, state.port);
+    Ok((endpoint, state.token))
+}
+
+#[tauri::command]
+async fn fetch_daemon_jobs() -> Result<Vec<DaemonJob>, String> {
+    let (endpoint, token) = match fetch_daemon_connection().await {
+        Ok(res) => res,
+        Err(_) => return Ok(vec![]),
+    };
+
+    let client = manager_http_client().map_err(|e| e.to_string())?;
+    let url = format!("{}/v3/background", endpoint);
+    let res = client.get(&url).header("Authorization", format!("Bearer {}", token)).send().await;
+
+    if let Ok(response) = res {
+        if response.status().is_success() {
+            if let Ok(body) = response.text().await {
+                // Try parsing the processes. The API returns {"processes": [...]}
+                if let Ok(json) = serde_json::from_str::<Value>(&body) {
+                    if let Some(processes) = json.get("processes").and_then(Value::as_array) {
+                        let mut jobs = Vec::new();
+                        for proc in processes {
+                            let id = proc.get("processId").and_then(Value::as_str).unwrap_or("unknown").to_string();
+                            let cmd = proc.get("command").and_then(Value::as_str).unwrap_or("unknown").to_string();
+                            let mut args = vec![];
+                            if let Some(arr) = proc.get("args").and_then(Value::as_array) {
+                                for arg in arr {
+                                    if let Some(s) = arg.as_str() { args.push(s.to_string()); }
+                                }
+                            }
+                            let full_cmd = if args.is_empty() { cmd } else { format!("{} {}", cmd, args.join(" ")) };
+                            let pid = proc.get("pid").and_then(|v| v.as_u64()).map(|p| p as u32);
+                            let status = proc.get("status").and_then(Value::as_str).unwrap_or("stopped").to_string();
+                            let exit_code = proc.get("exitCode").and_then(|v| v.as_i64()).map(|c| c as i32);
+                            let uptime = None; // Uptime computation could be added if startedAt is provided
+
+                            jobs.push(DaemonJob {
+                                id,
+                                cmd: full_cmd,
+                                pid,
+                                status,
+                                uptime,
+                                exit_code,
+                            });
+                        }
+                        return Ok(jobs);
+                    }
+                }
+            }
+        }
+    }
+    
+    Ok(vec![])
+}
+
+#[tauri::command]
+async fn kill_daemon_job(job_id: String) -> Result<CommandOutcome, String> {
+    let (endpoint, token) = fetch_daemon_connection().await?;
+    let client = manager_http_client().map_err(|e| e.to_string())?;
+    let url = format!("{}/v3/background/{}/kill", endpoint, job_id);
+    
+    let res = client.post(&url).header("Authorization", format!("Bearer {}", token)).send().await
+        .map_err(|e| e.to_string())?;
+
+    if res.status().is_success() {
+        Ok(CommandOutcome {
+            ok: true,
+            command: format!("kill {}", job_id),
+            exit_code: None,
+            stdout: "Job killed".to_string(),
+            stderr: String::new(),
+            message: "Job killed successfully".to_string(),
+        })
+    } else {
+        Err(format!("Failed to kill job: HTTP {}", res.status()))
+    }
+}
+
+#[tauri::command]
+async fn restart_daemon_job(job_id: String) -> Result<CommandOutcome, String> {
+    // Restart is generally not supported as a native API unless we recreate it. For now, killing it and letting the user start a new one is standard. 
+    // Opta CLI daemon doesn't have a /v3/background/:processId/restart.
+    Err("API does not support native restart. Please kill the job and start anew.".to_string())
 }
 
 #[tauri::command]
@@ -1780,6 +2067,167 @@ async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
     Err(format!("App {} not found or not installed", app_id))
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct OptaEnvironmentConfig {
+    profile: String,
+    install_path: String,
+    docs_path: String,
+}
+
+#[tauri::command]
+async fn save_opta_config(config: OptaEnvironmentConfig) -> Result<(), String> {
+    println!("Saving Opta Config: {:?}", config);
+    // In a real implementation this would write to ~/.optalocal/config.json
+    Ok(())
+}
+
+#[tauri::command]
+async fn check_dependency_status(dependency: String) -> bool {
+    match dependency.as_str() {
+        "cli" => is_command_available("opta").await,
+        "daemon" => {
+            let args = vec!["daemon".to_string(), "status".to_string(), "--json".to_string()];
+            let output = run_command_capture("opta", &args).await;
+            output.is_ok()
+        },
+        "lmx" => {
+            let apps = list_installed_apps().await.unwrap_or_default();
+            apps.into_iter().any(|a| a.id == "opta-lmx")
+        },
+        "code" => {
+            let apps = list_installed_apps().await.unwrap_or_default();
+            apps.into_iter().any(|a| a.id == "opta-code-universal")
+        },
+        _ => false,
+    }
+}
+
+#[tauri::command]
+async fn install_dependency(app: tauri::AppHandle, dependency: String) -> Result<CommandOutcome, String> {
+    match dependency.as_str() {
+        "cli" => {
+            let captured = run_command_stream(
+                &app, 
+                "cli", 
+                "npm", 
+                &["install".to_string(), "-g".to_string(), "@opta/opta-cli".to_string()]
+            ).await.map_err(|e| format!("CLI install failed: {}", e))?;
+            
+            if captured.success {
+                Ok(outcome_from_success(captured, "CLI installed via npm."))
+            } else {
+                Err(format!("CLI install failed: {}", if captured.stderr.is_empty() { captured.stdout } else { captured.stderr }))
+            }
+        },
+        "daemon" => {
+            if !is_command_available("opta").await {
+                return Err("Opta CLI not available".to_string());
+            }
+            let captured = run_command_stream(
+                &app,
+                "daemon",
+                "opta",
+                &["daemon".to_string(), "install".to_string()]
+            ).await.map_err(|e| format!("Daemon install failed: {}", e))?;
+            
+            if captured.success {
+                Ok(outcome_from_success(captured, "Daemon installed."))
+            } else {
+                Err(format!("Daemon install failed: {}", if captured.stderr.is_empty() { captured.stdout } else { captured.stderr }))
+            }
+        },
+        "lmx" => {
+            // Using the global install_app function which resolves channel to stable by default or pass explicitly
+            match install_app(app, "opta-lmx".to_string(), "stable".to_string()).await {
+                Ok(out) => Ok(out),
+                Err(e) => Err(format!("LMX install failed: {:?}", e))
+            }
+        },
+        "code" => {
+            match install_app(app, "opta-code-universal".to_string(), "stable".to_string()).await {
+                Ok(out) => Ok(out),
+                Err(e) => Err(format!("Code install failed: {:?}", e))
+            }
+        },
+        _ => Err(format!("Unknown dependency: {}", dependency)),
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AccountUser {
+    id: Option<String>,
+    email: Option<String>,
+    name: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct AccountStatusPayload {
+    ok: bool,
+    authenticated: bool,
+    project: Option<String>,
+    user: Option<AccountUser>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct TauriUserProfile {
+    email: Option<String>,
+    name: Option<String>,
+    avatar: Option<String>,
+    active_role: Option<String>,
+}
+
+#[tauri::command]
+async fn get_account_status() -> Result<Option<TauriUserProfile>, String> {
+    let captured = run_command_capture("opta", &["account".to_string(), "status".to_string(), "--json".to_string()])
+        .await
+        .map_err(|e| e.to_string())?;
+
+    if !captured.success {
+        return Ok(None);
+    }
+
+    if let Ok(payload) = serde_json::from_str::<AccountStatusPayload>(&captured.stdout) {
+        if payload.authenticated {
+            if let Some(user) = payload.user {
+                return Ok(Some(TauriUserProfile {
+                    email: user.email,
+                    name: user.name,
+                    avatar: None,
+                    active_role: Some("Developer".to_string()),
+                }));
+            } else {
+                return Ok(Some(TauriUserProfile {
+                    email: None,
+                    name: None,
+                    avatar: None,
+                    active_role: Some("Developer".to_string()),
+                }));
+            }
+        }
+    }
+    Ok(None)
+}
+
+#[tauri::command]
+async fn trigger_login() -> Result<(), String> {
+    run_command_capture("opta", &["login".to_string()])
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn trigger_logout() -> Result<(), String> {
+    run_command_capture("opta", &["logout".to_string()])
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
@@ -1795,9 +2243,18 @@ fn main() {
             daemon_status,
             daemon_start,
             daemon_stop,
+            fetch_daemon_jobs,
+            kill_daemon_job,
+            restart_daemon_job,
             open_url,
             check_manager_update,
-            install_manager_update
+            install_manager_update,
+            check_dependency_status,
+            install_dependency,
+            save_opta_config,
+            get_account_status,
+            trigger_login,
+            trigger_logout
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

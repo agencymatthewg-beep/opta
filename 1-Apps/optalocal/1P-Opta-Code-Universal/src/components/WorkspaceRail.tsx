@@ -33,7 +33,10 @@ export function WorkspaceRail({
 }: WorkspaceRailProps) {
   const [search, setSearch] = useState("");
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [pinnedWorkspaces, setPinnedWorkspaces] = useLocalStorage<string[]>("opta:pinnedWorkspaces", []);
+  const [pinnedWorkspaces, setPinnedWorkspaces] = useLocalStorage<string[]>(
+    "opta:pinnedWorkspaces",
+    [],
+  );
   const copyTimerRef = useRef<number | null>(null);
 
   const dynamicWorkspaces = [
@@ -42,12 +45,16 @@ export function WorkspaceRail({
   ];
 
   // Combine pinned and dynamic distinctively
-  const workspaces = [...new Set(["all", ...pinnedWorkspaces, ...dynamicWorkspaces])];
+  const workspaces = [
+    ...new Set(["all", ...pinnedWorkspaces, ...dynamicWorkspaces]),
+  ];
 
   const handleTogglePin = (workspace: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setPinnedWorkspaces(prev =>
-      prev.includes(workspace) ? prev.filter(w => w !== workspace) : [...prev, workspace]
+    setPinnedWorkspaces((prev) =>
+      prev.includes(workspace)
+        ? prev.filter((w) => w !== workspace)
+        : [...prev, workspace],
     );
   };
 
@@ -58,16 +65,17 @@ export function WorkspaceRail({
 
   const visible = search.trim()
     ? byWorkspace.filter(
-      (session) =>
-        session.title.toLowerCase().includes(search.toLowerCase()) ||
-        session.sessionId.includes(search),
-    )
+        (session) =>
+          session.title.toLowerCase().includes(search.toLowerCase()) ||
+          session.sessionId.includes(search),
+      )
     : byWorkspace;
 
   const copyId = (sessionId: string, event: React.MouseEvent) => {
     event.stopPropagation();
     void navigator.clipboard.writeText(sessionId).then(() => {
-      if (copyTimerRef.current !== null) window.clearTimeout(copyTimerRef.current);
+      if (copyTimerRef.current !== null)
+        window.clearTimeout(copyTimerRef.current);
       setCopiedId(sessionId);
       copyTimerRef.current = window.setTimeout(() => setCopiedId(null), 1400);
     });
@@ -84,7 +92,10 @@ export function WorkspaceRail({
           const isPinned = pinnedWorkspaces.includes(workspace);
           const isAll = workspace === "all";
           return (
-            <div key={workspace} className={`workspace-chip-row ${workspace === selectedWorkspace ? "active" : ""}`}>
+            <div
+              key={workspace}
+              className={`workspace-chip-row ${workspace === selectedWorkspace ? "active" : ""}`}
+            >
               <button
                 type="button"
                 className={`workspace-chip-btn ${workspace === selectedWorkspace ? "active" : ""}`}
@@ -99,7 +110,11 @@ export function WorkspaceRail({
                   onClick={(e) => handleTogglePin(workspace, e)}
                   title={isPinned ? "Unpin Project" : "Pin Project"}
                 >
-                  {isPinned ? <Pin size={12} fill="currentColor" /> : <PinOff size={12} />}
+                  {isPinned ? (
+                    <Pin size={12} fill="currentColor" />
+                  ) : (
+                    <PinOff size={12} />
+                  )}
                 </button>
               )}
             </div>
@@ -126,12 +141,18 @@ export function WorkspaceRail({
           </p>
         ) : (
           visible.map((session) => {
-            const isSessionStreaming = streamingBySession[session.sessionId] ?? false;
-            const pendingCount = pendingPermissionsBySession[session.sessionId]?.length ?? 0;
+            const isSessionStreaming =
+              streamingBySession[session.sessionId] ?? false;
+            const pendingCount =
+              pendingPermissionsBySession[session.sessionId]?.length ?? 0;
             const browserSummary = browserVisualBySession[session.sessionId];
             const browserState: BrowserVisualState =
               browserSummary?.state ??
-              (pendingCount > 0 ? "blocked" : isSessionStreaming ? "working" : "idle");
+              (pendingCount > 0
+                ? "blocked"
+                : isSessionStreaming
+                  ? "working"
+                  : "idle");
             const showBrowserCue =
               browserState === "active" ||
               browserState === "blocked" ||

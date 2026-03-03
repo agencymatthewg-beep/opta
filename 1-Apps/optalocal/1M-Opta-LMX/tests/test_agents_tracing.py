@@ -45,8 +45,10 @@ def test_audit_trail_records_and_queries() -> None:
 
     event_a = AuditEvent(timestamp=100.0, actor="user", action="run_created", resource_id="r1")
     event_b = AuditEvent(
-        timestamp=200.0, actor="agent:planner",
-        action="skill_executed", resource_id="r2",
+        timestamp=200.0,
+        actor="agent:planner",
+        action="skill_executed",
+        resource_id="r2",
     )
     event_c = AuditEvent(timestamp=300.0, actor="system", action="run_cancelled", resource_id="r3")
 
@@ -97,12 +99,14 @@ def test_audit_trail_respects_max_events() -> None:
     trail = AuditTrail(max_events=3)
 
     for i in range(5):
-        trail.record(AuditEvent(
-            timestamp=float(i),
-            actor="user",
-            action="run_created",
-            resource_id=f"r{i}",
-        ))
+        trail.record(
+            AuditEvent(
+                timestamp=float(i),
+                actor="user",
+                action="run_created",
+                resource_id=f"r{i}",
+            )
+        )
 
     results = trail.query(limit=10)
     assert len(results) == 3
@@ -117,21 +121,25 @@ def test_audit_trail_persists_to_disk(tmp_path: Path) -> None:
 
     # Create trail and record events
     trail = AuditTrail(persist_path=persist_file)
-    trail.record(AuditEvent(
-        timestamp=100.0,
-        actor="user",
-        action="run_created",
-        resource_type="agent_run",
-        resource_id="r1",
-        trace_id="trace-abc",
-        details={"key": "value"},
-    ))
-    trail.record(AuditEvent(
-        timestamp=200.0,
-        actor="system",
-        action="run_cancelled",
-        resource_id="r2",
-    ))
+    trail.record(
+        AuditEvent(
+            timestamp=100.0,
+            actor="user",
+            action="run_created",
+            resource_type="agent_run",
+            resource_id="r1",
+            trace_id="trace-abc",
+            details={"key": "value"},
+        )
+    )
+    trail.record(
+        AuditEvent(
+            timestamp=200.0,
+            actor="system",
+            action="run_cancelled",
+            resource_id="r2",
+        )
+    )
 
     # Verify file exists and is valid JSON
     assert persist_file.exists()

@@ -17,6 +17,7 @@ import json
 import logging
 import re
 from pathlib import Path
+from typing import Any
 
 from opta_lmx.sessions.models import (
     SessionFull,
@@ -28,6 +29,34 @@ from opta_lmx.sessions.models import (
 logger = logging.getLogger(__name__)
 
 _DEFAULT_SESSIONS_DIR = Path.home() / ".config" / "opta" / "sessions"
+
+
+def _as_str(value: object, default: str = "") -> str:
+    """Return string values as-is and fallback for everything else."""
+    return value if isinstance(value, str) else default
+
+
+def _as_str_list(value: object) -> list[str]:
+    """Keep only string items from a list-like value."""
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, str)]
+
+
+def _as_int(value: object, default: int = 0) -> int:
+    """Return integer-like values while preserving a safe default."""
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    return default
+
+
+def _as_bool(value: object, default: bool = False) -> bool:
+    """Return booleans unchanged and fallback for non-bools."""
+    return value if isinstance(value, bool) else default
 
 
 class SessionStore:
@@ -48,7 +77,7 @@ class SessionStore:
 
         Prevents path traversal attacks (e.g. ``../../.env``).
         """
-        if not re.match(r'^[a-zA-Z0-9_-]+$', session_id):
+        if not re.match(r"^[a-zA-Z0-9_-]+$", session_id):
             raise ValueError(f"Invalid session_id: {session_id!r}")
 
     def _safe_session_path(self, session_id: str) -> Path:
@@ -119,10 +148,16 @@ class SessionStore:
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("session_read_error", extra={
-                "session_id": session_id,
-                "error": str(exc),
-            })
+            logger.warning(
+                "session_read_error",
+                extra={
+                    "session_id": session_id,
+                    "error": str(exc),
+                },
+            )
+            return None
+
+        if not isinstance(raw, dict):
             return None
 
         return self._parse_full_session(session_id, raw)
@@ -145,10 +180,13 @@ class SessionStore:
         try:
             path.unlink()
         except OSError as exc:
-            logger.error("session_delete_error", extra={
-                "session_id": session_id,
-                "error": str(exc),
-            })
+            logger.error(
+                "session_delete_error",
+                extra={
+                    "session_id": session_id,
+                    "error": str(exc),
+                },
+            )
             return False
 
         # Update index.json if it exists
@@ -233,21 +271,29 @@ class SessionStore:
             logger.warning("index_read_error", extra={"error": str(exc)})
             return self._scan_session_files()
 
-        entries: dict = raw.get("entries", {})
+        raw_entries = raw.get("entries", {})
+        if not isinstance(raw_entries, dict):
+            return self._scan_session_files()
+
+        entries: dict[str, object] = {
+            str(session_id): entry for session_id, entry in raw_entries.items()
+        }
         summaries: list[SessionSummary] = []
 
         for sid, entry in entries.items():
             if not isinstance(entry, dict):
                 continue
-            summaries.append(SessionSummary(
-                id=sid,
-                title=entry.get("title", ""),
-                model=entry.get("model", ""),
-                tags=entry.get("tags", []),
-                created=entry.get("created", ""),
-                updated=entry.get("updated", entry.get("created", "")),
-                message_count=entry.get("messageCount", 0),
-            ))
+            summaries.append(
+                SessionSummary(
+                    id=sid,
+                    title=_as_str(entry.get("title", "")),
+                    model=_as_str(entry.get("model", "")),
+                    tags=_as_str_list(entry.get("tags", [])),
+                    created=_as_str(entry.get("created", "")),
+                    updated=_as_str(entry.get("updated", entry.get("created", ""))),
+                    message_count=_as_int(entry.get("messageCount", 0)),
+                )
+            )
 
         return summaries
 
@@ -262,10 +308,13 @@ class SessionStore:
             try:
                 raw = json.loads(path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError) as exc:
-                logger.warning("session_scan_error", extra={
-                    "file": path.name,
-                    "error": str(exc),
-                })
+                logger.warning(
+                    "session_scan_error",
+                    extra={
+                        "file": path.name,
+                        "error": str(exc),
+                    },
+                )
                 continue
 
             if not isinstance(raw, dict):
@@ -274,19 +323,21 @@ class SessionStore:
             sid = raw.get("id", path.stem)
             messages = raw.get("messages", [])
 
-            summaries.append(SessionSummary(
-                id=sid,
-                title=raw.get("title", ""),
-                model=raw.get("model", ""),
-                tags=raw.get("tags", []),
-                created=raw.get("created", ""),
-                updated=raw.get("updated", raw.get("created", "")),
-                message_count=len(messages) if isinstance(messages, list) else 0,
-            ))
+            summaries.append(
+                SessionSummary(
+                    id=_as_str(sid, path.stem),
+                    title=_as_str(raw.get("title", "")),
+                    model=_as_str(raw.get("model", "")),
+                    tags=_as_str_list(raw.get("tags", [])),
+                    created=_as_str(raw.get("created", "")),
+                    updated=_as_str(raw.get("updated", raw.get("created", ""))),
+                    message_count=len(messages) if isinstance(messages, list) else 0,
+                )
+            )
 
         return summaries
 
-    def _parse_full_session(self, session_id: str, raw: dict) -> SessionFull:
+    def _parse_full_session(self, session_id: str, raw: dict[str, Any]) -> SessionFull:
         """Parse a raw session dict into a SessionFull model."""
         raw_messages = raw.get("messages", [])
         messages: list[SessionMessage] = []
@@ -294,24 +345,26 @@ class SessionStore:
         for msg in raw_messages:
             if not isinstance(msg, dict):
                 continue
-            messages.append(SessionMessage(
-                role=msg.get("role", "user"),
-                content=msg.get("content"),
-                tool_calls=msg.get("tool_calls"),
-                tool_call_id=msg.get("tool_call_id"),
-            ))
+            messages.append(
+                SessionMessage(
+                    role=msg.get("role", "user"),
+                    content=msg.get("content"),
+                    tool_calls=msg.get("tool_calls"),
+                    tool_call_id=msg.get("tool_call_id"),
+                )
+            )
 
         return SessionFull(
-            id=raw.get("id", session_id),
-            title=raw.get("title", ""),
-            model=raw.get("model", ""),
-            tags=raw.get("tags", []),
-            created=raw.get("created", ""),
-            updated=raw.get("updated", raw.get("created", "")),
-            cwd=raw.get("cwd", ""),
+            id=_as_str(raw.get("id", session_id), session_id),
+            title=_as_str(raw.get("title", "")),
+            model=_as_str(raw.get("model", "")),
+            tags=_as_str_list(raw.get("tags", [])),
+            created=_as_str(raw.get("created", "")),
+            updated=_as_str(raw.get("updated", raw.get("created", ""))),
+            cwd=_as_str(raw.get("cwd", "")),
             messages=messages,
-            tool_call_count=raw.get("toolCallCount", 0),
-            compacted=raw.get("compacted", False),
+            tool_call_count=_as_int(raw.get("toolCallCount", 0)),
+            compacted=_as_bool(raw.get("compacted", False)),
         )
 
     def _remove_from_index(self, session_id: str) -> None:
@@ -332,10 +385,13 @@ class SessionStore:
                 )
                 logger.info("index_entry_removed", extra={"session_id": session_id})
         except (json.JSONDecodeError, OSError) as exc:
-            logger.warning("index_update_error", extra={
-                "session_id": session_id,
-                "error": str(exc),
-            })
+            logger.warning(
+                "index_update_error",
+                extra={
+                    "session_id": session_id,
+                    "error": str(exc),
+                },
+            )
 
     def _first_message_matches(self, session_id: str, query: str) -> bool:
         """Check if the first user message in a session matches the query."""

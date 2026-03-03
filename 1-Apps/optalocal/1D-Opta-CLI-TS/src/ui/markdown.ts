@@ -83,6 +83,8 @@ async function getRenderer(): Promise<(md: string) => string> {
   try {
     const { Marked } = await import('marked');
     const { markedTerminal } = await import('marked-terminal');
+    const { initShiki, highlightCodeAnsiSync } = await import('./shiki-highlighter.js');
+    await initShiki();
 
     const marked = new Marked(
       markedTerminal({
@@ -109,6 +111,19 @@ async function getRenderer(): Promise<(md: string) => string> {
         tab: 2,
       })
     );
+
+    // Override the code block renderer to use Shiki
+    marked.use({
+      renderer: {
+        code(token: { text: string; lang?: string }) {
+          const lang = token.lang || 'text';
+          const highlighted = highlightCodeAnsiSync(token.text, lang);
+          const lines = highlighted.split('\n');
+          const indented = lines.map(l => '  ' + l).join('\n');
+          return '\n' + indented + '\n\n';
+        }
+      }
+    });
 
     renderer = (md: string) => {
       try {

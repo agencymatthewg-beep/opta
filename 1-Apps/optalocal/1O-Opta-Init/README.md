@@ -4,10 +4,10 @@ Canonical path: `1-Apps/optalocal/1O-Opta-Init`
 
 ## What It Is
 
-Opta Init is the Opta Local distribution and update control plane.
+Opta Init is the Opta Local Initializer (short for `opta init`), handling first-run bootstrap, distribution, and rollout of stack lifecycle operations.
 
 - **Web app** (Next.js, static export) published at `init.optalocal.com`
-- **Desktop Manager** (Tauri) in `desktop-manager/` for install/update/launch orchestration across Opta Local apps
+- **Opta Init Desktop Manager** (Tauri) in `desktop-manager/` as the local runtime shell for install/update/launch orchestration across Opta Local apps
 
 ## Local Development
 

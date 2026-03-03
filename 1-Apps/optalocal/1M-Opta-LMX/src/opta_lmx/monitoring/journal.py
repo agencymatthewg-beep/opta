@@ -127,9 +127,7 @@ def _render_update_markdown(
     steps: list[Mapping[str, Any]] | None,
 ) -> str:
     """Render a numbered update log markdown document."""
-    promoted_value = (
-        "true" if promoted else "false" if promoted is not None else "null"
-    )
+    promoted_value = "true" if promoted else "false" if promoted is not None else "null"
     command_input_lines = _render_command_inputs(command_inputs)
     step_lines = _render_step_results(steps)
 
@@ -138,13 +136,13 @@ def _render_update_markdown(
             "---",
             f"id: {log_id:03d}",
             f"date: {timestamp:%Y-%m-%d}",
-            f"time: \"{timestamp:%H:%M:%S}\"",
-            f"author: \"{author}\"",
-            f"version_before: \"{version_before or ''}\"",
-            f"version_after: \"{version_after or ''}\"",
-            f"commit: \"{commit or ''}\"",
+            f'time: "{timestamp:%H:%M:%S}"',
+            f'author: "{author}"',
+            f'version_before: "{version_before or ""}"',
+            f'version_after: "{version_after or ""}"',
+            f'commit: "{commit or ""}"',
             f"promoted: {promoted_value}",
-            f"category: \"{category}\"",
+            f'category: "{category}"',
             "---",
             "",
             f"# {title}",
@@ -422,16 +420,12 @@ class RuntimeJournalManager:
         session = self._session
         finished_at = _to_timezone(ended_at or datetime.now(self._tz), self._tz)
         summary_slug = _slugify(summary, fallback="session")
-        filename = (
-            f"{session.started_at:%Y-%m-%d-%H%M}-"
-            f"{session.device}-{summary_slug}.md"
-        )
+        filename = f"{session.started_at:%Y-%m-%d-%H%M}-{session.device}-{summary_slug}.md"
         output_path = self._config.session_logs_dir / filename
         suffix = 2
         while output_path.exists():
             output_path = self._config.session_logs_dir / (
-                f"{session.started_at:%Y-%m-%d-%H%M}-{session.device}-"
-                f"{summary_slug}-{suffix}.md"
+                f"{session.started_at:%Y-%m-%d-%H%M}-{session.device}-{summary_slug}-{suffix}.md"
             )
             suffix += 1
 
@@ -479,11 +473,11 @@ class RuntimeJournalManager:
             [
                 "---",
                 f"date: {session.started_at:%Y-%m-%d}",
-                f"time: \"{session.started_at:%H:%M %Z}\"",
-                f"device: \"{session.device}\"",
-                f"user: \"{session.user}\"",
-                f"model: \"{session.model}\"",
-                f"duration: \"{_duration_hms(session.started_at, finished_at)}\"",
+                f'time: "{session.started_at:%H:%M %Z}"',
+                f'device: "{session.device}"',
+                f'user: "{session.user}"',
+                f'model: "{session.model}"',
+                f'duration: "{_duration_hms(session.started_at, finished_at)}"',
                 "---",
                 "",
                 "# Session: Runtime Session",

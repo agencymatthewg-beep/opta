@@ -33,14 +33,19 @@ async def test_is_model_available_missing_file(tmp_path: Path) -> None:
 async def test_is_model_available_hf_cache(tmp_path: Path) -> None:
     """is_model_available returns True when model is in HF cache."""
     manager = ModelManager(models_directory=tmp_path)
-    mock_available = [{
-        "repo_id": "mlx-community/Qwen2.5-7B",
-        "local_path": "/cache/q",
-        "size_bytes": 100,
-        "downloaded_at": 0.0,
-    }]
+    mock_available = [
+        {
+            "repo_id": "mlx-community/Qwen2.5-7B",
+            "local_path": "/cache/q",
+            "size_bytes": 100,
+            "downloaded_at": 0.0,
+        }
+    ]
     with patch.object(
-        manager, "list_available", new_callable=AsyncMock, return_value=mock_available,
+        manager,
+        "list_available",
+        new_callable=AsyncMock,
+        return_value=mock_available,
     ):
         assert await manager.is_model_available("mlx-community/Qwen2.5-7B") is True
         assert await manager.is_model_available("mlx-community/other-model") is False

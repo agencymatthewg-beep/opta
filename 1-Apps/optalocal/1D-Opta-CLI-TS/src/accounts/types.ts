@@ -13,6 +13,8 @@ export interface SupabaseSession {
   token_type: string;
   expires_in: number;
   expires_at?: number;
+  provider_token?: string;
+  provider_refresh_token?: string;
   user?: SupabaseUser;
   [key: string]: unknown;
 }

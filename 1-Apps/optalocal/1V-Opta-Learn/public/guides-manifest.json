@@ -1,56 +1,64 @@
 {
-  "generatedAt": "2026-03-03T01:53:19.990Z",
+  "generatedAt": "2026-03-03T18:17:54.654Z",
   "root": "content/guides",
   "counts": {
-    "published": 6,
-    "draft": 0,
+    "published": 1,
+    "draft": 6,
     "orphan": 0
   },
   "published": [
-    {
-      "slug": "opta-local-intro",
-      "title": "Introduction to Local",
-      "file": "content/guides/opta-local-intro.ts",
-      "exportName": "optaLocalIntro",
-      "status": "verified"
-    },
-    {
-      "slug": "lmx",
-      "title": "Getting Started with LMX",
-      "file": "content/guides/lmx-overview.ts",
-      "exportName": "lmxOverview",
-      "status": "verified"
-    },
     {
       "slug": "cli",
       "title": "CLI Masterclass",
       "file": "content/guides/cli-masterclass.ts",
       "exportName": "cliMasterclass",
       "status": "verified"
+    }
+  ],
+  "draft": [
+    {
+      "slug": "opta-local-intro",
+      "title": "Introduction to Local",
+      "file": "content/guides/opta-local-intro.ts",
+      "exportName": "optaLocalIntro",
+      "status": "draft"
+    },
+    {
+      "slug": "lmx",
+      "title": "Getting Started with LMX",
+      "file": "content/guides/lmx-overview.ts",
+      "exportName": "lmxOverview",
+      "status": "draft"
     },
     {
       "slug": "browser-automation",
       "title": "Browser Automation Deep Dive",
       "file": "content/guides/browser-automation.ts",
       "exportName": "browserAutomationGuide",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "code-desktop",
       "title": "Code Desktop Overview",
       "file": "content/guides/code-desktop-overview.ts",
       "exportName": "codeDesktopOverview",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "accounts",
       "title": "Accounts Local Sync",
       "file": "content/guides/accounts-sync.ts",
       "exportName": "accountsSync",
-      "status": "verified"
+      "status": "draft"
+    },
+    {
+      "slug": "feature-name",
+      "title": "Feature Name Masterclass",
+      "file": "content/guides/template-deep-dive.ts",
+      "exportName": "deepDiveTemplate",
+      "status": "draft"
     }
   ],
-  "draft": [],
   "orphan": [],
   "diagnostics": {
     "duplicateSlugs": [],

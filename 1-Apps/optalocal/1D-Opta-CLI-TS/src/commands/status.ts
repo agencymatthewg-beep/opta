@@ -1,3 +1,4 @@
+import os from 'node:os';
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { formatError, OptaError, ExitError, EXIT } from '../core/errors.js';
@@ -17,6 +18,7 @@ export async function status(opts: StatusOptions): Promise<void> {
   const config = await loadConfig();
   const { host, port } = config.connection;
   const adminKey = config.connection.adminKey;
+  const adminKeysByHost = config.connection.adminKeysByHost;
   const reqOpts = opts.full ? FULL_STATUS_REQUEST_OPTS : FAST_STATUS_REQUEST_OPTS;
 
   const client = new LmxClient({
@@ -24,6 +26,7 @@ export async function status(opts: StatusOptions): Promise<void> {
     fallbackHosts: config.connection.fallbackHosts,
     port,
     adminKey,
+    adminKeysByHost,
   });
   const spinner = opts.json ? null : await createSpinner();
 
@@ -41,6 +44,12 @@ export async function status(opts: StatusOptions): Promise<void> {
 
     spinner?.succeed(`Opta LMX is ${health.status} at ${activeHost}:${port}`);
 
+    const currentDevice = os.hostname();
+    const requestedHost = host;
+    const normalizedRequested = requestedHost.trim().toLowerCase();
+    const localRequested = normalizedRequested === 'localhost' || normalizedRequested === '127.0.0.1' || normalizedRequested === '::1';
+    const executionContext = localRequested ? 'local' : 'remote';
+
     if (opts.json) {
       console.log(JSON.stringify({
         health,
@@ -49,6 +58,9 @@ export async function status(opts: StatusOptions): Promise<void> {
           requestedHost: host,
           activeHost,
           fallbackUsed: activeHost.toLowerCase() !== host.toLowerCase(),
+          downloadTargetHost: activeHost,
+          executionContext,
+          currentDevice,
         },
         deviceIdentity,
         availableModelsCount: available?.length,
@@ -56,6 +68,12 @@ export async function status(opts: StatusOptions): Promise<void> {
       }, null, 2));
       return;
     }
+
+    console.log(chalk.dim('  Current Device: ') + chalk.bold(currentDevice));
+    console.log(chalk.dim('  Requested LLM Host: ') + chalk.bold(`${requestedHost}:${port}`));
+    console.log(chalk.dim('  Active LLM Host: ') + chalk.bold(`${activeHost}:${port}`));
+    console.log(chalk.dim('  Download Target: ') + chalk.bold(`${activeHost}:${port}`));
+    console.log(chalk.dim('  Execution Context: ') + chalk.bold(executionContext));
 
     if (activeHost.toLowerCase() !== host.toLowerCase()) {
       console.log(
@@ -155,7 +173,9 @@ export async function status(opts: StatusOptions): Promise<void> {
     const suggestions = isUnauthorized
       ? [
           'Check admin key: opta config get connection.adminKey',
+          'Check host-key map: opta config get connection.adminKeysByHost',
           'Set/clear key: opta config set connection.adminKey <key>  or  opta config delete connection.adminKey',
+          'Set host-key map: opta config set connection.adminKeysByHost \'{"host":"key"}\'',
           `Verify unauthenticated health: curl http://${host}:${port}/healthz`,
         ]
       : [
@@ -167,12 +187,11 @@ export async function status(opts: StatusOptions): Promise<void> {
             : 'Configure fallback hosts: opta config set connection.fallbackHosts hostA,hostB',
         ];
 
-    throw new OptaError(
-      `Cannot reach Opta LMX at ${host}:${port}`,
-      EXIT.NO_CONNECTION,
-      causes,
-      suggestions,
-    );
+    const title = isUnauthorized
+      ? `Cannot access Opta LMX admin endpoints at ${host}:${port}`
+      : `Cannot reach Opta LMX at ${host}:${port}`;
+
+    throw new OptaError(title, EXIT.NO_CONNECTION, causes, suggestions);
   }
 }
 

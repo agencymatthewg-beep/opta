@@ -19,7 +19,7 @@ export function Footer() {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 text-sm">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-sm">
             <a
               href="https://init.optalocal.com"
               className="text-text-secondary hover:text-text-primary transition-colors"
@@ -39,10 +39,34 @@ export function Footer() {
               CLI
             </a>
             <a
+              href="https://help.optalocal.com/docs/opta-code"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Code
+            </a>
+            <a
               href="https://accounts.optalocal.com"
               className="text-text-secondary hover:text-text-primary transition-colors"
             >
               Accounts
+            </a>
+            <a
+              href="https://status.optalocal.com"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Status
+            </a>
+            <a
+              href="https://help.optalocal.com"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Help
+            </a>
+            <a
+              href="https://learn.optalocal.com"
+              className="text-text-secondary hover:text-text-primary transition-colors"
+            >
+              Learn
             </a>
             <a
               href="https://optamize.biz"

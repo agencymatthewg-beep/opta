@@ -1,0 +1,316 @@
+{
+  "generatedAt": "2026-03-03T20:55:53.480Z",
+  "source": {
+    "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
+    "package": "@opta/opta-cli",
+    "version": "0.5.0-alpha.1",
+    "commandEntry": "src/index.ts",
+    "operationsContract": "src/protocol/v3/operations.ts"
+  },
+  "commands": {
+    "topLevel": [
+      "account",
+      "benchmark",
+      "ceo-bench",
+      "chat",
+      "completions",
+      "config",
+      "daemon",
+      "diff",
+      "do",
+      "doctor",
+      "embed",
+      "env",
+      "init",
+      "key",
+      "keychain",
+      "mcp",
+      "memory",
+      "models",
+      "onboard",
+      "rerank",
+      "serve",
+      "server",
+      "sessions",
+      "setup",
+      "status",
+      "tui",
+      "update",
+      "version"
+    ],
+    "families": [
+      "account",
+      "benchmark",
+      "ceo-bench",
+      "chat",
+      "completions",
+      "config",
+      "daemon",
+      "diff",
+      "do",
+      "doctor",
+      "embed",
+      "env",
+      "init",
+      "key",
+      "keychain",
+      "mcp",
+      "memory",
+      "models",
+      "onboard",
+      "rerank",
+      "serve",
+      "server",
+      "sessions",
+      "setup",
+      "status",
+      "tui",
+      "update",
+      "version"
+    ],
+    "subcommands": {
+      "account": [
+        "keys",
+        "login",
+        "logout",
+        "signup",
+        "status"
+      ],
+      "mcp": [
+        "add",
+        "add-playwright",
+        "availability",
+        "config",
+        "health",
+        "list",
+        "remove",
+        "test"
+      ],
+      "daemon": [
+        "install",
+        "logs",
+        "run",
+        "start",
+        "status",
+        "stop",
+        "uninstall"
+      ],
+      "keychain": [
+        "delete-anthropic",
+        "delete-gemini",
+        "delete-lmx",
+        "delete-openai",
+        "delete-opencode-zen",
+        "set-anthropic",
+        "set-gemini",
+        "set-lmx",
+        "set-openai",
+        "set-opencode-zen",
+        "status"
+      ],
+      "sessions": []
+    },
+    "modelActions": [
+      "agents",
+      "alias",
+      "aliases",
+      "bench",
+      "benchmark",
+      "browse",
+      "browse-library",
+      "browse-local",
+      "dashboard",
+      "delete",
+      "download",
+      "health",
+      "help",
+      "helpers",
+      "history",
+      "info",
+      "interactive",
+      "library",
+      "list",
+      "load",
+      "manage",
+      "predictor",
+      "quantize",
+      "rag",
+      "remove",
+      "scan",
+      "skills",
+      "stop",
+      "swap",
+      "ui",
+      "unalias",
+      "unload",
+      "use"
+    ]
+  },
+  "operations": {
+    "count": 76,
+    "ids": [
+      "account.keys.delete",
+      "account.keys.list",
+      "account.keys.push",
+      "account.login",
+      "account.logout",
+      "account.signup",
+      "account.status",
+      "benchmark",
+      "ceo.benchmark",
+      "completions.generate",
+      "config.get",
+      "config.list",
+      "config.reset",
+      "config.set",
+      "daemon.install",
+      "daemon.logs",
+      "daemon.start",
+      "daemon.status",
+      "daemon.stop",
+      "daemon.uninstall",
+      "diff",
+      "doctor",
+      "embed",
+      "env.delete",
+      "env.list",
+      "env.save",
+      "env.show",
+      "env.use",
+      "init.run",
+      "key.copy",
+      "key.create",
+      "key.show",
+      "keychain.delete-anthropic",
+      "keychain.delete-gemini",
+      "keychain.delete-lmx",
+      "keychain.delete-openai",
+      "keychain.delete-opencode-zen",
+      "keychain.set-anthropic",
+      "keychain.set-gemini",
+      "keychain.set-lmx",
+      "keychain.set-openai",
+      "keychain.set-opencode-zen",
+      "keychain.status",
+      "mcp.add",
+      "mcp.add-playwright",
+      "mcp.list",
+      "mcp.remove",
+      "mcp.test",
+      "models.agents",
+      "models.aliases.delete",
+      "models.aliases.list",
+      "models.aliases.set",
+      "models.browse.library",
+      "models.browse.local",
+      "models.dashboard",
+      "models.health",
+      "models.helpers",
+      "models.history",
+      "models.predictor",
+      "models.quantize",
+      "models.rag",
+      "models.scan",
+      "models.skills",
+      "onboard.apply",
+      "rerank",
+      "serve.logs",
+      "serve.restart",
+      "serve.start",
+      "serve.status",
+      "serve.stop",
+      "sessions.delete",
+      "sessions.export",
+      "sessions.list",
+      "sessions.search",
+      "update.run",
+      "version.check"
+    ],
+    "families": [
+      {
+        "name": "account",
+        "count": 7
+      },
+      {
+        "name": "benchmark",
+        "count": 1
+      },
+      {
+        "name": "ceo",
+        "count": 1
+      },
+      {
+        "name": "completions",
+        "count": 1
+      },
+      {
+        "name": "config",
+        "count": 4
+      },
+      {
+        "name": "daemon",
+        "count": 6
+      },
+      {
+        "name": "diff",
+        "count": 1
+      },
+      {
+        "name": "doctor",
+        "count": 1
+      },
+      {
+        "name": "embed",
+        "count": 1
+      },
+      {
+        "name": "env",
+        "count": 5
+      },
+      {
+        "name": "init",
+        "count": 1
+      },
+      {
+        "name": "key",
+        "count": 3
+      },
+      {
+        "name": "keychain",
+        "count": 11
+      },
+      {
+        "name": "mcp",
+        "count": 5
+      },
+      {
+        "name": "models",
+        "count": 15
+      },
+      {
+        "name": "onboard",
+        "count": 1
+      },
+      {
+        "name": "rerank",
+        "count": 1
+      },
+      {
+        "name": "serve",
+        "count": 5
+      },
+      {
+        "name": "sessions",
+        "count": 4
+      },
+      {
+        "name": "update",
+        "count": 1
+      },
+      {
+        "name": "version",
+        "count": 1
+      }
+    ]
+  }
+}

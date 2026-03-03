@@ -73,9 +73,7 @@ def validate_architecture(model_id: str) -> None:
         raise AdmissionFailure(
             code=ErrorCodes.MODEL_UNSUPPORTED_ARCH,
             status_code=422,
-            message=(
-                f"MLX backend requires Apple Silicon/arm64; detected architecture '{arch}'."
-            ),
+            message=(f"MLX backend requires Apple Silicon/arm64; detected architecture '{arch}'."),
             error_type="not_supported_error",
         )
 
@@ -85,8 +83,7 @@ class CompatibilityRegistry:
 
     def __init__(self, path: Path | None = None) -> None:
         self._path = (
-            path
-            or (Path.home() / ".opta-lmx" / "compatibility-registry.json")
+            path or (Path.home() / ".opta-lmx" / "compatibility-registry.json")
         ).expanduser()
         self._path.parent.mkdir(parents=True, exist_ok=True)
         self._cache: list[dict[str, Any]] | None = None
@@ -195,12 +192,15 @@ class CompatibilityRegistry:
             model_id = row.get("model_id")
             if not isinstance(model_id, str) or not model_id:
                 continue
-            item = summary.setdefault(model_id, {
-                "total": 0,
-                "pass": 0,
-                "fail": 0,
-                "latest_ts": 0.0,
-            })
+            item = summary.setdefault(
+                model_id,
+                {
+                    "total": 0,
+                    "pass": 0,
+                    "fail": 0,
+                    "latest_ts": 0.0,
+                },
+            )
             item["total"] = int(item["total"]) + 1
             outcome = row.get("outcome")
             if outcome == "pass":
@@ -246,10 +246,7 @@ class ReadinessTracker:
 
     def snapshot(self) -> dict[str, dict[str, Any]]:
         """Return a copy of all known readiness rows keyed by model_id."""
-        return {
-            model_id: dict(row)
-            for model_id, row in self._state.items()
-        }
+        return {model_id: dict(row) for model_id, row in self._state.items()}
 
     def is_routable(self, model_id: str) -> bool:
         return self._state.get(model_id, {}).get("state") == "routable"

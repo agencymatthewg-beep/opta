@@ -84,3 +84,10 @@ export interface ManagerUpdateInstallResult {
   message?: string;
   error?: string;
 }
+
+export interface AccountProfile {
+  email?: string;
+  name?: string;
+  avatar?: string;
+  activeRole?: string;
+}

@@ -361,7 +361,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_completions_rejects_no_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """POST /v1/chat/completions without API key returns 401."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -376,7 +379,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_completions_rejects_wrong_key(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """POST /v1/chat/completions with wrong API key returns 401."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -392,7 +398,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_chat_completions_accepts_correct_key(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """POST /v1/chat/completions with correct key succeeds (or 404 for missing model)."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -409,7 +418,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_v1_models_rejects_no_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """GET /v1/models without API key returns 401."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -418,7 +430,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_v1_models_accepts_x_api_key(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """GET /v1/models with X-Api-Key header passes auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -430,7 +445,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_v1_embeddings_rejects_no_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """POST /v1/embeddings without auth returns 401."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -442,7 +460,10 @@ class TestCloudProfileHTTPIntegration:
 
     @pytest.mark.asyncio
     async def test_healthz_no_auth_required(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """GET /healthz should always work without auth — it's a liveness probe."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -458,7 +479,10 @@ class TestSpoofedXForwardedFor:
 
     @pytest.mark.asyncio
     async def test_spoofed_xff_does_not_bypass_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """X-Forwarded-For header from untrusted client does not bypass inference auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -477,7 +501,10 @@ class TestSpoofedXForwardedFor:
 
     @pytest.mark.asyncio
     async def test_spoofed_xff_with_localhost_does_not_bypass_admin(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """X-Forwarded-For: 127.0.0.1 doesn't bypass admin key auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -492,7 +519,10 @@ class TestSpoofedXForwardedFor:
 
     @pytest.mark.asyncio
     async def test_spoofed_xff_chain_does_not_bypass_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """Multi-hop X-Forwarded-For chain doesn't bypass auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -514,7 +544,10 @@ class TestSpoofedXRealIP:
 
     @pytest.mark.asyncio
     async def test_spoofed_x_real_ip_does_not_bypass_auth(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """X-Real-IP header from untrusted client doesn't bypass inference auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -532,7 +565,10 @@ class TestSpoofedXRealIP:
 
     @pytest.mark.asyncio
     async def test_spoofed_x_real_ip_does_not_bypass_admin(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """X-Real-IP doesn't bypass admin key auth."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -597,7 +633,10 @@ class TestProxyHeadersWithAuth:
 
     @pytest.mark.asyncio
     async def test_xff_plus_wrong_auth_still_rejected(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """Even with spoofed XFF, wrong auth credentials are still rejected."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -617,7 +656,10 @@ class TestProxyHeadersWithAuth:
 
     @pytest.mark.asyncio
     async def test_xff_plus_correct_auth_accepted(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """Spoofed headers are irrelevant when correct auth is provided."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):
@@ -638,7 +680,10 @@ class TestProxyHeadersWithAuth:
 
     @pytest.mark.asyncio
     async def test_admin_xff_plus_wrong_key_rejected(
-        self, mock_engine: InferenceEngine, mock_model_manager: ModelManager, tmp_path: Path,
+        self,
+        mock_engine: InferenceEngine,
+        mock_model_manager: ModelManager,
+        tmp_path: Path,
     ) -> None:
         """Admin endpoint: spoofed XFF + wrong admin key = 403."""
         async for client in _make_cloud_test_client(mock_engine, mock_model_manager, tmp_path):

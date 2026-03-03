@@ -84,23 +84,25 @@ vi.mock('../../src/lmx/api-key.js', () => ({
 
 // Mock MCP cache
 vi.mock('../../src/mcp/cache.js', () => ({
-  ToolResultCache: vi.fn().mockImplementation(() => ({
-    isCacheable: () => false,
-    isWriteTool: () => false,
-    get: () => undefined,
-    set: vi.fn(),
-    flush: vi.fn(),
-    size: 0,
-  })),
+  ToolResultCache: vi.fn().mockImplementation(function() {
+    return {
+      isCacheable: () => false,
+      isWriteTool: () => false,
+      get: () => undefined,
+      set: vi.fn(),
+      flush: vi.fn(),
+      size: 0,
+    };
+  }),
 }));
-
-// Mock LSP
 vi.mock('../../src/lsp/manager.js', () => ({
-  LspManager: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue('lsp result'),
-    shutdownAll: vi.fn(),
-    notifyFileChanged: vi.fn(),
-  })),
+  LspManager: vi.fn().mockImplementation(function() {
+    return {
+      execute: vi.fn().mockResolvedValue('lsp result'),
+      shutdownAll: vi.fn(),
+      notifyFileChanged: vi.fn(),
+    };
+  }),
 }));
 
 import { connectMcpServer, type McpConnection } from '../../src/mcp/client.js';

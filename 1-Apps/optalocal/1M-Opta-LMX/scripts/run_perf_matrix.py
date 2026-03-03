@@ -100,11 +100,7 @@ def _api_json(
 def _deep_merge(base: dict[str, Any], overlay: dict[str, Any]) -> dict[str, Any]:
     merged = deepcopy(base)
     for key, value in overlay.items():
-        if (
-            key in merged
-            and isinstance(merged[key], dict)
-            and isinstance(value, dict)
-        ):
+        if key in merged and isinstance(merged[key], dict) and isinstance(value, dict):
             merged[key] = _deep_merge(merged[key], value)
         else:
             merged[key] = value
@@ -182,13 +178,16 @@ def _spec_metrics_snapshot(
 
 def _spec_metrics_delta(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
     accepted_delta = _coerce_int(after.get("accepted_tokens"), 0) - _coerce_int(
-        before.get("accepted_tokens"), 0,
+        before.get("accepted_tokens"),
+        0,
     )
     rejected_delta = _coerce_int(after.get("rejected_tokens"), 0) - _coerce_int(
-        before.get("rejected_tokens"), 0,
+        before.get("rejected_tokens"),
+        0,
     )
     ignored_delta = _coerce_int(after.get("ignored_tokens"), 0) - _coerce_int(
-        before.get("ignored_tokens"), 0,
+        before.get("ignored_tokens"),
+        0,
     )
     denominator = accepted_delta + rejected_delta
     acceptance_ratio_delta: float | None = None
@@ -520,12 +519,15 @@ def main(argv: list[str] | None = None) -> int:
         _parse_json_dict(args.spec_overrides_json, "--spec-overrides-json"),
     )
     if args.speculative_draft_model:
-        speculative_overrides = _deep_merge(speculative_overrides, {
-            "speculative": {
-                "draft_model": args.speculative_draft_model,
-                "num_tokens": args.speculative_num_tokens,
+        speculative_overrides = _deep_merge(
+            speculative_overrides,
+            {
+                "speculative": {
+                    "draft_model": args.speculative_draft_model,
+                    "num_tokens": args.speculative_num_tokens,
+                },
             },
-        })
+        )
 
     base_url = args.base_url.rstrip("/")
     headers = _build_headers(args.admin_key)
@@ -597,42 +599,51 @@ def main(argv: list[str] | None = None) -> int:
     speculative_active = bool(speculative_summary.get("active"))
 
     checks: list[dict[str, Any]] = []
-    checks.append({
-        "name": "baseline_tps_available",
-        "passed": baseline_tps > 0,
-        "actual": baseline_tps,
-        "required": "> 0",
-    })
-    checks.append({
-        "name": "min_tps_ratio",
-        "passed": tps_ratio is not None and tps_ratio >= args.min_tps_ratio,
-        "actual": tps_ratio,
-        "required": f">= {args.min_tps_ratio}",
-    })
+    checks.append(
+        {
+            "name": "baseline_tps_available",
+            "passed": baseline_tps > 0,
+            "actual": baseline_tps,
+            "required": "> 0",
+        }
+    )
+    checks.append(
+        {
+            "name": "min_tps_ratio",
+            "passed": tps_ratio is not None and tps_ratio >= args.min_tps_ratio,
+            "actual": tps_ratio,
+            "required": f">= {args.min_tps_ratio}",
+        }
+    )
     if args.max_ttft_ratio is not None:
-        checks.append({
-            "name": "max_ttft_ratio",
-            "passed": ttft_ratio is not None and ttft_ratio <= args.max_ttft_ratio,
-            "actual": ttft_ratio,
-            "required": f"<= {args.max_ttft_ratio}",
-        })
+        checks.append(
+            {
+                "name": "max_ttft_ratio",
+                "passed": ttft_ratio is not None and ttft_ratio <= args.max_ttft_ratio,
+                "actual": ttft_ratio,
+                "required": f"<= {args.max_ttft_ratio}",
+            }
+        )
     if args.min_acceptance_ratio is not None:
-        checks.append({
-            "name": "min_acceptance_ratio",
-            "passed": (
-                acceptance_ratio is not None
-                and acceptance_ratio >= args.min_acceptance_ratio
-            ),
-            "actual": acceptance_ratio,
-            "required": f">= {args.min_acceptance_ratio}",
-        })
+        checks.append(
+            {
+                "name": "min_acceptance_ratio",
+                "passed": (
+                    acceptance_ratio is not None and acceptance_ratio >= args.min_acceptance_ratio
+                ),
+                "actual": acceptance_ratio,
+                "required": f">= {args.min_acceptance_ratio}",
+            }
+        )
     if args.require_spec_active:
-        checks.append({
-            "name": "speculative_active",
-            "passed": speculative_active,
-            "actual": speculative_active,
-            "required": True,
-        })
+        checks.append(
+            {
+                "name": "speculative_active",
+                "passed": speculative_active,
+                "actual": speculative_active,
+                "required": True,
+            }
+        )
 
     overall_pass = all(bool(check["passed"]) for check in checks)
 

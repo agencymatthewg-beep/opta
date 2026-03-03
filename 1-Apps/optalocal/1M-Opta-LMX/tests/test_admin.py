@@ -57,7 +57,8 @@ class TestAdminAuth:
     async def test_rejects_wrong_key(self, client_with_auth: AsyncClient) -> None:
         """Returns 403 when admin key is incorrect."""
         response = await client_with_auth.get(
-            "/admin/status", headers={"x-admin-key": "wrong-key"},
+            "/admin/status",
+            headers={"x-admin-key": "wrong-key"},
         )
         assert response.status_code == 403
 
@@ -65,7 +66,8 @@ class TestAdminAuth:
     async def test_accepts_correct_key(self, client_with_auth: AsyncClient) -> None:
         """Returns 200 when admin key matches."""
         response = await client_with_auth.get(
-            "/admin/status", headers={"x-admin-key": "test-secret-key"},
+            "/admin/status",
+            headers={"x-admin-key": "test-secret-key"},
         )
         assert response.status_code == 200
 
@@ -146,7 +148,8 @@ class TestAdminLoad:
     async def test_load_model_on_disk(self, client: AsyncClient) -> None:
         """Loading a model that's on disk returns success."""
         response = await client.post(
-            "/admin/models/load", json={"model_id": "test/model"},
+            "/admin/models/load",
+            json={"model_id": "test/model"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -160,7 +163,8 @@ class TestAdminLoad:
         await client.post("/admin/models/load", json={"model_id": "test/model"})
         # Load again
         response = await client.post(
-            "/admin/models/load", json={"model_id": "test/model"},
+            "/admin/models/load",
+            json={"model_id": "test/model"},
         )
         assert response.status_code == 200
         assert response.json()["success"] is True
@@ -188,7 +192,8 @@ class TestAdminLoad:
         app.state.model_manager.estimate_size = AsyncMock(return_value=5_000_000_000)
 
         response = await client.post(
-            "/admin/models/load", json={"model_id": "big/model"},
+            "/admin/models/load",
+            json={"model_id": "big/model"},
         )
         assert response.status_code == 202
         data = response.json()
@@ -564,7 +569,8 @@ class TestAdminUnload:
         await client.post("/admin/models/load", json={"model_id": "test/model"})
 
         response = await client.post(
-            "/admin/models/unload", json={"model_id": "test/model"},
+            "/admin/models/unload",
+            json={"model_id": "test/model"},
         )
         assert response.status_code == 200
         data = response.json()
@@ -574,7 +580,8 @@ class TestAdminUnload:
     async def test_unload_not_loaded_returns_404(self, client: AsyncClient) -> None:
         """Unloading a model that isn't loaded returns 404."""
         response = await client.post(
-            "/admin/models/unload", json={"model_id": "nonexistent/model"},
+            "/admin/models/unload",
+            json={"model_id": "nonexistent/model"},
         )
         assert response.status_code == 404
 
@@ -635,7 +642,8 @@ class TestAdminDelete:
         await client.post("/admin/models/load", json={"model_id": "test/model"})
 
         response = await client.request(
-            "DELETE", "/admin/models/test/model",
+            "DELETE",
+            "/admin/models/test/model",
         )
         assert response.status_code == 409
 
@@ -645,13 +653,15 @@ class TestAdminDelete:
         # Use a model_id that embeds ".." — httpx normalizes pure ../ in URLs,
         # so we use a path segment containing ".." that doesn't get normalized.
         response = await client.request(
-            "DELETE", "/admin/models/safe/../../etc/passwd",
+            "DELETE",
+            "/admin/models/safe/../../etc/passwd",
         )
         # FastAPI routing may normalize this to /admin/models/../etc/passwd → /admin/etc/passwd
         # which won't match the route at all (404). Instead test via the other branch:
         # model_id starting with "/"
         response = await client.request(
-            "DELETE", "/admin/models/%2Fetc%2Fpasswd",
+            "DELETE",
+            "/admin/models/%2Fetc%2Fpasswd",
         )
         assert response.status_code == 400
 
@@ -821,10 +831,13 @@ class TestBenchmark:
     @pytest.mark.asyncio
     async def test_benchmark_model_not_loaded(self, client: AsyncClient) -> None:
         """Benchmark returns 404 when model is not loaded."""
-        response = await client.post("/admin/benchmark", json={
-            "model_id": "nonexistent/model",
-            "prompt": "Hello",
-        })
+        response = await client.post(
+            "/admin/benchmark",
+            json={
+                "model_id": "nonexistent/model",
+                "prompt": "Hello",
+            },
+        )
         assert response.status_code == 404
 
     @pytest.mark.asyncio
@@ -842,12 +855,15 @@ class TestBenchmark:
 
         app.state.engine.stream_generate = mock_stream
 
-        response = await client.post("/admin/benchmark", json={
-            "model_id": "test/model",
-            "prompt": "Say hello",
-            "max_tokens": 100,
-            "runs": 2,
-        })
+        response = await client.post(
+            "/admin/benchmark",
+            json={
+                "model_id": "test/model",
+                "prompt": "Say hello",
+                "max_tokens": 100,
+                "runs": 2,
+            },
+        )
         assert response.status_code == 200
         data = response.json()
         assert data["model_id"] == "test/model"

@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import importlib
 import logging
 import time
-from typing import Any
+from typing import Any, Protocol, cast
 
 logger = logging.getLogger(__name__)
+
+
+class _MlxEmbeddingsUtilsModule(Protocol):
+    """Structural type for mlx_embeddings.utils."""
+
+    def load(self, model_id: str) -> tuple[Any, Any]:
+        """Load model and tokenizer."""
+
+    def generate(self, model: Any, tokenizer: Any, texts: list[str]) -> Any:
+        """Generate embeddings."""
 
 
 class EmbeddingEngine:
@@ -48,20 +59,30 @@ class EmbeddingEngine:
 
         start = time.monotonic()
         try:
-            from mlx_embeddings.utils import load
-
-            self._model, self._tokenizer = load(model_id)
+            mlx_utils = cast(
+                _MlxEmbeddingsUtilsModule,
+                importlib.import_module("mlx_embeddings.utils"),
+            )
+            self._model, self._tokenizer = mlx_utils.load(model_id)
             self._model_id = model_id
             self._loaded_at = time.time()
 
             elapsed = time.monotonic() - start
-            logger.info("embedding_model_loaded", extra={
-                "model_id": model_id, "duration_sec": round(elapsed, 2),
-            })
+            logger.info(
+                "embedding_model_loaded",
+                extra={
+                    "model_id": model_id,
+                    "duration_sec": round(elapsed, 2),
+                },
+            )
         except Exception as e:
-            logger.error("embedding_model_load_failed", extra={
-                "model_id": model_id, "error": str(e),
-            })
+            logger.error(
+                "embedding_model_load_failed",
+                extra={
+                    "model_id": model_id,
+                    "error": str(e),
+                },
+            )
             raise RuntimeError(f"Failed to load embedding model {model_id}: {e}") from e
 
     async def unload(self) -> None:
@@ -97,16 +118,19 @@ class EmbeddingEngine:
             raise RuntimeError("No embedding model loaded. Set models.embedding_model in config.")
 
         try:
-            from mlx_embeddings.utils import generate
+            mlx_utils = cast(
+                _MlxEmbeddingsUtilsModule,
+                importlib.import_module("mlx_embeddings.utils"),
+            )
 
-            result = generate(self._model, self._tokenizer, texts)
+            result = mlx_utils.generate(self._model, self._tokenizer, texts)
             # mlx-embeddings >=0.0.5 returns BaseModelOutput; extract embeddings
             if hasattr(result, "text_embeds") and result.text_embeds is not None:
-                return result.text_embeds.tolist()  # type: ignore[no-any-return]
+                return cast(list[list[float]], result.text_embeds.tolist())
             if hasattr(result, "pooler_output") and result.pooler_output is not None:
-                return result.pooler_output.tolist()  # type: ignore[no-any-return]
+                return cast(list[list[float]], result.pooler_output.tolist())
             # Fallback: assume result is already an array (older versions)
-            return result.tolist()  # type: ignore[no-any-return]
+            return cast(list[list[float]], result.tolist())
         except Exception as e:
             logger.error("embedding_failed", extra={"error": str(e), "num_texts": len(texts)})
             raise RuntimeError(f"Embedding generation failed: {e}") from e

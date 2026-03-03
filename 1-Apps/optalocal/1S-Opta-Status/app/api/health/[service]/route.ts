@@ -37,6 +37,18 @@ const SERVICES: Record<
     urlFallback: 'https://help.optalocal.com',
     path: '/',
   },
+  admin: {
+    urlFallback: 'https://admin.optalocal.com',
+    path: '/',
+  },
+  status: {
+    urlFallback: 'https://status.optalocal.com',
+    path: '/',
+  },
+  learn: {
+    urlFallback: 'https://learn.optalocal.com',
+    path: '/',
+  },
 }
 
 export async function GET(

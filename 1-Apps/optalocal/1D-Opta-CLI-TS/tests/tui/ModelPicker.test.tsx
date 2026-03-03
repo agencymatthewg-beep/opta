@@ -140,4 +140,35 @@ describe('ModelPicker', () => {
     expect(frame).toContain('Failed to load models: connection to 127.0.0.1:1234 timed out while loading model inventory');
     unmount();
   });
+
+  it('shows in-picker debug guidance for connection failures', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('fetch failed');
+      }),
+    );
+
+    const { lastFrame, unmount } = render(
+      <ModelPicker
+        currentModel="mlx-community/MiniMax-M2.5-4bit"
+        connectionHost="127.0.0.1"
+        connectionPort={1234}
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    for (let i = 0; i < 30; i++) {
+      if (lastFrame().includes('Failed to load models:')) break;
+      await flush();
+    }
+
+    const frame = lastFrame();
+    expect(frame).toContain('/debug');
+    expect(frame).toContain('/doctor');
+    expect(frame).toContain('/lmx status --full');
+    expect(frame).toContain('Configured endpoint: 127.0.0.1:1234');
+    unmount();
+  });
 });
