@@ -1,7 +1,11 @@
 # OptaLocal Documentation Status
 
-Updated: 2026-03-01
+Updated: 2026-03-04
 Scope: `1-Apps/optalocal/*`
+
+## Hosting plan
+- Vercel account is now on **Pro** plan (upgraded 2026-03-04).
+- Operational policy: deploy each web app from its own app directory with `rootDirectory: null` in Vercel project settings to avoid path-doubling regressions.
 
 ## Canonical apps
 - `1D-Opta-CLI-TS` — runtime/TUI/daemon
@@ -24,8 +28,10 @@ Scope: `1-Apps/optalocal/*`
 | `lmx.optalocal.com` | 1L-Opta-Local (legacy) | `opta-lmx-dashboard` (prj_VbWNtBjU...) | ✅ Live (frozen legacy deploy) |
 | `init.optalocal.com` | 1O-Opta-Init | `opta-init` | ✅ Live |
 | `accounts.optalocal.com` | 1R-Opta-Accounts | `accounts` | ✅ Live — SSO portal |
-| `status.optalocal.com` | 1S-Opta-Status | `status` | ✅ Live |
+| `status.optalocal.com` | 1S-Opta-Status | `status-fix` | ✅ Live |
 | `help.optalocal.com` | 1U-Opta-Help | `opta-help` | ✅ Live |
+| `learn.optalocal.com` | 1V-Opta-Learn | `opta-learn` | ✅ Live |
+| `admin.optalocal.com` | 1X-Opta-Admin | `opta-admin` | ✅ Live (auth-gated) |
 
 ## Vercel Deploy Notes
 
@@ -49,6 +55,13 @@ Scope: `1-Apps/optalocal/*`
 - Moved `lmx.optalocal.com` domain from old `web` project → new `opta-lmx-dashboard`
 - Fixed `.vercelignore` to include `1D-Opta-CLI-TS/packages/` (daemon-client, protocol-shared)
 - Both domains verified live and serving correct content
+
+## Actions completed (2026-03-04)
+- Updated Vercel project configuration to `rootDirectory: null` for:
+  - `web`, `opta-init`, `accounts`, `status-fix`, `opta-help`, `opta-learn`, `opta-admin`
+- Redeployed latest source for all live website apps:
+  - `1T-Opta-Home`, `1O-Opta-Init`, `1R-Opta-Accounts`, `1S-Opta-Status`, `1U-Opta-Help`, `1V-Opta-Learn`, `1X-Opta-Admin`
+- Re-ran web SLO checks: all 8 domains passed (`OPTA_LOCAL_SLO_OK`).
 
 ## Maintenance rule
 When a major architecture/path/policy change occurs, update:

@@ -39,3 +39,8 @@ export function getDaemonDir(): string {
 export function getThemesDir(): string {
   return join(getConfigDir(), 'themes');
 }
+
+/** LSP isolated binary directory: <configDir>/lsp-bin/ */
+export function getLspBinDir(): string {
+  return join(getConfigDir(), 'lsp-bin');
+}

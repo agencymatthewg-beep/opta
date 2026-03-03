@@ -311,8 +311,9 @@ export class LspManager {
       );
     }
 
-    // Check if binary is on PATH
-    const available = await this.checkBinary(serverConfig.command);
+    // Ensure binary is installed (auto-provision if necessary)
+    const { ensureLspServerInstalled } = await import('./installer.js');
+    const { available, command: resolvedCommand } = await ensureLspServerInstalled(language, serverConfig);
     this.serverAvailable.set(language, available);
 
     if (!available) {
@@ -323,7 +324,7 @@ export class LspManager {
     try {
       const rootUri = filePathToUri(this.cwd);
       const client = new LspClient({
-        command: serverConfig.command,
+        command: resolvedCommand,
         args: serverConfig.args,
         rootUri,
         language,
