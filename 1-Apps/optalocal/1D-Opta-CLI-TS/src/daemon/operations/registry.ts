@@ -532,6 +532,42 @@ export const operationRegistry = {
       await sessions('delete', input.id, { json: true });
     })
   ),
+  'sessions.pin': defineOperation('sessions.pin', async (input) =>
+    runCommandForJson('sessions.pin', async () => {
+      await sessions('pin', input.id, { json: true });
+    })
+  ),
+  'sessions.unpin': defineOperation('sessions.unpin', async (input) =>
+    runCommandForJson('sessions.unpin', async () => {
+      await sessions('unpin', input.id, { json: true });
+    })
+  ),
+  'sessions.pins': defineOperation('sessions.pins', async () =>
+    runCommandForJson('sessions.pins', async () => {
+      await sessions('pins', undefined, { json: true });
+    })
+  ),
+  'sessions.retention.get': defineOperation('sessions.retention.get', async () =>
+    runCommandForJson('sessions.retention.get', async () => {
+      await sessions('retention-get', undefined, { json: true });
+    })
+  ),
+  'sessions.retention.set': defineOperation('sessions.retention.set', async (input) =>
+    runCommandForJson('sessions.retention.set', async () => {
+      await sessions('retention-set', String(input.days), {
+        json: true,
+        preservePinned: input.preservePinned,
+      });
+    })
+  ),
+  'sessions.retention.prune': defineOperation('sessions.retention.prune', async (input) =>
+    runCommandForJson('sessions.retention.prune', async () => {
+      await sessions('prune', undefined, {
+        json: true,
+        dryRun: input.dryRun,
+      });
+    })
+  ),
   diff: defineOperation('diff', async (input) =>
     runCommandForText(async () => {
       await diff({ session: input.session });

@@ -1,6 +1,6 @@
 # Opta CLI -> Opta Code Parity Matrix
 
-Date: 2026-03-01
+Date: 2026-03-03
 Scope:
 - CLI engine: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS`
 - Universal UI: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
@@ -30,6 +30,7 @@ Legend:
 | CLI Capability Family | Coverage in Opta Code | Implementation Path |
 |---|---|---|
 | Session orchestration (`opta`, `do`, live turns, permissions, cancel) | Dedicated | Sessions cockpit (`WorkspaceRail`, `TimelineCards`, `Composer`, `useDaemonSessions`) |
+| Session memory center (`sessions.pin/unpin/pins/search`, retention get/set/prune) | Dedicated | Memory Center page (`MemoryCenterPage`) + daemon operation wrappers |
 | Model control (`status`, `models` core load/unload/download/delete/memory) | Dedicated | Models page + LMX daemon endpoints |
 | Generic daemon operations catalog | Dedicated | Operations page (`useOperations`, schema-driven runner) |
 | Config management (`config get/set/list/reset`, full flattened keys) | Dedicated | Config Studio page |
@@ -45,7 +46,7 @@ Legend:
 | Shell completions (`completions`) | Console | Existing typed operation |
 | Version checks (`version --check`) | Console | Existing typed operation |
 | Keychain (`keychain status/set/delete`) | Console | Existing typed operations |
-| CLI-only onboarding wizard (`onboard`, `setup`) | Gap | Interactive TTY wizard; no daemon op mapping yet |
+| CLI-only onboarding wizard (`onboard`, `setup`) | Partial | Desktop Setup Wizard now applies non-interactive onboarding via `onboard.apply`; interactive TTY flow remains CLI-only |
 | Raw CLI HTTP server command (`server`) | Gap | Daemon already provides server; no separate UI command surface |
 
 ## Settings Coverage Statement
@@ -66,6 +67,12 @@ This provides broad settings parity in Opta Code via Config Studio without creat
   - hides native-only controls
   - uses HTTP/WebSocket daemon communication
   - uses browser-safe storage/input fallbacks
+
+## Deprecation Status
+- Tauri `save_setup_config` remains callable for compatibility but is now deprecated.
+- Desktop setup now applies onboarding through daemon `onboard.apply` after daemon bootstrap + secure token lookup.
+- Deprecated command invocations are warned at runtime and logged to `.../opta/daemon/deprecations.log` in the platform config directory.
+- Removal plan is tracked in `docs/MEMORY-CENTER-AND-ONBOARDING-ROLLOUT.md` (deprecate now, remove next release).
 
 ## Remaining Competitive Gaps (Next)
 1. Dedicated MCP management page (currently Console only).

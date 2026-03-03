@@ -97,6 +97,21 @@ cd ../1D-Opta-CLI-TS
 npm run dev -- daemon start
 ```
 
+## Memory Center + Onboarding Sync
+
+- Opta Code now includes a dedicated **Memory** page for:
+  - pinned sessions (`pin`, `unpin`, `pins`)
+  - recall search (`sessions.search`)
+  - retention policy (`sessions.retention.get/set`)
+  - prune preview/apply (`sessions.retention.prune`)
+- These actions are daemon-backed so Opta Code and Opta CLI use the same runtime memory behavior.
+- Setup Wizard completion now applies onboarding through daemon `onboard.apply`.
+- Legacy Tauri `save_setup_config` remains compatibility-only and is deprecated.
+
+See:
+- [docs/OPTACLI-PARITY-MATRIX.md](docs/OPTACLI-PARITY-MATRIX.md)
+- [docs/MEMORY-CENTER-AND-ONBOARDING-ROLLOUT.md](docs/MEMORY-CENTER-AND-ONBOARDING-ROLLOUT.md)
+
 ## Windows Compatibility Contract
 
 See [docs/WINDOWS-COMPATIBILITY.md](docs/WINDOWS-COMPATIBILITY.md) for the

@@ -1,6 +1,6 @@
 # Opta Code Desktop Linux Compatibility Contract
 
-Last updated: 2026-03-02
+Last updated: 2026-03-03
 
 This document defines what is considered Linux-compatible for `1P-Opta-Code-Universal` and what evidence is required before release.
 
@@ -18,6 +18,8 @@ Target runtime:
 | Desktop shell launch (AppImage/deb) | Supported | Verified by Linux build + artifact checks in CI. |
 | Daemon connection (host/port/token) | Supported | Endpoint is bootstrapped from native daemon metadata and secure-store state; editable in app header form. |
 | Session cockpit (create/track/stream/cancel) | Supported | Uses daemon v3 stream/events endpoints. |
+| Memory Center (`sessions.pin/unpin/pins/search`, retention get/set/prune) | Supported | Uses daemon `sessions.*` operations for CLI parity. |
+| Setup Wizard onboarding apply | Supported | Desktop applies daemon `onboard.apply`; legacy `save_setup_config` remains compatibility-only and deprecated. |
 | Operations page | Supported | Daemon-backed operation endpoints only. |
 | Background jobs page | Supported | Requires a valid daemon session ID for background job starts. |
 | Models page / LMX status display | Conditional | Works when daemon-side LMX services are reachable; otherwise UI shows unreachable/error state. |

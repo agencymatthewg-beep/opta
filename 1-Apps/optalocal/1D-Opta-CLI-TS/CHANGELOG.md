@@ -7,6 +7,22 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [Unreleased]
 
+### Added
+- Session memory retention controls in `opta sessions`:
+  - `pin`, `unpin`, `pins`
+  - `retention-get`, `retention-set`
+  - `prune` with `--dry-run`
+- Daemon operation support and typed protocol schemas for:
+  - `sessions.pin`
+  - `sessions.unpin`
+  - `sessions.pins`
+  - `sessions.retention.get`
+  - `sessions.retention.set`
+  - `sessions.retention.prune`
+
+### Changed
+- Runtime capability evaluation now treats `sessions.retention.prune` as a high-risk write operation.
+
 ### In Progress
 - Phase 2 Runtime Confidence: cancellation backpressure, P50/P99 latency metrics, multi-writer soak testing
 - Phase 3 Release Readiness: macOS packaging sign-off, clean-machine validation, npm publish

@@ -23,11 +23,25 @@ const GB_TO_BYTES = 1024 * 1024 * 1024;
 const LMX_READ_TIMEOUT_MS = 30_000;
 const LMX_MUTATION_TIMEOUT_MS = 120_000;
 
-interface SessionSnapshot {
+export interface SessionSnapshot {
   sessionId: string;
   title?: string;
   workspace?: string;
   updatedAt?: string;
+}
+
+export interface SessionRetentionPolicy {
+  days: number;
+  preservePinned: boolean;
+}
+
+export interface SessionRetentionPruneResult {
+  dryRun: boolean;
+  listed: number;
+  kept: number;
+  pruned: number;
+  keptSessions: SessionSnapshot[];
+  prunedSessions: SessionSnapshot[];
 }
 
 interface RuntimeMetricsResponse {
@@ -309,6 +323,175 @@ function normalizeConfigValue(raw: unknown): unknown {
   return raw;
 }
 
+function normalizeSessionSnapshot(raw: unknown): SessionSnapshot | null {
+  const parsed = asRecord(raw);
+  if (!parsed) return null;
+
+  const sessionId =
+    typeof parsed.sessionId === "string"
+      ? parsed.sessionId
+      : typeof parsed.session_id === "string"
+        ? parsed.session_id
+        : typeof parsed.id === "string"
+          ? parsed.id
+          : "";
+  if (!sessionId.trim()) return null;
+
+  const workspaceValue =
+    typeof parsed.workspace === "string"
+      ? parsed.workspace
+      : typeof parsed.project === "string"
+        ? parsed.project
+        : undefined;
+
+  const titleValue =
+    typeof parsed.title === "string"
+      ? parsed.title
+      : typeof parsed.summary === "string"
+        ? parsed.summary
+        : undefined;
+
+  const updatedAtValue =
+    typeof parsed.updatedAt === "string"
+      ? parsed.updatedAt
+      : typeof parsed.updated_at === "string"
+        ? parsed.updated_at
+        : typeof parsed.modifiedAt === "string"
+          ? parsed.modifiedAt
+          : undefined;
+
+  return {
+    sessionId,
+    title: titleValue,
+    workspace: workspaceValue,
+    updatedAt: updatedAtValue,
+  };
+}
+
+function normalizeSessionSnapshots(raw: unknown): SessionSnapshot[] {
+  if (Array.isArray(raw)) {
+    return raw
+      .map((item) => normalizeSessionSnapshot(item))
+      .filter((item): item is SessionSnapshot => item !== null);
+  }
+
+  const parsed = asRecord(raw);
+  if (!parsed) return [];
+
+  const listCandidates = [
+    parsed.sessions,
+    parsed.items,
+    parsed.results,
+    parsed.pins,
+    parsed.data,
+    parsed.matches,
+  ];
+
+  for (const candidate of listCandidates) {
+    if (!Array.isArray(candidate)) continue;
+    const normalized = candidate
+      .map((item) => normalizeSessionSnapshot(item))
+      .filter((item): item is SessionSnapshot => item !== null);
+    if (normalized.length > 0) return normalized;
+  }
+
+  const single = normalizeSessionSnapshot(parsed);
+  return single ? [single] : [];
+}
+
+function normalizeRetentionPolicy(raw: unknown): SessionRetentionPolicy | null {
+  const parsed = asRecord(raw);
+  if (!parsed) return null;
+  const policy = asRecord(parsed.policy) ?? parsed;
+
+  const days =
+    typeof policy.days === "number"
+      ? policy.days
+      : typeof policy.retentionDays === "number"
+        ? policy.retentionDays
+        : typeof policy.retention_days === "number"
+          ? policy.retention_days
+          : undefined;
+
+  const preservePinned =
+    typeof policy.preservePinned === "boolean"
+      ? policy.preservePinned
+      : typeof policy.preserve_pinned === "boolean"
+        ? policy.preserve_pinned
+        : undefined;
+
+  if (!Number.isFinite(days)) return null;
+
+  return {
+    days: Number(days),
+    preservePinned: preservePinned ?? true,
+  };
+}
+
+function normalizeRetentionPruneResult(
+  raw: unknown,
+  dryRunFallback: boolean,
+): SessionRetentionPruneResult {
+  const parsed = asRecord(raw);
+  const dryRun =
+    typeof parsed?.dryRun === "boolean"
+      ? parsed.dryRun
+      : typeof parsed?.dry_run === "boolean"
+        ? parsed.dry_run
+        : dryRunFallback;
+
+  const candidateIds = Array.isArray(parsed?.candidateIds)
+    ? parsed.candidateIds.filter((value): value is string => typeof value === "string")
+    : [];
+  const prunedIds = Array.isArray(parsed?.prunedIds)
+    ? parsed.prunedIds.filter((value): value is string => typeof value === "string")
+    : [];
+
+  const prunedSessionsFromIds = (dryRun ? candidateIds : prunedIds).map((sessionId) => ({
+    sessionId,
+  }));
+  const prunedSessions = normalizeSessionSnapshots(
+    parsed?.prunedSessions ?? parsed?.pruned ?? parsed?.removed ?? prunedSessionsFromIds,
+  );
+  const keptSessions = normalizeSessionSnapshots(
+    parsed?.keptSessions ?? parsed?.kept ?? parsed?.remaining ?? [],
+  );
+
+  const listed =
+    typeof parsed?.listed === "number"
+      ? parsed.listed
+      : typeof parsed?.total === "number"
+        ? parsed.total
+        : typeof parsed?.scanned === "number"
+          ? parsed.scanned
+        : prunedSessions.length + keptSessions.length;
+  const pruned =
+    typeof parsed?.candidateCount === "number" && dryRun
+      ? parsed.candidateCount
+      : typeof parsed?.pruned === "number"
+      ? parsed.pruned
+      : typeof parsed?.prunedCount === "number"
+        ? parsed.prunedCount
+        : prunedSessions.length;
+  const kept =
+    typeof parsed?.kept === "number"
+      ? parsed.kept
+      : typeof parsed?.keptCount === "number"
+        ? parsed.keptCount
+        : Number.isFinite(listed) && Number.isFinite(pruned)
+          ? Number(listed) - Number(pruned)
+        : keptSessions.length;
+
+  return {
+    dryRun,
+    listed: Number(listed),
+    kept: Number(kept),
+    pruned: Number(pruned),
+    keptSessions,
+    prunedSessions,
+  };
+}
+
 function operationError(
   operationId: string,
   response: DaemonRunOperationResponse,
@@ -550,6 +733,106 @@ export const daemonClient = {
     if (!result) return {};
     const nestedConfig = asRecord(result.config);
     return nestedConfig ?? result;
+  },
+
+  async sessionsSearch(
+    connection: DaemonConnectionOptions,
+    query: string,
+  ): Promise<SessionSnapshot[]> {
+    const response = await daemonClient.runOperation(connection, "sessions.search", {
+      input: { query },
+    });
+    if (!response.ok) throw operationError("sessions.search", response);
+    return normalizeSessionSnapshots(response.result);
+  },
+
+  async sessionsPins(
+    connection: DaemonConnectionOptions,
+  ): Promise<SessionSnapshot[]> {
+    const response = await daemonClient.runOperation(connection, "sessions.pins", {
+      input: {},
+    });
+    if (!response.ok) throw operationError("sessions.pins", response);
+    return normalizeSessionSnapshots(response.result);
+  },
+
+  async sessionsPin(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+  ): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "sessions.pin", {
+      input: { id: sessionId },
+    });
+    if (!response.ok) throw operationError("sessions.pin", response);
+  },
+
+  async sessionsUnpin(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+  ): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "sessions.unpin", {
+      input: { id: sessionId },
+    });
+    if (!response.ok) throw operationError("sessions.unpin", response);
+  },
+
+  async sessionsRetentionGet(
+    connection: DaemonConnectionOptions,
+  ): Promise<SessionRetentionPolicy> {
+    const response = await daemonClient.runOperation(
+      connection,
+      "sessions.retention.get",
+      {
+        input: {},
+      },
+    );
+    if (!response.ok) throw operationError("sessions.retention.get", response);
+    return normalizeRetentionPolicy(response.result) ?? {
+      days: 30,
+      preservePinned: true,
+    };
+  },
+
+  async sessionsRetentionSet(
+    connection: DaemonConnectionOptions,
+    policy: SessionRetentionPolicy,
+  ): Promise<SessionRetentionPolicy> {
+    const response = await daemonClient.runOperation(
+      connection,
+      "sessions.retention.set",
+      {
+        input: {
+          days: policy.days,
+          preservePinned: policy.preservePinned,
+        },
+      },
+    );
+    if (!response.ok) throw operationError("sessions.retention.set", response);
+    return normalizeRetentionPolicy(response.result) ?? policy;
+  },
+
+  async sessionsRetentionPrune(
+    connection: DaemonConnectionOptions,
+    input: SessionRetentionPolicy & { dryRun?: boolean },
+  ): Promise<SessionRetentionPruneResult> {
+    // Ensure prune uses the latest user-selected policy values.
+    await daemonClient.sessionsRetentionSet(connection, {
+      days: input.days,
+      preservePinned: input.preservePinned,
+    });
+
+    const dryRun = Boolean(input.dryRun);
+    const response = await daemonClient.runOperation(
+      connection,
+      "sessions.retention.prune",
+      {
+        input: {
+          dryRun,
+        },
+      },
+    );
+    if (!response.ok) throw operationError("sessions.retention.prune", response);
+    return normalizeRetentionPruneResult(response.result, dryRun);
   },
 
   async listBackground(

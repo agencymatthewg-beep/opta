@@ -13,6 +13,7 @@ const HIGH_RISK_WRITE_OPERATIONS = new Set<OperationId>([
   'serve.stop',
   'serve.restart',
   'update.run',
+  'sessions.retention.prune',
   'keychain.delete-anthropic',
   'keychain.delete-lmx',
 ]);

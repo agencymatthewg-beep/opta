@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::fs::OpenOptions;
 use std::io::{BufRead, BufReader, Read, Write as IoWrite};
 use std::path::PathBuf;
 
@@ -40,6 +41,13 @@ pub fn check_first_run() -> bool {
 /// Save setup wizard data to CLI config location.
 #[tauri::command]
 pub fn save_setup_config(config: SetupConfig) -> Result<(), String> {
+    eprintln!(
+        "[DEPRECATED] Tauri command `save_setup_config` is deprecated; use daemon operation `onboard.apply` instead."
+    );
+    if let Err(error) = append_deprecation_log_entry("save_setup_config") {
+        eprintln!("[WARN] Failed to append deprecation log entry: {}", error);
+    }
+
     let config_path = get_opta_config_path().map_err(|e| e.to_string())?;
 
     if let Some(parent) = config_path.parent() {
@@ -75,6 +83,36 @@ pub fn save_setup_config(config: SetupConfig) -> Result<(), String> {
     std::fs::write(
         &config_path,
         serde_json::to_string_pretty(&json_value).map_err(|e| e.to_string())?,
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+fn append_deprecation_log_entry(command: &str) -> Result<(), String> {
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    let log_path = get_deprecations_log_path()?;
+    if let Some(parent) = log_path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+
+    let timestamp = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_secs();
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path)
+        .map_err(|e| e.to_string())?;
+
+    writeln!(
+        file,
+        "{}\t{}\t{}",
+        timestamp,
+        command,
+        "deprecated command invoked; migrate to daemon onboarding operations"
     )
     .map_err(|e| e.to_string())?;
 
@@ -255,4 +293,12 @@ fn get_opta_config_path() -> Result<PathBuf, String> {
             .unwrap_or_else(|_| format!("{}/.config", home));
         Ok(PathBuf::from(xdg).join("opta").join("config.json"))
     }
+}
+
+fn get_deprecations_log_path() -> Result<PathBuf, String> {
+    let config_path = get_opta_config_path()?;
+    let config_dir = config_path
+        .parent()
+        .ok_or_else(|| "Unable to resolve Opta config directory".to_string())?;
+    Ok(config_dir.join("daemon").join("deprecations.log"))
 }

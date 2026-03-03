@@ -290,6 +290,8 @@ interface SessionsCommandOptions {
   since?: string;
   tag?: string;
   limit?: string;
+  preservePinned?: string | boolean;
+  dryRun?: string | boolean;
 }
 
 interface McpListCommandOptions {
@@ -754,7 +756,10 @@ accountCmd
 program
   .command('sessions')
   .description('Manage chat sessions')
-  .argument('[action]', 'resume | delete | export | search')
+  .argument(
+    '[action]',
+    'list | resume | delete | export | search | pin | unpin | pins | retention-get | retention-set | prune'
+  )
   .argument('[id]', 'session id or search query')
   .option('--json', 'machine-readable output')
   .option('--model <name>', 'filter by model name')
@@ -762,6 +767,8 @@ program
   .option('--since <date>', 'filter sessions after date (ISO or relative: 7d, 2w, 1m)')
   .option('--tag <tag>', 'filter by tag')
   .option('--limit <n>', 'limit results (default 20)')
+  .option('--preserve-pinned <bool>', 'used with retention-set: preserve pinned sessions (true|false)')
+  .option('--dry-run', 'used with prune: preview prune candidates without deleting sessions')
   .action(
     async (action: string | undefined, id: string | undefined, opts: SessionsCommandOptions) => {
       const { sessions } = await import('./commands/sessions.js');

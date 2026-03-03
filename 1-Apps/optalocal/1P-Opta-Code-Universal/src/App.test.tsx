@@ -82,6 +82,10 @@ vi.mock("./pages/ConfigStudioPage", () => ({
   ConfigStudioPage: () => <div>ConfigStudioPageMock</div>,
 }));
 
+vi.mock("./pages/MemoryCenterPage", () => ({
+  MemoryCenterPage: () => <div>MemoryCenterPageMock</div>,
+}));
+
 vi.mock("./pages/AccountControlPage", () => ({
   AccountControlPage: () => <div>AccountControlPageMock</div>,
 }));
@@ -194,6 +198,44 @@ describe("App account controls wiring", () => {
     const mcpTab = screen.getByRole("button", { name: "MCP" });
     fireEvent.click(mcpTab);
     expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
+  });
+
+  it("renders Memory tab and opens MemoryCenterPage", async () => {
+    render(<App />);
+
+    const memoryTab = await screen.findByRole("button", { name: "Memory" });
+    fireEvent.click(memoryTab);
+
+    expect(screen.getByText("MemoryCenterPageMock")).toBeInTheDocument();
+  });
+
+  it("opens memory center via command palette command", async () => {
+    render(<App />);
+
+    const paletteTrigger = await screen.findByRole("button", {
+      name: "Palette (Cmd/Ctrl+K)",
+    });
+    fireEvent.click(paletteTrigger);
+
+    const paletteDialog = await screen.findByRole("dialog", {
+      name: "Command palette",
+    });
+
+    fireEvent.change(
+      within(paletteDialog).getByPlaceholderText("Type to search commands..."),
+      {
+        target: { value: "memory center" },
+      },
+    );
+
+    const commandButton = await within(paletteDialog).findByRole("button", {
+      name: /Open memory center/i,
+    });
+    fireEvent.click(commandButton);
+
+    await waitFor(() => {
+      expect(screen.getByText("MemoryCenterPageMock")).toBeInTheDocument();
+    });
   });
 
   it("shows reconnect overlay after losing connection from a previously connected state", async () => {

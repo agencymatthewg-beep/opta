@@ -79,6 +79,25 @@ opta chat --device mono512:1234
 opta chat --resume <session-id>
 ```
 
+### Session Memory Controls
+
+Use `opta sessions` to manage retention-focused memory behavior:
+
+```bash
+# Pin / unpin high-value sessions
+opta sessions pin <session-id>
+opta sessions unpin <session-id>
+opta sessions pins
+
+# View / update retention policy
+opta sessions retention-get
+opta sessions retention-set 30 --preserve-pinned=true
+
+# Preview prune without deleting, then apply
+opta sessions prune --dry-run
+opta sessions prune
+```
+
 ## Startup Host Setup (Important)
 
 If your primary host is `localhost:1234` but LMX actually runs on another machine (for example `mono512:1234`), startup now probes both `connection.host` and `connection.fallbackHosts` before failing.

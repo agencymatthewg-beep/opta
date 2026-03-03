@@ -6,17 +6,17 @@ on:
     tags:
       - "v*"
     paths:
-      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
       - ".github/workflows/opta-code-macos-build.yml"
   pull_request:
     branches: [main]
     paths:
-      - "1-Apps/optalocal/1P-Opta-Code-Desktop/**"
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
   workflow_dispatch:
 
 defaults:
   run:
-    working-directory: 1-Apps/optalocal/1P-Opta-Code-Desktop
+    working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal
 
 jobs:
   # Unit + vitest tests (Linux, fast)
@@ -80,7 +80,7 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri -> target"
+          workspaces: "1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri -> target"
       - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install --ignore-scripts
@@ -117,7 +117,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          projectPath: 1-Apps/optalocal/1P-Opta-Code-Desktop
+          projectPath: 1-Apps/optalocal/1P-Opta-Code-Universal
           tauriScript: npx tauri
           args: --target aarch64-apple-darwin
 
@@ -126,8 +126,8 @@ jobs:
         with:
           name: opta-code-macos-dmg
           path: |
-            1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
-            1-Apps/optalocal/1P-Opta-Code-Desktop/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
+            1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target/aarch64-apple-darwin/release/bundle/dmg/*.dmg
+            1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri/target/aarch64-apple-darwin/release/bundle/macos/*.app.tar.gz
           if-no-files-found: error
           retention-days: 30
 
@@ -157,7 +157,7 @@ jobs:
       - name: Smoke test app startup
         working-directory: .
         run: |
-          bash 1-Apps/optalocal/1P-Opta-Code-Desktop/tests/macos/app-smoke.sh \
+          bash 1-Apps/optalocal/1P-Opta-Code-Universal/tests/macos/app-smoke.sh \
             --artifacts-path dist-artifacts \
             --min-alive-seconds 5 \
             --log-file dist-artifacts/macos-smoke.log
