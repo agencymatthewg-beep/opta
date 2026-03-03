@@ -17,10 +17,12 @@
 | Gate                                                          | Owner         | Status |
 | ------------------------------------------------------------- | ------------- | ------ |
 | Real CLI package URL returns `200`                            | 1D            | [x]    |
-| Manifest artifact URLs under `init.optalocal.com/downloads/...` resolve (redirect or file) | 1O + Infra | [x] |
+| Active manifest artifact URLs under `init.optalocal.com/downloads/...` resolve (redirect or file) | 1O + Infra | [x] |
 | Real LMX macOS package URL returns `200`                      | 1M            | [ ]    |
-| Bootstrap endpoint `https://optalocal.com/init` returns `200` | Infra + 1D/1M | [ ]    |
+| Bootstrap endpoint `https://init.optalocal.com/init` (canonical) returns `200` | 1O + Infra | [x]    |
+| Root-domain bootstrap alias `https://optalocal.com/init` redirects to canonical endpoint | Infra | [ ] |
 | Init site points only to valid links                          | 1O            | [x]    |
+| Promotion status report generated in CI (`opta-init-promotion-status`) | 1O + Infra | [x] |
 | Dashboard URL `https://lmx.optalocal.com` reachable           | 1L            | [x]    |
 | End-to-end install test passes on clean machine               | 1D + 1M + 1O  | [ ]    |
 
@@ -58,8 +60,9 @@ curl -sSf "http://127.0.0.1:1234/v1/models" >/dev/null
 ### 1O Opta Init (onboarding and conversion)
 
 - [x] Replace placeholder-only download wiring with GitHub release asset detection (`lib/download-artifacts.ts`).
-- [ ] Ensure bootstrap command shown in UI points to a live script endpoint.
+- [x] Ensure bootstrap command shown in UI points to canonical live script endpoint (`https://init.optalocal.com/init`).
 - [x] Add install-state messaging (available/coming soon) based on real artifact status.
+- [x] Add release-driven manifest sync path for component metadata updates (`/.github/workflows/opta-init-component-manifest-sync.yml`).
 - [ ] Add version labels from latest release metadata (planned v1.1).
 - [ ] Run Lighthouse and cross-browser pass before final deploy.
 
@@ -85,7 +88,7 @@ curl -I "https://lmx.optalocal.com"
 
 ### Infra (DNS, script hosting, deployment)
 
-- [ ] Host bootstrap script at `https://optalocal.com/init` and return `200`.
+- [ ] Keep root-domain bootstrap alias `https://optalocal.com/init` redirected to `https://init.optalocal.com/init`.
 - [ ] Keep `init.optalocal.com` CNAME and TLS stable.
 - [x] Keep release artifact gateway stable at `https://init.optalocal.com/downloads/...`.
 - [x] Confirm cache headers are safe for static HTML + immutable static assets.
@@ -94,6 +97,7 @@ curl -I "https://lmx.optalocal.com"
 Verification:
 
 ```bash
+curl -I "https://init.optalocal.com/init"
 curl -I "https://optalocal.com/init"
 curl -I "https://init.optalocal.com"
 ```
@@ -116,16 +120,16 @@ Pass criteria:
 ## Immediate Blockers (current state)
 
 - [x] `init.optalocal.com` is live.
-- [x] Current CLI release asset URL returns `200`.
-- [x] Manifest artifacts now resolve through `init.optalocal.com/downloads/...` gateway.
-- [ ] LMX package artifact still pending in release feed (UI auto-falls back to unavailable state).
-- [ ] `https://optalocal.com/init` returns `404`.
+- [ ] Non-CLI component installers are not yet published (`opta-lmx`, `opta-code-universal`, `opta-daemon`).
+- [ ] LMX package artifact still pending in release feed.
+- [ ] Windows manager updater publishing remains blocked by missing GitHub Actions signing secrets (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). Windows entries are temporarily de-advertised from live updater feeds to avoid 404s.
+- [x] Root-domain bootstrap alias is live and redirects correctly: `https://optalocal.com/init` -> `https://init.optalocal.com/init`.
 - [x] `https://lmx.optalocal.com` returns `200`.
 
 ## Recommended Execution Order
 
 1. Ship real CLI and LMX release assets.
-2. Bring `optalocal.com/init` bootstrap endpoint live.
+2. Verify canonical bootstrap endpoint (`https://init.optalocal.com/init`) is live, then add root-domain alias redirect.
 3. Update Init constants and UI messaging.
 4. Run clean-machine E2E acceptance test.
 5. Deploy Init and mark go-live gates complete.
