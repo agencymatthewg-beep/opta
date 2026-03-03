@@ -26,6 +26,7 @@ These are **management websites**, not main local apps:
 - **learn.optalocal.com** (Opta Learn): discovery + guide portal
 - **accounts.optalocal.com** (Opta Accounts): identity, keys, account settings
 - **status.optalocal.com** (Opta Status): health + incident visibility
+- **admin.optalocal.com** (Opta Admin): private website-management control plane (fleet ops + guide promotions)
 
 ## Taxonomy Rules (Non-Negotiable)
 

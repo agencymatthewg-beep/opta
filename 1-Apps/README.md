@@ -29,8 +29,14 @@ All Opta applications, divided by domain.
 | 1D | Opta CLI | CLI/TUI (TypeScript) | Agentic coding CLI + daemon |
 | 1L | Opta Local | Retired | Deprecated duplicate client removed from `1-Apps` (backup retained in `/tmp`) |
 | 1M | Opta LMX | macOS service (Python + MLX) | MLX inference server — live Mono512:1234 |
-| 1O | Opta Init | Web (Next.js 15) | Download/setup landing — init.optalocal.com |
+| 1O | Opta Init | Web (Next.js) + Native (Tauri) | Init website + bundled Desktop Manager source (`desktop-manager/`) |
 | 1P | Opta Code Desktop (Universal) | Tauri v2 + React/Vite (TypeScript) | Unified 1-app client (web + native shell) built on Opta CLI daemon |
+| 1R | Opta Accounts | Web (Next.js + Supabase) | Accounts and auth portal — accounts.optalocal.com |
+| 1S | Opta Status | Web (Next.js) | Product/system status dashboard — status.optalocal.com |
+| 1T | Opta Home | Web (Next.js) | Main product landing site — optalocal.com |
+| 1U | Opta Help | Web (Next.js static export) | Documentation center — help.optalocal.com |
+| 1V | Opta Learn | Web (Next.js) | Guides and learning hub — learn.optalocal.com |
+| 1X | Opta Admin | Web (Next.js) | Private website-management cockpit — admin.optalocal.com |
 
 ## shared/
 

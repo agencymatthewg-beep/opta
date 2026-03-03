@@ -10,6 +10,7 @@ Generated from canonical frontmatter statuses for `1-Apps/optalocal/1D-Opta-CLI-
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-design.md` (ACTIVE) — open checkboxes: 14
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-plan.md` (ACTIVE) — open checkboxes: 11
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-opta-code-capability-stability-windows-master-plan.md` (ACTIVE) — open checkboxes: 5
+- [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-03-production-grade-optimization-plan.md` (ACTIVE) — open checkboxes: 3
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/ROADMAP.md` (ACTIVE) — open checkboxes: 5
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/OPTIMIZATION-PLAN.md` (ACTIVE) — open checkboxes: 22
 

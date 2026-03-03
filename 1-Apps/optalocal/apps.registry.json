@@ -123,5 +123,19 @@
       "check": "check",
       "start": "start"
     }
+  },
+  {
+    "id": "1x",
+    "slug": "opta-admin",
+    "name": "Opta Admin",
+    "type": "node",
+    "path": "1X-Opta-Admin",
+    "port": 3008,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
   }
 ]

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What Is This
 
-The `optalocal/` directory is the Opta Local product family — a local-first AI coding assistant ecosystem. It contains 4 core apps and 6 management websites, all under the `optalocal.com` domain.
+The `optalocal/` directory is the Opta Local product family — a local-first AI coding assistant ecosystem. It contains 4 core apps and 7 management websites, all under the `optalocal.com` domain.
 
 ## Product Taxonomy (Non-Negotiable)
 
@@ -17,7 +17,7 @@ The `optalocal/` directory is the Opta Local product family — a local-first AI
 | Opta Code Desktop | `1P-Opta-Code-Universal/` | Tauri v2, React 18, Vite 7 | Native desktop client (macOS + Windows) |
 | Opta Local | (web dashboard for LMX — separate repo location) | — | LMX management dashboard |
 
-**6 Management Websites** (support infrastructure, NOT core apps):
+**7 Management Websites** (support infrastructure, NOT core apps):
 
 | App | Dir | Domain | Stack |
 |-----|-----|--------|-------|
@@ -27,6 +27,7 @@ The `optalocal/` directory is the Opta Local product family — a local-first AI
 | Opta Learn | `1V-Opta-Learn/` | learn.optalocal.com | Next.js 16 |
 | Opta Accounts | `1R-Opta-Accounts/` | accounts.optalocal.com | Next.js 16 + Supabase |
 | Opta Status | `1S-Opta-Status/` | status.optalocal.com | Next.js 16, SWR polling |
+| Opta Admin | `1X-Opta-Admin/` | admin.optalocal.com | Next.js 16 |
 
 Do not label management websites as core apps. "Your Opta Apps" sections list only the 4 core apps.
 
@@ -93,7 +94,7 @@ npm run typecheck
 
 Uses `@opta/daemon-client` and `@opta/protocol-shared` via tsconfig path aliases (not npm deps). Token auth: bearer header for HTTP, `?token=T` query param for WebSocket. Event routing by `envelope.event`.
 
-### Next.js Management Sites (1O, 1R, 1S, 1T, 1U, 1V)
+### Next.js Management Sites (1O, 1R, 1S, 1T, 1U, 1V, 1X)
 
 All share the same pattern:
 
@@ -113,6 +114,7 @@ npm run lint
 | 1T-Opta-Home | 3000 | No (native Vercel) | — |
 | 1U-Opta-Help | 3006 | Yes (`output: 'export'`) | — |
 | 1V-Opta-Learn | 3007 | No (SSR/native) | `npm run guides:validate`, `npm run guide:new` |
+| 1X-Opta-Admin | 3008 | No (SSR/native) | Website fleet operations + guide promotion |
 
 ## Shared Design System (All Apps)
 

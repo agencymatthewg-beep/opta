@@ -15,6 +15,7 @@ Canonical workspace for Opta Local apps under `/Users/matthewbyrden/Synced/Opta/
 | 1T | Opta Home | `1T-Opta-Home` | Next.js | 3000 | Marketing/home surface |
 | 1U | Opta Help | `1U-Opta-Help` | Next.js static export | 3006 | Docs/help center |
 | 1V | Opta Learn | `1V-Opta-Learn` | Next.js | 3007 | Guides and learning system |
+| 1X | Opta Admin | `1X-Opta-Admin` | Next.js | 3008 | Private website-management control plane |
 
 ## Workspace Commands
 
@@ -27,6 +28,7 @@ npm run check:all
 npm run build:all
 npm run dev:1o
 npm run dev:1p
+npm run dev:1x
 ```
 
 Workspace scripts are powered by:

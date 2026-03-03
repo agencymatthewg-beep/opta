@@ -6,14 +6,15 @@
 
 | Component | Path | Role |
 |---|---|---|
-| Opta CLI | `1D-Opta-CLI-TS/` | TUI + daemon runtime (`opta chat`, `opta do`, `opta daemon`) |
+| Opta CLI | `1D-Opta-CLI-TS/` | TUI + daemon runtime (`opta`, `opta tui`, `opta chat`, `opta do`, `opta daemon`) |
 | Opta LMX | `1M-Opta-LMX/` | Local inference server (`/v1/chat/completions`, `/v1/chat/stream`) |
 | Opta Code Desktop (Universal) | `1P-Opta-Code-Universal/` | Unified web + native client for daemon sessions and operations |
+| Opta Admin | `1X-Opta-Admin/` | Private website-management control plane (website fleet health + Learn guide promotion) |
 
 ## Current Architecture (Level 3)
 
 ```text
-opta tui / opta do / opta chat
+opta / opta tui / opta chat / opta do
         │
         ▼
 opta daemon (127.0.0.1:<dynamic>, token-auth)
@@ -50,7 +51,10 @@ Opta LMX (192.168.188.11:1234 default)
 cd ~/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS
 npm run dev -- daemon start
 npm run dev -- daemon status
-npm run dev -- chat --tui
+npm run dev -- tui
+
+# or installed CLI binary
+opta tui
 
 # Unified app (web mode)
 cd ~/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal

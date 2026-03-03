@@ -8,7 +8,6 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 
 ## Canonical App Paths
 - `optalocal/1D-Opta-CLI-TS` — Opta CLI (runtime/TUI/daemon)
-- `1L-Opta-Local` — retired/deleted duplicate client (backup tar retained in `/tmp`)
 - `optalocal/1M-Opta-LMX` — Opta LMX inference service
 - `optalocal/1O-Opta-Init` — Opta Init
 - `optalocal/1P-Opta-Code-Universal` — Opta Code Desktop (UI client for Opta CLI daemon)
@@ -16,6 +15,8 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 - `optalocal/1S-Opta-Status` — Opta Status (status and health dashboard)
 - `optalocal/1T-Opta-Home` — Opta Home (optalocal.com landing)
 - `optalocal/1U-Opta-Help` — Opta Help (help.optalocal.com docs)
+- `optalocal/1V-Opta-Learn` — Opta Learn (learn.optalocal.com guides portal)
+- `optalocal/1X-Opta-Admin` — Opta Admin (private website-management control plane)
 - `optamize/1E-Opta-Life-IOS` — Opta Life iOS
 - `optamize/1F-Opta-Life-Web` — Opta Life Web
 - `optamize/1G-Opta-Mini-MacOS` — Opta Mini macOS
@@ -31,6 +32,7 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 
 ## Alias Policy
 - Aliases/symlinks may exist for backward compatibility.
+- `1L-Opta-Local` is retired and must not be used as a source path.
 - All docs/build tooling must point to canonical paths.
 - New work must not be started in alias locations.
 

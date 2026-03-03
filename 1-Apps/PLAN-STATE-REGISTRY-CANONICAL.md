@@ -3,21 +3,25 @@
 Canonical source of truth: frontmatter `status` in scoped 1D plan documents.
 
 ## Summary
-- ACTIVE: 8
+- ACTIVE: 10
 - REVIEW: 0
-- COMPLETED: 5
+- COMPLETED: 7
 - ARCHIVED: 28
 
 ## Entries
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/.planning/phases/01-tui-markdown/01-01-PLAN.md` (open: 8, done: 0)
-- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/FEATURE-PLAN.md` (open: 13, done: 2)
+- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/FEATURE-PLAN.md` (open: 10, done: 5)
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-15-v2-features-design.md` (open: 5, done: 22)
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-23-codex-desktop-parity-spec.md` (open: 8, done: 8)
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-design.md` (open: 14, done: 0)
+- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-plan.md` (open: 11, done: 0)
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-opta-code-capability-stability-windows-master-plan.md` (open: 5, done: 1)
-- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/ROADMAP.md` (open: 3, done: 0)
+- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-03-production-grade-optimization-plan.md` (open: 3, done: 0)
+- [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/ROADMAP.md` (open: 5, done: 0)
 - [ACTIVE] `1-Apps/optalocal/1D-Opta-CLI-TS/OPTIMIZATION-PLAN.md` (open: 22, done: 0)
 - [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/.planning/ROADMAP.md` (open: 0, done: 20)
+- [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-integration-improvements.md` (open: 0, done: 0)
+- [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-01-daemon-optimization-report.md` (open: 0, done: 0)
 - [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-16-v2-phase2-git-integration.md` (open: 0, done: 6)
 - [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-26-accounts-lmx-integration-plan.md` (open: 0, done: 10)
 - [COMPLETED] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-26-opta-v1-implementation-plan.md` (open: 0, done: 3)

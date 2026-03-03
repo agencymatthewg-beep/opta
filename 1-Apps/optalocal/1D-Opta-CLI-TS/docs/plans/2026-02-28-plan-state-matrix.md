@@ -11,8 +11,8 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 
 ## Summary
 
-- Total scoped plan files: 44
-- ACTIVE: 9
+- Total scoped plan files: 45
+- ACTIVE: 10
 - REVIEW: 0
 - COMPLETED: 7
 - ARCHIVED: 28
@@ -27,7 +27,7 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 - `COMPLETED` has no open checkboxes and at least one done checkbox.
 - `ARCHIVED` has no open checkboxes and no pending work.
 
-## ACTIVE (9)
+## ACTIVE (10)
 
 | Plan | Open | Done |
 |---|---:|---:|
@@ -38,6 +38,7 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 | docs/plans/2026-02-28-browser-full-autonomy-upgrade-design.md | 14 | 0 |
 | docs/plans/2026-02-28-browser-full-autonomy-upgrade-plan.md | 11 | 0 |
 | docs/plans/2026-02-28-opta-code-capability-stability-windows-master-plan.md | 5 | 1 |
+| docs/plans/2026-03-03-production-grade-optimization-plan.md | 3 | 0 |
 | docs/ROADMAP.md | 5 | 0 |
 | OPTIMIZATION-PLAN.md | 22 | 0 |
 
