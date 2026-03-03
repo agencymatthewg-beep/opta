@@ -122,7 +122,7 @@ Pass criteria:
 - [x] `init.optalocal.com` is live.
 - [ ] Non-CLI component installers are not yet published (`opta-lmx`, `opta-code-universal`, `opta-daemon`).
 - [ ] LMX package artifact still pending in release feed.
-- [ ] Windows manager updater publishing remains blocked by missing GitHub Actions signing secrets (`TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`). Windows entries are temporarily de-advertised from live updater feeds to avoid 404s.
+- [ ] Signed Windows installer lane remains blocked by missing Windows signing secrets (`WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`); zero-cost unsigned cross-platform releases are now supported.
 - [x] Root-domain bootstrap alias is live and redirects correctly: `https://optalocal.com/init` -> `https://init.optalocal.com/init`.
 - [x] `https://lmx.optalocal.com` returns `200`.
 

@@ -1,6 +1,6 @@
 # SOT + Opta Operating Model
 
-_Last updated: 2026-03-01_
+_Last updated: 2026-03-03_
 
 ## Objective
 Keep operational governance and product execution cleanly separated, while still tightly linked.
@@ -41,3 +41,9 @@ If a document answers **"What is officially true across bots/infra"** → SOT.
 3. Never duplicate full truth blocks unless needed for snapshots.
 4. If snapshot is necessary, include source path and timestamp.
 
+## Release-Credential Snapshot Rule
+- Product docs may track credential **names + configured/missing state** for release workflows.
+- Raw credential values must remain only in SOT credential storage and secret managers.
+- Current example: Opta Init desktop-manager release lane state is tracked in:
+  - `2-Docs/Operations/SOFTWARE-STATE-REGISTRY.md`
+  - `1-Apps/optalocal/1O-Opta-Init/docs/RELEASE-CONTROL-WORKFLOW.md`

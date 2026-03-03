@@ -38,6 +38,11 @@ on:
         required: true
         default: false
         type: boolean
+      enable_platform_signing:
+        description: "Enable Apple/Windows code signing + notarization checks"
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: write
@@ -64,6 +69,8 @@ jobs:
       strict_link_check: ${{ steps.resolve.outputs.strict_link_check }}
       dry_run: ${{ steps.resolve.outputs.dry_run }}
       metadata_ref: ${{ steps.resolve.outputs.metadata_ref }}
+      enable_platform_signing: ${{ steps.resolve.outputs.enable_platform_signing }}
+      updater_public_key: ${{ steps.derive-updater-pubkey.outputs.public_key }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,6 +79,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: "20"
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
 
       - name: Resolve channel/version/tag
         id: resolve
@@ -85,6 +95,7 @@ jobs:
           INPUT_PUBLISH_METADATA: ${{ github.event.inputs.publish_metadata || '' }}
           INPUT_STRICT_LINK_CHECK: ${{ github.event.inputs.strict_link_check || '' }}
           INPUT_DRY_RUN: ${{ github.event.inputs.dry_run || '' }}
+          INPUT_ENABLE_PLATFORM_SIGNING: ${{ github.event.inputs.enable_platform_signing || '' }}
         run: |
           node <<'NODE'
           const fs = require('fs');
@@ -197,6 +208,9 @@ jobs:
           const dryRun = eventName === 'push'
             ? false
             : parseBool(process.env.INPUT_DRY_RUN, false);
+          const enablePlatformSigning = eventName === 'push'
+            ? false
+            : parseBool(process.env.INPUT_ENABLE_PLATFORM_SIGNING, false);
 
           const metadataRef = eventName === 'push' ? 'main' : refName;
 
@@ -210,6 +224,7 @@ jobs:
             strict_link_check: String(strictLinkCheck),
             dry_run: String(dryRun),
             metadata_ref: metadataRef,
+            enable_platform_signing: String(enablePlatformSigning),
           };
 
           const outputPath = process.env.GITHUB_OUTPUT;
@@ -218,6 +233,82 @@ jobs:
 
           console.log(`Resolved release: channel=${channel}, version=${version}, tag=${releaseTag}, metadata_ref=${metadataRef}`);
           NODE
+
+      - name: Derive updater public key from TAURI signing key
+        id: derive-updater-pubkey
+        shell: bash
+        env:
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ] || [ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" ]; then
+            echo "Missing TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PASSWORD."
+            exit 1
+          fi
+
+          tmpdir="$(mktemp -d)"
+          trap 'rm -rf "${tmpdir}"' EXIT
+
+          cat > "${tmpdir}/Cargo.toml" <<'TOML'
+          [package]
+          name = "derive_tauri_updater_pubkey"
+          version = "0.1.0"
+          edition = "2021"
+
+          [dependencies]
+          base64 = "0.22"
+          minisign = "0.7"
+          TOML
+
+          mkdir -p "${tmpdir}/src"
+          cat > "${tmpdir}/src/main.rs" <<'RS'
+          use base64::Engine;
+          use minisign::{PublicKey, SecretKey, SecretKeyBox};
+
+          fn main() {
+              let private_key_b64 = std::env::var("TAURI_SIGNING_PRIVATE_KEY")
+                  .expect("TAURI_SIGNING_PRIVATE_KEY missing");
+              let private_key_password =
+                  std::env::var("TAURI_SIGNING_PRIVATE_KEY_PASSWORD").ok();
+
+              let private_key_box = base64::engine::general_purpose::STANDARD
+                  .decode(private_key_b64.trim())
+                  .expect("failed to decode TAURI_SIGNING_PRIVATE_KEY");
+              let private_key_box = String::from_utf8(private_key_box)
+                  .expect("TAURI_SIGNING_PRIVATE_KEY is not valid UTF-8");
+
+              let secret_key = SecretKey::from_box(
+                  SecretKeyBox::from(private_key_box),
+                  private_key_password,
+              )
+              .expect("failed to parse/decrypt TAURI signing private key");
+
+              let public_key = PublicKey::from_secret_key(&secret_key)
+                  .expect("failed to derive TAURI signing public key");
+              let public_key_box = public_key
+                  .to_box()
+                  .expect("failed to encode updater public key")
+                  .into_string();
+
+              let public_key_b64 =
+                  base64::engine::general_purpose::STANDARD.encode(public_key_box.as_bytes());
+              println!("{public_key_b64}");
+          }
+          RS
+
+          updater_public_key="$(cargo run --quiet --manifest-path "${tmpdir}/Cargo.toml")"
+          if [ -z "${updater_public_key}" ]; then
+            echo "Failed to derive updater public key from TAURI signing key."
+            exit 1
+          fi
+
+          {
+            echo "public_key<<EOF"
+            echo "${updater_public_key}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
 
   quality-gate:
     name: Quality gate
@@ -274,12 +365,14 @@ jobs:
     env:
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      TAURI_SIGNING_PUBLIC_KEY: ${{ needs.prepare-release.outputs.updater_public_key }}
       APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
       APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
       APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
       APPLE_ID: ${{ secrets.APPLE_ID }}
       APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
       APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ENABLE_PLATFORM_SIGNING: ${{ needs.prepare-release.outputs.enable_platform_signing }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -301,21 +394,45 @@ jobs:
 
       - name: Require Tauri updater signing secrets
         run: |
-          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ] || [ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" ]; then
-            echo "Missing TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PASSWORD."
+          if [ -z "${TAURI_SIGNING_PRIVATE_KEY}" ] || [ -z "${TAURI_SIGNING_PRIVATE_KEY_PASSWORD}" ] || [ -z "${TAURI_SIGNING_PUBLIC_KEY}" ]; then
+            echo "Missing TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD, or derived TAURI_SIGNING_PUBLIC_KEY."
             exit 1
           fi
 
-      - name: Require macOS signing secrets for tagged releases
-        if: github.event_name == 'push'
+      - name: Configure macOS signing mode
+        shell: bash
         run: |
-          if [ -z "${APPLE_CERTIFICATE}" ] || [ -z "${APPLE_CERTIFICATE_PASSWORD}" ] || [ -z "${APPLE_SIGNING_IDENTITY}" ]; then
-            echo "Tagged releases require APPLE_CERTIFICATE, APPLE_CERTIFICATE_PASSWORD, and APPLE_SIGNING_IDENTITY."
+          set -euo pipefail
+
+          if [ "${ENABLE_PLATFORM_SIGNING}" != "true" ]; then
+            echo "MACOS_SIGNING_ENABLED=false" >> "${GITHUB_ENV}"
+            echo "APPLE_CERTIFICATE=" >> "${GITHUB_ENV}"
+            echo "APPLE_CERTIFICATE_PASSWORD=" >> "${GITHUB_ENV}"
+            echo "APPLE_SIGNING_IDENTITY=" >> "${GITHUB_ENV}"
+            echo "APPLE_ID=" >> "${GITHUB_ENV}"
+            echo "APPLE_PASSWORD=" >> "${GITHUB_ENV}"
+            echo "APPLE_TEAM_ID=" >> "${GITHUB_ENV}"
+            echo "Platform signing disabled; building unsigned macOS artifacts."
+            exit 0
+          fi
+
+          missing=()
+          for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID; do
+            if [ -z "${!name:-}" ]; then
+              missing+=("${name}")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "enable_platform_signing=true but required macOS signing/notarization secrets are missing: ${missing[*]}"
             exit 1
           fi
+
+          echo "MACOS_SIGNING_ENABLED=true" >> "${GITHUB_ENV}"
+          echo "Platform signing enabled; macOS artifacts will be signed and notarization checks enforced."
 
       - name: Import Apple Developer ID certificate
-        if: env.APPLE_CERTIFICATE != ''
+        if: env.MACOS_SIGNING_ENABLED == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -346,6 +463,41 @@ jobs:
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
         run: npm install
+
+      - name: Inject updater plugin config
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const updaterPublicKey = (process.env.TAURI_SIGNING_PUBLIC_KEY || '').trim();
+          if (!updaterPublicKey) {
+            throw new Error('TAURI_SIGNING_PUBLIC_KEY is empty.');
+          }
+
+          const confPath = path.join(
+            process.env.GITHUB_WORKSPACE,
+            process.env.MANAGER_DIR,
+            'src-tauri',
+            'tauri.conf.json',
+          );
+          const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
+
+          conf.bundle = conf.bundle || {};
+          conf.bundle.createUpdaterArtifacts = 'v1Compatible';
+
+          conf.plugins = conf.plugins || {};
+          conf.plugins.updater = conf.plugins.updater || {};
+          conf.plugins.updater.pubkey = updaterPublicKey;
+          if (!Array.isArray(conf.plugins.updater.endpoints)) {
+            conf.plugins.updater.endpoints = [];
+          }
+
+          fs.writeFileSync(confPath, `${JSON.stringify(conf, null, 2)}\n`);
+          NODE
 
       - name: Build desktop-manager with Tauri (${{ matrix.target }})
         working-directory: ${{ env.MANAGER_DIR }}
@@ -389,6 +541,7 @@ jobs:
           cp "$dmg_file" "$dist_dir/${{ matrix.dmg_name }}"
 
       - name: Verify DMG notarization and Gatekeeper acceptance (${{ matrix.platform_key }})
+        if: env.MACOS_SIGNING_ENABLED == 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -427,8 +580,10 @@ jobs:
     env:
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+      TAURI_SIGNING_PUBLIC_KEY: ${{ needs.prepare-release.outputs.updater_public_key }}
       WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
+      ENABLE_PLATFORM_SIGNING: ${{ needs.prepare-release.outputs.enable_platform_signing }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -451,22 +606,32 @@ jobs:
       - name: Require Tauri updater signing secrets
         shell: pwsh
         run: |
-          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) -or [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
-            Write-Error "Missing TAURI_SIGNING_PRIVATE_KEY or TAURI_SIGNING_PRIVATE_KEY_PASSWORD."
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY) -or [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD) -or [string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PUBLIC_KEY)) {
+            Write-Error "Missing TAURI_SIGNING_PRIVATE_KEY, TAURI_SIGNING_PRIVATE_KEY_PASSWORD, or derived TAURI_SIGNING_PUBLIC_KEY."
             exit 1
           }
 
-      - name: Require Windows code signing secrets for tagged releases
-        if: github.event_name == 'push'
+      - name: Configure Windows signing mode
         shell: pwsh
         run: |
+          if ($env:ENABLE_PLATFORM_SIGNING -ne "true") {
+            "WINDOWS_SIGNING_ENABLED=false" >> $env:GITHUB_ENV
+            "WINDOWS_CERTIFICATE=" >> $env:GITHUB_ENV
+            "WINDOWS_CERTIFICATE_PASSWORD=" >> $env:GITHUB_ENV
+            Write-Host "Platform signing disabled; building unsigned Windows artifacts."
+            exit 0
+          }
+
           if ([string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE) -or [string]::IsNullOrWhiteSpace($env:WINDOWS_CERTIFICATE_PASSWORD)) {
-            Write-Error "Tagged releases require WINDOWS_CERTIFICATE and WINDOWS_CERTIFICATE_PASSWORD."
+            Write-Error "enable_platform_signing=true but WINDOWS_CERTIFICATE/WINDOWS_CERTIFICATE_PASSWORD are missing."
             exit 1
           }
 
+          "WINDOWS_SIGNING_ENABLED=true" >> $env:GITHUB_ENV
+          Write-Host "Platform signing enabled; Windows artifacts will be Authenticode-signed."
+
       - name: Configure Authenticode signing
-        if: env.WINDOWS_CERTIFICATE != '' && env.WINDOWS_CERTIFICATE_PASSWORD != ''
+        if: env.WINDOWS_SIGNING_ENABLED == 'true'
         shell: pwsh
         run: |
           $pfxPath = Join-Path $env:RUNNER_TEMP "opta-init-manager.pfx"
@@ -489,6 +654,41 @@ jobs:
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
         run: npm install
+
+      - name: Inject updater plugin config
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          node <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+
+          const updaterPublicKey = (process.env.TAURI_SIGNING_PUBLIC_KEY || '').trim();
+          if (!updaterPublicKey) {
+            throw new Error('TAURI_SIGNING_PUBLIC_KEY is empty.');
+          }
+
+          const confPath = path.join(
+            process.env.GITHUB_WORKSPACE,
+            process.env.MANAGER_DIR,
+            'src-tauri',
+            'tauri.conf.json',
+          );
+          const conf = JSON.parse(fs.readFileSync(confPath, 'utf8'));
+
+          conf.bundle = conf.bundle || {};
+          conf.bundle.createUpdaterArtifacts = 'v1Compatible';
+
+          conf.plugins = conf.plugins || {};
+          conf.plugins.updater = conf.plugins.updater || {};
+          conf.plugins.updater.pubkey = updaterPublicKey;
+          if (!Array.isArray(conf.plugins.updater.endpoints)) {
+            conf.plugins.updater.endpoints = [];
+          }
+
+          fs.writeFileSync(confPath, `${JSON.stringify(conf, null, 2)}\n`);
+          NODE
 
       - name: Build desktop-manager with Tauri (Windows)
         working-directory: ${{ env.MANAGER_DIR }}

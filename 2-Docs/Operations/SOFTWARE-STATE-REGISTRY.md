@@ -1,6 +1,6 @@
 # Opta Software State Registry (Long-Term)
 
-_Last updated: 2026-03-01 20:15 AEDT (Australia/Melbourne)_
+_Last updated: 2026-03-03 22:40 AEDT (Australia/Melbourne)_
 
 Purpose: single source of truth for external software/services Opta depends on, including ownership, auth state, current usage, risk posture, and next action.
 
@@ -51,6 +51,22 @@ Purpose: single source of truth for external software/services Opta depends on, 
 - **State:** Bootstrapped, pending SHA finalization after npm publish
 - **Open risk:** Formula metadata still references `optaops` URLs (legacy)
 - **Next action:** rewrite formula URLs to canonical artifact source + set final sha256
+
+### Opta Init Desktop Manager (Tauri)
+- **Release workflow:** `/.github/workflows/opta-init-desktop-manager-release.yml`
+- **Default mode:** zero-cost (unsigned platform installers; updater signatures still enforced)
+- **Required repo secrets (always):**
+  - `TAURI_SIGNING_PRIVATE_KEY`
+  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- **Optional repo secrets (only when `enable_platform_signing=true`):**
+  - `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`
+  - `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`
+  - `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`
+- **Current snapshot (names only, no secret values):**
+  - configured: TAURI signing pair + Apple signing/notarization set
+  - missing: Windows certificate pair
+- **Operational note:** Windows users can install/run unsigned builds (SmartScreen warning expected) with no feature loss.
+- **Credential source-of-truth:** values remain in SOT credential storage per `2-Docs/Operations/SOT-OPTA-OPERATING-MODEL.md` (do not store raw secrets in this registry).
 
 ---
 
@@ -107,4 +123,3 @@ Update this registry whenever one of these changes:
 - Repo/org ownership changed
 - Distribution channel added/removed
 - Critical risk introduced/resolved
-

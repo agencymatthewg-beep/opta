@@ -18,6 +18,8 @@ This document defines the internal release-control contract for Opta Init channe
   - `scripts/validate-release-manifests.mjs`
   - `scripts/validate-manager-update-metadata.mjs`
   - `scripts/validate-manager-update-links.mjs`
+- Component upsert utility:
+  - `scripts/upsert-channel-component.mjs`
 - Metadata generator:
   - `scripts/generate-manager-update-metadata.mjs`
 - Link reachability validator:
@@ -25,6 +27,21 @@ This document defines the internal release-control contract for Opta Init channe
 - Publish sync:
   - `scripts/sync-desktop-manifests.mjs`
   - `scripts/sync-manager-updates.mjs`
+
+## Component Sync Automation
+
+- Reusable workflow:
+  - `/.github/workflows/opta-init-component-manifest-sync.yml`
+- Manual wrapper workflow:
+  - `/.github/workflows/opta-init-component-manifest-sync-manual.yml`
+- Current integration:
+  - `/.github/workflows/opta-cli-release.yml` calls the reusable sync workflow on release tags.
+  - `/.github/workflows/opta-code-release-manifest-sync.yml` syncs `opta-code-universal` from release tags/assets.
+  - `/.github/workflows/opta-lmx-release.yml` builds/publishes LMX release assets and syncs `opta-lmx`.
+  - `/.github/workflows/opta-daemon-release-manifest-sync.yml` syncs `opta-daemon` from release tags/assets.
+
+This keeps `channels/<channel>.json`, `public/desktop/manifest-<channel>.json`,
+and `vercel.json` synchronized from component release events, then re-runs contract validation.
 
 ## Component Manifest Contract Summary
 
@@ -37,9 +54,13 @@ This document defines the internal release-control contract for Opta Init channe
     - `opta-lmx`
     - `opta-code-universal`
     - `opta-daemon`
-- Every component must ship both `macos` and `windows` artifact arrays with:
+- Every component must expose both `macos` and `windows` artifact arrays.
+- Arrays may be empty during progressive rollout when installers are not yet published.
+- Artifact records require:
   - artifact URL
   - package type
+  - platform + arch
+- Recommended (optional but preferred for production release):
   - size
   - SHA-256 checksum
   - signature metadata
@@ -52,13 +73,11 @@ This document defines the internal release-control contract for Opta Init channe
   - `version`
   - `notes`
   - `pub_date`
-- Platform payloads are under `platforms` and keyed by target:
-  - `darwin-aarch64`
-  - `darwin-x86_64`
-  - `windows-x86_64`
-- Every platform entry must include:
+- Platform payloads are under `platforms` and keyed by target (for example `darwin-aarch64`, `darwin-x86_64`, `windows-x86_64`).
+- Every published platform entry must include:
   - `url`
   - `signature`
+- Progressive mode allows shipping a subset of platforms (for example macOS first).
 - `scripts/sync-manager-updates.mjs` publishes runtime feeds (`public/desktop-updates/*.json`) in Tauri-native shape:
   - `version`
   - `notes`
@@ -93,12 +112,32 @@ This document defines the internal release-control contract for Opta Init channe
 
 ## Required Signing Variables (Manager Updater)
 
-These variables are required whenever manager updater signatures are generated or rotated:
+These variables are required by `/.github/workflows/opta-init-desktop-manager-release.yml`:
 
-- `TAURI_SIGNING_PRIVATE_KEY`
-- `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- Updater signature (all manager builds):
+  - `TAURI_SIGNING_PRIVATE_KEY`
+  - `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
+- Platform signing/notarization (only when `enable_platform_signing=true`):
+  - macOS:
+    - `APPLE_CERTIFICATE`
+    - `APPLE_CERTIFICATE_PASSWORD`
+    - `APPLE_SIGNING_IDENTITY`
+    - `APPLE_ID`
+    - `APPLE_PASSWORD`
+    - `APPLE_TEAM_ID`
+  - Windows:
+    - `WINDOWS_CERTIFICATE`
+    - `WINDOWS_CERTIFICATE_PASSWORD`
 
-If either variable is missing, do not publish manager updater metadata.
+Notes:
+- `TAURI_SIGNING_PUBLIC_KEY` is derived in CI from `TAURI_SIGNING_PRIVATE_KEY`; no separate repo secret is required.
+- Default release mode is zero-cost (`enable_platform_signing=false`), producing unsigned installer bundles while preserving updater functionality/signatures.
+
+Current secret snapshot (verified 2026-03-03, repo `agencymatthewg-beep/opta`):
+- configured: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`, `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, `APPLE_TEAM_ID`
+- missing: `WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`
+
+If signed Windows installers are required, configure Windows certificate secrets first.
 
 ## Publish Procedure (Component Manifests)
 
@@ -124,28 +163,50 @@ If either variable is missing, do not publish manager updater metadata.
 
 Preferred path: run the automated workflow
 at repo root:
-`../.github/workflows/opta-init-desktop-manager-release.yml`.
+`/.github/workflows/opta-init-desktop-manager-release.yml`.
 It builds macOS + Windows updater artifacts, publishes release assets, generates
 `channels/manager-updates/<channel>.json`, syncs `public/desktop-updates/<channel>.json`,
 and runs contract validation gates.
 
 1. Build desktop manager update artifacts for each target being published (`darwin-aarch64`, `darwin-x86_64`, `windows-x86_64` at minimum).
-2. Export required signing variables:
+2. Export required updater signing variables:
    - `export TAURI_SIGNING_PRIVATE_KEY='<private-key-pem>'`
    - `export TAURI_SIGNING_PRIVATE_KEY_PASSWORD='<private-key-password>'`
-3. Sign each updater artifact and collect generated signatures.
+   - optional platform signing variables (only when `enable_platform_signing=true`):
+   - macOS:
+     - `export APPLE_CERTIFICATE='<p12-base64>'`
+     - `export APPLE_CERTIFICATE_PASSWORD='<p12-password>'`
+     - `export APPLE_SIGNING_IDENTITY='<developer-id-application-cn>'`
+     - `export APPLE_ID='<apple-id-email>'`
+     - `export APPLE_PASSWORD='<apple-app-specific-password>'`
+     - `export APPLE_TEAM_ID='<apple-team-id>'`
+   - Windows:
+     - `export WINDOWS_CERTIFICATE='<pfx-base64>'`
+     - `export WINDOWS_CERTIFICATE_PASSWORD='<pfx-password>'`
+3. Generate updater signatures for each target artifact (always required). Platform installer signing is optional unless `enable_platform_signing=true`.
 4. Update channel metadata in:
    - `channels/manager-updates/beta.json` for beta releases
    - `channels/manager-updates/stable.json` for stable releases
 5. Ensure each changed target has correct `url`, `signature`, `version`, `notes`, and `date`.
 6. Validate manager metadata:
-   - `npm run validate:manager-update-metadata -- channels/manager-updates/beta.json channels/manager-updates/stable.json`
+   - progressive mode:
+     - `npm run validate:manager-update-metadata -- channels/manager-updates/beta.json channels/manager-updates/stable.json`
+   - full cross-platform mode:
+     - `npm run validate:manager-update-metadata:strict -- channels/manager-updates/beta.json channels/manager-updates/stable.json`
    - `npm run validate:manager-update-links`
 7. Sync public updater metadata:
    - `npm run sync:manager-updates`
 8. Run the combined contract gate:
-   - `npm run validate:release-contract`
+   - `npm run validate:release-contract` (progressive)
+   - optional full gate:
+     - `npm run validate:release-contract:strict`
 9. Commit + publish changes.
+
+Known live verification note (2026-03-03):
+- Manager metadata includes Windows updater URLs, but release tags
+  `opta-init-manager-stable-v0.6.1` and `opta-init-manager-beta-v0.6.1`
+  currently expose only `opta-init-mac.dmg` assets in GitHub Releases.
+- Missing `WINDOWS_CERTIFICATE` + `WINDOWS_CERTIFICATE_PASSWORD` currently blocks signed Windows installers, but unsigned Windows artifacts can ship with `enable_platform_signing=false`.
 
 ## Automated Release Workflow Inputs
 
@@ -155,6 +216,17 @@ and runs contract validation gates.
 - `publish_metadata`: whether workflow commits feed updates
 - `strict_link_check`: runs strict manager updater URL gate
 - `dry_run`: build + validate without metadata commit
+- `enable_platform_signing`: opt-in platform installer signing/notarization (`false` by default)
+
+## Automated Component Sync Inputs (Reusable Workflow)
+
+- `channel`: `stable` or `beta`
+- `component_id`: `opta-cli`, `opta-lmx`, `opta-code-universal`, `opta-daemon`
+- `payload_json`: component upsert payload (release patch + component patch)
+- `metadata_ref`: target git ref for metadata commit (default `main`)
+- `commit_changes`: whether generated manifest changes are committed
+- `strict_require_artifacts`: require at least one artifact for the updated component
+- `strict_require_signatures`: require signature metadata for every artifact of the updated component
 
 ## Promote Beta to Stable
 
@@ -167,6 +239,20 @@ and runs contract validation gates.
    - `npm run sync:desktop-manifests`
    - `npm run sync:manager-updates`
 6. Commit + publish stable metadata.
+
+## Promotion Visibility + Stable Gate
+
+- Generate a current promotion matrix at any time:
+  - `npm run report:promotion-status`
+- Hard-gate stable readiness locally:
+  - `npm run validate:stable-promotion`
+- CI enforcement:
+  - `/.github/workflows/opta-init-release-manifest-checks.yml` uploads an
+    `opta-init-promotion-status` report artifact on every run.
+  - The same workflow enforces `validate:stable-promotion` when either:
+    - `channels/stable.json`, or
+    - `channels/manager-updates/stable.json`
+    changes in the diff.
 
 ## Rollback Procedure
 
