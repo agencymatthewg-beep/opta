@@ -500,8 +500,17 @@ jobs:
           NODE
 
       - name: Build desktop-manager with Tauri (${{ matrix.target }})
+        shell: bash
         working-directory: ${{ env.MANAGER_DIR }}
-        run: npm run tauri build -- --target ${{ matrix.target }}
+        run: |
+          set -euo pipefail
+
+          if [ "${MACOS_SIGNING_ENABLED}" != "true" ]; then
+            unset APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_ID APPLE_PASSWORD APPLE_TEAM_ID
+            echo "Running unsigned macOS build (Apple signing environment variables unset)."
+          fi
+
+          npm run tauri build -- --target ${{ matrix.target }}
 
       - name: Collect updater artifact (${{ matrix.platform_key }})
         shell: bash
