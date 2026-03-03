@@ -67,6 +67,10 @@ Purpose: single source of truth for external software/services Opta depends on, 
   - missing: Windows certificate pair
 - **Operational note:** Windows users can install/run unsigned builds (SmartScreen warning expected) with no feature loss.
 - **Credential source-of-truth:** values remain in SOT credential storage per `2-Docs/Operations/SOT-OPTA-OPERATING-MODEL.md` (do not store raw secrets in this registry).
+- **Deferred investigation (approved):**
+  - keep default mode as zero-cost now
+  - investigate signed-installer lane economics/options later (Windows certificate + Apple signing/notarization tradeoffs)
+  - investigate/confirm secret-handling hardening and app-specific-password rotation timing later
 
 ---
 
