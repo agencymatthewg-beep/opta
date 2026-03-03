@@ -1,6 +1,6 @@
 # Opta Code Desktop macOS Compatibility Contract
 
-Last updated: 2026-02-28
+Last updated: 2026-03-03
 
 This document defines what is considered macOS-compatible for `1P-Opta-Code-Universal` and what evidence is required before release.
 
@@ -18,6 +18,8 @@ Target runtime:
 | Desktop shell launch (`.app` bundle / DMG) | Supported | Verified by DMG smoke test in CI. Binary launched directly from `Contents/MacOS/`. |
 | Daemon connection (host/port/token) | Supported | Endpoint is bootstrapped from native daemon metadata and secure-store state; editable in app header form. |
 | Session cockpit (create/track/stream/cancel) | Supported | Uses daemon v3 stream/events endpoints. |
+| Memory Center (`sessions.pin/unpin/pins/search`, retention get/set/prune) | Supported | Uses daemon `sessions.*` operations for CLI parity. |
+| Setup Wizard onboarding apply | Supported | Desktop applies daemon `onboard.apply`; legacy `save_setup_config` remains compatibility-only and deprecated. |
 | Operations page | Supported | Daemon-backed operation endpoints only. |
 | Background jobs page | Supported | Daemon-backed job listing/control only. |
 | Models page / LMX status display | Conditional | Works when daemon-side LMX services are reachable; otherwise UI shows unreachable/error state. |

@@ -1,6 +1,6 @@
 # Opta CLI -> Opta Code Parity Matrix
 
-Date: 2026-03-01
+Date: 2026-03-03
 Scope:
 - CLI engine: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS`
 - Universal UI: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
