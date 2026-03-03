@@ -170,7 +170,7 @@ export async function updateSessionIndex(id: string, session: Session): Promise<
     tags: session.tags,
     created: session.created,
     messageCount: session.messages.filter((m) => m.role !== 'system').length,
-    toolCallCount: session.toolCallCount ?? 0,
+    toolCallCount: session.toolCallCount,
     preview: buildSessionSearchPreview(session.messages),
   };
   await saveIndex(index);
@@ -258,10 +258,10 @@ export async function listSessions(): Promise<SessionSummary[]> {
       summaries.push({
         id,
         title: entry.title || '(untitled)',
-        tags: entry.tags ?? [],
+        tags: entry.tags,
         model: entry.model,
         created: entry.created,
-        messageCount: entry.messageCount ?? 0,
+        messageCount: entry.messageCount,
         toolCallCount: entry.toolCallCount ?? 0,
       });
       if (typeof entry.preview !== 'string') {
@@ -285,21 +285,21 @@ export async function listSessions(): Promise<SessionSummary[]> {
           index.entries[id] = {
             title: session.title,
             model: session.model,
-            tags: session.tags ?? [],
+            tags: session.tags,
             created: session.created,
             messageCount,
-            toolCallCount: session.toolCallCount ?? 0,
+            toolCallCount: session.toolCallCount,
             preview: buildSessionSearchPreview(session.messages),
           };
 
           summaries.push({
             id: session.id,
             title: session.title || '(untitled)',
-            tags: session.tags ?? [],
+            tags: session.tags,
             model: session.model,
             created: session.created,
             messageCount,
-            toolCallCount: session.toolCallCount ?? 0,
+            toolCallCount: session.toolCallCount,
           });
           indexMutated = true;
         } catch {
@@ -363,23 +363,25 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     .filter((summary) => !index.entries[summary.id]?.preview)
     .map((summary) => summary.id);
   if (missingPreviewIds.length > 0) {
-    await Promise.all(
+    const previewBackfills = await Promise.all(
       missingPreviewIds.map(async (id) => {
         try {
           const data = await readFile(sessionPath(id), 'utf-8');
           const session = parseSession(data);
-          if (!session) return;
+          if (!session) return false;
           const preview = buildSessionSearchPreview(session.messages);
           const entry = index.entries[id];
-          if (!entry) return;
+          if (!entry) return false;
           entry.preview = preview;
           previewById.set(id, preview);
-          indexMutated = true;
+          return true;
         } catch {
           // Skip unreadable session files
+          return false;
         }
       })
     );
+    indexMutated = previewBackfills.some(Boolean);
   }
 
   for (const [id, entry] of Object.entries(index.entries)) {
@@ -412,7 +414,7 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
     }
 
     // Tag match
-    const tagMatch = summary.tags?.some((t) => t.toLowerCase().includes(q));
+    const tagMatch = summary.tags.some((t) => t.toLowerCase().includes(q));
     if (tagMatch) score += 60;
 
     // Model match
@@ -422,7 +424,7 @@ export async function searchSessions(query: string): Promise<SessionSummary[]> {
 
     // Word-level fuzzy: check if all query words appear somewhere
     const queryWords = q.split(/\s+/);
-    const tagStr = (summary.tags ?? []).join(' ');
+    const tagStr = summary.tags.join(' ');
     const haystack = `${summary.id} ${summary.title} ${summary.model} ${tagStr}`.toLowerCase();
     const allWordsMatch = queryWords.every((w) => haystack.includes(w));
     if (allWordsMatch && queryWords.length > 1) {

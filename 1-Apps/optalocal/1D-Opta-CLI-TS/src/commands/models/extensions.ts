@@ -184,7 +184,8 @@ export async function runQuantizeCommand(
 
     const unknown: string[] = [];
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (!token.startsWith('--')) {
         unknown.push(token);
         continue;
@@ -291,7 +292,8 @@ export async function runAgentsCommand(
     let status: string | undefined;
 
     for (let i = 1; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--limit') {
         const value = tokens[i + 1];
         const parsed = value ? Number.parseInt(value, 10) : Number.NaN;
@@ -336,13 +338,14 @@ export async function runAgentsCommand(
 
     const runs = Array.isArray(payload.data) ? payload.data : [];
     console.log(chalk.bold('Agent Runs\n'));
-    console.log(`  Total: ${payload.total ?? runs.length}`);
+    const total = (payload as { total?: number }).total ?? runs.length;
+    console.log(`  Total: ${total}`);
     if (runs.length === 0) {
       console.log(chalk.dim('  No agent runs found.'));
       return;
     }
     for (const run of runs.slice(0, 30)) {
-      const statusText = run.status ?? 'unknown';
+      const statusText = (run as { status?: string }).status ?? 'unknown';
       const color =
         statusText === 'completed'
           ? chalk.green
@@ -372,7 +375,8 @@ export async function runAgentsCommand(
     let idempotencyKey: string | undefined;
 
     for (let i = 1; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (!token.startsWith('--') && prompt === undefined) {
         prompt = token;
         continue;
@@ -574,7 +578,8 @@ export async function runAgentsCommand(
     let timeoutSec = 30;
     let limit = 120;
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--timeout') {
         const value = tokens[i + 1];
         const parsed = value ? Number.parseFloat(value) : Number.NaN;
@@ -710,7 +715,8 @@ export async function runSkillsCommand(
   if (action === 'list') {
     let latestOnly = true;
     for (let i = 1; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--all') {
         latestOnly = false;
         continue;
@@ -801,7 +807,8 @@ export async function runSkillsCommand(
     let timeoutSec: number | undefined;
     let argumentsPayload: Record<string, unknown> = {};
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--approve') {
         approved = true;
         continue;
@@ -882,7 +889,8 @@ export async function runSkillsCommand(
     let approved = false;
     let argumentsPayload: Record<string, unknown> = {};
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--approve') {
         approved = true;
         continue;
@@ -935,7 +943,8 @@ export async function runSkillsCommand(
     let timeoutSec: number | undefined;
     let argumentsPayload: Record<string, unknown> = {};
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--approve') {
         approved = true;
         continue;
@@ -1069,7 +1078,8 @@ export async function runRagCommand(
     let searchMode: 'vector' | 'keyword' | 'hybrid' | undefined;
     let rerank = false;
     for (let i = 3; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--top-k') {
         const value = tokens[i + 1];
         const parsed = value ? Number.parseInt(value, 10) : Number.NaN;
@@ -1164,7 +1174,8 @@ export async function runRagCommand(
     let model: string | undefined;
 
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--file') {
         const value = tokens[i + 1];
         if (!value) {
@@ -1333,7 +1344,8 @@ export async function runRagCommand(
     let rerank = false;
 
     for (let i = 2; i < tokens.length; i += 1) {
-      const token = tokens[i]!;
+      const token = tokens[i];
+      if (token === undefined) continue;
       if (token === '--collections') {
         const value = tokens[i + 1];
         if (!value) {

@@ -14,6 +14,38 @@ export interface ScreenshotCompressOptions {
 
 const DATA_URL_RE = /data:image\/(png|jpeg|jpg|webp);base64,([A-Za-z0-9+/]+=*)/;
 
+interface SharpResizeOptions {
+  width: number;
+  height: number;
+  fit: 'inside';
+  withoutEnlargement: true;
+}
+
+interface SharpJpegOptions {
+  quality: number;
+}
+
+interface SharpLike {
+  resize(options: SharpResizeOptions): SharpLike;
+  jpeg(options: SharpJpegOptions): SharpLike;
+  toBuffer(): Promise<Buffer>;
+}
+
+type SharpFactory = (input: Buffer) => SharpLike;
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function extractDefaultExport(moduleValue: unknown): unknown {
+  if (!isObjectRecord(moduleValue)) return undefined;
+  return moduleValue.default;
+}
+
+function isSharpFactory(value: unknown): value is SharpFactory {
+  return typeof value === 'function';
+}
+
 /** Returns true if the result string looks like a Playwright screenshot response containing a data URL. */
 export function isScreenshotResult(result: unknown): result is string {
   return typeof result === 'string' && DATA_URL_RE.test(result);
@@ -38,13 +70,12 @@ export async function compressBrowserScreenshot(
 
   // sharp is an optional peer dependency — use dynamic import with unknown typing to avoid
   // requiring @types/sharp in devDependencies when the package isn't installed.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let sharpFactory: ((input: Buffer) => any) | undefined;
+  let sharpFactory: SharpFactory | undefined;
   try {
-    const mod = await import('sharp' as string);
-    const fn = (mod as { default?: unknown }).default ?? mod;
-    if (typeof fn === 'function') {
-      sharpFactory = fn as (input: Buffer) => unknown;
+    const mod: unknown = await import('sharp' as string);
+    const fn = extractDefaultExport(mod) ?? mod;
+    if (isSharpFactory(fn)) {
+      sharpFactory = fn;
     }
   } catch {
     // sharp is not installed — return original unchanged
@@ -59,7 +90,7 @@ export async function compressBrowserScreenshot(
       .resize({ width: maxWidth, height: maxHeight, fit: 'inside', withoutEnlargement: true })
       .jpeg({ quality })
       .toBuffer();
-    const newB64 = (compressed as Buffer).toString('base64');
+    const newB64 = compressed.toString('base64');
     const newDataUrl = `data:image/jpeg;base64,${newB64}`;
     return result.replace(fullMatch, newDataUrl);
   } catch {

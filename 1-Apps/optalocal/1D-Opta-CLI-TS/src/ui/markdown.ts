@@ -17,25 +17,35 @@ function splitTableRow(line: string): string[] {
 }
 
 function formatTableBlock(lines: string[], width: number): string[] {
-  if (lines.length < 2 || !isTableSeparator(lines[1]!)) return lines;
+  const separator = lines[1];
+  if (lines.length < 2 || separator === undefined || !isTableSeparator(separator)) return lines;
   const rows = lines.map(splitTableRow);
   const colCount = Math.max(...rows.map((r) => r.length));
-  const normalized = rows.map((r) => [...r, ...Array(Math.max(0, colCount - r.length)).fill('')]);
+  const normalized = rows.map((r) => [
+    ...r,
+    ...Array<string>(Math.max(0, colCount - r.length)).fill(''),
+  ]);
 
   const maxTotal = Math.max(20, width - 6);
   const baseCol = Math.max(4, Math.floor(maxTotal / colCount) - 3);
   const colWidths = Array.from({ length: colCount }, (_, i) =>
-    Math.min(baseCol, Math.max(4, ...normalized.map((r) => visibleTextWidth(String(r[i] ?? '')))))
+    Math.min(baseCol, Math.max(4, ...normalized.map((r) => visibleTextWidth(r[i] ?? ''))))
   );
 
   const render = (cells: string[]) =>
-    `| ${cells.map((c, i) => fitTextToWidth(c, colWidths[i]!, { pad: true })).join(' | ')} |`;
+    `| ${cells.map((c, i) => fitTextToWidth(c, colWidths[i] ?? 4, { pad: true })).join(' | ')} |`;
   const rule = `|-${colWidths.map((w) => '-'.repeat(w)).join('-|-')}-|`;
 
   const out: string[] = [];
-  out.push(render(normalized[0]!));
+  const headerRow = normalized[0];
+  if (headerRow === undefined) return lines;
+  out.push(render(headerRow));
   out.push(rule);
-  for (let i = 2; i < normalized.length; i++) out.push(render(normalized[i]!));
+  for (let i = 2; i < normalized.length; i++) {
+    const row = normalized[i];
+    if (row === undefined) continue;
+    out.push(render(row));
+  }
   return out;
 }
 
@@ -48,14 +58,17 @@ export function formatMarkdownTables(text: string, width = 100): string {
   const out: string[] = [];
 
   for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]!;
+    const line = lines[i];
+    if (line === undefined) continue;
     const next = lines[i + 1];
     if (line.includes('|') && next && isTableSeparator(next)) {
       const block: string[] = [line, next];
       i += 2;
-      while (i < lines.length && lines[i]!.includes('|')) {
-        block.push(lines[i]!);
-        i++;
+      while (i < lines.length) {
+        const blockLine = lines[i];
+        if (blockLine === undefined || !blockLine.includes('|')) break;
+        block.push(blockLine);
+        i += 1;
       }
       i -= 1;
       out.push(...formatTableBlock(block, width));
@@ -145,7 +158,7 @@ async function getRenderer(): Promise<(md: string) => string> {
  * Render markdown text to the terminal via stdout.
  */
 export async function renderMarkdown(text: string): Promise<void> {
-  if (!text?.trim()) return;
+  if (!text.trim()) return;
   try {
     const prepared = formatMarkdownTables(text, 100);
     const render = await getRenderer();
@@ -165,7 +178,7 @@ export async function renderMarkdown(text: string): Promise<void> {
  * Render markdown text to a string (for testing and programmatic use).
  */
 export async function renderMarkdownToString(text: string): Promise<string> {
-  if (!text?.trim()) return '';
+  if (!text.trim()) return '';
   try {
     const prepared = formatMarkdownTables(text, 100);
     const render = await getRenderer();

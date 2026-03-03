@@ -326,6 +326,8 @@ export async function agentLoop(
     initProcessManager(effectiveConfig);
   }
 
+  const pendingDiagnostics: string[] = [];
+
   const { buildToolRegistry } = await import('../mcp/registry.js');
   const registry = await buildToolRegistry(effectiveConfig, options?.mode, {
     executeLocalTool: options?.toolExecutor,
@@ -333,6 +335,13 @@ export async function agentLoop(
     onSubAgentProgress: options?.onSubAgentProgress,
     onSubAgentDone: options?.onSubAgentDone,
     onBrowserEvent: options?.onBrowserEvent,
+    onLspDiagnostics: (uri, diagnostics) => {
+      const errors = diagnostics.filter((d) => d.severity === 1);
+      if (errors.length > 0) {
+        const msg = errors.map((e) => `- [${e.source || 'LSP'}] ${e.message} (line ${e.range?.start?.line})`).join('\n');
+        pendingDiagnostics.push(`System Warning: Your previous edit caused the following LSP errors in ${uri}:\n${msg}`);
+      }
+    },
   });
 
   const { getAgentProfile, filterToolsForMode } = await import('./agent-profiles.js');
@@ -493,6 +502,15 @@ export async function agentLoop(
     while (true) {
       if (options?.signal?.aborted) {
         throw makeAbortError();
+      }
+
+      // Inject any severe LSP diagnostics that appeared in the background
+      if (pendingDiagnostics.length > 0) {
+        const msgs = pendingDiagnostics.splice(0, pendingDiagnostics.length);
+        messages.push({
+          role: 'user',
+          content: msgs.join('\n\n'),
+        });
       }
 
       // --- OPTA SUPERVISOR CHECK ---

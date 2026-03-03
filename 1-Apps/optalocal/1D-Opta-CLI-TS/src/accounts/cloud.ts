@@ -47,7 +47,7 @@ export async function listCloudApiKeys(
   state: AccountState | null,
   provider?: string,
 ): Promise<CloudApiKeyEntry[]> {
-  const accessToken = state?.session?.access_token?.trim();
+  const accessToken = state?.session?.access_token.trim();
   if (!accessToken) return [];
 
   const url = new URL('/api/keys', accountsBaseUrl());
@@ -63,12 +63,22 @@ export async function listCloudApiKeys(
       | { keys?: Array<{ id?: string; provider?: string; label?: string | null; key_value?: string; updated_at?: string }> }
       | null;
     return (payload?.keys ?? [])
-      .filter((k) => k.id && k.key_value)
+      .filter(
+        (
+          k
+        ): k is {
+          id: string;
+          provider?: string;
+          label?: string | null;
+          key_value: string;
+          updated_at?: string;
+        } => Boolean(k.id && k.key_value),
+      )
       .map((k) => ({
-        id: k.id!,
+        id: k.id,
         provider: k.provider ?? provider ?? '',
         label: k.label ?? null,
-        keyValue: k.key_value!,
+        keyValue: k.key_value,
         updatedAt: k.updated_at ?? '',
       }));
   } catch {
@@ -85,8 +95,8 @@ export async function resolveCloudApiKey(
   state: AccountState | null,
   provider: string,
 ): Promise<string | null> {
-  const accessToken = state?.session?.access_token?.trim();
-  const project = state?.project?.trim();
+  const accessToken = state?.session?.access_token.trim();
+  const project = state?.project.trim();
   if (!accessToken || !project) return null;
 
   const p = normalizeProvider(provider);
@@ -96,7 +106,7 @@ export async function resolveCloudApiKey(
 
   const keys = await listCloudApiKeys(state, p);
   // GET /api/keys returns active keys sorted by updated_at DESC — first entry is most recent.
-  const key = keys[0]?.keyValue?.trim();
+  const key = keys[0]?.keyValue.trim();
   if (!key) return null;
 
   cloudKeyCache.set(cacheKey, { value: key, expiresAt: Date.now() + CLOUD_KEY_TTL_MS });
@@ -114,7 +124,7 @@ export async function storeCloudApiKey(
   keyValue: string,
   label = 'default',
 ): Promise<boolean> {
-  const accessToken = state?.session?.access_token?.trim();
+  const accessToken = state?.session?.access_token.trim();
   if (!accessToken) return false;
 
   const url = new URL('/api/keys', accountsBaseUrl());
@@ -129,7 +139,7 @@ export async function storeCloudApiKey(
     });
     if (response.ok) {
       // Invalidate cache so the next resolve picks up the new key immediately.
-      const project = state?.project?.trim();
+      const project = state?.project.trim();
       if (project) cloudKeyCache.delete(`${project}:${normalizeProvider(provider)}`);
     }
     return response.ok;
@@ -147,7 +157,7 @@ export async function deleteCloudApiKey(
   keyId: string,
   provider?: string,
 ): Promise<boolean> {
-  const accessToken = state?.session?.access_token?.trim();
+  const accessToken = state?.session?.access_token.trim();
   if (!accessToken) return false;
 
   const url = new URL(`/api/keys/${encodeURIComponent(keyId)}`, accountsBaseUrl());
@@ -157,7 +167,7 @@ export async function deleteCloudApiKey(
       headers: authHeaders(accessToken),
     });
     if (response.ok && provider) {
-      const project = state?.project?.trim();
+      const project = state?.project.trim();
       if (project) cloudKeyCache.delete(`${project}:${normalizeProvider(provider)}`);
     }
     return response.ok;
@@ -172,8 +182,8 @@ function buildDeviceFingerprint(userId: string): string {
 }
 
 export async function registerCliDevice(state: AccountState): Promise<string | null> {
-  const accessToken = state.session?.access_token?.trim();
-  const userId = state.user?.id?.trim();
+  const accessToken = state.session?.access_token.trim();
+  const userId = state.user?.id.trim();
   if (!accessToken || !userId) return null;
 
   const fingerprintHash = buildDeviceFingerprint(userId);
@@ -220,7 +230,7 @@ export async function evaluateCapability(
   scope: string,
   deviceId?: string | null,
 ): Promise<{ allow: boolean; reason?: string }> {
-  const accessToken = state?.session?.access_token?.trim();
+  const accessToken = state?.session?.access_token.trim();
   if (!accessToken) return { allow: false, reason: 'not_authenticated' };
 
   const url = new URL('/api/capabilities/evaluate', accountsBaseUrl());
@@ -252,8 +262,8 @@ export async function evaluateCapability(
  * Silently no-ops if the user is unauthenticated or the request fails.
  */
 export async function touchSessionRecord(state: AccountState | null): Promise<void> {
-  const accessToken = state?.session?.access_token?.trim();
-  const userId = state?.user?.id?.trim();
+  const accessToken = state?.session?.access_token.trim();
+  const userId = state?.user?.id.trim();
   if (!accessToken || !userId || !state?.project) return;
 
   const base = supabaseRestBaseFromProject(state.project);
@@ -271,8 +281,8 @@ export async function upsertSessionRecord(
   state: AccountState,
   sessionType: 'cli' | 'web' | 'api' = 'cli',
 ): Promise<void> {
-  const accessToken = state.session?.access_token?.trim();
-  const userId = state.user?.id?.trim();
+  const accessToken = state.session?.access_token.trim();
+  const userId = state.user?.id.trim();
   if (!accessToken || !userId) return;
 
   const base = supabaseRestBaseFromProject(state.project);

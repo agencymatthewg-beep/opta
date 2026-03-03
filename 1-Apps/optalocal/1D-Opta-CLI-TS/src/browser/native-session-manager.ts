@@ -81,7 +81,10 @@ interface PlaywrightPageLike {
   fill(selector: string, text: string, options?: Record<string, unknown>): Promise<unknown>;
   content(): Promise<string>;
   screenshot(options?: Record<string, unknown>): Promise<Uint8Array>;
-  evaluate(pageFunction: any, arg?: any): Promise<any>;
+  evaluate<Arg = unknown, Result = unknown>(
+    pageFunction: ((arg: Arg) => Result | Promise<Result>) | string,
+    arg?: Arg,
+  ): Promise<Result>;
   url(): string;
 }
 
@@ -89,7 +92,10 @@ interface PlaywrightContextLike {
   newPage(): Promise<PlaywrightPageLike>;
   pages(): PlaywrightPageLike[];
   close(): Promise<void>;
-  addInitScript(script: { path?: string; content?: string } | ((...args: any[]) => unknown) | string, arg?: any): Promise<void>;
+  addInitScript(
+    script: { path?: string; content?: string } | ((...args: unknown[]) => unknown) | string,
+    arg?: unknown,
+  ): Promise<void>;
 }
 
 interface PlaywrightBrowserLike {
@@ -124,6 +130,16 @@ interface ManagedSession {
   timelineWrite: Promise<void>;
 }
 
+type PageGateResult = { page: PlaywrightPageLike } | { error: BrowserActionError };
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPlaywrightRuntimeLike(value: unknown): value is PlaywrightRuntimeLike {
+  return isObjectRecord(value) && 'chromium' in value;
+}
+
 export interface NativeSessionManagerOptions {
   cwd?: string;
   now?: () => Date;
@@ -138,11 +154,11 @@ export interface NativeSessionActionOptions {
 async function defaultPlaywrightLoader(): Promise<PlaywrightRuntimeLike | null> {
   try {
     const specifier = 'playwright';
-    const runtime = await import(specifier);
-    if (!runtime || typeof runtime !== 'object' || !('chromium' in runtime)) {
+    const runtimeModule: unknown = await import(specifier);
+    if (!isPlaywrightRuntimeLike(runtimeModule)) {
       return null;
     }
-    return runtime as PlaywrightRuntimeLike;
+    return runtimeModule;
   } catch {
     return null;
   }
@@ -291,21 +307,22 @@ export class NativeSessionManager {
     }
 
     const gate = this.ensurePage(managed);
-    if (gate) {
-      await this.recordAction(managed, action, false, gate);
+    if ('error' in gate) {
+      await this.recordAction(managed, action, false, gate.error);
       await this.persist(managed);
-      return { ok: false, action, error: gate };
+      return { ok: false, action, error: gate.error };
     }
+    const page = gate.page;
 
     try {
       await this.withActionSignal(managed, options, async () => {
-        await managed.page!.goto(input.url, {
+        await page.goto(input.url, {
           timeout: input.timeoutMs ?? DEFAULT_NAVIGATION_TIMEOUT_MS,
           waitUntil: input.waitUntil ?? 'domcontentloaded',
         });
       });
 
-      managed.session.currentUrl = managed.page!.url();
+      managed.session.currentUrl = page.url();
       managed.session.updatedAt = this.timestamp();
 
       await this.recordAction(managed, action, true);
@@ -340,16 +357,17 @@ export class NativeSessionManager {
     }
 
     const gate = this.ensurePage(managed);
-    if (gate) {
-      await this.recordAction(managed, action, false, gate);
+    if ('error' in gate) {
+      await this.recordAction(managed, action, false, gate.error);
       await this.persist(managed);
-      return { ok: false, action, error: gate };
+      return { ok: false, action, error: gate.error };
     }
+    const page = gate.page;
 
     try {
       await this.withActionSignal(managed, options, async () => {
         // Trigger visual click animation
-        await managed.page!.evaluate(
+        await page.evaluate(
           ([selector]: string[]) => {
             type DOMGlobal = {
               dispatchEvent: (e: unknown) => void;
@@ -363,7 +381,7 @@ export class NativeSessionManager {
           [input.selector],
         ).catch(() => { }); // Best effort
 
-        await managed.page!.click(input.selector, {
+        await page.click(input.selector, {
           timeout: input.timeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS,
         });
       });
@@ -394,16 +412,17 @@ export class NativeSessionManager {
     }
 
     const gate = this.ensurePage(managed);
-    if (gate) {
-      await this.recordAction(managed, action, false, gate);
+    if ('error' in gate) {
+      await this.recordAction(managed, action, false, gate.error);
       await this.persist(managed);
-      return { ok: false, action, error: gate };
+      return { ok: false, action, error: gate.error };
     }
+    const page = gate.page;
 
     try {
       await this.withActionSignal(managed, options, async () => {
         // Trigger visual type animation
-        await managed.page!.evaluate(
+        await page.evaluate(
           ([selector]: string[]) => {
             type DOMGlobal = {
               dispatchEvent: (e: unknown) => void;
@@ -417,7 +436,7 @@ export class NativeSessionManager {
           [input.selector],
         ).catch(() => { }); // Best effort
 
-        await managed.page!.fill(input.selector, input.text, {
+        await page.fill(input.selector, input.text, {
           timeout: input.timeoutMs ?? DEFAULT_ACTION_TIMEOUT_MS,
         });
       });
@@ -447,14 +466,15 @@ export class NativeSessionManager {
     }
 
     const gate = this.ensurePage(managed);
-    if (gate) {
-      await this.recordAction(managed, action, false, gate);
+    if ('error' in gate) {
+      await this.recordAction(managed, action, false, gate.error);
       await this.persist(managed);
-      return { ok: false, action, error: gate };
+      return { ok: false, action, error: gate.error };
     }
+    const page = gate.page;
 
     try {
-      const html = await this.withActionSignal(managed, options, async () => managed.page!.content());
+      const html = await this.withActionSignal(managed, options, async () => page.content());
       const artifact = await this.createArtifact(managed, action.id, 'snapshot', 'html', 'text/html', html);
       managed.session.updatedAt = this.timestamp();
       await this.recordAction(managed, action, true, undefined, artifact);
@@ -490,11 +510,12 @@ export class NativeSessionManager {
     }
 
     const gate = this.ensurePage(managed);
-    if (gate) {
-      await this.recordAction(managed, action, false, gate);
+    if ('error' in gate) {
+      await this.recordAction(managed, action, false, gate.error);
       await this.persist(managed);
-      return { ok: false, action, error: gate };
+      return { ok: false, action, error: gate.error };
     }
+    const page = gate.page;
 
     try {
       const type = input.type ?? 'png';
@@ -508,7 +529,7 @@ export class NativeSessionManager {
       }
 
       const image = await this.withActionSignal(managed, options, async () =>
-        managed.page!.screenshot(screenshotOptions));
+        page.screenshot(screenshotOptions));
       const artifact = await this.createArtifact(
         managed,
         action.id,
@@ -598,16 +619,16 @@ export class NativeSessionManager {
     }
   }
 
-  private ensurePage(managed: ManagedSession): BrowserActionError | null {
+  private ensurePage(managed: ManagedSession): PageGateResult {
     if (managed.session.status !== 'open') {
-      return this.error('SESSION_CLOSED', `Browser session "${managed.session.id}" is closed.`);
+      return { error: this.error('SESSION_CLOSED', `Browser session "${managed.session.id}" is closed.`) };
     }
 
     if (!managed.page || managed.session.runtime !== 'playwright') {
-      return { ...PLAYWRIGHT_UNAVAILABLE_ERROR };
+      return { error: { ...PLAYWRIGHT_UNAVAILABLE_ERROR } };
     }
 
-    return null;
+    return { page: managed.page };
   }
 
   private async createArtifact(
@@ -911,7 +932,7 @@ export class NativeSessionManager {
       throw this.makeAbortError();
     }
 
-    let onAbort: (() => void) | null = null;
+    let onAbort: () => void = () => undefined;
     const abortPromise = new Promise<never>((_, reject) => {
       onAbort = () => {
         void this.safeCloseRuntime(managed);
@@ -923,9 +944,7 @@ export class NativeSessionManager {
     try {
       return await Promise.race([execute(), abortPromise]);
     } finally {
-      if (onAbort) {
-        signal.removeEventListener('abort', onAbort);
-      }
+      signal.removeEventListener('abort', onAbort);
     }
   }
 

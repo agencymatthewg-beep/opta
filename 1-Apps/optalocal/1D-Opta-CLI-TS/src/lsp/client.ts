@@ -27,6 +27,7 @@ export interface LspClientOptions {
   rootUri: string;
   language: string;
   cwd?: string;
+  onDiagnostics?: (uri: string, diagnostics: Diagnostic[]) => void;
 }
 
 export class LspClient {
@@ -56,11 +57,17 @@ export class LspClient {
       cwd: this.opts.cwd,
     });
 
-    this.process.stdout!.on('data', (data: Buffer) => {
+    const stdout = this.process.stdout;
+    const stderr = this.process.stderr;
+    if (!stdout || !stderr) {
+      throw new Error('LSP server did not expose stdio pipes');
+    }
+
+    stdout.on('data', (data: Buffer) => {
       this.handleData(data);
     });
 
-    this.process.stderr!.on('data', () => {
+    stderr.on('data', () => {
       // Ignore stderr, but read it to prevent pipe blocking
     });
 
@@ -222,7 +229,8 @@ export class LspClient {
     this.assertInitialized();
 
     const result = await this.sendRequest('workspace/symbol', { query });
-    return (result as SymbolInformation[]) ?? [];
+    const symbols = result as SymbolInformation[] | null | undefined;
+    return symbols ?? [];
   }
 
   async documentSymbols(uri: string): Promise<DocumentSymbol[]> {
@@ -232,7 +240,8 @@ export class LspClient {
     const result = await this.sendRequest('textDocument/documentSymbol', {
       textDocument: { uri },
     });
-    return (result as DocumentSymbol[]) ?? [];
+    const symbols = result as DocumentSymbol[] | null | undefined;
+    return symbols ?? [];
   }
 
   async rename(uri: string, position: Position, newName: string): Promise<WorkspaceEdit> {
@@ -244,7 +253,8 @@ export class LspClient {
       position,
       newName,
     });
-    return (result as WorkspaceEdit) ?? { changes: {} };
+    const edit = result as WorkspaceEdit | null | undefined;
+    return edit ?? { changes: {} };
   }
 
   async diagnostics(uri: string): Promise<Diagnostic[]> {
@@ -366,7 +376,7 @@ export class LspClient {
       return;
     }
 
-    while (true) {
+    for (;;) {
       // Parse Content-Length header
       const headerEnd = this.buffer.indexOf('\r\n\r\n');
       if (headerEnd === -1) break;
@@ -379,7 +389,12 @@ export class LspClient {
         continue;
       }
 
-      const contentLength = parseInt(match[1]!, 10);
+      const contentLengthRaw = match[1];
+      if (contentLengthRaw === undefined) {
+        this.buffer = this.buffer.subarray(headerEnd + 4);
+        continue;
+      }
+      const contentLength = parseInt(contentLengthRaw, 10);
       const totalLength = headerEnd + 4 + contentLength;
 
       if (this.buffer.length < totalLength) break; // Need more data
@@ -421,7 +436,18 @@ export class LspClient {
         }
       }
     }
-    // Notifications from server (no id) -- ignore for now
+    // Notifications from server (no id)
+    if (!('id' in message) && message['method'] === 'textDocument/publishDiagnostics') {
+      const params = message['params'] as Record<string, unknown> | undefined;
+      if (
+        params &&
+        typeof params['uri'] === 'string' &&
+        Array.isArray(params['diagnostics']) &&
+        this.opts.onDiagnostics
+      ) {
+        this.opts.onDiagnostics(params['uri'], params['diagnostics'] as Diagnostic[]);
+      }
+    }
   }
 
   // --- Helpers ---
@@ -464,7 +490,7 @@ export class LspClient {
     if (!result) return [];
     if (Array.isArray(result)) return result as Diagnostic[];
 
-    if (typeof result === 'object' && result && 'items' in (result as Record<string, unknown>)) {
+    if (typeof result === 'object' && 'items' in (result as Record<string, unknown>)) {
       const items = (result as Record<string, unknown>)['items'];
       if (Array.isArray(items)) return items as Diagnostic[];
     }
@@ -481,9 +507,13 @@ export class LspClient {
         const title = typeof entry['title'] === 'string' ? entry['title'] : '(untitled action)';
         const kind = typeof entry['kind'] === 'string' ? entry['kind'] : undefined;
         const isPreferred = entry['isPreferred'] === true;
-        const disabled =
+        const disabledRecord =
           entry['disabled'] && typeof entry['disabled'] === 'object'
-            ? { reason: String((entry['disabled'] as Record<string, unknown>)['reason'] ?? '') }
+            ? (entry['disabled'] as Record<string, unknown>)
+            : undefined;
+        const disabled =
+          disabledRecord !== undefined
+            ? { reason: typeof disabledRecord['reason'] === 'string' ? disabledRecord['reason'] : '' }
             : undefined;
         const edit =
           entry['edit'] && typeof entry['edit'] === 'object'

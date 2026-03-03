@@ -40,10 +40,12 @@ export class LspManager {
   private serverAvailable = new Map<string, boolean>();
   private cwd: string;
   private config: LspConfig;
+  private onDiagnostics?: (uri: string, diagnostics: any[]) => void;
 
-  constructor(opts: { cwd: string; config: LspConfig }) {
+  constructor(opts: { cwd: string; config: LspConfig; onDiagnostics?: (uri: string, diagnostics: any[]) => void }) {
     this.cwd = opts.cwd;
     this.config = opts.config;
+    this.onDiagnostics = opts.onDiagnostics;
   }
 
   // --- Language Detection ---
@@ -329,6 +331,7 @@ export class LspManager {
         rootUri,
         language,
         cwd: this.cwd,
+        onDiagnostics: this.onDiagnostics,
       });
 
       await client.initialize({ timeout: this.config.timeout });

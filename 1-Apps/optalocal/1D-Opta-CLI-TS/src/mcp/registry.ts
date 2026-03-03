@@ -49,6 +49,7 @@ interface BuildToolRegistryOptions {
   onSubAgentDone?: (agentId: string, result: string) => void;
   /** Called after each successfully executed browser action. Used to stream browser events over the daemon WS bus. */
   onBrowserEvent?: (toolName: string, sessionId: string) => void;
+  onLspDiagnostics?: (uri: string, diagnostics: any[]) => void;
 }
 
 const PLAYWRIGHT_MCP_SERVER_KEY = 'playwright';
@@ -214,7 +215,12 @@ export async function buildToolRegistry(
         servers: (lspConfig?.servers ?? {}) as OptaConfig['lsp']['servers'],
         timeout: lspConfig?.timeout ?? 10_000,
       },
+      onDiagnostics: options?.onLspDiagnostics,
     });
+    
+    // Bind the OS-level watcher to sync IDE changes to the daemon
+    const { setupWorkspaceWatcher } = await import('../lsp/watcher.js');
+    setupWorkspaceWatcher(lspManager, process.cwd());
   }
 
   // Filter out LSP tools from base schemas if disabled

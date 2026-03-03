@@ -37,7 +37,7 @@ function safeEnvUser(): string {
 }
 
 function safeDeviceName(): string {
-  const raw = process.env['OPTA_DEVICE'] ?? hostname() ?? 'device';
+  const raw = process.env['OPTA_DEVICE'] ?? hostname();
   return raw.split('.')[0] ?? raw;
 }
 
@@ -47,11 +47,7 @@ function toSessionText(input: Session['messages'][number]['content']): string {
 
   return input
     .map((part) => {
-      if (part && typeof part === 'object' && 'type' in part && part.type === 'text' && 'text' in part) {
-        const text = part.text;
-        return typeof text === 'string' ? text : '';
-      }
-      return '';
+      return part.type === 'text' ? part.text : '';
     })
     .filter(Boolean)
     .join('\n');
@@ -246,7 +242,7 @@ function extractIssues(session: Session): string[] {
   const issues: string[] = [];
   const issueRegex = /\b(error|failed|failure|exception|timeout|denied|invalid)\b/i;
 
-  for (const message of session.messages ?? []) {
+  for (const message of session.messages) {
     const text = toSessionText(message.content).trim();
     if (!text) continue;
     if (!issueRegex.test(text)) continue;
@@ -263,7 +259,7 @@ function extractDecisions(session: Session): string[] {
   const decisions: string[] = [];
   const decisionRegex = /\b(decision|decided|choose|selected|plan|approach)\b/i;
 
-  for (const message of session.messages ?? []) {
+  for (const message of session.messages) {
     if (message.role !== 'assistant') continue;
     const text = toSessionText(message.content).trim();
     if (!text) continue;
@@ -278,7 +274,7 @@ function extractDecisions(session: Session): string[] {
 }
 
 function extractNextSteps(session: Session): string[] {
-  const assistantMessages = (session.messages ?? []).filter((message) => message.role === 'assistant');
+  const assistantMessages = session.messages.filter((message) => message.role === 'assistant');
   const lastAssistant = assistantMessages[assistantMessages.length - 1];
   const text = lastAssistant ? toSessionText(lastAssistant.content).trim() : '';
 
@@ -302,8 +298,8 @@ function renderSessionLogMarkdown(params: {
 }): string {
   const { session, dateTime, user, device, duration, changes, checkpointCount } = params;
 
-  const userMessageCount = (session.messages ?? []).filter((message) => message.role === 'user').length;
-  const assistantMessageCount = (session.messages ?? []).filter((message) => message.role === 'assistant').length;
+  const userMessageCount = session.messages.filter((message) => message.role === 'user').length;
+  const assistantMessageCount = session.messages.filter((message) => message.role === 'assistant').length;
   const issues = extractIssues(session);
   const decisions = extractDecisions(session);
   const nextSteps = extractNextSteps(session);
@@ -327,7 +323,7 @@ duration: ${duration}
 - Session: ${session.id}
 - Title: ${session.title || '(untitled)'}
 - Messages: user=${userMessageCount}, assistant=${assistantMessageCount}
-- Tool calls: ${session.toolCallCount ?? 0}
+- Tool calls: ${session.toolCallCount}
 
 ## Files Changed
 ### Created
@@ -389,7 +385,7 @@ export async function writeSessionLog(
   const dateTime = zonedDateTimeParts(now, timezone);
   const user = options.user?.trim() || safeEnvUser();
   const device = options.device?.trim() || safeDeviceName();
-  const baseCwd = options.cwd ?? session.cwd ?? process.cwd();
+  const baseCwd = options.cwd ?? session.cwd;
   const logsDir = await resolveLogsDir(baseCwd, options.logsDir);
 
   await mkdir(logsDir, { recursive: true });
