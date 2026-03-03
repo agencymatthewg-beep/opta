@@ -5140,3 +5140,162 @@ button.active,
   grid-template-rows: 1fr;
   opacity: 1;
 }
+
+/* ── Memory Center ───────────────────────────────────────────────────────── */
+.memory-center-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.memory-center-header h2 {
+  margin: 0;
+}
+
+.memory-center-header p {
+  margin: 0.45rem 0 0;
+  color: var(--text-soft);
+  font-size: 0.8rem;
+}
+
+.memory-center-notice {
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  background: rgba(168, 85, 247, 0.08);
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.memory-center-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.memory-center-card {
+  border: 1px solid var(--line);
+  background: var(--bg-1);
+  padding: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.memory-center-card h3 {
+  margin: 0;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.memory-center-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.memory-center-subtle {
+  color: var(--text-muted);
+  font-size: 0.72rem;
+}
+
+.memory-center-field {
+  color: var(--text-soft);
+  font-size: 0.75rem;
+}
+
+.memory-center-inline {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.6rem;
+}
+
+.memory-center-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.memory-center-list li {
+  border: 1px solid var(--line);
+  padding: 0.65rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.memory-center-list li div {
+  min-width: 0;
+  display: grid;
+}
+
+.memory-center-list li strong {
+  font-size: 0.86rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-center-list li span {
+  margin-top: 0.2rem;
+  color: var(--text-soft);
+  font-size: 0.72rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memory-center-empty {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.memory-center-error {
+  margin: 0;
+  color: var(--danger);
+  font-size: 0.76rem;
+}
+
+.memory-center-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--text-soft);
+  font-size: 0.78rem;
+}
+
+.memory-center-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.memory-center-actions .danger {
+  border-color: rgba(239, 68, 68, 0.35);
+  color: var(--danger);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.memory-center-prune-summary {
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.02);
+  padding: 0.65rem;
+  font-size: 0.78rem;
+}
+
+.memory-center-prune-summary p {
+  margin: 0;
+}
+
+.memory-center-prune-summary ul {
+  margin: 0.5rem 0 0;
+  padding-left: 1.2rem;
+}
+
+.memory-center-prune-summary li {
+  margin: 0.2rem 0;
+}

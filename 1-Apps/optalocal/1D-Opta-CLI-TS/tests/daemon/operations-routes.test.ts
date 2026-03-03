@@ -105,6 +105,12 @@ describe('daemon operations routes', () => {
         expect.objectContaining({ id: 'update.run', safety: 'write' }),
         expect.objectContaining({ id: 'sessions.list', safety: 'read' }),
         expect.objectContaining({ id: 'sessions.delete', safety: 'write' }),
+        expect.objectContaining({ id: 'sessions.pin', safety: 'write' }),
+        expect.objectContaining({ id: 'sessions.unpin', safety: 'write' }),
+        expect.objectContaining({ id: 'sessions.pins', safety: 'read' }),
+        expect.objectContaining({ id: 'sessions.retention.get', safety: 'read' }),
+        expect.objectContaining({ id: 'sessions.retention.set', safety: 'write' }),
+        expect.objectContaining({ id: 'sessions.retention.prune', safety: 'write' }),
         expect.objectContaining({ id: 'diff', safety: 'read' }),
         expect.objectContaining({ id: 'benchmark', safety: 'dangerous' }),
       ])
@@ -232,6 +238,59 @@ describe('daemon operations routes', () => {
       id: 'sessions.list',
       safety: 'read',
       result: expect.any(Array),
+    });
+
+    const sessionsPins = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/sessions.pins',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(sessionsPins.statusCode).toBe(200);
+    expect(sessionsPins.json()).toMatchObject({
+      ok: true,
+      id: 'sessions.pins',
+      safety: 'read',
+      result: expect.any(Array),
+    });
+
+    const retentionGet = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/sessions.retention.get',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: {} },
+    });
+    expect(retentionGet.statusCode).toBe(200);
+    expect(retentionGet.json()).toMatchObject({
+      ok: true,
+      id: 'sessions.retention.get',
+      safety: 'read',
+      result: {
+        days: expect.any(Number),
+        preservePinned: expect.any(Boolean),
+      },
+    });
+
+    const retentionPruneDryRun = await running.app.inject({
+      method: 'POST',
+      url: '/v3/operations/sessions.retention.prune',
+      headers: { authorization: 'Bearer secret-token' },
+      payload: { input: { dryRun: true } },
+    });
+    expect(retentionPruneDryRun.statusCode).toBe(200);
+    expect(retentionPruneDryRun.json()).toMatchObject({
+      ok: true,
+      id: 'sessions.retention.prune',
+      safety: 'write',
+      result: {
+        dryRun: true,
+        policy: {
+          days: expect.any(Number),
+          preservePinned: expect.any(Boolean),
+        },
+        candidateCount: expect.any(Number),
+        candidateIds: expect.any(Array),
+      },
     });
 
     const diffOp = await running.app.inject({

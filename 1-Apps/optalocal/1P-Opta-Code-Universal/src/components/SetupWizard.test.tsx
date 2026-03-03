@@ -5,6 +5,7 @@ import { SetupWizard } from "./SetupWizard";
 const invokeNative = vi.fn();
 const runtimeState = { native: false };
 const lmxDiscovery = vi.fn();
+const runOperation = vi.fn();
 
 vi.mock("../lib/runtime", () => ({
   invokeNative: (...args: unknown[]) => invokeNative(...args),
@@ -14,6 +15,7 @@ vi.mock("../lib/runtime", () => ({
 vi.mock("../lib/daemonClient", () => ({
   daemonClient: {
     lmxDiscovery: (...args: unknown[]) => lmxDiscovery(...args),
+    runOperation: (...args: unknown[]) => runOperation(...args),
   },
 }));
 
@@ -28,6 +30,13 @@ describe("SetupWizard", () => {
     invokeNative.mockRejectedValue(new Error("not available"));
     lmxDiscovery.mockReset();
     lmxDiscovery.mockRejectedValue(new Error("discovery unavailable"));
+    runOperation.mockReset();
+    runOperation.mockResolvedValue({
+      ok: true,
+      id: "onboard.apply",
+      safety: "write",
+      result: { applied: true },
+    });
   });
 
   it("walks through steps and completes launch", async () => {
@@ -53,12 +62,23 @@ describe("SetupWizard", () => {
     }, { timeout: 2000 });
   });
 
-  it("blocks completion when native save fails and allows retry", async () => {
+  it("blocks completion when native onboarding apply fails and allows retry", async () => {
     runtimeState.native = true;
+    runOperation
+      .mockRejectedValueOnce(new Error("write failed"))
+      .mockResolvedValueOnce({
+        ok: true,
+        id: "onboard.apply",
+        safety: "write",
+        result: { applied: true },
+      });
     invokeNative.mockImplementation((command: string) => {
       if (command === "get_config_dir") return Promise.resolve("/tmp/opta");
-      if (command === "save_setup_config") {
-        return Promise.reject(new Error("write failed"));
+      if (command === "bootstrap_daemon_connection") {
+        return Promise.resolve({ host: "127.0.0.1", port: 10999 });
+      }
+      if (command === "get_connection_secret") {
+        return Promise.resolve("daemon-token");
       }
       return Promise.reject(new Error(`unexpected command: ${command}`));
     });
@@ -79,12 +99,25 @@ describe("SetupWizard", () => {
     await waitFor(() => expect(launchButton).not.toBeDisabled());
     fireEvent.click(launchButton);
     await waitFor(() => {
-      expect(invokeNative).toHaveBeenCalledWith(
-        "save_setup_config",
-        expect.any(Object),
+      expect(runOperation).toHaveBeenCalledWith(
+        {
+          host: "127.0.0.1",
+          port: 10999,
+          token: "daemon-token",
+        },
+        "onboard.apply",
+        expect.objectContaining({
+          input: expect.objectContaining({
+            provider: "lmx",
+            lmxHost: "127.0.0.1",
+            lmxPort: 1234,
+          }),
+        }),
       );
     });
-    expect(invokeNative.mock.calls.length).toBeGreaterThanOrEqual(3);
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    }, { timeout: 2000 });
   });
 
   it("prefills connection using daemon lmx discovery instead of static 192.168.x.x", async () => {

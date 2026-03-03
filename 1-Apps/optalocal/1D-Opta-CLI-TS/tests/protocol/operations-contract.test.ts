@@ -52,6 +52,12 @@ describe('v3 operations contract', () => {
       'sessions.search',
       'sessions.export',
       'sessions.delete',
+      'sessions.pin',
+      'sessions.unpin',
+      'sessions.pins',
+      'sessions.retention.get',
+      'sessions.retention.set',
+      'sessions.retention.prune',
       'diff',
       'mcp.list',
       'mcp.add',
@@ -133,6 +139,34 @@ describe('v3 operations contract', () => {
         },
       })
     ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'sessions.retention.set',
+        input: {
+          days: 21,
+          preservePinned: false,
+        },
+      })
+    ).toMatchObject({ id: 'sessions.retention.set' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'sessions.retention.set',
+        input: {
+          days: 0,
+        },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'sessions.retention.prune',
+        input: {
+          dryRun: true,
+        },
+      })
+    ).toMatchObject({ id: 'sessions.retention.prune' });
 
     expect(
       OperationExecuteRequestSchema.parse({

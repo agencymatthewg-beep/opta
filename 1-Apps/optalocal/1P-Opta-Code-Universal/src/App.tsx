@@ -16,6 +16,7 @@ import { McpManagementPage } from "./pages/McpManagementPage";
 import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { AccountControlPage } from "./pages/AccountControlPage";
 import { CliOperationsPage } from "./pages/CliOperationsPage";
+import { MemoryCenterPage } from "./pages/MemoryCenterPage";
 import { DaemonPanel } from "./components/DaemonPanel";
 import {
   downloadAsFile,
@@ -35,6 +36,7 @@ import type { PaletteCommand } from "./types";
 
 type AppPage =
   | "sessions"
+  | "memory"
   | "models"
   | "operations"
   | "cli"
@@ -355,6 +357,13 @@ function App() {
         run: () => setActivePage("models"),
       },
       {
+        id: "open-memory-center",
+        title: "Open memory center",
+        description: "Manage pinned sessions, recall search, and retention pruning",
+        keywords: ["memory", "pins", "retention", "prune", "search"],
+        run: () => setActivePage("memory"),
+      },
+      {
         id: "open-sessions",
         title: "Open session cockpit",
         description: "Switch to active session orchestration",
@@ -630,6 +639,13 @@ function App() {
                 </button>
                 <button
                   type="button"
+                  className={activePage === "memory" ? "active" : ""}
+                  onClick={() => setActivePage("memory")}
+                >
+                  Memory
+                </button>
+                <button
+                  type="button"
                   className={activePage === "models" ? "active" : ""}
                   onClick={() => setActivePage("models")}
                 >
@@ -737,6 +753,8 @@ function App() {
                 connection={connection}
                 onOpenSettings={() => setIsSettingsOpen(true)}
               />
+            ) : activePage === "memory" ? (
+              <MemoryCenterPage connection={connection} />
             ) : activePage === "operations" ? (
               <OperationsPage connection={connection} />
             ) : activePage === "cli" ? (

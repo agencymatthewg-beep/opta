@@ -1,6 +1,13 @@
 import { useState } from "react";
+import { daemonClient } from "../../lib/daemonClient";
 import { isNativeDesktop } from "../../lib/runtime";
 import { type WizardFormData, wizardInvoke, WIZARD_THEME } from "./shared";
+import type { DaemonConnectionOptions } from "../../types";
+
+interface BootstrapMetadata {
+  host?: string;
+  port?: number;
+}
 
 export function StepReady({
   form,
@@ -33,23 +40,47 @@ export function StepReady({
     setSaveError(null);
 
     try {
-      await wizardInvoke("save_setup_config", {
-        provider: form.provider,
-        lmxHost: form.lmxHost,
-        lmxPort: form.lmxPort,
-        anthropicKey: form.anthropicKey,
-        configDir: form.configDir,
-        autonomyLevel: form.autonomyLevel,
-        shell: form.shell,
-        tuiDefault: form.tuiDefault,
+      const bootstrap = await wizardInvoke<BootstrapMetadata>(
+        "bootstrap_daemon_connection",
+        { startIfNeeded: true },
+      );
+      const host = bootstrap?.host?.trim();
+      const port = Math.trunc(Number(bootstrap?.port));
+      if (!host || !Number.isFinite(port) || port <= 0 || port > 65_535) {
+        throw new Error("Daemon bootstrap returned an invalid connection.");
+      }
+
+      const token = await wizardInvoke<string>("get_connection_secret", {
+        host,
+        port,
+      }).catch(() => "");
+
+      const connection: DaemonConnectionOptions = {
+        host,
+        port,
+        token: typeof token === "string" ? token : "",
+      };
+
+      const response = await daemonClient.runOperation(connection, "onboard.apply", {
+        input: {
+          provider: form.provider,
+          lmxHost: form.lmxHost,
+          lmxPort: form.lmxPort,
+          anthropicApiKey: form.anthropicKey || undefined,
+          autonomyLevel: form.autonomyLevel,
+          tuiDefault: form.tuiDefault,
+        },
       });
+      if (!response.ok) {
+        throw new Error(`[${response.error.code}] ${response.error.message}`);
+      }
     } catch (error) {
       if (nativeDesktop) {
         setLaunching(false);
         setSaveError(
           error instanceof Error
             ? error.message
-            : "Unable to save setup config",
+            : "Unable to apply onboarding config",
         );
         return;
       }
@@ -226,9 +257,9 @@ export function StepReady({
           }}
         >
           {launched ? (
-            "Config saved - starting Opta"
+            "Onboarding applied - starting Opta"
           ) : launching ? (
-            "Writing config..."
+            "Applying onboarding..."
           ) : (
             <>
               Launch Opta
@@ -271,7 +302,7 @@ export function StepReady({
               textAlign: "center",
             }}
           >
-            Save failed: {saveError}
+            Launch failed: {saveError}
           </p>
         ) : null}
       </div>

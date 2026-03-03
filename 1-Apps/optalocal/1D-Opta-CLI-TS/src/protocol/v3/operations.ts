@@ -42,6 +42,12 @@ export const OPERATION_IDS = [
   'sessions.search',
   'sessions.export',
   'sessions.delete',
+  'sessions.pin',
+  'sessions.unpin',
+  'sessions.pins',
+  'sessions.retention.get',
+  'sessions.retention.set',
+  'sessions.retention.prune',
   'diff',
   'mcp.list',
   'mcp.add',
@@ -252,6 +258,29 @@ export const OperationInputSchemaById = {
       id: z.string().min(1),
     })
     .strict(),
+  'sessions.pin': z
+    .object({
+      id: z.string().min(1),
+    })
+    .strict(),
+  'sessions.unpin': z
+    .object({
+      id: z.string().min(1),
+    })
+    .strict(),
+  'sessions.pins': EmptyInputSchema,
+  'sessions.retention.get': EmptyInputSchema,
+  'sessions.retention.set': z
+    .object({
+      days: z.union([z.string().min(1), z.number().int().min(1)]),
+      preservePinned: z.boolean().optional(),
+    })
+    .strict(),
+  'sessions.retention.prune': z
+    .object({
+      dryRun: z.boolean().optional(),
+    })
+    .strict(),
   diff: z
     .object({
       session: z.string().min(1).optional(),
@@ -387,6 +416,37 @@ const SessionSummarySchema = z
   })
   .strict();
 
+const SessionPinResultSchema = z
+  .object({
+    id: z.string().min(1),
+    pinned: z.boolean(),
+    alreadyPinned: z.boolean(),
+    tags: z.array(z.string()),
+  })
+  .strict();
+
+const SessionRetentionPolicySchema = z
+  .object({
+    days: z.number().int().min(1),
+    preservePinned: z.boolean(),
+  })
+  .strict();
+
+const SessionRetentionPruneReportSchema = z
+  .object({
+    dryRun: z.boolean(),
+    policy: SessionRetentionPolicySchema,
+    cutoff: z.string().min(1),
+    scanned: z.number().int().min(0),
+    preservedPinned: z.number().int().min(0),
+    candidateCount: z.number().int().min(0),
+    candidateIds: z.array(z.string().min(1)),
+    keptCount: z.number().int().min(0),
+    prunedCount: z.number().int().min(0),
+    prunedIds: z.array(z.string().min(1)),
+  })
+  .strict();
+
 export const OperationOutputSchemaById = {
   doctor: z.unknown(),
   'env.list': z.unknown(),
@@ -500,6 +560,12 @@ export const OperationOutputSchemaById = {
   'sessions.search': z.array(SessionSummarySchema),
   'sessions.export': z.unknown(),
   'sessions.delete': TextCommandOutputSchema,
+  'sessions.pin': SessionPinResultSchema,
+  'sessions.unpin': SessionPinResultSchema,
+  'sessions.pins': z.array(SessionSummarySchema),
+  'sessions.retention.get': SessionRetentionPolicySchema,
+  'sessions.retention.set': SessionRetentionPolicySchema,
+  'sessions.retention.prune': SessionRetentionPruneReportSchema,
   diff: TextCommandOutputSchema,
   'mcp.list': z.unknown(),
   'mcp.add': TextCommandOutputSchema,
@@ -571,6 +637,12 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('sessions.search'),
   makeExecuteRequestVariant('sessions.export'),
   makeExecuteRequestVariant('sessions.delete'),
+  makeExecuteRequestVariant('sessions.pin'),
+  makeExecuteRequestVariant('sessions.unpin'),
+  makeExecuteRequestVariant('sessions.pins'),
+  makeExecuteRequestVariant('sessions.retention.get'),
+  makeExecuteRequestVariant('sessions.retention.set'),
+  makeExecuteRequestVariant('sessions.retention.prune'),
   makeExecuteRequestVariant('diff'),
   makeExecuteRequestVariant('mcp.list'),
   makeExecuteRequestVariant('mcp.add'),
@@ -884,6 +956,42 @@ export const OPERATION_TAXONOMY = [
     id: 'sessions.delete',
     title: 'Sessions Delete',
     description: 'Delete a local chat session.',
+    safety: 'write',
+  },
+  {
+    id: 'sessions.pin',
+    title: 'Sessions Pin',
+    description: 'Pin a local chat session to retain it for long-term memory.',
+    safety: 'write',
+  },
+  {
+    id: 'sessions.unpin',
+    title: 'Sessions Unpin',
+    description: 'Remove pin protection from a local chat session.',
+    safety: 'write',
+  },
+  {
+    id: 'sessions.pins',
+    title: 'Sessions Pins',
+    description: 'List pinned local chat sessions.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.retention.get',
+    title: 'Sessions Retention Get',
+    description: 'Read the local sessions retention policy.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.retention.set',
+    title: 'Sessions Retention Set',
+    description: 'Persist the local sessions retention policy.',
+    safety: 'write',
+  },
+  {
+    id: 'sessions.retention.prune',
+    title: 'Sessions Retention Prune',
+    description: 'Prune stale local sessions using retention policy rules.',
     safety: 'write',
   },
   {
