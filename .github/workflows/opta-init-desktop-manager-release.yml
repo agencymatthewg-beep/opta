@@ -236,14 +236,14 @@ jobs:
           node-version: "20"
 
       - name: Install Opta Init dependencies
-        run: npm ci
+        run: npm install
 
       - name: Validate full release contract
         run: npm run validate:release-contract
 
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Desktop-manager typecheck
         working-directory: ${{ env.MANAGER_DIR }}
@@ -323,7 +323,7 @@ jobs:
 
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Build desktop-manager with Tauri (${{ matrix.target }})
         working-directory: ${{ env.MANAGER_DIR }}
@@ -466,7 +466,7 @@ jobs:
 
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
-        run: npm ci
+        run: npm install
 
       - name: Build desktop-manager with Tauri (Windows)
         working-directory: ${{ env.MANAGER_DIR }}
@@ -622,7 +622,7 @@ jobs:
           node-version: "20"
 
       - name: Install Opta Init dependencies
-        run: npm ci
+        run: npm install
 
       - name: Download macOS arm64 artifact
         uses: actions/download-artifact@v4
