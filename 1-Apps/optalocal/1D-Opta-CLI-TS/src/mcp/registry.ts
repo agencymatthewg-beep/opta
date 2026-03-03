@@ -12,7 +12,6 @@ import { instantiateOrInvoke } from '../utils/newable.js';
 import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } from '../core/tools/custom.js';
 import { createPlaywrightMcpServerConfig } from '../browser/mcp-bootstrap.js';
 import { normalizeStringList } from '../utils/text.js';
-import * as lmxApiKey from '../lmx/api-key.js';
 import { resolveAdminKeyForHost } from '../lmx/admin-keys.js';
 
 interface ToolSchema {
@@ -53,6 +52,8 @@ interface BuildToolRegistryOptions {
 }
 
 const PLAYWRIGHT_MCP_SERVER_KEY = 'playwright';
+const DEFAULT_PLAYWRIGHT_MCP_COMMAND = 'npx';
+const DEFAULT_PLAYWRIGHT_MCP_PACKAGE = '@playwright/mcp@latest';
 
 /**
  * Fire-and-forget dispatch of a custom DOM event to the browser's chrome overlay.
@@ -69,24 +70,42 @@ function dispatchOverlayEvent(
   void mcpConn.call('browser_evaluate', { expression }).catch(() => {});
 }
 
-function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser']): string[] {
-  const legacy = browser as typeof browser & { globalAllowedHosts?: string[] };
-  const policyHosts = normalizeStringList(browser.policy?.allowedHosts);
+function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser'] | undefined): string[] {
+  const browserConfig = browser as
+    | (OptaConfig['browser'] & {
+        globalAllowedHosts?: string[];
+        policy?: { allowedHosts?: string[] };
+      })
+    | undefined;
+  const policyHosts = normalizeStringList(browserConfig?.policy?.allowedHosts);
   const hasPolicyOverride = policyHosts.some((host) => host !== '*');
   const sourceHosts = hasPolicyOverride
     ? policyHosts
-    : normalizeStringList(legacy.globalAllowedHosts);
+    : normalizeStringList(browserConfig?.globalAllowedHosts);
 
   // Preserve previous behavior: wildcard means unrestricted, so omit the flag.
   if (sourceHosts.includes('*')) return [];
   return sourceHosts;
 }
 
-function resolvePlaywrightBlockedOrigins(browser: OptaConfig['browser']): string[] {
-  const legacy = browser as typeof browser & { blockedOrigins?: string[] };
-  const policyBlocked = normalizeStringList(browser.policy?.blockedOrigins);
+function resolvePlaywrightBlockedOrigins(browser: OptaConfig['browser'] | undefined): string[] {
+  const browserConfig = browser as
+    | (OptaConfig['browser'] & {
+        blockedOrigins?: string[];
+        policy?: { blockedOrigins?: string[] };
+      })
+    | undefined;
+  const policyBlocked = normalizeStringList(browserConfig?.policy?.blockedOrigins);
   if (policyBlocked.length > 0) return policyBlocked;
-  return normalizeStringList(legacy.blockedOrigins);
+  return normalizeStringList(browserConfig?.blockedOrigins);
+}
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  return typeof value === 'string' ? value : undefined;
 }
 
 export async function buildToolRegistry(
@@ -98,26 +117,37 @@ export async function buildToolRegistry(
   const mcpSchemas: ToolSchema[] = [];
   const mcpRoutes = new Map<string, McpConnection>();
 
-  const mergedServers = { ...(config.mcp?.servers ?? {}) };
-  const browser = config.browser;
+  const mcpConfig = config.mcp as { servers?: Record<string, Parameters<typeof connectMcpServer>[1]> } | undefined;
+  const mergedServers: Record<string, Parameters<typeof connectMcpServer>[1]> = {
+    ...(mcpConfig?.servers ?? {}),
+  };
+  const browser = config.browser as
+    | (OptaConfig['browser'] & {
+        mcp?: { enabled?: boolean; command?: string; package?: string };
+        attach?: { enabled?: boolean };
+      })
+    | undefined;
+  const browserEnabled = browser?.enabled ?? false;
   const browserMcp = browser?.mcp;
+  const browserMcpEnabled = browserMcp?.enabled ?? true;
+  const browserAttachEnabled = browser?.attach?.enabled ?? false;
 
   if (
-    browser?.enabled &&
-    browserMcp?.enabled &&
+    browserEnabled &&
+    browserMcpEnabled &&
     !(PLAYWRIGHT_MCP_SERVER_KEY in mergedServers)
   ) {
-    const browserMode = browser.attach?.enabled ? 'attach' : browser.mode;
+    const browserMode = browserAttachEnabled ? 'attach' : (browser?.mode ?? 'isolated');
     const allowedHosts = resolvePlaywrightAllowedHosts(browser);
     const blockedOrigins = resolvePlaywrightBlockedOrigins(browser);
 
     mergedServers[PLAYWRIGHT_MCP_SERVER_KEY] = await createPlaywrightMcpServerConfig({
-      command: browserMcp.command,
-      packageName: browserMcp.package,
+      command: browserMcp?.command ?? DEFAULT_PLAYWRIGHT_MCP_COMMAND,
+      packageName: browserMcp?.package ?? DEFAULT_PLAYWRIGHT_MCP_PACKAGE,
       mode: browserMode,
       allowedHosts,
       blockedOrigins,
-      startUrl: browser.homePage,
+      startUrl: browser?.homePage,
     });
   }
 
@@ -160,13 +190,14 @@ export async function buildToolRegistry(
   }
 
   // Conditionally include sub-agent tools
-  const subAgentEnabled = config.subAgent?.enabled ?? true;
+  const subAgentEnabled = (config.subAgent as { enabled?: boolean } | undefined)?.enabled ?? true;
   const subAgentSchemas = subAgentEnabled
     ? (SUB_AGENT_TOOL_SCHEMAS as ToolSchema[])
     : [];
 
   // Conditionally include LSP tools
-  const lspEnabled = config.lsp?.enabled ?? true;
+  const lspConfig = config.lsp as Partial<OptaConfig['lsp']> | undefined;
+  const lspEnabled = lspConfig?.enabled ?? true;
   const LSP_TOOL_NAMES = new Set([
     'lsp_definition', 'lsp_references', 'lsp_hover',
     'lsp_symbols', 'lsp_document_symbols', 'lsp_diagnostics',
@@ -180,8 +211,8 @@ export async function buildToolRegistry(
       cwd: process.cwd(),
       config: {
         enabled: true,
-        servers: config.lsp?.servers ?? {},
-        timeout: config.lsp?.timeout ?? 10000,
+        servers: (lspConfig?.servers ?? {}) as OptaConfig['lsp']['servers'],
+        timeout: lspConfig?.timeout ?? 10_000,
       },
     });
   }
@@ -203,7 +234,7 @@ export async function buildToolRegistry(
   }
 
   const totalTools = baseSchemas.length + mcpSchemas.length + subAgentSchemas.length + customSchemas.length;
-  const contextLimit = config.model?.contextLimit ?? 32768;
+  const contextLimit = (config.model as { contextLimit?: number } | undefined)?.contextLimit ?? 32_768;
   // ~256 tokens of context per tool is a reasonable budget; exceeding this
   // means tool schemas consume too much of the model's working memory.
   const toolThreshold = Math.floor(contextLimit / 256);
@@ -262,19 +293,24 @@ export async function buildToolRegistry(
 
       const mcpConn = mcpRoutes.get(name);
       if (mcpConn) {
-        let args: Record<string, unknown>;
+        let parsedArgs: unknown;
         try {
-          args = JSON.parse(argsJson);
+          parsedArgs = JSON.parse(argsJson);
         } catch {
           return 'Error: Invalid JSON arguments';
         }
+        if (!isObjectRecord(parsedArgs)) {
+          return 'Error: Invalid JSON arguments';
+        }
+        const args = parsedArgs;
         // Strip namespace: mcp__server__toolname -> toolname
         const originalName = name.split('__').slice(2).join('__');
 
         // Route Playwright MCP browser calls through the policy/safety interceptor
-        if (mcpConn.name === PLAYWRIGHT_MCP_SERVER_KEY && config.browser?.enabled) {
+        if (mcpConn.name === PLAYWRIGHT_MCP_SERVER_KEY && browserEnabled) {
           const { interceptBrowserMcpCall, BrowserPolicyDeniedError } = await import('../browser/mcp-interceptor.js');
           const { resolveBrowserPolicyConfig } = await import('../core/browser-policy-config.js');
+          const onBrowserEvent = subAgentCallbacks.onBrowserEvent;
 
           // Signal the overlay that a tool is about to execute
           dispatchOverlayEvent(mcpConn, 'opta:state', { state: 'executing' });
@@ -288,15 +324,15 @@ export async function buildToolRegistry(
                 sessionId: parentCtx?.parentSessionId ?? 'registry',
                 // Auto-approve gate decisions so all Playwright tools are usable.
                 // The policy engine still blocks denied tools; only gated tools get through.
-                onGate: async (_toolName, _decision) => 'approved',
+                onGate: (_toolName, _decision) => Promise.resolve('approved'),
                 // Compress screenshots before returning to LLM to preserve context budget.
                 screenshotCompressOptions: { maxWidth: 1280, maxHeight: 720, quality: 80 },
                 // Retry transient Playwright failures (e.g. element detach, timing races).
                 maxRetries: 2,
                 retryBackoffMs: 500,
-                onBrowserEvent: subAgentCallbacks?.onBrowserEvent
+                onBrowserEvent: onBrowserEvent
                   ? (toolName, _args, _result) =>
-                      subAgentCallbacks.onBrowserEvent!(toolName, parentCtx?.parentSessionId ?? 'registry')
+                      onBrowserEvent(toolName, parentCtx?.parentSessionId ?? 'registry')
                   : undefined,
               },
               () => mcpConn.call(originalName, args),
@@ -304,11 +340,14 @@ export async function buildToolRegistry(
 
             // Dispatch tool-specific visual events after successful execution
             if (originalName === 'browser_navigate') {
-              dispatchOverlayEvent(mcpConn, 'opta:navigate', { url: String(args.url ?? '') });
+              const url = asOptionalString(args['url']) ?? '';
+              dispatchOverlayEvent(mcpConn, 'opta:navigate', { url });
             } else if (originalName === 'browser_click') {
-              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'click', selector: String(args.selector ?? args.element ?? '') });
+              const selector = asOptionalString(args['selector']) ?? asOptionalString(args['element']) ?? '';
+              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'click', selector });
             } else if (originalName === 'browser_type' || originalName === 'browser_fill_form') {
-              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'type', selector: String(args.selector ?? args.element ?? '') });
+              const selector = asOptionalString(args['selector']) ?? asOptionalString(args['element']) ?? '';
+              dispatchOverlayEvent(mcpConn, 'opta:action', { type: 'type', selector });
             }
 
             // Reset overlay to idle after successful execution
@@ -330,17 +369,25 @@ export async function buildToolRegistry(
 
       // Route sub-agent tools (pass context explicitly for concurrency safety)
       if (name === 'spawn_agent' || name === 'delegate_task') {
-        return execSubAgentTool(name, argsJson, config, registryRef.current!, parentCtx, subAgentCallbacks);
+        const currentRegistry = registryRef.current;
+        if (!currentRegistry) {
+          return 'Error: Tool registry not initialized';
+        }
+        return execSubAgentTool(name, argsJson, config, currentRegistry, parentCtx, subAgentCallbacks);
       }
 
       // Route LSP tools through LspManager
       if (lspManager && LSP_TOOL_NAMES.has(name)) {
-        let args: Record<string, unknown>;
+        let parsedArgs: unknown;
         try {
-          args = JSON.parse(argsJson);
+          parsedArgs = JSON.parse(argsJson);
         } catch {
           return 'Error: Invalid JSON arguments';
         }
+        if (!isObjectRecord(parsedArgs)) {
+          return 'Error: Invalid JSON arguments';
+        }
+        const args = parsedArgs;
         const result = await lspManager.execute(name, args);
         // Cache LSP read results
         if (cache.isCacheable(name)) {
@@ -352,12 +399,16 @@ export async function buildToolRegistry(
       // Route custom tools
       const customTool = customRoutes.get(name);
       if (customTool) {
-        let args: Record<string, unknown>;
+        let parsedArgs: unknown;
         try {
-          args = JSON.parse(argsJson);
+          parsedArgs = JSON.parse(argsJson);
         } catch {
           return 'Error: Invalid JSON arguments for custom tool';
         }
+        if (!isObjectRecord(parsedArgs)) {
+          return 'Error: Invalid JSON arguments for custom tool';
+        }
+        const args = parsedArgs;
         return executeCustomTool(customTool, args);
       }
 
@@ -373,9 +424,12 @@ export async function buildToolRegistry(
       // Notify LSP of file changes after write operations
       if (lspManager && (name === 'edit_file' || name === 'write_file' || name === 'multi_edit')) {
         try {
-          const args = JSON.parse(argsJson);
-          if (args.path) {
-            await lspManager.notifyFileChanged(resolve(process.cwd(), String(args.path)));
+          const parsedArgs = JSON.parse(argsJson) as unknown;
+          if (isObjectRecord(parsedArgs)) {
+            const pathArg = asOptionalString(parsedArgs['path']) ?? asOptionalString(parsedArgs['file']);
+            if (pathArg) {
+              await lspManager.notifyFileChanged(resolve(process.cwd(), pathArg));
+            }
           }
         } catch {
           // Best effort - don't fail the tool execution
@@ -420,6 +474,10 @@ export async function buildToolRegistry(
  */
 async function resolveLmxModel(config: OptaConfig): Promise<string> {
   const model = config.model.default;
+
+  if (config.provider.active !== 'lmx') {
+    return model;
+  }
 
   // Known LMX-compatible HuggingFace org prefixes
   const LMX_ORG_PREFIXES = [
@@ -468,12 +526,16 @@ async function execSubAgentTool(
   parentCtx?: SubAgentContext,
   callbacks?: SubAgentCallbacks,
 ): Promise<string> {
-  let args: Record<string, unknown>;
+  let parsedArgs: unknown;
   try {
-    args = JSON.parse(argsJson);
+    parsedArgs = JSON.parse(argsJson);
   } catch {
     return 'Error: Invalid JSON arguments for sub-agent tool';
   }
+  if (!isObjectRecord(parsedArgs)) {
+    return 'Error: Invalid JSON arguments for sub-agent tool';
+  }
+  const args = parsedArgs;
 
   // Lazy-load sub-agent modules
   const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } = await import('../core/subagent.js');
@@ -499,17 +561,13 @@ async function execSubAgentTool(
     return `Error: ${errorMessage(err)}`;
   }
 
-  // Create an OpenAI client for the sub-agent (direct LMX connection)
-  const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(config.connection);
-
-  const { default: OpenAI } = await import('openai');
-  const client = instantiateOrInvoke<import('openai').default>(OpenAI, {
-    baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
-    apiKey,
-  });
+  // Create the client for the sub-agent via the unified provider manager
+  const { getProvider } = await import('../providers/manager.js');
+  const provider = await getProvider(subAgentConfig);
+  const client = await provider.getClient();
 
   if (name === 'spawn_agent') {
-    const task = String(args['task'] ?? '');
+    const task = asOptionalString(args['task']) ?? '';
     if (!task) return 'Error: task is required for spawn_agent';
 
     const agentId = nanoid(8);
@@ -519,11 +577,11 @@ async function execSubAgentTool(
       {
         id: agentId,
         description: task,
-        scope: args['scope'] ? String(args['scope']) : undefined,
+        scope: asOptionalString(args['scope']),
         budget: args['max_tool_calls']
           ? { maxToolCalls: Number(args['max_tool_calls']) }
           : undefined,
-        mode: args['mode'] ? String(args['mode']) : undefined,
+        mode: asOptionalString(args['mode']),
         onProgress: callbacks?.onSubAgentProgress,
       },
       subAgentConfig,
@@ -539,13 +597,14 @@ async function execSubAgentTool(
   if (name === 'delegate_task') {
     const { executeDelegation } = await import('../core/orchestrator.js');
 
-    const plan = String(args['plan'] ?? '');
+    const plan = asOptionalString(args['plan']) ?? '';
     if (!plan) return 'Error: plan is required for delegate_task';
 
-    const subtasks = (args['subtasks'] as Array<{ task: string; scope?: string; depends_on?: number }>) ?? [];
-    if (!Array.isArray(subtasks) || subtasks.length === 0) {
+    const rawSubtasks = args['subtasks'];
+    if (!Array.isArray(rawSubtasks) || rawSubtasks.length === 0) {
       return 'Error: subtasks array is required for delegate_task';
     }
+    const subtasks = rawSubtasks as Array<{ task: string; scope?: string; depends_on?: number }>;
 
     try {
       return await executeDelegation(

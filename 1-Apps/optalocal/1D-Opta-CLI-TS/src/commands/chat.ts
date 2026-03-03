@@ -159,6 +159,22 @@ type LmxClientLike = {
   }) => Promise<{ models: Array<{ model_id: string }> }>;
 };
 
+type ProviderLike = {
+  active?: 'lmx' | 'anthropic';
+  anthropic?: { model?: string };
+};
+
+function readProvider(config: Awaited<ReturnType<typeof loadConfig>>): {
+  active: 'lmx' | 'anthropic';
+  anthropicModel?: string;
+} {
+  const provider = config.provider as ProviderLike | undefined;
+  return {
+    active: provider?.active === 'anthropic' ? 'anthropic' : 'lmx',
+    anthropicModel: provider?.anthropic?.model,
+  };
+}
+
 async function createLmxClient(options: LmxClientOptions): Promise<LmxClientLike> {
   const { LmxClient } = await import('../lmx/client.js');
   try {
@@ -180,7 +196,7 @@ async function ensureModelLoadedOnLmxStartup(
   modelId: string,
   preflight: ModelPreflightStatus
 ): Promise<ModelPreflightStatus> {
-  if ((config.provider?.active ?? 'lmx') === 'anthropic') {
+  if (readProvider(config).active === 'anthropic') {
     return preflight;
   }
 
@@ -229,7 +245,7 @@ async function probeModelPreflight(
 ): Promise<ModelPreflightStatus> {
   // When running on Anthropic (zero-config fallback or explicit config), the
   // model is always "loaded" from the CLI's perspective — no LMX probe needed.
-  if ((config.provider?.active ?? 'lmx') === 'anthropic') {
+  if (readProvider(config).active === 'anthropic') {
     return { modelLoaded: true, loadedModelIds: [modelId] };
   }
 
@@ -256,9 +272,10 @@ async function runChatDiskPreflight(
   config: Awaited<ReturnType<typeof loadConfig>>,
   jsonMode: boolean
 ): Promise<void> {
+  const safety = config.safety as { diskHeadroomMb?: number } | undefined;
   try {
     await ensureDiskHeadroom(OPTA_CONFIG_DIR, {
-      minFreeBytes: diskHeadroomMbToBytes(config.safety?.diskHeadroomMb),
+      minFreeBytes: diskHeadroomMbToBytes(safety?.diskHeadroomMb),
     });
   } catch (err) {
     if (!isStorageRelatedError(err)) throw err;
@@ -303,7 +320,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   // Anthropic so fresh installs with only an API key work out of the box.
   // Only probe when provider is 'lmx' (default) — skip if user explicitly
   // configured Anthropic or if we're in JSON (pipe) mode where silence matters.
-  if ((config.provider?.active ?? 'lmx') === 'lmx') {
+  if (readProvider(config).active === 'lmx') {
     try {
       const { probeProvider } = await import('../providers/manager.js');
       const probed = await probeProvider(config);
@@ -311,13 +328,13 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         // LMX unreachable — route the whole session through Anthropic.
         // Always derive the model from provider.anthropic.model (or the
         // well-known default) so we don't keep an LMX model string.
-        const anthropicDefault = config.provider.anthropic?.model || 'claude-sonnet-4-5-20250929';
+        const anthropicDefault = readProvider(config).anthropicModel || 'claude-sonnet-4-5-20250929';
         config = {
           ...config,
           provider: {
-            ...config.provider,
+            ...(config.provider as ProviderLike | undefined),
             active: 'anthropic',
-          },
+          } as typeof config.provider,
           model: {
             ...config.model,
             default: anthropicDefault,
@@ -420,7 +437,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       // Exact ID not found — try fuzzy search
       const matches = await searchSessions(opts.resume);
       if (matches.length === 1) {
-        session = await loadSession(matches[0]!.id);
+        const match = matches[0];
+        if (!match) {
+          throw new ExitError(EXIT.NOT_FOUND);
+        }
+        session = await loadSession(match.id);
       } else if (matches.length > 1) {
         try {
           const { select } = await import('@inquirer/prompts');
@@ -430,7 +451,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
                 {
                   message: chalk.dim(`Multiple sessions match "${opts.resume}"`),
                   choices: matches.slice(0, 10).map((m) => ({
-                    name: `${m.title || m.id.slice(0, 8)}  ${chalk.dim(m.model || '')}  ${chalk.dim(new Date(m.created).toLocaleDateString())}${m.tags?.length ? '  ' + chalk.cyan(m.tags.join(', ')) : ''}`,
+                    name: `${m.title || m.id.slice(0, 8)}  ${chalk.dim(m.model || '')}  ${chalk.dim(new Date(m.created).toLocaleDateString())}${(m.tags ?? []).length ? '  ' + chalk.cyan((m.tags ?? []).join(', ')) : ''}`,
                     value: m.id,
                   })),
                 },
@@ -465,10 +486,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
     if (!jsonMode) {
       const msgCount = session.messages.filter((m) => m.role !== 'system').length;
+      const providerActive = readProvider(config).active;
       const providerLabel =
-        (config.provider?.active ?? 'lmx') === 'anthropic' ? 'Anthropic' : 'LMX';
+        providerActive === 'anthropic' ? 'Anthropic' : 'LMX';
       const providerValue =
-        (config.provider?.active ?? 'lmx') === 'anthropic'
+        providerActive === 'anthropic'
           ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
           : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
       console.log(
@@ -498,10 +520,11 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     startupPreflightError = startupPreflight.error;
 
     if (!jsonMode) {
+      const providerActive = readProvider(config).active;
       const providerLabel =
-        (config.provider?.active ?? 'lmx') === 'anthropic' ? 'Anthropic' : 'LMX';
+        providerActive === 'anthropic' ? 'Anthropic' : 'LMX';
       const providerValue =
-        (config.provider?.active ?? 'lmx') === 'anthropic'
+        providerActive === 'anthropic'
           ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
           : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
       console.log(
@@ -554,7 +577,14 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   async function saveSessionWithJournal(): Promise<string | null> {
     await saveSession(session);
 
-    const journal = config.journal;
+    const journal = config.journal as
+      | {
+          enabled?: boolean;
+          sessionLogsDir?: string;
+          timezone?: string;
+          author?: string;
+        }
+      | undefined;
     // loadConfig returns defaults in production, but treat missing journal config
     // as enabled to preserve backward-compatible session logging in partial test stubs.
     if (!(journal?.enabled ?? true)) return null;
@@ -696,7 +726,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               emitter.emit('permission:request', {
                 id: typeof payload['requestId'] === 'string' ? payload['requestId'] : '',
                 toolName: typeof payload['toolName'] === 'string' ? payload['toolName'] : 'tool',
-                args: (payload['args'] as Record<string, unknown>) ?? {},
+                args: (payload['args'] as Record<string, unknown> | undefined) ?? {},
               });
               break;
             case 'turn.done': {
@@ -719,7 +749,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               void daemon
                 .getSession(session.id)
                 .then((remote) => {
-                  const remoteMessages = (remote.messages ?? []) as AgentMessage[];
+                  const remoteMessages = (remote.messages as AgentMessage[] | undefined) ?? [];
                   session.messages = remoteMessages;
                   session.toolCallCount = remote.toolCallCount ?? session.toolCallCount;
                   return saveSession(session);
@@ -921,7 +951,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   const { input } = await import('@inquirer/prompts');
   let queuedInput = opts.initialPrompt?.trim() ?? '';
 
-  while (true) {
+  for (;;) {
     let userInput: string;
     if (queuedInput) {
       userInput = queuedInput;
@@ -981,11 +1011,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         config = await loadConfig(overrides);
         continue;
       }
-      if (typeof handled === 'object' && handled !== null && 'type' in handled && handled.type === 'generate') {
-        userInput = handled.prompt;
-      } else {
+      if (handled === 'handled') {
         continue;
       }
+      userInput = handled.prompt;
     }
 
     // Shell mode: !command executes directly
@@ -1067,8 +1096,9 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       const assistantMessage = result.messages[result.messages.length - 1];
       if (assistantMessage?.role === 'assistant' && typeof assistantMessage.content === 'string') {
         const { handleGenUIResponse } = await import('../ui/genui-manager.js');
-        const genuiEnabled = config.genui?.enabled !== false;
-        const autoOpen = config.genui?.autoOpenBrowser !== false;
+        const genuiConfig = config.genui as { enabled?: boolean; autoOpenBrowser?: boolean };
+        const genuiEnabled = genuiConfig.enabled ?? true;
+        const autoOpen = genuiConfig.autoOpenBrowser ?? true;
         
         if (genuiEnabled) {
           const genuiResult = await handleGenUIResponse(assistantMessage.content, 'genui', autoOpen);

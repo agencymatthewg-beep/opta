@@ -39,6 +39,10 @@ export interface SubAgentContext {
   parentCwd: string;
 }
 
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 // --- Task 1: Budget Validation & Defaults ---
 
 export function resolveBudget(
@@ -243,8 +247,9 @@ export async function spawnSubAgent(
   );
 
   // Build the tool schemas to use (respect whitelist if provided)
-  const toolSchemas = task.tools
-    ? registry.schemas.filter(s => task.tools!.includes(s.function.name))
+  const allowedTools = task.tools;
+  const toolSchemas = allowedTools
+    ? registry.schemas.filter(s => allowedTools.includes(s.function.name))
     : registry.schemas;
 
   // Import resolvePermission once outside the loop
@@ -263,7 +268,7 @@ export async function spawnSubAgent(
   emitPhase('spawning');
 
   const runLoop = async (): Promise<SubAgentResult> => {
-    while (true) {
+    for (;;) {
       // Check budget before each LLM call
       if (toolCallCount >= budget.maxToolCalls) {
         const lastAssistantMsg = [...messages].reverse().find(m => m.role === 'assistant');
@@ -362,21 +367,29 @@ export async function spawnSubAgent(
 
         // Track files
         try {
-          const args = JSON.parse(tc.function.arguments);
-          if (toolName === 'multi_edit' && Array.isArray(args.edits)) {
-            for (const edit of args.edits) {
-              if (edit && typeof edit.path === 'string') {
-                filesModified.push(edit.path);
+          const parsedArgs = JSON.parse(tc.function.arguments) as unknown;
+          if (!isObjectRecord(parsedArgs)) {
+            continue;
+          }
+          if (toolName === 'multi_edit' && Array.isArray(parsedArgs['edits'])) {
+            for (const edit of parsedArgs['edits']) {
+              if (!isObjectRecord(edit)) {
+                continue;
+              }
+              const editPath = edit['path'];
+              if (typeof editPath === 'string') {
+                filesModified.push(editPath);
               }
             }
           } else {
-            const path = args.path ?? args.file;
+            const pathValue = parsedArgs['path'] ?? parsedArgs['file'];
+            const path = typeof pathValue === 'string' ? pathValue : undefined;
             if (path) {
               if (['read_file', 'read_project_docs'].includes(toolName)) {
-                filesRead.push(String(path));
+                filesRead.push(path);
               }
               if (['edit_file', 'write_file', 'delete_file'].includes(toolName)) {
-                filesModified.push(String(path));
+                filesModified.push(path);
               }
             }
           }
@@ -458,4 +471,3 @@ export function formatSubAgentResult(result: SubAgentResult): string {
 
   return lines.join('\n');
 }
-

@@ -192,7 +192,10 @@ function lmxConnectionResultFromSnapshot(
       failoverHint,
       "Run 'opta status' or 'opta config set connection.host <host>' to reconfigure.",
     ].join(' '),
-    fix: async () => 'Ensure LMX server is running on Mono512 (192.168.188.11:1234). Cannot auto-start remote server.',
+    fix: () =>
+      Promise.resolve(
+        'Ensure LMX server is running on Mono512 (192.168.188.11:1234). Cannot auto-start remote server.'
+      ),
   };
 }
 
@@ -417,37 +420,43 @@ export async function checkMcpServers(
 
   const probeStdioServers = process.env['OPTA_DOCTOR_PROBE_STDIO_MCP'] === '1';
   const probeTargets = names.filter((name) => {
-    const server = servers[name]!;
+    const server = servers[name];
+    if (!server) return false;
     if (server.transport === 'http') return true;
     if (server.transport === 'stdio') return probeStdioServers;
     return false;
   });
-  const skippedStdio = names.filter((name) => servers[name]!.transport === 'stdio' && !probeStdioServers);
+  const skippedStdio = names.filter((name) => {
+    const server = servers[name];
+    return server?.transport === 'stdio' && !probeStdioServers;
+  });
 
   const { connectMcpServer } = await import('../mcp/client.js');
   const settled = await Promise.all(
     probeTargets.map(async (name) => {
-      const serverConfig = servers[name]!;
+      const serverConfig = servers[name];
+      if (!serverConfig) {
+        return { name, ok: false as const, toolCount: 0 };
+      }
       const connectPromise = connectMcpServer(
         name,
         serverConfig as Parameters<typeof connectMcpServer>[1]
       );
-      let timedOut = false;
+      const timeoutError = new Error('timeout');
       let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
       try {
         const timeout = new Promise<never>((_, reject) => {
           timeoutId = setTimeout(() => {
-            timedOut = true;
-            reject(new Error('timeout'));
+            reject(timeoutError);
           }, 5000);
         });
         const conn = await Promise.race([connectPromise, timeout]);
         const toolCount = conn.tools.length;
         await conn.close();
         return { name, ok: true as const, toolCount };
-      } catch {
-        if (timedOut) {
+      } catch (err) {
+        if (err === timeoutError) {
           // Best-effort late cleanup if the connect promise resolves after timeout.
           void connectPromise
             .then(async (conn) => {
@@ -709,7 +718,7 @@ export async function checkDiskHeadroom(
         status: 'fail',
         message: `Disk headroom below required minimum (${available} available, ${required} required)`,
         detail: 'Free disk space on the filesystem backing ~/.config/opta and rerun opta doctor.',
-        fix: async () => 'Disk space is low — free space manually. Cannot auto-fix.',
+        fix: () => Promise.resolve('Disk space is low — free space manually. Cannot auto-fix.'),
       };
     }
 
@@ -732,11 +741,11 @@ export async function checkDaemon(): Promise<CheckResult> {
   const state = await readDaemonState();
   const running = await isDaemonRunning(state);
 
-  if (running) {
+  if (running && state) {
     return {
       name: 'Daemon',
       status: 'pass',
-      message: `Daemon running (pid=${state!.pid}, port=${state!.port})`,
+      message: `Daemon running (pid=${state.pid}, port=${state.port})`,
     };
   }
 
@@ -848,7 +857,7 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     checkMcpServers(config.mcp.servers as Parameters<typeof checkMcpServers>[0]),
     checkGit(cwd),
     checkDiskUsage(),
-    checkDiskHeadroom(diskHeadroomMbToBytes(config.safety?.diskHeadroomMb)),
+    checkDiskHeadroom(diskHeadroomMbToBytes(config.safety.diskHeadroomMb)),
     checkAccount(),
     checkDaemon(),
     checkConfigDirs(),
@@ -934,7 +943,9 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 
     for (const result of fixable) {
       try {
-        const fixMessage = await result.fix!();
+        const fix = result.fix;
+        if (!fix) continue;
+        const fixMessage = await fix();
         console.log(`  ${chalk.green('\u2713')} ${result.name}: ${fixMessage}`);
       } catch (err) {
         console.log(`  ${chalk.red('\u2717')} ${result.name}: fix failed — ${errorMessage(err)}`);

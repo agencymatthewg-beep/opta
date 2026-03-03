@@ -101,7 +101,7 @@ export async function dispatchSlashCommand(
   ctx: SlashContext
 ): Promise<SlashResult> {
   const parts = input.trim().split(/\s+/);
-  const rawCmd = parts[0]!.toLowerCase();
+  const rawCmd = (parts[0] ?? '').toLowerCase();
   const args = parts.slice(1).join(' ');
 
   // Strip leading slash
@@ -125,9 +125,11 @@ export async function dispatchSlashCommand(
 
     if (bestMatch && bestMatch.distance <= 2) {
       // Close enough — auto-execute with a hint
-      const matched = commandMap.get(bestMatch.name)!;
-      console.log(chalk.dim(`  Auto-corrected: /${bestMatch.name}`));
-      return matched.handler(args, ctx);
+      const matched = commandMap.get(bestMatch.name);
+      if (matched) {
+        console.log(chalk.dim(`  Auto-corrected: /${bestMatch.name}`));
+        return matched.handler(args, ctx);
+      }
     }
 
     if (bestMatch && bestMatch.distance === 3) {
@@ -172,23 +174,36 @@ export async function dispatchSlashCommand(
 function levenshtein(a: string, b: string): number {
   const m = a.length;
   const n = b.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0) as number[]);
+  const dp: Int32Array[] = Array.from({ length: m + 1 }, () => new Int32Array(n + 1));
 
-  for (let i = 0; i <= m; i++) dp[i]![0] = i;
-  for (let j = 0; j <= n; j++) dp[0]![j] = j;
+  for (let i = 0; i <= m; i++) {
+    const row = dp[i];
+    if (!row) continue;
+    row[0] = i;
+  }
+  const firstRow = dp[0];
+  if (!firstRow) return 0;
+  for (let j = 0; j <= n; j++) firstRow[j] = j;
 
   for (let i = 1; i <= m; i++) {
+    const row = dp[i];
+    const prevRow = dp[i - 1];
+    if (!row || !prevRow) continue;
     for (let j = 1; j <= n; j++) {
       const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      dp[i]![j] = Math.min(
-        dp[i - 1]![j]! + 1,      // deletion
-        dp[i]![j - 1]! + 1,      // insertion
-        dp[i - 1]![j - 1]! + cost // substitution
+      const deletion = (prevRow[j] ?? 0) + 1;
+      const insertion = (row[j - 1] ?? 0) + 1;
+      const substitution = (prevRow[j - 1] ?? 0) + cost;
+      row[j] = Math.min(
+        deletion,
+        insertion,
+        substitution
       );
     }
   }
 
-  return dp[m]![n]!;
+  const lastRow = dp[m];
+  return lastRow?.[n] ?? 0;
 }
 
 /**

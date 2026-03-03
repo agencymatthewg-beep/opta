@@ -160,7 +160,7 @@ async function interactiveConfigMenu(ctx: SlashContext): Promise<boolean> {
   let sectionIndex = 0;
   let itemIndex = 0;
 
-  while (true) {
+  for (;;) {
     const latest = await loadConfig();
     const sections = buildConfigSections(latest as unknown as Record<string, unknown>);
     if (sections.length === 0) return true;
@@ -477,7 +477,8 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
       let env: string | undefined;
       let envIndex = -1;
       for (let i = 2; i < tokens.length; i += 1) {
-        const token = tokens[i]!;
+        const token = tokens[i];
+        if (token === undefined) continue;
         if (token === '--env' || token.startsWith('--env=')) {
           envIndex = i;
           break;
@@ -492,7 +493,11 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
       }
 
       if (envIndex !== -1) {
-        const envToken = tokens[envIndex]!;
+        const envToken = tokens[envIndex];
+        if (envToken === undefined) {
+          console.log(chalk.dim('  Usage: /mcp add <name> <command> [--env KEY=VAL,...]'));
+          return 'handled';
+        }
         if (envToken === '--env') {
           env = tokens[envIndex + 1];
         } else {
@@ -517,7 +522,8 @@ const mcpHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
 
       const unknown: string[] = [];
       for (let i = 1; i < tokens.length; i += 1) {
-        const token = tokens[i]!;
+        const token = tokens[i];
+        if (token === undefined) continue;
         if (token === '--name') {
           opts.name = tokens[i + 1];
           i += 1;
@@ -657,7 +663,8 @@ const updateHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
   const unknown: string[] = [];
 
   for (let i = 0; i < tokens.length; i += 1) {
-    const token = tokens[i]!;
+    const token = tokens[i];
+    if (token === undefined) continue;
     if (token === '--components' || token === '-c') {
       opts.components = tokens[i + 1];
       i += 1;
@@ -781,7 +788,8 @@ const serverHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
   const unknown: string[] = [];
 
   for (let i = startIndex; i < tokens.length; i += 1) {
-    const token = tokens[i]!;
+    const token = tokens[i];
+    if (token === undefined) continue;
     if (token === '--host') {
       daemonOpts.host = tokens[i + 1];
       i += 1;
@@ -852,7 +860,8 @@ const daemonHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
   const unknown: string[] = [];
 
   for (let i = startIndex; i < tokens.length; i += 1) {
-    const token = tokens[i]!;
+    const token = tokens[i];
+    if (token === undefined) continue;
     if (token === '--host') {
       daemonOpts.host = tokens[i + 1];
       i += 1;
@@ -997,8 +1006,8 @@ const quickfixHandler = async (_args: string, _ctx: SlashContext): Promise<Slash
 const keyHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult> => {
   const tokens = parseSlashArgs(args);
   const first = tokens[0]?.toLowerCase();
-  const hasExplicitAction = Boolean(first && !first.startsWith('-'));
-  const action = hasExplicitAction ? first! : 'show';
+  const hasExplicitAction = first !== undefined && !first.startsWith('-');
+  const action = hasExplicitAction ? first : 'show';
   const rest = hasExplicitAction ? tokens.slice(1) : tokens;
 
   if (action === 'help' || rest.includes('--help') || rest.includes('-h')) {
@@ -1019,7 +1028,8 @@ const keyHandler = async (args: string, _ctx: SlashContext): Promise<SlashResult
       const unknown: string[] = [];
 
       for (let i = 0; i < rest.length; i += 1) {
-        const token = rest[i]!;
+        const token = rest[i];
+        if (token === undefined) continue;
         if (token === '--value') {
           opts.value = rest[i + 1];
           i += 1;
@@ -1100,7 +1110,7 @@ const permissionsHandler = async (args: string, ctx: SlashContext): Promise<Slas
 
   if (!toolName) {
     // List all tool permissions
-    const perms = ctx.config.permissions || {};
+    const perms = ctx.config.permissions;
     const defaults: Record<string, string> = {
       read_file: 'allow',
       write_file: 'ask',
@@ -1213,14 +1223,14 @@ function buildNestedObject(path: string, value: string): Record<string, unknown>
   const result: Record<string, unknown> = {};
   let current = result;
 
-  for (let i = 0; i < keys.length - 1; i++) {
+  for (const key of keys.slice(0, -1)) {
     const next: Record<string, unknown> = {};
-    current[keys[i]!] = next;
+    current[key] = next;
     current = next;
   }
 
   // Auto-convert types
-  const lastKey = keys[keys.length - 1]!;
+  const lastKey = keys.at(-1) ?? '';
   if (value === 'true') current[lastKey] = true;
   else if (value === 'false') current[lastKey] = false;
   else if (/^\d+$/.test(value)) current[lastKey] = parseInt(value, 10);

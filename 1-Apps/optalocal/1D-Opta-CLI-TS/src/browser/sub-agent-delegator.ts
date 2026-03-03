@@ -38,9 +38,8 @@ export async function delegateToBrowserSubAgent(
   try {
     const { spawnSubAgent, formatSubAgentResult, createSubAgentContext } =
       await import('../core/subagent.js');
-    const { default: OpenAI } = await import('openai');
-    const lmxApiKey = await import('../lmx/api-key.js');
     const { buildToolRegistry } = await import('../mcp/registry.js');
+    const { getProvider } = await import('../providers/manager.js');
 
     const sessionNote = preferredSessionId
       ? `\n\nReuse browser session ID: ${preferredSessionId}`
@@ -51,12 +50,9 @@ export async function delegateToBrowserSubAgent(
     const taskDescription = `${BROWSER_SPECIALIST_PROMPT}${sessionNote}${contextNote}\n\n---\n\nGoal: ${goal}`;
 
     const childContext = createSubAgentContext(preferredSessionId ?? 'browser-agent', undefined, config);
-    const apiKey = await lmxApiKey.resolveLmxApiKeyAsync(config.connection);
 
-    const client = new OpenAI({
-      baseURL: `http://${config.connection.host}:${config.connection.port}/v1`,
-      apiKey,
-    });
+    const provider = await getProvider(config);
+    const client = await provider.getClient();
 
     const subRegistry = await buildToolRegistry(config, 'normal');
 

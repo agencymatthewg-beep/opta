@@ -101,7 +101,7 @@ function normalizePort(port: number): number {
 async function resolveDefaultLmxConnection(
   existing: OptaConfig | null
 ): Promise<{ host: string; port: number }> {
-  if (existing?.connection?.host?.trim()) {
+  if (existing?.connection.host.trim()) {
     return {
       host: existing.connection.host.trim(),
       port: normalizePort(existing.connection.port),
@@ -111,7 +111,7 @@ async function resolveDefaultLmxConnection(
   try {
     const discovered = await discoverLmxHosts(1200);
     const first = discovered[0];
-    if (first?.host?.trim()) {
+    if (first?.host.trim()) {
       return {
         host: first.host.trim(),
         port: normalizePort(first.port),
@@ -130,22 +130,22 @@ export async function applyOnboardingProfile(
   const existing = await loadConfig().catch(() => null);
 
   const provider: OnboardingProvider = normalizeOnboardingProvider(
-    input.provider ?? existing?.provider?.active
+    input.provider ?? existing?.provider.active
   );
   const defaultLmxConnection = await resolveDefaultLmxConnection(existing);
   const lmxHost = input.lmxHost?.trim() || defaultLmxConnection.host;
   const lmxPort = normalizePort(input.lmxPort ?? defaultLmxConnection.port);
-  const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy?.level ?? 2);
-  const tuiDefault = input.tuiDefault ?? existing?.tui?.default ?? false;
+  const autonomyLevel = clampAutonomyLevel(input.autonomyLevel ?? existing?.autonomy.level ?? 2);
+  const tuiDefault = input.tuiDefault ?? existing?.tui.default ?? false;
 
   const configured: ProviderFieldConfig[] = [];
 
-  const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider?.anthropic?.apiKey ?? '').trim();
-  const geminiApiKey = (input.geminiApiKey ?? existing?.provider?.gemini?.apiKey ?? '').trim();
-  const openaiApiKey = (input.openaiApiKey ?? existing?.provider?.openai?.apiKey ?? '').trim();
+  const anthropicApiKey = (input.anthropicApiKey ?? existing?.provider.anthropic.apiKey ?? '').trim();
+  const geminiApiKey = (input.geminiApiKey ?? existing?.provider.gemini.apiKey ?? '').trim();
+  const openaiApiKey = (input.openaiApiKey ?? existing?.provider.openai.apiKey ?? '').trim();
   const opencodeZenApiKey = (
     input.opencodeZenApiKey ??
-    existing?.provider?.opencode_zen?.apiKey ??
+    existing?.provider.opencode_zen.apiKey ??
     ''
   ).trim();
 
@@ -230,7 +230,7 @@ export async function applyOnboardingProfile(
         storage: persisted.storage,
         maskedSuffix: persisted.maskedSuffix,
       });
-    } else if (provider === 'opencode_zen') {
+    } else {
       const persisted = await persistProviderKey('opencode_zen', opencodeZenApiKey);
       configPatch['provider.opencode_zen.apiKey'] = persisted.configValue;
       configured.push({
@@ -394,7 +394,7 @@ export async function runOnboarding(): Promise<void> {
         'Opencode Zen' + chalk.dim('— Alternative provider endpoint'),
       ],
       (() => {
-        const active = normalizeOnboardingProvider(existing?.provider?.active);
+        const active = normalizeOnboardingProvider(existing?.provider.active);
         if (active === 'anthropic') return 1;
         if (active === 'gemini') return 2;
         if (active === 'openai') return 3;
@@ -433,6 +433,10 @@ export async function runOnboarding(): Promise<void> {
       } catch { /* discovery is best-effort */ }
 
       if (discoveredHosts.length > 0) {
+        const firstDiscovered = discoveredHosts[0];
+        if (!firstDiscovered) {
+          throw new Error('Discovery list unexpectedly empty');
+        }
         process.stdout.write(
           '\r' +
             chalk.green(`  Found ${discoveredHosts.length} LMX server${discoveredHosts.length !== 1 ? 's' : ''} on LAN`) +
@@ -448,29 +452,29 @@ export async function runOnboarding(): Promise<void> {
 
         const useDiscovered = await confirm(
           rl,
-          `  Use ${discoveredHosts[0]!.host}:${discoveredHosts[0]!.port}?`,
+          `  Use ${firstDiscovered.host}:${firstDiscovered.port}?`,
           true
         );
         if (useDiscovered) {
-          lmxHost = discoveredHosts[0]!.host;
-          lmxPort = discoveredHosts[0]!.port;
+          lmxHost = firstDiscovered.host;
+          lmxPort = firstDiscovered.port;
         } else {
-          lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || 'localhost');
-          const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
+          lmxHost = await ask(rl, '  LMX host', existing?.connection.host || 'localhost');
+          const portStr = await ask(rl, '  LMX port', String(existing?.connection.port || 1234));
           lmxPort = parseInt(portStr, 10) || 1234;
         }
       } else {
         process.stdout.write(
           '\r' + chalk.dim('  No LMX servers found on LAN — enter address manually') + '         \n'
         );
-        lmxHost = await ask(rl, '  LMX host', existing?.connection?.host || 'localhost');
-        const portStr = await ask(rl, '  LMX port', String(existing?.connection?.port || 1234));
+        lmxHost = await ask(rl, '  LMX host', existing?.connection.host || 'localhost');
+        const portStr = await ask(rl, '  LMX port', String(existing?.connection.port || 1234));
         lmxPort = parseInt(portStr, 10) || 1234;
       }
       lmxAdminKey = await ask(
         rl,
         '  LMX admin key (optional)',
-        existing?.connection?.adminKey || ''
+        existing?.connection.adminKey || ''
       );
 
       const testConn = await confirm(rl, '  Test connection now?', true);
@@ -480,8 +484,8 @@ export async function runOnboarding(): Promise<void> {
           const client = new LmxClient({
             host: lmxHost,
             port: lmxPort,
-            adminKey: lmxAdminKey.trim() || existing?.connection?.adminKey,
-            adminKeysByHost: existing?.connection?.adminKeysByHost,
+            adminKey: lmxAdminKey.trim() || existing?.connection.adminKey,
+            adminKeysByHost: existing?.connection.adminKeysByHost,
           });
           await client.health({ timeoutMs: 3_000, maxRetries: 0 });
           process.stdout.write(
@@ -544,12 +548,12 @@ export async function runOnboarding(): Promise<void> {
       console.log('');
       const existingCloudKey =
         provider === 'anthropic'
-          ? existing?.provider?.anthropic?.apiKey || ''
+          ? existing?.provider.anthropic.apiKey || ''
           : provider === 'gemini'
-            ? existing?.provider?.gemini?.apiKey || ''
+            ? existing?.provider.gemini.apiKey || ''
             : provider === 'openai'
-              ? existing?.provider?.openai?.apiKey || ''
-              : existing?.provider?.opencode_zen?.apiKey || '';
+              ? existing?.provider.openai.apiKey || ''
+              : existing?.provider.opencode_zen.apiKey || '';
 
       const cloudPromptLabel =
         provider === 'anthropic'
@@ -579,7 +583,7 @@ export async function runOnboarding(): Promise<void> {
         'Balanced    ' + chalk.dim('— Ask for risky actions only (recommended)'),
         'Autonomous  ' + chalk.dim('— Auto-approve safe operations'),
       ],
-      Math.max(0, Math.min(2, (existing?.autonomy?.level ?? 2) - 1))
+      Math.max(0, Math.min(2, (existing?.autonomy.level ?? 2) - 1))
     );
     // autonomyChoice is 0/1/2, autonomyLevel is 1/2/3 matching the schema
     const autonomyLevel = autonomyChoice + 1;
@@ -587,7 +591,7 @@ export async function runOnboarding(): Promise<void> {
     const tuiDefault = await confirm(
       rl,
       '  Enable TUI (full-screen mode) by default?',
-      existing?.tui?.default ?? false
+      existing?.tui.default ?? false
     );
 
     // ── Step 3: Review & Confirm ───────────────────────────────────────────
