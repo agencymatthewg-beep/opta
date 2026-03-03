@@ -1,5 +1,22 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "out",
-  "framework": null
+  "framework": null,
+  "redirects": [
+    {
+      "source": "/init",
+      "destination": "https://init.optalocal.com/init",
+      "permanent": false
+    },
+    {
+      "source": "/init/",
+      "destination": "https://init.optalocal.com/init",
+      "permanent": false
+    },
+    {
+      "source": "/init/:path*",
+      "destination": "https://init.optalocal.com/init/:path*",
+      "permanent": false
+    }
+  ]
 }
