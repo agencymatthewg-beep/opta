@@ -238,8 +238,8 @@ jobs:
       - name: Install Opta Init dependencies
         run: npm install
 
-      - name: Validate full release contract
-        run: npm run validate:release-contract
+      - name: Validate release contract (pre-publish)
+        run: npm run validate:release-contract:local
 
       - name: Install desktop-manager dependencies
         working-directory: ${{ env.MANAGER_DIR }}
