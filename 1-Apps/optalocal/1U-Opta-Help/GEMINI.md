@@ -60,3 +60,6 @@ npm run dev      # local dev on port 3006
 - No modifying OptaRing CSS keyframes
 - No hex/rgb literals in component code — use CSS variables
 - No adding new dependencies without instruction
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

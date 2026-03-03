@@ -134,3 +134,6 @@ export const ACCOUNTS_URL = 'https://accounts.optalocal.com'
 - `npm run build` → `next export` → `out/` directory
 - Deploy via Vercel with `init` subdomain CNAME
 - Verify Cloudflare DNS: `init CNAME cname.vercel-dns.com`
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

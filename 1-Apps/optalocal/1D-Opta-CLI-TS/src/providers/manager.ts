@@ -49,8 +49,15 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
   }
 
   const active = config.provider.active;
+  const customProvider = config.provider.customProviders?.find(p => p.id === active);
 
-  if (active === 'anthropic') {
+  if (customProvider) {
+    const { CloudProvider } = await import('./cloud.js');
+    cachedProvider = instantiateOrInvoke<ProviderClient>(CloudProvider, 'openai', config, {
+      baseURL: customProvider.baseURL,
+      apiKey: customProvider.apiKeyEnvVar ? process.env[customProvider.apiKeyEnvVar] : undefined,
+    });
+  } else if (active === 'anthropic') {
     const { AnthropicProvider } = await import('./anthropic.js');
     cachedProvider = instantiateOrInvoke<ProviderClient>(AnthropicProvider, config);
   } else if (active === 'gemini' || active === 'openai' || active === 'opencode_zen') {

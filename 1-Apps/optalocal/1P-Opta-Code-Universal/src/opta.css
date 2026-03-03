@@ -553,6 +553,14 @@ button.active,
   grid-template-columns: 320px minmax(0, 1fr);
 }
 
+.workspace-layout.single-pane.with-terminal {
+  grid-template-columns: minmax(0, 1fr) 320px;
+}
+
+.workspace-layout.single-pane.without-terminal {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .glass,
 .workspace-rail,
 .timeline-panel,

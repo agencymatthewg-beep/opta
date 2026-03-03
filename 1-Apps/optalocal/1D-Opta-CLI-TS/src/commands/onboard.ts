@@ -36,7 +36,7 @@ export async function markOnboarded(): Promise<void> {
 }
 
 type ProviderName = OptaConfig['provider']['active'];
-type OnboardingProvider = Extract<ProviderName, 'lmx' | 'anthropic' | 'gemini' | 'openai' | 'opencode_zen'>;
+export type OnboardingProvider = string;
 
 function normalizeOnboardingProvider(input: string | undefined): OnboardingProvider {
   if (input === 'anthropic' || input === 'gemini' || input === 'openai' || input === 'opencode_zen') {

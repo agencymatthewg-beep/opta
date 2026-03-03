@@ -234,3 +234,6 @@ All browser modules have unit tests. Full E2E browser session flow covered in `t
 - **Decisions:** `docs/DECISIONS.md` — why daemon-first, HTTP + WS + SSE, Fastify
 - **Guardrails:** `docs/GUARDRAILS.md` — safety rules for tool execution
 - **Index:** `docs/INDEX.md` — documentation read order for agents
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

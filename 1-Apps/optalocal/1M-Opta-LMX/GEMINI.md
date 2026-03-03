@@ -377,3 +377,6 @@ See `docs/GUARDRAILS.md` for full rules. Key ones for development:
 ---
 
 *This file defines the standard for all Python code on Opta-LMX. Update it as patterns evolve, but keep the core principles stable.*
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

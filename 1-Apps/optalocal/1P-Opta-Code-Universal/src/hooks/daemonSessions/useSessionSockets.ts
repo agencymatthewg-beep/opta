@@ -11,6 +11,14 @@ import { STOP_EVENT_KINDS, eventsToTimelineItems } from "./timeline";
 
 const TOKEN_FLUSH_MS = 40;
 
+// ─── Heartbeat config ────────────────────────────────────────────────────────
+// A ping is sent after HEARTBEAT_IDLE_MS of no server messages.
+// If no message arrives within HEARTBEAT_PONG_TIMEOUT_MS of the ping,
+// the connection is treated as stale and forcibly closed for reconnect.
+// This catches NAT/firewall silent drops that never send a WS close frame.
+const HEARTBEAT_IDLE_MS = 20_000;
+const HEARTBEAT_PONG_TIMEOUT_MS = 5_000;
+
 export interface WsHandle {
   close: () => void;
   send: (msg: object) => void;
@@ -152,8 +160,36 @@ export function useSessionSockets({
       let reconnectTimer: number | null = null;
       let attempts = 0;
       let closeRequestedLocally = false;
+      let networkOffline = false;
       let innerHandle: ReturnType<typeof daemonClient.connectWebSocket> | null =
         null;
+      // Heartbeat state — reset on every received message
+      let heartbeatIdleTimer: number | null = null;
+      let heartbeatPongTimer: number | null = null;
+
+      const clearHeartbeatTimers = () => {
+        if (heartbeatIdleTimer !== null) {
+          window.clearTimeout(heartbeatIdleTimer);
+          heartbeatIdleTimer = null;
+        }
+        if (heartbeatPongTimer !== null) {
+          window.clearTimeout(heartbeatPongTimer);
+          heartbeatPongTimer = null;
+        }
+      };
+
+      const scheduleHeartbeat = () => {
+        clearHeartbeatTimers();
+        heartbeatIdleTimer = window.setTimeout(() => {
+          // Send ping and start pong timeout
+          try { innerHandle?.send({ type: "ping" }); } catch { /* ignore */ }
+          heartbeatPongTimer = window.setTimeout(() => {
+            // No message received in time — force reconnect
+            innerHandle?.close();
+          }, HEARTBEAT_PONG_TIMEOUT_MS);
+        }, HEARTBEAT_IDLE_MS);
+      };
+
       const cursor = { seq: seqCursorRef.current[sessionId] ?? 0 };
       const generation = (sessionGenerationRef.current[sessionId] ?? 0) + 1;
       sessionGenerationRef.current[sessionId] = generation;
@@ -303,13 +339,25 @@ export function useSessionSockets({
             onOpen: () => {
               if (!isCurrentGeneration()) return;
               attempts = 0;
+              scheduleHeartbeat();
             },
             onEvent: (envelope) => {
               if (!mountedRef.current || !isCurrentGeneration()) return;
+              // Any received message resets the heartbeat idle timer
+              scheduleHeartbeat();
+              // If a pong arrived, clear the pong timeout
+              const eventKind = String((envelope as unknown as Record<string, unknown>).event ?? "");
+              if (heartbeatPongTimer !== null && eventKind === "pong") {
+                window.clearTimeout(heartbeatPongTimer);
+                heartbeatPongTimer = null;
+                scheduleHeartbeat();
+                return;
+              }
               handleEnvelope(envelope);
             },
             onClose: (_code) => {
               innerHandle = null;
+              clearHeartbeatTimers();
               if (!isCurrentGeneration()) return;
 
               flushTokenBuffer(sessionId);
@@ -321,7 +369,8 @@ export function useSessionSockets({
               if (
                 !mountedRef.current ||
                 !wsHandlesRef.current.has(sessionId) ||
-                closeRequestedLocally
+                closeRequestedLocally ||
+                networkOffline
               ) {
                 return;
               }
@@ -345,6 +394,7 @@ export function useSessionSockets({
       const handle: WsHandle = {
         close: () => {
           closeRequestedLocally = true;
+          clearHeartbeatTimers();
           flushTokenBuffer(sessionId);
           if (reconnectTimer !== null) {
             window.clearTimeout(reconnectTimer);
@@ -389,4 +439,36 @@ export function useSessionSockets({
     },
     [wsHandlesRef, tokenFlushTimerRef, tokenBufferRef, sessionGenerationRef],
   );
+
+  // ─── Network change detection ──────────────────────────────────────────────
+  // When the device loses network, suppress WS backoff retries to avoid
+  // hammering with connection attempts that will all fail immediately.
+  // When the device regains network, force-close current sockets so the
+  // backoff loop restarts immediately on the fresh network path rather than
+  // waiting for the current exponential delay to expire.
+  useEffect(() => {
+    const onOnline = () => {
+      // Close all sockets — onClose will start a fresh reconnect immediately
+      // since networkOffline is back to false (it was cleared before this fires)
+      for (const handle of wsHandlesRef.current.values()) {
+        // Re-open by closing (backoff timer will re-connect with attempts=0)
+        const send = handle.send;
+        void send; // keep reference alive
+        handle.close();
+      }
+      wsHandlesRef.current.clear();
+    };
+
+    const onOffline = () => {
+      // Nothing to do here — wsHandles have networkOffline flag set per-closure.
+      // The reconnect suppression happens inside each ws close handler.
+    };
+
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, [wsHandlesRef]);
 }

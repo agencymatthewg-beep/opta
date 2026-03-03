@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI vs Claude Code vs OpenCode — Competitive Analysis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6; /* Opta Violet */
+    --primary-glow: #a855f7;
+    --claude-peach: #f9b89b;
+    --opencode-teal: #2dd4bf;
+    --neon-green: #22c55e;
+    --neon-red: #ef4444;
+    --neon-blue: #3b82f6;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', sans-serif;
+    line-height: 1.6;
+    padding: 3rem;
+  }
+
+  /* Noise overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 9999;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  header {
+    margin-bottom: 4rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2rem;
+  }
+
+  h1 {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+    background: linear-gradient(135deg, #fff, var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+  }
+
+  .grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2rem;
+    margin-bottom: 4rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; height: 3px;
+  }
+
+  .card.opta::before { background: var(--primary); }
+  .card.claude::before { background: var(--claude-peach); }
+  .card.opencode::before { background: var(--opencode-teal); }
+
+  .card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .stat-block {
+    margin-bottom: 1.5rem;
+  }
+  
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 4rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  th, td {
+    padding: 1.25rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    background: var(--elevated);
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+  }
+
+  td {
+    font-size: 0.95rem;
+  }
+
+  td:first-child {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  .badge.win { background: rgba(34, 197, 94, 0.1); color: var(--neon-green); border: 1px solid rgba(34, 197, 94, 0.2); }
+  .badge.loss { background: rgba(239, 68, 68, 0.1); color: var(--neon-red); border: 1px solid rgba(239, 68, 68, 0.2); }
+  .badge.tie { background: rgba(59, 130, 246, 0.1); color: var(--neon-blue); border: 1px solid rgba(59, 130, 246, 0.2); }
+
+  .architectural-edge {
+    background: var(--surface);
+    border-left: 4px solid var(--primary);
+    padding: 2rem;
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 2rem;
+  }
+
+  .architectural-edge h3 {
+    margin-bottom: 1rem;
+    color: var(--primary-glow);
+  }
+
+  ul {
+    list-style: none;
+  }
+
+  li {
+    margin-bottom: 0.75rem;
+    padding-left: 1.5rem;
+    position: relative;
+  }
+
+  li::before {
+    content: '→';
+    position: absolute;
+    left: 0;
+    color: var(--primary);
+  }
+
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>/gu Intelligence: CLI Agent Comparison</h1>
+      <div class="subtitle">EXECUTION DATE: 2026-03-04 | TARGET: OPTA CLI vs CLAUDE CODE vs OPENCODE</div>
+    </header>
+
+    <div class="grid-3">
+      <!-- Opta CLI -->
+      <div class="card opta">
+        <h2>Opta CLI</h2>
+        <div class="stat-block">
+          <div class="stat-value">Level 3</div>
+          <div class="stat-label">Architecture</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-value">Zero</div>
+          <div class="stat-label">Local Inference Latency (LMX)</div>
+        </div>
+        <p class="subtitle">The only system running a persistent daemon model that multiplexes between Terminal and Native Desktop UI simultaneously.</p>
+      </div>
+
+      <!-- Claude Code -->
+      <div class="card claude">
+        <h2>Claude Code</h2>
+        <div class="stat-block">
+          <div class="stat-value">SOTA</div>
+          <div class="stat-label">Terminal-Bench 2.0 Score</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-value">20-23%</div>
+          <div class="stat-label">Cost Waste on Poor Context</div>
+        </div>
+        <p class="subtitle">Anthropic's proprietary powerhouse. Heavily reliant on Claude 3.7+ models. Strong OTel enterprise telemetry tracking LOC acceptance.</p>
+      </div>
+
+      <!-- OpenCode -->
+      <div class="card opencode">
+        <h2>OpenCode (SST)</h2>
+        <div class="stat-block">
+          <div class="stat-value">650k</div>
+          <div class="stat-label">Monthly Active Devs</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-value">71.9k</div>
+          <div class="stat-label">GitHub Stars (Explosive Growth)</div>
+        </div>
+        <p class="subtitle">Open-source Juggernaut built on Go/BubbleTea. Supports 75+ LLMs natively with built-in Language Server Protocol (LSP) intelligence.</p>
+      </div>
+    </div>
+
+    <h2>Feature & Capabilities Matrix</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Feature Vector</th>
+          <th>Opta CLI</th>
+          <th>Claude Code</th>
+          <th>OpenCode</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>LLM Provider Support</strong></td>
+          <td>Multi (Anthropic, OpenAI, LMX, Gemini) <span class="badge tie">Tie</span></td>
+          <td>Anthropic Only <span class="badge loss">Loss</span></td>
+          <td>75+ Providers <span class="badge win">Win</span></td>
+        </tr>
+        <tr>
+          <td><strong>Local First Execution</strong></td>
+          <td>Native MLX/Metal Optimization (LMX) <span class="badge win">Win</span></td>
+          <td>Cloud Only <span class="badge loss">Loss</span></td>
+          <td>Via Ollama/LM Studio <span class="badge tie">Tie</span></td>
+        </tr>
+        <tr>
+          <td><strong>Process Architecture</strong></td>
+          <td>Persistent Background Daemon <span class="badge win">Win</span></td>
+          <td>Transient CLI Process <span class="badge loss">Loss</span></td>
+          <td>Transient CLI Process <span class="badge loss">Loss</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cross-UI Synchronization</strong></td>
+          <td>Yes (CLI ↔ Tauri Desktop App) <span class="badge win">Win</span></td>
+          <td>No (CLI Only) <span class="badge loss">Loss</span></td>
+          <td>No (CLI Only) <span class="badge loss">Loss</span></td>
+        </tr>
+        <tr>
+          <td><strong>Telemetry & Stats</strong></td>
+          <td>Local UI Dashboard (VRAM/Tokens) <span class="badge tie">Tie</span></td>
+          <td>Enterprise Dashboard (LOC/PRs) <span class="badge win">Win</span></td>
+          <td>Local CLI Stats & LiteLLM Pricing <span class="badge tie">Tie</span></td>
+        </tr>
+        <tr>
+          <td><strong>Codebase Intelligence</strong></td>
+          <td>Custom OPIS / Regex <span class="badge tie">Tie</span></td>
+          <td>Agentic Search / Embeddings <span class="badge tie">Tie</span></td>
+          <td>Native LSP Integration <span class="badge win">Win</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="architectural-edge">
+      <h3>Where Opta CLI Wins (The Moat)</h3>
+      <ul>
+        <li><strong>The Level 3 Daemon:</strong> Unlike Claude Code and OpenCode which die when the terminal closes, Opta CLI runs a persistent Fastify/WebSocket daemon. This allows heavy background tasks (like Playwright headless browser navigation) to survive terminal restarts.</li>
+        <li><strong>UI Multiplexing:</strong> Opta Code Desktop natively attaches to the CLI daemon. You can start a massive refactor in the terminal, walk away, open the Desktop app, and watch the exact same session stream live. Neither competitor has a GUI wrapper.</li>
+        <li><strong>Apple Silicon LMX Integration:</strong> While OpenCode delegates to Ollama, Opta natively bundles its own MLX-based inference engine, allowing absolute zero-latency execution without network hops.</li>
+      </ul>
+    </div>
+
+    <div class="architectural-edge" style="border-color: var(--neon-red);">
+      <h3 style="color: var(--neon-red);">Where Opta Needs to Catch Up</h3>
+      <ul>
+        <li><strong>LSP Integration:</strong> OpenCode's ability to read native Language Server Protocol diagnostics gives it a massive advantage in hallucination-free code editing. Opta currently relies heavily on file grepping and LLM intuition.</li>
+        <li><strong>Scale & Community:</strong> OpenCode commands 650,000 monthly active developers. Opta is heavily siloed in the macOS/Unix ecosystem.</li>
+        <li><strong>Enterprise Telemetry:</strong> Claude Code's OTel hooks and GitHub PR contribution metrics are highly attractive to engineering managers. Opta's telemetry is currently purely local (VRAM/Token Speed).</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

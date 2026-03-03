@@ -9,13 +9,19 @@ export class CloudProvider implements ProviderClient {
   readonly name: string;
   private client: import('openai').default | null = null;
   private config: OptaConfig;
+  private customOpts?: { baseURL?: string; apiKey?: string };
 
-  constructor(name: string, config: OptaConfig) {
+  constructor(name: string, config: OptaConfig, customOpts?: { baseURL?: string; apiKey?: string }) {
     this.name = name;
     this.config = config;
+    this.customOpts = customOpts;
   }
 
   private async resolveApiKey(): Promise<{ apiKey: string; source: CloudKeySource }> {
+    if (this.customOpts?.apiKey) {
+      return { apiKey: this.customOpts.apiKey, source: 'env' };
+    }
+
     const configuredProvider =
       this.name === 'gemini'
         ? this.config.provider.gemini.apiKey
@@ -48,9 +54,11 @@ export class CloudProvider implements ProviderClient {
         const key = (await getOpenaiKey())?.trim();
         if (key) return { apiKey: key, source: 'keychain' };
       }
-      const { getOpencodeZenKey } = await import('../keychain/api-keys.js');
-      const key = (await getOpencodeZenKey())?.trim();
-      if (key) return { apiKey: key, source: 'keychain' };
+      if (this.name === 'opencode_zen') {
+        const { getOpencodeZenKey } = await import('../keychain/api-keys.js');
+        const key = (await getOpencodeZenKey())?.trim();
+        if (key) return { apiKey: key, source: 'keychain' };
+      }
     } catch {
       // Keychain unavailable — continue.
     }
@@ -74,25 +82,34 @@ export class CloudProvider implements ProviderClient {
 
     const { apiKey } = await this.resolveApiKey();
 
-    if (!apiKey) {
+    if (!apiKey && !this.customOpts?.baseURL?.includes('localhost') && !this.customOpts?.baseURL?.includes('127.0.0.1')) {
       const hint =
         this.name === 'gemini'
           ? 'GEMINI_API_KEY or opta config / keychain / accounts cloud'
           : this.name === 'openai'
             ? 'OPENAI_API_KEY or opta config / keychain / accounts cloud'
-            : 'OPENCODE_ZEN_API_KEY or opta config / keychain / accounts cloud';
+            : this.customOpts
+              ? `the configured environment variable for ${this.name}`
+              : 'OPENCODE_ZEN_API_KEY or opta config / keychain / accounts cloud';
       throw new Error(`Missing API key for provider: ${this.name}. Set ${hint}.`);
     }
 
-    const baseURL =
+    let baseURL =
       this.name === 'gemini'
         ? 'https://generativelanguage.googleapis.com/v1beta/openai/'
         : this.name === 'opencode_zen'
           ? 'https://api.opencodezen.com/v1'
           : undefined;
+          
+    if (this.customOpts?.baseURL) {
+      baseURL = this.customOpts.baseURL;
+    }
 
     const { default: OpenAI } = await import('openai');
-    this.client = instantiateOrInvoke<import('openai').default>(OpenAI, { apiKey, baseURL });
+    this.client = instantiateOrInvoke<import('openai').default>(OpenAI, { 
+      apiKey: apiKey || 'dummy-key-for-local', 
+      baseURL 
+    });
     return this.client;
   }
 

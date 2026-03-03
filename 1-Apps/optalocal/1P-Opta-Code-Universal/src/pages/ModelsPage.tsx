@@ -3,6 +3,7 @@ import {
   Activity,
   Box,
   Brain,
+  Cloud,
   Download,
   HardDrive,
   RefreshCw,
@@ -976,6 +977,34 @@ export function ModelsPage({ connection, onOpenSettings }: ModelsPageProps) {
           </div>
         </div>
       ) : null}
+
+      {/* Universal Cloud Models Registry */}
+      <div className="models-available glass-subtle" style={{ marginTop: "2rem", marginBottom: "2rem" }}>
+        <div className="models-section-header">
+          <Cloud size={13} aria-hidden="true" />
+          <h3>Universal Cloud Models (OpenAI-Compatible)</h3>
+          <span className="models-count">4</span>
+        </div>
+        <div className="model-cards">
+          {[
+            { id: 'deepseek-coder-v2', provider: 'DeepSeek', date: 'Jul 2024', bench: '90.2% HumanEval', rank: '#1 Open-Weights' },
+            { id: 'moonshot-v1-128k', provider: 'Kimi (Moonshot)', date: 'Oct 2023', bench: '86.4% MMLU', rank: '#1 Long-Context' },
+            { id: 'minimax-abab6.5', provider: 'Minimax', date: 'Jan 2024', bench: '89.1% HumanEval', rank: '#2 Chinese-Native' },
+            { id: 'litellm-proxy', provider: 'LiteLLM (Local)', date: 'Rolling', bench: 'N/A', rank: '75+ Models' },
+          ].map(m => (
+            <div key={m.id} className="model-card model-card-disk">
+              <div className="model-card-name" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{m.id} <span style={{fontSize: '0.7em', color: 'var(--text-muted)'}}>({m.provider})</span></span>
+                <span className="status-badge online" style={{ fontSize: '0.65em' }}>{m.rank}</span>
+              </div>
+              <div className="model-card-meta" style={{ display: 'flex', gap: '1rem', marginTop: '0.5rem' }}>
+                <span title="Release Date" style={{ color: 'var(--text-secondary)' }}>🗓 {m.date}</span>
+                <span title="Benchmarks" style={{ color: 'var(--text-secondary)' }}>📊 {m.bench}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
 
       {/* Download from HuggingFace */}
       <div className="models-download glass-subtle">

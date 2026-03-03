@@ -7,6 +7,7 @@ import {
   type BrowserVisualState,
   type BrowserVisualSummary,
 } from "../lib/browserVisualState";
+import type { ConnectionHealthState } from "../hooks/useConnectionHealth";
 
 interface WorkspaceRailProps {
   sessions: DaemonSessionSummary[];
@@ -15,6 +16,7 @@ interface WorkspaceRailProps {
   streamingBySession?: Record<string, boolean>;
   pendingPermissionsBySession?: Record<string, unknown[]>;
   browserVisualBySession?: Record<string, BrowserVisualSummary>;
+  connectionHealth?: ConnectionHealthState;
   onSelectWorkspace: (workspace: string) => void;
   onSelectSession: (sessionId: string) => void;
   onRemoveSession?: (sessionId: string) => void;
@@ -27,6 +29,7 @@ export function WorkspaceRail({
   streamingBySession = {},
   pendingPermissionsBySession = {},
   browserVisualBySession = {},
+  connectionHealth,
   onSelectWorkspace,
   onSelectSession,
   onRemoveSession,
@@ -65,10 +68,10 @@ export function WorkspaceRail({
 
   const visible = search.trim()
     ? byWorkspace.filter(
-        (session) =>
-          session.title.toLowerCase().includes(search.toLowerCase()) ||
-          session.sessionId.includes(search),
-      )
+      (session) =>
+        session.title.toLowerCase().includes(search.toLowerCase()) ||
+        session.sessionId.includes(search),
+    )
     : byWorkspace;
 
   const copyId = (sessionId: string, event: React.MouseEvent) => {
@@ -244,6 +247,35 @@ export function WorkspaceRail({
           })
         )}
       </div>
+
+      {/* ─── Ambient connection health badge ─────────────────────── */}
+      {connectionHealth && (
+        <footer className="rail-health-badge">
+          <span
+            className={`rail-health-dot rail-health-dot--${connectionHealth.status === "connected" ? connectionHealth.latencyTier : connectionHealth.status}`}
+            aria-hidden="true"
+          />
+          <span className="rail-health-label">
+            <span className="rail-health-host">
+              {connectionHealth.host}:{connectionHealth.port}
+            </span>
+            {connectionHealth.status === "connected" && connectionHealth.latencyMs !== null && (
+              <span className="rail-health-latency">
+                {connectionHealth.latencyMs}ms
+              </span>
+            )}
+            {connectionHealth.status === "offline" && (
+              <span className="rail-health-status">No network</span>
+            )}
+            {connectionHealth.status === "disconnected" && (
+              <span className="rail-health-status">Disconnected</span>
+            )}
+            {connectionHealth.status === "connecting" && (
+              <span className="rail-health-status">Connecting…</span>
+            )}
+          </span>
+        </footer>
+      )}
     </aside>
   );
 }

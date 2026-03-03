@@ -543,8 +543,18 @@ export const OptaConfigSchema = z.object({
     .default({}),
   provider: z
     .object({
-      active: z.enum(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']).default('lmx'),
+      active: z.string().default('lmx'), // Relaxed from enum to allow custom provider IDs
       fallbackOnFailure: z.boolean().default(false),
+      customProviders: z
+        .array(
+          z.object({
+            id: z.string(),
+            protocol: z.enum(['openai-compatible', 'anthropic-compatible']).default('openai-compatible'),
+            baseURL: z.string().url(),
+            apiKeyEnvVar: z.string().optional(),
+          })
+        )
+        .default([]),
       anthropic: z
         .object({
           apiKey: z.string().default(''),

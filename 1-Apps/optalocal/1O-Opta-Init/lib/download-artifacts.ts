@@ -37,6 +37,7 @@ export type DownloadAvailability = {
   available: boolean;
   label: string;
   source: "manifest" | "fallback" | "none";
+  version?: string;
 };
 
 export type DownloadAvailabilityMap = Record<
@@ -50,11 +51,12 @@ export type DownloadAvailabilityMap = Record<
 >;
 
 type ManagerUpdateFeed = {
+  version?: string;
   platforms?: Record<string, { url?: string }>;
 };
 
 type ManifestAssetResult =
-  | { status: "found"; url: string; platformKey: string }
+  | { status: "found"; url: string; platformKey: string; version?: string }
   | { status: "missing" }
   | { status: "unreachable" };
 
@@ -73,10 +75,12 @@ async function findManifestAsset(
 
   const data = (await res.json()) as ManagerUpdateFeed;
   const platforms = data.platforms ?? {};
+  const version = typeof data.version === "string" ? data.version : undefined;
+
   for (const platformKey of platformKeys) {
     const url = platforms[platformKey]?.url;
     if (typeof url === "string" && url.length > 0) {
-      return { status: "found", url, platformKey };
+      return { status: "found", url, platformKey, version };
     }
   }
 
@@ -119,6 +123,7 @@ async function resolvePlatformAvailability(
       available: true,
       label: labelFor(release.url, true),
       source: "manifest",
+      version: release.version,
     };
   }
 

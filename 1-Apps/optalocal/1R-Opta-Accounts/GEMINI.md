@@ -69,3 +69,6 @@ All `redirect_to` and `next` query params are validated against `lib/allowed-red
 
 - Vercel with `accounts` subdomain CNAME → `cname.vercel-dns.com`
 - Cloudflare DNS: `accounts CNAME cname.vercel-dns.com`
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

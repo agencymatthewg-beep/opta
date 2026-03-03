@@ -1,6 +1,8 @@
 import chalk from 'chalk';
 import { readdir, stat, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
+import * as os from 'node:os';
+import { execaCommand } from 'execa';
 import { loadConfig } from '../core/config.js';
 import { getConfigDir, getSessionsDir, getDaemonDir } from '../platform/paths.js';
 import { VERSION } from '../core/version.js';
@@ -251,6 +253,100 @@ function activeModelResultFromSnapshot(
 }
 
 // --- Individual Checks ---
+
+export async function checkOS(): Promise<CheckResult> {
+  const platform = os.platform();
+  const arch = os.arch();
+  const release = os.release();
+
+  if (platform === 'darwin') {
+    try {
+      await execaCommand('xcode-select -p', { timeout: 2000 });
+      return {
+        name: 'Operating System',
+        status: 'pass',
+        message: `macOS ${release} (${arch}) — Xcode CLT installed`,
+      };
+    } catch {
+      return {
+        name: 'Operating System',
+        status: 'warn',
+        message: `macOS ${release} (${arch}) — Xcode CLT missing`,
+        detail: "Run 'xcode-select --install' for native build tools used by LMX and npm",
+      };
+    }
+  } else if (platform === 'win32') {
+    try {
+      // Check for PowerShell availability as a proxy for healthy Windows environments
+      await execaCommand('powershell -Command "echo 1"', { timeout: 2000 });
+      return {
+        name: 'Operating System',
+        status: 'pass',
+        message: `Windows ${release} (${arch}) — PowerShell available`,
+      };
+    } catch {
+      return {
+        name: 'Operating System',
+        status: 'warn',
+        message: `Windows ${release} (${arch}) — PowerShell check failed`,
+        detail: 'PowerShell is required for many Opta background scripts on Windows',
+      };
+    }
+  } else if (platform === 'linux') {
+    return {
+      name: 'Operating System',
+      status: 'pass',
+      message: `Linux ${release} (${arch})`,
+    };
+  }
+
+  return {
+    name: 'Operating System',
+    status: 'warn',
+    message: `Unsupported platform: ${platform} (${arch})`,
+    detail: 'Opta is primarily tested on macOS and Windows.',
+  };
+}
+
+export async function checkDependencies(): Promise<CheckResult> {
+  const missing: string[] = [];
+  const deps = ['git', 'curl', 'tar'];
+  for (const dep of deps) {
+    try {
+      if (os.platform() === 'win32') {
+        await execaCommand(`where ${dep}`, { timeout: 2000 });
+      } else {
+        await execaCommand(`which ${dep}`, { timeout: 2000 });
+      }
+    } catch {
+      missing.push(dep);
+    }
+  }
+
+  let hasPython = false;
+  for (const py of ['python3', 'python']) {
+    try {
+      await execaCommand(`${py} --version`, { timeout: 2000 });
+      hasPython = true;
+      break;
+    } catch {}
+  }
+  if (!hasPython) missing.push('python3');
+
+  if (missing.length === 0) {
+    return {
+      name: 'System Tools',
+      status: 'pass',
+      message: `System tools installed (${deps.join(', ')}, python)`,
+    };
+  }
+  return {
+    name: 'System Tools',
+    status: 'warn',
+    message: `Missing system tools: ${missing.join(', ')}`,
+    detail: `Please install missing tools. LMX requires Python.`,
+  };
+}
 
 export function checkNode(): CheckResult {
   const version = process.version;
@@ -531,7 +627,6 @@ export async function checkGit(cwd: string): Promise<CheckResult> {
 
   // Check for uncommitted changes
   try {
-    const { execaCommand } = await import('execa');
     const result = await execaCommand('git status --porcelain', {
       cwd,
       timeout: 5000,
@@ -833,6 +928,8 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
 
   const nodeResult = checkNode();
   const [
+    osResult,
+    depsResult,
     lmxSnapshot,
     configResult,
     opisResult,
@@ -845,6 +942,8 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
     configDirsResult,
     lmxDiscoveryResult,
   ] = await Promise.all([
+    checkOS(),
+    checkDependencies(),
     collectLmxDoctorSnapshot(
       host,
       port,
@@ -865,7 +964,9 @@ export async function runDoctor(options: DoctorOptions): Promise<void> {
   ]);
 
   const results: CheckResult[] = [
+    osResult,
     nodeResult,
+    depsResult,
     lmxConnectionResultFromSnapshot(lmxSnapshot, host, port, config.connection.fallbackHosts),
     lmxDiscoveryResult,
     activeModelResultFromSnapshot(config.model.default, lmxSnapshot),

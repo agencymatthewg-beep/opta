@@ -519,7 +519,7 @@ export const operationRegistry = {
   ),
   'onboard.apply': defineOperation('onboard.apply', async (input) =>
     applyOnboardingProfile({
-      provider: input.provider,
+      provider: input.provider as string | undefined,
       lmxHost: input.lmxHost,
       lmxPort: input.lmxPort === undefined ? undefined : Number(input.lmxPort),
       lmxAdminKey: input.lmxAdminKey,

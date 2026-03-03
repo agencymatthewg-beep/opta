@@ -503,10 +503,17 @@ export default function Home() {
                   {data.macos.available && data.macos.url ? (
                     <a
                       href={data.macos.url}
-                      className="w-full h-12 rounded-lg bg-primary text-white font-semibold flex items-center justify-center gap-2 hover:bg-primary-glow transition-colors"
+                      className="w-full rounded-lg bg-primary text-white font-semibold flex flex-col items-center justify-center gap-0.5 py-2.5 hover:bg-primary-glow transition-colors"
                     >
-                      <Download className="w-4 h-4" />
-                      {data.macos.label === "Installer Ready" ? "Download macOS" : "Download macOS"}
+                      <span className="flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        Download macOS
+                      </span>
+                      {data.macos.version && (
+                        <span className="text-[10px] font-mono text-white/60 tracking-widest">
+                          v{data.macos.version}
+                        </span>
+                      )}
                     </a>
                   ) : (
                     <button
@@ -520,10 +527,17 @@ export default function Home() {
                   {data.windows.available && data.windows.url ? (
                     <a
                       href={data.windows.url}
-                      className="w-full h-12 rounded-lg bg-white/10 text-white font-semibold flex items-center justify-center gap-2 hover:bg-white/15 border border-white/20 transition-colors"
+                      className="w-full rounded-lg bg-white/10 text-white font-semibold flex flex-col items-center justify-center gap-0.5 py-2.5 hover:bg-white/15 border border-white/20 transition-colors"
                     >
-                      <Download className="w-4 h-4" />
-                      {data.windows.label === "Installer Ready" ? "Download Windows" : "Download Windows"}
+                      <span className="flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        Download Windows
+                      </span>
+                      {data.windows.version && (
+                        <span className="text-[10px] font-mono text-white/60 tracking-widest">
+                          v{data.windows.version}
+                        </span>
+                      )}
                     </a>
                   ) : (
                     <button

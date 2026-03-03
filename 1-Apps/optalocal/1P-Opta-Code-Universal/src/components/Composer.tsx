@@ -157,7 +157,11 @@ export function Composer({
             <option value="anthropic">Anthropic</option>
             <option value="gemini">Gemini</option>
             <option value="openai">OpenAI</option>
-            <option value="opencode_zen">Opencode Zen</option>
+            <option disabled>── Custom ──</option>
+            <option value="kimi">Kimi (Moonshot)</option>
+            <option value="minimax">Minimax</option>
+            <option value="deepseek">DeepSeek</option>
+            <option value="litellm">LiteLLM Proxy (75+ Models)</option>
           </select>
         </div>
 

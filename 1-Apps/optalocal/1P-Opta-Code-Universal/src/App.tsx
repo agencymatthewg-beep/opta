@@ -22,6 +22,7 @@ import { downloadAsFile, exportToMarkdown } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
+import { useConnectionHealth } from "./hooks/useConnectionHealth";
 import { LiveBrowserView } from "./components/LiveBrowserView";
 import { OPEN_SETUP_WIZARD_EVENT } from "./components/ErrorBoundary";
 import {
@@ -144,6 +145,8 @@ function App() {
     initialCheckDone,
     runtimePollDelayMs,
   } = useDaemonSessions();
+
+  const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
   const { getSlotForSession } = useBrowserLiveHost();
 
@@ -632,7 +635,7 @@ function App() {
               </span>
               <span>AGENTS: {activeStreamCount}</span>
               <span>SESSIONS: {sessionCount}</span>
-              <a href={ACCOUNTS_PORTAL_URL} target="_blank" rel="noopener noreferrer" className="accounts-btn accounts-btn-pulse" aria-label="Open Opta Accounts portal" style={{ marginLeft: "1rem" }}>ACCOUNTS</a>
+              <button type="button" onClick={() => setActivePage("account")} className="accounts-btn accounts-btn-pulse" aria-label="Open Account Controls" style={{ marginLeft: "1rem" }}>ACCOUNTS</button>
             </div>
           </header>
 
@@ -681,7 +684,8 @@ function App() {
             </div>
 
             <main
-              className={`workspace-layout ${showTerminal ? "with-terminal" : "without-terminal"}`}
+              className={`workspace-layout ${activePage !== "sessions" ? "single-pane" : ""
+                } ${showTerminal ? "with-terminal" : "without-terminal"}`}
             >
               {activePage === "models" ? (
                 <ModelsPage
@@ -716,6 +720,7 @@ function App() {
                     streamingBySession={streamingBySession}
                     pendingPermissionsBySession={pendingPermissionsBySession}
                     browserVisualBySession={browserVisualBySession}
+                    connectionHealth={useConnectionHealthResult}
                     onSelectWorkspace={setSelectedWorkspace}
                     onSelectSession={(sessionId) => {
                       setActiveSessionId(sessionId);

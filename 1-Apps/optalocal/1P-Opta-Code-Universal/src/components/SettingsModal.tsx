@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   X,
   Network,
   Cpu,
   ShieldAlert,
-  CpuIcon,
   Webhook,
-  Fingerprint,
+  Terminal,
+  RefreshCw,
+  RotateCcw,
+  Lightbulb,
+  Copy,
+  CheckCircle,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -15,6 +19,7 @@ import {
   daemonClient,
   type DaemonLmxEndpointCandidate,
 } from "../lib/daemonClient";
+import { ConnectionAddressBook } from "./settings/ConnectionAddressBook";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -23,7 +28,23 @@ interface SettingsModalProps {
   onSaveConnection: (conn: DaemonConnectionOptions) => void;
 }
 
-type TabId = "connection" | "lmx" | "models" | "autonomy" | "genui";
+type TabId = "connection" | "lmx" | "models" | "autonomy" | "genui" | "daemon";
+
+const DEFAULT_CONNECTION_FORM = {
+  host: "127.0.0.1",
+  port: "9999",
+  token: "",
+  protocol: "",
+};
+
+const DEFAULT_LMX = {
+  host: "192.168.188.11",
+  port: "1234",
+  fallbackHosts: "",
+  autoDiscover: true,
+  adminKey: "",
+  adminKeysByHost: "{}",
+};
 
 function parseHostList(raw: string): string[] {
   return raw
@@ -66,12 +87,12 @@ function formatAdminKeysByHost(raw: unknown): string {
   const map =
     typeof raw === "string"
       ? (() => {
-          try {
-            return normalizeAdminKeyMap(JSON.parse(raw));
-          } catch {
-            return {};
-          }
-        })()
+        try {
+          return normalizeAdminKeyMap(JSON.parse(raw));
+        } catch {
+          return {};
+        }
+      })()
       : normalizeAdminKeyMap(raw);
   return JSON.stringify(map, null, 2);
 }
@@ -93,10 +114,17 @@ export function SettingsModal({
   });
   const [showToken, setShowToken] = useState(false);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [copiedToken, setCopiedToken] = useState(false);
   const [probeMessage, setProbeMessage] = useState<{
     text: string;
     status: "ok" | "err" | "testing";
   } | null>(null);
+
+  // --- Daemon Controls State ---
+  const [daemonStatus, setDaemonStatus] = useState<string | null>(null);
+  const [daemonStatusLoading, setDaemonStatusLoading] = useState(false);
+  const [daemonOpResult, setDaemonOpResult] = useState<string | null>(null);
+  const [daemonOpRunning, setDaemonOpRunning] = useState(false);
 
   // --- LMX Target State ---
   const [lmxHost, setLmxHost] = useState("");
@@ -262,8 +290,48 @@ export function SettingsModal({
     }
   }
 
-  if (!isOpen) return null;
+  // NOTE: All hooks and functions that use state setters must live BEFORE the early-return
+  // guard below. React requires hooks to be called unconditionally in the same order.
 
+  const runDaemonOp = useCallback(async (op: string) => {
+    setDaemonOpRunning(true);
+    setDaemonOpResult(null);
+    try {
+      const response = await daemonClient.runOperation(connection, op, {});
+      if (response.ok) {
+        setDaemonOpResult(`✓ ${op} completed successfully.`);
+      } else {
+        setDaemonOpResult(`✗ ${op} failed: ${response.error?.message ?? "Unknown error"}`);
+      }
+    } catch (err) {
+      setDaemonOpResult(`✗ ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDaemonOpRunning(false);
+    }
+  }, [connection]);
+
+  const checkDaemonHealth = useCallback(async () => {
+    setDaemonStatusLoading(true);
+    setDaemonStatus(null);
+    try {
+      const result = await daemonClient.health(connection);
+      setDaemonStatus(`✓ Daemon online — status: ${result.status}`);
+    } catch (err) {
+      setDaemonStatus(`✗ Daemon offline or unreachable: ${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDaemonStatusLoading(false);
+    }
+  }, [connection]);
+
+  const copyToken = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(connForm.token);
+      setCopiedToken(true);
+      setTimeout(() => setCopiedToken(false), 2000);
+    } catch { /* ignore */ }
+  }, [connForm.token]);
+
+  // --- LMX Probe (regular async fn, not a hook) ---
   async function runLmxAccessProbe() {
     setLmxTesting(true);
     setLmxNotice("Testing LMX admin access...");
@@ -273,7 +341,7 @@ export function SettingsModal({
         ? status.models.length
         : 0;
       setLmxNotice(
-        `LMX admin reachable (${modelCount} loaded model${modelCount === 1 ? "" : "s"}).`,
+        `✓ LMX admin reachable — ${modelCount} loaded model${modelCount === 1 ? "" : "s"}.`,
       );
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
@@ -285,162 +353,55 @@ export function SettingsModal({
         lower.includes("403")
       ) {
         setLmxNotice(
-          "LMX reachable but admin access is unauthorized. Verify connection.adminKey and connection.adminKeysByHost.",
+          "✗ LMX reachable but admin access is unauthorized. Check 'Default Admin Key' — run `opta config get connection.adminKey` in terminal to find it.",
+        );
+      } else if (lower.includes("404") || lower.includes("not found")) {
+        setLmxNotice(
+          "✗ LMX host responded but the status endpoint was not found (404). The LMX server may be running an older version, or the host/port points to a non-LMX service. Check LMX Host & Port.",
         );
       } else if (lower.includes("timed out")) {
         setLmxNotice(
-          "LMX check timed out. Verify host/port routing and network reachability.",
+          "✗ LMX check timed out. The Mac Studio at this IP may be offline or the port is blocked. Try pinging it first.",
+        );
+      } else if (lower.includes("connection refused") || lower.includes("econnrefused")) {
+        setLmxNotice(
+          "✗ Connection refused — LMX is not running at this host/port. Start it with `opta-lmx` on the Mac Studio.",
         );
       } else {
-        setLmxNotice(`LMX probe failed: ${message}`);
+        setLmxNotice(`✗ LMX probe failed: ${message}`);
       }
     } finally {
       setLmxTesting(false);
     }
   }
 
+  // --- Early return gate (must come AFTER all hooks) ---
+  if (!isOpen) return null;
+
+
   const renderTabContent = () => {
     switch (activeTab) {
       case "connection":
+      case "connection":
         return (
           <motion.div
+            key="connection"
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <h3 className="opta-studio-section-title">Daemon Connection</h3>
-            <p
-              style={{
-                color: "#a1a1aa",
-                fontSize: "0.85rem",
-                marginBottom: "1.5rem",
-                lineHeight: 1.5,
-              }}
-            >
-              Connect Opta Code to the local daemon that brokers LLM
-              communication, file operations, and ATPO cycles.
-            </p>
-
-            <div className="opta-studio-form-group">
-              <label>Daemon Host</label>
-              <input
-                className="opta-studio-input"
-                placeholder="127.0.0.1"
-                value={connForm.host}
-                onChange={(e) =>
-                  setConnForm((prev) => ({ ...prev, host: e.target.value }))
-                }
-              />
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "1rem",
-              }}
-            >
-              <div className="opta-studio-form-group">
-                <label>Port</label>
-                <input
-                  className="opta-studio-input"
-                  placeholder="9999"
-                  value={connForm.port}
-                  onChange={(e) =>
-                    setConnForm((prev) => ({ ...prev, port: e.target.value }))
-                  }
-                />
-              </div>
-              <div className="opta-studio-form-group">
-                <label>Protocol</label>
-                <select
-                  className="opta-studio-select"
-                  value={connForm.protocol}
-                  onChange={(e) =>
-                    setConnForm((prev) => ({
-                      ...prev,
-                      protocol: e.target.value,
-                    }))
-                  }
-                >
-                  <option value="">Auto-detect</option>
-                  <option value="http">HTTP (Local)</option>
-                  <option value="https">HTTPS (Secure)</option>
-                </select>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+              <div>
+                <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Client Connection</h3>
+                <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
+                  Manage saved daemon targets and discover new ones on your local network.
+                </p>
               </div>
             </div>
-
-            <div className="opta-studio-form-group">
-              <label>Auth Token</label>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <input
-                  className="opta-studio-input"
-                  type={showToken ? "text" : "password"}
-                  placeholder="Leave blank for unauthenticated"
-                  value={connForm.token}
-                  onChange={(e) =>
-                    setConnForm((prev) => ({ ...prev, token: e.target.value }))
-                  }
-                />
-                <button
-                  type="button"
-                  className="opta-studio-btn-secondary"
-                  onClick={() => setShowToken(!showToken)}
-                >
-                  {showToken ? "Hide" : "Show"}
-                </button>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginTop: "2rem",
-              }}
-            >
-              <div
-                style={{ display: "flex", alignItems: "center", gap: "1rem" }}
-              >
-                <button
-                  type="button"
-                  className="opta-studio-btn-secondary"
-                  onClick={runConnectionProbe}
-                  disabled={testingConnection}
-                >
-                  {testingConnection ? "Testing..." : "Test Connection"}
-                </button>
-                {probeMessage && (
-                  <div
-                    className={`opta-studio-status-badge ${probeMessage.status === "ok" ? "connected" : "disconnected"}`}
-                  >
-                    <div
-                      className={`opta-studio-dot ${probeMessage.status === "ok" ? "connected" : "disconnected"}`}
-                    />
-                    {probeMessage.text}
-                  </div>
-                )}
-              </div>
-              <button
-                className="opta-studio-btn"
-                onClick={() => {
-                  onSaveConnection({
-                    host: connForm.host.trim() || connection.host,
-                    port: Number.parseInt(connForm.port, 10) || connection.port,
-                    token: connForm.token.trim(),
-                    protocol:
-                      connForm.protocol === "http" ||
-                      connForm.protocol === "https"
-                        ? connForm.protocol
-                        : undefined,
-                  });
-                  onClose();
-                }}
-              >
-                Save & Reconnect
-              </button>
-            </div>
+            <ConnectionAddressBook
+              activeConnection={connection}
+              onConnectionChange={onSaveConnection}
+            />
           </motion.div>
         );
       case "autonomy":
@@ -683,18 +644,47 @@ export function SettingsModal({
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
           >
-            <h3 className="opta-studio-section-title">LMX Inference Routing</h3>
-            <p
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+              <div>
+                <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>LMX Inference Routing</h3>
+                <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
+                  Where the daemon routes inference requests. Point this to your Mac Studio.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="opta-studio-btn-secondary"
+                style={{ whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem" }}
+                onClick={() => {
+                  setLmxHost(DEFAULT_LMX.host);
+                  setLmxPort(DEFAULT_LMX.port);
+                  setLmxFallbackHosts(DEFAULT_LMX.fallbackHosts);
+                  setLmxAutoDiscover(DEFAULT_LMX.autoDiscover);
+                  setLmxAdminKey(DEFAULT_LMX.adminKey);
+                  setLmxAdminKeysByHost(DEFAULT_LMX.adminKeysByHost);
+                }}
+              >
+                <RotateCcw size={13} /> Restore Defaults
+              </button>
+            </div>
+
+            <div
               style={{
-                color: "#a1a1aa",
-                fontSize: "0.85rem",
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: "1px solid rgba(139,92,246,0.3)",
+                background: "rgba(139,92,246,0.08)",
                 marginBottom: "1.5rem",
-                lineHeight: 1.5,
+                display: "flex",
+                gap: "0.5rem",
+                alignItems: "flex-start",
               }}
             >
-              Configure where the local daemon routes inference requests. This
-              is useful for connecting to a remote Mac Studio.
-            </p>
+              <Lightbulb size={14} style={{ color: "#a855f7", marginTop: "2px", flexShrink: 0 }} />
+              <p style={{ margin: 0, fontSize: "0.79rem", color: "#c4b5fd", lineHeight: 1.5 }}>
+                Your Mac Studio address is typically <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>192.168.188.11</code> on port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>. Get the LMX admin key by running <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>opta config get connection.adminKey</code> on the Mac Studio.
+              </p>
+            </div>
 
             <div
               style={{
@@ -887,6 +877,103 @@ export function SettingsModal({
             ) : null}
           </motion.div>
         );
+      case "daemon":
+        return (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Daemon Control Centre</h3>
+            <p style={{ color: "#a1a1aa", fontSize: "0.85rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+              Start, stop, or restart the Opta daemon process. The daemon must be running for all Opta Code features to work.
+            </p>
+
+            <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+              <button
+                type="button"
+                className="opta-studio-btn-secondary"
+                disabled={daemonStatusLoading}
+                onClick={() => void checkDaemonHealth()}
+                style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+              >
+                <RefreshCw size={14} style={daemonStatusLoading ? { animation: "spin 1s linear infinite" } : {}} />
+                {daemonStatusLoading ? "Checking..." : "Check Health"}
+              </button>
+              <button
+                type="button"
+                className="opta-studio-btn"
+                disabled={daemonOpRunning}
+                onClick={() => void runDaemonOp("daemon.start")}
+              >
+                Start Daemon
+              </button>
+              <button
+                type="button"
+                className="opta-studio-btn-secondary"
+                disabled={daemonOpRunning}
+                onClick={() => void runDaemonOp("daemon.stop")}
+                style={{ borderColor: "rgba(239,68,68,0.4)", color: "#fca5a5" }}
+              >
+                Stop Daemon
+              </button>
+            </div>
+
+            {daemonStatus && (
+              <div style={{
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: `1px solid ${daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
+                background: daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                marginBottom: "1rem",
+                fontSize: "0.8rem",
+                color: daemonStatus.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
+                fontFamily: "JetBrains Mono",
+              }}>
+                {daemonStatus}
+              </div>
+            )}
+
+            {daemonOpResult && (
+              <div style={{
+                padding: "10px 14px",
+                borderRadius: "8px",
+                border: `1px solid ${daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
+                background: daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+                marginBottom: "1rem",
+                fontSize: "0.8rem",
+                color: daemonOpResult.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
+                fontFamily: "JetBrains Mono",
+              }}>
+                {daemonOpResult}
+              </div>
+            )}
+
+            <div
+              style={{
+                padding: "12px 16px",
+                borderRadius: "8px",
+                border: "1px solid var(--opta-border)",
+                background: "rgba(0,0,0,0.2)",
+              }}
+            >
+              <h4 style={{ margin: "0 0 8px", fontSize: "0.85rem", color: "#fafafa", fontFamily: "Sora" }}>Quick Reference</h4>
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                {[
+                  ["Start daemon", "opta daemon start"],
+                  ["Stop daemon", "opta daemon stop"],
+                  ["Check status", "opta daemon status"],
+                  ["View logs", "opta daemon logs"],
+                  ["Get admin key", "opta config get connection.adminKey"],
+                ].map(([label, cmd]) => (
+                  <div key={cmd} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+                    <span style={{ fontSize: "0.78rem", color: "#a1a1aa" }}>{label}</span>
+                    <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.74rem", color: "#c4b5fd", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "4px", padding: "2px 6px" }}>{cmd}</code>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        );
       default:
         return null;
     }
@@ -938,6 +1025,12 @@ export function SettingsModal({
               onClick={() => setActiveTab("genui")}
             >
               <Webhook size={16} /> Generative UI
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "daemon" ? "active" : ""}`}
+              onClick={() => setActiveTab("daemon")}
+            >
+              <Terminal size={16} /> Daemon Controls
             </button>
           </aside>
 

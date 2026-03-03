@@ -164,3 +164,6 @@ All apps share one Supabase project. Cookie domain `.optalocal.com` enables cros
 **Opta Init (1O):** Matthew explicitly wants the current design preserved. Do NOT redesign or alter the aesthetic. Only targeted feature additions.
 
 **Opta Home (1T):** Non-negotiable design philosophy — precision over decoration, real data as texture, terminal DNA (JetBrains Mono for stats), no generic AI aesthetics. Never add `output: 'export'` to next.config.
+
+### Autonomous Source Control
+- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

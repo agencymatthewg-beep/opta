@@ -1025,6 +1025,33 @@ program
     });
   });
 
+const appsCmd = program.command('apps').description('Manage Opta ecosystem applications (CLI, LMX, Code Desktop, Daemon)');
+
+appsCmd
+  .command('list')
+  .description('List installed Opta applications')
+  .option('--json', 'machine-readable output')
+  .action(async (opts: { json?: boolean }) => {
+    const { appsList } = await import('./commands/apps.js');
+    await appsList(opts);
+  });
+
+appsCmd
+  .command('install [app_ids...]')
+  .description('Install one or more Opta applications (interactive if no args provided)')
+  .action(async (appIds: string[]) => {
+    const { appsInstall } = await import('./commands/apps.js');
+    await appsInstall(appIds);
+  });
+
+appsCmd
+  .command('uninstall [app_ids...]')
+  .description('Uninstall one or more Opta applications (interactive if no args provided)')
+  .action(async (appIds: string[]) => {
+    const { appsUninstall } = await import('./commands/apps.js');
+    await appsUninstall(appIds);
+  });
+
 const daemonCmd = program.command('daemon').description('Manage Opta Level 3 daemon runtime');
 
 daemonCmd

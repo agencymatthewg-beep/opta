@@ -24,18 +24,14 @@ export const PROVIDER_OVERRIDE_NAMES = [
   'opencode_zen',
 ] as const;
 
-export type ProviderOverrideName = (typeof PROVIDER_OVERRIDE_NAMES)[number];
+export type ProviderOverrideName = string;
 
 export function parseProviderOverride(input: string): ProviderOverrideName {
   const normalized = input.trim().toLowerCase();
-  if (
-    PROVIDER_OVERRIDE_NAMES.includes(normalized as ProviderOverrideName)
-  ) {
-    return normalized as ProviderOverrideName;
+  if (!normalized) {
+    throw new Error('Provider name cannot be empty.');
   }
-  throw new Error(
-    `Invalid provider "${input}". Expected one of: ${PROVIDER_OVERRIDE_NAMES.join(', ')}.`
-  );
+  return normalized;
 }
 
 export function buildConfigOverrides(opts: ConfigOverrideFlags): Record<string, unknown> {
