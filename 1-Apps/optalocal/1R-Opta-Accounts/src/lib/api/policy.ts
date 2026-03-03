@@ -4,7 +4,7 @@ export type TrustState = (typeof TRUST_STATES)[number];
 export const PROVIDERS = ['google', 'apple', 'openai', 'anthropic', 'gemini'] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
-export const HIGH_RISK_SCOPES = new Set(['automation.high_risk', 'lmx.admin']);
+export const HIGH_RISK_SCOPES = new Set(['automation.high_risk', 'lmx.admin', 'cli.run.elevated', 'daemon.manage']);
 
 export function isUuid(value: string): boolean {
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);

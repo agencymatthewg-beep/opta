@@ -22,7 +22,7 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
     : redirectAfter;
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4 bg-transparent">
       <motion.div
         initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -53,7 +53,7 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
         </div>
 
         {/* Auth Card */}
-        <div className="glass-strong rounded-2xl p-6">
+        <div className="obsidian rounded-2xl p-6">
           {/* OAuth Buttons */}
           <OAuthButtons redirectAfter={effectiveRedirect} />
 

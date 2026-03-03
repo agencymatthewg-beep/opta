@@ -42,6 +42,9 @@ Execution rule for every sensitive action:
 ### CLI/LMX scopes
 - `cli.login`
 - `cli.run`
+- `cli.run.atpo`
+- `cli.run.elevated`
+- `daemon.manage`
 - `lmx.inference`
 - `lmx.admin`
 - `lmx.skills.invoke`

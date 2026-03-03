@@ -67,7 +67,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
   const provider = user.app_metadata?.provider ?? "email";
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-transparent">
       <motion.div
         initial={{ opacity: 0, y: 16, filter: "blur(8px)" }}
         animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
@@ -88,7 +88,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
         </div>
 
         {/* Profile Card */}
-        <div className="glass-strong rounded-2xl p-6 mb-4">
+        <div className="obsidian rounded-2xl p-6 mb-4">
           {/* Avatar + Name */}
           <div className="flex items-center gap-4 mb-6">
             {user.user_metadata?.avatar_url ? (
@@ -246,7 +246,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
           className={cn(
             "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg",
             "glass-subtle text-opta-text-secondary text-sm font-medium",
-            "hover:text-opta-neon-red hover:border-opta-neon-red/20 transition-colors",
+            "hover:text-red-400 hover:border-red-400/20 transition-colors",
           )}
         >
           <LogOut size={14} />
