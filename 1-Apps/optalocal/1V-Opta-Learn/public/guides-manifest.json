@@ -1,9 +1,9 @@
 {
-  "generatedAt": "2026-03-03T18:17:54.654Z",
+  "generatedAt": "2026-03-03T23:25:56.538Z",
   "root": "content/guides",
   "counts": {
     "published": 1,
-    "draft": 6,
+    "draft": 9,
     "orphan": 0
   },
   "published": [
@@ -56,6 +56,27 @@
       "title": "Feature Name Masterclass",
       "file": "content/guides/template-deep-dive.ts",
       "exportName": "deepDiveTemplate",
+      "status": "draft"
+    },
+    {
+      "slug": "lmx-masterclass",
+      "title": "LMX Masterclass",
+      "file": "content/guides/lmx-masterclass.ts",
+      "exportName": "lmxMasterclassGuide",
+      "status": "draft"
+    },
+    {
+      "slug": "code-desktop-masterclass",
+      "title": "Code Desktop Masterclass",
+      "file": "content/guides/code-desktop-masterclass.ts",
+      "exportName": "codeDesktopMasterclassGuide",
+      "status": "draft"
+    },
+    {
+      "slug": "accounts-masterclass",
+      "title": "Accounts Masterclass",
+      "file": "content/guides/accounts-masterclass.ts",
+      "exportName": "accountsMasterclassGuide",
       "status": "draft"
     }
   ],

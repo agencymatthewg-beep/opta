@@ -48,6 +48,11 @@ export interface BrowserMcpInterceptorConfig {
    */
   executeSnapshot?: () => Promise<string>;
   /**
+   * Called to evaluate arbitrary JavaScript in the browser. Used for SoM injection
+   * and implicit state verification.
+   */
+  executeEvaluate?: (expression: string) => Promise<unknown>;
+  /**
    * Called after each successfully executed browser action (allowed or approved).
    * Useful for emitting real-time browser events to the WS event bus.
    */
@@ -69,6 +74,12 @@ export async function interceptBrowserMcpCall(
   // Non-browser tools pass through without interception
   if (!isBrowserToolName(toolName)) {
     return execute();
+  }
+
+  // ID-based Action Mapping (SoM compatibility)
+  if ('element_id' in args && typeof args['element_id'] === 'number') {
+    args['selector'] = `[data-opta-id="${args['element_id']}"]`;
+    delete args['element_id'];
   }
 
   const policyDecision = evaluateBrowserPolicyAction(config.policyConfig, {
@@ -110,7 +121,35 @@ export async function interceptBrowserMcpCall(
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // Set-of-Mark Injection
+      let somDictionary = '';
+      if (toolName === 'browser_snapshot' && config.executeEvaluate) {
+        try {
+          const evalResult = await config.executeEvaluate('window.__optaInjectMarks && window.__optaInjectMarks()');
+          if (evalResult && typeof evalResult === 'object' && 'result' in evalResult) {
+            somDictionary = String(evalResult.result);
+          } else if (typeof evalResult === 'string') {
+            somDictionary = evalResult;
+          }
+        } catch (e) {
+          // ignore SoM failure
+        }
+      }
+
       let result = await execute();
+
+      // Append SoM dictionary to snapshot output
+      if (toolName === 'browser_snapshot' && somDictionary) {
+        if (typeof result === 'string') {
+          result = `Set-of-Marks Dictionary (use element_id instead of selector for actions):\n${somDictionary}\n\n---\n\n${result}`;
+        } else if (result && typeof result === 'object' && Array.isArray((result as any).content)) {
+           // MCP format `[{ type: "text", text: ... }]`
+           const contentArr = (result as any).content;
+           if (contentArr.length > 0 && contentArr[0].type === 'text') {
+             contentArr[0].text = `Set-of-Marks Dictionary (use element_id instead of selector for actions):\n${somDictionary}\n\n---\n\n${contentArr[0].text}`;
+           }
+        }
+      }
 
       // Screenshot compression (optional, behind config flag)
       if (
@@ -124,6 +163,38 @@ export async function interceptBrowserMcpCall(
 
       // Notify observers of successful browser action
       config.onBrowserEvent?.(toolName, args, result);
+
+      // Phase 4: Implicit State Verification
+      // After a mutable action, wait for stabilization and return the new state
+      if (
+        (toolName === 'browser_click' || toolName === 'browser_type' || toolName === 'browser_press_key') &&
+        config.executeEvaluate
+      ) {
+        try {
+          // Wait briefly for UI to react
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          const evalResult = await config.executeEvaluate('window.__optaInjectMarks && window.__optaInjectMarks()');
+          let newState = '';
+          if (evalResult && typeof evalResult === 'object' && 'result' in evalResult) {
+            newState = String(evalResult.result);
+          } else if (typeof evalResult === 'string') {
+            newState = evalResult;
+          }
+          if (newState) {
+            const stateMsg = `\n\n--- Post-Action UI State (Set-of-Marks) ---\n${newState}`;
+            if (typeof result === 'string') {
+              result += stateMsg;
+            } else if (result && typeof result === 'object' && Array.isArray((result as any).content)) {
+               const contentArr = (result as any).content;
+               if (contentArr.length > 0 && contentArr[0].type === 'text') {
+                 contentArr[0].text += stateMsg;
+               }
+            }
+          }
+        } catch (e) {
+          // ignore verification failure
+        }
+      }
 
       return result;
     } catch (err) {

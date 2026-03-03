@@ -336,6 +336,7 @@ export async function buildToolRegistry(
                 // Retry transient Playwright failures (e.g. element detach, timing races).
                 maxRetries: 2,
                 retryBackoffMs: 500,
+                executeEvaluate: (expression: string) => mcpConn.call('browser_evaluate', { expression }),
                 onBrowserEvent: onBrowserEvent
                   ? (toolName, _args, _result) =>
                       onBrowserEvent(toolName, parentCtx?.parentSessionId ?? 'registry')

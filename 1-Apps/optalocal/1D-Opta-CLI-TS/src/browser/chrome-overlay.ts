@@ -621,4 +621,70 @@
 
   // --- Initialize to idle state ---
   applyState('idle');
+
+  // --- Set-of-Marks (SoM) Injection ---
+  w.__optaMarks = new Map();
+  let nextMarkId = 1;
+
+  w.__optaInjectMarks = function () {
+    // Clear previous marks
+    const existingMarks = shadow.querySelectorAll('.opta-mark-badge');
+    existingMarks.forEach((m) => m.remove());
+    w.__optaMarks.clear();
+    nextMarkId = 1;
+
+    const interactableSelectors = [
+      'button', 'a', 'input', 'select', 'textarea', 
+      '[role="button"]', '[role="link"]', '[role="checkbox"]', 
+      '[role="menuitem"]', '[role="switch"]', '[tabindex]:not([tabindex="-1"])'
+    ].join(', ');
+
+    const elements = document.querySelectorAll(interactableSelectors);
+    const marks: Record<string, any> = {};
+
+    elements.forEach((el) => {
+      // Check visibility
+      const rect = el.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) return;
+      const style = window.getComputedStyle(el);
+      if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return;
+
+      const id = nextMarkId++;
+      w.__optaMarks.set(id, el);
+      
+      // Tag the element for CSS selector fallback
+      el.setAttribute('data-opta-id', String(id));
+
+      // Draw visual badge
+      const badge = document.createElement('div');
+      badge.className = 'opta-mark-badge';
+      badge.textContent = `[${id}]`;
+      badge.style.position = 'absolute';
+      badge.style.left = `${rect.left + window.scrollX}px`;
+      badge.style.top = `${rect.top + window.scrollY}px`;
+      badge.style.backgroundColor = 'var(--opta-accent)';
+      badge.style.color = '#fff';
+      badge.style.fontSize = '10px';
+      badge.style.fontWeight = 'bold';
+      badge.style.padding = '1px 3px';
+      badge.style.borderRadius = '3px';
+      badge.style.zIndex = '999999';
+      badge.style.pointerEvents = 'none';
+      badge.style.border = '1px solid #fff';
+      badge.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
+      
+      shadow.appendChild(badge);
+
+      // Collect data
+      marks[id] = {
+        id,
+        tag: el.tagName.toLowerCase(),
+        type: (el as HTMLInputElement).type || el.getAttribute('role') || undefined,
+        name: el.getAttribute('aria-label') || el.getAttribute('name') || el.textContent?.trim().slice(0, 50) || undefined,
+        selector: `[data-opta-id="${id}"]`
+      };
+    });
+
+    return JSON.stringify(marks);
+  };
 })();
