@@ -1,5 +1,6 @@
 export type AppSlug = 'lmx' | 'cli' | 'accounts' | 'init' | 'general';
 export type Category = 'getting-started' | 'feature' | 'troubleshooting' | 'reference';
+export type GuideStatus = 'verified' | 'draft';
 
 import {
   type ExplanationExtent,
@@ -26,8 +27,11 @@ export interface Guide {
   tags: string[];
   sections: GuideSection[];
   updatedAt: string;
-  status?: 'verified' | 'draft';
 }
+
+export type RegisteredGuide = Guide & {
+  status: GuideStatus;
+};
 
 import { lmxOverview } from './lmx-overview';
 import { optaLocalIntro } from './opta-local-intro';
@@ -36,7 +40,7 @@ import { accountsSync } from './accounts-sync';
 import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
 
-export const allGuides: Guide[] = [
+export const allGuides: RegisteredGuide[] = [
   { ...optaLocalIntro, status: 'verified' },
   { ...lmxOverview, status: 'verified' },
   { ...cliMasterclass, status: 'verified' },
@@ -50,7 +54,7 @@ function extractGuideLinks(content: string): string[] {
   return Array.from(matches, (match) => match[1].toLowerCase());
 }
 
-function validateGuideSet(guides: Guide[]): string[] {
+function validateGuideSet(guides: RegisteredGuide[]): string[] {
   const errors: string[] = [];
 
   const slugSet = new Set<string>();
@@ -92,11 +96,11 @@ if (guideValidationErrors.length > 0) {
   );
 }
 
-export function getGuide(slug: string): Guide | undefined {
+export function getGuide(slug: string): RegisteredGuide | undefined {
   return getPublishedGuides().find((g) => g.slug === slug);
 }
 
-export function getPublishedGuides(): Guide[] {
+export function getPublishedGuides(): RegisteredGuide[] {
   return allGuides.filter((g) => g.status === 'verified');
 }
 

@@ -177,10 +177,13 @@ function renderGuideSource({ exportName, slug, title, app, category, template, s
 function registerInIndex(indexSource, fileBase, exportName, status) {
   const importLine = `import { ${exportName} } from './${fileBase}';`;
   if (!indexSource.includes(importLine)) {
-    const allGuidesIndex = indexSource.indexOf('export const allGuides: Guide[] = [');
-    if (allGuidesIndex === -1) {
+    const allGuidesDecl = indexSource.match(
+      /export const allGuides:\s*[A-Za-z_$][\w$]*\[]\s*=\s*\[/,
+    );
+    if (!allGuidesDecl || allGuidesDecl.index === undefined) {
       throw new Error('Could not locate allGuides array in content/guides/index.ts');
     }
+    const allGuidesIndex = allGuidesDecl.index;
 
     const beforeAllGuides = indexSource.slice(0, allGuidesIndex);
     const afterAllGuides = indexSource.slice(allGuidesIndex);
@@ -189,7 +192,9 @@ function registerInIndex(indexSource, fileBase, exportName, status) {
 
   const insertionLine = `  { ...${exportName}, status: '${status}' },`;
   if (!indexSource.includes(insertionLine)) {
-    const arrayMatch = indexSource.match(/export const allGuides: Guide\[] = \[[\s\S]*?\n\];/);
+    const arrayMatch = indexSource.match(
+      /export const allGuides:\s*[A-Za-z_$][\w$]*\[]\s*=\s*\[[\s\S]*?\n\];/,
+    );
     if (!arrayMatch) {
       throw new Error('Could not parse allGuides array for registration');
     }

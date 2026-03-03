@@ -7,9 +7,11 @@
     "build": "next build --webpack",
     "start": "next start --port 3007",
     "guide:new": "node ./scripts/new-guide.mjs",
+    "guides:inventory": "node ./scripts/guides-inventory.mjs",
+    "guides:inventory:check": "node ./scripts/check-guides-inventory.mjs",
     "guides:validate": "node ./scripts/validate-guides.mjs",
     "typecheck": "tsc --noEmit",
-    "lint": "npm run guides:validate && eslint .",
+    "lint": "npm run guides:validate && npm run guides:inventory:check && eslint .",
     "check": "npm run typecheck && npm run lint && npm run build"
   },
   "dependencies": {

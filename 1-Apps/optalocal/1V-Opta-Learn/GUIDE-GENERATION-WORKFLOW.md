@@ -141,7 +141,7 @@ When instructed to create a new guide:
 - Repository workflow: `.github/workflows/opta-learn-quality.yml`
 - CI gates on Learn changes:
   - `npm ci`
-  - `npm run lint` (includes `guides:validate`)
-  - `npm run build`
+  - `npm run guides:inventory:check` (fails if `content/guides/index.ts` manifest inventory is stale)
+  - `npm run check` (full gate: typecheck + lint + `guides:validate` + build)
 
 This ensures guide template compliance and rendering integrity are enforced before merge.

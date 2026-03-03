@@ -1,0 +1,41 @@
+name: Opta Learn Quality
+
+on:
+  pull_request:
+    paths:
+      - '1-Apps/optalocal/1V-Opta-Learn/**'
+      - '.github/workflows/opta-learn-quality.yml'
+  push:
+    branches:
+      - main
+      - master
+    paths:
+      - '1-Apps/optalocal/1V-Opta-Learn/**'
+      - '.github/workflows/opta-learn-quality.yml'
+
+jobs:
+  learn-quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1V-Opta-Learn
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: 1-Apps/optalocal/1V-Opta-Learn/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Guide inventory check
+        run: npm run guides:inventory:check
+
+      - name: Full quality check
+        run: npm run check

@@ -30,6 +30,7 @@ npm run start
 ## Guide Tooling
 
 ```bash
+npm run guides:inventory:check
 npm run guides:validate
 npm run guide:new
 ```

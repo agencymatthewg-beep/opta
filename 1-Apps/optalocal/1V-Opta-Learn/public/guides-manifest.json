@@ -1,0 +1,63 @@
+{
+  "generatedAt": "2026-03-03T01:53:19.990Z",
+  "root": "content/guides",
+  "counts": {
+    "published": 6,
+    "draft": 0,
+    "orphan": 0
+  },
+  "published": [
+    {
+      "slug": "opta-local-intro",
+      "title": "Introduction to Local",
+      "file": "content/guides/opta-local-intro.ts",
+      "exportName": "optaLocalIntro",
+      "status": "verified"
+    },
+    {
+      "slug": "lmx",
+      "title": "Getting Started with LMX",
+      "file": "content/guides/lmx-overview.ts",
+      "exportName": "lmxOverview",
+      "status": "verified"
+    },
+    {
+      "slug": "cli",
+      "title": "CLI Masterclass",
+      "file": "content/guides/cli-masterclass.ts",
+      "exportName": "cliMasterclass",
+      "status": "verified"
+    },
+    {
+      "slug": "browser-automation",
+      "title": "Browser Automation Deep Dive",
+      "file": "content/guides/browser-automation.ts",
+      "exportName": "browserAutomationGuide",
+      "status": "verified"
+    },
+    {
+      "slug": "code-desktop",
+      "title": "Code Desktop Overview",
+      "file": "content/guides/code-desktop-overview.ts",
+      "exportName": "codeDesktopOverview",
+      "status": "verified"
+    },
+    {
+      "slug": "accounts",
+      "title": "Accounts Local Sync",
+      "file": "content/guides/accounts-sync.ts",
+      "exportName": "accountsSync",
+      "status": "verified"
+    }
+  ],
+  "draft": [],
+  "orphan": [],
+  "diagnostics": {
+    "duplicateSlugs": [],
+    "missingStatus": [],
+    "invalidStatus": [],
+    "registrationWithoutImport": [],
+    "importWithoutRegistration": [],
+    "parseError": null
+  }
+}

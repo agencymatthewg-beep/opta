@@ -1,11 +1,9 @@
 #!/usr/bin/env node
 
-import fs from 'node:fs';
 import path from 'node:path';
+import { collectGuidesInventory } from './guides-inventory-lib.mjs';
 
 const projectRoot = process.cwd();
-const guidesRoot = path.join(projectRoot, 'content', 'guides');
-const indexPath = path.join(guidesRoot, 'index.ts');
 
 const TEMPLATE_RULES = {
   'holistic-whole-app': { minSections: 4, minWords: 220, requiresCode: false },
@@ -19,47 +17,60 @@ function fail(message) {
   process.exit(1);
 }
 
-if (!fs.existsSync(indexPath)) {
-  fail(`index.ts not found at ${indexPath}`);
+let inventory;
+try {
+  inventory = collectGuidesInventory(projectRoot);
+} catch (error) {
+  fail(error instanceof Error ? error.message : String(error));
 }
 
-const indexSource = fs.readFileSync(indexPath, 'utf8');
-const importMatches = Array.from(
-  indexSource.matchAll(/from '\.\/([a-z0-9-]+)'/gi),
-  (m) => m[1],
-).filter((name) => name !== 'templates');
+const guides = inventory.modules.map((guide) => ({
+  ...guide,
+  filePath: path.join(projectRoot, guide.file),
+}));
 
-const activeGuideFiles = [...new Set(importMatches)]
-  .map((name) => path.join(guidesRoot, `${name}.ts`))
-  .filter((filePath) => fs.existsSync(filePath));
-
-if (activeGuideFiles.length === 0) {
-  fail('No active guide modules found via content/guides/index.ts imports.');
+if (guides.length === 0) {
+  fail('No guide modules found in content/guides.');
 }
-
-const guides = activeGuideFiles.map((filePath) => {
-  const source = fs.readFileSync(filePath, 'utf8');
-  const slug = source.match(/slug:\s*'([^']+)'/)?.[1];
-  const template = source.match(/template:\s*'([^']+)'/)?.[1];
-  const headingCount = (source.match(/\bheading:\s*['`"]/g) || []).length;
-  const hasCode = /\bcode:\s*['`"]/.test(source);
-  const links = Array.from(
-    source.matchAll(/href=["']\/guides\/([a-z0-9-]+)["']/gi),
-    (m) => m[1],
-  );
-
-  // Approximate text corpus for word-count enforcement.
-  const textCorpus = source
-    .replace(/<[^>]*>/g, ' ')
-    .replace(/[^A-Za-z0-9\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  const wordCount = textCorpus ? textCorpus.split(' ').length : 0;
-
-  return { filePath, source, slug, template, headingCount, hasCode, links, wordCount };
-});
 
 const errors = [];
+
+if (inventory.diagnostics.parseError) {
+  errors.push(`[index.ts] ${inventory.diagnostics.parseError}`);
+}
+
+for (const duplicate of inventory.diagnostics.duplicateSlugs) {
+  errors.push(
+    `duplicate slug '${duplicate.slug}' across: ${duplicate.files.join(', ')}.`,
+  );
+}
+
+for (const entry of inventory.diagnostics.missingStatus) {
+  const target = entry.file ?? entry.exportName;
+  errors.push(`[${target}] missing explicit status in allGuides registration.`);
+}
+
+for (const entry of inventory.diagnostics.invalidStatus) {
+  errors.push(
+    `[${entry.exportName}] invalid status '${entry.status}' in allGuides registration.`,
+  );
+}
+
+for (const exportName of inventory.diagnostics.registrationWithoutImport) {
+  errors.push(
+    `[${exportName}] allGuides registration has no matching import in content/guides/index.ts.`,
+  );
+}
+
+for (const entry of inventory.diagnostics.importWithoutRegistration) {
+  errors.push(
+    `[${entry.file}] imported as '${entry.exportName}' but not registered in allGuides.`,
+  );
+}
+
+for (const orphan of inventory.orphan) {
+  errors.push(`[${orphan.file}] orphan guide module (not registered in allGuides).`);
+}
 
 const slugSet = new Set();
 for (const guide of guides) {
@@ -119,5 +130,5 @@ if (errors.length > 0) {
 }
 
 console.log(
-  `Guide validation passed for ${guides.length} active guides (${[...slugSet].length} unique slugs).`,
+  `Guide validation passed for ${guides.length} guide modules (${[...slugSet].length} unique slugs, registered=${inventory.published.length + inventory.draft.length}).`,
 );
