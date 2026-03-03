@@ -75,14 +75,14 @@ export function ProfileContent({ user }: ProfileContentProps) {
         className="w-full max-w-md"
       >
         {/* Header */}
-        <div className="flex flex-col items-center mb-8">
+        <div className="flex flex-col items-center mb-8 pb-1">
           <OptaLogo
             size={64}
             showText={false}
             logoSrc="/opta-accounts-mark.svg"
-            className="mb-6"
+            className="mb-6 drop-shadow-md"
           />
-          <h1 className="text-xl font-semibold text-opta-text-primary">
+          <h1 className="text-xl font-semibold text-opta-text-primary tracking-tight">
             Your Opta Account
           </h1>
         </div>
