@@ -205,24 +205,22 @@ function activeModelResultFromSnapshot(
   configModel: string,
   snapshot: LmxDoctorSnapshot
 ): CheckResult {
-  if (snapshot.reachable && snapshot.adminAccess === 'unauthorized') {
-    return {
-      name: 'Active Model',
-      status: 'warn',
-      message: configModel
-        ? `Cannot verify model "${configModel}" (admin auth required)`
-        : 'Cannot verify active model (admin auth required)',
-      detail:
-        "Grant admin access first: set 'connection.adminKey' to the LMX admin key (or clear stale key).",
-    };
-  }
-
   if (!configModel) {
     return {
       name: 'Active Model',
       status: 'warn',
       message: 'No default model configured',
       detail: "Run 'opta models use <model>' to set a default",
+    };
+  }
+
+  if (snapshot.reachable && snapshot.adminAccess === 'unauthorized') {
+    return {
+      name: 'Active Model',
+      status: 'warn',
+      message: `Cannot verify model "${configModel}" (admin auth required)`,
+      detail:
+        "Grant admin access first: set 'connection.adminKey' to the LMX admin key (or clear stale key).",
     };
   }
 

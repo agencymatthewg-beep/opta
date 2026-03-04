@@ -28,7 +28,8 @@ function getTextContentBlocks(value: unknown): TextContentBlock[] | null {
 function firstTextBlock(value: unknown): TextContentBlock | null {
   const blocks = getTextContentBlocks(value);
   if (!blocks || blocks.length === 0) return null;
-  return blocks[0].type === 'text' ? blocks[0] : null;
+  const [first] = blocks;
+  return first && first.type === 'text' ? first : null;
 }
 
 function resolveSelectorArg(args: Record<string, unknown>): string {

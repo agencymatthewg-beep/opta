@@ -690,15 +690,15 @@ function App() {
           aria-hidden={palette.isOpen ? "true" : undefined}
         >
           {/* V1 Topbar — redesign-9: logo + Accounts only, no search */}
-          <header className="v1-topbar">
-            <div className="v1-top-left">
-              <div className="v1-logo">
-                <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg">
+          <header className="v1-topbar" data-tauri-drag-region>
+            <div className="v1-top-left" data-tauri-drag-region>
+              <div className="v1-logo" data-tauri-drag-region>
+                <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg" data-tauri-drag-region>
                   <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" />
                   <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
                   <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
                 </svg>
-                <span className="v1-logo-text">OPTA CODE</span>
+                <span className="v1-logo-text" data-tauri-drag-region>OPTA CODE</span>
               </div>
             </div>
             <div className="v1-top-right">
@@ -754,9 +754,11 @@ function App() {
                 const next = sessions.find((s) => s.sessionId === sessionId);
                 if (next) setSelectedWorkspace(next.workspace);
               }}
-              onCreateSession={() => {
+              onCreateSession={async () => {
                 const ws = selectedWorkspace === "all" ? "default" : selectedWorkspace;
-                void createSession({ workspace: ws });
+                const sessionId = await createSession({ workspace: ws });
+                setActiveSessionId(sessionId);
+                setActivePage("sessions");
                 setNotice(`New session created in "${ws}"`);
               }}
             />
