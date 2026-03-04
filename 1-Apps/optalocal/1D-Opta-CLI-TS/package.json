@@ -81,6 +81,7 @@
     "marked": "^15.0.0",
     "marked-terminal": "^7.0.0",
     "nanoid": "^5.0.0",
+    "node-notifier": "^10.0.1",
     "openai": "^4.77.0",
     "ora": "^8.0.0",
     "p-queue": "^8.0.0",

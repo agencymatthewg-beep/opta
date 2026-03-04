@@ -6,6 +6,7 @@ import { resolveSupabaseAuthConfig } from '../accounts/supabase.js';
 import { InlineSelect, InlineSlider, type SelectOption } from './InlineSelect.js';
 import { OPTA_BRAND_GLYPH, OPTA_BRAND_NAME } from '../ui/brand.js';
 import { errorMessage } from '../utils/errors.js';
+import { TUI_COLORS } from './palette.js';
 
 // --- TYPES ---
 
@@ -764,6 +765,7 @@ export function SettingsOverlay({
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editValue, setEditValue] = useState('');
   const [changes, setChanges] = useState<Record<string, unknown>>({});
+  const [lastSavedKey, setLastSavedKey] = useState<string | null>(null);
   const [dynamicOptions, setDynamicOptions] = useState<Record<string, SelectOption[]>>({});
 
   // Account page state
