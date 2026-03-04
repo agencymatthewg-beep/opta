@@ -990,15 +990,27 @@ function App() {
 
             {/* Right: Widget Pane */}
             {activePage === "sessions" && (
-              <WidgetPane
-                slots={widgetLayout.layout.slots}
-                isEditing={widgetLayout.isEditing}
-                onToggleEdit={widgetLayout.toggleEditMode}
-                onRemoveWidget={widgetLayout.removeWidget}
-                onAddWidget={(wid) => widgetLayout.addWidget(wid, "M")}
-                timelineItems={timelineItems}
-                rawEvents={activeSessionId ? rawEventsBySession[activeSessionId] || [] : []}
-              />
+              <>
+                <WidgetPane
+                  slots={widgetLayout.layout.slots}
+                  isEditing={widgetLayout.isEditing}
+                  onToggleEdit={widgetLayout.toggleEditMode}
+                  onRemoveWidget={widgetLayout.removeWidget}
+                  onAddWidget={(wid) => widgetLayout.addWidget(wid, "M")}
+                  timelineItems={timelineItems}
+                  rawEvents={activeSessionId ? rawEventsBySession[activeSessionId] || [] : []}
+                />
+                {showTerminal && (
+                  <div className="v1-right-panel" style={{ width: '400px', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                    <LiveBrowserView
+                      connection={connection}
+                      slot={activeBrowserSlot}
+                      viewerAuthToken={activeBrowserViewerAuthToken}
+                      className="flex-1"
+                    />
+                  </div>
+                )}
+              </>
             )}
           </div>
 

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import websitesRegistry from '../../../websites.registry.generated.json'
 
 export const revalidate = 30
 
@@ -173,10 +174,52 @@ type ServiceDefinition = {
   paths?: string[]
 }
 
-const SERVICES: Record<
-  string,
-  ServiceDefinition
-> = {
+type RegistryWebsite = {
+  domain: string
+  healthPath: string
+  statusServiceId: string | null
+}
+
+function isRegistryWebsite(value: unknown): value is RegistryWebsite {
+  if (!value || typeof value !== 'object') return false
+  const website = value as Partial<RegistryWebsite>
+  const hasDomain = typeof website.domain === 'string' && website.domain.trim().length > 0
+  const hasHealthPath = typeof website.healthPath === 'string' && website.healthPath.trim().length > 0
+  const hasServiceId =
+    typeof website.statusServiceId === 'string' || website.statusServiceId === null
+  return hasDomain && hasHealthPath && hasServiceId
+}
+
+function buildWebsiteServiceDefinitions(): Record<string, ServiceDefinition> {
+  const websites = Array.isArray(websitesRegistry.websites) ? websitesRegistry.websites : []
+  const definitions: Record<string, ServiceDefinition> = {}
+
+  for (const rawWebsite of websites) {
+    if (!isRegistryWebsite(rawWebsite)) continue
+    const serviceId = rawWebsite.statusServiceId
+    if (typeof serviceId !== 'string' || serviceId.trim().length === 0) continue
+
+    const normalizedServiceId = serviceId.trim().toLowerCase()
+    const definition: ServiceDefinition = {
+      urlFallback: `https://${rawWebsite.domain.trim()}`,
+      path: rawWebsite.healthPath.trim(),
+    }
+
+    if (normalizedServiceId === 'local') {
+      definition.urlEnv = 'OPTA_LOCAL_URL'
+    } else if (normalizedServiceId === 'accounts') {
+      definition.urlEnv = 'OPTA_ACCOUNTS_URL'
+    } else if (normalizedServiceId === 'admin') {
+      definition.urlEnv = 'OPTA_ADMIN_URL'
+    }
+
+    definitions[normalizedServiceId] = definition
+  }
+
+  return definitions
+}
+
+const BASE_SERVICES: Record<string, ServiceDefinition> = {
   lmx: {
     // Health-only hostname for LMX. Legacy env is still accepted for compatibility.
     urlEnv: 'OPTA_LMX_HEALTH_URL',
@@ -194,37 +237,11 @@ const SERVICES: Record<
     urlFallback: 'https://optalocal.com',
     path: '/',
   },
-  local: {
-    urlFallback: 'https://optalocal.com',
-    urlEnv: 'OPTA_LOCAL_URL',
-    path: '/api/health',
-  },
-  init: {
-    urlFallback: 'https://init.optalocal.com',
-    path: '/',
-  },
-  accounts: {
-    urlEnv: 'OPTA_ACCOUNTS_URL',
-    urlFallback: 'https://accounts.optalocal.com',
-    path: '/api/health/supabase',
-  },
-  help: {
-    urlFallback: 'https://help.optalocal.com',
-    path: '/',
-  },
-  admin: {
-    urlEnv: 'OPTA_ADMIN_URL',
-    urlFallback: 'https://opta-admin.vercel.app',
-    path: '/api/health',
-  },
-  status: {
-    urlFallback: 'https://status.optalocal.com',
-    path: '/',
-  },
-  learn: {
-    urlFallback: 'https://learn.optalocal.com',
-    path: '/',
-  },
+}
+
+const SERVICES: Record<string, ServiceDefinition> = {
+  ...BASE_SERVICES,
+  ...buildWebsiteServiceDefinitions(),
 }
 
 export async function GET(

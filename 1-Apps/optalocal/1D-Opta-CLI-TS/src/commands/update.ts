@@ -20,6 +20,8 @@ export interface UpdateOptions {
   components?: string;
   target?: UpdateTargetMode;
   remoteHost?: string;
+  remoteAll?: boolean;
+  remoteHosts?: string;
   remoteUser?: string;
   identityFile?: string;
   localRoot?: string;
@@ -89,6 +91,16 @@ interface DiscoveredRemoteHostCandidate {
 
 export const CLI_UPDATE_BUILD_SCRIPT =
   'npm run -s typecheck && (npm run -s build || (npm install --no-fund --no-audit && npm run -s typecheck && npm run -s build))';
+export const CANONICAL_WEB_APP_DIRS = [
+  '1L-Opta-LMX-Dashboard',
+  '1O-Opta-Init',
+  '1R-Opta-Accounts',
+  '1S-Opta-Status',
+  '1T-Opta-Home',
+  '1U-Opta-Help',
+  '1V-Opta-Learn',
+  '1X-Opta-Admin',
+] as const;
 
 const REQUIRED_OPTA_COMMANDS = [
   'chat',
@@ -185,6 +197,40 @@ export function resolveRemoteHostCandidates(
   }
 
   return deduped;
+}
+
+export function parseRemoteHostList(raw?: string): string[] {
+  if (!raw || raw.trim().length === 0) return [];
+  const parts = raw
+    .split(',')
+    .map((host) => host.trim())
+    .filter((host) => host.length > 0);
+
+  const deduped: string[] = [];
+  const seen = new Set<string>();
+  for (const host of parts) {
+    const key = host.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(host);
+  }
+  return deduped;
+}
+
+export function resolveRolloutHosts(
+  reachableHosts: readonly string[],
+  selectedHost: string | null,
+  rolloutAll: boolean,
+  explicitHosts: readonly string[] = []
+): string[] {
+  const reachable = new Set(reachableHosts.map((host) => host.toLowerCase()));
+  if (explicitHosts.length > 0) {
+    return explicitHosts.filter((host) => reachable.has(host.toLowerCase()));
+  }
+  if (rolloutAll) {
+    return [...reachableHosts];
+  }
+  return selectedHost ? [selectedHost] : [];
 }
 
 export function extractReachableRemoteHosts(probes: readonly RemoteHostProbe[]): string[] {
@@ -340,8 +386,30 @@ function componentRepoPath(component: UpdateComponent, appsRoot: string): string
     case 'plus':
       return join(appsRoot, '1I-OptaPlus');
     case 'web':
-      return join(appsRoot, '1L-Opta-Local');
+      if (existsSync(join(appsRoot, '1X-Opta-Admin'))) {
+        return appsRoot;
+      }
+      const nestedOptalocalRoot = join(appsRoot, 'optalocal');
+      if (existsSync(join(nestedOptalocalRoot, '1X-Opta-Admin'))) {
+        return nestedOptalocalRoot;
+      }
+      return appsRoot;
   }
+}
+
+export function canonicalWebBuildScript(webAppDirs: readonly string[] = CANONICAL_WEB_APP_DIRS): string {
+  const commands: string[] = [];
+
+  for (const appDir of webAppDirs) {
+    const quotedDir = quoteSh(appDir);
+    commands.push(
+      `if [ ! -d ${quotedDir} ]; then echo "__WEB_APP_MISSING__:${appDir}"; exit 64; fi`,
+      `npm --prefix ${quotedDir} run -s typecheck`,
+      `(npm --prefix ${quotedDir} run -s build || (npm --prefix ${quotedDir} install --no-fund --no-audit && npm --prefix ${quotedDir} run -s typecheck && npm --prefix ${quotedDir} run -s build))`
+    );
+  }
+
+  return commands.join(' && ');
 }
 
 async function runLocalCommand(
@@ -775,13 +843,14 @@ async function runComponentBuildLocal(
       return { status: 'ok', message: dryRun ? 'dry-run swift build' : 'swift build complete' };
     }
     case 'web': {
-      const result = await runLocalCommand(
-        'if command -v pnpm >/dev/null 2>&1; then pnpm -C web run build || (pnpm -C web install --no-frozen-lockfile && pnpm -C web run build); else npm --prefix web run build || (npm --prefix web install --no-fund --no-audit && npm --prefix web run build); fi',
-        repoPath,
-        dryRun
-      );
+      const result = await runLocalCommand(canonicalWebBuildScript(), repoPath, dryRun);
+      if (result.exitCode === 64) {
+        const missing = result.stdout.split('\n').find((line) => line.startsWith('__WEB_APP_MISSING__:'));
+        const appDir = missing?.replace('__WEB_APP_MISSING__:', '').trim() || 'unknown';
+        return { status: 'fail', message: `missing web app directory: ${appDir}` };
+      }
       if (result.exitCode !== 0) return { status: 'fail', message: result.stderr || result.stdout };
-      return { status: 'ok', message: dryRun ? 'dry-run build' : 'web build complete' };
+      return { status: 'ok', message: dryRun ? 'dry-run web workspace build' : 'web workspace build complete' };
     }
   }
 }
@@ -826,17 +895,16 @@ async function runComponentBuildRemote(
       command = `cd ${quoteSh(repoPath)} && swift build`;
       break;
     case 'web':
-      command = [
-        `cd ${quoteSh(repoPath)}`,
-        '&& if command -v pnpm >/dev/null 2>&1;',
-        'then pnpm -C web run build || (pnpm -C web install --no-frozen-lockfile && pnpm -C web run build);',
-        'else npm --prefix web run build || (npm --prefix web install --no-fund --no-audit && npm --prefix web run build);',
-        'fi',
-      ].join(' ');
+      command = `cd ${quoteSh(repoPath)} && (${canonicalWebBuildScript()})`;
       break;
   }
 
   const result = await runRemoteCommand(ssh, command, dryRun);
+  if (component === 'web' && result.exitCode === 64) {
+    const missing = result.stdout.split('\n').find((line) => line.startsWith('__WEB_APP_MISSING__:'));
+    const appDir = missing?.replace('__WEB_APP_MISSING__:', '').trim() || 'unknown';
+    return { status: 'fail', message: `missing web app directory: ${appDir}` };
+  }
   if (result.exitCode !== 0) {
     return { status: 'fail', message: result.stderr || result.stdout || 'remote command failed' };
   }
@@ -927,6 +995,8 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const dryRun = Boolean(opts.dryRun);
   const noBuild = opts.build === false;
   const noPull = opts.pull === false;
+  const rolloutAllReachable = Boolean(opts.remoteAll);
+  const explicitRolloutHosts = parseRemoteHostList(opts.remoteHosts);
 
   const localAppsRoot = opts.localRoot ? expandHome(opts.localRoot) : detectAppsRoot(process.cwd());
 
@@ -937,6 +1007,13 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const verifyStepCount =
     targets.includes('remote') && components.includes('cli') && !isLocalHost(remoteHost) ? 1 : 0;
   const remoteGuardStepCount = targets.includes('remote') && !isLocalHost(remoteHost) ? 1 : 0;
+  const expectedRemoteHosts = isLocalHost(remoteHost)
+    ? 1
+    : explicitRolloutHosts.length > 0
+      ? explicitRolloutHosts.length
+      : rolloutAllReachable
+        ? Math.max(1, 1 + config.connection.fallbackHosts.length)
+        : 1;
   const localStepCount = targets.includes('local')
     ? localAppsRoot
       ? components.length * 2
@@ -945,7 +1022,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const remoteStepCount = targets.includes('remote')
     ? isLocalHost(remoteHost)
       ? components.length
-      : components.length * 2 + verifyStepCount + remoteGuardStepCount
+      : (components.length * 2 + verifyStepCount + remoteGuardStepCount) * expectedRemoteHosts
     : 0;
   const progress = createSegmentedStepProgressTracker(
     [
@@ -1052,7 +1129,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
       const remoteCandidates = resolveRemoteHostCandidates(
         remoteHost,
-        config.connection.fallbackHosts,
+        [...explicitRolloutHosts, ...config.connection.fallbackHosts],
         discoveredRemoteHosts.map((entry) => entry.host)
       );
       const selection = await selectReachableRemoteHost(
@@ -1070,11 +1147,22 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
       );
       const reachableHosts = extractReachableRemoteHosts(selection.probes);
       let selectedRemoteHost = selection.selectedHost;
-      if (reachableHosts.length > 1 && canPromptForRemoteHostSelection(opts)) {
+      if (
+        reachableHosts.length > 1 &&
+        explicitRolloutHosts.length === 0 &&
+        !rolloutAllReachable &&
+        canPromptForRemoteHostSelection(opts)
+      ) {
         selectedRemoteHost = await promptForRemoteHostSelection(reachableHosts, discoveredRemoteHosts);
       }
+      const rolloutHosts = resolveRolloutHosts(
+        reachableHosts,
+        selectedRemoteHost,
+        rolloutAllReachable,
+        explicitRolloutHosts
+      );
 
-      if (!selectedRemoteHost) {
+      if (rolloutHosts.length === 0) {
         const connectStatus = remoteConnectFailureStatus(mode);
         const attemptDetail =
           selection.probes.length > 0
@@ -1084,11 +1172,15 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
             : 'ssh failed';
         const attemptedHosts =
           remoteCandidates.length > 0 ? remoteCandidates.join(', ') : remoteHost;
+        const explicitHostHint =
+          explicitRolloutHosts.length > 0
+            ? `; requested hosts=${explicitRolloutHosts.join(', ')}`
+            : '';
         const connectDetail = `ssh failed for hosts (${attemptedHosts}) — ${attemptDetail}`;
         const connectMessage =
           mode === 'auto'
-            ? `${connectDetail} (auto mode skipped remote updates; use --target remote once SSH is reachable)`
-            : connectDetail;
+            ? `${connectDetail}${explicitHostHint} (auto mode skipped remote updates; use --target remote once SSH is reachable)`
+            : `${connectDetail}${explicitHostHint}`;
         for (const component of components) {
           pushResult({
             target: 'remote',
@@ -1100,71 +1192,90 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           });
         }
       } else {
-        remoteHostUsed = selectedRemoteHost;
-        const sshConfig: SshConfig = {
-          ...baseSshConfig,
-          host: selectedRemoteHost,
-        };
+        remoteHostUsed = rolloutHosts.join(',');
 
-        const guardComponent = components[0] ?? 'cli';
-        const guard = await runRemoteLanStabilityGuard(sshConfig, dryRun, mode);
-        pushResult(
-          componentStep(
-            'remote',
-            guardComponent,
-            'network',
-            {
-              status: guard.status,
-              message: guard.message,
-            },
-            sshConfig.host
-          )
+        const reachableHostKeySet = new Set(reachableHosts.map((host) => host.toLowerCase()));
+        const unreachableExplicitHosts = explicitRolloutHosts.filter(
+          (host) => !reachableHostKeySet.has(host.toLowerCase())
         );
+        for (const missingHost of unreachableExplicitHosts) {
+          pushResult({
+            target: 'remote',
+            component: components[0] ?? 'cli',
+            step: 'connect',
+            status: remoteConnectFailureStatus(mode),
+            message: `requested remote host not reachable: ${missingHost}`,
+            host: missingHost,
+          });
+        }
 
-        if (!guard.canProceed) {
-          const gatedMessage = 'skipped due LAN guard failure';
-          for (const component of components) {
-            pushResult({
-              target: 'remote',
-              component,
-              step: 'git',
-              status: 'skip',
-              message: gatedMessage,
-              host: sshConfig.host,
-            });
+        for (const rolloutHost of rolloutHosts) {
+          const sshConfig: SshConfig = {
+            ...baseSshConfig,
+            host: rolloutHost,
+          };
 
-            if (noBuild) {
+          const guardComponent = components[0] ?? 'cli';
+          const guard = await runRemoteLanStabilityGuard(sshConfig, dryRun, mode);
+          pushResult(
+            componentStep(
+              'remote',
+              guardComponent,
+              'network',
+              {
+                status: guard.status,
+                message: guard.message,
+              },
+              sshConfig.host
+            )
+          );
+
+          if (!guard.canProceed) {
+            const gatedMessage = 'skipped due LAN guard failure';
+            for (const component of components) {
               pushResult({
                 target: 'remote',
                 component,
-                step: 'build',
-                status: 'skip',
-                message: 'skipped (--no-build)',
-                host: sshConfig.host,
-              });
-            } else {
-              pushResult({
-                target: 'remote',
-                component,
-                step: 'build',
+                step: 'git',
                 status: 'skip',
                 message: gatedMessage,
                 host: sshConfig.host,
               });
-            }
 
-            if (component === 'cli') {
-              pushResult({
-                target: 'remote',
-                component,
-                step: 'verify',
-                status: 'skip',
-                message: gatedMessage,
-                host: sshConfig.host,
-              });
+              if (noBuild) {
+                pushResult({
+                  target: 'remote',
+                  component,
+                  step: 'build',
+                  status: 'skip',
+                  message: 'skipped (--no-build)',
+                  host: sshConfig.host,
+                });
+              } else {
+                pushResult({
+                  target: 'remote',
+                  component,
+                  step: 'build',
+                  status: 'skip',
+                  message: gatedMessage,
+                  host: sshConfig.host,
+                });
+              }
+
+              if (component === 'cli') {
+                pushResult({
+                  target: 'remote',
+                  component,
+                  step: 'verify',
+                  status: 'skip',
+                  message: gatedMessage,
+                  host: sshConfig.host,
+                });
+              }
             }
+            continue;
           }
-        } else {
+
           for (const component of components) {
             const repoPath =
               component === 'lmx'
@@ -1235,6 +1346,8 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           dryRun,
           noBuild,
           noPull,
+          rolloutAllReachable,
+          explicitRolloutHosts,
           localAppsRoot,
           remoteHost,
           remoteHostUsed,
@@ -1262,6 +1375,8 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           dryRun,
           noBuild,
           noPull,
+          rolloutAllReachable,
+          explicitRolloutHosts,
           localAppsRoot: localAppsRoot ?? '(auto-detect failed)',
           remoteHost,
           remoteHostUsed: remoteHostUsed ?? '(none)',

@@ -5,6 +5,11 @@
   "scripts": {
     "apps:list": "node scripts/opta-local-workspace.mjs list",
     "apps:verify": "node scripts/opta-local-workspace.mjs verify",
+    "registry:sync": "node scripts/sync-websites-registry.mjs",
+    "registry:check": "node scripts/sync-websites-registry.mjs --check",
+    "clean:local": "node scripts/clean-local-artifacts.mjs",
+    "clean:local:dry": "node scripts/clean-local-artifacts.mjs --dry-run",
+    "clean:local:deep": "node scripts/clean-local-artifacts.mjs --deep",
     "docs:check": "node scripts/docs/docs-health-check.mjs",
     "monitor:synthetic": "node scripts/synthetic-web-health.mjs",
     "check:all": "node scripts/opta-local-workspace.mjs run all check --continue-on-error",

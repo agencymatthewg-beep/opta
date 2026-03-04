@@ -55,7 +55,7 @@ export default function LocalWebDashboardPage() {
           </p>
           <ul>
             <li><strong>Current usage</strong> -- how many GB of unified memory are allocated to loaded models</li>
-            <li><strong>Total capacity</strong> -- the total unified memory pool (e.g., 192GB on a Mac Studio Ultra)</li>
+            <li><strong>Total capacity</strong> -- the total unified memory pool (e.g., 192GB on a high-memory Apple Silicon host)</li>
             <li><strong>Percentage fill</strong> -- rendered as a circular arc with smooth animation</li>
           </ul>
           <p>

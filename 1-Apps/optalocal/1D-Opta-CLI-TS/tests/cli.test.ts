@@ -162,6 +162,8 @@ describe('opta CLI', () => {
     expect(result.stdout).toContain('--components');
     expect(result.stdout).toContain('--target');
     expect(result.stdout).toContain('--remote-host');
+    expect(result.stdout).toContain('--remote-all');
+    expect(result.stdout).toContain('--remote-hosts');
     expect(result.stdout).toContain('--dry-run');
     expect(result.stdout).toContain('--no-build');
     expect(result.stdout).toContain('--no-pull');

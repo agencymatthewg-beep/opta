@@ -48,12 +48,12 @@ export default function LmxApiPage() {
 
           <h2 id="base-url">Base URL</h2>
           <CodeBlock
-            code="http://192.168.188.11:1234"
+            code="http://lmx-host.local:1234"
             language="text"
           />
           <p>
-            When running locally on the Mac Studio, use <code>http://localhost:1234</code>. From
-            other devices on the LAN, use the Mac Studio&apos;s IP address.
+            When running locally on the dedicated Apple Silicon host, use <code>http://localhost:1234</code>. From
+            other devices on the LAN, use the dedicated Apple Silicon host&apos;s IP address.
           </p>
           <Callout variant="info" title="No API key required">
             LMX does not enforce API key authentication on LAN. The <code>api_key</code> field in
@@ -122,7 +122,7 @@ data: [DONE]`}
           <CodeBlock
             language="javascript"
             filename="ws-stream.js"
-            code={`const ws = new WebSocket("ws://192.168.188.11:1234/v1/chat/stream");
+            code={`const ws = new WebSocket("ws://lmx-host.local:1234/v1/chat/stream");
 
 ws.onopen = () => {
   ws.send(JSON.stringify({

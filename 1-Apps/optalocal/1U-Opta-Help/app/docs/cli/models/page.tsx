@@ -226,7 +226,7 @@ Uptime: 4h 23m`}
 
           <CodeBlock
             code={`Request Flow:
-1. LMX (local, 192.168.188.11:1234)
+1. LMX (local, lmx-host.local:1234)
    ├─ Success → Use local response
    └─ Fail → Fallback to Anthropic
 2. Anthropic (cloud, api.anthropic.com)

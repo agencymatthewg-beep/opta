@@ -81,7 +81,7 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
 
           <h3 id="lmx-unreachable">LMX Unreachable</h3>
           <p>
-            If the daemon cannot reach the LMX server at <code>192.168.188.11:1234</code>, it will
+            If the daemon cannot reach the LMX server at <code>lmx-host.local:1234</code>, it will
             emit a <code>turn.error</code> event with code <code>LMX_UNREACHABLE</code>. The
             WebSocket connection itself stays open, but inference fails.
           </p>
@@ -91,7 +91,7 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
                 title: "Check LMX is running",
                 content: (
                   <CommandBlock
-                    command="curl http://192.168.188.11:1234/healthz"
+                    command="curl http://lmx-host.local:1234/healthz"
                     output={`{"status":"ok"}`}
                   />
                 ),
@@ -100,8 +100,8 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
                 title: "Check network connectivity",
                 content: (
                   <CommandBlock
-                    command="ping -c 3 192.168.188.11"
-                    description="Verify LAN connection to Mac Studio"
+                    command="ping -c 3 lmx-host.local"
+                    description="Verify LAN connection to dedicated Apple Silicon host"
                   />
                 ),
               },
@@ -109,7 +109,7 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
                 title: "Check LMX has a model loaded",
                 content: (
                   <CommandBlock
-                    command="curl http://192.168.188.11:1234/readyz"
+                    command="curl http://lmx-host.local:1234/readyz"
                     output={`{"ready":true,"model":"qwen3-30b-a3b"}`}
                   />
                 ),
@@ -117,7 +117,7 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
             ]}
           />
           <Callout variant="danger" title="Never use Tailscale">
-            Always connect to the Mac Studio over LAN (<code>192.168.188.11</code>). Tailscale adds
+            Always connect to the dedicated Apple Silicon host over LAN (<code>lmx-host.local</code>). Tailscale adds
             latency and is not supported for LMX connections.
           </Callout>
 
@@ -199,7 +199,7 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
           <CommandBlock
             command="opta doctor"
             output={`Checking daemon...        ● running (pid 12345, port 9999)
-Checking LMX...           ● reachable (192.168.188.11:1234)
+Checking LMX...           ● reachable (lmx-host.local:1234)
 Checking model...         ● loaded (qwen3-30b-a3b)
 Checking config...        ● valid
 Checking permissions...   ● ok
@@ -226,7 +226,7 @@ All checks passed.`}
 [10:00:01] INFO  daemon started on 127.0.0.1:9999
 
 # LMX connection failure
-[10:00:05] ERROR lmx preflight failed: ECONNREFUSED 192.168.188.11:1234
+[10:00:05] ERROR lmx preflight failed: ECONNREFUSED lmx-host.local:1234
 
 # Permission timeout
 [10:05:00] WARN  permission request perm_001 timed out (5m), auto-denying

@@ -272,7 +272,7 @@ Overall: 2 issues, 1 suggestion`}
 
           <CommandBlock
             command="/lmx status"
-            output={`LMX Server: 192.168.188.11:1234
+            output={`LMX Server: lmx-host.local:1234
 Status: healthy
 Model: qwen3-30b-a3b (4-bit)
 VRAM: 18.2 / 192.0 GB

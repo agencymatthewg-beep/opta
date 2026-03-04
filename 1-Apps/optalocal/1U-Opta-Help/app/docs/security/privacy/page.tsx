@@ -164,7 +164,7 @@ export default function SecurityPrivacyPage() {
           </p>
           <ul>
             <li><strong>CLI to Daemon</strong> -- localhost only (127.0.0.1:9999)</li>
-            <li><strong>Daemon to LMX</strong> -- LAN only (192.168.188.11:1234)</li>
+            <li><strong>Daemon to LMX</strong> -- LAN only (lmx-host.local:1234)</li>
             <li><strong>Web Dashboard to LMX</strong> -- LAN only or via Cloudflare Tunnel (explicit opt-in)</li>
           </ul>
           <p>

@@ -40,7 +40,7 @@ export default function LmxSetupPage() {
           <h1>LMX Setup</h1>
           <p className="lead">
             This guide covers installing and configuring Opta LMX on your Apple Silicon machine.
-            LMX is designed to run on a dedicated inference server — typically a Mac Studio on your
+            LMX is designed to run on a dedicated inference server — typically a dedicated Apple Silicon host on your
             local network.
           </p>
 
@@ -284,7 +284,7 @@ INFO:     Ready for inference`}
                 title: "Liveness check",
                 content: (
                   <CommandBlock
-                    command="curl http://192.168.188.11:1234/healthz"
+                    command="curl http://lmx-host.local:1234/healthz"
                     output={`{"status":"ok"}`}
                   />
                 ),
@@ -293,7 +293,7 @@ INFO:     Ready for inference`}
                 title: "Readiness check (model loaded)",
                 content: (
                   <CommandBlock
-                    command="curl http://192.168.188.11:1234/readyz"
+                    command="curl http://lmx-host.local:1234/readyz"
                     output={`{"ready":true,"model":"qwen3-30b-a3b"}`}
                   />
                 ),
@@ -302,7 +302,7 @@ INFO:     Ready for inference`}
                 title: "Test inference",
                 content: (
                   <CommandBlock
-                    command={`curl http://192.168.188.11:1234/v1/chat/completions \\
+                    command={`curl http://lmx-host.local:1234/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{"model":"qwen3-30b-a3b","messages":[{"role":"user","content":"Hi"}]}'`}
                     description="Send a test completion request"
@@ -313,7 +313,7 @@ INFO:     Ready for inference`}
                 title: "Check model list",
                 content: (
                   <CommandBlock
-                    command="curl http://192.168.188.11:1234/admin/models"
+                    command="curl http://lmx-host.local:1234/admin/models"
                     output={`{"models":[{"id":"qwen3-30b-a3b","loaded":true,"vram_gb":18.4}]}`}
                   />
                 ),

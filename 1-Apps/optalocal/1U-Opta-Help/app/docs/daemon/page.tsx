@@ -46,7 +46,7 @@ export default function DaemonOverviewPage() {
           <p>
             When you run <code>opta chat</code> or <code>opta do</code>, the CLI connects to the
             daemon over HTTP. The daemon then proxies inference requests to the LMX server on your
-            Mac Studio (or any OpenAI-compatible endpoint), handles tool calls, manages permissions,
+            dedicated Apple Silicon host (or any OpenAI-compatible endpoint), handles tool calls, manages permissions,
             and streams events back to the client.
           </p>
 
@@ -96,7 +96,7 @@ export default function DaemonOverviewPage() {
               ▼
 ┌─────────────────────────────┐
 │   Opta LMX                   │
-│   192.168.188.11:1234        │
+│   lmx-host.local:1234        │
 │   (Apple Silicon inference)  │
 └─────────────────────────────┘`}
           />

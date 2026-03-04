@@ -55,7 +55,7 @@ export default function LocalWebRemoteAccessPage() {
                   <div className="text-sm text-text-secondary space-y-2">
                     <p>Direct IP access on your local network. No authentication required.</p>
                     <p>Best for: development workstations, shared offices, home labs.</p>
-                    <p>URL: <code>http://192.168.188.11:3004</code> or <code>http://localhost:3004</code></p>
+                    <p>URL: <code>http://your-device.local:3004</code> or <code>http://localhost:3004</code></p>
                   </div>
                 ),
               },

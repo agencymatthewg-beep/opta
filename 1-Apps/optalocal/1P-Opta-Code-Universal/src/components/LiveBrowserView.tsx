@@ -1,8 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import type { BrowserLiveHostSlot } from "../lib/browserLiveHostClient";
 import { isNativeDesktop } from "../lib/runtime";
+import { useOperations } from "../hooks/useOperations";
+import type { DaemonConnectionOptions } from "../types";
+import { Play, Pause, Square } from "lucide-react";
 
 interface LiveBrowserViewProps {
+  connection: DaemonConnectionOptions;
   slot?: BrowserLiveHostSlot;
   className?: string;
   refreshRateMs?: number;
@@ -11,12 +15,14 @@ interface LiveBrowserViewProps {
 }
 
 export function LiveBrowserView({
+  connection,
   slot,
   className = "",
   refreshRateMs = 800,
   showNativeControls,
   viewerAuthToken,
 }: LiveBrowserViewProps) {
+  const { runOperation } = useOperations(connection);
   const [frameUrl, setFrameUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [errorCount, setErrorCount] = useState(0);
@@ -124,7 +130,33 @@ export function LiveBrowserView({
             <span className="light light-max" />
           </div>
         ) : null}
-        <div className="browser-url-bar">
+        <div className="flex gap-2 mr-2">
+          <button
+            onClick={() => void runOperation("browser.runtime", { action: "play" })}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title="Play"
+            type="button"
+          >
+            <Play size={14} className="text-green-400" />
+          </button>
+          <button
+            onClick={() => void runOperation("browser.runtime", { action: "pause" })}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title="Pause"
+            type="button"
+          >
+            <Pause size={14} className="text-yellow-400" />
+          </button>
+          <button
+            onClick={() => void runOperation("browser.host", { action: "status" })}
+            className="p-1 hover:bg-white/10 rounded transition-colors"
+            title="Stop/Status"
+            type="button"
+          >
+            <Square size={14} className="text-red-400" />
+          </button>
+        </div>
+        <div className="browser-url-bar flex-1">
           <span className="truncate">
             {slot?.currentUrl || (slot ? "about:blank" : "Offline")}
           </span>

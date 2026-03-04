@@ -1,10 +1,25 @@
+.DS_Store
 .vercel
+
+# Dependency/build caches
+**/node_modules/
+**/.next/
+**/.turbo/
+**/.cache/
+**/dist/
+**/build/
+**/.venv/
+**/.pytest_cache/
 
 # Local run artifacts
 .e2e-artifacts/
 .tmp-apple-cert/
 1P-Opta-Code-Universal/test-results/
-1D-Opta-CLI-TS/.opta/memory/
+1D-Opta-CLI-TS/.opta/browser/
+1D-Opta-CLI-TS/.opta/eslint-warnings.json
+1D-Opta-CLI-TS/tmp/eslint-report.json
+1D-Opta-CLI-TS/.opta/handoffs/task_*.md
+1D-Opta-CLI-TS/.opta/recovery/*.json
 
 # Local patch/scratch outputs
 1R-Opta-Accounts/src/**/*.patch

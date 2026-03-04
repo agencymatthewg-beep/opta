@@ -9,7 +9,7 @@ Documentation and support center for Opta Local.
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1U-Opta-Help
+cd <optalocal-root>/1U-Opta-Help
 npm install
 npm run dev
 ```

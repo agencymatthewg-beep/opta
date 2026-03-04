@@ -68,7 +68,7 @@ export const navigation: NavSection[] = [
     slug: "lmx",
     items: [
       { title: "Overview", href: "/docs/lmx/", description: "The local inference engine for Apple Silicon" },
-      { title: "Setup", href: "/docs/lmx/setup/", description: "Install and configure LMX on your Mac Studio" },
+      { title: "Setup", href: "/docs/lmx/setup/", description: "Install and configure LMX on your dedicated Apple Silicon host" },
       { title: "API Reference", href: "/docs/lmx/api/", description: "OpenAI-compatible inference endpoints" },
       { title: "Model Management", href: "/docs/lmx/models/", description: "Load, unload, and download models" },
       { title: "Monitoring", href: "/docs/lmx/monitoring/", description: "Health checks, VRAM, and throughput metrics" },

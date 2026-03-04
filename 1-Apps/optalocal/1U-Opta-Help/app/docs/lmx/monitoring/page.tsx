@@ -64,7 +64,7 @@ export default function LmxMonitoringPage() {
             or times out, the LMX process has crashed and needs to be restarted.
           </p>
           <CommandBlock
-            command="curl -f http://192.168.188.11:1234/healthz && echo 'LMX alive' || echo 'LMX down'"
+            command="curl -f http://lmx-host.local:1234/healthz && echo 'LMX alive' || echo 'LMX down'"
             description="Quick health check script"
           />
 
@@ -119,7 +119,7 @@ export default function LmxMonitoringPage() {
             Connect with any SSE client to receive metrics in real time:
           </p>
           <CommandBlock
-            command="curl -N http://192.168.188.11:1234/admin/events"
+            command="curl -N http://lmx-host.local:1234/admin/events"
             description="Stream metrics (press Ctrl+C to stop)"
           />
 
@@ -216,7 +216,7 @@ export default function LmxMonitoringPage() {
             by querying the admin models endpoint:
           </p>
           <CommandBlock
-            command="curl http://192.168.188.11:1234/admin/models"
+            command="curl http://lmx-host.local:1234/admin/models"
             output={`{
   "models": [{
     "id": "qwen3-30b-a3b",
@@ -227,7 +227,7 @@ export default function LmxMonitoringPage() {
 }`}
           />
           <p>
-            On a Mac Studio with 192GB unified memory, you can monitor system-level memory alongside
+            On a dedicated Apple Silicon host with 192GB unified memory, you can monitor system-level memory alongside
             LMX:
           </p>
           <CommandBlock
@@ -351,7 +351,7 @@ WARNING:  SSE client disconnected: ConnectionResetError`}
 
           <h3 id="throughput-targets">Throughput Targets</h3>
           <p>
-            Expected token generation speeds on a Mac Studio M3 Ultra (192GB) with MLX-native 4-bit
+            Expected token generation speeds on a dedicated Apple Silicon host M3 Ultra (192GB) with MLX-native 4-bit
             quantized models:
           </p>
           <div className="overflow-x-auto mb-6">

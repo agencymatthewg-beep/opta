@@ -178,6 +178,7 @@ async function applyRemoteInferenceKey(
     'candidates = [',
     '    lmx_path / "config" / "config.yaml",',
     '    Path.home() / ".opta-lmx" / "config.yaml",',
+    '    lmx_path / "config" / "production-current.yaml",',
     '    lmx_path / "config" / "mono512-current.yaml",',
     '    lmx_path / "config" / "default-config.yaml",',
     ']',

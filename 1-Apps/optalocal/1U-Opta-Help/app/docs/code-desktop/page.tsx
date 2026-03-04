@@ -66,7 +66,7 @@ Opta Daemon  127.0.0.1:9999
     |
     |  Proxied inference requests
     v
-Opta LMX  192.168.188.11:1234`}
+Opta LMX  lmx-host.local:1234`}
           />
 
           <p>

@@ -1,9 +1,9 @@
 /**
  * Opta LMX API client — fetch wrappers with auth, error handling, SSE, and WS.
  *
- * All requests target the LMX backend API. The base URL defaults to the
- * standard LAN endpoint (Mono512 Mac Studio) and can be overridden via
- * the NEXT_PUBLIC_LMX_API_URL environment variable or runtime config.
+ * All requests target the LMX backend API. The base URL defaults to a
+ * local loopback endpoint and can be overridden via the
+ * NEXT_PUBLIC_LMX_API_URL environment variable or runtime config.
  */
 
 import type { LmxApiError } from './types'
@@ -11,7 +11,7 @@ import type { LmxApiError } from './types'
 // ── Configuration ───────────────────────────────────────────────────────────
 
 const DEFAULT_LMX_URL =
-    process.env.NEXT_PUBLIC_LMX_API_URL ?? 'http://192.168.188.11:1234'
+    process.env.NEXT_PUBLIC_LMX_API_URL ?? 'http://127.0.0.1:1234'
 
 let _baseUrl = DEFAULT_LMX_URL
 let _adminKey: string | null = null

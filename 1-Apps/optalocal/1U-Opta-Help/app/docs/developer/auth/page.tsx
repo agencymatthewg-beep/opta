@@ -185,7 +185,7 @@ const ws = new WebSocket(
                       requests:
                     </p>
                     <pre className="text-xs text-text-muted font-mono bg-[var(--color-code-bg)] rounded p-2 overflow-x-auto">
-                      {`curl -X POST http://192.168.188.11:1234/admin/models/load \\
+                      {`curl -X POST http://lmx-host.local:1234/admin/models/load \\
   -H "Authorization: Bearer <admin-key>" \\
   -H "Content-Type: application/json" \\
   -d '{"model": "qwen3-72b"}'`}

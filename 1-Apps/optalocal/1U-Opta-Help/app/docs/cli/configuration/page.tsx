@@ -61,7 +61,7 @@ export default function ConfigurationPage() {
 
           <CommandBlock
             command="opta config list"
-            output={`connection.host     192.168.188.11
+            output={`connection.host     lmx-host.local
 connection.port     1234
 model.default       qwen3-30b-a3b
 provider.fallback   true
@@ -79,13 +79,13 @@ ui.streaming        true`}
 
           <CommandBlock
             command="opta config get connection.host"
-            output="192.168.188.11"
+            output="lmx-host.local"
             description="Read a single setting"
           />
 
           <CommandBlock
-            command="opta config set connection.host 192.168.1.100"
-            output="connection.host = 192.168.1.100"
+            command="opta config set connection.host lmx-host.local"
+            output="connection.host = lmx-host.local"
             description="Update a setting"
           />
 
@@ -111,7 +111,7 @@ ui.streaming        true`}
             code={`Opta Settings
 ━━━━━━━━━━━━━
 > Connection
-    Host: 192.168.188.11
+    Host: lmx-host.local
     Port: 1234
   Model
     Default: qwen3-30b-a3b
@@ -136,7 +136,7 @@ ui.streaming        true`}
             language="json"
             code={`{
   "connection": {
-    "host": "192.168.188.11",
+    "host": "lmx-host.local",
     "port": 1234
   },
   "model": {
@@ -205,7 +205,7 @@ ui.streaming        true`}
                 content: (
                   <CommandBlock
                     command="opta env use home"
-                    output="Switched to profile 'home'.\nconnection.host = 192.168.188.11"
+                    output="Switched to profile 'home'.\nconnection.host = lmx-host.local"
                   />
                 ),
               },
@@ -241,7 +241,7 @@ ui.streaming        true`}
               <tbody className="text-text-secondary">
                 <tr className="border-b border-white/5">
                   <td className="px-4 py-2.5 font-mono text-xs">connection.host</td>
-                  <td className="px-4 py-2.5 font-mono text-xs">192.168.188.11</td>
+                  <td className="px-4 py-2.5 font-mono text-xs">lmx-host.local</td>
                   <td className="px-4 py-2.5">LMX server IP address</td>
                 </tr>
                 <tr className="border-b border-white/5">

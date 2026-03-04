@@ -168,7 +168,7 @@ export default function DashboardHome() {
                             throughput.
                         </p>
                         <p className="text-xs text-text-muted font-mono">
-                            Default endpoint: 192.168.188.11:1234
+                            Default endpoint: 127.0.0.1:1234
                         </p>
                     </div>
                 ) : (

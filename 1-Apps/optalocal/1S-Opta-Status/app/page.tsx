@@ -10,6 +10,7 @@ import {
   GENERATED_RELEASE_NOTES,
   GENERATED_RELEASE_NOTES_METADATA,
 } from './release-notes.generated'
+import websitesRegistry from './websites.registry.generated.json'
 
 type ServiceStatus = 'online' | 'offline' | 'degraded' | 'checking' | 'unconfigured'
 
@@ -47,7 +48,14 @@ interface ServiceDef {
   metricFn?: (d: HealthData) => string | null
 }
 
-const SERVICES: ServiceDef[] = [
+type RegistryWebsite = {
+  domain: string
+  name: string
+  purpose?: string
+  statusServiceId: string | null
+}
+
+const BASE_SERVICES: ServiceDef[] = [
   {
     id: 'lmx',
     name: 'Opta LMX',
@@ -75,52 +83,90 @@ const SERVICES: ServiceDef[] = [
     id: 'code',
     name: 'Opta Code Desktop',
     subtitle: 'Desktop AI editor',
-    icon: Terminal, // Using Terminal as placeholder, or maybe Code/Monitor? Let's use Server or Terminal. Server is used for local. Let's use Terminal.
+    icon: Terminal,
     docs: 'https://optalocal.com',
   },
-  {
-    id: 'local',
+]
+
+const WEBSITE_STATUS_ORDER = ['local', 'init', 'accounts', 'status', 'admin', 'help', 'learn'] as const
+
+const WEBSITE_STATUS_PRESENTATION: Record<string, { name: string; subtitle: string; icon: React.ElementType }> = {
+  local: {
     name: 'Opta Local',
     subtitle: 'Management website (optalocal.com)',
     icon: Server,
-    docs: 'https://optalocal.com',
   },
-  {
-    id: 'init',
+  init: {
     name: 'Opta Init',
     subtitle: 'Setup & download portal',
     icon: Globe,
-    docs: 'https://init.optalocal.com',
   },
-  {
-    id: 'accounts',
+  accounts: {
     name: 'Opta Accounts',
     subtitle: 'Identity, SSO & capability control',
     icon: Globe,
-    docs: 'https://accounts.optalocal.com',
   },
-  {
-    id: 'admin',
+  status: {
+    name: 'Opta Status',
+    subtitle: 'Public health and release-state visibility',
+    icon: Globe,
+  },
+  admin: {
     name: 'Opta Admin',
     subtitle: 'Private control plane',
     icon: Terminal,
-    docs: 'https://admin.optalocal.com',
   },
-  {
-    id: 'help',
+  help: {
     name: 'Opta Help',
     subtitle: 'Documentation & support',
     icon: Globe,
-    docs: 'https://help.optalocal.com',
   },
-  {
-    id: 'learn',
+  learn: {
     name: 'Opta Learn',
     subtitle: 'Guides and onboarding',
     icon: Globe,
-    docs: 'https://learn.optalocal.com',
   },
-]
+}
+
+function isRegistryWebsite(value: unknown): value is RegistryWebsite {
+  if (!value || typeof value !== 'object') return false
+  const website = value as Partial<RegistryWebsite>
+  const hasDomain = typeof website.domain === 'string' && website.domain.trim().length > 0
+  const hasName = typeof website.name === 'string' && website.name.trim().length > 0
+  const hasServiceId =
+    typeof website.statusServiceId === 'string' || website.statusServiceId === null
+  return hasDomain && hasName && hasServiceId
+}
+
+function buildWebsiteServiceDefs(): ServiceDef[] {
+  const websites = Array.isArray(websitesRegistry.websites) ? websitesRegistry.websites : []
+  const byId = new Map<string, RegistryWebsite>()
+
+  for (const rawWebsite of websites) {
+    if (!isRegistryWebsite(rawWebsite)) continue
+    const serviceId = rawWebsite.statusServiceId
+    if (typeof serviceId !== 'string' || serviceId.trim().length === 0) continue
+    byId.set(serviceId.trim().toLowerCase(), rawWebsite)
+  }
+
+  return WEBSITE_STATUS_ORDER
+    .map((serviceId) => {
+      const website = byId.get(serviceId)
+      if (!website) return null
+      const presentation = WEBSITE_STATUS_PRESENTATION[serviceId]
+      const domain = website.domain.trim()
+      return {
+        id: serviceId,
+        name: presentation?.name ?? website.name,
+        subtitle: presentation?.subtitle ?? website.purpose?.trim() ?? `${website.name} website`,
+        icon: presentation?.icon ?? Globe,
+        docs: `https://${domain}`,
+      } satisfies ServiceDef
+    })
+    .filter((service): service is ServiceDef => service !== null)
+}
+
+const SERVICES: ServiceDef[] = [...BASE_SERVICES, ...buildWebsiteServiceDefs()]
 
 const BORDER_COLOR: Record<ServiceStatus, string> = {
   online: 'var(--opta-neon-green)',

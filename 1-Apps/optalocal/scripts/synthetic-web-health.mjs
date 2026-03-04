@@ -1,6 +1,15 @@
 #!/usr/bin/env node
 
-const SITE_TARGETS = [
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const WORKSPACE_ROOT = path.resolve(__dirname, '..');
+const REGISTRY_PATH = path.join(WORKSPACE_ROOT, 'websites.registry.json');
+
+const FALLBACK_SITE_TARGETS = [
   { id: 'home', name: 'Home', url: 'https://optalocal.com' },
   { id: 'init', name: 'Init', url: 'https://init.optalocal.com' },
   { id: 'accounts', name: 'Accounts', url: 'https://accounts.optalocal.com' },
@@ -11,7 +20,7 @@ const SITE_TARGETS = [
   { id: 'lmx', name: 'LMX', url: 'https://lmx.optalocal.com' },
 ];
 
-const HEALTH_ENDPOINTS = [
+const FALLBACK_HEALTH_ENDPOINTS = [
   { id: 'home', name: 'Home Health', url: 'https://optalocal.com/api/health' },
   { id: 'accounts', name: 'Accounts Health', url: 'https://accounts.optalocal.com/api/health/supabase' },
   { id: 'status-admin', name: 'Status Admin Probe', url: 'https://status.optalocal.com/api/health/admin' },
@@ -19,6 +28,113 @@ const HEALTH_ENDPOINTS = [
   { id: 'status-daemon', name: 'Status Daemon Probe', url: 'https://status.optalocal.com/api/health/daemon' },
   { id: 'admin', name: 'Admin Health', url: 'https://admin.optalocal.com/api/health' },
 ];
+
+function titleCaseLabel(value) {
+  return String(value)
+    .split(/[-_]/g)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function shortWebsiteName(name) {
+  const trimmed = String(name ?? '').trim();
+  if (!trimmed) return 'Site';
+  return trimmed.replace(/^Opta\s+/i, '') || trimmed;
+}
+
+function loadWebsiteRegistry() {
+  try {
+    const raw = readFileSync(REGISTRY_PATH, 'utf8');
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray(parsed.websites)) {
+      return null;
+    }
+    return parsed;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.warn(`warning: failed to load websites registry (${REGISTRY_PATH}): ${message}`);
+    return null;
+  }
+}
+
+function buildTargetsFromRegistry() {
+  const registry = loadWebsiteRegistry();
+  if (!registry) {
+    return {
+      siteTargets: FALLBACK_SITE_TARGETS,
+      healthEndpoints: FALLBACK_HEALTH_ENDPOINTS,
+    };
+  }
+
+  const websites = registry.websites
+    .filter((website) => website && typeof website === 'object')
+    .filter((website) => typeof website.key === 'string' && website.key.trim().length > 0)
+    .filter((website) => typeof website.domain === 'string' && website.domain.trim().length > 0)
+    .map((website) => ({
+      ...website,
+      key: website.key.trim().toLowerCase(),
+      domain: website.domain.trim(),
+      name: typeof website.name === 'string' ? website.name : website.key,
+      healthPath:
+        typeof website.healthPath === 'string' && website.healthPath.trim().length > 0
+          ? website.healthPath.trim()
+          : '/',
+      statusServiceId:
+        typeof website.statusServiceId === 'string' && website.statusServiceId.trim().length > 0
+          ? website.statusServiceId.trim().toLowerCase()
+          : null,
+    }));
+
+  if (websites.length === 0) {
+    return {
+      siteTargets: FALLBACK_SITE_TARGETS,
+      healthEndpoints: FALLBACK_HEALTH_ENDPOINTS,
+    };
+  }
+
+  const siteTargets = websites.map((website) => ({
+    id: website.key,
+    name: shortWebsiteName(website.name),
+    url: `https://${website.domain}`,
+  }));
+
+  const healthEndpointById = new Map(
+    websites.map((website) => [
+      website.key,
+      {
+        id: website.key,
+        name: `${shortWebsiteName(website.name)} Health`,
+        url: `https://${website.domain}${website.healthPath}`,
+      },
+    ]),
+  );
+
+  const statusDomain =
+    websites.find((website) => website.statusServiceId === 'status')?.domain ??
+    'status.optalocal.com';
+  const probeServiceIds = Array.isArray(registry.syntheticStatusProbeServiceIds)
+    ? registry.syntheticStatusProbeServiceIds.filter(
+        (serviceId) => typeof serviceId === 'string' && serviceId.trim().length > 0,
+      )
+    : [];
+
+  for (const serviceId of probeServiceIds) {
+    const normalizedServiceId = serviceId.trim().toLowerCase();
+    healthEndpointById.set(`status-${normalizedServiceId}`, {
+      id: `status-${normalizedServiceId}`,
+      name: `Status ${titleCaseLabel(normalizedServiceId)} Probe`,
+      url: `https://${statusDomain}/api/health/${normalizedServiceId}`,
+    });
+  }
+
+  return {
+    siteTargets,
+    healthEndpoints: [...healthEndpointById.values()],
+  };
+}
+
+const { siteTargets: SITE_TARGETS, healthEndpoints: HEALTH_ENDPOINTS } = buildTargetsFromRegistry();
 
 const REQUIRED_SECURITY_HEADERS = [
   { key: 'content-security-policy', label: 'CSP' },

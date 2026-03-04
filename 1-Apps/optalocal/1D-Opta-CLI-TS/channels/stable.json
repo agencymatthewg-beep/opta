@@ -5,7 +5,7 @@
   "stateRoot": "~/.config/opta",
   "sessionRoot": "~/.config/opta/sessions",
   "lmx": {
-    "host": "192.168.188.11",
+    "host": "localhost",
     "port": 1234
   }
 }

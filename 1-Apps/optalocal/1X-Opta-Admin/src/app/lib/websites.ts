@@ -1,81 +1,50 @@
 import type { ManagedWebsite, WebsiteHealthSnapshot, WebsiteRuntimeStatus } from './types';
+import websitesRegistry from './websites.registry.generated.json';
 
 const REQUEST_TIMEOUT_MS = 6_500;
 
-export const MANAGED_WEBSITES: ManagedWebsite[] = [
-  {
-    key: 'home',
-    name: 'Opta Home',
-    domain: 'optalocal.com',
-    path: '1T-Opta-Home',
-    purpose: 'Primary ecosystem landing surface',
-    localUrl: 'http://localhost:3000',
-    healthPath: '/',
-  },
-  {
-    key: 'init',
-    name: 'Opta Init',
-    domain: 'init.optalocal.com',
-    path: '1O-Opta-Init',
-    purpose: 'Distribution + update metadata control plane',
-    localUrl: 'http://localhost:3001',
-    healthPath: '/',
-  },
-  {
-    key: 'lmx',
-    name: 'Opta LMX Dashboard',
-    domain: 'lmx.optalocal.com',
-    path: '1L-Opta-LMX-Dashboard',
-    purpose: 'Model management and inference operations surface',
-    localUrl: 'http://localhost:3003',
-    healthPath: '/',
-  },
-  {
-    key: 'accounts',
-    name: 'Opta Accounts',
-    domain: 'accounts.optalocal.com',
-    path: '1R-Opta-Accounts',
-    purpose: 'Identity, session, and account access management',
-    localUrl: 'http://localhost:3002',
-    healthPath: '/api/health/supabase',
-  },
-  {
-    key: 'status',
-    name: 'Opta Status',
-    domain: 'status.optalocal.com',
-    path: '1S-Opta-Status',
-    purpose: 'Public health and release-state visibility',
-    localUrl: 'http://localhost:3005',
-    healthPath: '/',
-  },
-  {
-    key: 'help',
-    name: 'Opta Help',
-    domain: 'help.optalocal.com',
-    path: '1U-Opta-Help',
-    purpose: 'Support docs and implementation references',
-    localUrl: 'http://localhost:3006',
-    healthPath: '/',
-  },
-  {
-    key: 'learn',
-    name: 'Opta Learn',
-    domain: 'learn.optalocal.com',
-    path: '1V-Opta-Learn',
-    purpose: 'Guide inventory and learning pipeline',
-    localUrl: 'http://localhost:3007',
-    healthPath: '/',
-  },
-  {
-    key: 'admin',
-    name: 'Opta Admin',
-    domain: 'admin.optalocal.com',
-    path: '1X-Opta-Admin',
-    purpose: 'Private website operations cockpit',
-    localUrl: 'http://localhost:3008',
-    healthPath: '/',
-  },
-];
+type CanonicalWebsiteRecord = {
+  key: string;
+  name: string;
+  domain: string;
+  localUrl: string;
+  healthPath: string;
+  appPath: string;
+  purpose?: string;
+};
+
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.trim().length > 0;
+}
+
+function readCanonicalManagedWebsites(): ManagedWebsite[] {
+  const websites = Array.isArray(websitesRegistry.websites) ? websitesRegistry.websites : [];
+
+  return websites
+    .filter((website): website is CanonicalWebsiteRecord => {
+      return (
+        website != null &&
+        isNonEmptyString(website.key) &&
+        isNonEmptyString(website.name) &&
+        isNonEmptyString(website.domain) &&
+        isNonEmptyString(website.localUrl) &&
+        isNonEmptyString(website.healthPath) &&
+        isNonEmptyString(website.appPath)
+      );
+    })
+    .map((website) => ({
+      key: website.key,
+      name: website.name,
+      domain: website.domain,
+      path: website.appPath,
+      purpose:
+        website.purpose?.trim() || `${website.name} operational surface`,
+      localUrl: website.localUrl,
+      healthPath: website.healthPath,
+    }));
+}
+
+export const MANAGED_WEBSITES: ManagedWebsite[] = readCanonicalManagedWebsites();
 
 async function probe(url: string): Promise<WebsiteRuntimeStatus> {
   const controller = new AbortController();

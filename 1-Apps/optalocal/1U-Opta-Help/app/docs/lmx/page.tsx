@@ -46,7 +46,7 @@ export default function LmxOverviewPage() {
             for LM Studio, Ollama, or any other local inference server.
           </p>
           <p>
-            LMX is designed to run 24/7 on a dedicated Apple Silicon machine (recommended: Mac Studio
+            LMX is designed to run 24/7 on a dedicated Apple Silicon machine (recommended: dedicated Apple Silicon host
             with M3 Ultra and 192GB unified memory). The Opta CLI daemon connects to LMX over LAN to
             perform inference.
           </p>
@@ -85,7 +85,7 @@ export default function LmxOverviewPage() {
             code={`from openai import OpenAI
 
 client = OpenAI(
-    base_url="http://192.168.188.11:1234/v1",
+    base_url="http://lmx-host.local:1234/v1",
     api_key="not-needed"  # LMX does not require API keys on LAN
 )
 
@@ -129,14 +129,14 @@ for chunk in response:
 
           <h2 id="architecture">Architecture</h2>
           <p>
-            LMX is a FastAPI application with an MLX inference backend. It runs on the Mac Studio and
+            LMX is a FastAPI application with an MLX inference backend. It runs on the dedicated Apple Silicon host and
             listens on all interfaces (<code>0.0.0.0:1234</code>) to accept connections from any
             device on the LAN.
           </p>
           <CodeBlock
             language="text"
             code={`┌─────────────────────────────────────────┐
-│  Opta LMX (192.168.188.11:1234)         │
+│  Opta LMX (lmx-host.local:1234)         │
 │                                          │
 │  FastAPI Server                          │
 │  ├── /v1/chat/completions  (inference)   │
@@ -161,7 +161,7 @@ for chunk in response:
           <p>
             LMX intentionally listens on port 1234 — the same default port as LM Studio. This makes
             it a seamless replacement for any workflow that already targets a local OpenAI-compatible
-            server. Point your tools at <code>http://192.168.188.11:1234/v1</code> and they will work
+            server. Point your tools at <code>http://lmx-host.local:1234/v1</code> and they will work
             without configuration changes.
           </p>
           <Callout variant="tip" title="No API key required">
@@ -174,12 +174,12 @@ for chunk in response:
             Verify that LMX is running and a model is loaded:
           </p>
           <CommandBlock
-            command="curl http://192.168.188.11:1234/healthz"
+            command="curl http://lmx-host.local:1234/healthz"
             description="Check LMX is alive"
             output={`{"status":"ok"}`}
           />
           <CommandBlock
-            command="curl http://192.168.188.11:1234/readyz"
+            command="curl http://lmx-host.local:1234/readyz"
             description="Check a model is loaded and ready"
             output={`{"ready":true,"model":"qwen3-30b-a3b"}`}
           />
@@ -187,7 +187,7 @@ for chunk in response:
             Send a test completion:
           </p>
           <CommandBlock
-            command={`curl http://192.168.188.11:1234/v1/chat/completions \\
+            command={`curl http://lmx-host.local:1234/v1/chat/completions \\
   -H "Content-Type: application/json" \\
   -d '{"model":"qwen3-30b-a3b","messages":[{"role":"user","content":"Hello"}]}'`}
             description="Send a non-streaming chat completion"

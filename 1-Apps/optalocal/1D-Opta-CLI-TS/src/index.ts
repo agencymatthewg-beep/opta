@@ -154,7 +154,7 @@ Examples:
   $ opta                         Start interactive session in TUI
   $ opta --resume abc123         Resume session
   $ opta --model qwen2.5         Use specific model
-  $ opta --device mono512:1234
+  $ opta --device lmx-host.local:1234
   $ opta onboard                 Run guided setup wizard
   $ opta do "fix the auth bug"   One-shot task
   $ opta embed "semantic query"  Generate an embedding via Opta LMX
@@ -347,6 +347,8 @@ interface UpdateCommandOptions {
   components?: string;
   target?: UpdateTargetMode;
   remoteHost?: string;
+  remoteAll?: boolean;
+  remoteHosts?: string;
   remoteUser?: string;
   identityFile?: string;
   localRoot?: string;
@@ -438,7 +440,7 @@ program
 Examples:
   $ opta do "refactor auth module"
   $ opta do "fix bug in utils.ts" --model qwen2.5
-  $ opta do "summarize repository" --device mono512:1234
+  $ opta do "summarize repository" --device lmx-host.local:1234
   $ opta do "run tests" --format json
 `
   )
@@ -460,7 +462,7 @@ program
     `
 Examples:
   $ opta embed "hello world"
-  $ opta embed "hello world" --device 192.168.1.20
+  $ opta embed "hello world" --device 10.0.0.20:1234
   $ opta embed "semantic search query" --model snowflake/arctic-embed-m-v2.0
 `
   )
@@ -483,7 +485,7 @@ program
     `
 Examples:
   $ opta rerank "what changed?" --documents "release notes|commit log|meeting notes"
-  $ opta rerank "auth failures" --documents "ticket|postmortem|chat" --device mono512
+  $ opta rerank "auth failures" --documents "ticket|postmortem|chat" --device lmx-host.local
   $ opta rerank "auth failures" --documents "ticket|postmortem|chat" --top-k 2 --json
 `
   )
@@ -628,7 +630,7 @@ program
     `
 Examples:
   $ opta models                     Interactive manager (TTY) or list output
-  $ opta models --device mono512
+  $ opta models --device lmx-host.local
   $ opta models --remote
   $ opta models manage              Force interactive manager
   $ opta models use                 Pick default model via keyboard
@@ -1045,6 +1047,11 @@ program
     '--remote-host <host>',
     'override remote host (default: connection.host; otherwise uses configured + discovered LAN hosts)'
   )
+  .option('--remote-all', 'roll out updates to all reachable remote hosts')
+  .option(
+    '--remote-hosts <list>',
+    'comma-separated remote hosts to target (takes precedence over --remote-host when provided)'
+  )
   .option('--remote-user <user>', 'override SSH user (default: connection.ssh.user)')
   .option(
     '--identity-file <path>',
@@ -1064,6 +1071,8 @@ Examples:
   $ opta update --components web --target local
   $ opta update --components lmx --target both
   $ opta update --target remote --remote-host lmx-a.local
+  $ opta update --target remote --remote-all
+  $ opta update --target remote --remote-hosts lmx-a.local,lmx-b.local
   $ opta update --dry-run --json
 `
   )

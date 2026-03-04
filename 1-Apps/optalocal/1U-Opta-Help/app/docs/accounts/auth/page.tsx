@@ -16,6 +16,9 @@ const tocItems = [
   { id: "callback-security", title: "Callback Security", level: 2 as const },
   { id: "session-storage", title: "Session Storage", level: 2 as const },
   { id: "logout", title: "Logout", level: 2 as const },
+  { id: "cli-offline-banner", title: "CLI Offline Banner", level: 2 as const },
+  { id: "admin-key-detection", title: "Admin Key Detection", level: 2 as const },
+  { id: "desktop-accounts-flow", title: "Desktop Accounts Button", level: 2 as const },
 ];
 
 export default function AccountsAuthPage() {
@@ -151,6 +154,99 @@ export NEXT_PUBLIC_SUPABASE_ANON_KEY="$OPTA_SUPABASE_ANON_KEY"`}
           <p>
             If Supabase env vars are unavailable during logout, local state is still cleared and a
             warning is printed for remote revoke.
+          </p>
+
+          <h2 id="cli-offline-banner">CLI Offline Banner</h2>
+          <p>
+            When <code>opta chat</code> can&apos;t reach LMX (host down, invalid admin key, or LAN
+            fallback failure) the Ink UI now boots with an <strong>Offline</strong> banner. The
+            composer is disabled, the attempted hosts are listed, and a CTA points you at recovery
+            commands instead of crashing the CLI.
+          </p>
+          <Callout variant="warning" title="What the notice means">
+            The banner renders after provider probes fail and <code>detectLocalAdminKey</code>{" "}
+            cannot authorize against any loopback or fallback host. It is safe to keep the CLI
+            open—the UI stays read-only until you rerun diagnostics or fix the server.
+          </Callout>
+          <p>
+            Use these commands (in order) to clear the banner, re-run detection, and confirm the
+            admin key:
+          </p>
+          <CommandBlock
+            command="opta status"
+            description="Print discovery info, host/fallback list, and whether the admin key was auto-detected or overridden."
+          />
+          <CommandBlock
+            command="/server status"
+            description="Slash command inside the chat UI that re-probes the current host/fallback set without restarting the CLI."
+          />
+          <CommandBlock
+            command="opta models --json"
+            description="Calls the secured /admin/model endpoints; success confirms the admin key is accepted again."
+          />
+          <CommandBlock
+            command="opta config delete connection.adminKey"
+            description="Clears a stale override so the CLI falls back to the auto-detected loopback key."
+          />
+
+          <h2 id="admin-key-detection">Admin Key Detection</h2>
+          <p>
+            Loopback hosts (e.g., <code>127.0.0.1</code>, <code>::1</code>) now trigger{" "}
+            <code>detectLocalAdminKey</code>. After environment, project, and CLI overrides finish,
+            the helper looks for <code>server.admin_key</code> inside{" "}
+            <code>~/.opta-lmx/config.yaml</code>, copies it into{" "}
+            <code>connection.adminKey</code>, and pre-populates{" "}
+            <code>connection.adminKeysByHost</code> for every loopback fallback host. Remote hosts
+            never receive this key—changing <code>connection.host</code> to a non-loopback value
+            forces the helper to restart detection so nothing leaks.
+          </p>
+          <Callout variant="tip" title="Check the source of truth">
+            <p>
+              The CTA in the banner links to <code>~/.opta-lmx/config.yaml</code>. Ensure{" "}
+              <code>server.admin_key</code> is set there (or export{" "}
+              <code>OPTA_LMX_ADMIN_KEY</code>) so automatic detection continues to work after
+              reboots.
+            </p>
+          </Callout>
+          <p>Manual overrides are still available:</p>
+          <CommandBlock
+            command="opta config set connection.adminKeysByHost '{\"127.0.0.1\":\"<key>\"}'"
+            description="Pin specific loopback hosts when multiple simulators are running."
+          />
+          <CommandBlock
+            command="opta config set connection.adminKey <key>"
+            description="Override detection globally. Remember to delete it after switching back to auto mode."
+          />
+
+          <h2 id="desktop-accounts-flow">Desktop Accounts Button</h2>
+          <p>
+            Opta Desktop apps (Code + Init) now ship an <strong>Accounts</strong> button in the
+            header grid. Clicking it launches the system browser, renders the standard{" "}
+            <code>accounts.optalocal.com</code> OAuth screen, then closes the tab after sign-in when
+            the <code>opta-code://auth/callback</code> deep-link fires. The deep-link handler refreshes
+            account state inside the app and the status badge flips to “Signed in” without requiring
+            a manual reload.
+          </p>
+          <Callout variant="warning" title="If login looks stuck">
+            <ul>
+              <li>
+                Ensure macOS still allows <code>opta-code://</code> deep-links (System Settings →
+                Privacy &amp; Security → Open URLs with Opta Code).
+              </li>
+              <li>
+                Run <code>opta account status</code> or <code>opta account login --oauth</code>{" "}
+                from the CLI to confirm Supabase credentials while keeping the desktop app open.
+              </li>
+              <li>
+                Re-trigger the Accounts button after clearing blocked pop-ups or network proxies; the
+                handler unsubscribes/subscribe automatically so repeated attempts are safe.
+              </li>
+            </ul>
+          </Callout>
+          <p>
+            Successful desktop logins immediately unlock the CLI as soon as the daemon picks up the
+            refreshed session file, so you can bounce between desktop and terminal without repeating
+            the flow.
           </p>
 
           <PrevNextNav prev={prev} next={next} />

@@ -73,7 +73,7 @@ export default function DeveloperOverviewPage() {
           <h3 id="lmx-openai-api">LMX OpenAI API</h3>
           <p>
             The LMX inference server exposes an OpenAI-compatible API at{" "}
-            <code>192.168.188.11:1234</code>. Any tool or library that works
+            <code>lmx-host.local:1234</code>. Any tool or library that works
             with the OpenAI API can connect to LMX by changing the base
             URL.
           </p>
@@ -84,7 +84,7 @@ export default function DeveloperOverviewPage() {
             code={`import OpenAI from "openai";
 
 const client = new OpenAI({
-  baseURL: "http://192.168.188.11:1234/v1",
+  baseURL: "http://lmx-host.local:1234/v1",
   apiKey: "not-needed",  // LMX does not require an API key for inference
 });
 

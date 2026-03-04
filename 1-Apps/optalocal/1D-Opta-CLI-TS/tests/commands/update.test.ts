@@ -1,12 +1,16 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
+  CANONICAL_WEB_APP_DIRS,
   CLI_UPDATE_BUILD_SCRIPT,
+  canonicalWebBuildScript,
   extractReachableRemoteHosts,
   missingOptaCommands,
   parseComponentList,
+  parseRemoteHostList,
   parseRemoteLanGuardMarker,
   remoteConnectFailureStatus,
   resolveRemoteHostCandidates,
+  resolveRolloutHosts,
   resolveTargets,
   selectReachableRemoteHost,
 } from '../../src/commands/update.js';
@@ -73,6 +77,45 @@ describe('update command helpers', () => {
     it('appends discovered LAN hosts after configured hosts with case-insensitive dedupe', () => {
       expect(resolveRemoteHostCandidates('remote-lab', ['backup-a'], ['10.0.0.11', 'backup-a', '10.0.0.11']))
         .toEqual(['remote-lab', 'backup-a', '10.0.0.11']);
+    });
+  });
+
+  describe('parseRemoteHostList', () => {
+    it('parses comma-separated host list with trim and dedupe', () => {
+      expect(parseRemoteHostList(' lmx-a.local, lmx-b.local ,LMX-A.local,,'))
+        .toEqual(['lmx-a.local', 'lmx-b.local']);
+    });
+
+    it('returns empty list for empty values', () => {
+      expect(parseRemoteHostList('')).toEqual([]);
+      expect(parseRemoteHostList()).toEqual([]);
+    });
+  });
+
+  describe('resolveRolloutHosts', () => {
+    it('prefers explicit host list when provided', () => {
+      expect(resolveRolloutHosts(
+        ['lmx-a.local', 'lmx-b.local'],
+        'lmx-a.local',
+        false,
+        ['lmx-b.local', 'lmx-missing.local'],
+      )).toEqual(['lmx-b.local']);
+    });
+
+    it('returns all reachable hosts in rollout-all mode', () => {
+      expect(resolveRolloutHosts(
+        ['lmx-a.local', 'lmx-b.local'],
+        'lmx-a.local',
+        true,
+      )).toEqual(['lmx-a.local', 'lmx-b.local']);
+    });
+
+    it('falls back to selected host for default behavior', () => {
+      expect(resolveRolloutHosts(
+        ['lmx-a.local', 'lmx-b.local'],
+        'lmx-b.local',
+        false,
+      )).toEqual(['lmx-b.local']);
     });
   });
 
@@ -219,6 +262,19 @@ Commands:
       expect(missingOptaCommands(help)).toContain('benchmark');
       expect(missingOptaCommands(help)).toContain('daemon');
       expect(missingOptaCommands(help)).toContain('completions');
+    });
+  });
+
+  describe('canonicalWebBuildScript', () => {
+    it('builds every canonical web app and enforces missing-dir marker', () => {
+      const script = canonicalWebBuildScript();
+      expect(script).toContain('__WEB_APP_MISSING__');
+      for (const appDir of CANONICAL_WEB_APP_DIRS) {
+        expect(script).toContain(appDir);
+      }
+      expect(script).toContain('npm --prefix');
+      expect(script).toContain('run -s typecheck');
+      expect(script).toContain('run -s build');
     });
   });
 });

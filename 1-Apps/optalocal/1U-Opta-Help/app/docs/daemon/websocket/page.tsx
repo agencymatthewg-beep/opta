@@ -303,7 +303,7 @@ ws.onclose = (e) => console.log("closed", e.code, e.reason);`}
     "turnId": "turn_001",
     "error": {
       "code": "LMX_UNREACHABLE",
-      "message": "Connection refused to 192.168.188.11:1234"
+      "message": "Connection refused to lmx-host.local:1234"
     }
   }
 }`}

@@ -67,7 +67,7 @@ export default function LocalWebOverviewPage() {
     |  HTTP requests to /v1/chat/completions
     |  SSE connection to /admin/events
     v
-Opta LMX  192.168.188.11:1234
+Opta LMX  lmx-host.local:1234
     |
     |  MLX inference on Apple Silicon
     v
@@ -159,7 +159,7 @@ npm run dev:native   # launches the Tauri desktop shell`}
 
           <p>
             Ensure your LMX server is running on the expected address
-            (default: <code>192.168.188.11:1234</code>). The dashboard will
+            (default: <code>lmx-host.local:1234</code>). The dashboard will
             connect automatically and begin streaming status data.
           </p>
 

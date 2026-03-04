@@ -86,7 +86,7 @@ LMX connections: outbound only (daemon → LMX)`}
           <Callout variant="info" title="LMX is separate">
             The LMX inference server has its own network binding and
             authentication model. It listens on a LAN address
-            (192.168.188.11:1234) to serve multiple clients. See the LMX
+            (lmx-host.local:1234) to serve multiple clients. See the LMX
             documentation for its security configuration.
           </Callout>
 

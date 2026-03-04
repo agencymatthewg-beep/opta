@@ -68,7 +68,7 @@ export default function LmxModelsPage() {
 }`}
           />
           <CommandBlock
-            command={`curl -X POST http://192.168.188.11:1234/admin/models/load \\
+            command={`curl -X POST http://lmx-host.local:1234/admin/models/load \\
   -H "Content-Type: application/json" \\
   -d '{"model":"mlx-community/Qwen3-30B-A3B-4bit"}'`}
             description="Load a model via the API"
@@ -104,7 +104,7 @@ Model loaded in 2.3s (18.4 GB VRAM)`}
                 label: "API",
                 content: (
                   <CommandBlock
-                    command={`curl -X POST http://192.168.188.11:1234/admin/models/unload`}
+                    command={`curl -X POST http://lmx-host.local:1234/admin/models/unload`}
                     output={`{"success":true,"freed_vram_gb":18.4}`}
                   />
                 ),
@@ -139,7 +139,7 @@ Model loaded in 2.3s (18.4 GB VRAM)`}
                 title: "Load the model (triggers download)",
                 content: (
                   <CommandBlock
-                    command={`curl -X POST http://192.168.188.11:1234/admin/models/load \\
+                    command={`curl -X POST http://lmx-host.local:1234/admin/models/load \\
   -H "Content-Type: application/json" \\
   -d '{"model":"mlx-community/Llama-3.3-70B-Instruct-4bit"}'`}
                     description="First load will download the model"
@@ -211,7 +211,7 @@ The 1.2× multiplier accounts for KV cache and runtime overhead.`}
             Check your current VRAM usage via the admin API:
           </p>
           <CommandBlock
-            command="curl http://192.168.188.11:1234/admin/models"
+            command="curl http://lmx-host.local:1234/admin/models"
             output={`{"models":[{"id":"qwen3-30b-a3b","loaded":true,"vram_gb":18.4}]}`}
           />
 
@@ -249,7 +249,7 @@ oom_threshold_pct = 90   # Auto-unload threshold`}
 
           <h2 id="recommended-models">Recommended Models</h2>
           <p>
-            These models are tested and recommended for use with LMX on the Mac Studio M3 Ultra (192GB):
+            These models are tested and recommended for use with LMX on the dedicated Apple Silicon host M3 Ultra (192GB):
           </p>
           <div className="overflow-x-auto mb-6">
             <table className="w-full text-sm">

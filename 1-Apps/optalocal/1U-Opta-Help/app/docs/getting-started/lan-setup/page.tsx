@@ -61,10 +61,10 @@ export default function LanSetupPage() {
               {
                 title: "Set the LMX host address",
                 description:
-                  "Replace the IP with your LMX server's local address. This is typically your Mac Studio's static IP.",
+                  "Replace the IP with your LMX server's local address. This is typically your dedicated Apple Silicon host's static IP.",
                 content: (
                   <CommandBlock
-                    command="opta config set connection.host 192.168.188.11"
+                    command="opta config set connection.host lmx-host.local"
                     description="Set the LMX inference server IP address"
                   />
                 ),
@@ -85,7 +85,7 @@ export default function LanSetupPage() {
                 content: (
                   <CommandBlock
                     command="opta config get connection"
-                    output={`connection.host    192.168.188.11
+                    output={`connection.host    lmx-host.local
 connection.port    1234`}
                   />
                 ),
@@ -110,7 +110,7 @@ connection.port    1234`}
                     command="opta key create"
                     output={`API key created and stored in keychain.
 Key ID: opta_key_a1b2c3d4
-Host:   192.168.188.11:1234`}
+Host:   lmx-host.local:1234`}
                   />
                 ),
               },
@@ -120,7 +120,7 @@ Host:   192.168.188.11:1234`}
                   <CommandBlock
                     command="opta key list"
                     output={`ID                  Host                    Created
-opta_key_a1b2c3d4   192.168.188.11:1234     2026-03-01`}
+opta_key_a1b2c3d4   lmx-host.local:1234     2026-03-01`}
                   />
                 ),
               },
@@ -135,7 +135,7 @@ opta_key_a1b2c3d4   192.168.188.11:1234     2026-03-01`}
 
           <h2 id="failover-hosts">Failover Hosts</h2>
           <p>
-            If you have multiple LMX instances (for example, a Mac Studio and a Mac Pro),
+            If you have multiple LMX instances (for example, a dedicated Apple Silicon host and a high-memory Apple Silicon host),
             you can configure failover hosts. The CLI will try each host in order until
             one responds.
           </p>
@@ -145,11 +145,11 @@ opta_key_a1b2c3d4   192.168.188.11:1234     2026-03-01`}
             filename="~/.config/opta/config.json"
             code={`{
   "connection": {
-    "host": "192.168.188.11",
+    "host": "lmx-host.local",
     "port": 1234,
     "failover": [
-      { "host": "192.168.188.12", "port": 1234 },
-      { "host": "192.168.188.13", "port": 1234 }
+      { "host": "lmx-backup-a.local", "port": 1234 },
+      { "host": "lmx-backup-b.local", "port": 1234 }
     ],
     "timeout": 5000
   }
@@ -173,7 +173,7 @@ opta_key_a1b2c3d4   192.168.188.11:1234     2026-03-01`}
             language="text"
             filename="~/.ssh/config"
             code={`Host lmx-studio
-    HostName 192.168.188.11
+    HostName lmx-host.local
     User matt
     IdentityFile ~/.ssh/id_ed25519
     ForwardAgent yes`}
@@ -204,7 +204,7 @@ opta_key_a1b2c3d4   192.168.188.11:1234     2026-03-01`}
                     command="opta status"
                     output={`CLI:    v1.0.0
 Daemon: stopped
-LMX:    connected (192.168.188.11:1234)
+LMX:    connected (lmx-host.local:1234)
   Model: Qwen3-30B-A3B (loaded)
   VRAM:  42.1 / 192.0 GB`}
                   />
@@ -223,7 +223,7 @@ LMX:    connected (192.168.188.11:1234)
   npm         10.9.0             ok
   Config dir  ~/.config/opta     ok
   Daemon      not running        (start with: opta daemon start)
-  LMX host    192.168.188.11     ok
+  LMX host    lmx-host.local     ok
   LMX health  200 OK             ok
   LMX model   Qwen3-30B-A3B     loaded`}
                   />

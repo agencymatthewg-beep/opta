@@ -72,7 +72,7 @@ export default function GettingStartedIntroPage() {
                   <td>
                     Local inference engine (LMX) plus its dashboard experience for monitoring and control.
                   </td>
-                  <td>Mac Studio / Mac Pro (high-memory host)</td>
+                  <td>dedicated Apple Silicon host (high-memory host)</td>
                 </tr>
                 <tr>
                   <td><strong>Opta Code Desktop (macOS + Windows)</strong></td>
@@ -105,7 +105,7 @@ export default function GettingStartedIntroPage() {
           <ul>
             <li>
               <strong>Developers with Apple Silicon hardware</strong> -- particularly
-              Mac Studios or Mac Pros with 96GB+ unified memory, capable of running
+              high-memory Apple Silicon hosts with 96GB+ unified memory, capable of running
               70B+ parameter models locally.
             </li>
             <li>
@@ -134,7 +134,7 @@ export default function GettingStartedIntroPage() {
           <h3>Speed</h3>
           <p>
             Apple Silicon unified memory architecture allows models to load directly into
-            GPU-accessible memory without PCIe bottlenecks. A Mac Studio with 192GB of
+            GPU-accessible memory without PCIe bottlenecks. A dedicated Apple Silicon host with 192GB of
             unified memory can run 70B parameter models at 40+ tokens per second --
             comparable to or faster than many cloud API endpoints.
           </p>
@@ -167,7 +167,7 @@ export default function GettingStartedIntroPage() {
 opta daemon  127.0.0.1:9999            Background orchestration service
         |   HTTP v3 REST + WS streaming
         v
-Opta LMX  192.168.188.11:1234          Apple Silicon inference server
+Opta LMX  lmx-host.local:1234          Apple Silicon inference server
         |   OpenAI-compatible /v1/chat/completions
         v
 Opta Local Web  localhost:3004         Browser dashboard + chat UI`}
