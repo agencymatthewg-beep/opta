@@ -1,3 +1,5 @@
+import { useEffect, useState } from "react";
+import { daemonClient } from "../../lib/daemonClient";
 import type { Platform } from "../../hooks/usePlatform.js";
 import {
   MonoLabel,
@@ -20,6 +22,27 @@ export function StepPreferences({
   platform: Platform | null;
   connection?: DaemonConnectionOptions | null;
 }) {
+  const [profiled, setProfiled] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    if (connection && !profiled) {
+      daemonClient.runOperation(connection, "doctor", {}).then((res) => {
+        if (!active) return;
+        setProfiled(true);
+        if (res.ok) {
+          setForm((prev) => ({
+            ...prev,
+            autonomyLevel: prev.autonomyLevel === 2 ? 3 : prev.autonomyLevel
+          }));
+        }
+      }).catch(() => {
+        // fail silently
+      });
+    }
+    return () => { active = false; };
+  }, [connection, profiled, setForm]);
+
   const prefGroup = (children: React.ReactNode) => (
     <div style={{ marginBottom: 20 }}>{children}</div>
   );
@@ -42,6 +65,23 @@ export function StepPreferences({
       >
         Tune Opta to your workflow
       </p>
+
+      {profiled && (
+        <div
+          style={{
+            fontSize: 11,
+            color: WIZARD_THEME.ok,
+            background: WIZARD_THEME.okGlow,
+            border: `1px solid rgba(34, 197, 94, 0.3)`,
+            borderRadius: 6,
+            padding: "6px 10px",
+            marginBottom: 20,
+            display: "inline-block",
+          }}
+        >
+          ✓ Hardware Profiled: Safe Defaults Applied
+        </div>
+      )}
 
       {prefGroup(
         <>
