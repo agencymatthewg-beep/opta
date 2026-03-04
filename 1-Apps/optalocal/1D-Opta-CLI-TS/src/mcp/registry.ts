@@ -69,15 +69,15 @@ function dispatchOverlayEvent(
 ): void {
   const detailJson = JSON.stringify(detail);
   const expression = `window.dispatchEvent(new CustomEvent(${JSON.stringify(eventName)}, { detail: ${detailJson} }))`;
-  void mcpConn.call('browser_evaluate', { expression }).catch(() => {});
+  void mcpConn.call('browser_evaluate', { expression }).catch(() => { });
 }
 
 function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser'] | undefined): string[] {
   const browserConfig = browser as
     | (OptaConfig['browser'] & {
-        globalAllowedHosts?: string[];
-        policy?: { allowedHosts?: string[] };
-      })
+      globalAllowedHosts?: string[];
+      policy?: { allowedHosts?: string[] };
+    })
     | undefined;
   const policyHosts = normalizeStringList(browserConfig?.policy?.allowedHosts);
   const hasPolicyOverride = policyHosts.some((host) => host !== '*');
@@ -93,9 +93,9 @@ function resolvePlaywrightAllowedHosts(browser: OptaConfig['browser'] | undefine
 function resolvePlaywrightBlockedOrigins(browser: OptaConfig['browser'] | undefined): string[] {
   const browserConfig = browser as
     | (OptaConfig['browser'] & {
-        blockedOrigins?: string[];
-        policy?: { blockedOrigins?: string[] };
-      })
+      blockedOrigins?: string[];
+      policy?: { blockedOrigins?: string[] };
+    })
     | undefined;
   const policyBlocked = normalizeStringList(browserConfig?.policy?.blockedOrigins);
   if (policyBlocked.length > 0) return policyBlocked;
@@ -125,9 +125,9 @@ export async function buildToolRegistry(
   };
   const browser = config.browser as
     | (OptaConfig['browser'] & {
-        mcp?: { enabled?: boolean; command?: string; package?: string };
-        attach?: { enabled?: boolean };
-      })
+      mcp?: { enabled?: boolean; command?: string; package?: string };
+      attach?: { enabled?: boolean };
+    })
     | undefined;
   const browserEnabled = browser?.enabled ?? false;
   const browserMcp = browser?.mcp;
@@ -180,6 +180,28 @@ export async function buildToolRegistry(
         mcpRoutes.set(namespacedName, conn);
       }
 
+      if (name === PLAYWRIGHT_MCP_SERVER_KEY && browserEnabled) {
+        const namespacedFallback = `mcp__${name}__browser_action_coordinates`;
+        mcpSchemas.push({
+          type: 'function',
+          function: {
+            name: namespacedFallback,
+            description: `[${name}] Fallback tool: execute a programmatic mouse click or text input at an arbitrary X, Y screen coordinate when standard DOM selectors fail or the element is not exposed in the accessibility tree (e.g. inside a <canvas>).`,
+            parameters: {
+              type: 'object',
+              properties: {
+                action: { type: 'string', enum: ['click', 'type'] },
+                x: { type: 'number', description: 'X pixel coordinate on the current viewport' },
+                y: { type: 'number', description: 'Y pixel coordinate on the current viewport' },
+                text: { type: 'string', description: 'Text to type if action is "type"' },
+              },
+              required: ['action', 'x', 'y'],
+            },
+          },
+        });
+        mcpRoutes.set(namespacedFallback, conn);
+      }
+
       debug(`MCP "${name}": ${conn.tools.length} tools registered`);
     } else {
       // Extract server name from the settled result — map index matches serverEntries order
@@ -218,7 +240,7 @@ export async function buildToolRegistry(
       },
       onDiagnostics: options?.onLspDiagnostics,
     });
-    
+
     // Bind the OS-level watcher to sync IDE changes to the daemon
     const { setupWorkspaceWatcher } = await import('../lsp/watcher.js');
     setupWorkspaceWatcher(lspManager, process.cwd());
@@ -340,7 +362,7 @@ export async function buildToolRegistry(
                 executeEvaluate: (expression: string) => mcpConn.call('browser_evaluate', { expression }),
                 onBrowserEvent: onBrowserEvent
                   ? (toolName, _args, _result) =>
-                      onBrowserEvent(toolName, parentCtx?.parentSessionId ?? 'registry')
+                    onBrowserEvent(toolName, parentCtx?.parentSessionId ?? 'registry')
                   : undefined,
               },
               () => mcpConn.call(originalName, args),

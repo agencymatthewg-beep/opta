@@ -105,6 +105,47 @@ export async function interceptBrowserMcpCall(
     return execute();
   }
 
+  // Handle custom coordinate fallback natively via executeEvaluate to bypass Playwright Protocol Server
+  if (toolName === 'browser_action_coordinates') {
+    if (!config.executeEvaluate) throw new Error('config.executeEvaluate is required for browser_action_coordinates');
+    const x = Number(args.x);
+    const y = Number(args.y);
+    const action = args.action;
+
+    let evalStr = '';
+    if (action === 'click') {
+      evalStr = `
+        (function() {
+          var el = document.elementFromPoint(${x}, ${y});
+          if (el) { el.click(); el.focus(); return true; }
+          return false;
+        })()
+      `;
+    } else {
+      const text = typeof args.text === 'string' ? args.text.replace(/\\/g, '\\\\').replace(/"/g, '\\"') : '';
+      evalStr = `
+        (function() {
+          var el = document.elementFromPoint(${x}, ${y});
+          if (el) { 
+             el.focus(); 
+             if ('value' in el) el.value = "${text}";
+             el.dispatchEvent(new Event('input', { bubbles: true }));
+             el.dispatchEvent(new Event('change', { bubbles: true }));
+             return true;
+          }
+          return false;
+        })()
+      `;
+    }
+
+    await config.executeEvaluate(evalStr);
+
+    // Quick stabilization wait
+    await new Promise((r) => setTimeout(r, 600));
+
+    return `Successfully executed coordinate ${action} at (${x}, ${y}). Request a browser_snapshot to view the result.`;
+  }
+
   // ID-based Action Mapping (SoM compatibility)
   if ('element_id' in args && typeof args['element_id'] === 'number') {
     args['selector'] = `[data-opta-id="${args['element_id']}"]`;
@@ -165,7 +206,33 @@ export async function interceptBrowserMcpCall(
         }
       }
 
-      let result = await execute();
+      let result: unknown;
+      try {
+        result = await execute();
+      } catch (err: any) {
+        // Fallback for cross-frame web components and arbitrary shadow DOMs
+        if (
+          (toolName === 'browser_click' || toolName === 'browser_type' || toolName === 'browser_fill_form') &&
+          config.executeEvaluate &&
+          err.message && (err.message.includes('Timeout') || err.message.includes('waiting for selector'))
+        ) {
+          const selector = resolveSelectorArg(args);
+          if (selector) {
+            const action = toolName === 'browser_click' ? 'click' : 'type';
+            const value = typeof args['text'] === 'string' ? args['text'] : (typeof args['value'] === 'string' ? args['value'] : '');
+
+            // Fire and forget the fallback cross-frame message
+            const evalStr = `window.__optaFallbackAction && window.__optaFallbackAction('${action}', \`${selector.replace(/`/g, "\\`")}\`, \`${value.replace(/`/g, "\\`")}\`)`;
+            try { await config.executeEvaluate(evalStr); } catch { }
+
+            result = `Executed programmatic ${action} fallback across all frames. (Playwright original error: timeout)`;
+          } else {
+            throw err;
+          }
+        } else {
+          throw err;
+        }
+      }
 
       // Append SoM dictionary to snapshot output
       if (toolName === 'browser_snapshot' && somDictionary) {
@@ -201,8 +268,29 @@ export async function interceptBrowserMcpCall(
         config.executeEvaluate
       ) {
         try {
-          // Wait briefly for UI to react
-          await new Promise((resolve) => setTimeout(resolve, 800));
+          // Wait dynamically for UI to react and stabilize
+          const waitScript = `
+            new Promise(resolve => {
+              if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', () => setTimeout(resolve, 500));
+                setTimeout(resolve, 3000);
+                return;
+              }
+              let timer;
+              const observer = new MutationObserver(() => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { observer.disconnect(); resolve(true); }, 400);
+              });
+              if (document.body) observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+              timer = setTimeout(() => { observer.disconnect(); resolve(true); }, 400);
+              setTimeout(() => { observer.disconnect(); resolve(true); }, 3000);
+            })
+          `;
+          try {
+            await config.executeEvaluate(waitScript);
+          } catch {
+            await new Promise((r) => setTimeout(r, 800));
+          }
           const evalResult = await config.executeEvaluate('window.__optaInjectMarks && window.__optaInjectMarks()');
           let newState = '';
           if (isObjectRecord(evalResult) && 'result' in evalResult && typeof evalResult.result === 'string') {

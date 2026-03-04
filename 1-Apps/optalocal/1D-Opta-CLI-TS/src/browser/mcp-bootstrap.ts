@@ -37,6 +37,7 @@ interface PlaywrightMcpConfigFile {
       reducedMotion?: 'no-preference' | 'reduce';
       colorScheme?: 'dark' | 'light' | 'no-preference';
       viewport?: { width: number; height: number };
+      userAgent?: string;
     };
     initScript?: string[];
   };
@@ -72,7 +73,7 @@ async function readOverlayScript(): Promise<string> {
   } catch {
     throw new Error(
       `chrome-overlay not found at ${jsPath} or ${tsPath}. ` +
-        'Run `npm run build` to generate the compiled overlay.',
+      'Run `npm run build` to generate the compiled overlay.',
     );
   }
   const source = await readFile(tsPath, 'utf-8');
@@ -102,7 +103,7 @@ function stripTypeAnnotations(source: string): string {
     .replace(/\s+as\s+\w+/g, '')
     // Remove parameter type annotations like `(x: number, y: number)`
     // but preserve the parameter names
-    .replace(/(\w+)\s*:\s*(?:number|string|boolean|DOMRect|CustomEvent|EventListener)\b/g, '$1')
+    .replace(/(\w+)\s*:\s*(?:number|string|boolean|DOMRect|CustomEvent|EventListener|any|unknown|Element|Document|Node|ShadowRoot)\b/g, '$1')
     // Remove function return type annotations
     .replace(/\)\s*:\s*void\s*\{/g, ') {');
 }
@@ -142,6 +143,8 @@ export async function ensureBrowserConfigFiles(
       contextOptions: {
         reducedMotion,
         colorScheme: 'dark',
+        // Drop the HeadlessChrome user agent signature to evade basic bot detection
+        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       },
     },
   };

@@ -20,7 +20,12 @@
  *   opta:navigate -> { url: string }
  */
 (() => {
-  type WindowWithOpta = typeof window & { __OPTA_CHROME_INITIALIZED__?: boolean };
+  type WindowWithOpta = typeof window & {
+    __OPTA_CHROME_INITIALIZED__?: boolean;
+    __optaMarks?: Map<number, Element>;
+    __optaInjectMarks?: () => Promise<string>;
+    __optaFallbackAction?: (action: string, selector: string, value?: string) => boolean;
+  };
   const w = window as WindowWithOpta;
 
   if (typeof window === 'undefined' || w.__OPTA_CHROME_INITIALIZED__) return;
@@ -622,40 +627,60 @@
   // --- Initialize to idle state ---
   applyState('idle');
 
-  // --- Set-of-Marks (SoM) Injection ---
-  w.__optaMarks = new Map();
+  // --- Set-of-Marks (SoM) Injection & Cross-Frame Coordination ---
+  const framePrefix = Math.floor(Math.random() * 900) + 100; // 100-999
   let nextMarkId = 1;
 
-  w.__optaInjectMarks = function () {
-    // Clear previous marks
+  function collectMarksLocally(): Record<string, any> {
     const existingMarks = shadow.querySelectorAll('.opta-mark-badge');
     existingMarks.forEach((m) => m.remove());
+    w.__optaMarks = w.__optaMarks || new Map();
     w.__optaMarks.clear();
     nextMarkId = 1;
 
     const interactableSelectors = [
-      'button', 'a', 'input', 'select', 'textarea', 
-      '[role="button"]', '[role="link"]', '[role="checkbox"]', 
-      '[role="menuitem"]', '[role="switch"]', '[tabindex]:not([tabindex="-1"])'
+      'button', 'a', 'input', 'select', 'textarea',
+      '[role="button"]', '[role="link"]', '[role="checkbox"]',
+      '[role="menuitem"]', '[role="switch"]', '[tabindex]:not([tabindex="-1"])',
+      '[onclick]', '[onClick]', '[ng-click]', '[v-on\\:click]', '[data-action]'
     ].join(', ');
 
-    const elements = document.querySelectorAll(interactableSelectors);
+    const elements: Element[] = [];
+    const collectElements = (root: Element | Document | ShadowRoot) => {
+      if (root.nodeType === Node.ELEMENT_NODE) {
+        const el = root as Element;
+        if (el.id === 'opta-chrome-host') return;
+
+        if (el.matches(interactableSelectors)) {
+          elements.push(el);
+        }
+        if (el.shadowRoot) {
+          collectElements(el.shadowRoot);
+        }
+      }
+
+      const children = root.children;
+      if (children) {
+        for (let i = 0; i < children.length; i++) {
+          collectElements(children[i]);
+        }
+      }
+    };
+
+    collectElements(document.documentElement);
+
     const marks: Record<string, any> = {};
 
     elements.forEach((el) => {
-      // Check visibility
       const rect = el.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) return;
       const style = window.getComputedStyle(el);
       if (style.visibility === 'hidden' || style.display === 'none' || style.opacity === '0') return;
 
-      const id = nextMarkId++;
-      w.__optaMarks.set(id, el);
-      
-      // Tag the element for CSS selector fallback
+      const id = parseInt(`${framePrefix}${String(nextMarkId++).padStart(3, '0')}`);
+      w.__optaMarks!.set(id, el);
       el.setAttribute('data-opta-id', String(id));
 
-      // Draw visual badge
       const badge = document.createElement('div');
       badge.className = 'opta-mark-badge';
       badge.textContent = `[${id}]`;
@@ -672,10 +697,9 @@
       badge.style.pointerEvents = 'none';
       badge.style.border = '1px solid #fff';
       badge.style.boxShadow = '0 0 4px rgba(0,0,0,0.5)';
-      
+
       shadow.appendChild(badge);
 
-      // Collect data
       marks[id] = {
         id,
         tag: el.tagName.toLowerCase(),
@@ -685,6 +709,83 @@
       };
     });
 
-    return JSON.stringify(marks);
+    return marks;
+  }
+
+  w.__optaInjectMarks = async function () {
+    const localMarks = collectMarksLocally();
+    const frames = Array.from(document.querySelectorAll('iframe'));
+    if (frames.length === 0) return JSON.stringify(localMarks);
+
+    return new Promise((resolve) => {
+      const allMarks = { ...localMarks };
+      let completed = 0;
+      let resolved = false;
+
+      const finish = () => {
+        if (resolved) return;
+        resolved = true;
+        window.removeEventListener('message', onMessage);
+        resolve(JSON.stringify(allMarks));
+      };
+
+      const timer = setTimeout(finish, 800);
+
+      const onMessage = (e: MessageEvent) => {
+        if (e.data?.type === 'OPTA_MARKS_RESPONSE') {
+          Object.assign(allMarks, e.data.marks);
+          completed++;
+          if (completed >= frames.length) {
+            clearTimeout(timer);
+            finish();
+          }
+        }
+      };
+
+      window.addEventListener('message', onMessage);
+
+      frames.forEach(f => {
+        try {
+          f.contentWindow?.postMessage({ type: 'OPTA_MARKS_REQUEST' }, '*');
+        } catch {
+          completed++;
+        }
+      });
+
+      if (completed >= frames.length) {
+        clearTimeout(timer);
+        finish();
+      }
+    });
   };
+
+  w.__optaFallbackAction = function (action: string, selector: string, value?: string) {
+    const el = document.querySelector(selector) as HTMLElement;
+    if (el) {
+      if (action === 'click') {
+        el.click();
+      } else if (action === 'type') {
+        if ('value' in el) (el as HTMLInputElement).value = value || '';
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      return true;
+    }
+
+    const frames = document.querySelectorAll('iframe');
+    frames.forEach(f => {
+      try { f.contentWindow?.postMessage({ type: 'OPTA_FALLBACK', action, selector, value }, '*'); } catch { }
+    });
+    return false;
+  };
+
+  window.addEventListener('message', (e) => {
+    if (e.data?.type === 'OPTA_MARKS_REQUEST') {
+      w.__optaInjectMarks!().then((marksStr: string) => {
+        e.source?.postMessage({ type: 'OPTA_MARKS_RESPONSE', marks: JSON.parse(marksStr) }, { targetOrigin: '*' });
+      });
+    } else if (e.data?.type === 'OPTA_FALLBACK') {
+      w.__optaFallbackAction!(e.data.action, e.data.selector, e.data.value);
+    }
+  });
 })();
