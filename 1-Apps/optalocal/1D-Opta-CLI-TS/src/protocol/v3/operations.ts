@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { PROVIDER_OVERRIDE_NAMES } from '../../utils/config-helpers.js';
 
 export const OPERATION_IDS = [
   'doctor',
@@ -109,7 +108,14 @@ export const OperationDescriptorSchema = z
 export type OperationDescriptor = z.infer<typeof OperationDescriptorSchema>;
 
 const EmptyInputSchema = z.object({}).strict();
-const ProviderOverrideSchema = z.enum(PROVIDER_OVERRIDE_NAMES);
+const OPERATION_PROVIDER_OVERRIDE_NAMES = [
+  'lmx',
+  'anthropic',
+  'gemini',
+  'openai',
+  'opencode_zen',
+] as const;
+const ProviderOverrideSchema = z.enum(OPERATION_PROVIDER_OVERRIDE_NAMES);
 
 export const OperationInputSchemaById = {
   doctor: EmptyInputSchema,

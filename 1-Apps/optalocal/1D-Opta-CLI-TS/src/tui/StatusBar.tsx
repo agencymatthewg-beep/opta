@@ -69,6 +69,8 @@ interface InkStatusBarProps {
   primaryHost?: string;
   /** Called when user requests reconnect (r key when connection error). */
   onReconnect?: () => void;
+  /** When true, show Offline pill. */
+  offlineMode?: boolean;
 }
 
 const ACTIVE_PHASES = new Set(['streaming', 'waiting', 'tool-call', 'connecting']);
@@ -94,6 +96,7 @@ export function InkStatusBar({
   activeHost,
   primaryHost,
   onReconnect,
+  offlineMode = false,
 }: InkStatusBarProps) {
   const { stdout } = useStdout();
   const columns = stdout?.columns ?? process.stdout.columns ?? LAYOUT.fallbackColumns;
@@ -196,6 +199,12 @@ export function InkStatusBar({
             <>
               <Text dimColor> </Text>
               <Text color="#f59e0b" bold>(fallback)</Text>
+            </>
+          )}
+          {offlineMode && (
+            <>
+              <Text dimColor> </Text>
+              <Text color={TUI_COLORS.danger} bold>OFFLINE</Text>
             </>
           )}
         </Box>

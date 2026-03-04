@@ -28,6 +28,7 @@ Generated from canonical frontmatter statuses for `1-Apps/optalocal/1D-Opta-CLI-
 
 ## ARCHIVED
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/.planning/phases/02-tui-input/02-01-PLAN.md` (ARCHIVED) — no open checklist items
+- [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-04-cli-desktop-accounts-resilience.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-04-lsp-and-universal-models-plan.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-12-opta-cli-v1-design.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-16-v2-features-implementation.md` (ARCHIVED) — no open checklist items

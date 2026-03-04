@@ -17,6 +17,7 @@ import type { OnStreamCallbacks } from './agent.js';
 import type { OptaConfig } from './config.js';
 import { isAbortError, streamLmxChatWebSocket } from '../lmx/connection.js';
 import { resolveLmxEndpoint } from '../lmx/endpoints.js';
+import { parseProviderName } from '../utils/provider-normalization.js';
 
 // --- Types ---
 
@@ -158,7 +159,13 @@ async function maybeCreateLmxWsStream(
   params: Parameters<OpenAI['chat']['completions']['create']>[0]
 ): Promise<ChunkStream | null> {
   if (!transport?.config) return null;
-  const providerName = transport.providerName ?? transport.config.provider.active;
+  const rawProviderName = transport.providerName ?? transport.config.provider.active;
+  let providerName: string | null = null;
+  try {
+    providerName = parseProviderName(rawProviderName);
+  } catch {
+    providerName = null;
+  }
   if (providerName !== 'lmx') return null;
   let endpointHost = transport.resolvedLmxHost;
   if (!endpointHost) {
@@ -168,7 +175,7 @@ async function maybeCreateLmxWsStream(
         fallbackHosts: transport.config.connection.fallbackHosts,
         port: transport.config.connection.port,
         adminKey: transport.config.connection.adminKey,
-    adminKeysByHost: transport.config.connection.adminKeysByHost,
+        adminKeysByHost: transport.config.connection.adminKeysByHost,
       },
       { timeoutMs: 1_500 }
     );
@@ -496,12 +503,16 @@ export async function createStreamWithRetry(
   transport?: StreamTransportOptions
 ): Promise<AsyncIterable<OpenAI.Chat.Completions.ChatCompletionChunk>> {
   let lastError: unknown;
+  const rawProviderName = transport?.providerName ?? transport?.config?.provider.active;
+  let runtimeProviderName: string | null = null;
+  try {
+    runtimeProviderName = rawProviderName ? parseProviderName(rawProviderName) : null;
+  } catch {
+    runtimeProviderName = null;
+  }
   // `isLmxProvider`: routing through Opta-LMX regardless of whether WS or SSE is used.
   // `shouldTryLmxWs`: only true when WS has not been established as unavailable this session.
-  const isLmxProvider = Boolean(
-    transport?.config &&
-      (transport.providerName ?? transport.config.provider.active) === 'lmx'
-  );
+  const isLmxProvider = Boolean(transport?.config && runtimeProviderName === 'lmx');
   const shouldTryLmxWs = isLmxProvider && !transport?.lmxWsUnavailable;
 
   for (let attempt = 0; attempt <= retryConfig.maxRetries; attempt++) {

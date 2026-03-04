@@ -39,6 +39,21 @@ vi.mock('../../src/providers/anthropic.js', () => ({
   },
 }));
 
+vi.mock('../../src/providers/cloud.js', () => ({
+  CloudProvider: class MockCloudProvider {
+    readonly name: string;
+    readonly config: OptaConfig;
+    readonly getClient = vi.fn().mockResolvedValue({});
+    readonly listModels = vi.fn().mockResolvedValue([]);
+    readonly health = vi.fn().mockResolvedValue({ ok: true, latencyMs: 35 });
+
+    constructor(name: string, config: OptaConfig) {
+      this.name = name;
+      this.config = config;
+    }
+  },
+}));
+
 vi.mock('../../src/providers/fallback.js', () => ({
   FallbackProvider: class MockFallbackProvider {
     readonly name = 'lmx+fallback';
@@ -353,6 +368,39 @@ describe('probeProvider — LMX unreachable + ANTHROPIC_API_KEY set', () => {
     const provider = await probeProvider(config);
 
     expect(provider.name).toBe('anthropic');
+  });
+});
+
+describe('probeProvider — LMX unreachable + cloud fallback order', () => {
+  afterEach(() => {
+    delete process.env['ANTHROPIC_API_KEY'];
+    delete process.env['GEMINI_API_KEY'];
+    delete process.env['OPENAI_API_KEY'];
+    delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
+  });
+
+  it('returns OpenAI cloud provider when only OPENAI_API_KEY is present', async () => {
+    process.env['OPENAI_API_KEY'] = 'sk-openai-test-key';
+    const probeMock = await getProbeMock();
+    probeMock.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'ECONNREFUSED' });
+
+    const config = makeConfig({ provider: { ...DEFAULT_CONFIG.provider, active: 'lmx' } });
+    const provider = await probeProvider(config);
+
+    expect(provider.name).toBe('openai');
+  });
+
+  it('respects OPTA_CLOUD_FALLBACK_ORDER when multiple cloud keys are present', async () => {
+    process.env['GEMINI_API_KEY'] = 'sk-gemini-test-key';
+    process.env['OPENAI_API_KEY'] = 'sk-openai-test-key';
+    process.env['OPTA_CLOUD_FALLBACK_ORDER'] = 'openai,gemini';
+    const probeMock = await getProbeMock();
+    probeMock.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'ECONNREFUSED' });
+
+    const config = makeConfig({ provider: { ...DEFAULT_CONFIG.provider, active: 'lmx' } });
+    const provider = await probeProvider(config);
+
+    expect(provider.name).toBe('openai');
   });
 });
 

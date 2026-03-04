@@ -34,9 +34,11 @@ function providerIdLabel(provider: WizardFormData["provider"]): string {
 export function StepReady({
   form,
   onComplete,
+  connection,
 }: {
   form: WizardFormData;
   onComplete: () => void;
+  connection?: DaemonConnectionOptions | null;
 }) {
   const [launching, setLaunching] = useState(false);
   const [launched, setLaunched] = useState(false);

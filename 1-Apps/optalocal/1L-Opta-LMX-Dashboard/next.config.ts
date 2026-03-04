@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next'
+import path from 'node:path'
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -25,6 +26,9 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
+  },
+  turbopack: {
+    root: path.resolve(__dirname),
   },
   async headers() {
     return [

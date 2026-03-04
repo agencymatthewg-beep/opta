@@ -8,6 +8,7 @@ import { agentLoop } from '../../core/agent.js';
 import { generateTitle, saveSession } from '../../memory/store.js';
 import { estimateTokens, formatTokens } from '../../utils/tokens.js';
 import { runMenuPrompt } from '../../ui/prompt-nav.js';
+import { normalizeProviderName } from '../../utils/provider-normalization.js';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 
 function parseSlashArgs(raw: string): string[] {
@@ -438,7 +439,7 @@ const renameHandler = async (args: string, ctx: SlashContext): Promise<SlashResu
 
 const costHandler = (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const messages = ctx.session.messages;
-  const isLocal = ctx.config.provider.active === 'lmx';
+  const isLocal = normalizeProviderName(ctx.config.provider.active, 'lmx') === 'lmx';
 
   let inputTokens = 0;
   let outputTokens = 0;

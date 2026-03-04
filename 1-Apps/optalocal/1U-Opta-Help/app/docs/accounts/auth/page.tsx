@@ -210,7 +210,7 @@ export NEXT_PUBLIC_SUPABASE_ANON_KEY="$OPTA_SUPABASE_ANON_KEY"`}
           </Callout>
           <p>Manual overrides are still available:</p>
           <CommandBlock
-            command="opta config set connection.adminKeysByHost '{\"127.0.0.1\":\"<key>\"}'"
+            command={`opta config set connection.adminKeysByHost '{"127.0.0.1":"<key>"}'`}
             description="Pin specific loopback hosts when multiple simulators are running."
           />
           <CommandBlock

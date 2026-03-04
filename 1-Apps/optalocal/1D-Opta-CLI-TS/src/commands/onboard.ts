@@ -15,6 +15,10 @@ import {
 import { getConfigDir } from '../platform/paths.js';
 import { discoverLmxHosts } from '../lmx/mdns-discovery.js';
 import { LmxApiError, LmxClient } from '../lmx/client.js';
+import {
+  normalizeProviderName,
+  type CanonicalProviderName,
+} from '../utils/provider-normalization.js';
 
 // ── Onboard marker (first-run detection) ────────────────────────────────────
 
@@ -35,13 +39,10 @@ export async function markOnboarded(): Promise<void> {
   await writeFile(ONBOARD_MARKER, new Date().toISOString(), 'utf-8');
 }
 
-export type OnboardingProvider = string;
+export type OnboardingProvider = CanonicalProviderName;
 
 function normalizeOnboardingProvider(input: string | undefined): OnboardingProvider {
-  if (input === 'anthropic' || input === 'gemini' || input === 'openai' || input === 'opencode_zen') {
-    return input;
-  }
-  return 'lmx';
+  return normalizeProviderName(input, 'lmx');
 }
 
 interface ProviderFieldConfig {
@@ -52,7 +53,7 @@ interface ProviderFieldConfig {
 }
 
 export interface OnboardingProfileInput {
-  provider?: OnboardingProvider;
+  provider?: string;
   lmxHost?: string;
   lmxPort?: number;
   lmxAdminKey?: string;
@@ -389,8 +390,8 @@ export async function runOnboarding(): Promise<void> {
         'Local LMX  ' + chalk.dim('— Remote/local inference server (recommended)'),
         'Anthropic  ' + chalk.dim('— Cloud API with your API key'),
         'Gemini    ' + chalk.dim('— Google OpenAI-compatible endpoint (Gemini)'),
-        'OpenAI    ' + chalk.dim('— OpenAI/Codex-compatible endpoint'),
-        'Opencode Zen' + chalk.dim('— Alternative provider endpoint'),
+        'OpenAI    ' + chalk.dim('— OpenAI/Codex/Minimax-compatible endpoint'),
+        'Opencode Zen' + chalk.dim('— OpenCode-compatible endpoint'),
       ],
       (() => {
         const active = normalizeOnboardingProvider(existing?.provider.active);

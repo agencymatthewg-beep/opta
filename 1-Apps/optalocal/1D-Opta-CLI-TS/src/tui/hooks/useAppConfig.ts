@@ -13,6 +13,7 @@ import type { ResponseIntentTone } from '../response-intent.js';
 import { DEFAULT_TRIGGER_MODE_DEFINITIONS, type TriggerModeDefinition } from '../trigger-router.js';
 import { homedir } from '../../platform/index.js';
 import { errorMessage } from '../../utils/errors.js';
+import type { StartupConnectionNotice } from '../types.js';
 
 interface SkillRuntimeSettings {
   dynamicLoading: boolean;
@@ -80,6 +81,8 @@ export interface UseAppConfigReturn {
   // Full config snapshot + refresh
   configSnapshot: OptaConfig;
   refreshConfig: () => Promise<void>;
+  startupConnectionNotice: StartupConnectionNotice | null;
+  setStartupConnectionNotice: React.Dispatch<React.SetStateAction<StartupConnectionNotice | null>>;
 }
 
 export interface UseAppConfigDeps {
@@ -140,6 +143,8 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
 
   // --- Keybinding overrides ---
   const [keybindingOverrides, setKeybindingOverrides] = useState<KeybindingOverrides>({});
+  const [startupConnectionNotice, setStartupConnectionNotice] =
+    useState<StartupConnectionNotice | null>(null);
 
   // --- Context limit loading ---
   useEffect(() => {
@@ -394,5 +399,7 @@ export function useAppConfig(deps: UseAppConfigDeps): UseAppConfigReturn {
     reconnectLmx,
     configSnapshot,
     refreshConfig,
+    startupConnectionNotice,
+    setStartupConnectionNotice,
   };
 }

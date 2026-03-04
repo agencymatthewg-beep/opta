@@ -5,6 +5,12 @@ import { EXIT, ExitError } from '../core/errors.js';
 import { parseAdminKeysByHost } from '../lmx/admin-keys.js';
 import { lookupContextLimit } from '../lmx/client.js';
 import { normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
+import {
+  CANONICAL_PROVIDER_NAMES,
+  normalizeProviderName,
+  parseProviderName,
+  providerOptionHelp,
+} from '../utils/provider-normalization.js';
 
 interface EnvCommandOptions {
   json?: boolean;
@@ -37,7 +43,7 @@ export interface EnvProfile {
 
 const ENV_PROFILES_KEY = 'profiles.environments';
 const ENV_CURRENT_KEY = 'profiles.activeEnvironment';
-const VALID_PROVIDERS = new Set<ProviderName>(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']);
+const VALID_PROVIDERS = new Set<ProviderName>([...CANONICAL_PROVIDER_NAMES]);
 const VALID_MODES = new Set<DefaultMode>([
   'safe',
   'auto',
@@ -60,12 +66,12 @@ function parsePort(value: string | undefined, fallback: number): number {
 
 function parseProvider(value: string | undefined, fallback: ProviderName): ProviderName {
   if (!value || !value.trim()) return fallback;
-  const normalized = value.trim().toLowerCase() as ProviderName;
-  if (!VALID_PROVIDERS.has(normalized)) {
-    console.error(chalk.red('✗') + ` Invalid provider: ${value}`);
+  try {
+    return parseProviderName(value) as ProviderName;
+  } catch {
+    console.error(chalk.red('✗') + ` Invalid provider: ${value}. Expected ${providerOptionHelp()}`);
     throw new ExitError(EXIT.MISUSE);
   }
-  return normalized;
 }
 
 function parseMode(value: string | undefined, fallback: DefaultMode): DefaultMode {
@@ -134,9 +140,11 @@ function sanitizeProfiles(raw: unknown): Record<string, EnvProfile> {
     if (typeof host !== 'string' || !host.trim()) continue;
     if (typeof port !== 'number' || !Number.isFinite(port)) continue;
     if (typeof modelDefault !== 'string') continue;
-    if (typeof providerRaw !== 'string' || !VALID_PROVIDERS.has(providerRaw as ProviderName)) continue;
+    if (typeof providerRaw !== 'string') continue;
+    const providerNormalized = normalizeProviderName(providerRaw, 'lmx') as ProviderName;
+    if (!VALID_PROVIDERS.has(providerNormalized)) continue;
     if (typeof defaultMode !== 'string' || !VALID_MODES.has(defaultMode as DefaultMode)) continue;
-    const provider = providerRaw as ProviderName;
+    const provider = providerNormalized;
 
     const normalized = normalizeEnvProfileName(typeof obj.name === 'string' ? obj.name : key);
     if (!normalized) continue;

@@ -81,14 +81,16 @@ describe('opta CLI', () => {
     const result = await run(['do', '--provider', 'invalid', 'test']);
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain('Invalid provider');
-    expect(result.stderr).toContain('lmx, anthropic');
+    expect(result.stderr).toContain('lmx|anthropic|gemini|openai|opencode_zen');
+    expect(result.stderr).toContain('aliases: claude, google, codex, minimax, opencode');
   });
 
   it('fails clearly for invalid do provider', async () => {
     const result = await run(['do', 'echo ok', '--provider', 'invalid']);
     expect(result.exitCode).not.toBe(0);
     expect(result.stderr).toContain('Invalid provider');
-    expect(result.stderr).toContain('lmx, anthropic');
+    expect(result.stderr).toContain('lmx|anthropic|gemini|openai|opencode_zen');
+    expect(result.stderr).toContain('aliases: claude, google, codex, minimax, opencode');
   });
 
   it('chat command accepts --auto flag', async () => {

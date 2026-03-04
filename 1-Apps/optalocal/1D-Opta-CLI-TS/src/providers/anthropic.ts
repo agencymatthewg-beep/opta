@@ -10,8 +10,11 @@ import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './
 import type { OptaConfig } from '../core/config.js';
 import { errorMessage } from '../utils/errors.js';
 import { instantiateOrInvoke } from '../utils/newable.js';
-
-type AnthropicKeySource = 'config' | 'env' | 'keychain' | 'cloud' | 'none';
+import {
+  providerEnvVarNames,
+  resolveProviderApiKey,
+  type ProviderKeySource,
+} from '../utils/provider-normalization.js';
 
 export class AnthropicProvider implements ProviderClient {
   readonly name = 'anthropic';
@@ -22,34 +25,8 @@ export class AnthropicProvider implements ProviderClient {
     this.config = config;
   }
 
-  private async resolveApiKey(): Promise<{ apiKey: string; source: AnthropicKeySource }> {
-    const configuredKey = this.config.provider.anthropic.apiKey?.trim();
-    if (configuredKey) return { apiKey: configuredKey, source: 'config' };
-
-    const envKey = process.env['ANTHROPIC_API_KEY']?.trim();
-    if (envKey) return { apiKey: envKey, source: 'env' };
-
-    try {
-      const { getAnthropicKey } = await import('../keychain/api-keys.js');
-      const keychainKey = (await getAnthropicKey())?.trim();
-      if (keychainKey) return { apiKey: keychainKey, source: 'keychain' };
-    } catch {
-      // Keychain unavailable/errored: continue and check cloud.
-    }
-
-    // 4. Opta Accounts cloud key — mirrors the LMX resolution chain so that
-    //    keys stored via the Opta Accounts portal work for Anthropic too.
-    try {
-      const { loadAccountState } = await import('../accounts/storage.js');
-      const { resolveCloudApiKey } = await import('../accounts/cloud.js');
-      const state = await loadAccountState();
-      const cloudKey = (await resolveCloudApiKey(state, 'anthropic'))?.trim();
-      if (cloudKey) return { apiKey: cloudKey, source: 'cloud' };
-    } catch {
-      // Cloud lookup unavailable — fall through to none.
-    }
-
-    return { apiKey: '', source: 'none' };
+  private async resolveApiKey(): Promise<{ apiKey: string; source: ProviderKeySource }> {
+    return resolveProviderApiKey(this.config, 'anthropic');
   }
 
   async getClient(): Promise<import('openai').default> {
@@ -59,12 +36,15 @@ export class AnthropicProvider implements ProviderClient {
     const { apiKey } = await this.resolveApiKey();
 
     if (!apiKey) {
+      const envHints = providerEnvVarNames('anthropic')
+        .map((envVar) => `export ${envVar}=sk-ant-...`)
+        .join('\n  or ');
       throw new Error(
         'Anthropic API key required.\n\n' +
           'Set it via:\n' +
           '  opta config set provider.anthropic.apiKey sk-ant-...\n' +
-          '  or export ANTHROPIC_API_KEY=sk-ant-...\n' +
-          '  or opta keychain set-anthropic sk-ant-...\n' +
+          `  or ${envHints}\n` +
+          '  or opta keychain set-anthropic sk-ant-... (or set-claude)\n' +
           '  or add an Anthropic key in your Opta Account at accounts.optalocal.com'
       );
     }

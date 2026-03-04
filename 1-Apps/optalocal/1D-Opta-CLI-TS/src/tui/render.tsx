@@ -8,6 +8,7 @@ import type { SlashCommandResult } from './App.js';
 import type { TuiMessage } from './App.js';
 import { isTTY } from '../ui/output.js';
 import { colorizeOptaWord } from '../ui/brand.js';
+import type { StartupConnectionNotice } from './types.js';
 
 /** Legacy render options — waits for full response before display. */
 interface LegacyRenderOptions {
@@ -31,6 +32,8 @@ interface StreamingRenderOptions {
   title?: string;
   /** Called when user cycles workflow mode (Shift+Tab). */
   onModeChange?: (mode: string) => void;
+  /** Startup connection guardrail metadata. */
+  startupConnectionNotice?: StartupConnectionNotice;
 }
 
 type RenderOptions = LegacyRenderOptions | StreamingRenderOptions;
@@ -104,6 +107,7 @@ export async function renderTUI(options: RenderOptions): Promise<void> {
       initialModelLoaded: options.initialModelLoaded,
       title: options.title,
       onModeChange: options.onModeChange,
+      startupConnectionNotice: options.startupConnectionNotice,
     }
     : { model, sessionId, onMessage: options.onMessage };
 

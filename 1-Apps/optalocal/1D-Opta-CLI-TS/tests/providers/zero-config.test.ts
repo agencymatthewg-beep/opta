@@ -50,6 +50,18 @@ vi.mock('../../src/providers/anthropic.js', () => ({
   }),
 }));
 
+vi.mock('../../src/providers/cloud.js', () => ({
+  CloudProvider: vi.fn().mockImplementation(function(name: string, config: OptaConfig) {
+    return {
+      name,
+      config,
+      getClient: vi.fn().mockResolvedValue({}),
+      listModels: vi.fn().mockResolvedValue([{ id: `${name}-model` }]),
+      health: vi.fn().mockResolvedValue({ ok: true, latencyMs: 40 }),
+    };
+  }),
+}));
+
 vi.mock('../../src/providers/fallback.js', () => ({
   FallbackProvider: vi.fn().mockImplementation(function(primary: unknown, config: OptaConfig) {
     return {
@@ -123,6 +135,9 @@ afterEach(async () => {
   resetProviderCache();
   vi.clearAllMocks();
   delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['GEMINI_API_KEY'];
+  delete process.env['OPENAI_API_KEY'];
+  delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
 });
 
 // ---------------------------------------------------------------------------
@@ -254,6 +269,32 @@ describe('probeProvider — LMX unreachable + ANTHROPIC_API_KEY set', () => {
 
     stdoutSpy.mockRestore();
     consoleLogSpy.mockRestore();
+  });
+});
+
+describe('probeProvider — LMX unreachable + cloud provider keys', () => {
+  it('uses OpenAI provider when only OPENAI_API_KEY is configured', async () => {
+    process.env['OPENAI_API_KEY'] = 'sk-openai-test-key';
+    const probeLmx = await getProbeLmxConnection();
+    probeLmx.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'connection refused' });
+
+    const { probeProvider } = await getProbeProvider();
+    const provider = await probeProvider(DEFAULT_CONFIG);
+
+    expect(provider.name).toBe('openai');
+  });
+
+  it('respects fallback order env var when multiple cloud keys exist', async () => {
+    process.env['GEMINI_API_KEY'] = 'sk-gemini-test-key';
+    process.env['OPENAI_API_KEY'] = 'sk-openai-test-key';
+    process.env['OPTA_CLOUD_FALLBACK_ORDER'] = 'openai,gemini';
+    const probeLmx = await getProbeLmxConnection();
+    probeLmx.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'connection refused' });
+
+    const { probeProvider } = await getProbeProvider();
+    const provider = await probeProvider(DEFAULT_CONFIG);
+
+    expect(provider.name).toBe('openai');
   });
 });
 

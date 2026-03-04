@@ -13,6 +13,7 @@ import { loadCustomTools, toToolSchema, executeCustomTool, type CustomToolDef } 
 import { createPlaywrightMcpServerConfig } from '../browser/mcp-bootstrap.js';
 import { normalizeStringList } from '../utils/text.js';
 import { resolveAdminKeyForHost } from '../lmx/admin-keys.js';
+import { normalizeProviderName } from '../utils/provider-normalization.js';
 
 interface ToolSchema {
   type: 'function';
@@ -482,7 +483,7 @@ export async function buildToolRegistry(
 async function resolveLmxModel(config: OptaConfig): Promise<string> {
   const model = config.model.default;
 
-  if (config.provider.active !== 'lmx') {
+  if (normalizeProviderName(config.provider.active, 'lmx') !== 'lmx') {
     return model;
   }
 

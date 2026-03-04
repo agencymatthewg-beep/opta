@@ -16,6 +16,7 @@ import type {
 } from '../lmx/client.js';
 import type { ProviderModelInfo } from './base.js';
 import type { OptaConfig } from '../core/config.js';
+import { hasProviderApiKey, normalizeProviderName } from '../utils/provider-normalization.js';
 
 // --- Scan Result ---
 
@@ -115,9 +116,8 @@ export async function scanModels(config: OptaConfig, full = false): Promise<Scan
   // Query Anthropic provider in parallel with LMX
   const anthropicPromise = (async () => {
     if (
-      config.provider.active === 'anthropic' ||
-      config.provider.anthropic.apiKey ||
-      process.env['ANTHROPIC_API_KEY']
+      normalizeProviderName(config.provider.active, 'lmx') === 'anthropic' ||
+      (await hasProviderApiKey(config, 'anthropic'))
     ) {
       try {
         const { getProvider } = await import('./manager.js');

@@ -27,6 +27,14 @@ import type { Session } from '../memory/store.js';
 import { runMenuPrompt } from '../ui/prompt-nav.js';
 import type { TuiMessage } from '../tui/App.js';
 import type { TuiErrorEvent, TuiErrorPayload } from '../tui/adapter.js';
+import type { StartupConnectionNotice } from '../tui/types.js';
+import {
+  normalizeProviderName,
+  providerDisplayName,
+  providerEndpointHint,
+  providerModelFromConfig,
+  type CanonicalProviderName,
+} from '../utils/provider-normalization.js';
 
 // Narrowed client type used for LMX model preflight/load path.
 type LmxLifecycleClient = {
@@ -161,18 +169,43 @@ type LmxClientLike = {
 };
 
 type ProviderLike = {
-  active?: 'lmx' | 'anthropic';
+  active?: string;
   anthropic?: { model?: string };
+  customProviders?: Array<{ id: string; baseURL: string }>;
 };
 
 function readProvider(config: Awaited<ReturnType<typeof loadConfig>>): {
-  active: 'lmx' | 'anthropic';
-  anthropicModel?: string;
+  active: CanonicalProviderName | 'custom';
+  rawActive: string;
+  endpoint: string;
+  label: string;
+  model: string;
+  isCloud: boolean;
 } {
   const provider = config.provider as ProviderLike | undefined;
+  const rawActive = provider?.active?.trim() || 'lmx';
+  const custom = provider?.customProviders?.find((entry) => entry.id === rawActive);
+  if (custom) {
+    return {
+      active: 'custom',
+      rawActive,
+      endpoint: custom.baseURL,
+      label: rawActive,
+      model: config.model.default,
+      isCloud: true,
+    };
+  }
+  const active = normalizeProviderName(rawActive, 'lmx');
   return {
-    active: provider?.active === 'anthropic' ? 'anthropic' : 'lmx',
-    anthropicModel: provider?.anthropic?.model,
+    active,
+    rawActive,
+    endpoint:
+      active === 'lmx'
+        ? `${config.connection.host}:${config.connection.port}`
+        : providerEndpointHint(active),
+    label: providerDisplayName(active),
+    model: providerModelFromConfig(config, active),
+    isCloud: active !== 'lmx',
   };
 }
 
@@ -206,7 +239,7 @@ async function ensureModelLoadedOnLmxStartup(
   modelId: string,
   preflight: ModelPreflightStatus
 ): Promise<ModelPreflightStatus> {
-  if (readProvider(config).active === 'anthropic') {
+  if (readProvider(config).isCloud) {
     return preflight;
   }
 
@@ -253,9 +286,8 @@ async function probeModelPreflight(
   config: Awaited<ReturnType<typeof loadConfig>>,
   modelId: string
 ): Promise<ModelPreflightStatus> {
-  // When running on Anthropic (zero-config fallback or explicit config), the
-  // model is always "loaded" from the CLI's perspective — no LMX probe needed.
-  if (readProvider(config).active === 'anthropic') {
+  // Cloud providers do not require local model probes.
+  if (readProvider(config).isCloud) {
     return { modelLoaded: true, loadedModelIds: [modelId] };
   }
 
@@ -298,12 +330,84 @@ async function runChatDiskPreflight(
   }
 }
 
+function connectionEndpoints(config: Awaited<ReturnType<typeof loadConfig>>): string[] {
+  const endpoints = new Set<string>();
+  const addHost = (rawHost: string | undefined) => {
+    if (!rawHost) return;
+    const host = rawHost.trim();
+    if (!host) return;
+    if (host.includes(':')) {
+      endpoints.add(host);
+      return;
+    }
+    endpoints.add(`${host}:${config.connection.port}`);
+  };
+  addHost(config.connection.host);
+  for (const host of config.connection.fallbackHosts ?? []) {
+    addHost(host);
+  }
+  return Array.from(endpoints);
+}
+
+function buildProbeStartupNotice(
+  payload: {
+    attemptedSummary?: string;
+    probeFailures?: string[];
+    attemptedEndpoints?: string[];
+  },
+  config: Awaited<ReturnType<typeof loadConfig>>
+): StartupConnectionNotice {
+  const attempted =
+    payload.attemptedEndpoints && payload.attemptedEndpoints.length > 0
+      ? payload.attemptedEndpoints
+      : connectionEndpoints(config);
+  const summary = payload.attemptedSummary
+    ? `LMX unreachable (${payload.attemptedSummary})`
+    : 'LMX unreachable';
+  const failureDetail =
+    payload.probeFailures && payload.probeFailures.length > 0
+      ? payload.probeFailures.slice(0, 2).join(' | ')
+      : 'Check OPTA_ADMIN_KEY or ~/.opta-lmx/config.yaml.';
+  return {
+    severity: 'error',
+    bullets: [summary, `Probe failures: ${failureDetail}`],
+    attemptedEndpoints: attempted,
+  };
+}
+
+function buildAdminKeyNotice(
+  config: Awaited<ReturnType<typeof loadConfig>>,
+  errorText: string | undefined
+): StartupConnectionNotice {
+  return {
+    severity: 'error',
+    bullets: [
+      'LMX rejected the configured admin key.',
+      errorText ?? 'Update OPTA_ADMIN_KEY or ~/.opta-lmx/config.yaml.',
+    ],
+    attemptedEndpoints: connectionEndpoints(config),
+  };
+}
+
+function isAdminKeyErrorMessage(message: string | undefined): boolean {
+  if (!message) return false;
+  const normalized = message.toLowerCase();
+  return (
+    normalized.includes('401') ||
+    normalized.includes('unauthorized') ||
+    normalized.includes('admin key') ||
+    normalized.includes('forbidden')
+  );
+}
+
 export async function startChat(opts: ChatOptions): Promise<void> {
   const overrides = buildConfigOverrides(opts);
 
   const jsonMode = opts.format === 'json';
   let config = await loadConfig(overrides);
   await runChatDiskPreflight(config, jsonMode);
+  const shouldRenderTui = opts.tui || config.tui.default;
+  let startupConnectionNotice: StartupConnectionNotice | undefined;
 
   // First-run onboarding + project scaffold.
   if (!jsonMode) {
@@ -326,72 +430,80 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   }
 
   // Zero-config fallback: probe LMX before the first turn.
-  // If LMX is unreachable and ANTHROPIC_API_KEY is set, silently switch to
-  // Anthropic so fresh installs with only an API key work out of the box.
-  // Only probe when provider is 'lmx' (default) — skip if user explicitly
-  // configured Anthropic or if we're in JSON (pipe) mode where silence matters.
-  if (readProvider(config).active === 'lmx') {
+  // If LMX is unreachable and a configured cloud key exists, silently switch
+  // to cloud so fresh installs with existing subscriptions work out of the box.
+  // Only probe when provider is LMX — skip if user explicitly configured cloud
+  // (including custom providers) or if we're in JSON mode where silence matters.
+  if (!readProvider(config).isCloud) {
     try {
       const { probeProvider } = await import('../providers/manager.js');
       const probed = await probeProvider(config);
-      if (probed.name === 'anthropic') {
-        // LMX unreachable — route the whole session through Anthropic.
-        // Always derive the model from provider.anthropic.model (or the
-        // well-known default) so we don't keep an LMX model string.
-        const anthropicDefault = readProvider(config).anthropicModel || 'claude-sonnet-4-5-20250929';
+      const probedProvider = normalizeProviderName(probed.name, 'lmx');
+      if (probedProvider !== 'lmx') {
+        // LMX unreachable — route the whole session through cloud and switch
+        // model default to that provider's configured model.
+        const cloudModel = providerModelFromConfig(config, probedProvider);
         config = {
           ...config,
           provider: {
             ...(config.provider as ProviderLike | undefined),
-            active: 'anthropic',
+            active: probedProvider,
           } as typeof config.provider,
           model: {
             ...config.model,
-            default: anthropicDefault,
-            contextLimit: 200_000,
+            default: cloudModel,
           },
         };
       }
     } catch (err) {
-      // probeProvider threw — means both LMX unreachable AND no ANTHROPIC_API_KEY.
+      // probeProvider threw — means both LMX unreachable and no usable cloud key.
       // Translate to a user-actionable OptaError instead of surfacing raw JSON payloads.
       const message = errorMessage(err);
+      let handledOffline = false;
       try {
         const parsed = JSON.parse(message) as {
           code?: string;
           attemptedSummary?: string;
           probeFailures?: string[];
           noCloudFallbackConfigured?: boolean;
+          attemptedEndpoints?: string[];
         };
         if (
           parsed.code === 'lmx_unreachable' &&
           parsed.noCloudFallbackConfigured
         ) {
-          const causes: string[] = [];
-          if (parsed.attemptedSummary) {
-            causes.push(`LMX endpoints unreachable: ${parsed.attemptedSummary}`);
+          if (!jsonMode && shouldRenderTui) {
+            startupConnectionNotice = buildProbeStartupNotice(parsed, config);
+            handledOffline = true;
+          } else {
+            const causes: string[] = [];
+            if (parsed.attemptedSummary) {
+              causes.push(`LMX endpoints unreachable: ${parsed.attemptedSummary}`);
+            }
+            if (Array.isArray(parsed.probeFailures) && parsed.probeFailures.length > 0) {
+              causes.push(
+                `Probe failures: ${parsed.probeFailures.slice(0, 3).join(' | ')}`
+              );
+            }
+            throw new OptaError(NO_MODEL_ERROR, EXIT.NO_CONNECTION, causes, [
+              'Load directly: opta models load <model-id>',
+              'Set default: opta config set model.default <model-name>',
+              'Discover models: opta models',
+              'Run onboarding: opta onboard',
+              'Check connection: opta status',
+              'Run diagnostics: opta doctor',
+              'Set cloud fallback key: ANTHROPIC_API_KEY',
+            ]);
           }
-          if (Array.isArray(parsed.probeFailures) && parsed.probeFailures.length > 0) {
-            causes.push(
-              `Probe failures: ${parsed.probeFailures.slice(0, 3).join(' | ')}`
-            );
-          }
-          throw new OptaError(NO_MODEL_ERROR, EXIT.NO_CONNECTION, causes, [
-            'Load directly: opta models load <model-id>',
-            'Set default: opta config set model.default <model-name>',
-            'Discover models: opta models',
-            'Run onboarding: opta onboard',
-            'Check connection: opta status',
-            'Run diagnostics: opta doctor',
-            'Set cloud fallback key: ANTHROPIC_API_KEY',
-          ]);
         }
       } catch (parseErr) {
         if (parseErr instanceof OptaError) {
           throw parseErr;
         }
       }
-      throw err;
+      if (!handledOffline) {
+        throw err;
+      }
     }
   }
 
@@ -529,16 +641,21 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
+    if (
+      !startupModelLoaded &&
+      isAdminKeyErrorMessage(startupPreflightError) &&
+      !jsonMode &&
+      shouldRenderTui &&
+      !startupConnectionNotice
+    ) {
+      startupConnectionNotice = buildAdminKeyNotice(config, startupPreflightError);
+    }
 
     if (!jsonMode) {
       const msgCount = session.messages.filter((m) => m.role !== 'system').length;
-      const providerActive = readProvider(config).active;
-      const providerLabel =
-        providerActive === 'anthropic' ? 'Anthropic' : 'LMX';
-      const providerValue =
-        providerActive === 'anthropic'
-          ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
-          : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
+      const providerState = readProvider(config);
+      const providerLabel = providerState.label;
+      const providerValue = `${providerState.endpoint} ${statusDot(startupModelLoaded)}`;
       console.log(
         '\n' +
           box('Opta', [
@@ -564,15 +681,20 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
+    if (
+      !startupModelLoaded &&
+      isAdminKeyErrorMessage(startupPreflightError) &&
+      !jsonMode &&
+      shouldRenderTui &&
+      !startupConnectionNotice
+    ) {
+      startupConnectionNotice = buildAdminKeyNotice(config, startupPreflightError);
+    }
 
     if (!jsonMode) {
-      const providerActive = readProvider(config).active;
-      const providerLabel =
-        providerActive === 'anthropic' ? 'Anthropic' : 'LMX';
-      const providerValue =
-        providerActive === 'anthropic'
-          ? `api.anthropic.com ${statusDot(startupModelLoaded)}`
-          : `${config.connection.host}:${config.connection.port} ${statusDot(startupModelLoaded)}`;
+      const providerState = readProvider(config);
+      const providerLabel = providerState.label;
+      const providerValue = `${providerState.endpoint} ${statusDot(startupModelLoaded)}`;
       console.log(
         '\n' +
           box('Opta', [
@@ -934,6 +1056,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
 
         return { result, output, newModel };
       },
+      startupConnectionNotice,
     });
     closed = true;
     emitter.off('permission:response', onPermissionResponse);

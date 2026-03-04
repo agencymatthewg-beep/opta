@@ -21,6 +21,7 @@ const ACCOUNT_LMX = 'lmx-api-key';
 const ACCOUNT_GEMINI = 'gemini-api-key';
 const ACCOUNT_OPENAI = 'openai-api-key';
 const ACCOUNT_OPENCODE_ZEN = 'opencode-zen-api-key';
+const ACCOUNT_MINIMAX = 'minimax-api-key';
 const ACCOUNT_GITHUB = 'github-api-key';
 
 // ---------------------------------------------------------------------------
@@ -252,9 +253,12 @@ export async function keychainStatus(): Promise<{
 
 const PROVIDER_ACCOUNT_MAP: Record<string, string> = {
   anthropic: ACCOUNT_ANTHROPIC,
+  claude: ACCOUNT_ANTHROPIC,
   lmx: ACCOUNT_LMX,
   gemini: ACCOUNT_GEMINI,
   openai: ACCOUNT_OPENAI,
+  minimax: ACCOUNT_MINIMAX,
+  opencode_zen: ACCOUNT_OPENCODE_ZEN,
   'opencode-zen': ACCOUNT_OPENCODE_ZEN,
   opencode: ACCOUNT_OPENCODE_ZEN,
   github: ACCOUNT_GITHUB,
@@ -310,4 +314,3 @@ export async function deleteKeyByProvider(
   if (!account) return;
   await deleteSecret(KEYCHAIN_SERVICE, account);
 }
-

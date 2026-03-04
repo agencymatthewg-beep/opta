@@ -138,6 +138,21 @@ describe('env command', () => {
     expect(getByPath(storeState, 'profiles.activeEnvironment')).toBe('laptop');
   });
 
+  it('normalizes provider aliases when saving profiles', async () => {
+    const { envCommand } = await import('../../src/commands/env.js');
+
+    await envCommand('save', 'cloud', {
+      host: 'localhost',
+      port: '1234',
+      provider: 'claude',
+    });
+    await envCommand('use', 'cloud', {});
+
+    expect(saveConfigMock).toHaveBeenCalledWith(
+      expect.objectContaining({ 'provider.active': 'anthropic' })
+    );
+  });
+
   it('deletes profiles', async () => {
     const { envCommand } = await import('../../src/commands/env.js');
 

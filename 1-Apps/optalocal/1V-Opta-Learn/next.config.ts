@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import path from 'node:path';
 
 const contentSecurityPolicy = [
   "default-src 'self'",
@@ -24,6 +25,7 @@ const securityHeaders = [
 
 const config: NextConfig = {
   typescript: { ignoreBuildErrors: false },
+  outputFileTracingRoot: path.resolve(__dirname),
   async headers() {
     return [
       {

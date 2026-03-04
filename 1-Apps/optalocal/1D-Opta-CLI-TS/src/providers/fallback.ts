@@ -1,18 +1,25 @@
 /**
- * Fallback provider — wraps LMX with automatic Anthropic degradation.
+ * Fallback provider — wraps LMX with automatic cloud degradation.
  *
  * When fallbackOnFailure is enabled, attempts LMX first for every operation.
- * On connection failure, transparently falls back to the Anthropic provider.
+ * On connection failure, transparently falls back to the first configured
+ * cloud provider from fallback order.
  */
 
 import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './base.js';
 import { instantiateOrInvoke } from '../utils/newable.js';
 import type { OptaConfig } from '../core/config.js';
+import {
+  pickFirstConfiguredCloudProvider,
+  providerDisplayName,
+  type CloudProviderName,
+} from '../utils/provider-normalization.js';
 
 export class FallbackProvider implements ProviderClient {
   readonly name = 'lmx+fallback';
   private primary: ProviderClient;
   private fallback: ProviderClient | null = null;
+  private fallbackProviderName: CloudProviderName | null = null;
   private config: OptaConfig;
   private usingFallback = false;
 
@@ -21,15 +28,27 @@ export class FallbackProvider implements ProviderClient {
     this.config = config;
   }
 
-  private async getFallback(): Promise<ProviderClient> {
+  private async getFallback(): Promise<ProviderClient | null> {
     if (this.fallback) return this.fallback;
-    const { AnthropicProvider } = await import('./anthropic.js');
-    this.fallback = instantiateOrInvoke<ProviderClient>(AnthropicProvider, this.config);
+
+    const selected = await pickFirstConfiguredCloudProvider(this.config);
+    if (!selected) return null;
+
+    this.fallbackProviderName = selected;
+    if (selected === 'anthropic') {
+      const { AnthropicProvider } = await import('./anthropic.js');
+      this.fallback = instantiateOrInvoke<ProviderClient>(AnthropicProvider, this.config);
+      return this.fallback;
+    }
+
+    const { CloudProvider } = await import('./cloud.js');
+    this.fallback = instantiateOrInvoke<ProviderClient>(CloudProvider, selected, this.config);
     return this.fallback;
   }
 
-  private hasFallbackKey(): boolean {
-    return !!(this.config.provider.anthropic.apiKey || process.env['ANTHROPIC_API_KEY']);
+  private fallbackLabel(): string {
+    if (!this.fallbackProviderName) return 'cloud fallback';
+    return providerDisplayName(this.fallbackProviderName);
   }
 
   async getClient(): Promise<import('openai').default> {
@@ -47,14 +66,14 @@ export class FallbackProvider implements ProviderClient {
       // Health check failed — try fallback
     }
 
-    // LMX unreachable — try Anthropic fallback
-    if (this.hasFallbackKey()) {
+    // LMX unreachable — try cloud fallback
+    const fallback = await this.getFallback();
+    if (fallback) {
       if (!this.usingFallback) {
-        console.error('[opta] LMX unreachable — falling back to Anthropic');
+        console.error(`[opta] LMX unreachable — falling back to ${this.fallbackLabel()}`);
         this.usingFallback = true;
       }
-      const fb = await this.getFallback();
-      return fb.getClient();
+      return fallback.getClient();
     }
 
     // No fallback available — return primary client anyway (will fail at request time)
@@ -65,11 +84,11 @@ export class FallbackProvider implements ProviderClient {
     try {
       return await this.primary.listModels();
     } catch {
-      if (this.hasFallbackKey()) {
-        const fb = await this.getFallback();
+      const fb = await this.getFallback();
+      if (fb) {
         return fb.listModels();
       }
-      throw new Error('LMX unreachable and no Anthropic fallback configured');
+      throw new Error('LMX unreachable and no cloud fallback configured');
     }
   }
 
@@ -77,14 +96,15 @@ export class FallbackProvider implements ProviderClient {
     const primary = await this.primary.health();
     if (primary.ok) return primary;
 
-    if (this.hasFallbackKey()) {
-      const fb = await this.getFallback();
+    const fb = await this.getFallback();
+    if (fb) {
       const fallback = await fb.health();
+      const label = this.fallbackLabel();
       return {
         ...fallback,
         error: fallback.ok
-          ? `LMX down, using Anthropic fallback (${primary.error})`
-          : `Both LMX and Anthropic unreachable`,
+          ? `LMX down, using ${label} (${primary.error})`
+          : `Both LMX and ${label} are unreachable`,
       };
     }
 

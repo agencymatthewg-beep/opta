@@ -41,11 +41,13 @@ import {
   type BackgroundOutputQuery,
 } from './background-manager.js';
 import { errorMessage } from '../utils/errors.js';
+import {
+  normalizeProviderName,
+  parseProviderName,
+} from '../utils/provider-normalization.js';
 
 const CHARS_PER_TOKEN = 4;
 const PREFLIGHT_CACHE_TTL_MS = 10_000;
-const PROVIDER_OVERRIDE_SET = new Set(['lmx', 'anthropic', 'gemini', 'openai', 'opencode_zen']);
-
 class LatencyWindow {
   private readonly samples: number[] = [];
   private readonly maxSamples = 100;
@@ -662,7 +664,7 @@ export class SessionManager {
   }
 
   private async runTurnModelPreflight(session: ManagedSession, config: OptaConfig): Promise<void> {
-    if (config.provider.active !== 'lmx') return;
+    if (normalizeProviderName(config.provider.active, 'lmx') !== 'lmx') return;
 
     this.throwIfTurnAborted(session);
 
@@ -1054,10 +1056,13 @@ export class SessionManager {
 
   private normalizeProviderOverride(provider?: string): OptaConfig['provider']['active'] | null {
     if (!provider) return null;
-    const normalized = provider.trim().toLowerCase();
+    const normalized = provider.trim();
     if (!normalized) return null;
-    if (!PROVIDER_OVERRIDE_SET.has(normalized)) return null;
-    return normalized as OptaConfig['provider']['active'];
+    try {
+      return parseProviderName(normalized) as OptaConfig['provider']['active'];
+    } catch {
+      return null;
+    }
   }
 
   private normalizeModelOverride(model?: string): string | null {

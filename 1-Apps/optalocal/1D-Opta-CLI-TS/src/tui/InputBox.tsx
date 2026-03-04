@@ -33,6 +33,9 @@ interface InputBoxProps {
   triggerWords?: string[];
   /** Backward-compatible alias for triggerWords. */
   browserTriggerWords?: string[];
+  /** Disable text entry (e.g., when offline). */
+  disabled?: boolean;
+  disabledReason?: string;
 }
 
 /** Debounce interval for @file glob searches (ms). */
@@ -121,6 +124,8 @@ export function InputBox({
   safeMode = false,
   triggerWords,
   browserTriggerWords = DEFAULT_BROWSER_TRIGGER_WORDS,
+  disabled = false,
+  disabledReason,
 }: InputBoxProps) {
   const editorRef = useRef<InputEditor>(
     new InputEditor({ prompt: '>', multiline: true, mode })
@@ -252,7 +257,7 @@ export function InputBox({
   }, []);
 
   useInput((input, key) => {
-    if (isLoading) return;
+    if (disabled || isLoading) return;
 
     // Meta+Return (Alt+Enter) — insert newline
     // Detection: either ink parses it as meta+return, or the terminal sends \x1B\r
@@ -466,7 +471,7 @@ export function InputBox({
       updateSlashSuggestions(buf);
       return;
     }
-  }, { isActive: !isLoading });
+  }, { isActive: !isLoading && !disabled });
 
   // Build the displayed text with cursor
   const buffer = editor.getBuffer();
@@ -491,6 +496,20 @@ export function InputBox({
         return bypassIndicator ? <><Text color={TUI_COLORS.info} bold>[Code] </Text>{bypassIndicator}</> : null;
     }
   })();
+
+  if (disabled) {
+    const disabledContent = (
+      <Box paddingX={1}>
+        {modeDisplay}
+        <Text color={TUI_COLORS.warning}>
+          {disabledReason ?? 'Input disabled while offline.'}
+        </Text>
+      </Box>
+    );
+    return (
+      <Box borderStyle="single" borderColor={TUI_COLORS.warning}>{disabledContent}</Box>
+    );
+  }
 
   if (isLoading) {
     const loadingContent = (

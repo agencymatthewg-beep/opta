@@ -11,11 +11,11 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 
 ## Summary
 
-- Total scoped plan files: 46
+- Total scoped plan files: 47
 - ACTIVE: 10
 - REVIEW: 0
 - COMPLETED: 7
-- ARCHIVED: 29
+- ARCHIVED: 30
 - Frontmatter vs registry mismatches: 0
 - Frontmatter vs queue mismatches: 0
 - Stale ACTIVE/REVIEW entries: 0
@@ -58,11 +58,12 @@ Single source summary for plan-state reconciliation in `1D-Opta-CLI-TS`.
 | docs/plans/archive/2026-02-26-opta-v1-implementation-plan.md | 0 | 3 |
 | docs/plans/archive/2026-02-26-tui-quality-improvement-plan.md | 0 | 9 |
 
-## ARCHIVED (29)
+## ARCHIVED (30)
 
 | Plan | Open | Done |
 |---|---:|---:|
 | .planning/phases/02-tui-input/02-01-PLAN.md | 0 | 0 |
+| docs/plans/2026-03-04-cli-desktop-accounts-resilience.md | 0 | 0 |
 | docs/plans/2026-03-04-lsp-and-universal-models-plan.md | 0 | 0 |
 | docs/plans/archive/2026-02-12-opta-cli-v1-design.md | 0 | 0 |
 | docs/plans/archive/2026-02-16-v2-features-implementation.md | 0 | 0 |

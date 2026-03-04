@@ -5,6 +5,12 @@
  * Imported by chat.ts and do.ts.
  */
 
+import {
+  CANONICAL_PROVIDER_NAMES,
+  parseProviderName,
+  providerOptionHelp,
+} from './provider-normalization.js';
+
 export interface ConfigOverrideFlags {
   model?: string;
   provider?: string;
@@ -16,27 +22,20 @@ export interface ConfigOverrideFlags {
   plan?: boolean;
 }
 
-export const PROVIDER_OVERRIDE_NAMES = [
-  'lmx',
-  'anthropic',
-  'gemini',
-  'openai',
-  'opencode_zen',
-] as const;
+export const PROVIDER_OVERRIDE_NAMES = [...CANONICAL_PROVIDER_NAMES] as const;
 
 export type ProviderOverrideName = string;
 
 export function parseProviderOverride(input: string): ProviderOverrideName {
-  const normalized = input.trim().toLowerCase();
+  const normalized = input.trim();
   if (!normalized) {
     throw new Error('Provider name cannot be empty.');
   }
-  if (!PROVIDER_OVERRIDE_NAMES.includes(normalized as (typeof PROVIDER_OVERRIDE_NAMES)[number])) {
-    throw new Error(
-      `Invalid provider "${normalized}". Expected one of: ${PROVIDER_OVERRIDE_NAMES.join(', ')}.`
-    );
+  try {
+    return parseProviderName(normalized);
+  } catch {
+    throw new Error(`Invalid provider "${normalized}". Expected ${providerOptionHelp()}.`);
   }
-  return normalized;
 }
 
 export function buildConfigOverrides(opts: ConfigOverrideFlags): Record<string, unknown> {

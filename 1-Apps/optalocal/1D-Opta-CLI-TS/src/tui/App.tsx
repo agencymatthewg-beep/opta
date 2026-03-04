@@ -42,6 +42,7 @@ import { AgentMonitorPanel } from './AgentMonitorPanel.js';
 import { deriveOptimiserIntent } from './optimiser-intent.js';
 import { TUI_COLORS } from './palette.js';
 import { errorMessage } from '../utils/errors.js';
+import type { StartupConnectionNotice } from './types.js';
 
 /** Chrome rows: Header(3) + BrowserManagerRail(3) + StatusBar(3) + HintBar(1) + InputBox(3) = 13 */
 const CHROME_HEIGHT = LAYOUT.totalChromeWithRail;
@@ -128,6 +129,34 @@ interface AppProps {
   onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
   title?: string;
   onModeChange?: (mode: WorkflowMode) => void;
+  startupConnectionNotice?: StartupConnectionNotice;
+}
+
+function StartupNoticeBanner({ notice }: { notice: StartupConnectionNotice }) {
+  const tone = notice.severity === 'warning' ? TUI_COLORS.warning : TUI_COLORS.danger;
+  const attempted =
+    notice.attemptedEndpoints.length > 0 ? notice.attemptedEndpoints.join(', ') : 'unknown';
+  return (
+    <Box
+      borderStyle="round"
+      borderColor={tone}
+      flexDirection="column"
+      paddingX={1}
+      paddingY={0}
+      width="100%"
+    >
+      <Text color={tone} bold>
+        {notice.severity === 'warning' ? 'Degraded connectivity' : 'Offline'} · Check Opta LMX
+      </Text>
+      {notice.bullets.map((bullet) => (
+        <Text key={bullet} color={TUI_COLORS.prompt}>
+          • {bullet}
+        </Text>
+      ))}
+      <Text color={TUI_COLORS.dim}>Attempted: {attempted}</Text>
+      <Text color={TUI_COLORS.prompt}>Try: /server status · opta status · opta doctor</Text>
+    </Box>
+  );
 }
 
 function AppInner({
@@ -144,6 +173,7 @@ function AppInner({
   onSlashCommand,
   title: initialTitle,
   onModeChange,
+  startupConnectionNotice: startupNoticeProp,
 }: AppProps) {
   const { exit } = useApp();
   const { width, height } = useTerminalSize();
@@ -245,12 +275,33 @@ function AppInner({
     configSnapshot,
     refreshConfig,
     reconnectLmx,
+    startupConnectionNotice: persistedStartupNotice,
+    setStartupConnectionNotice,
   } = appConfig;
+
+  useEffect(() => {
+    if (!startupNoticeProp) return;
+    if (!persistedStartupNotice) {
+      setStartupConnectionNotice(startupNoticeProp);
+    }
+  }, [startupNoticeProp, persistedStartupNotice, setStartupConnectionNotice]);
+
+  useEffect(() => {
+    if (!persistedStartupNotice) return;
+    if (effectiveConnectionState === 'connected') {
+      setStartupConnectionNotice(null);
+    }
+  }, [effectiveConnectionState, persistedStartupNotice, setStartupConnectionNotice]);
 
   const triggerWords = useMemo(
     () => triggerWordsFromDefinitions(triggerDefinitions),
     [triggerDefinitions],
   );
+  const offlineNotice = persistedStartupNotice;
+  const composerDisabled = Boolean(offlineNotice);
+  const composerDisabledReason = offlineNotice
+    ? 'Input disabled while offline. Run /server status or opta status.'
+    : undefined;
 
   // --- 2. useAppActions: action history, status bar, token flushing, refs ---
   const appActions = useAppActions({
@@ -806,6 +857,8 @@ function AppInner({
               safeMode={safeMode}
               triggerWords={triggerWords}
               isLoading={isLoading || !!permissionPending || overlayActive}
+              disabled={composerDisabled}
+              disabledReason={composerDisabledReason}
             />
           </Box>
         )
@@ -851,6 +904,7 @@ function AppInner({
         connectionState={effectiveConnectionState}
         atpoState={atpoState}
       />
+      {offlineNotice ? <StartupNoticeBanner notice={offlineNotice} /> : null}
 
       <SplitPane
         main={mainContent}
@@ -923,6 +977,7 @@ function AppInner({
         activeHost={connectionHost}
         primaryHost={connectionHost}
         onReconnect={reconnectLmx}
+        offlineMode={composerDisabled}
       />
     </Box>
   );

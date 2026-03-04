@@ -7,14 +7,18 @@ import {
 } from "./controls";
 import { type WizardFormData, WIZARD_THEME } from "./shared";
 
+import type { DaemonConnectionOptions } from "../../types";
+
 export function StepPreferences({
   form,
   setForm,
   platform,
+  connection,
 }: {
   form: WizardFormData;
   setForm: WizardFormSetter;
   platform: Platform | null;
+  connection?: DaemonConnectionOptions | null;
 }) {
   const prefGroup = (children: React.ReactNode) => (
     <div style={{ marginBottom: 20 }}>{children}</div>

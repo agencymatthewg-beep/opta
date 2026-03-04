@@ -2,79 +2,36 @@ import type { ProviderClient, ProviderModelInfo, ProviderHealthResult } from './
 import type { OptaConfig } from '../core/config.js';
 import { errorMessage } from '../utils/errors.js';
 import { instantiateOrInvoke } from '../utils/newable.js';
-
-type CloudKeySource = 'config' | 'env' | 'keychain' | 'cloud' | 'none';
+import {
+  normalizeProviderName,
+  providerEnvVarNames,
+  resolveProviderApiKey,
+  type CloudProviderName,
+  type ProviderKeySource,
+} from '../utils/provider-normalization.js';
 
 export class CloudProvider implements ProviderClient {
-  readonly name: string;
+  readonly name: CloudProviderName;
   private client: import('openai').default | null = null;
   private config: OptaConfig;
   private customOpts?: { baseURL?: string; apiKey?: string };
 
   constructor(name: string, config: OptaConfig, customOpts?: { baseURL?: string; apiKey?: string }) {
-    this.name = name;
+    const normalized = normalizeProviderName(name, 'openai');
+    this.name =
+      normalized === 'gemini' || normalized === 'openai' || normalized === 'opencode_zen'
+        ? normalized
+        : 'openai';
     this.config = config;
     this.customOpts = customOpts;
   }
 
-  private async resolveApiKey(): Promise<{ apiKey: string; source: CloudKeySource }> {
+  private async resolveApiKey(): Promise<{ apiKey: string; source: ProviderKeySource }> {
     if (this.customOpts?.apiKey) {
       return { apiKey: this.customOpts.apiKey, source: 'env' };
     }
 
-    const configuredProvider =
-      this.name === 'gemini'
-        ? this.config.provider.gemini.apiKey
-        : this.name === 'openai'
-          ? this.config.provider.openai.apiKey
-          : this.config.provider.opencode_zen.apiKey;
-
-    if (configuredProvider?.trim()) {
-      return { apiKey: configuredProvider.trim(), source: 'config' };
-    }
-
-    const envVar =
-      this.name === 'gemini'
-        ? process.env['GEMINI_API_KEY']
-        : this.name === 'openai'
-          ? process.env['OPENAI_API_KEY']
-          : process.env['OPENCODE_ZEN_API_KEY'];
-    if (envVar?.trim()) {
-      return { apiKey: envVar.trim(), source: 'env' };
-    }
-
-    try {
-      if (this.name === 'gemini') {
-        const { getGeminiKey } = await import('../keychain/api-keys.js');
-        const key = (await getGeminiKey())?.trim();
-        if (key) return { apiKey: key, source: 'keychain' };
-      }
-      if (this.name === 'openai') {
-        const { getOpenaiKey } = await import('../keychain/api-keys.js');
-        const key = (await getOpenaiKey())?.trim();
-        if (key) return { apiKey: key, source: 'keychain' };
-      }
-      if (this.name === 'opencode_zen') {
-        const { getOpencodeZenKey } = await import('../keychain/api-keys.js');
-        const key = (await getOpencodeZenKey())?.trim();
-        if (key) return { apiKey: key, source: 'keychain' };
-      }
-    } catch {
-      // Keychain unavailable — continue.
-    }
-
-    // Optional Opta Accounts cloud token source for portable key management.
-    try {
-      const { loadAccountState } = await import('../accounts/storage.js');
-      const { resolveCloudApiKey } = await import('../accounts/cloud.js');
-      const state = await loadAccountState();
-      const cloudKey = (await resolveCloudApiKey(state, this.name))?.trim();
-      if (cloudKey) return { apiKey: cloudKey, source: 'cloud' };
-    } catch {
-      // Cloud lookup unavailable.
-    }
-
-    return { apiKey: '', source: 'none' };
+    return resolveProviderApiKey(this.config, this.name);
   }
 
   async getClient(): Promise<import('openai').default> {
@@ -83,15 +40,18 @@ export class CloudProvider implements ProviderClient {
     const { apiKey } = await this.resolveApiKey();
 
     if (!apiKey && !this.customOpts?.baseURL?.includes('localhost') && !this.customOpts?.baseURL?.includes('127.0.0.1')) {
-      const hint =
+      const providerLabel =
         this.name === 'gemini'
-          ? 'GEMINI_API_KEY or opta config / keychain / accounts cloud'
+          ? 'Gemini'
           : this.name === 'openai'
-            ? 'OPENAI_API_KEY or opta config / keychain / accounts cloud'
-            : this.customOpts
-              ? `the configured environment variable for ${this.name}`
-              : 'OPENCODE_ZEN_API_KEY or opta config / keychain / accounts cloud';
-      throw new Error(`Missing API key for provider: ${this.name}. Set ${hint}.`);
+            ? 'OpenAI/Codex/Minimax'
+            : 'OpenCode Zen';
+      const envHints = providerEnvVarNames(this.name).join(', ');
+      const hint =
+        this.customOpts && this.customOpts.baseURL
+          ? `the configured environment variable for ${this.name}`
+          : `${envHints} or opta config / keychain / accounts cloud`;
+      throw new Error(`Missing API key for provider ${providerLabel}. Set ${hint}.`);
     }
 
     let baseURL =

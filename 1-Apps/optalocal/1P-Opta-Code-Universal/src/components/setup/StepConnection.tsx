@@ -11,12 +11,16 @@ import {
 
 type TestState = "idle" | "pinging" | "ok" | "fail";
 
+import type { DaemonConnectionOptions } from "../../types";
+
 export function StepConnection({
   form,
   setForm,
+  connection,
 }: {
   form: WizardFormData;
   setForm: WizardFormSetter;
+  connection?: DaemonConnectionOptions | null;
 }) {
   const [testState, setTestState] = useState<TestState>("idle");
   const [testMsg, setTestMsg] = useState("");

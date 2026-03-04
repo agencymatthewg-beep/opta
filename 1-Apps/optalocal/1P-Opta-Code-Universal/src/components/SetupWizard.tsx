@@ -97,6 +97,7 @@ function parseDiscoveryConnection(
 export function SetupWizard({ onComplete }: SetupWizardProps) {
   const [step, setStep] = useState(0);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [connection, setConnection] = useState<DaemonConnectionOptions | null>(null);
   const [slideDir, setSlideDir] = useState<"right" | "left">("right");
   const [animKey, setAnimKey] = useState(0);
   const platform = usePlatform();
@@ -145,6 +146,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         const resolved = parseDiscoveryConnection(discovery, host, port);
 
         if (cancelled) return;
+        setConnection(connection);
         setForm((prev) => ({
           ...prev,
           lmxHost: resolved.host,
@@ -190,14 +192,15 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
   const stepContent = [
     <StepWelcome key="welcome" platform={platform} />,
-    <StepConnection key="connection" form={form} setForm={setForm} />,
+    <StepConnection key="connection" form={form} setForm={setForm} connection={connection} />,
     <StepPreferences
       key="preferences"
       form={form}
       setForm={setForm}
       platform={platform}
+      connection={connection}
     />,
-    <StepReady key="ready" form={form} onComplete={onComplete} />,
+    <StepReady key="ready" form={form} onComplete={onComplete} connection={connection} />,
   ];
 
   const isLastStep = step === TOTAL_STEPS - 1;

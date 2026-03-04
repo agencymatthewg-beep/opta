@@ -98,6 +98,8 @@ describe('v3 operations contract', () => {
       'keychain.delete-gemini',
       'keychain.delete-openai',
       'keychain.delete-opencode-zen',
+      'audio.transcribe',
+      'audio.tts',
     ]);
   });
 

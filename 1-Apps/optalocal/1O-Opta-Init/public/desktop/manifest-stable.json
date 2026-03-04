@@ -72,22 +72,8 @@
         "priority": 3
       },
       "artifacts": {
-        "macos": [
-          {
-            "platform": "macos",
-            "arch": "arm64",
-            "packageType": "dmg",
-            "url": "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-code-macos-aarch64.dmg"
-          }
-        ],
-        "windows": [
-          {
-            "platform": "windows",
-            "arch": "x64",
-            "packageType": "exe",
-            "url": "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-code-windows-x64-setup.exe"
-          }
-        ]
+        "macos": [],
+        "windows": []
       }
     },
     {

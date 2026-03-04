@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
 import { ensureMemoryScaffold, getProviderMemoryFileName } from '../context/memory.js';
+import { normalizeProviderName } from '../utils/provider-normalization.js';
 
 interface MemorySyncOptions {
   scope?: 'all' | 'provider' | 'main' | 'atpo' | 'model';
@@ -30,8 +31,7 @@ const PROVIDER_FILE_BY_PROVIDER: Record<string, string> = {
 const POLICY_DEFAULT: 'skip' | 'append' | 'replace' = 'skip';
 
 function normalizeProvider(provider = '') {
-  const value = provider.trim().toLowerCase();
-  return value || 'lmx';
+  return normalizeProviderName(provider, 'lmx');
 }
 
 function normalizeModel(name = '') {

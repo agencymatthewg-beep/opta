@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T09:31:05.300Z",
+  "generatedAt": "2026-03-04T10:17:46.041Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -107,6 +107,7 @@
       "keychain": [
         "delete-anthropic",
         "delete-brave",
+        "delete-claude",
         "delete-cloudflare",
         "delete-codex",
         "delete-exa",
@@ -115,7 +116,9 @@
         "delete-google",
         "delete-groq",
         "delete-lmx",
+        "delete-minimax",
         "delete-openai",
+        "delete-opencode",
         "delete-opencode-zen",
         "delete-perplexity",
         "delete-tavily",
@@ -123,6 +126,7 @@
         "delete-vercel",
         "set-anthropic",
         "set-brave",
+        "set-claude",
         "set-cloudflare",
         "set-codex",
         "set-exa",
@@ -131,7 +135,9 @@
         "set-google",
         "set-groq",
         "set-lmx",
+        "set-minimax",
         "set-openai",
+        "set-opencode",
         "set-opencode-zen",
         "set-perplexity",
         "set-tavily",

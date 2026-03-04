@@ -21,9 +21,24 @@ describe('buildConfigOverrides', () => {
     expect(result).toEqual({ provider: { active: 'lmx' } });
   });
 
+  it('maps provider aliases to canonical providers', () => {
+    expect(buildConfigOverrides({ provider: 'claude' })).toEqual({
+      provider: { active: 'anthropic' },
+    });
+    expect(buildConfigOverrides({ provider: 'google' })).toEqual({
+      provider: { active: 'gemini' },
+    });
+    expect(buildConfigOverrides({ provider: 'codex' })).toEqual({
+      provider: { active: 'openai' },
+    });
+    expect(buildConfigOverrides({ provider: 'opencode' })).toEqual({
+      provider: { active: 'opencode_zen' },
+    });
+  });
+
   it('throws for invalid provider override', () => {
     expect(() => buildConfigOverrides({ provider: 'invalid-provider' })).toThrow(
-      'Invalid provider "invalid-provider". Expected one of: lmx, anthropic, gemini, openai, opencode_zen.'
+      'Invalid provider "invalid-provider". Expected lmx|anthropic|gemini|openai|opencode_zen'
     );
   });
 

@@ -136,6 +136,7 @@ describe('startChat startup handling', () => {
     preflightError?: Error;
     ensureLoadError?: Error;
     ensureLoadId?: string;
+    probeProviderError?: Error;
   }) {
     const loadConfig = vi.fn().mockResolvedValue({ ...BASE_CONFIG, tui: { default: true } });
     const buildSystemPrompt = vi.fn().mockResolvedValue('system prompt');
@@ -244,8 +245,11 @@ describe('startChat startup handling', () => {
       diskHeadroomMbToBytes: (mb: number) => mb * 1024 * 1024,
       isStorageRelatedError: () => false,
     }));
+    const probeProvider = params.probeProviderError
+      ? vi.fn().mockRejectedValue(params.probeProviderError)
+      : vi.fn().mockResolvedValue({ name: 'lmx' });
     vi.doMock('../../src/providers/manager.js', () => ({
-      probeProvider: vi.fn().mockResolvedValue({ name: 'lmx' }),
+      probeProvider,
       getProvider: vi.fn(),
       resetProviderCache: vi.fn(),
     }));
@@ -259,6 +263,7 @@ describe('startChat startup handling', () => {
       emitter,
       lmxModels,
       ensureModelLoaded,
+      probeProvider,
       wsHandlersRef: () => wsHandlers,
       writeSessionLog,
       ensureDiskHeadroom,
@@ -363,6 +368,34 @@ describe('startChat startup handling', () => {
     expect(renderOpts.initialModelLoaded).toBe(false);
     expect(renderOpts.initialMessages[0].role).toBe('error');
     expect(renderOpts.initialMessages[0].content).toContain('No Model Loaded - Use Opta Menu to begin');
+  });
+
+  it('passes startup connection notice into the TUI when provider probe fails', async () => {
+    const probeFailure = new Error(
+      JSON.stringify({
+        code: 'lmx_unreachable',
+        attemptedEndpoints: ['127.0.0.1:11434', 'localhost:11434'],
+        attemptedSummary: '127.0.0.1:11434',
+        probeFailures: ['127.0.0.1:11434 (ECONNREFUSED)'],
+        noCloudFallbackConfigured: true,
+      })
+    );
+    const mocks = await loadStartChatTuiWithPreflight({
+      loadedModelIds: [],
+      probeProviderError: probeFailure,
+    });
+
+    await mocks.startChat({ tui: true });
+
+    expect(mocks.renderTUI).toHaveBeenCalledTimes(1);
+    const renderOpts = mocks.renderTUI.mock.calls[0]?.[0];
+    expect(renderOpts.startupConnectionNotice).toBeDefined();
+    expect(renderOpts.startupConnectionNotice?.severity).toBe('error');
+    expect(renderOpts.startupConnectionNotice?.attemptedEndpoints).toEqual([
+      '127.0.0.1:11434',
+      'localhost:11434',
+    ]);
+    expect(renderOpts.startupConnectionNotice?.bullets.join(' ')).toContain('LMX unreachable');
   });
 
   it('forwards structured turn.error payloads to TUI error channel', async () => {

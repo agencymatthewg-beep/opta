@@ -10,10 +10,12 @@ import {
   PROVIDER_OVERRIDE_NAMES,
   type ProviderOverrideName,
 } from './utils/config-helpers.js';
+import { providerOptionHelp } from './utils/provider-normalization.js';
 import type { UpdateTargetMode } from './commands/update.js';
 
 // --- SIGINT handler ---
 export let isShuttingDown = false;
+const PROVIDER_OPTION_HELP = providerOptionHelp();
 
 async function cleanup(): Promise<void> {
   try {
@@ -75,7 +77,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
+  .option('--provider <name>', `override provider for this run (${PROVIDER_OPTION_HELP})`, parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -112,7 +114,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
+  .option('--provider <name>', `override provider for this run (${PROVIDER_OPTION_HELP})`, parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -134,7 +136,7 @@ program
   .option('--review', 'code review mode — read-only, structured review output')
   .option('--research', 'research mode — explore ideas, gather information')
   .option('-m, --model <name>', 'override default model')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
+  .option('--provider <name>', `override provider for this run (${PROVIDER_OPTION_HELP})`, parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('--no-commit', 'disable auto-commit at task end')
@@ -423,7 +425,7 @@ program
   .command('do <task...>')
   .description('Execute a coding task using the agent loop')
   .option('-m, --model <name>', 'use specific model for this task')
-  .option('--provider <name>', 'override provider for this run (lmx|anthropic|gemini|openai|opencode_zen)', parseProviderOption)
+  .option('--provider <name>', `override provider for this run (${PROVIDER_OPTION_HELP})`, parseProviderOption)
   .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
   .option('-f, --format <type>', 'output format: text (default) or json')
   .option('-q, --quiet', 'suppress output (exit code only, errors to stderr)')
@@ -689,7 +691,7 @@ program
     'override host-specific admin keys map when saving, e.g. {"lmx-a.local":"keyA"}'
   )
   .option('--model <id>', 'override default model when saving')
-  .option('--provider <name>', 'provider for profile (lmx|anthropic|gemini|openai|opencode_zen)')
+  .option('--provider <name>', `provider for profile (${PROVIDER_OPTION_HELP})`)
   .option('--mode <name>', 'default mode (safe|auto|plan|review|research|dangerous|ci)')
   .option('--json', 'machine-readable output')
   .addHelpText(
@@ -1372,8 +1374,11 @@ const NEW_PROVIDERS: Array<{ slug: string; label: string; envHint: string }> = [
   { slug: 'brave', label: 'Brave Search API key', envHint: 'BRAVE_API_KEY' },
   { slug: 'exa', label: 'Exa API key', envHint: 'EXA_API_KEY' },
   { slug: 'groq', label: 'Groq API key', envHint: 'GROQ_API_KEY' },
+  { slug: 'claude', label: 'Claude API key', envHint: 'CLAUDE_API_KEY' },
   { slug: 'codex', label: 'Codex API key', envHint: 'CODEX_API_KEY' },
+  { slug: 'minimax', label: 'Minimax API key', envHint: 'MINIMAX_API_KEY' },
   { slug: 'google', label: 'Google API key', envHint: 'GOOGLE_API_KEY' },
+  { slug: 'opencode', label: 'OpenCode API key', envHint: 'OPENCODE_API_KEY' },
   { slug: 'twitter', label: 'Twitter/X Bearer token', envHint: 'TWITTER_BEARER_TOKEN' },
 ];
 

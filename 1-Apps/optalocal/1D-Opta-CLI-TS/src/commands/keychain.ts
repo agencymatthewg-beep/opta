@@ -23,10 +23,12 @@ import { listCloudApiKeys } from '../accounts/cloud.js';
 
 type KeychainProvider =
   | 'anthropic'
+  | 'claude'
   | 'lmx'
   | 'gemini'
   | 'openai'
   | 'opencode-zen'
+  | 'opencode'
   | 'github'
   | 'vercel'
   | 'cloudflare'
@@ -36,6 +38,7 @@ type KeychainProvider =
   | 'exa'
   | 'groq'
   | 'codex'
+  | 'minimax'
   | 'google'
   | 'twitter';
 
@@ -47,10 +50,12 @@ type KeychainAction =
 // Human-readable display names
 const PROVIDER_DISPLAY: Record<KeychainProvider, string> = {
   anthropic: 'Anthropic',
+  claude: 'Claude (alias)',
   lmx: 'LMX',
   gemini: 'Gemini',
   openai: 'OpenAI',
   'opencode-zen': 'Opencode Zen',
+  opencode: 'OpenCode (alias)',
   github: 'GitHub',
   vercel: 'Vercel',
   cloudflare: 'Cloudflare',
@@ -60,6 +65,7 @@ const PROVIDER_DISPLAY: Record<KeychainProvider, string> = {
   exa: 'Exa',
   groq: 'Groq',
   codex: 'Codex',
+  minimax: 'Minimax',
   google: 'Google',
   twitter: 'Twitter/X',
 };

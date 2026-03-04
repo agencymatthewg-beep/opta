@@ -49,11 +49,18 @@ A test CLI application.
 export const VERSION = "1.0";
 `);
 
+    const { execa } = await import('execa');
+    await execa('git', ['init'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.email', 'test@test.com'], { cwd: TEST_DIR });
+    await execa('git', ['config', 'user.name', 'Test'], { cwd: TEST_DIR });
+    await execa('git', ['add', '-A'], { cwd: TEST_DIR });
+    await execa('git', ['commit', '-m', 'init'], { cwd: TEST_DIR });
+
     const prompt = await buildSystemPrompt(DEFAULT_CONFIG, TEST_DIR);
-    expect(prompt).toContain('Codebase exports:');
+    expect(prompt).toContain('Repository Map (Symbols):');
     expect(prompt).toContain('start');
     expect(prompt).toContain('VERSION');
-    expect(prompt).toContain('src/main.ts');
+    expect(prompt).toContain('main.ts (symbols: start, VERSION)');
   });
 
   it('includes fallback memory when no OPIS scaffold', async () => {
