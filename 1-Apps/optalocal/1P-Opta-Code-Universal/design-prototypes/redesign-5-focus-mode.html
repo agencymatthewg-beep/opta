@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Code — Prototype 5: Compact Focus</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #09090b;
+            --bg-1: #141417;
+            --bg-2: #27272a;
+            --line: rgba(255, 255, 255, 0.06);
+            --line-strong: rgba(255, 255, 255, 0.12);
+            --primary: #a855f7;
+            --primary-dim: rgba(168, 85, 247, 0.15);
+            --text: #fafafa;
+            --text-soft: #a1a1aa;
+            --text-muted: #52525b;
+            --green: #22c55e;
+            --red: #ef4444;
+            --cyan: #06b6d4;
+            --amber: #f59e0b;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            overflow: hidden;
+        }
+
+        .app {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1.5rem;
+            height: 50px;
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+        }
+
+        .logo svg {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+        }
+
+        .app-btn-group {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .app-btn {
+            background: transparent;
+            border: 1px solid var(--line);
+            color: var(--text-soft);
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            cursor: pointer;
+            font-size: 0.7rem;
+            font-family: 'Sora';
+            font-weight: 600;
+        }
+
+        .app-btn svg {
+            color: var(--primary);
+        }
+
+        /* Agent Bar */
+        .agent-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0 1.5rem;
+            height: 36px;
+            background: var(--bg);
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .agent-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono';
+            background: rgba(34, 197, 94, 0.06);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            color: var(--text-soft);
+        }
+
+        .agent-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Body */
+        .body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Collapsed Left Pane */
+        .left-pane-collapsed {
+            width: 48px;
+            border-right: 1px solid var(--line);
+            background: var(--bg-1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding-top: 1rem;
+            gap: 1rem;
+            flex-shrink: 0;
+        }
+
+        .proj-icon {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .proj-icon.inactive {
+            background: var(--bg-2);
+            border-color: transparent;
+            color: var(--text-muted);
+        }
+
+        .expand-btn {
+            margin-top: auto;
+            margin-bottom: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+
+        .expand-btn:hover {
+            color: var(--text);
+        }
+
+        /* Center Chat */
+        .chat-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg);
+            padding: 0 2rem;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .chat-header {
+            padding: 1.5rem 0 1rem;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .chat-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .chat-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono';
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .msg-block {
+            display: flex;
+            gap: 1.5rem;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        .av-user {
+            background: var(--bg-2);
+            color: var(--text-soft);
+        }
+
+        .av-agent {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: var(--primary);
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.1);
+        }
+
+        .msg-content {
+            flex: 1;
+            font-size: 0.9rem;
+            line-height: 1.7;
+            color: var(--text-soft);
+        }
+
+        .msg-content code {
+            font-family: 'JetBrains Mono';
+            font-size: 0.85rem;
+            background: var(--bg-1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+        }
+
+        .composer {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--line);
+        }
+
+        .cmp-box {
+            background: var(--bg-1);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .cmp-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'Sora';
+            font-size: 0.95rem;
+            outline: none;
+        }
+
+        .cmp-send {
+            background: linear-gradient(135deg, #8b5cf6, #a855f7);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Right Widget Pane */
+        .right-pane {
+            width: 360px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: var(--bg-1);
+            border-left: 1px solid var(--line);
+        }
+
+        .pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .pane-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .w-grid {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            overflow-y: auto;
+        }
+
+        .tile {
+            background: var(--bg);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .t-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.85rem;
+        }
+
+        .t-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Widget: Next Steps */
+        .step-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .step-item {
+            font-size: 0.8rem;
+            color: var(--text-soft);
+            line-height: 1.5;
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .step-num {
+            color: var(--primary);
+            font-family: 'JetBrains Mono';
+            font-weight: 600;
+        }
+
+        .step-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 0.15rem 0.4rem;
+            font-size: 0.65rem;
+            cursor: pointer;
+            margin-top: 0.25rem;
+            display: inline-block;
+            color: var(--text-muted);
+        }
+
+        /* Widget: Plan Completion */
+        .plan-wrap {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .progress-ring {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: conic-gradient(var(--primary) 75%, var(--bg-2) 0);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .progress-inner {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: var(--bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono';
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .plan-info {
+            flex: 1;
+        }
+
+        .p-phase {
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .p-chip {
+            display: inline-block;
+            padding: 0.15rem 0.4rem;
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            color: var(--green);
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono';
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <header class="topbar">
+            <div class="logo">
+                <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+                    <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" stroke-width="1.5" />
+                    <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" stroke-width="3" stroke-linecap="round" />
+                    <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" stroke-width="3" stroke-linecap="round" />
+                </svg>
+                <span>OPTA CODE</span>
+            </div>
+            <div class="app-btn-group">
+                <button class="app-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                        <circle cx="12" cy="7" r="4" />
+                    </svg><span>ACCOUNTS</span></button>
+                <button class="app-btn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <rect x="3" y="3" width="7" height="7" />
+                        <rect x="14" y="3" width="7" height="7" />
+                        <rect x="3" y="14" width="7" height="7" />
+                        <rect x="14" y="14" width="7" height="7" />
+                    </svg></button>
+            </div>
+        </header>
+
+        <div class="agent-bar">
+            <div class="agent-pill">
+                <div class="dot"></div> auth-refactor <span style="opacity:0.6">[opta-core]</span> 3m02s
+            </div>
+        </div>
+
+        <div class="body">
+            <!-- Collapsed Left Pane -->
+            <div class="left-pane-collapsed">
+                <div class="proj-icon">O</div>
+                <div class="proj-icon inactive">L</div>
+                <div class="proj-icon inactive">H</div>
+                <button class="expand-btn"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6" />
+                    </svg></button>
+            </div>
+
+            <!-- Center Chat -->
+            <div class="chat-pane">
+                <div class="chat-header">
+                    <h1 class="chat-title">Supabase Auth Refactor</h1>
+                    <div class="chat-meta">opta-core · Qwen2.5-Coder-32B · Level 4 Autonomy</div>
+                </div>
+
+                <div class="messages">
+                    <div class="msg-block">
+                        <div class="avatar av-user">U</div>
+                        <div class="msg-content">Refactor the Supabase auth module to use the new SSR cookie pattern.
+                            Ensure redirect validation uses the whitelist.</div>
+                    </div>
+                    <div class="msg-block">
+                        <div class="avatar av-agent">A</div>
+                        <div class="msg-content">
+                            I've updated the three files required for the SSR cookie pattern:
+                            <br><br>
+                            <code>src/lib/supabase/server.ts</code> — Created the SSR client factory<br>
+                            <code>src/middleware.ts</code> — Configured cookie forwarding<br>
+                            <code>src/lib/allowed-redirects.ts</code> — Added the 2 new valid origins
+                            <br><br>
+                            The changes are complete and ready for your review.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="composer">
+                    <div class="cmp-box">
+                        <input class="cmp-input" placeholder="Give feedback or request changes..." />
+                        <button class="cmp-send"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <line x1="22" y1="2" x2="11" y2="13" />
+                                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                            </svg></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Pane: Focus Widgets -->
+            <div class="right-pane">
+                <div class="pane-header">
+                    <span class="pane-title">Project Insights</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="15 18 9 12 15 6" />
+                    </svg>
+                </div>
+                <div class="w-grid">
+
+                    <!-- Widget: Plan Completion -->
+                    <div class="tile">
+                        <div class="t-header"><span class="t-title">COMPLETION</span></div>
+                        <div class="plan-wrap">
+                            <div class="progress-ring">
+                                <div class="progress-inner">75%</div>
+                            </div>
+                            <div class="plan-info">
+                                <div class="p-phase">Execution</div>
+                                <div class="p-chip">✓ Planning Done</div>
+                                <div style="font-size:0.65rem; color:var(--text-muted); margin-top:0.4rem;">Est. 2 turns
+                                    remaining</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget: Next Steps -->
+                    <div class="tile">
+                        <div class="t-header">
+                            <span class="t-title">NEXT STEPS</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                stroke-width="2">
+                                <polyline points="23 4 23 10 17 10" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                        </div>
+                        <div class="step-list">
+                            <div class="step-item"><span class="step-num">1</span>
+                                <div>Write tests for the server SSR client<br><button class="step-btn">Start Session
+                                        →</button></div>
+                            </div>
+                            <div class="step-item"><span class="step-num">2</span>
+                                <div>Verify cookie forwarding in middleware</div>
+                            </div>
+                            <div class="step-item"><span class="step-num">3</span>
+                                <div>Update docs for allowed redirects</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -26,7 +26,10 @@ vi.mock("./hooks/useDaemonSessions", () => ({
 
 vi.mock("./hooks/useBrowserLiveHost", () => ({
   useBrowserLiveHost: () => ({
+    status: null,
+    isActive: false,
     getSlotForSession: () => undefined,
+    refreshNow: vi.fn(),
   }),
 }));
 

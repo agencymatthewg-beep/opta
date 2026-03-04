@@ -24,17 +24,9 @@ Architecture contract:
 - Why: terminal rendering and keyboard semantics are intentionally replaced by desktop interaction model.
 - Acceptance target: feature-equivalent controls for mode switching, interrupt/cancel, tool permission flow, and event timeline state.
 
-2. `server`
-- Why: server lifecycle is represented through daemon + serve operations instead of separate terminal process management UX.
-- Acceptance target: explicit server-state diagnostics and lifecycle controls in daemon panel and operations page.
-
-3. `memory`
-- Why: capability is represented via sessions persistence/search/export instead of a standalone memory command panel.
-- Acceptance target: dedicated memory-oriented entry points for discoverability (search/export/delete/retrieval) via `SessionMemoryPage`.
-
 ## Execution Backlog
 1. Add adapted-parity acceptance tests
-- Add a parity test suite that validates expected adapted behavior contracts for `tui`, `server`, and `memory`.
+- Add a parity test suite that validates expected adapted behavior contracts for `tui`.
 
 2. Expand memory-focused desktop affordances
 - Add richer memory controls in session UI (pin/retrieve/retention policies) backed by existing operations.

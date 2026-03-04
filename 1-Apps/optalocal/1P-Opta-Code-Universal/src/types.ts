@@ -46,13 +46,13 @@ export interface TurnStats {
 export interface TimelineItem {
   id: string;
   kind:
-    | "user"
-    | "assistant"
-    | "tool"
-    | "system"
-    | "event"
-    | "permission"
-    | "thinking";
+  | "user"
+  | "assistant"
+  | "tool"
+  | "system"
+  | "event"
+  | "permission"
+  | "thinking";
   title: string;
   body?: string;
   createdAt?: string;
@@ -84,4 +84,66 @@ export interface SessionTurnOverrides {
   format?: SessionOutputFormat;
   autonomyMode?: SessionAutonomyMode;
   autonomyLevel?: number;
+}
+
+/* ═══════════════════════════════════════════════════════
+   V1 Design Types — Blended Modular Workspace
+   ═══════════════════════════════════════════════════════ */
+
+export interface OptaProject {
+  id: string;
+  name: string;
+  color: string;
+  icon?: string;
+  rootPath?: string;
+  createdAt: string;
+  updatedAt: string;
+  aiConfig: {
+    systemPrompt?: string;
+    preferredModel?: string;
+    autonomyLevel?: 1 | 2 | 3 | 4 | 5;
+    autonomyMode?: SessionAutonomyMode;
+    temperature?: number;
+  };
+  notes: {
+    id: string;
+    title: string;
+    body: string;
+    pinned: boolean;
+  }[];
+  settings: {
+    defaultWorkspace?: string;
+    sessionRetention?: "all" | "recent-10" | "recent-30";
+    autoCommit?: boolean;
+  };
+}
+
+export type WidgetId =
+  | "atpo"
+  | "benchmark"
+  | "runtime"
+  | "next-steps"
+  | "tool-log"
+  | "plan-completion"
+  | "cli-stream";
+
+export type WidgetSize = "S" | "M" | "T";
+
+export interface WidgetSlot {
+  id: string;
+  widgetId: WidgetId | null;
+  size: WidgetSize;
+}
+
+export interface WidgetLayout {
+  projectId: string;
+  slots: WidgetSlot[];
+}
+
+export interface AgentBarItem {
+  sessionId: string;
+  sessionTitle: string;
+  projectName?: string;
+  state: "streaming" | "awaiting-review" | "blocked" | "completed";
+  elapsedMs: number;
 }

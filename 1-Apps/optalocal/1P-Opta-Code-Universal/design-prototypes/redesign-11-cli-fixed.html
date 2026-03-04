@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Code — Prototype 11: CLI Integrated (Fixed)</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Press+Start+2P&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #09090b;
+            --bg-1: #18181b;
+            --bg-2: #27272a;
+            --line: rgba(255, 255, 255, 0.06);
+            --line-strong: rgba(255, 255, 255, 0.12);
+            --primary: #a855f7;
+            --primary-dim: rgba(168, 85, 247, 0.12);
+            --text: #fafafa;
+            --text-soft: #a1a1aa;
+            --text-muted: #52525b;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --cyan: #06b6d4;
+            --blue: #3b82f6;
+            --pink: #ec4899;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Background Ambient */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.12;
+        }
+
+        .b1 {
+            background: var(--primary);
+            top: -100px;
+            right: -100px;
+        }
+
+        .b2 {
+            background: var(--cyan);
+            bottom: -200px;
+            left: 10%;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            height: 50px;
+            background: rgba(9, 9, 11, 0.6);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+        }
+
+        .logo svg {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+        }
+
+        .top-center {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .global-cmd {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--line-strong);
+            padding: 0.4rem 0.8rem;
+            border-radius: 8px;
+            width: 340px;
+            color: var(--text-soft);
+            font-size: 0.75rem;
+            transition: all 0.2s;
+            cursor: text;
+        }
+
+        .global-cmd:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .cmd-key {
+            font-family: 'JetBrains Mono';
+            font-size: 0.65rem;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 0.1rem 0.3rem;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            color: var(--text-muted);
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: 'JetBrains Mono';
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .app-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-left: 1px solid var(--line);
+            padding-left: 1rem;
+        }
+
+        .app-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .app-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--line);
+        }
+
+        .app-btn svg {
+            filter: drop-shadow(0 0 4px rgba(6, 182, 212, 0.3));
+        }
+
+        .app-btn span {
+            font-family: 'Sora';
+            font-size: 0.7rem;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        /* Body */
+        .body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        /* Left Pane */
+        .left-pane {
+            width: 280px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: rgba(24, 24, 27, 0.3);
+            border-right: 1px solid var(--line);
+            backdrop-filter: blur(24px);
+            position: relative;
+        }
+
+        .pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1rem 0.5rem;
+        }
+
+        .pane-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .btn-icon {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-icon:hover {
+            color: var(--text);
+        }
+
+        /* Agents Section in Left Pane */
+        .agent-list {
+            padding: 0 0.75rem 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .agent-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.4rem 0.6rem;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-family: 'JetBrains Mono';
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            color: var(--text-soft);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .agent-pill:hover {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgba(34, 197, 94, 0.3);
+        }
+
+        .agent-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 1.5s infinite;
+            flex-shrink: 0;
+        }
+
+        .agent-name {
+            font-family: 'Sora';
+            font-weight: 600;
+            color: var(--text);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .agent-proj {
+            color: var(--text-muted);
+            font-size: 0.6rem;
+            margin-left: auto;
+        }
+
+        /* Projects Section in Left Pane */
+        .tree-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0;
+        }
+
+        .tree-project {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .tree-project:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .p-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .p-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .p-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .tree-ws {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 1rem 0.3rem 2.2rem;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+
+        .tree-sess {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.3rem 0.5rem 0.3rem 3rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-left: 2px solid transparent;
+            margin-left: 0.5rem;
+            border-radius: 0 4px 4px 0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tree-sess:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tree-sess.active {
+            background: var(--primary-dim);
+            color: var(--text);
+            border-left-color: var(--primary);
+        }
+
+        /* Bottom Area of Left Pane: Health + Profile */
+        .left-bottom {
+            border-top: 1px solid var(--line);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        .left-health {
+            padding: 0.75rem 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .health-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-family: 'JetBrains Mono';
+            font-size: 0.65rem;
+            color: var(--text-soft);
+        }
+
+        .h-server {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            color: var(--green);
+        }
+
+        .h-server .dot {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 4px var(--green);
+            animation: pulse 2s infinite;
+        }
+
+        .h-models {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .m-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--line-strong);
+            padding: 0.1rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--text-soft);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .user-profile:hover {
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .up-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .up-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .up-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .up-team {
+            font-size: 0.6rem;
+            font-family: 'JetBrains Mono';
+            color: var(--text-muted);
+        }
+
+        /* Center Container */
+        .center-container {
+            flex: 1;
+            position: relative;
+            min-width: 400px;
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        /* Retro Branding in Center Container */
+        .branding-container {
+            padding: 3rem 0 1rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .brand-text {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 4.5rem;
+            color: var(--primary);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            text-shadow:
+                2px 2px 0 var(--bg), 3px 3px 0 var(--bg),
+                4px 4px 0 var(--primary), 5px 5px 0 var(--primary),
+                7px 7px 0 var(--bg), 8px 8px 0 var(--bg),
+                9px 9px 0 var(--primary), 10px 10px 0 var(--primary);
+            filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.3));
+            margin-bottom: 2rem;
+        }
+
+        .brand-subtitle {
+            font-family: 'JetBrains Mono';
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* Chat Pane */
+        .chat-pane {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .chat-pane.hidden {
+            opacity: 0;
+            transform: scale(0.97);
+            pointer-events: none;
+        }
+
+        .chat-header {
+            position: absolute;
+            top: 1rem;
+            left: 1.25rem;
+            z-index: 10;
+            font-family: 'JetBrains Mono';
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            opacity: 0.6;
+        }
+
+        .chat-header b {
+            color: var(--text-soft);
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Composer Mode Cycling */
+        .composer {
+            padding: 1rem 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 10;
+        }
+
+        .cmp-box {
+            background: rgba(24, 24, 27, 0.8);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: all 0.2s;
+            position: relative;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 20px rgba(168, 85, 247, 0.05);
+        }
+
+        .cmp-box:focus-within {
+            border-color: rgba(168, 85, 247, 0.6);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), 0 0 30px rgba(168, 85, 247, 0.15);
+        }
+
+        .mode-badge {
+            align-self: flex-start;
+            margin-left: 0.25rem;
+            margin-top: 0.25rem;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono';
+            font-weight: 700;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .mod-key {
+            font-size: 0.55rem;
+            opacity: 0.6;
+            padding-left: 0.3rem;
+            border-left: 1px solid currentColor;
+            margin-left: 0.2rem;
+        }
+
+        .mode-code {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: var(--primary);
+        }
+
+        .mode-plan {
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--blue);
+        }
+
+        .mode-review {
+            background: rgba(245, 158, 11, 0.15);
+            border: 1px solid rgba(245, 158, 11, 0.3);
+            color: var(--amber);
+        }
+
+        .mode-chat {
+            background: rgba(6, 182, 212, 0.15);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            color: var(--cyan);
+        }
+
+        .cmp-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'Sora';
+            font-size: 0.95rem;
+            resize: none;
+            outline: none;
+            padding: 0.5rem;
+            min-height: 44px;
+        }
+
+        .cmp-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.25rem;
+        }
+
+        .tool-btn {
+            background: none;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.65rem;
+            color: var(--text-soft);
+            cursor: pointer;
+            font-family: 'JetBrains Mono';
+        }
+
+        .cmp-send {
+            background: var(--primary);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Feature 5 RESTORED: Settings Overlay Grid */
+        .settings-pane {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 3rem;
+            background: rgba(9, 9, 11, 0.85);
+            backdrop-filter: blur(32px);
+            opacity: 0;
+            transform: scale(1.03);
+            pointer-events: none;
+            transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 20;
+        }
+
+        .settings-pane.visible {
+            opacity: 1;
+            transform: scale(1);
+            pointer-events: auto;
+        }
+
+        .settings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+        }
+
+        .sh-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .sh-hint {
+            font-family: 'JetBrains Mono';
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            padding: 0.3rem 0.6rem;
+            background: var(--line);
+            border-radius: 4px;
+        }
+
+        .settings-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 1.5rem;
+            max-width: 1000px;
+        }
+
+        .s-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            gap: 1rem;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .s-card svg {
+            color: var(--text-muted);
+            transition: all 0.3s;
+            width: 40px;
+            height: 40px;
+        }
+
+        .s-card-title {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-soft);
+            transition: color 0.3s;
+        }
+
+        .s-card-desc {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .s-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.04);
+        }
+
+        .s-card.c-general:hover {
+            border-color: rgba(168, 85, 247, 0.4);
+            box-shadow: 0 10px 30px rgba(168, 85, 247, 0.1);
+        }
+
+        .s-card.c-general:hover svg {
+            color: var(--primary);
+            filter: drop-shadow(0 0 8px var(--primary));
+            transform: scale(1.1);
+        }
+
+        .s-card.c-general:hover .s-card-title {
+            color: var(--text);
+        }
+
+        .s-card.c-conn:hover {
+            border-color: rgba(34, 197, 94, 0.4);
+            box-shadow: 0 10px 30px rgba(34, 197, 94, 0.1);
+        }
+
+        .s-card.c-conn:hover svg {
+            color: var(--green);
+            filter: drop-shadow(0 0 8px var(--green));
+            transform: scale(1.1);
+        }
+
+        .s-card.c-conn:hover .s-card-title {
+            color: var(--text);
+        }
+
+        .s-card.c-intel:hover {
+            border-color: rgba(6, 182, 212, 0.4);
+            box-shadow: 0 10px 30px rgba(6, 182, 212, 0.1);
+        }
+
+        .s-card.c-intel:hover svg {
+            color: var(--cyan);
+            filter: drop-shadow(0 0 8px var(--cyan));
+            transform: scale(1.1);
+        }
+
+        .s-card.c-intel:hover .s-card-title {
+            color: var(--text);
+        }
+
+        .s-card.c-ui:hover {
+            border-color: rgba(236, 72, 153, 0.4);
+            box-shadow: 0 10px 30px rgba(236, 72, 153, 0.1);
+        }
+
+        .s-card.c-ui:hover svg {
+            color: var(--pink);
+            filter: drop-shadow(0 0 8px var(--pink));
+            transform: scale(1.1);
+        }
+
+        .s-card.c-ui:hover .s-card-title {
+            color: var(--text);
+        }
+
+        /* Right Widget Pane - BLENDED & MODULAR */
+        .right-pane {
+            width: 380px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--line);
+            background: rgba(9, 9, 11, 0.2);
+            backdrop-filter: blur(24px);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+        }
+
+        .right-pane.collapsed {
+            width: 0;
+            border-left: none;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .w-controls {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.75rem;
+        }
+
+        .btn-edit {
+            background: transparent;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            color: var(--text-soft);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-edit:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .w-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 0.75rem 0.75rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: min-content;
+            gap: 0.75rem;
+            align-content: start;
+        }
+
+        .tile {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .w-grid.editing .tile {
+            border: 1px dashed rgba(168, 85, 247, 0.4);
+            background: rgba(168, 85, 247, 0.03);
+            cursor: grab;
+            animation: wiggle 0.4s infinite alternate ease-in-out;
+        }
+
+        .w-grid.editing .tile:nth-child(even) {
+            animation-direction: alternate-reverse;
+        }
+
+        .btn-remove {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 1px solid var(--text-muted);
+            color: var(--text-soft);
+            font-size: 10px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .w-grid.editing .btn-remove {
+            display: flex;
+        }
+
+        .btn-remove:hover {
+            border-color: var(--red);
+            color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .add-slot {
+            display: none;
+            border: 1px dashed var(--line-strong);
+            border-radius: 12px;
+            min-height: 80px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .w-grid.editing .add-slot {
+            display: flex;
+        }
+
+        .add-slot:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .tile.size-m {
+            grid-column: span 2;
+        }
+
+        .tile.size-t {
+            grid-column: span 2;
+            grid-row: span 2;
+            min-height: 380px;
+        }
+
+        /* Widget: ATPO (M) */
+        .t-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .t-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .t-icon {
+            width: 14px;
+            height: 14px;
+            color: var(--text-soft);
+        }
+
+        .atpo-phase {
+            color: var(--text-soft);
+            font-size: 0.75rem;
+            margin-bottom: 0.4rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .atpo-active {
+            color: var(--primary);
+            background: rgba(168, 85, 247, 0.1);
+            padding: 0.35rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .atpo-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 6px var(--primary);
+        }
+
+        /* Widget: CLI Stream Terminal (T) */
+        .cli-terminal {
+            background: #000;
+            border-radius: 8px;
+            padding: 0.75rem;
+            flex: 1;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.65rem;
+            color: #a1a1aa;
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            border: 1px inset rgba(255, 255, 255, 0.05);
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.8);
+        }
+
+        .cli-line {
+            display: flex;
+            gap: 0.5rem;
+            line-height: 1.4;
+            word-break: break-all;
+        }
+
+        .cli-time {
+            color: #52525b;
+            user-select: none;
+        }
+
+        .cli-c-green {
+            color: #22c55e;
+        }
+
+        .cli-c-cyan {
+            color: #06b6d4;
+        }
+
+        .cli-c-blue {
+            color: #3b82f6;
+        }
+
+        .cli-c-purp {
+            color: #a855f7;
+        }
+
+        .cli-c-amb {
+            color: #f59e0b;
+        }
+
+        .cli-prompt {
+            margin-top: auto;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            color: #fff;
+        }
+
+        .cli-prompt input {
+            background: transparent;
+            border: none;
+            color: #fff;
+            font-family: 'JetBrains Mono';
+            font-size: 0.65rem;
+            outline: none;
+            flex: 1;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes wiggle {
+            0% {
+                transform: rotate(-0.5deg);
+            }
+
+            100% {
+                transform: rotate(0.5deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+    </div>
+
+    <div class="app">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="top-left">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" stroke-width="1.5" />
+                        <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                        <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                    </svg>
+                    <span>OPTA CODE</span>
+                </div>
+            </div>
+
+            <div class="top-center">
+                <div class="global-cmd">
+                    <div style="display:flex; align-items:center; gap:0.5rem;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <circle cx="11" cy="11" r="8" />
+                            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                        </svg>
+                        <span>Search or run CLI tool...</span>
+                    </div>
+                    <span class="cmd-key">⌘ K</span>
+                </div>
+            </div>
+
+            <div class="top-right">
+                <div class="app-btn-group">
+                    <!-- FIXED: Replaced buggy globe vector with a crisp Server icon for LMX Router -->
+                    <button class="app-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)"
+                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                            <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                            <line x1="6" y1="6" x2="6.01" y2="6" />
+                            <line x1="6" y1="18" x2="6.01" y2="18" />
+                        </svg>
+                        <span style="color:var(--text)">LMX ROUTER</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="body">
+            <!-- Left Pane -->
+            <div class="left-pane">
+
+                <!-- Agents Section -->
+                <div class="pane-header">
+                    <span class="pane-title">Active Agents</span>
+                    <button class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <path d="M3 12h18" />
+                            <path d="M12 3v18" />
+                        </svg></button>
+                </div>
+                <div class="agent-list">
+                    <div class="agent-pill">
+                        <div class="dot"></div>
+                        <span class="agent-name">auth-refactor</span>
+                        <span class="agent-proj">2m14s</span>
+                    </div>
+                    <div class="agent-pill"
+                        style="background:rgba(245,158,11,0.05); border-color:rgba(245,158,11,0.2);">
+                        <div class="dot"
+                            style="background:var(--amber); box-shadow:0 0 6px var(--amber); animation:none"></div>
+                        <span class="agent-name">local-sync</span>
+                        <span class="agent-proj" style="color:var(--amber)">REVIEW</span>
+                    </div>
+                </div>
+
+                <!-- Projects Section -->
+                <div class="pane-header">
+                    <span class="pane-title">Projects</span>
+                    <button class="btn-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                            stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg></button>
+                </div>
+                <div class="tree-list">
+                    <div class="tree-project">
+                        <div class="p-left">
+                            <div class="p-dot" style="background:#a855f7"></div><span class="p-name">opta-core</span>
+                        </div>
+                    </div>
+                    <div class="tree-ws">▾ default-workspace</div>
+                    <div class="tree-sess active">
+                        <span>auth-refactor</span>
+                        <div class="sess-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+                    </div>
+                    <div class="tree-project" style="margin-top:0.5rem">
+                        <div class="p-left">
+                            <div class="p-dot" style="background:#06b6d4"></div><span class="p-name">opta-lmx</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Left Area -->
+                <div class="left-bottom">
+                    <div class="left-health">
+                        <div class="health-row">
+                            <span>Daemon</span>
+                            <div class="h-server">
+                                <div class="dot"></div> HTTP/WS
+                            </div>
+                        </div>
+                        <div class="health-row">
+                            <span>LMX Engine</span>
+                            <span class="h-perf">48.3 t/s</span>
+                        </div>
+                    </div>
+
+                    <!-- User Profile (moved from topbar) -->
+                    <div class="user-profile">
+                        <div class="up-avatar">M</div>
+                        <div class="up-info">
+                            <span class="up-name">Matthew Byrden</span>
+                            <span class="up-team">Opta Local Pro</span>
+                        </div>
+                        <svg style="margin-left:auto; color:var(--text-muted)" width="16" height="16"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M19 12l-7 7-7-7" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Container -->
+            <div class="center-container" id="centerContainer">
+
+                <!-- Chat Pane -->
+                <div class="chat-pane" id="chatPane">
+
+                    <div class="chat-header">
+                        Try pressing <b style="color:var(--primary)">Ctrl+S</b>
+                    </div>
+
+                    <div class="branding-container">
+                        <div class="brand-text">OPTA</div>
+                        <div class="brand-subtitle">Code Environment</div>
+                    </div>
+
+                    <div class="messages" style="justify-content: flex-end; padding-bottom: 2rem;">
+                        <div
+                            style="text-align:center; font-family:'JetBrains Mono'; color:var(--text-muted); font-size:0.75rem;">
+                            No messages yet. Select a project and start a task.
+                        </div>
+                    </div>
+
+                    <div class="composer">
+                        <div class="cmp-box">
+                            <div class="mode-badge mode-code" id="modeBadge" onclick="cycleMode()">
+                                MODE: CODE <span class="mod-key">⇧⇥</span>
+                            </div>
+                            <textarea class="cmp-input" id="composerInput"
+                                placeholder="Message agent... (Press Shift+Tab to change mode)"
+                                onkeydown="checkShiftTab(event)"></textarea>
+                            <div class="cmp-actions">
+                                <button class="tool-btn">@context</button>
+                                <button class="cmp-send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                        <line x1="22" y1="2" x2="11" y2="13" />
+                                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                    </svg></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Feature 5 RESTORED: Settings Overlay Grid -->
+                <div class="settings-pane" id="settingsPane">
+                    <div class="settings-header">
+                        <div class="sh-title"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2">
+                                <path
+                                    d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg> Opta Settings</div>
+                        <div class="sh-hint">ESC or Ctrl+S to close</div>
+                    </div>
+
+                    <div class="settings-grid">
+                        <div class="s-card c-general">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8l-6 6v12a2 2 0 0 0 2 2z" />
+                                <line x1="14" y1="2" x2="14" y2="22" />
+                                <line x1="4" y1="12" x2="14" y2="12" />
+                            </svg>
+                            <div>
+                                <div class="s-card-title">General</div>
+                                <div class="s-card-desc">App preferences, file behavior, and updates</div>
+                            </div>
+                        </div>
+
+                        <div class="s-card c-intel">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <circle cx="12" cy="12" r="10" />
+                                <path d="M12 16v-4" />
+                                <path d="M12 8h.01" />
+                                <path d="M10 21.8c.8 0 1.5-.7 1.5-1.5s-.7-1.5-1.5-1.5-1.5.7-1.5 1.5.7 1.5 1.5 1.5z" />
+                                <path d="M14 21.8c.8 0 1.5-.7 1.5-1.5s-.7-1.5-1.5-1.5-1.5.7-1.5 1.5.7 1.5 1.5 1.5z" />
+                            </svg>
+                            <div>
+                                <div class="s-card-title">Intelligence</div>
+                                <div class="s-card-desc">LMX Engine bindings, default models, and context</div>
+                            </div>
+                        </div>
+
+                        <div class="s-card c-conn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+                                <path d="M12 12v9" />
+                                <path d="M8 17l4 4 4-4" />
+                            </svg>
+                            <div>
+                                <div class="s-card-title">Connection</div>
+                                <div class="s-card-desc">Daemon remote host logic and HTTP/WS sockets</div>
+                            </div>
+                        </div>
+
+                        <div class="s-card c-ui">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                                <path
+                                    d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+                                <polyline points="3.29 7 12 12 20.71 7" />
+                                <line x1="12" y1="22" x2="12" y2="12" />
+                            </svg>
+                            <div>
+                                <div class="s-card-title">Interface</div>
+                                <div class="s-card-desc">Widget grids, typography, and visual bounds</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Right Pane: Focus Widgets -->
+            <div class="right-pane" id="rightPane">
+                <div class="w-controls">
+                    <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">Customise Tiles</button>
+                </div>
+                <div class="w-grid" id="widgetGrid">
+
+                    <!-- Widget: ATPO (M) -->
+                    <div class="tile size-m widget-el" id="w-atpo">
+                        <button class="btn-remove" onclick="removeWidget('w-atpo')">✕</button>
+                        <div class="t-header"><span class="t-title"><svg class="t-icon" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                                    <polyline points="14 2 14 8 20 8" />
+                                    <line x1="16" y1="13" x2="8" y2="13" />
+                                    <line x1="16" y1="17" x2="8" y2="17" />
+                                    <polyline points="10 9 9 9 8 9" />
+                                </svg> ATPO PLAN</span></div>
+                        <div class="atpo-phase atpo-active">
+                            <div class="atpo-dot"></div> 2. Refactor auth client
+                        </div>
+                        <div class="atpo-phase" style="color:var(--text-muted); padding:0 0.5rem">○ 3. Verification
+                        </div>
+                    </div>
+
+                    <!-- CLI Terminal Stream (T) -->
+                    <div class="tile size-t widget-el" id="w-cli">
+                        <button class="btn-remove" onclick="removeWidget('w-cli')">✕</button>
+                        <div class="t-header"><span class="t-title"><svg class="t-icon" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2">
+                                    <polyline points="4 17 10 11 4 5" />
+                                    <line x1="12" y1="19" x2="20" y2="19" />
+                                </svg> OPTA CLI LOGS</span></div>
+
+                        <div class="cli-terminal">
+                            <div class="cli-line"><span class="cli-time">13:40:01</span> <span
+                                    class="cli-c-cyan">[daemon]</span> WebSocket connected (Client: Tauri-Mac)</div>
+                            <div class="cli-line"><span class="cli-time">13:40:02</span> <span
+                                    class="cli-c-green">[lmx-router]</span> Model Qwen2.5-32B loaded successfully in
+                                410ms.</div>
+                            <div class="cli-line"><span class="cli-time">13:40:05</span> <span
+                                    class="cli-c-purp">[tool/invoke]</span> Executing <span
+                                    style="color:#fff">read_file(src/App.tsx)</span>...</div>
+                            <div class="cli-line"><span class="cli-time">13:40:06</span> <span
+                                    class="cli-c-blue">[agent/chunk]</span> Stream generation started (temp: 0.7)</div>
+                            <div class="cli-line"><span class="cli-time">13:40:08</span> <span
+                                    class="cli-c-amb">[fs/watch]</span> Detected change in opta.css</div>
+
+                            <div class="cli-prompt">
+                                <span class="cli-c-green">❯</span>
+                                <input type="text" placeholder="Type a CLI command..." />
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add slots -->
+                    <div class="add-slot size-m" onclick="addWidget('m')"><span>+</span></div>
+                    <div class="add-slot size-t" onclick="addWidget('t')"><span>+</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditing = false;
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            const grid = document.getElementById('widgetGrid');
+            const btn = document.getElementById('btnEdit');
+            if (isEditing) {
+                grid.classList.add('editing');
+                btn.textContent = 'DONE EDITING';
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.borderStyle = 'solid';
+            } else {
+                grid.classList.remove('editing');
+                btn.textContent = 'Customise Tiles';
+                btn.style.background = 'transparent';
+                btn.style.color = 'var(--text-soft)';
+                btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                btn.style.borderStyle = 'dashed';
+                checkEmptyPane();
+            }
+        }
+        function removeWidget(id) {
+            const el = document.getElementById(id);
+            if (el) { el.remove(); if (!isEditing) checkEmptyPane(); }
+        }
+        function addWidget(size) {
+            const grid = document.getElementById('widgetGrid');
+            const newId = 'w-new-' + Math.random().toString(36).substr(2, 5);
+            const el = document.createElement('div');
+            el.className = `tile size-${size} widget-el`;
+            el.id = newId;
+            el.innerHTML = `<button class="btn-remove" onclick="removeWidget('${newId}')">✕</button><div class="t-header"><span class="t-title">NEW WIDGET</span></div><div style="color:var(--text-muted); font-size:0.7rem; text-align:center; padding-top:1rem;">Configure...</div>`;
+            grid.insertBefore(el, grid.querySelector('.add-slot'));
+            document.getElementById('rightPane').classList.remove('collapsed');
+        }
+        function checkEmptyPane() {
+            const grid = document.getElementById('widgetGrid');
+            const rightPane = document.getElementById('rightPane');
+            if (grid.querySelectorAll('.widget-el').length === 0) {
+                rightPane.classList.add('collapsed');
+            } else {
+                rightPane.classList.remove('collapsed');
+            }
+        }
+
+        // Mode Cycling
+        const modes = [
+            { name: 'CODE', class: 'mode-code' },
+            { name: 'PLAN', class: 'mode-plan' },
+            { name: 'REVIEW', class: 'mode-review' },
+            { name: 'CHAT', class: 'mode-chat' }
+        ];
+        let currentModeIdx = 0;
+        function cycleMode() {
+            const badge = document.getElementById('modeBadge');
+            badge.classList.remove(modes[currentModeIdx].class);
+            currentModeIdx = (currentModeIdx + 1) % modes.length;
+            const newMode = modes[currentModeIdx];
+            badge.classList.add(newMode.class);
+            badge.innerHTML = `MODE: ${newMode.name} <span class="mod-key">⇧⇥</span>`;
+            badge.style.transform = 'scale(1.05)';
+            setTimeout(() => { badge.style.transform = 'scale(1)'; }, 100);
+        }
+        function checkShiftTab(e) {
+            if (e.shiftKey && e.key === 'Tab') { e.preventDefault(); cycleMode(); }
+        }
+
+        // Settings Overlay (RESTORED)
+        let settingsOpen = false;
+        function toggleSettings() {
+            settingsOpen = !settingsOpen;
+            const chatPane = document.getElementById('chatPane');
+            const settingsPane = document.getElementById('settingsPane');
+            if (settingsOpen) {
+                chatPane.classList.add('hidden');
+                settingsPane.classList.add('visible');
+            } else {
+                chatPane.classList.remove('hidden');
+                settingsPane.classList.remove('visible');
+                document.getElementById('composerInput').focus();
+            }
+        }
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); toggleSettings(); }
+            if (e.key === 'Escape' && settingsOpen) { toggleSettings(); }
+        });
+    </script>
+</body>
+
+</html>

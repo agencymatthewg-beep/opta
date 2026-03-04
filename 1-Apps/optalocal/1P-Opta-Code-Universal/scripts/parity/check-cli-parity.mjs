@@ -67,9 +67,10 @@ const COMMAND_STATUS_MAP = {
     rationale: "apps.* operations are available through the CLI Operations page.",
   },
   "ceo-bench": {
-    status: "adapted",
+    status: "covered",
     required: true,
-    rationale: "Autonomy benchmarking is represented through benchmark operations and runtime/autonomy telemetry.",
+    rationale:
+      "Dedicated tooling controls expose ceo.benchmark via daemon operations, with CLI bridge fallback.",
   },
   status: {
     status: "covered",
@@ -84,28 +85,32 @@ const COMMAND_STATUS_MAP = {
   sessions: { status: "covered", required: true, rationale: "Session rail + sessions.* operations." },
   mcp: { status: "covered", required: true, rationale: "Dedicated MCP management page (mcp.*)." },
   memory: {
-    status: "adapted",
+    status: "covered",
     required: true,
-    rationale: "Session persistence and recovery semantics are represented through timeline + sessions operations.",
+    rationale:
+      "Dedicated Session Memory page maps memory workflows to sessions.* daemon operations, with CLI bridge fallback.",
   },
   onboard: {
-    status: "adapted",
+    status: "covered",
     required: true,
-    rationale: "Setup wizard + onboard.apply operation, not full TTY wizard parity.",
+    rationale:
+      "Setup Wizard + System Control Plane expose onboard.apply through daemon operations.",
   },
   setup: {
-    status: "adapted",
+    status: "covered",
     required: true,
-    rationale: "Alias handled by setup wizard + onboard.apply operation.",
+    rationale:
+      "Setup flow is first-class in desktop via Setup Wizard backed by onboard.apply daemon operation.",
   },
   init: { status: "covered", required: true, rationale: "init.run available via CLI Operations page." },
   diff: { status: "covered", required: true, rationale: "diff operation available via CLI Operations page." },
   serve: { status: "covered", required: true, rationale: "serve.* operations available via CLI Operations page." },
   update: { status: "covered", required: true, rationale: "update.run available via CLI Operations page." },
   server: {
-    status: "adapted",
+    status: "covered",
     required: true,
-    rationale: "Legacy server behavior is adapted through daemon lifecycle + serve controls in desktop.",
+    rationale:
+      "Server lifecycle is represented via dedicated System Control Plane daemon/serve operations and daemon panel.",
   },
   daemon: { status: "covered", required: true, rationale: "Dedicated daemon panel + daemon.* operations." },
   doctor: { status: "covered", required: true, rationale: "doctor operation available via CLI Operations page." },

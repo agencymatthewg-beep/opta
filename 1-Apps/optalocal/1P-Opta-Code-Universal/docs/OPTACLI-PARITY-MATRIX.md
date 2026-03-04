@@ -43,8 +43,8 @@ Legend:
 | Session memory management (`sessions.*`) | Dedicated + Console | `SessionMemoryPage` + CLI bridge |
 | Tooling ops (`diff`, `embed`, `rerank`, `benchmark`, `ceo.benchmark`) | Dedicated + Console | `ToolingOperationsPage` + CLI bridge |
 | Full operation-family fallback | Console | `CliOperationsPage` (advanced parity bridge) |
-| Onboarding (`onboard`, `setup`) | Adapted | In-app setup wizard now routes through canonical `onboard.apply` (all providers, key storage mode, marker write) instead of separate config writer |
-| HTTP server command (`server`) | Adapted | Legacy server runtime behavior is represented by desktop daemon panel + `serve.*` operations |
+| Onboarding (`onboard`, `setup`) | Dedicated + Console | In-app setup wizard routes through canonical `onboard.apply` and system controls expose the same operation family via daemon API |
+| HTTP server command (`server`) | Dedicated + Console | Server lifecycle is represented by `daemon.*` + `serve.*` operations in `SystemOperationsPage` and CLI bridge |
 | Chat mode flags (`--plan`, `--review`, `--research`) | Dedicated | Composer/runtime submit API supports all CLI intent modes |
 | Per-run control flags (`--auto`, `--dangerous`, `--no-commit`, `--no-checkpoints`, `--provider`, `--model`, `--format`) | Dedicated | Composer forwards full turn override contract to daemon runtime with mode/git/provider/model/output adaptation |
 | Advanced `opta models` suite (`history`, `aliases`, `predictor`, `helpers`, `quantize`, `agents`, `skills`, `rag`, `health`, `scan`, `browse-*`, `dashboard` parity) | Console + Dedicated | `models.*` operations are daemon-addressable; `ModelsPage` adds dedicated `history`/`health`/`scan` controls and the rest run via operation console |
@@ -60,11 +60,8 @@ Current parity status:
 
 Known intentional adapted behaviors (documented and accepted):
 - `tui`
-- `server`
-- `memory`
-- `onboard` / `setup`
 
 ## Ongoing Maintenance
 
 1. Keep parity artifacts (`docs/parity/*.json`) fresh during release prep and CI (always regenerate before check).
-2. Track adapted-command acceptance criteria (`tui`, `server`, `memory`, `onboard`, `setup`) as product behavior evolves.
+2. Track adapted-command acceptance criteria (`tui`) as product behavior evolves.

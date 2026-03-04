@@ -7,6 +7,7 @@ interface LiveBrowserViewProps {
   className?: string;
   refreshRateMs?: number;
   showNativeControls?: boolean;
+  viewerAuthToken?: string;
 }
 
 export function LiveBrowserView({
@@ -14,6 +15,7 @@ export function LiveBrowserView({
   className = "",
   refreshRateMs = 800,
   showNativeControls,
+  viewerAuthToken,
 }: LiveBrowserViewProps) {
   const [frameUrl, setFrameUrl] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -41,11 +43,15 @@ export function LiveBrowserView({
       if (!active) return;
       let nextDelay = refreshRateMs;
       try {
+        const frameUrl = new URL(`http://127.0.0.1:${activeSlot.port}/frame`);
+        if (viewerAuthToken?.trim()) {
+          frameUrl.searchParams.set("token", viewerAuthToken.trim());
+        }
         const controller = new AbortController();
         const timeoutHandle = window.setTimeout(() => controller.abort(), 2500);
         const response = await (async () => {
           try {
-            return await fetch(`http://127.0.0.1:${activeSlot.port}/frame`, {
+            return await fetch(frameUrl.toString(), {
               cache: "no-store",
               signal: controller.signal,
               headers: {
@@ -103,7 +109,7 @@ export function LiveBrowserView({
       if (currentObjectUrl) URL.revokeObjectURL(currentObjectUrl);
       if (previousObjectUrl) URL.revokeObjectURL(previousObjectUrl);
     };
-  }, [slot?.port, slot?.sessionId, refreshRateMs]);
+  }, [slot?.port, slot?.sessionId, refreshRateMs, viewerAuthToken]);
 
   return (
     <div

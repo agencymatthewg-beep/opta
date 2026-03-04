@@ -14,6 +14,7 @@ const SYSTEM_OPERATION_SCOPES: string[] = [
   "completions.generate",
   "daemon.*",
   "serve.*",
+  "browser.host",
   "init.run",
   "update.run",
   "onboard.apply",
@@ -48,4 +49,3 @@ export function SystemOperationsPage({
     </div>
   );
 }
-

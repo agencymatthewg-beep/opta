@@ -62,6 +62,12 @@ const OPTIONAL_LOCAL_OPERATION_IDS = [
   OP_LOCAL_KEY_COPY,
 ] as const;
 
+const OAUTH_BROWSER_LOGIN_INPUT: Record<string, unknown> = {
+  oauth: true,
+  timeout: 600,
+  returnTo: "opta-code://auth/callback",
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
@@ -479,6 +485,22 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
     );
   }, [loginInput, parseAndExecute]);
 
+  const handleBrowserLogin = useCallback(async () => {
+    const result = await executeOperation(OP_ACCOUNT_LOGIN, {
+      input: OAUTH_BROWSER_LOGIN_INPUT,
+      successMessage: "Browser OAuth login completed.",
+      onSuccess: (result) => {
+        setAuthResult(result);
+      },
+    });
+    if (result !== undefined) {
+      await executeOperation(OP_ACCOUNT_STATUS, {
+        successMessage: "Loaded account status.",
+        onSuccess: (status) => setStatusResult(status),
+      });
+    }
+  }, [executeOperation]);
+
   const handleLogout = useCallback(async () => {
     await executeOperation(OP_ACCOUNT_LOGOUT, {
       successMessage: "Logout operation completed.",
@@ -697,6 +719,20 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
               ? "Running login…"
               : "Run login"}
           </button>
+          <button
+            type="button"
+            className="action-btn"
+            onClick={() => void handleBrowserLogin()}
+            disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_LOGIN)}
+          >
+            {busyOperation === OP_ACCOUNT_LOGIN
+              ? "Opening browser…"
+              : "Sign in via browser"}
+          </button>
+          <p className="account-empty">
+            Browser mode uses <code>{"{ \"oauth\": true }"}</code> and waits for
+            callback completion.
+          </p>
 
           <div className="account-result-block">
             <h4>Latest status result</h4>

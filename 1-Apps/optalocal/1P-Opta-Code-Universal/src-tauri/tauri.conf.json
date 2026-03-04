@@ -28,6 +28,15 @@
       "csp": "default-src 'self'; connect-src 'self' http: ws: https: wss:; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:"
     }
   },
+  "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "opta-code"
+        ]
+      }
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",

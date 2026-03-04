@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T01:24:35.588Z",
+  "generatedAt": "2026-03-04T02:00:27.186Z",
   "source": {
     "desktopRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal",
     "cliRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
@@ -71,9 +71,9 @@
       },
       {
         "command": "ceo-bench",
-        "status": "adapted",
+        "status": "covered",
         "required": true,
-        "rationale": "Autonomy benchmarking is represented through benchmark operations and runtime/autonomy telemetry."
+        "rationale": "Dedicated tooling controls expose ceo.benchmark via daemon operations, with CLI bridge fallback."
       },
       {
         "command": "chat",
@@ -155,9 +155,9 @@
       },
       {
         "command": "memory",
-        "status": "adapted",
+        "status": "covered",
         "required": true,
-        "rationale": "Session persistence and recovery semantics are represented through timeline + sessions operations."
+        "rationale": "Dedicated Session Memory page maps memory workflows to sessions.* daemon operations, with CLI bridge fallback."
       },
       {
         "command": "models",
@@ -167,9 +167,9 @@
       },
       {
         "command": "onboard",
-        "status": "adapted",
+        "status": "covered",
         "required": true,
-        "rationale": "Setup wizard + onboard.apply operation, not full TTY wizard parity."
+        "rationale": "Setup Wizard + System Control Plane expose onboard.apply through daemon operations."
       },
       {
         "command": "rerank",
@@ -185,9 +185,9 @@
       },
       {
         "command": "server",
-        "status": "adapted",
+        "status": "covered",
         "required": true,
-        "rationale": "Legacy server behavior is adapted through daemon lifecycle + serve controls in desktop."
+        "rationale": "Server lifecycle is represented via dedicated System Control Plane daemon/serve operations and daemon panel."
       },
       {
         "command": "sessions",
@@ -197,9 +197,9 @@
       },
       {
         "command": "setup",
-        "status": "adapted",
+        "status": "covered",
         "required": true,
-        "rationale": "Alias handled by setup wizard + onboard.apply operation."
+        "rationale": "Setup flow is first-class in desktop via Setup Wizard backed by onboard.apply daemon operation."
       },
       {
         "command": "status",
@@ -227,8 +227,8 @@
       }
     ],
     "commandStatusCounts": {
-      "covered": 23,
-      "adapted": 6
+      "covered": 28,
+      "adapted": 1
     },
     "operationScopeCoverage": {
       "totalCliOperations": 79,

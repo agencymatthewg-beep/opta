@@ -20,6 +20,9 @@ describe("CliOperationsPage", () => {
     );
 
     expect(screen.getByText("mock-operations-page")).toBeInTheDocument();
+    expect(
+      screen.getByText(/Opta CLI remains the primary TUI coding interface/i),
+    ).toBeInTheDocument();
     expect(operationsPageSpy).toHaveBeenCalledTimes(1);
 
     const props = operationsPageSpy.mock.calls[0]?.[0] as {

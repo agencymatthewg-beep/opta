@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Opta Code — Prototype 7: Blended Modular Workspace</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #09090b;
+            --bg-1: #18181b;
+            --bg-2: #27272a;
+            --line: rgba(255, 255, 255, 0.06);
+            --line-strong: rgba(255, 255, 255, 0.12);
+            --primary: #a855f7;
+            --primary-dim: rgba(168, 85, 247, 0.12);
+            --text: #fafafa;
+            --text-soft: #a1a1aa;
+            --text-muted: #52525b;
+            --green: #22c55e;
+            --amber: #f59e0b;
+            --cyan: #06b6d4;
+        }
+
+        html,
+        body {
+            width: 100%;
+            height: 100%;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Sora', sans-serif;
+            overflow: hidden;
+        }
+
+        /* Background Ambient */
+        .ambient {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .blob {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            filter: blur(120px);
+            opacity: 0.1;
+        }
+
+        .b1 {
+            background: var(--primary);
+            top: -100px;
+            right: -100px;
+        }
+
+        .b2 {
+            background: var(--cyan);
+            bottom: -200px;
+            left: 10%;
+        }
+
+        .app {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* Topbar */
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 1rem;
+            height: 50px;
+            background: rgba(9, 9, 11, 0.6);
+            backdrop-filter: blur(24px);
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .top-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            font-size: 0.8rem;
+        }
+
+        .logo svg {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+        }
+
+        .top-right {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            font-family: 'JetBrains Mono';
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .app-btn-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border-left: 1px solid var(--line);
+            padding-left: 1rem;
+        }
+
+        .app-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: transparent;
+            border: 1px solid transparent;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .app-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--line);
+        }
+
+        .app-btn svg {
+            filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.3));
+        }
+
+        .app-btn span {
+            font-family: 'Sora';
+            font-size: 0.7rem;
+            color: var(--text-soft);
+            font-weight: 600;
+        }
+
+        /* Agent Bar */
+        .agent-bar {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0 1rem;
+            height: 36px;
+            background: rgba(9, 9, 11, 0.4);
+            border-bottom: 1px solid var(--line);
+            flex-shrink: 0;
+        }
+
+        .agent-label {
+            font-size: 0.6rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-right: 0.5rem;
+        }
+
+        .agent-pill {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            padding: 0.25rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono';
+            background: rgba(34, 197, 94, 0.06);
+            border: 1px solid rgba(34, 197, 94, 0.15);
+            color: var(--text-soft);
+        }
+
+        .agent-pill .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Body */
+        .body {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            background: transparent;
+        }
+
+        /* Left Pane */
+        .left-pane {
+            width: 260px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            background: rgba(24, 24, 27, 0.3);
+            border-right: 1px solid var(--line);
+            backdrop-filter: blur(24px);
+        }
+
+        .pane-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .pane-title {
+            font-size: 0.7rem;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+        }
+
+        .tree-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0.5rem 0;
+        }
+
+        .tree-project {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.4rem 1rem;
+        }
+
+        .p-left {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .p-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .p-name {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .tree-ws {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.3rem 1rem 0.3rem 2.2rem;
+            font-size: 0.75rem;
+            color: var(--text-soft);
+        }
+
+        .tree-sess {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.3rem 0.5rem 0.3rem 3rem;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            border-left: 2px solid transparent;
+            margin-left: 0.5rem;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .tree-sess.active {
+            background: var(--primary-dim);
+            color: var(--primary);
+            border-left-color: var(--primary);
+        }
+
+        .sess-status {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+        }
+
+        /* Center Chat */
+        .chat-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: transparent;
+            min-width: 400px;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .chat-header {
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .chat-proj-tag {
+            font-size: 0.6rem;
+            padding: 0.15rem 0.4rem;
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            color: var(--primary);
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .chat-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .msg {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .msg-user {
+            flex-direction: row-reverse;
+            align-self: flex-end;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .av-user {
+            background: var(--bg-1);
+            border: 1px solid var(--line-strong);
+            color: var(--text-soft);
+        }
+
+        .av-agent {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: var(--primary);
+        }
+
+        .msg-content {
+            padding: 0.85rem 1rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            background: rgba(24, 24, 27, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--line);
+            color: var(--text-soft);
+        }
+
+        .msg-user .msg-content {
+            background: rgba(168, 85, 247, 0.05);
+            border-color: rgba(168, 85, 247, 0.15);
+        }
+
+        .composer {
+            padding: 1rem 1.5rem;
+            border-top: 1px solid var(--line);
+            max-width: 900px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .cmp-box {
+            background: rgba(24, 24, 27, 0.8);
+            backdrop-filter: blur(24px);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 0.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            transition: border-color 0.2s;
+        }
+
+        .cmp-box:focus-within {
+            border-color: rgba(168, 85, 247, 0.4);
+        }
+
+        .cmp-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: 'Sora';
+            font-size: 0.9rem;
+            resize: none;
+            outline: none;
+            padding: 0.5rem;
+            min-height: 44px;
+        }
+
+        .cmp-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0.25rem;
+        }
+
+        .tool-btn {
+            background: none;
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            padding: 0.25rem 0.6rem;
+            font-size: 0.65rem;
+            color: var(--text-soft);
+            cursor: pointer;
+            font-family: 'JetBrains Mono';
+        }
+
+        .cmp-send {
+            background: var(--primary);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Right Widget Pane - BLENDED & MODULAR */
+        .right-pane {
+            width: 340px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            border-left: 1px solid var(--line);
+            background: rgba(9, 9, 11, 0.2);
+            backdrop-filter: blur(24px);
+            transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+        }
+
+        .right-pane.collapsed {
+            width: 0;
+            border-left: none;
+            opacity: 0;
+            overflow: hidden;
+        }
+
+        .w-controls {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.75rem;
+        }
+
+        .btn-edit {
+            background: transparent;
+            border: 1px dashed rgba(255, 255, 255, 0.2);
+            color: var(--text-soft);
+            font-size: 0.65rem;
+            font-weight: 600;
+            padding: 0.3rem 0.6rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-edit:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .w-grid {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 0.75rem 0.75rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-auto-rows: min-content;
+            gap: 0.75rem;
+            align-content: start;
+        }
+
+        /* Blended Tiles - Glassy, gentle borders */
+        .tile {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.04);
+            border-radius: 12px;
+            padding: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .tile:hover {
+            background: rgba(255, 255, 255, 0.04);
+            border-color: rgba(255, 255, 255, 0.08);
+        }
+
+        /* Edit Mode Styles */
+        .w-grid.editing .tile {
+            border: 1px dashed rgba(168, 85, 247, 0.4);
+            background: rgba(168, 85, 247, 0.03);
+            cursor: grab;
+            animation: wiggle 0.4s infinite alternate ease-in-out;
+        }
+
+        .w-grid.editing .tile:nth-child(even) {
+            animation-direction: alternate-reverse;
+        }
+
+        .btn-remove {
+            position: absolute;
+            top: -6px;
+            left: -6px;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--bg);
+            border: 1px solid var(--text-muted);
+            color: var(--text-soft);
+            font-size: 10px;
+            font-weight: bold;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+
+        .w-grid.editing .btn-remove {
+            display: flex;
+        }
+
+        .btn-remove:hover {
+            border-color: var(--red);
+            color: var(--red);
+            background: rgba(239, 68, 68, 0.1);
+        }
+
+        .add-slot {
+            display: none;
+            border: 1px dashed var(--line-strong);
+            border-radius: 12px;
+            min-height: 80px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .w-grid.editing .add-slot {
+            display: flex;
+        }
+
+        .add-slot:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-dim);
+        }
+
+        .tile.size-m {
+            grid-column: span 2;
+        }
+
+        .tile.size-t {
+            grid-column: span 2;
+            grid-row: span 2;
+            min-height: 220px;
+        }
+
+        .t-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .t-title {
+            font-size: 0.65rem;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .t-icon {
+            width: 14px;
+            height: 14px;
+            color: var(--text-soft);
+        }
+
+        /* Widget: Runtime (M) */
+        .rt-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .rt-val {
+            font-family: 'JetBrains Mono';
+            font-size: 1.25rem;
+            font-weight: 700;
+        }
+
+        .rt-val.v-primary {
+            color: var(--primary);
+        }
+
+        .rt-val.v-green {
+            color: var(--green);
+        }
+
+        .rt-sub {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono';
+            margin-top: 0.2rem;
+        }
+
+        .rt-bar {
+            height: 3px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 2px;
+            margin-top: 0.4rem;
+            overflow: hidden;
+        }
+
+        .rt-fill {
+            height: 100%;
+            background: var(--primary);
+        }
+
+        /* Widget: ATPO (T) */
+        .atpo-phase {
+            color: var(--text-soft);
+            font-size: 0.75rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .atpo-active {
+            color: var(--primary);
+            background: rgba(168, 85, 247, 0.1);
+            padding: 0.35rem 0.5rem;
+            border-radius: 6px;
+            border: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .atpo-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--primary);
+            box-shadow: 0 0 6px var(--primary);
+        }
+
+        /* Widget: Tool Log (T) */
+        .tlog-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .tlog-item {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono';
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            transition: background 0.2s;
+        }
+
+        .tlog-item:hover {
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .tl-top {
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-soft);
+        }
+
+        .tl-name {
+            color: var(--cyan);
+            font-weight: 600;
+        }
+
+        .tl-name.edit {
+            color: var(--primary);
+        }
+
+        .tl-arg {
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+        }
+
+        @keyframes wiggle {
+            0% {
+                transform: rotate(-0.5deg);
+            }
+
+            100% {
+                transform: rotate(0.5deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="ambient">
+        <div class="blob b1"></div>
+        <div class="blob b2"></div>
+    </div>
+
+    <div class="app">
+        <!-- Topbar -->
+        <header class="topbar">
+            <div class="top-left">
+                <div class="logo">
+                    <svg width="24" height="24" viewBox="0 0 48 48" fill="none">
+                        <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" stroke-width="1.5" />
+                        <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                        <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" stroke-width="3"
+                            stroke-linecap="round" />
+                    </svg>
+                    <span>OPTA CODE</span>
+                </div>
+            </div>
+            <div class="top-right">
+                <span>192.168.188.11:9999</span>
+                <div class="app-btn-group">
+                    <button class="app-btn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                            <circle cx="12" cy="7" r="4" />
+                        </svg>
+                        <span>ACCOUNTS</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Feature 3: Agent Bar -->
+        <div class="agent-bar">
+            <span class="agent-label">AGENTS</span>
+            <div class="agent-pill">
+                <div class="dot"></div>
+                auth-refactor <span style="opacity:0.6">[opta-core]</span> 2m14s
+            </div>
+        </div>
+
+        <div class="body">
+            <!-- Feature 1: Left Pane Project Tree -->
+            <div class="left-pane">
+                <div class="pane-header">
+                    <span class="pane-title">Projects</span>
+                    <button style="background:none; border:none; color:var(--text-muted); cursor:pointer;"><svg
+                            width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19" />
+                            <line x1="5" y1="12" x2="19" y2="12" />
+                        </svg></button>
+                </div>
+                <div class="tree-list">
+                    <!-- Project 1 -->
+                    <div class="tree-project">
+                        <div class="p-left">
+                            <div class="p-dot" style="background:#a855f7"></div><span class="p-name">opta-core</span>
+                        </div>
+                    </div>
+                    <div class="tree-ws">▾ default-workspace</div>
+                    <div class="tree-sess active">
+                        <span>auth-refactor</span>
+                        <div class="sess-status" style="background:var(--green);box-shadow:0 0 6px var(--green)"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center Pane -->
+            <div class="chat-pane" id="chatPane">
+                <div class="chat-header">
+                    <div class="chat-title-area">
+                        <span class="chat-proj-tag">opta-core</span>
+                        <span class="chat-title">auth-refactor</span>
+                    </div>
+                </div>
+
+                <div class="messages">
+                    <div class="msg msg-user">
+                        <div class="avatar av-user">U</div>
+                        <div class="msg-content">Refactor the Supabase auth module to use the new SSR cookie pattern.
+                            Ensure redirect validation uses the whitelist.</div>
+                    </div>
+                    <div class="msg msg-agent">
+                        <div class="avatar av-agent">A</div>
+                        <div class="msg-content">
+                            Done. I've updated the middleware and the SSR client factory.
+                        </div>
+                    </div>
+                </div>
+
+                <div class="composer">
+                    <div class="cmp-box">
+                        <textarea class="cmp-input" placeholder="Message agent..."></textarea>
+                        <div class="cmp-actions">
+                            <button class="tool-btn">@context</button>
+                            <button class="cmp-send"><svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="22" y1="2" x2="11" y2="13" />
+                                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                                </svg></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Feature 4: Right Widget Pane -->
+            <div class="right-pane" id="rightPane">
+                <div class="w-controls">
+                    <button class="btn-edit" id="btnEdit" onclick="toggleEditMode()">Customise Tiles</button>
+                </div>
+
+                <div class="w-grid" id="widgetGrid">
+
+                    <!-- Widget 1: Runtime -->
+                    <div class="tile size-m widget-el" id="w-runtime">
+                        <button class="btn-remove" onclick="removeWidget('w-runtime')" title="Remove widget">✕</button>
+                        <div class="t-header"><span class="t-title">RUNTIME</span></div>
+                        <div class="rt-grid">
+                            <div>
+                                <div class="rt-val v-primary">67.2%</div>
+                                <div class="rt-sub">Memory (86GB)</div>
+                                <div class="rt-bar">
+                                    <div class="rt-fill" style="width:67%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="rt-val v-green">48.3</div>
+                                <div class="rt-sub">Tokens / sec</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget 2: ATPO -->
+                    <div class="tile size-t widget-el" id="w-atpo">
+                        <button class="btn-remove" onclick="removeWidget('w-atpo')" title="Remove widget">✕</button>
+                        <div class="t-header"><span class="t-title">ATPO PLAN</span></div>
+                        <div class="atpo-phase">✓ 1. Read existing config</div>
+                        <div class="atpo-phase atpo-active">
+                            <div class="atpo-dot"></div> 2. Refactor client
+                        </div>
+                        <div class="atpo-phase">○ 3. Verification</div>
+                        <div class="rt-bar" style="margin-top:auto">
+                            <div class="rt-fill" style="width:50%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Widget 3: Tool Log -->
+                    <div class="tile size-t widget-el" id="w-toollog">
+                        <button class="btn-remove" onclick="removeWidget('w-toollog')" title="Remove widget">✕</button>
+                        <div class="t-header"><span class="t-title">TOOL LOG</span></div>
+                        <div class="tlog-list">
+                            <div class="tlog-item">
+                                <div class="tl-top"><span class="tl-name edit">edit_file</span><span>12s</span></div>
+                                <div class="tl-arg">src/lib/supabase/server.ts</div>
+                            </div>
+                            <div class="tlog-item">
+                                <div class="tl-top"><span class="tl-name">read_file</span><span>45s</span></div>
+                                <div class="tl-arg">src/middleware.ts</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add slots for edit mode -->
+                    <div class="add-slot size-s" onclick="addWidget('s')"><span>+</span></div>
+                    <div class="add-slot size-m" onclick="addWidget('m')"><span>+</span></div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isEditing = false;
+
+        function toggleEditMode() {
+            isEditing = !isEditing;
+            const grid = document.getElementById('widgetGrid');
+            const btn = document.getElementById('btnEdit');
+
+            if (isEditing) {
+                grid.classList.add('editing');
+                btn.textContent = 'DONE EDITING';
+                btn.style.background = 'var(--primary)';
+                btn.style.color = 'white';
+                btn.style.borderColor = 'var(--primary)';
+                btn.style.borderStyle = 'solid';
+            } else {
+                grid.classList.remove('editing');
+                btn.textContent = 'Customise Tiles';
+                btn.style.background = 'transparent';
+                btn.style.color = 'var(--text-soft)';
+                btn.style.borderColor = 'rgba(255,255,255,0.2)';
+                btn.style.borderStyle = 'dashed';
+                checkEmptyPane(); // Check if we should collapse right pane when done editing
+            }
+        }
+
+        function removeWidget(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.remove();
+                // If we are not in edit mode (just being protective), check if pane is empty
+                if (!isEditing) checkEmptyPane();
+            }
+        }
+
+        function addWidget(size) {
+            // Just a visual demo: adds a new dummy widget tile
+            const grid = document.getElementById('widgetGrid');
+            const newId = 'w-new-' + Math.random().toString(36).substr(2, 5);
+
+            // Create new element
+            const el = document.createElement('div');
+            el.className = `tile size-${size} widget-el`;
+            el.id = newId;
+            el.innerHTML = `
+      <button class="btn-remove" onclick="removeWidget('${newId}')" title="Remove widget">✕</button>
+      <div class="t-header"><span class="t-title">NEW WIDGET</span></div>
+      <div style="color:var(--text-muted); font-size: 0.7rem; text-align:center; padding-top: 1rem;">Configure widget...</div>
+    `;
+
+            // Insert before the first add-slot
+            const firstAddSlot = grid.querySelector('.add-slot');
+            grid.insertBefore(el, firstAddSlot);
+
+            // Ensure pane is visible since we just added something
+            document.getElementById('rightPane').classList.remove('collapsed');
+        }
+
+        function checkEmptyPane() {
+            // If no widgets exist (excluding add slots), collapse the right pane totally
+            const grid = document.getElementById('widgetGrid');
+            const widgets = grid.querySelectorAll('.widget-el');
+            const rightPane = document.getElementById('rightPane');
+
+            if (widgets.length === 0) {
+                rightPane.classList.add('collapsed');
+            } else {
+                rightPane.classList.remove('collapsed');
+            }
+        }
+
+        // Make DND somewhat visually demonstratable in edit mode (basic HTML5 drag to swap style)
+        let draggedEl = null;
+
+        document.addEventListener('dragstart', function (e) {
+            if (!isEditing) return;
+            if (e.target.classList && e.target.classList.contains('tile')) {
+                draggedEl = e.target;
+                e.target.style.opacity = 0.5;
+            }
+        });
+
+        document.addEventListener('dragend', function (e) {
+            if (e.target.classList && e.target.classList.contains('tile')) {
+                e.target.style.opacity = "";
+            }
+        });
+
+        document.addEventListener('dragover', function (e) {
+            e.preventDefault();
+        });
+
+        document.addEventListener('drop', function (e) {
+            e.preventDefault();
+            if (isEditing && draggedEl) {
+                // Find closest tile to swap with (simple demo logic)
+                let target = e.target.closest('.widget-el');
+                if (target && target !== draggedEl) {
+                    const grid = document.getElementById('widgetGrid');
+                    // Very rudimentary DOM swap for demonstration
+                    const nextTarget = target.nextSibling === draggedEl ? target : target.nextSibling;
+                    grid.insertBefore(draggedEl, nextTarget);
+                }
+            }
+        });
+
+        // Ensure draggable attribute is set on tiles
+        const tiles = document.querySelectorAll('.tile');
+        tiles.forEach(t => t.setAttribute('draggable', 'true'));
+
+    </script>
+</body>
+
+</html>

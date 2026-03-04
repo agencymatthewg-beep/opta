@@ -50,6 +50,7 @@ describe("SystemOperationsPage", () => {
         "completions.generate",
         "daemon.*",
         "serve.*",
+        "browser.host",
         "init.run",
         "update.run",
         "onboard.apply",
@@ -58,4 +59,3 @@ describe("SystemOperationsPage", () => {
     );
   });
 });
-

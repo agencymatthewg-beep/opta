@@ -7,6 +7,10 @@ import { SettingsModal } from "./components/SettingsModal";
 import { Download, Settings as SettingsIcon } from "lucide-react";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
+import { ProjectPane } from "./components/ProjectPane";
+import { WidgetPane } from "./components/WidgetPane";
+import { SettingsView } from "./components/SettingsView";
+import { useWidgetLayout } from "./hooks/useWidgetLayout";
 import { ModelsPage } from "./pages/ModelsPage";
 import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
@@ -92,6 +96,7 @@ function App() {
   // null = loading (show blank), true = first run (show wizard), false = normal app
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsView, setIsSettingsView] = useState(false);
 
   useEffect(() => {
     const invoke = getTauriInvoke();
@@ -151,9 +156,12 @@ function App() {
     runtimePollDelayMs,
   } = useDaemonSessions();
 
+  // V1: Widget layout hook
+  const widgetLayout = useWidgetLayout("default");
+
   const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
-  const { getSlotForSession } = useBrowserLiveHost();
+  const { status: browserLiveHostStatus, getSlotForSession } = useBrowserLiveHost();
 
   const activeSession = useMemo(
     () =>
@@ -164,6 +172,7 @@ function App() {
   const activeBrowserSlot = activeSessionId
     ? getSlotForSession(activeSessionId)
     : undefined;
+  const activeBrowserViewerAuthToken = browserLiveHostStatus?.viewerAuthToken;
 
   const activeStreamCount = useMemo(
     () => Object.values(streamingBySession).filter(Boolean).length,
@@ -265,7 +274,13 @@ function App() {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
+        // V1: Ctrl+S toggles in-place settings view
+        e.preventDefault();
+        setIsSettingsView((prev) => !prev);
+      } else if (e.key === "Escape" && isSettingsView) {
+        setIsSettingsView(false);
+      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
         e.preventDefault();
         setBrowserViewMode((current) => {
           const next =
@@ -287,7 +302,7 @@ function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [isSettingsView]);
 
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
@@ -646,206 +661,153 @@ function App() {
 
   return (
     <>
-      <div className="bg-singularity-anim" aria-hidden="true" />
+      {/* V1 Ambient Blobs */}
+      <div className="v1-ambient" aria-hidden="true">
+        <div className="v1-blob v1-blob-1" />
+        <div className="v1-blob v1-blob-2" />
+      </div>
       <div className={`app-shell ${palette.isOpen ? "palette-open" : ""}`}>
         <div
           ref={shellBodyRef}
           className="app-shell-body"
           aria-hidden={palette.isOpen ? "true" : undefined}
         >
-          <header className="app-topbar glass">
-            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <svg width="32" height="32" viewBox="0 0 48 48" fill="none" style={{ filter: "drop-shadow(0 0 8px rgba(168,85,247,0.4))" }}>
-                <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" strokeDasharray="4 4" />
+          {/* V1 Topbar */}
+          <header className="v1-topbar">
+            <div className="v1-top-left">
+              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg">
+                <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" />
                 <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
                 <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
               </svg>
-              <span style={{ fontWeight: 600, letterSpacing: "1px", color: "var(--opta-text-primary)" }}>OPTA CODE</span>
+              <span className="v1-logo-text">OPTA CODE</span>
             </div>
 
-            <div className="stats">
-              <span className={`signal signal-${connectionState}`}>
-                <span className="status-dot">●</span>
-                {connectionState === "connected" ? `${connection.host}:${connection.port}` : connectionState}
-              </span>
-              <span>AGENTS: {activeStreamCount}</span>
-              <span>SESSIONS: {sessionCount}</span>
-              <button type="button" onClick={() => setActivePage("account")} className="accounts-btn accounts-btn-pulse" aria-label="Open Account Controls" style={{ marginLeft: "1rem" }}>ACCOUNTS</button>
+            <div className="v1-top-center">
+              <button type="button" className="v1-global-cmd" onClick={palette.open}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
+                <span>Search or run CLI tool...</span>
+                <span className="v1-cmd-key">⌘ K</span>
+              </button>
+            </div>
+
+            <div className="v1-top-right">
+              <button type="button" className="v1-app-btn" onClick={() => setActivePage("models")}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-neon-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                  <line x1="6" y1="6" x2="6.01" y2="6" />
+                  <line x1="6" y1="18" x2="6.01" y2="18" />
+                </svg>
+                <span>LMX</span>
+              </button>
             </div>
           </header>
 
-          <div className="main-layout">
-            <div className="panel glass nav-rail">
-              <button type="button" className={`nav-item ${activePage === "sessions" ? "active" : ""}`} onClick={() => setActivePage("sessions")}>
-                Sessions
-              </button>
-              <button type="button" className={`nav-item ${activePage === "models" ? "active" : ""}`} onClick={() => setActivePage("models")}>
-                Models
-              </button>
-              <button type="button" className={`nav-item ${activePage === "tools" ? "active" : ""}`} onClick={() => setActivePage("tools")}>
-                Tools
-              </button>
-              <button type="button" className={`nav-item ${activePage === "apps" ? "active" : ""}`} onClick={() => setActivePage("apps")}>
-                Apps
-              </button>
-              <button type="button" className={`nav-item ${activePage === "memory" ? "active" : ""}`} onClick={() => setActivePage("memory")}>
-                Memory
-              </button>
-              <button type="button" className={`nav-item ${activePage === "system" ? "active" : ""}`} onClick={() => setActivePage("system")}>
-                System
-              </button>
-              <button type="button" className={`nav-item ${activePage === "cli" ? "active" : ""}`} onClick={() => setActivePage("cli")}>
-                CLI Bridge
-              </button>
-              <button type="button" className={`nav-item ${activePage === "env" ? "active" : ""}`} onClick={() => setActivePage("env")}>
-                Env
-              </button>
-              <button type="button" className={`nav-item ${activePage === "mcp" ? "active" : ""}`} onClick={() => setActivePage("mcp")}>
-                MCP
-              </button>
-              <button type="button" className={`nav-item ${activePage === "config" ? "active" : ""}`} onClick={() => setActivePage("config")}>
-                Config
-              </button>
-              <button type="button" className={`nav-item ${activePage === "account" ? "active" : ""}`} onClick={() => setActivePage("account")}>
-                Account
-              </button>
-              <button type="button" className={`nav-item ${activePage === "jobs" ? "active" : ""}`} onClick={() => setActivePage("jobs")}>
-                Jobs
-              </button>
-              <button type="button" className={`nav-item ${activePage === "logs" ? "active" : ""}`} onClick={() => setActivePage("logs")}>
-                Logs
-              </button>
-              <div style={{ flex: 1 }}></div>
-              <button type="button" className="nav-item" onClick={palette.open}>
-                Palette
-              </button>
-              <button type="button" className={`nav-item ${showTerminal ? "active" : ""}`} onClick={() => setShowTerminal(c => !c)}>
-                {showTerminal ? "Hide Telemetry" : "Show Telemetry"}
-              </button>
-              <button type="button" className="nav-item" onClick={() => setIsSettingsOpen(true)}>
-                Settings
-              </button>
-            </div>
+          {/* V1 3-Column Layout */}
+          <div className="v1-body">
+            {/* Left: Project Pane */}
+            <ProjectPane
+              sessions={sessions}
+              activeSessionId={activeSessionId}
+              streamingBySession={streamingBySession}
+              pendingPermissionsBySession={pendingPermissionsBySession}
+              connectionState={connectionState}
+              connectionHealth={useConnectionHealthResult}
+              connectionHost={connection.host}
+              connectionPort={connection.port}
+              onSelectSession={(sessionId) => {
+                setActiveSessionId(sessionId);
+                setActivePage("sessions");
+                const next = sessions.find((s) => s.sessionId === sessionId);
+                if (next) setSelectedWorkspace(next.workspace);
+              }}
+              onCreateSession={() => {
+                const ws = selectedWorkspace === "all" ? "default" : selectedWorkspace;
+                void createSession({ workspace: ws });
+                setNotice(`New session created in "${ws}"`);
+              }}
+            />
 
-            <main
-              className={`workspace-layout ${activePage !== "sessions" ? "single-pane" : ""
-                } ${showTerminal ? "with-terminal" : "without-terminal"}`}
-            >
-              {activePage === "models" ? (
-                <ModelsPage
-                  connection={connection}
-                  onOpenSettings={() => setIsSettingsOpen(true)}
-                />
-              ) : activePage === "tools" ? (
-                <ToolingOperationsPage connection={connection} />
-              ) : activePage === "apps" ? (
-                <AppCatalogPage connection={connection} />
-              ) : activePage === "memory" ? (
-                <SessionMemoryPage connection={connection} />
-              ) : activePage === "system" ? (
-                <SystemOperationsPage
-                  connection={connection}
-                  connectionState={connectionState}
-                  onOpenCliBridge={() => setActivePage("cli")}
-                />
-              ) : activePage === "cli" ? (
-                <CliOperationsPage connection={connection} />
-              ) : activePage === "env" ? (
-                <EnvProfilesPage connection={connection} />
-              ) : activePage === "mcp" ? (
-                <McpManagementPage connection={connection} />
-              ) : activePage === "config" ? (
-                <ConfigStudioPage connection={connection} />
-              ) : activePage === "account" ? (
-                <AccountControlPage connection={connection} />
-              ) : activePage === "jobs" ? (
-                <BackgroundJobsPage
-                  connection={connection}
-                  defaultSessionId={activeSessionId}
-                />
-              ) : activePage === "logs" ? (
-                <DaemonLogsPage />
-              ) : (
-                <>
-                  <WorkspaceRail
-                    sessions={sessions}
-                    activeSessionId={activeSessionId}
-                    selectedWorkspace={selectedWorkspace}
-                    streamingBySession={streamingBySession}
-                    pendingPermissionsBySession={pendingPermissionsBySession}
-                    browserVisualBySession={browserVisualBySession}
-                    connectionHealth={useConnectionHealthResult}
-                    onSelectWorkspace={setSelectedWorkspace}
-                    onSelectSession={(sessionId) => {
-                      setActiveSessionId(sessionId);
-                      const next = sessions.find(
-                        (session) => session.sessionId === sessionId,
-                      );
-                      if (next) setSelectedWorkspace(next.workspace);
+            {/* Center: Chat or Page Content */}
+            <div className="v1-center">
+              {/* Settings View (Ctrl+S overlay) */}
+              {isSettingsView && (
+                <div className="v1-settings-overlay">
+                  <SettingsView
+                    onOpenSettingsTab={() => {
+                      setIsSettingsView(false);
+                      setIsSettingsOpen(true);
                     }}
-                    onRemoveSession={removeSession}
                   />
+                </div>
+              )}
 
-                  <div
-                    className="workspace-center-column"
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      flex: 1,
-                      minWidth: 0,
-                      gap: "1rem",
-                      height: "calc(100vh - 120px)",
-                    }}
-                  >
-                    <div
-                      className={`browser-layout-row browser-mode-${browserViewMode}`}
-                      style={{ flex: 1, minHeight: 0 }}
-                    >
-                      <div className="timeline-module">
-                        {activeSessionId && timelineItems.length > 0 && (
-                          <div className="session-export-bar">
-                            <button
-                              type="button"
-                              className="session-export-btn"
-                              onClick={() => {
-                                const md = exportToMarkdown(
-                                  activeSessionId,
-                                  timelineItems,
-                                );
-                                downloadAsFile(
-                                  `opta-session-${activeSessionId}.md`,
-                                  md,
-                                );
-                                setNotice("Session exported as Markdown");
-                              }}
-                              title="Export session as Markdown"
-                            >
-                              <Download size={12} aria-hidden="true" />
-                              Export
-                            </button>
-                          </div>
-                        )}
-                        <TimelineCards
-                          sessionId={activeSessionId}
-                          sessionTitle={activeSession?.title}
-                          items={timelineItems}
-                          isStreaming={isStreaming}
-                          pendingPermissions={pendingPermissions}
-                          onResolvePermission={resolvePermission}
-                          connectionState={connectionState}
-                          browserVisualState={activeBrowserVisual}
-                        />
+              {/* Chat Pane (hidden when settings view active) */}
+              <div className={`v1-chat-pane ${isSettingsView ? "v1-chat-hidden" : ""}`}>
+                {activePage === "models" ? (
+                  <ModelsPage connection={connection} onOpenSettings={() => setIsSettingsOpen(true)} />
+                ) : activePage === "tools" ? (
+                  <ToolingOperationsPage connection={connection} />
+                ) : activePage === "apps" ? (
+                  <AppCatalogPage connection={connection} />
+                ) : activePage === "memory" ? (
+                  <SessionMemoryPage connection={connection} />
+                ) : activePage === "system" ? (
+                  <SystemOperationsPage connection={connection} connectionState={connectionState} onOpenCliBridge={() => setActivePage("cli")} />
+                ) : activePage === "cli" ? (
+                  <CliOperationsPage connection={connection} />
+                ) : activePage === "env" ? (
+                  <EnvProfilesPage connection={connection} />
+                ) : activePage === "mcp" ? (
+                  <McpManagementPage connection={connection} />
+                ) : activePage === "config" ? (
+                  <ConfigStudioPage connection={connection} />
+                ) : activePage === "account" ? (
+                  <AccountControlPage connection={connection} />
+                ) : activePage === "jobs" ? (
+                  <BackgroundJobsPage connection={connection} defaultSessionId={activeSessionId} />
+                ) : activePage === "logs" ? (
+                  <DaemonLogsPage />
+                ) : (
+                  /* Default: Sessions view */
+                  <>
+                    {/* Branding (shown when no active session) */}
+                    {!activeSessionId && (
+                      <div className="v1-branding">
+                        <div className="v1-brand-text">OPTA</div>
+                        <div className="v1-brand-sub">Code Environment</div>
                       </div>
-                      <div className="browser-module">
-                        {activeBrowserSlot ? (
-                          <LiveBrowserView
-                            slot={activeBrowserSlot}
-                            showNativeControls={nativeDesktop}
-                          />
-                        ) : (
-                          <LiveBrowserView showNativeControls={nativeDesktop} />
-                        )}
-                      </div>
+                    )}
+
+                    <div className="v1-timeline-area">
+                      {activeSessionId && timelineItems.length > 0 && (
+                        <div className="session-export-bar">
+                          <button
+                            type="button"
+                            className="session-export-btn"
+                            onClick={() => {
+                              const md = exportToMarkdown(activeSessionId, timelineItems);
+                              downloadAsFile(`opta-session-${activeSessionId}.md`, md);
+                              setNotice("Session exported as Markdown");
+                            }}
+                            title="Export session as Markdown"
+                          >
+                            <Download size={12} aria-hidden="true" />
+                            Export
+                          </button>
+                        </div>
+                      )}
+                      <TimelineCards
+                        sessionId={activeSessionId}
+                        sessionTitle={activeSession?.title}
+                        items={timelineItems}
+                        isStreaming={isStreaming}
+                        pendingPermissions={pendingPermissions}
+                        onResolvePermission={resolvePermission}
+                        connectionState={connectionState}
+                        browserVisualState={activeBrowserVisual}
+                      />
                     </div>
 
                     <Composer
@@ -858,27 +820,24 @@ function App() {
                       mode={submissionMode}
                       onModeChange={setSubmissionMode}
                     />
-                  </div>
-                </>
-              )}
+                  </>
+                )}
+              </div>
+            </div>
 
-              {showTerminal ? (
-                <TelemetryPanel
-                  metrics={{
-                    vramUtilized: 0,
-                    vramTotal: 32,
-                    tokensPerSec: 0,
-                  }}
-                  events={
-                    activeSessionId
-                      ? rawEventsBySession[activeSessionId] || []
-                      : []
-                  }
-                />
-              ) : null}
-            </main>
-
-          </div> {/* end main-layout */}
+            {/* Right: Widget Pane */}
+            {activePage === "sessions" && (
+              <WidgetPane
+                slots={widgetLayout.layout.slots}
+                isEditing={widgetLayout.isEditing}
+                onToggleEdit={widgetLayout.toggleEditMode}
+                onRemoveWidget={widgetLayout.removeWidget}
+                onAddWidget={(wid) => widgetLayout.addWidget(wid, "M")}
+                timelineItems={timelineItems}
+                rawEvents={activeSessionId ? rawEventsBySession[activeSessionId] || [] : []}
+              />
+            )}
+          </div>
 
           <SettingsModal
             isOpen={isSettingsOpen}
