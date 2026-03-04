@@ -500,9 +500,8 @@ describe('runDoctor', () => {
     expect(parsed).toHaveProperty('checks');
     expect(parsed).toHaveProperty('summary');
     expect(Array.isArray(parsed.checks)).toBe(true);
-    // runDoctor runs 13 checks: Node, LMX Connection, LMX Discovery, Active Model,
-    // Config, Config Dirs, OPIS, MCP, Git, Daemon, Sessions, Disk Headroom, Account
-    expect(parsed.checks.length).toBe(13);
+    // runDoctor currently runs 15 checks including OS + System Tools.
+    expect(parsed.checks.length).toBe(15);
     expect(parsed.summary).toHaveProperty('passed');
     expect(parsed.summary).toHaveProperty('warnings');
     expect(parsed.summary).toHaveProperty('failures');
@@ -524,7 +523,7 @@ describe('runDoctor', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('includes all 10 checks in results', async () => {
+  it('includes all core checks in results', async () => {
     const originalFetch = globalThis.fetch;
     globalThis.fetch = vi.fn().mockRejectedValue(new Error('ECONNREFUSED')) as unknown as typeof fetch;
 
@@ -535,13 +534,18 @@ describe('runDoctor', () => {
     const parsed = JSON.parse(text);
 
     const names = parsed.checks.map((c: { name: string }) => c.name);
+    expect(names).toContain('Operating System');
     expect(names).toContain('Node.js');
+    expect(names).toContain('System Tools');
     expect(names).toContain('LMX Connection');
+    expect(names).toContain('LMX Discovery');
     expect(names).toContain('Active Model');
     expect(names).toContain('Config');
+    expect(names).toContain('Config Dirs');
     expect(names).toContain('OPIS');
     expect(names).toContain('MCP');
     expect(names).toContain('Git');
+    expect(names).toContain('Daemon');
     expect(names).toContain('Sessions');
     expect(names).toContain('Disk Headroom');
     expect(names).toContain('Account');

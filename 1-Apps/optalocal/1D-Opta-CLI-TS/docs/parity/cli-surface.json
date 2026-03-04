@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T01:24:35.583Z",
+  "generatedAt": "2026-03-04T03:58:36.621Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -12,6 +12,7 @@
       "account",
       "apps",
       "benchmark",
+      "browser",
       "ceo-bench",
       "chat",
       "completions",
@@ -43,6 +44,7 @@
       "account",
       "apps",
       "benchmark",
+      "browser",
       "ceo-bench",
       "chat",
       "completions",
@@ -79,17 +81,13 @@
         "status"
       ],
       "apps": [
-        "if",
         "install",
         "list",
-        "no",
         "uninstall"
       ],
       "mcp": [
         "add",
         "add-playwright",
-        "availability",
-        "config",
         "health",
         "list",
         "remove",
@@ -156,7 +154,7 @@
     ]
   },
   "operations": {
-    "count": 79,
+    "count": 81,
     "ids": [
       "account.keys.delete",
       "account.keys.list",
@@ -169,6 +167,8 @@
       "apps.list",
       "apps.uninstall",
       "benchmark",
+      "browser.host",
+      "browser.runtime",
       "ceo.benchmark",
       "completions.generate",
       "config.get",
@@ -250,6 +250,10 @@
       {
         "name": "benchmark",
         "count": 1
+      },
+      {
+        "name": "browser",
+        "count": 2
       },
       {
         "name": "ceo",

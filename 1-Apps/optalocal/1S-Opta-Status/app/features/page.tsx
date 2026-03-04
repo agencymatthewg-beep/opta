@@ -13,7 +13,7 @@ const APPS = [
   { id: 'cli', label: 'CLI', name: 'Opta CLI', subtitle: '1D — Terminal & Daemon' },
   { id: 'lmx', label: 'LMX', name: 'Opta LMX', subtitle: '1M — MLX Inference' },
   { id: 'code-desktop', label: 'Code Desktop', name: 'Opta Code Desktop', subtitle: '1P — Desktop Client' },
-  { id: 'local-web', label: 'Opta Local', name: 'Opta Local', subtitle: '1L — Management Website' },
+  { id: 'local-web', label: 'Opta Local', name: 'Opta Local', subtitle: '1T — Management Website' },
   { id: 'accounts', label: 'Accounts', name: 'Opta Accounts', subtitle: '1R — Identity & SSO' },
   { id: 'init', label: 'Init', name: 'Opta Init', subtitle: '1O — Setup Portal' },
   { id: 'status', label: 'Status', name: 'Opta Status', subtitle: '1S — Ecosystem Health' },

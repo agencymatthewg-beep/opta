@@ -59,6 +59,7 @@ export interface BrowserLiveHostStatus {
   host: string;
   startedAt?: string;
   controlPort?: number;
+  viewerAuthToken?: string;
   safePorts: number[];
   scannedCandidateCount: number;
   requiredPortCount: number;
@@ -372,6 +373,7 @@ async function buildRuntimeStatus(runtime: BrowserLiveHostRuntime): Promise<Brow
     host: runtime.host,
     startedAt: runtime.startedAt,
     controlPort: runtime.controlPort,
+    viewerAuthToken: runtime.screenAuthToken,
     safePorts: [...runtime.safePorts],
     scannedCandidateCount: runtime.scannedCandidateCount,
     requiredPortCount: runtime.requiredPortCount,
@@ -867,6 +869,7 @@ function makeStoppedStatus(runtime?: BrowserLiveHostRuntime): BrowserLiveHostSta
   return {
     running: false,
     host: runtime?.host ?? LOCALHOST_BIND,
+    viewerAuthToken: undefined,
     safePorts: runtime ? [...runtime.safePorts] : [],
     scannedCandidateCount: runtime?.scannedCandidateCount ?? 0,
     requiredPortCount: runtime?.requiredPortCount ?? DEFAULT_REQUIRED_PORT_COUNT,

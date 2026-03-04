@@ -17,6 +17,9 @@ const ALLOWED_PATTERNS: RegExp[] = [
   /^http:\/\/localhost:\d+(\/.*)?$/,
   // iOS deep link
   /^opta-life:\/\/auth\/callback$/,
+  // Desktop deep links
+  /^opta-init:\/\/auth\/callback$/,
+  /^opta-code:\/\/auth\/callback$/,
 ];
 
 /**

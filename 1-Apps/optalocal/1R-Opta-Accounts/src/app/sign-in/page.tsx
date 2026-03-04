@@ -10,6 +10,8 @@ interface SignInPageProps {
     mode?: string;
     port?: string;
     state?: string;
+    return_to?: string;
+    handoff?: string;
     error?: string;
   }>;
 }
@@ -27,9 +29,17 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
     if (user) {
       // If CLI mode, redirect to CLI callback
       if (params.mode === 'cli' && params.port && params.state) {
-        redirect(
-          `/cli/callback?port=${params.port}&state=${params.state}`,
-        );
+        const callbackParams = new URLSearchParams({
+          port: params.port,
+          state: params.state,
+        });
+        if (params.return_to) {
+          callbackParams.set('return_to', params.return_to);
+        }
+        if (params.handoff) {
+          callbackParams.set('handoff', params.handoff);
+        }
+        redirect(`/cli/callback?${callbackParams.toString()}`);
       }
       // Otherwise redirect to destination
       const destination = sanitizeRedirect(
@@ -45,7 +55,12 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
   // CLI browser auth mode
   const cliMode =
     params.mode === 'cli' && params.port && params.state
-      ? { port: params.port, state: params.state }
+      ? {
+        port: params.port,
+        state: params.state,
+        returnTo: params.return_to,
+        handoff: params.handoff,
+      }
       : undefined;
 
   return <AuthForm mode="sign-in" redirectAfter={redirectAfter} cliMode={cliMode} />;

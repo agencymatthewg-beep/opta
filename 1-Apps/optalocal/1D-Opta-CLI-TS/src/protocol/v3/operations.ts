@@ -36,6 +36,8 @@ export const OPERATION_IDS = [
   'serve.stop',
   'serve.restart',
   'serve.logs',
+  'browser.runtime',
+  'browser.host',
   'init.run',
   'update.run',
   'apps.list',
@@ -168,6 +170,7 @@ export const OperationInputSchemaById = {
       oauthCookieJar: z.string().min(1).optional(),
       oauthHeadless: z.boolean().optional(),
       timeout: z.union([z.string().min(1), z.number().int().min(1)]).optional(),
+      returnTo: z.string().min(1).optional(),
       accountsUrl: z.string().min(1).optional(),
     })
     .strict(),
@@ -242,6 +245,21 @@ export const OperationInputSchemaById = {
   'serve.stop': EmptyInputSchema,
   'serve.restart': EmptyInputSchema,
   'serve.logs': EmptyInputSchema,
+  'browser.runtime': z
+    .object({
+      action: z.enum(['status', 'start', 'pause', 'resume', 'stop', 'kill']).optional(),
+    })
+    .strict(),
+  'browser.host': z
+    .object({
+      action: z.enum(['status', 'start', 'stop']).optional(),
+      portRangeStart: z.coerce.number().int().min(1_024).max(65_535).optional(),
+      portRangeEnd: z.coerce.number().int().min(1_024).max(65_535).optional(),
+      requiredPortCount: z.coerce.number().int().min(2).max(20).optional(),
+      maxSessionSlots: z.coerce.number().int().min(1).max(5).optional(),
+      includePeekabooScreen: z.boolean().optional(),
+    })
+    .strict(),
   'init.run': z
     .object({
       yes: z.boolean().optional(),
@@ -631,6 +649,8 @@ export const OperationOutputSchemaById = {
   'serve.stop': TextCommandOutputSchema,
   'serve.restart': TextCommandOutputSchema,
   'serve.logs': TextCommandOutputSchema,
+  'browser.runtime': z.unknown(),
+  'browser.host': z.unknown(),
   'init.run': TextCommandOutputSchema,
   'update.run': z.unknown(),
   'apps.list': z.unknown(),
@@ -727,6 +747,8 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('serve.stop'),
   makeExecuteRequestVariant('serve.restart'),
   makeExecuteRequestVariant('serve.logs'),
+  makeExecuteRequestVariant('browser.runtime'),
+  makeExecuteRequestVariant('browser.host'),
   makeExecuteRequestVariant('init.run'),
   makeExecuteRequestVariant('update.run'),
   makeExecuteRequestVariant('apps.list'),
@@ -1036,6 +1058,18 @@ export const OPERATION_TAXONOMY = [
     title: 'Serve Logs',
     description: 'Tail recent Opta LMX service log output.',
     safety: 'read',
+  },
+  {
+    id: 'browser.runtime',
+    title: 'Browser Runtime',
+    description: 'Inspect or control browser automation runtime lifecycle.',
+    safety: 'write',
+  },
+  {
+    id: 'browser.host',
+    title: 'Browser Host',
+    description: 'Inspect or control local browser live host session streaming.',
+    safety: 'write',
   },
   {
     id: 'init.run',

@@ -4,6 +4,7 @@ import { CommandPalette } from "./components/CommandPalette";
 import { Composer } from "./components/Composer";
 import { SetupWizard } from "./components/SetupWizard";
 import { SettingsModal } from "./components/SettingsModal";
+import type { SettingsTabId } from "./components/SettingsModal";
 import { Download, Settings as SettingsIcon } from "lucide-react";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
@@ -97,6 +98,8 @@ function App() {
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isSettingsView, setIsSettingsView] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] =
+    useState<SettingsTabId>("connection");
 
   useEffect(() => {
     const invoke = getTauriInvoke();
@@ -128,6 +131,11 @@ function App() {
   const [offlineSeconds, setOfflineSeconds] = useState(0);
   const [browserViewMode, setBrowserViewMode] =
     useState<BrowserViewMode>("default");
+
+  const openSettings = useCallback((tab: SettingsTabId = "connection") => {
+    setSettingsInitialTab(tab);
+    setIsSettingsOpen(true);
+  }, []);
 
   const {
     activeSessionId,
@@ -426,6 +434,13 @@ function App() {
         run: () => setActivePage("models"),
       },
       {
+        id: "open-settings",
+        title: "Open settings",
+        description: "Open Settings Studio in the connection tab",
+        keywords: ["settings", "preferences", "config", "studio"],
+        run: () => openSettings("connection"),
+      },
+      {
         id: "open-sessions",
         title: "Open session cockpit",
         description: "Switch to active session orchestration",
@@ -562,6 +577,7 @@ function App() {
     [
       activeSessionId,
       createSession,
+      openSettings,
       refreshNow,
       selectedWorkspace,
       timelineBySession,
@@ -701,6 +717,14 @@ function App() {
                 </svg>
                 <span>LMX</span>
               </button>
+              <button
+                type="button"
+                className="v1-app-btn"
+                onClick={() => openSettings("connection")}
+              >
+                <SettingsIcon size={16} />
+                <span>Settings</span>
+              </button>
             </div>
           </header>
 
@@ -735,9 +759,15 @@ function App() {
               {isSettingsView && (
                 <div className="v1-settings-overlay">
                   <SettingsView
-                    onOpenSettingsTab={() => {
+                    onOpenSettingsTab={(tab) => {
+                      const categoryToTab: Record<string, SettingsTabId> = {
+                        general: "connection",
+                        intelligence: "model-provider",
+                        connection: "lmx",
+                        interface: "browser",
+                      };
                       setIsSettingsView(false);
-                      setIsSettingsOpen(true);
+                      openSettings(categoryToTab[tab] ?? "connection");
                     }}
                   />
                 </div>
@@ -746,7 +776,7 @@ function App() {
               {/* Chat Pane (hidden when settings view active) */}
               <div className={`v1-chat-pane ${isSettingsView ? "v1-chat-hidden" : ""}`}>
                 {activePage === "models" ? (
-                  <ModelsPage connection={connection} onOpenSettings={() => setIsSettingsOpen(true)} />
+                  <ModelsPage connection={connection} onOpenSettings={() => openSettings("lmx")} />
                 ) : activePage === "tools" ? (
                   <ToolingOperationsPage connection={connection} />
                 ) : activePage === "apps" ? (
@@ -842,6 +872,7 @@ function App() {
           <SettingsModal
             isOpen={isSettingsOpen}
             onClose={() => setIsSettingsOpen(false)}
+            initialTab={settingsInitialTab}
             connection={connection}
             onSaveConnection={(conn) => {
               setConnection(conn);

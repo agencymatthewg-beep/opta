@@ -160,6 +160,7 @@ Examples:
   $ opta embed "semantic query"  Generate an embedding via Opta LMX
   $ opta rerank "release notes" --documents "notes|commits|chat"
   $ opta benchmark --serve       Generate + host benchmark showcase apps
+  $ opta browser host start      Start browser live host for frontend viewers
   $ opta env save laptop         Save current host/model as a named profile
   $ opta env use laptop          Switch to that profile
   $ opta update                  Update CLI, LMX, and Plus
@@ -240,6 +241,16 @@ interface ModelsCommandOptions extends DeviceOption {
   full?: boolean;
 }
 
+interface BrowserCommandOptions {
+  json?: boolean;
+}
+
+interface BrowserHostCommandOptions {
+  range?: string;
+  screen?: string;
+  json?: boolean;
+}
+
 interface EnvCommandOptions {
   host?: string;
   port?: string;
@@ -263,6 +274,7 @@ interface AccountCommandOptions {
   oauthCookieJar?: string;
   oauthHeadless?: boolean;
   timeout?: string;
+  returnTo?: string;
   accountsUrl?: string;
   json?: boolean;
 }
@@ -552,6 +564,52 @@ program
     await status(opts);
   });
 
+const browserCmd = program
+  .command('browser')
+  .description('Manage browser runtime controls and live host endpoints');
+
+browserCmd
+  .argument('[action]', 'status | start | pause | resume | stop | kill', 'status')
+  .option('--json', 'machine-readable output')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ opta browser
+  $ opta browser status
+  $ opta browser start
+  $ opta browser pause
+  $ opta browser stop
+`
+  )
+  .action(async (action: string | undefined, opts: BrowserCommandOptions) => {
+    const { browser } = await import('./commands/browser.js');
+    await browser(action, opts);
+  });
+
+browserCmd
+  .command('host')
+  .description('Manage browser live host (local viewer/control endpoints)')
+  .argument('[action]', 'status | start | stop', 'status')
+  .option('--range <start-end>', 'preferred localhost port range (e.g. 46000-47000)')
+  .option('--screen <mode>', 'enable screen streaming mode (supported: peekaboo)')
+  .option('--json', 'machine-readable output')
+  .addHelpText(
+    'after',
+    `
+Examples:
+  $ opta browser host
+  $ opta browser host start
+  $ opta browser host start --range 46000-47000
+  $ opta browser host start --screen peekaboo
+  $ opta browser host stop
+`
+  )
+  .action(async (action: string | undefined, opts: BrowserHostCommandOptions) => {
+    const { browserHost } = await import('./commands/browser.js');
+    await browserHost(action, opts);
+  });
+
 program
   .command('models')
   .description('List and manage loaded models')
@@ -693,6 +751,7 @@ accountCmd
   .option('--oauth-cookie-jar <name>', 'cookie jar id for --oauth-opta-browser (default: default)')
   .option('--oauth-headless', 'run --oauth-opta-browser headless (advanced)')
   .option('--timeout <seconds>', 'browser OAuth timeout in seconds (30-1800)')
+  .option('--return-to <url>', 'post-login app deep link to open after browser callback (OAuth modes only)')
   .option('--accounts-url <url>', 'override accounts portal URL (default: https://accounts.optalocal.com)')
   .option('--json', 'machine-readable output')
   .action(async (opts: AccountCommandOptions) => {

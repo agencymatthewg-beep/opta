@@ -215,9 +215,9 @@ function buildRemoteStartScript(lmxPath: string, configuredPython: string, port:
     `CFG=""`,
     `for _candidate in ${configCandidates.map((c) => quoteSh(c)).join(' ')}; do [ -f "$_candidate" ] && CFG="$_candidate" && break; done`,
     `if [ -n "$CFG" ] && [ "$ENTRY" = "opta_lmx.main" ]; then`,
-    `  nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m "$ENTRY" --config "$CFG" --host 0.0.0.0 --port ${port} >/tmp/opta-lmx.log 2>&1 &`,
+    `  nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m "$ENTRY" --config "$CFG" --host 127.0.0.1 --port ${port} >/tmp/opta-lmx.log 2>&1 &`,
     'else',
-    `  nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m "$ENTRY" --host 0.0.0.0 --port ${port} >/tmp/opta-lmx.log 2>&1 &`,
+    `  nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m "$ENTRY" --host 127.0.0.1 --port ${port} >/tmp/opta-lmx.log 2>&1 &`,
     'fi',
     'sleep 1',
   ].join('\n');

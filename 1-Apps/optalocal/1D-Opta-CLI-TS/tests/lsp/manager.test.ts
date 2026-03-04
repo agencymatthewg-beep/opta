@@ -33,20 +33,39 @@ vi.mock('../../src/lsp/client.js', () => ({
   }),
 }));
 
-// Mock fs/promises for readFile
-vi.mock('node:fs/promises', () => ({
-  readFile: vi.fn().mockResolvedValue('file content'),
+vi.mock('../../src/lsp/installer.js', () => ({
+  ensureLspServerInstalled: vi.fn(async (_language: string, config: { command: string }) => ({
+    available: true,
+    command: config.command,
+  })),
 }));
+
+// Partial mock fs/promises so installer can still use mkdir/access.
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>();
+  return {
+    ...actual,
+    readFile: vi.fn().mockResolvedValue('file content'),
+  };
+});
 
 describe('LspManager', () => {
   let manager: LspManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.clearAllMocks();
     manager = new LspManager({
       cwd: '/project',
       config: { enabled: true, servers: {}, timeout: 10000 },
     });
+
+    const { ensureLspServerInstalled } = await import('../../src/lsp/installer.js');
+    vi.mocked(ensureLspServerInstalled).mockImplementation(
+      async (_language: string, config: { command: string }) => ({
+        available: true,
+        command: config.command,
+      })
+    );
   });
 
   afterEach(async () => {
@@ -92,6 +111,14 @@ describe('LspManager', () => {
   });
 
   describe('server availability', () => {
+    beforeEach(async () => {
+      const { ensureLspServerInstalled } = await import('../../src/lsp/installer.js');
+      vi.mocked(ensureLspServerInstalled).mockResolvedValue({
+        available: false,
+        command: 'typescript-language-server',
+      });
+    });
+
     it('returns fallback message when server binary not found', async () => {
       const result = await manager.execute('lsp_definition', {
         path: 'src/app.ts',

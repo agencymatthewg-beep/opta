@@ -38,6 +38,13 @@
     ]
   },
   "plugins": {
+    "deep-link": {
+      "desktop": {
+        "schemes": [
+          "opta-init"
+        ]
+      }
+    },
     "updater": {
       "endpoints": [
         "https://init.optalocal.com/desktop-updates/stable.json"

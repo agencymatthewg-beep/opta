@@ -285,6 +285,7 @@ describe('account command', () => {
 
     const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
     const resultPromise = runOAuthLoginFlow({
+      returnTo: 'opta-init://auth/callback',
       onSignInUrl: (url) => {
         capturedSignInUrl = url;
       },
@@ -295,6 +296,7 @@ describe('account command', () => {
         expect(parsed.searchParams.get('code_challenge')).toBeTruthy();
         expect(parsed.searchParams.get('code_challenge_method')).toBe('S256');
         expect(parsed.searchParams.get('response_type')).toBe('code');
+        expect(parsed.searchParams.get('return_to')).toBe('opta-init://auth/callback');
         expect(port).toBeTruthy();
         expect(state).toBeTruthy();
 

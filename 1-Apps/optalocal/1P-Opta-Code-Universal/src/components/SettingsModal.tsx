@@ -40,11 +40,12 @@ import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
+  initialTab?: SettingsTabId;
   connection: DaemonConnectionOptions;
   onSaveConnection: (conn: DaemonConnectionOptions) => void;
 }
 
-type TabId = "connection" | "lmx" | "models" | "autonomy" | "genui" | "daemon"
+export type SettingsTabId = "connection" | "lmx" | "autonomy" | "genui" | "daemon"
   | "model-provider" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy";
 
 const DEFAULT_CONNECTION_FORM = {
@@ -55,7 +56,7 @@ const DEFAULT_CONNECTION_FORM = {
 };
 
 const DEFAULT_LMX = {
-  host: "192.168.188.11",
+  host: "127.0.0.1",
   port: "1234",
   fallbackHosts: "",
   autoDiscover: true,
@@ -117,10 +118,11 @@ function formatAdminKeysByHost(raw: unknown): string {
 export function SettingsModal({
   isOpen,
   onClose,
+  initialTab,
   connection,
   onSaveConnection,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("connection");
+  const [activeTab, setActiveTab] = useState<SettingsTabId>("connection");
 
   // --- Connection State ---
   const [connForm, setConnForm] = useState({
@@ -176,6 +178,11 @@ export function SettingsModal({
     setProbeMessage(null);
     setLmxNotice(null);
   }, [connection, isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setActiveTab(initialTab ?? "connection");
+  }, [isOpen, initialTab]);
 
   useEffect(() => {
     if (!isOpen) return;

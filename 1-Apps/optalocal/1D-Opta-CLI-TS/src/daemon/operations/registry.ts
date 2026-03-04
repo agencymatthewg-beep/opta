@@ -65,6 +65,12 @@ import { updateCommand } from '../../commands/update.js';
 import { fetchLatestVersion } from '../../commands/version.js';
 import { LmxClient } from '../../lmx/client.js';
 import {
+  getBrowserLiveHostStatus,
+  startBrowserLiveHost,
+  stopBrowserLiveHost,
+} from '../../browser/live-host.js';
+import { runBrowserControlAction } from '../../browser/control-surface.js';
+import {
   deleteAnthropicKey,
   deleteGeminiKey,
   deleteLmxKey,
@@ -419,6 +425,7 @@ export const operationRegistry = {
           oauthCookieJar: input.oauthCookieJar,
           oauthHeadless: input.oauthHeadless,
           timeout: input.timeout === undefined ? undefined : String(input.timeout),
+          returnTo: input.returnTo,
           accountsUrl: input.accountsUrl,
           json: true,
         });
@@ -558,6 +565,31 @@ export const operationRegistry = {
       await serve('logs');
     })
   ),
+  'browser.runtime': defineOperation('browser.runtime', async (input) => {
+    const config = await loadConfig();
+    const action = input.action ?? 'status';
+    return runBrowserControlAction(action, config);
+  }),
+  'browser.host': defineOperation('browser.host', async (input) => {
+    const action = input.action ?? 'status';
+    if (action === 'status') {
+      return getBrowserLiveHostStatus();
+    }
+
+    if (action === 'stop') {
+      return stopBrowserLiveHost();
+    }
+
+    const config = await loadConfig();
+    return startBrowserLiveHost({
+      config,
+      portRangeStart: input.portRangeStart,
+      portRangeEnd: input.portRangeEnd,
+      requiredPortCount: input.requiredPortCount,
+      maxSessionSlots: input.maxSessionSlots,
+      includePeekabooScreen: input.includePeekabooScreen,
+    });
+  }),
   'init.run': defineOperation('init.run', async (input) =>
     runCommandForText(async () => {
       await init({

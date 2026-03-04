@@ -1,19 +1,26 @@
 ---
 title: Roadmap
-type: opis
-status: draft
+type: workspace-docs
+status: active
+last_updated: 2026-03-04
 ---
 
-# Roadmap
+# OptaLocal Documentation Roadmap
 
-## Current Phase
+## Current (March 2026)
 
-<!-- What is being built now -->
+- Replace workspace-level stub docs with actionable canonical content.
+- Normalize canonical app naming across docs.
+- Introduce docs health-check automation.
 
-## Next Up
+## Next
 
-<!-- What comes after the current phase -->
+- Add docs-check CI enforcement at workspace level.
+- Add link validation for canonical docs (`file exists` + internal anchor sanity checks).
+- Expand app-level docs conformance checklist into reusable templates.
 
 ## Future
 
-<!-- Long-term vision and goals -->
+- Auto-generate parts of `docs/INDEX.md` from `apps.registry.json`.
+- Add ownership metadata and review cadence for all Tier 1 docs.
+- Add release-driven docs changelog generation from commit metadata.

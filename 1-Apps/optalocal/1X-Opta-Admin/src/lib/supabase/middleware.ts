@@ -10,7 +10,24 @@ export async function updateSession(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  if (!url || !key) return supabaseResponse;
+  if (!url || !key) {
+    const path = request.nextUrl.pathname;
+    const allowWhenAuthUnavailable = path === '/api/health' || path === '/unauthorized';
+
+    // Fail closed in production if auth env is missing, while preserving
+    // health probe visibility for status monitoring.
+    if (process.env.NODE_ENV === 'production' && !allowWhenAuthUnavailable) {
+      if (path.startsWith('/api/')) {
+        return NextResponse.json({ error: 'Auth backend unavailable' }, { status: 503 });
+      }
+
+      const redirect = request.nextUrl.clone();
+      redirect.pathname = '/unauthorized';
+      return NextResponse.redirect(redirect);
+    }
+
+    return supabaseResponse;
+  }
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -42,15 +59,18 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // Protect all routes except /unauthorized
-  if (request.nextUrl.pathname !== '/unauthorized') {
+  const path = request.nextUrl.pathname;
+  const isHealthEndpoint = path === '/api/health';
+
+  // Protect all routes except the public health endpoint and /unauthorized.
+  if (path !== '/unauthorized' && !isHealthEndpoint) {
     if (!user || user.email !== 'agencymatthewg@gmail.com') {
-      if (request.nextUrl.pathname.startsWith('/api/')) {
+      if (path.startsWith('/api/')) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
       } else {
-        const url = request.nextUrl.clone();
-        url.pathname = '/unauthorized';
-        return NextResponse.redirect(url);
+        const redirect = request.nextUrl.clone();
+        redirect.pathname = '/unauthorized';
+        return NextResponse.redirect(redirect);
       }
     }
   }

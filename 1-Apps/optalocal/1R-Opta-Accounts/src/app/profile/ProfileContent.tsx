@@ -173,6 +173,31 @@ export function ProfileContent({ user }: ProfileContentProps) {
           />
         </Link>
 
+        {/* Sync Vault Rules */}
+        <Link
+          href="/rules"
+          className={cn(
+            "glass rounded-2xl p-5 mb-4 flex items-center gap-4 group",
+            "hover:border-opta-primary/20 transition-colors block",
+          )}
+        >
+          <div className="w-10 h-10 rounded-xl bg-opta-primary/10 flex items-center justify-center flex-shrink-0">
+            <Shield size={18} className="text-opta-primary" />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-opta-text-primary">
+              Global AI Rules
+            </p>
+            <p className="text-xs text-opta-text-muted">
+              Sync your non-negotiables.md across Opta apps
+            </p>
+          </div>
+          <ExternalLink
+            size={14}
+            className="text-opta-text-muted group-hover:text-opta-primary transition-colors flex-shrink-0"
+          />
+        </Link>
+
         {/* Opta Local Apps */}
         <div className="glass rounded-2xl p-5 mb-4">
           <h2 className="text-sm font-medium text-opta-text-secondary mb-3">

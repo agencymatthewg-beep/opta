@@ -40,3 +40,6 @@
 - [x] Active request tracking
 - [ ] Auto-tune quantization per model size
 - [ ] Thermal throttle detection
+
+## Deployment Readiness
+- [ ] Production LMX + Daemon configuration for status/admin/local-web health wiring

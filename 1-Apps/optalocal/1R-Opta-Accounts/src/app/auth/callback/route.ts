@@ -6,6 +6,15 @@ import { sanitizeRedirect } from '@/lib/allowed-redirects';
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'production' ? '.optalocal.com' : undefined;
 
+function isAbsoluteRedirect(value: string): boolean {
+  try {
+    const parsed = new URL(value);
+    return parsed.protocol.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * OAuth callback handler.
  *
@@ -56,8 +65,8 @@ export async function GET(request: Request) {
 
     if (!error) {
       const destination = sanitizeRedirect(next);
-      // If destination is an absolute URL (external redirect), go there
-      if (destination.startsWith('http')) {
+      // Absolute redirects include https/http and app deep links (e.g. opta-life://...).
+      if (isAbsoluteRedirect(destination)) {
         return NextResponse.redirect(destination);
       }
       return NextResponse.redirect(`${origin}${destination}`);

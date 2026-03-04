@@ -11,6 +11,9 @@ use tokio::io::AsyncBufReadExt;
 
 const CLI_COMMAND_TIMEOUT_SECS: u64 = 20;
 const CLI_DISCOVERY_TIMEOUT_SECS: u64 = 5;
+const ACCOUNT_LOGIN_WAIT_TIMEOUT_SECS: u64 = 15 * 60;
+const ACCOUNT_LOGIN_FLOW_TIMEOUT_SECS: u64 = 10 * 60;
+const ACCOUNT_LOGIN_RETURN_TO_URL: &str = "opta-init://auth/callback";
 const MANAGER_VERSION: &str = env!("CARGO_PKG_VERSION");
 const UPDATER_ENDPOINT_ENV_STABLE: &str = "OPTA_INIT_UPDATER_ENDPOINT_STABLE";
 const UPDATER_ENDPOINT_ENV_BETA: &str = "OPTA_INIT_UPDATER_ENDPOINT_BETA";
@@ -299,6 +302,14 @@ async fn run_command_capture(
     program: &str,
     args: &[String],
 ) -> Result<CapturedOutput, ManagerError> {
+    run_command_capture_with_timeout(program, args, CLI_COMMAND_TIMEOUT_SECS).await
+}
+
+async fn run_command_capture_with_timeout(
+    program: &str,
+    args: &[String],
+    timeout_secs: u64,
+) -> Result<CapturedOutput, ManagerError> {
     let cmd_preview = command_preview(program, args);
     let mut child = Command::new(program)
         .env("PATH", extended_path())
@@ -327,7 +338,7 @@ async fn run_command_capture(
         })
     });
 
-    let status = match timeout(Duration::from_secs(CLI_COMMAND_TIMEOUT_SECS), child.wait()).await {
+    let status = match timeout(Duration::from_secs(timeout_secs), child.wait()).await {
         Ok(result) => result.map_err(|error| ManagerError::Spawn {
             command: cmd_preview.clone(),
             detail: error.to_string(),
@@ -337,7 +348,7 @@ async fn run_command_capture(
             let _ = child.wait().await;
             return Err(ManagerError::CommandTimedOut {
                 command: cmd_preview,
-                seconds: CLI_COMMAND_TIMEOUT_SECS,
+                seconds: timeout_secs,
             });
         }
     };
@@ -2214,23 +2225,62 @@ async fn get_account_status() -> Result<Option<TauriUserProfile>, String> {
 
 #[tauri::command]
 async fn trigger_login() -> Result<(), String> {
-    run_command_capture("opta", &["login".to_string()])
+    let captured = run_command_capture_with_timeout(
+        "opta",
+        &[
+            "account".to_string(),
+            "login".to_string(),
+            "--oauth".to_string(),
+            "--timeout".to_string(),
+            ACCOUNT_LOGIN_FLOW_TIMEOUT_SECS.to_string(),
+            "--return-to".to_string(),
+            ACCOUNT_LOGIN_RETURN_TO_URL.to_string(),
+            "--json".to_string(),
+        ],
+        ACCOUNT_LOGIN_WAIT_TIMEOUT_SECS,
+    )
         .await
         .map_err(|e| e.to_string())?;
+    if !captured.success {
+        let details = if captured.stderr.trim().is_empty() {
+            captured.stdout.trim().to_string()
+        } else {
+            captured.stderr.trim().to_string()
+        };
+        if details.is_empty() {
+            return Err("Login command failed. Run `opta account login --oauth` for details.".to_string());
+        }
+        return Err(format!("Login command failed: {}", details));
+    }
     Ok(())
 }
 
 #[tauri::command]
 async fn trigger_logout() -> Result<(), String> {
-    run_command_capture("opta", &["logout".to_string()])
+    let captured = run_command_capture(
+        "opta",
+        &["account".to_string(), "logout".to_string(), "--json".to_string()],
+    )
         .await
         .map_err(|e| e.to_string())?;
+    if !captured.success {
+        let details = if captured.stderr.trim().is_empty() {
+            captured.stdout.trim().to_string()
+        } else {
+            captured.stderr.trim().to_string()
+        };
+        if details.is_empty() {
+            return Err("Logout command failed.".to_string());
+        }
+        return Err(format!("Logout command failed: {}", details));
+    }
     Ok(())
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_deep_link::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
             fetch_manifest,

@@ -10,8 +10,8 @@ Currently, Opta Init acts as a blind local supervisor. It can talk to the `opta 
 ### Phase 1: Rust Backend Bindings (CLI Auth Bridge)
 We will add three new Tauri commands in `1O-Opta-Init/desktop-manager/src-tauri/src/main.rs`:
 1.  `get_account_status()`: Executes `opta account status --json`. Parses the output to return the user's email, name, avatar, and active role. Returns `null` if not logged in.
-2.  `trigger_login()`: Executes `opta login`. This command naturally opens the user's default browser to `accounts.optalocal.com/sign-in?mode=cli` and waits for the callback token.
-3.  `trigger_logout()`: Executes `opta logout` to wipe the OS keychain and sever the connection.
+2.  `trigger_login()`: Executes `opta account login --oauth --timeout <seconds> --return-to opta-init://auth/callback --json`. This opens the user's default browser to `accounts.optalocal.com/sign-in?mode=cli`, then returns focus to Init via deep link after callback completion before persisting the local account state.
+3.  `trigger_logout()`: Executes `opta account logout --json` to clear local account state and revoke the remote session when possible.
 
 ### Phase 2: React UI Integration (`App.tsx`)
 1.  **State Management:** Add a `userProfile` state object to `App.tsx`. Poll `invoke('get_account_status')` periodically (or on window focus) to ensure the Init app stays synced if the user logs out via the terminal.

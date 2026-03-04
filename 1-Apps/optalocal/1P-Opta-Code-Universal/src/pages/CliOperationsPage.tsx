@@ -17,6 +17,7 @@ const CLI_OPERATION_SCOPES: string[] = [
   "mcp.*",
   "onboard.apply",
   "serve.*",
+  "browser.*",
   "init.run",
   "update.run",
   "sessions.*",

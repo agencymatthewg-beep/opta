@@ -83,6 +83,24 @@ _LEGACY_LOAD_BACKEND_ALIASES: dict[str, str] = {
 }
 
 
+def _downloads_enabled(request: Request) -> bool:
+    config = getattr(request.app.state, "config", None)
+    security = getattr(config, "security", None)
+    return bool(getattr(security, "downloads_enabled", False))
+
+
+def _downloads_disabled_error() -> JSONResponse:
+    return openai_error(
+        status_code=403,
+        message=(
+            "Model downloads are disabled by policy on this device. "
+            "Enable `security.downloads_enabled=true` in config to allow downloads."
+        ),
+        error_type="invalid_request_error",
+        code="downloads_disabled",
+    )
+
+
 def _normalize_load_backend(raw_backend: str | None) -> str | None:
     """Normalize backend aliases and validate accepted backend names."""
     if raw_backend is None:
@@ -447,6 +465,9 @@ async def load_model(
             )
 
     if not is_available:
+        if not _downloads_enabled(request):
+            return _downloads_disabled_error()
+
         # Estimate download size only for truly missing models.
         # Snapshot-repair flows can avoid this remote metadata call.
         estimated = 0
@@ -948,6 +969,9 @@ async def confirm_and_load(
     Uses the confirmation_token returned by the load endpoint when
     a model was not found locally.
     """
+    if not _downloads_enabled(request):
+        return _downloads_disabled_error()
+
     async with _pending_lock:
         pending: dict[str, Any] = getattr(request.app.state, "pending_downloads", {})
         entry = pending.pop(body.confirmation_token, None)
@@ -1101,8 +1125,12 @@ async def start_download(
     body: AdminDownloadRequest,
     _auth: AdminAuth,
     manager: Manager,
+    request: Request,
 ) -> AdminDownloadResponse | JSONResponse:
     """Start an async model download from HuggingFace Hub."""
+    if not _downloads_enabled(request):
+        return _downloads_disabled_error()
+
     try:
         task = await manager.start_download(
             repo_id=body.repo_id,

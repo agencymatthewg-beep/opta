@@ -5,6 +5,7 @@
   "scripts": {
     "apps:list": "node scripts/opta-local-workspace.mjs list",
     "apps:verify": "node scripts/opta-local-workspace.mjs verify",
+    "docs:check": "node scripts/docs/docs-health-check.mjs",
     "check:all": "node scripts/opta-local-workspace.mjs run all check --continue-on-error",
     "build:all": "node scripts/opta-local-workspace.mjs run all build --continue-on-error",
     "dev:1d": "node scripts/opta-local-workspace.mjs run 1d dev",

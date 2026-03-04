@@ -83,7 +83,7 @@ export function SettingsTabPermissions({ connection }: Props) {
             <div className="st-header">
                 <div>
                     <h3 className="opta-studio-section-title">Tool Permissions</h3>
-                    <p className="st-desc">Control which tools require approval before execution. Changes are saved per-session.</p>
+                    <p className="st-desc">Control which tools require approval before execution. Changes are saved globally for this Opta profile.</p>
                 </div>
                 <div className="st-header-actions">
                     <button type="button" className="st-reset-btn" onClick={resetAll}>Reset Defaults</button>

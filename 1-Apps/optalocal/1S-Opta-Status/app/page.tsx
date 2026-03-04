@@ -6,12 +6,16 @@ import { Cpu, Terminal, Server, Globe, RefreshCw, ExternalLink, ArrowRight } fro
 import Link from 'next/link'
 import { OptaRing } from '@/components/OptaRing'
 import { FALLBACK_RELEASE_NOTES } from './release-notes'
-import { GENERATED_RELEASE_NOTES } from './release-notes.generated'
+import {
+  GENERATED_RELEASE_NOTES,
+  GENERATED_RELEASE_NOTES_METADATA,
+} from './release-notes.generated'
 
 type ServiceStatus = 'online' | 'offline' | 'degraded' | 'checking' | 'unconfigured'
 
 interface HealthData {
   status: ServiceStatus
+  upstreamStatus?: string
   version?: string
   latency?: number
   error?: string
@@ -22,6 +26,16 @@ interface HealthData {
   // Daemon specific
   uptime?: number
   sessions?: number
+}
+
+function normalizeStatus(value: unknown): ServiceStatus {
+  return value === 'online' ||
+    value === 'offline' ||
+    value === 'degraded' ||
+    value === 'checking' ||
+    value === 'unconfigured'
+    ? value
+    : 'offline'
 }
 
 interface ServiceDef {
@@ -129,6 +143,17 @@ const RELEASE_NOTES =
     ? GENERATED_RELEASE_NOTES
     : FALLBACK_RELEASE_NOTES
 
+const RELEASE_NOTES_SCOPE = String(GENERATED_RELEASE_NOTES_METADATA.sourceScope)
+const RELEASE_NOTES_LATEST_SOURCE_DATE =
+  GENERATED_RELEASE_NOTES_METADATA.latestSourceDate ?? null
+
+const RELEASE_NOTES_SCOPE_NOTICE =
+  RELEASE_NOTES_SCOPE === 'promoted'
+    ? RELEASE_NOTES_LATEST_SOURCE_DATE
+      ? `Showing promoted releases only (latest source activity: ${RELEASE_NOTES_LATEST_SOURCE_DATE}).`
+      : 'Showing promoted releases only.'
+    : null
+
 function StatusBadge({ status }: { status: ServiceStatus }) {
   const b = BADGE[status]
   return (
@@ -153,7 +178,11 @@ export default function StatusPage() {
     const results = await Promise.allSettled(
       SERVICES.map(async (svc) => {
         const res = await fetch(`/api/health/${svc.id}`, { cache: 'no-store' })
-        const data = (await res.json()) as HealthData
+        const raw = (await res.json()) as Partial<HealthData>
+        const data: HealthData = {
+          ...raw,
+          status: normalizeStatus(raw.status),
+        }
         return { id: svc.id, data }
       })
     )
@@ -377,6 +406,11 @@ export default function StatusPage() {
               <p className="text-xs text-text-muted mt-1">
                 Recent platform updates across the Opta Local ecosystem.
               </p>
+              {RELEASE_NOTES_SCOPE_NOTICE && (
+                <p className="text-[11px] text-text-muted mt-1 font-mono">
+                  {RELEASE_NOTES_SCOPE_NOTICE}
+                </p>
+              )}
             </div>
             <Link
               href="/features"

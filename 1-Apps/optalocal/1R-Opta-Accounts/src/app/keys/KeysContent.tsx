@@ -151,28 +151,42 @@ export function KeysContent({ initialKeys }: KeysContentProps) {
         </motion.button>
 
         {/* Provider Grid */}
-        <div className="space-y-2">
-          {keysByProvider.map(({ provider, key }, i) => (
-            <motion.div
-              key={provider.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 24,
-                delay: i * 0.04,
-              }}
-            >
-              <KeyCard
-                provider={provider}
-                apiKey={key}
-                onAdd={() => setSheetOpen(true)}
-                onDelete={handleDelete}
-                onVerify={handleVerify}
-              />
-            </motion.div>
-          ))}
+        <div className="space-y-6">
+          {(['AI Models', 'Research Tools', 'Developer Platforms'] as const).map((category, catIdx) => {
+            const categoryItems = keysByProvider.filter(({ provider }) => provider.category === category);
+            if (categoryItems.length === 0) return null;
+
+            return (
+              <div key={category} className="space-y-3">
+                <h2 className="text-xs font-semibold text-opta-text-secondary uppercase tracking-wider px-1">
+                  {category}
+                </h2>
+                <div className="space-y-2">
+                  {categoryItems.map(({ provider, key }, i) => (
+                    <motion.div
+                      key={provider.id}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{
+                        type: "spring",
+                        stiffness: 200,
+                        damping: 24,
+                        delay: (catIdx * 0.1) + (i * 0.04),
+                      }}
+                    >
+                      <KeyCard
+                        provider={provider}
+                        apiKey={key}
+                        onAdd={() => setSheetOpen(true)}
+                        onDelete={handleDelete}
+                        onVerify={handleVerify}
+                      />
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* Add Key Button */}

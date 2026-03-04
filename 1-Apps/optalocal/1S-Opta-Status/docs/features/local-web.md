@@ -1,6 +1,6 @@
 # Opta Local Features
 
-Opta Local (`1L-Opta-Local`) is the web dashboard and chat interface for the LMX inference server.
+Opta Local (`1T-Opta-Home`) is the web dashboard and chat interface for the LMX inference server.
 
 ## Chat Interface
 
@@ -14,7 +14,7 @@ Opta Local (`1L-Opta-Local`) is the web dashboard and chat interface for the LMX
 
 ## Dashboard
 
-- [x] LMX connection status — live health indicator
+- [ ] LMX connection status — production degraded due `/api/health` vs `/healthz` path mismatch
 - [x] Throughput metrics — tokens/sec via circular buffer (300 samples)
 - [x] Active model display — currently loaded model name and size
 - [x] Memory gauge — Metal GPU memory usage from `/admin/health`
@@ -64,3 +64,7 @@ Opta Local (`1L-Opta-Local`) is the web dashboard and chat interface for the LMX
 - 2026-02-25 — Session management and dashboard improvements
 - 2026-02-23 — Cloudflare Tunnel config and LAN/cloud mode separation
 - 2026-02-19 — Phase 5 sessions implementation complete
+
+## Current Production Reality (2026-03-04)
+
+- Local-web health integration is currently degraded in production until endpoint path parity is corrected.

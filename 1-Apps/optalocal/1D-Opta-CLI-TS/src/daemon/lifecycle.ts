@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, rm, chmod } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { randomBytes } from 'node:crypto';
 import { getDaemonDir } from '../platform/paths.js';
@@ -51,7 +51,12 @@ async function ensureDaemonDir(): Promise<void> {
   await ensureDiskHeadroom(daemonDir(), {
     minFreeBytes: diskHeadroomMbToBytes(envDiskHeadroomMb()),
   });
-  await mkdir(daemonDir(), { recursive: true });
+  await mkdir(daemonDir(), { recursive: true, mode: 0o700 });
+  try {
+    await chmod(daemonDir(), 0o700);
+  } catch {
+    // Best-effort only.
+  }
 }
 
 export async function readDaemonState(): Promise<DaemonState | null> {
@@ -65,8 +70,15 @@ export async function readDaemonState(): Promise<DaemonState | null> {
 
 export async function writeDaemonState(state: DaemonState): Promise<void> {
   await ensureDaemonDir();
-  await writeFile(statePath(), JSON.stringify(state, null, 2), 'utf-8');
-  await writeFile(pidPath(), String(state.pid), 'utf-8');
+  await writeFile(statePath(), JSON.stringify(state, null, 2), {
+    encoding: 'utf-8',
+    mode: 0o600,
+  });
+  await writeFile(pidPath(), String(state.pid), { encoding: 'utf-8', mode: 0o600 });
+  await Promise.all([
+    restrictFileToCurrentUser(statePath()),
+    restrictFileToCurrentUser(pidPath()),
+  ]);
 }
 
 export async function clearDaemonState(): Promise<void> {

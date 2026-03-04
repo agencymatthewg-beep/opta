@@ -694,3 +694,26 @@ class PresetListResponse(BaseModel):
 
     presets: list[PresetResponse]
     count: int
+
+class LegacyCompletionRequest(BaseModel):
+    """OpenAI-compatible legacy text completion request."""
+
+    model: str
+    prompt: str | list[str]
+    suffix: str | None = None
+    max_tokens: int | None = None
+    temperature: float = Field(0.7, ge=0, le=2.0)
+    top_p: float = Field(1.0, ge=0, le=1.0)
+    n: int = Field(1, ge=1, le=16)
+    stream: bool = False
+    logprobs: int | None = Field(None, ge=0, le=20)
+    echo: bool = False
+    stop: str | list[str] | None = None
+    presence_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    frequency_penalty: float = Field(0.0, ge=-2.0, le=2.0)
+    best_of: int | None = Field(None, ge=1, le=20)
+    user: str | None = None
+    seed: int | None = None
+    # Opta extension parity with chat completions
+    num_ctx: int | None = Field(None, ge=512, le=131072)
+

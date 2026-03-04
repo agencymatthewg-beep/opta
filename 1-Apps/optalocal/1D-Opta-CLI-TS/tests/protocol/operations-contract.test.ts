@@ -46,6 +46,8 @@ describe('v3 operations contract', () => {
       'serve.stop',
       'serve.restart',
       'serve.logs',
+      'browser.runtime',
+      'browser.host',
       'init.run',
       'update.run',
       'apps.list',
@@ -205,6 +207,50 @@ describe('v3 operations contract', () => {
       OperationExecuteRequestSchema.parse({
         id: 'serve.logs',
         input: { tail: 20 },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'browser.host',
+        input: {
+          action: 'start',
+          portRangeStart: 46000,
+          portRangeEnd: 47000,
+          requiredPortCount: 6,
+          maxSessionSlots: 5,
+          includePeekabooScreen: true,
+        },
+      })
+    ).toMatchObject({ id: 'browser.host' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'browser.host',
+        input: {
+          action: 'start',
+          portRangeStart: '46000',
+          portRangeEnd: '47000',
+        },
+      })
+    ).toMatchObject({ id: 'browser.host' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'browser.host',
+        input: {
+          action: 'invalid',
+        },
+      })
+    ).toThrow();
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'browser.host',
+        input: {
+          action: 'start',
+          portRangeStart: 'abc',
+        },
       })
     ).toThrow();
 

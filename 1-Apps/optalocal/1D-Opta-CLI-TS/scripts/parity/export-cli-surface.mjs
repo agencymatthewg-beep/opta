@@ -40,8 +40,9 @@ function parseCommandNames(helpText) {
     }
     if (!line.trim()) continue;
     if (!rawLine.startsWith("  ")) break;
-    const trimmed = line.trim();
-    const commandName = trimmed.split(/\s+/)[0];
+    const match = rawLine.match(/^\s{2}([a-z0-9][a-z0-9-]*)(?:\s+.+?)?\s{2,}\S/i);
+    if (!match) continue;
+    const commandName = match[1];
     if (!commandName || commandName === "help" || commandName.startsWith("(")) continue;
     commands.push(commandName);
   }

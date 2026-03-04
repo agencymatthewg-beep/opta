@@ -241,6 +241,43 @@ async function probeProviderEndpoint(provider: string, key: string): Promise<boo
         });
         return res.ok;
       }
+      case 'github': {
+        const res = await fetch('https://api.github.com/user', {
+          headers: { authorization: `token ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'vercel': {
+        const res = await fetch('https://api.vercel.com/v2/user', {
+          headers: { authorization: `Bearer ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'cloudflare': {
+        const res = await fetch('https://api.cloudflare.com/client/v4/user/tokens/verify', {
+          headers: { authorization: `Bearer ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'perplexity': {
+        // Simple chat completions request with 1 token to verify key
+        const res = await fetch('https://api.perplexity.ai/chat/completions', {
+          method: 'POST',
+          headers: { authorization: `Bearer ${key}`, 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'sonar', messages: [{ role: 'user', content: 'hello' }], max_tokens: 1 }),
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'codex':
+      case 'opencode':
+      case 'google':
+      case 'twitter':
+        // Skip direct validation if no trivial endpoint exists, assume valid if saved
+        return true;
       default:
         return false;
     }

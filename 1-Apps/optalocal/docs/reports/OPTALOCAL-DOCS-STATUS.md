@@ -1,82 +1,57 @@
-# OptaLocal Documentation Status
+# OptaLocal Documentation and Deployment Status
 
 Updated: 2026-03-04
 Scope: `1-Apps/optalocal/*`
 
-## Hosting plan
-- Vercel account is now on **Pro** plan (upgraded 2026-03-04).
-- Operational policy: deploy each web app from its own app directory with `rootDirectory: null` in Vercel project settings to avoid path-doubling regressions.
+## Canonical app set
 
-## Canonical apps
 - `1D-Opta-CLI-TS` — runtime/TUI/daemon
-- `1L-Opta-Local` — deprecated duplicate client (retired/deleted from workspace)
+- `1L-Opta-LMX-Dashboard` — LMX dashboard surface
 - `1M-Opta-LMX` — inference service (Mono512 host)
-- `1O-Opta-Init` — Opta Init Website + Opta Init Desktop Manager (desktop manager is the only website download target)
-- `1P-Opta-Code-Universal` — desktop client for Opta CLI daemon
+- `1O-Opta-Init` — init website + desktop manager distribution stack
+- `1P-Opta-Code-Universal` — desktop/web daemon client
 - `1R-Opta-Accounts` — auth/accounts portal
-- `1S-Opta-Status` — status and incident visibility
-- `1T-Opta-Home` — brand homepage (optalocal.com root) — **live 2026-03-01**
-- `1U-Opta-Help` — help/docs website
-- `1V-Opta-Learn` — learn/guides website
+- `1S-Opta-Status` — status dashboard
+- `1T-Opta-Home` — brand homepage
+- `1U-Opta-Help` — docs/help website
+- `1V-Opta-Learn` — guides/learning website
+- `1X-Opta-Admin` — admin website-management control plane
 
-## Domain Map (current, all live)
+Canonical metadata source: `apps.registry.json`.
+
+## Domain map (current)
 
 | Domain | App | Vercel Project | Status |
-|--------|-----|----------------|--------|
-| `optalocal.com` | 1T-Opta-Home | `web` (prj_LUQzl1HQ...) | ✅ Live — brand homepage |
-| `www.optalocal.com` | 1T-Opta-Home | `web` | ✅ Live |
-| `lmx.optalocal.com` | 1L-Opta-Local (legacy) | `opta-lmx-dashboard` (prj_VbWNtBjU...) | ✅ Live (frozen legacy deploy) |
-| `init.optalocal.com` | 1O-Opta-Init | `opta-init` | ✅ Live |
-| `accounts.optalocal.com` | 1R-Opta-Accounts | `accounts` | ✅ Live — SSO portal |
-| `status.optalocal.com` | 1S-Opta-Status | `status-fix` | ✅ Live |
-| `help.optalocal.com` | 1U-Opta-Help | `opta-help` | ✅ Live |
-| `learn.optalocal.com` | 1V-Opta-Learn | `opta-learn` | ✅ Live |
-| `admin.optalocal.com` | 1X-Opta-Admin | `opta-admin` | ✅ Live (standalone static dashboard) |
+|---|---|---|---|
+| `optalocal.com` | `1T-Opta-Home` | `web` | Live |
+| `www.optalocal.com` | `1T-Opta-Home` | `web` | Live |
+| `lmx.optalocal.com` | `1L-Opta-LMX-Dashboard` | `opta-lmx-dashboard` | Live |
+| `init.optalocal.com` | `1O-Opta-Init` | `opta-init` | Live |
+| `accounts.optalocal.com` | `1R-Opta-Accounts` | `accounts` | Live |
+| `status.optalocal.com` | `1S-Opta-Status` | `status-fix` | Live |
+| `help.optalocal.com` | `1U-Opta-Help` | `opta-help` | Live |
+| `learn.optalocal.com` | `1V-Opta-Learn` | `opta-learn` | Live |
+| `admin.optalocal.com` | `1X-Opta-Admin` | `opta-admin` | Live |
 
-## Vercel Deploy Notes
+## Hosting policy
 
-### optalocal.com (brand homepage — `web` project)
-- Deploy from: `1-Apps/optalocal/1T-Opta-Home/` directly
-- rootDirectory: null (deploys from app dir)
-- outputDirectory: null (Vercel builds Next.js natively — NO output: 'export')
-- `cd 1T-Opta-Home && vercel deploy --prod`
+- Vercel project `rootDirectory` should remain `null` for direct app-directory deployments.
+- Deploy each website from its own app directory to avoid path-doubling regressions.
 
-### lmx.optalocal.com (LMX dashboard — `opta-lmx-dashboard` project)
-- Deploy from: `/Users/Shared/312/Opta/` (monorepo root)
-- rootDirectory (historical): `1-Apps/optalocal/1L-Opta-Local/web` (path removed from workspace)
-- installCommand: `cd ../../../.. && pnpm install --no-frozen-lockfile`
-- `.vercel/project.json` at monorepo root points to `prj_VbWNtBjUrPUpzZMW6QFhn86KTYsJ`
-- `.vercelignore` at monorepo root whitelists: 1L web, 1D CLI packages, 6D-UI
-- `cd /Users/Shared/312/Opta && vercel deploy --prod`
+## Distribution policy (canonical)
 
-## Actions completed (2026-03-01)
-- Built and deployed `1T-Opta-Home` to `optalocal.com`
-- Created new `opta-lmx-dashboard` Vercel project for `1L-Opta-Local`
-- Moved `lmx.optalocal.com` domain from old `web` project → new `opta-lmx-dashboard`
-- Fixed `.vercelignore` to include `1D-Opta-CLI-TS/packages/` (daemon-client, protocol-shared)
-- Both domains verified live and serving correct content
-
-## Actions completed (2026-03-04)
-- Updated Vercel project configuration to `rootDirectory: null` for:
-  - `web`, `opta-init`, `accounts`, `status-fix`, `opta-help`, `opta-learn`, `opta-admin`
-- Redeployed latest source for all live website apps:
-  - `1T-Opta-Home`, `1O-Opta-Init`, `1R-Opta-Accounts`, `1S-Opta-Status`, `1U-Opta-Help`, `1V-Opta-Learn`, `1X-Opta-Admin`
-- Re-ran web SLO checks: all 8 domains passed (`OPTA_LOCAL_SLO_OK`).
-- Re-architected `1X-Opta-Admin` as static zero-dependency app (`index.html` only + Vercel metadata), removed stale Next.js scaffolding, and deployed.
-- Bound `admin.optalocal.com` alias to latest `opta-admin` production deployment and disabled project SSO gating for public dashboard access.
+- Opta websites should present **Opta Init Desktop Manager** as the distribution entrypoint.
+- CLI/LMX/Code lifecycle management is driven through Opta Init Manager flows.
 
 ## Maintenance rule
-When a major architecture/path/policy change occurs, update:
-1. app-local APP.md / ARCHITECTURE.md
-2. This file (`OPTALOCAL-DOCS-STATUS.md`)
-3. SOT project map (`AI26/1-SOT/PROJECTS.md`)
+
+When architecture/path/policy changes:
+1. update app-local `APP.md`/`README.md`
+2. update workspace canonical docs (`docs/INDEX.md`, `docs/ARCHITECTURE.md`, `docs/ECOSYSTEM.md`, `docs/PRODUCT-MODEL.md`)
+3. update this status file
+4. run `npm run docs:check`
 
 ## Known gaps
-- optamize.biz has no brand homepage (sister ecosystem — cross-brand path absent)
-- Real product screenshots not yet in `optalocal.com` Ecosystem section (using icon cards)
 
-## Canonical Distribution Policy
-
-- Opta Init Website (`init.optalocal.com`) and Opta Init Desktop Manager are separate components in the same app boundary.
-- Across OptaLocal websites, users should only download **Opta Init Desktop Manager**.
-- CLI/LMX/Code are lifecycle-managed from Opta Init Manager, not presented as direct website downloads.
+- Some dated historical reports in `docs/audit/` and `docs/reports/` reference legacy app names by design.
+- Canonical docs are now maintained separately and should be used for current-state decisions.

@@ -132,3 +132,46 @@ def _parse_responses_input_messages(input_payload: object) -> list[ChatMessage]:
     if not messages:
         raise ValueError("Field 'input' must not be empty.")
     return messages
+
+_SERVING_LANE_TO_PRIORITY: dict[str, str] = {
+    "interactive": "high",
+    "throughput": "normal",
+}
+_PRIORITY_TO_SERVING_LANE: dict[str, str] = {
+    "high": "interactive",
+    "normal": "throughput",
+}
+
+
+def _resolve_serving_lane_and_priority(
+    *,
+    route: str,
+    x_serving_lane: str | None,
+    x_priority: str | None,
+) -> tuple[str, str]:
+    """Resolve serving lane and request priority with deterministic precedence."""
+    lane_raw = (x_serving_lane or "").strip().lower()
+    if lane_raw:
+        if lane_raw not in _SERVING_LANE_TO_PRIORITY:
+            allowed = ", ".join(_SERVING_LANE_TO_PRIORITY.keys())
+            raise ValueError(f"Invalid value for 'x-serving-lane'. Expected one of: {allowed}.")
+        serving_lane = lane_raw
+        priority = _SERVING_LANE_TO_PRIORITY[serving_lane]
+        source = "x-serving-lane"
+    else:
+        priority_raw = (x_priority or "").strip().lower()
+        priority = priority_raw or "normal"
+        serving_lane = _PRIORITY_TO_SERVING_LANE.get(priority, "custom")
+        source = "x-priority" if priority_raw else "default"
+
+    logger.info(
+        "serving_lane_resolved",
+        extra={
+            "route": route,
+            "serving_lane": serving_lane,
+            "priority": priority,
+            "source": source,
+        },
+    )
+    return serving_lane, priority
+

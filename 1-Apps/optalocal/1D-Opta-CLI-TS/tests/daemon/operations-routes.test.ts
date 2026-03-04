@@ -101,6 +101,7 @@ describe('daemon operations routes', () => {
         expect.objectContaining({ id: 'serve.stop', safety: 'write' }),
         expect.objectContaining({ id: 'serve.restart', safety: 'write' }),
         expect.objectContaining({ id: 'serve.logs', safety: 'read' }),
+        expect.objectContaining({ id: 'browser.host', safety: 'write' }),
         expect.objectContaining({ id: 'init.run', safety: 'write' }),
         expect.objectContaining({ id: 'update.run', safety: 'write' }),
         expect.objectContaining({ id: 'sessions.list', safety: 'read' }),

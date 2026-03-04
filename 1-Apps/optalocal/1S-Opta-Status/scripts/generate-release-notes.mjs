@@ -157,6 +157,28 @@ async function readEntriesFromSource(source) {
   return entries
 }
 
+async function readExistingGeneratedNotes() {
+  let existing = ''
+  try {
+    existing = await fs.readFile(OUTPUT_FILE, 'utf-8')
+  } catch {
+    return null
+  }
+
+  const match = existing.match(
+    /export const GENERATED_RELEASE_NOTES: ReleaseNote\[] = (\[[\s\S]*?\])\s*\n(?:export const GENERATED_RELEASE_NOTES_METADATA|$)/,
+  )
+  if (!match) return null
+
+  try {
+    const parsed = JSON.parse(match[1])
+    if (!Array.isArray(parsed)) return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
 function classifyGroup(entry) {
   if (/^(load|unload)-/.test(entry.slug)) {
     return { kind: 'model-runtime', key: `model-runtime:${entry.date}` }
@@ -285,7 +307,32 @@ async function main() {
   }
 
   const promotedEntries = allEntries.filter((e) => e.promoted)
-  const notes = buildNotes(promotedEntries.length > 0 ? promotedEntries : allEntries)
+  const sourceEntries = promotedEntries.length > 0 ? promotedEntries : allEntries
+  const latestSourceDate =
+    sourceEntries.length > 0
+      ? [...sourceEntries].sort((a, b) => b.date.localeCompare(a.date))[0].date
+      : null
+
+  if (sourceEntries.length === 0) {
+    const existingNotes = await readExistingGeneratedNotes()
+    if (existingNotes !== null) {
+      console.log(
+        `No source release-note entries found. Preserving existing notes (${existingNotes.length}) in ${path.relative(
+          APP_ROOT,
+          OUTPUT_FILE,
+        )}.`,
+      )
+      return
+    }
+  }
+
+  const notes = buildNotes(sourceEntries)
+  const metadata = {
+    sourceScope: promotedEntries.length > 0 ? 'promoted' : 'all',
+    latestSourceDate,
+    sourceEntryCount: sourceEntries.length,
+    totalEntryCount: allEntries.length,
+  }
 
   const generatedAt = new Date().toISOString()
   const output = `/* eslint-disable */
@@ -299,6 +346,12 @@ export const GENERATED_RELEASE_NOTES: ReleaseNote[] = ${JSON.stringify(
     null,
     2,
   )}
+
+export const GENERATED_RELEASE_NOTES_METADATA = ${JSON.stringify(
+    metadata,
+    null,
+    2,
+  )} as const
 `
 
   await fs.writeFile(OUTPUT_FILE, output, 'utf-8')

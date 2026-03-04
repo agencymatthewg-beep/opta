@@ -40,6 +40,7 @@ interface AccountAuthOptions {
   oauthCookieJar?: string;
   oauthHeadless?: boolean;
   timeout?: string;
+  returnTo?: string;
   accountsUrl?: string;
   json?: boolean;
 }
@@ -60,6 +61,7 @@ type OAuthBrowserMode = 'system' | 'opta-session';
 export interface OAuthLoginFlowOptions {
   accountsUrl?: string;
   timeout?: string;
+  returnTo?: string;
   env?: NodeJS.ProcessEnv;
   browserMode?: OAuthBrowserMode;
   browserOpener?: (url: string) => void | Promise<void>;
@@ -390,6 +392,41 @@ function parseAccountsBaseUrl(raw: string): string {
   return `${parsed.protocol}//${parsed.host}`;
 }
 
+function normalizeOAuthReturnTo(raw: string | undefined): string | undefined {
+  const trimmed = raw?.trim();
+  if (!trimmed) return undefined;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(trimmed);
+  } catch {
+    throw new Error(
+      '--return-to must be an absolute URL (for example: opta-init://auth/callback).',
+    );
+  }
+
+  const protocol = parsed.protocol.toLowerCase();
+  if (
+    protocol === 'javascript:' ||
+    protocol === 'data:' ||
+    protocol === 'file:' ||
+    protocol === 'vbscript:'
+  ) {
+    throw new Error(`--return-to protocol is not allowed: ${protocol}`);
+  }
+
+  return parsed.toString();
+}
+
+function normalizeCallbackReturnTo(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    return normalizeOAuthReturnTo(raw) ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function parseOAuthTimeoutMs(raw: string): number {
   const seconds = Number.parseInt(raw, 10);
   if (!Number.isFinite(seconds) || seconds < 30 || seconds > 1800) {
@@ -410,7 +447,47 @@ function resolveAccountsBaseUrlRaw(
   );
 }
 
-function callbackPageHtml(title: string, detail: string): string {
+function callbackPageHtml(
+  title: string,
+  detail: string,
+  options: { autoClose?: boolean; returnTo?: string | null } = {},
+): string {
+  const autoClose = options.autoClose === true;
+  const returnTo = options.returnTo ?? null;
+  const returnToScriptValue = returnTo ? JSON.stringify(returnTo) : 'null';
+  const autoCloseHint = autoClose
+    ? '<p id="closeHint" style="display:none;margin-top:12px;">If this tab does not close automatically, press <code>Cmd/Ctrl+W</code>.</p>'
+    : '';
+  const autoCloseScript = autoClose
+    ? `
+  <script>
+    window.addEventListener('load', function () {
+      var returnTo = ${returnToScriptValue};
+      var closeWindow = function () {
+        window.open('', '_self');
+        window.close();
+        var hint = document.getElementById('closeHint');
+        if (hint) {
+          hint.style.display = 'block';
+        }
+      };
+      try {
+        window.history.replaceState({}, document.title, '/callback');
+      } catch (_) {}
+      if (returnTo) {
+        window.setTimeout(function () {
+          try {
+            window.location.assign(returnTo);
+          } catch (_) {}
+          window.setTimeout(closeWindow, 450);
+        }, 120);
+        return;
+      }
+      window.setTimeout(closeWindow, 300);
+    });
+  </script>`
+    : '';
+
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -429,7 +506,9 @@ function callbackPageHtml(title: string, detail: string): string {
   <div class="card">
     <h1>${title}</h1>
     <p>${detail}</p>
+    ${autoCloseHint}
   </div>
+  ${autoCloseScript}
 </body>
 </html>`;
 }
@@ -460,6 +539,7 @@ async function startBrowserAuthCallbackServer(
       response.end('Not found');
       return;
     }
+    const callbackReturnTo = normalizeCallbackReturnTo(requestUrl.searchParams.get('return_to'));
 
     const state = requestUrl.searchParams.get('state')?.trim() ?? '';
     if (!state || state !== expectedState) {
@@ -528,7 +608,8 @@ async function startBrowserAuthCallbackServer(
       response.end(
         callbackPageHtml(
           'Opta Sign-In Complete',
-          'Authentication succeeded. You can close this tab and return to the terminal.',
+          'Authentication succeeded. Returning to Opta now.',
+          { autoClose: true, returnTo: callbackReturnTo },
         ),
       );
 
@@ -594,7 +675,8 @@ async function startBrowserAuthCallbackServer(
     response.end(
       callbackPageHtml(
         'Opta Sign-In Complete',
-        'Authentication succeeded. You can close this tab and return to the terminal.',
+        'Authentication succeeded. Returning to Opta now.',
+        { autoClose: true, returnTo: callbackReturnTo },
       ),
     );
 
@@ -662,6 +744,7 @@ export async function runOAuthLoginFlow(
   const timeoutRaw = options.timeout ??
     env['OPTA_ACCOUNT_OAUTH_TIMEOUT_SECONDS'] ??
     String(DEFAULT_OAUTH_TIMEOUT_SECONDS);
+  const returnTo = normalizeOAuthReturnTo(options.returnTo);
   const accountsBaseUrlRaw = resolveAccountsBaseUrlRaw(options.accountsUrl, env);
   const accountsBaseUrl = parseAccountsBaseUrl(accountsBaseUrlRaw);
   const timeoutMs = parseOAuthTimeoutMs(timeoutRaw);
@@ -686,6 +769,9 @@ export async function runOAuthLoginFlow(
   signInUrl.searchParams.set('response_type', 'code');
   signInUrl.searchParams.set('code_challenge', pkce.codeChallenge);
   signInUrl.searchParams.set('code_challenge_method', 'S256');
+  if (returnTo) {
+    signInUrl.searchParams.set('return_to', returnTo);
+  }
   if (handoffToken) {
     signInUrl.searchParams.set('handoff', handoffToken);
   }
@@ -758,6 +844,7 @@ async function accountLoginOAuth(opts: AccountAuthOptions): Promise<void> {
   const result = await runOAuthLoginFlow({
     accountsUrl: opts.accountsUrl,
     timeout: opts.timeout,
+    returnTo: opts.returnTo,
     browserMode,
     optaCookieJar: opts.oauthCookieJar,
     optaHeadless: opts.oauthHeadless,
@@ -851,6 +938,13 @@ export async function accountLogin(opts: AccountAuthOptions): Promise<void> {
     if ((opts.oauthCookieJar || opts.oauthHeadless) && !opts.oauthOptaBrowser) {
       fail(
         '--oauth-cookie-jar / --oauth-headless require --oauth-opta-browser.',
+        opts.json,
+        EXIT.MISUSE,
+      );
+    }
+    if (opts.returnTo && !useOAuth) {
+      fail(
+        '--return-to requires --oauth or --oauth-opta-browser.',
         opts.json,
         EXIT.MISUSE,
       );

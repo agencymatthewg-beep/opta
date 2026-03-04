@@ -318,6 +318,7 @@ export function App() {
   const [managerUpdatePending, setManagerUpdatePending] = useState(false);
   const [accountProfile, setAccountProfile] = useState<AccountProfile | null>(null);
   const [accountPending, setAccountPending] = useState(false);
+  const [accountError, setAccountError] = useState<string | null>(null);
 
   const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
   const [showScanPrompt, setShowScanPrompt] = useState(false);
@@ -503,11 +504,13 @@ export function App() {
   const runAccountAction = useCallback(async (action: "login" | "logout") => {
     if (!tauriAvailable || accountPending || managerUpdatePending) return;
     setAccountPending(true);
+    setAccountError(null);
     try {
       await invoke(action === "login" ? "trigger_login" : "trigger_logout");
       setAccountProfile(await invoke<AccountProfile | null>("get_account_status"));
     } catch (e) {
       console.error("Account action failed:", e);
+      setAccountError(e instanceof Error ? e.message : String(e));
     } finally {
       setAccountPending(false);
     }
@@ -768,6 +771,9 @@ export function App() {
                   <div className="settings-sub">
                     {accountProfile ? `Role: ${accountProfile.activeRole ?? "Developer"}` : "Sync significant data preferences, identity and cloud backups."}
                   </div>
+                  {accountError ? (
+                    <div className="settings-sub settings-error">{accountError}</div>
+                  ) : null}
                 </div>
                 <button
                   className="btn secondary"

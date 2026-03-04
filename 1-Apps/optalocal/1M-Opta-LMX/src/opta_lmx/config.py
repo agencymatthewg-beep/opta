@@ -507,6 +507,10 @@ class SecurityConfig(BaseModel):
         None,
         description="Required key for /v1/* inference endpoints. None = no auth.",
     )
+    downloads_enabled: bool = Field(
+        False,
+        description="Allow remote model downloads through /admin/models/download* endpoints.",
+    )
     profile: str = Field("lan", description="Security profile: 'lan' or 'cloud'")
     cors_allowed_origins: list[str] = Field(default_factory=list)
     mtls_mode: str = Field(

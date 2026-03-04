@@ -249,6 +249,12 @@ function parsePortRange(raw: string | undefined): { start: number; end: number }
   return { start: min, end: max };
 }
 
+function maskToken(token: string | undefined): string {
+  if (!token) return '-';
+  if (token.length <= 10) return `${token.slice(0, 2)}***${token.slice(-2)}`;
+  return `${token.slice(0, 6)}...${token.slice(-4)}`;
+}
+
 function printBrowserLiveHostStatus(status: BrowserLiveHostStatus): void {
   if (!status.running) {
     console.log(chalk.dim('  Browser live host is stopped.'));
@@ -270,6 +276,7 @@ function printBrowserLiveHostStatus(status: BrowserLiveHostStatus): void {
       `  slots=${status.maxSessionSlots} required_ports=${status.requiredPortCount} peekaboo_screen=${String(status.includePeekabooScreen)} screen_actions=${String(status.screenActionsEnabled)}`,
     ),
   );
+  console.log(chalk.dim(`  viewer_token=${maskToken(status.viewerAuthToken)}`));
 
   for (const slot of status.slots) {
     const slotUrl = `http://${status.host}:${slot.port}`;

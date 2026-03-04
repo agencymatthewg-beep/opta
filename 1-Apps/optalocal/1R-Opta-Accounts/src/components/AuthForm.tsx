@@ -13,13 +13,26 @@ interface AuthFormProps {
   cliMode?: {
     port: string;
     state: string;
+    returnTo?: string;
+    handoff?: string;
   };
 }
 
 export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
-  const effectiveRedirect = cliMode
-    ? `/cli/callback?port=${cliMode.port}&state=${cliMode.state}`
-    : redirectAfter;
+  const effectiveRedirect = (() => {
+    if (!cliMode) return redirectAfter;
+    const callbackParams = new URLSearchParams({
+      port: cliMode.port,
+      state: cliMode.state,
+    });
+    if (cliMode.returnTo) {
+      callbackParams.set("return_to", cliMode.returnTo);
+    }
+    if (cliMode.handoff) {
+      callbackParams.set("handoff", cliMode.handoff);
+    }
+    return `/cli/callback?${callbackParams.toString()}`;
+  })();
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 bg-transparent">
@@ -76,7 +89,7 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
             <>
               Don&apos;t have an account?{" "}
               <Link
-                href={`/sign-up${redirectAfter ? `?next=${encodeURIComponent(redirectAfter)}` : ""}`}
+                href={`/sign-up${effectiveRedirect ? `?next=${encodeURIComponent(effectiveRedirect)}` : ""}`}
                 className="text-opta-primary hover:text-opta-primary-glow transition-colors"
               >
                 Sign up
@@ -86,7 +99,7 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
             <>
               Already have an account?{" "}
               <Link
-                href={`/sign-in${redirectAfter ? `?next=${encodeURIComponent(redirectAfter)}` : ""}`}
+                href={`/sign-in${effectiveRedirect ? `?next=${encodeURIComponent(effectiveRedirect)}` : ""}`}
                 className="text-opta-primary hover:text-opta-primary-glow transition-colors"
               >
                 Sign in

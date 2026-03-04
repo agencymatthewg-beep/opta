@@ -7,6 +7,7 @@ Canonical workspace for Opta Local apps under `/Users/matthewbyrden/Synced/Opta/
 | ID | App | Path | Stack | Dev Port | Core role |
 |---|---|---|---|---:|---|
 | 1D | Opta CLI | `1D-Opta-CLI-TS` | TypeScript CLI/daemon | n/a | Runtime engine and daemon control plane |
+| 1L | Opta LMX Dashboard | `1L-Opta-LMX-Dashboard` | Next.js | 3003 | LMX runtime dashboard surface |
 | 1M | Opta LMX | `1M-Opta-LMX` | Python/FastAPI/MLX | 1234 | Local inference runtime |
 | 1O | Opta Init | `1O-Opta-Init` | Next.js + Desktop Manager (Tauri) | 3001 | Distribution/update control plane |
 | 1P | Opta Code Universal | `1P-Opta-Code-Universal` | React/Vite + Tauri | 5173 | Local desktop/web operator client |
@@ -29,6 +30,7 @@ npm run build:all
 npm run dev:1o
 npm run dev:1p
 npm run dev:1x
+npm run dev:1l
 ```
 
 Workspace scripts are powered by:
@@ -58,3 +60,13 @@ This runs strict release validation and then syncs:
 - `.github/workflows/opta-code-macos-build.yml`
 - `.github/workflows/opta-code-windows-build.yml`
 - `.github/workflows/opta-local-web-ci.yml`
+
+## Documentation System
+
+Workspace canonical docs live in `docs/` and are indexed in `docs/INDEX.md`.
+
+Run docs quality checks:
+
+```bash
+npm run docs:check
+```
