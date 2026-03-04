@@ -28,6 +28,8 @@ from opta_lmx.api.admin import router as admin_router
 from opta_lmx.api.admin_diagnostics import router as diagnostics_router
 from opta_lmx.api.agents import router as agents_router
 from opta_lmx.api.anthropic import router as anthropic_router
+from opta_lmx.api.audio_transcription import router as audio_transcription_router
+from opta_lmx.api.audio_speech import router as audio_speech_router
 from opta_lmx.api.benchmark import router as benchmark_router
 from opta_lmx.api.embeddings import router as embeddings_router
 from opta_lmx.api.health import router as health_router
@@ -896,6 +898,8 @@ def create_app(config: LMXConfig | None = None) -> FastAPI:
     if config.agents.enabled:
         app.include_router(agents_router)
     app.include_router(health_router)
+    app.include_router(audio_transcription_router)
+    app.include_router(audio_speech_router)
     if config.server.websocket_enabled:
         app.include_router(websocket_router)
 

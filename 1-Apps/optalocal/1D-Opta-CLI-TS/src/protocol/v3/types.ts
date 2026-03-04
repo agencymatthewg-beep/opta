@@ -42,6 +42,9 @@ export const V3EventSchema = z.enum([
   'browser.action',
   'agent.phase',
   'atpo.intervene',
+  'audio.transcription.result',
+  'audio.tts.chunk',
+  'voice.state',
 ]);
 export type V3Event = z.infer<typeof V3EventSchema>;
 
@@ -205,13 +208,13 @@ export interface BackgroundOutputEventPayload extends BackgroundOutputChunk {
 export interface BackgroundStatusEventPayload {
   process: BackgroundProcessSnapshot;
   reason:
-    | 'started'
-    | 'running'
-    | 'completed'
-    | 'failed'
-    | 'killed'
-    | 'timeout'
-    | 'spawn-error';
+  | 'started'
+  | 'running'
+  | 'completed'
+  | 'failed'
+  | 'killed'
+  | 'timeout'
+  | 'spawn-error';
   previousState?: BackgroundProcessState;
   signal?: BackgroundSignal;
 }
@@ -221,4 +224,19 @@ export interface BackgroundOutputSlice {
   chunks: BackgroundOutputChunk[];
   nextSeq: number;
   hasMore: boolean;
+}
+
+export interface AudioTranscriptionResultPayload {
+  text: string;
+  provider: string;
+}
+
+export interface AudioTTSChunkPayload {
+  audioBase64: string;
+  provider: string;
+  isFinal: boolean;
+}
+
+export interface VoiceStatePayload {
+  state: 'idle' | 'listening' | 'transcribing' | 'thinking' | 'speaking';
 }

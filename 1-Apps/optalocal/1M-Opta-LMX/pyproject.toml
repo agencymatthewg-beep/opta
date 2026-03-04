@@ -24,6 +24,9 @@ dependencies = [
     "structlog>=25.0",
     "tqdm>=4.60",
     "zeroconf>=0.133.0",
+    "mlx-whisper>=0.4.0",
+    "mlx-audio>=0.1.0",
+    "soundfile>=0.12.1",
 ]
 
 [project.optional-dependencies]

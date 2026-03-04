@@ -43,6 +43,7 @@ import { benchmark } from '../../commands/benchmark.js';
 import { runCeoBenchmark } from '../../benchmark/ceo/runner.js';
 import { appsInstall, appsList, appsUninstall } from '../../commands/apps.js';
 import { embed } from '../../commands/embed.js';
+import { executeAudioTranscribe, executeAudioTTS } from './audio.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { models } from '../../commands/models/index.js';
 import {
@@ -915,6 +916,12 @@ export const operationRegistry = {
   'keychain.delete-opencode-zen': defineOperation('keychain.delete-opencode-zen', async () => {
     await deleteOpencodeZenKey();
     return { deleted: true, status: await keychainStatus() };
+  }),
+  'audio.transcribe': defineOperation('audio.transcribe', async (input) => {
+    return await executeAudioTranscribe(input);
+  }),
+  'audio.tts': defineOperation('audio.tts', async (input) => {
+    return await executeAudioTTS(input);
   }),
 } satisfies { [K in OperationId]: OperationRegistryEntry<K> };
 

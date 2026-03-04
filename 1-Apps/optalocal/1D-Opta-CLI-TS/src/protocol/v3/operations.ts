@@ -88,6 +88,8 @@ export const OPERATION_IDS = [
   'keychain.delete-gemini',
   'keychain.delete-openai',
   'keychain.delete-opencode-zen',
+  'audio.transcribe',
+  'audio.tts',
 ] as const;
 
 export type OperationId = (typeof OPERATION_IDS)[number];
@@ -483,6 +485,21 @@ export const OperationInputSchemaById = {
   'keychain.delete-gemini': EmptyInputSchema,
   'keychain.delete-openai': EmptyInputSchema,
   'keychain.delete-opencode-zen': EmptyInputSchema,
+  'audio.transcribe': z
+    .object({
+      audioBase64: z.string().min(1),
+      provider: ProviderOverrideSchema.optional(),
+      language: z.string().optional(),
+      audioFormat: z.enum(['wav', 'm4a', 'mp3', 'webm', 'ogg']).default('webm'),
+    })
+    .strict(),
+  'audio.tts': z
+    .object({
+      text: z.string().min(1),
+      provider: ProviderOverrideSchema.optional(),
+      voice: z.string().optional(),
+    })
+    .strict(),
 } as const satisfies Record<OperationId, z.ZodTypeAny>;
 
 export type OperationInputById = {
@@ -715,6 +732,19 @@ export const OperationOutputSchemaById = {
   'keychain.delete-gemini': z.unknown(),
   'keychain.delete-openai': z.unknown(),
   'keychain.delete-opencode-zen': z.unknown(),
+  'audio.transcribe': z
+    .object({
+      text: z.string(),
+      provider: z.string(),
+    })
+    .strict(),
+  'audio.tts': z
+    .object({
+      audioBase64: z.string(),
+      provider: z.string(),
+      format: z.string(),
+    })
+    .strict(),
 } as const satisfies Record<OperationId, z.ZodTypeAny>;
 
 export type OperationOutputById = {
@@ -818,6 +848,8 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('keychain.delete-gemini'),
   makeExecuteRequestVariant('keychain.delete-openai'),
   makeExecuteRequestVariant('keychain.delete-opencode-zen'),
+  makeExecuteRequestVariant('audio.transcribe'),
+  makeExecuteRequestVariant('audio.tts'),
 ]);
 export type OperationExecuteRequest = z.infer<typeof OperationExecuteRequestSchema>;
 
@@ -1394,6 +1426,18 @@ export const OPERATION_TAXONOMY = [
     title: 'Keychain Delete Opencode Zen',
     description: 'Delete Opencode Zen API key from system keychain.',
     safety: 'write',
+  },
+  {
+    id: 'audio.transcribe',
+    title: 'Audio Transcribe',
+    description: 'Transcribe audio via STT model.',
+    safety: 'read',
+  },
+  {
+    id: 'audio.tts',
+    title: 'Audio TTS',
+    description: 'Generate speech audio via TTS model.',
+    safety: 'read',
   },
 ] as const satisfies readonly OperationDescriptor[];
 

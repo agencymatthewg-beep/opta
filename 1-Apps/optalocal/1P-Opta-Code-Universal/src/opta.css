@@ -7063,6 +7063,55 @@ button.active,
   color: var(--opta-text-muted);
 }
 
+.r9-composer-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+/* Mic button */
+.r9-mic-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  background: transparent;
+  border: 1px solid rgba(161, 161, 170, 0.2);
+  color: var(--opta-text-secondary);
+}
+
+.r9-mic-btn:hover:not(:disabled) {
+  background: rgba(161, 161, 170, 0.1);
+  color: var(--opta-text-primary);
+}
+
+.r9-mic-btn.r9-mic-recording {
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.4);
+  background: rgba(239, 68, 68, 0.1);
+  animation: pulse-mic 1.5s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes pulse-mic {
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+
+  70% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
 /* Send button */
 .r9-send-btn {
   width: 36px;
@@ -7103,4 +7152,104 @@ button.active,
 .r9-send-cancel:hover {
   background: rgba(239, 68, 68, 0.25) !important;
   box-shadow: 0 0 12px rgba(239, 68, 68, 0.2) !important;
+}
+
+/* 
+ * ──────────────────────────────────────────────────────────────────────────
+ * Workspace Rail Health Badge (Footer)
+ * ──────────────────────────────────────────────────────────────────────────
+ */
+.rail-health-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--border-subtle);
+  background: rgba(9, 9, 11, 0.4);
+  font-family: inherit;
+  font-size: 0.65rem;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.rail-health-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-health-host {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.rail-health-latency {
+  font-family: var(--font-mono);
+  color: var(--text-muted);
+}
+
+.rail-health-status {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.rail-health-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-muted);
+}
+
+.rail-health-dot--excellent {
+  background: var(--color-neon-green, #22c55e);
+  box-shadow: 0 0 8px rgba(34, 197, 94, 0.4);
+}
+
+.rail-health-dot--good {
+  background: var(--color-neon-green, #22c55e);
+}
+
+.rail-health-dot--degraded {
+  background: #f59e0b;
+}
+
+.rail-health-dot--poor {
+  background: var(--color-neon-red, #ef4444);
+}
+
+.rail-health-dot--disconnected {
+  background: var(--color-neon-red, #ef4444);
+}
+
+.rail-health-dot--offline {
+  background: var(--text-muted);
+  opacity: 0.5;
+}
+
+.rail-health-dot--connecting {
+  background: var(--color-primary, #8b5cf6);
+  animation: pulse-connection 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse-connection {
+
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.6);
+  }
+
+  50% {
+    opacity: 0.5;
+    box-shadow: none;
+  }
 }

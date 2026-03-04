@@ -28,6 +28,7 @@ import { TelemetryPanel } from "./components/TelemetryPanel";
 import { downloadAsFile, exportToMarkdown } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
+import { daemonClient } from "./lib/daemonClient";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
 import { useConnectionHealth } from "./hooks/useConnectionHealth";
 import { LiveBrowserView } from "./components/LiveBrowserView";
@@ -635,6 +636,28 @@ function App() {
     [activeSessionId, composerDraft, submitMessage, submissionMode],
   );
 
+  const onDictate = useCallback(async (audioBase64: string) => {
+    if (!connection) return;
+    setNotice("Transcribing audio...");
+    try {
+      const res = await daemonClient.runOperation(connection, 'audio.transcribe', {
+        audioBase64,
+        audioFormat: 'webm'
+      });
+      if (res.ok) {
+        const text = (res.result as any).text;
+        if (text) {
+          setComposerDraft((prev) => prev ? `${prev} ${text}` : text);
+          setNotice("Dictation complete.");
+        }
+      } else {
+        setNotice(`Transcription failed: ${res.error?.message || 'Unknown error'}`);
+      }
+    } catch (err) {
+      setNotice(`Dictation error: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }, [connection]);
+
   const reconnectEndpoint = `${connection.protocol ?? "http"}://${connection.host}:${connection.port}`;
   const copyReconnectDiagnostics = useCallback(async () => {
     const diagnostics = [
@@ -830,6 +853,7 @@ function App() {
                           onChange={setComposerDraft}
                           onSubmit={onSubmitComposer}
                           onCancel={() => void cancelActiveTurn()}
+                          onDictate={onDictate}
                           isStreaming={isStreaming}
                           disabled={true}
                           mode={submissionMode}
@@ -872,6 +896,7 @@ function App() {
                           onChange={setComposerDraft}
                           onSubmit={onSubmitComposer}
                           onCancel={() => void cancelActiveTurn()}
+                          onDictate={onDictate}
                           isStreaming={isStreaming}
                           disabled={false}
                           mode={submissionMode}

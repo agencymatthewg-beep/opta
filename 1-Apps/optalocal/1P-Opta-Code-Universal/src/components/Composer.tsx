@@ -1,4 +1,6 @@
 import { useState, useRef, useEffect } from "react";
+import { Mic, Square } from "lucide-react";
+import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import type {
   SessionAutonomyMode,
   SessionOutputFormat,
@@ -11,6 +13,7 @@ interface ComposerProps {
   onChange: (next: string) => void;
   onSubmit: (overrides?: SessionTurnOverrides) => void;
   onCancel?: () => void;
+  onDictate?: (audioBase64: string) => Promise<void>;
   disabled?: boolean;
   isStreaming?: boolean;
   mode: SessionSubmitMode;
@@ -40,11 +43,20 @@ export function Composer({
   onChange,
   onSubmit,
   onCancel,
+  onDictate,
   disabled,
   isStreaming = false,
   mode,
   onModeChange,
 }: ComposerProps) {
+  const { isRecording, startRecording, stopRecording, audioBase64, setAudioBase64, error } = useAudioRecorder();
+
+  useEffect(() => {
+    if (audioBase64 && onDictate) {
+      onDictate(audioBase64).finally(() => setAudioBase64(null));
+    }
+  }, [audioBase64, onDictate, setAudioBase64]);
+
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
   const [providerOverride, setProviderOverride] = useState<string | undefined>(undefined);
   const [autonomyModeOverride, setAutonomyModeOverride] = useState<SessionAutonomyMode | undefined>(undefined);
@@ -262,31 +274,44 @@ export function Composer({
             onKeyDown={handleKeyDown}
             rows={1}
           />
-          {isStreaming ? (
-            <button
-              type="button"
-              className="r9-send-btn r9-send-cancel"
-              onClick={onCancel}
-              title="Cancel operation"
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-              </svg>
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="r9-send-btn"
-              disabled={disabled || !value.trim()}
-              onClick={handleSubmitClick}
-              title={`${actionLabelByMode[mode]} (Cmd+Enter)`}
-            >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="m22 2-7 20-4-9-9-4Z" />
-                <path d="M22 2 11 13" />
-              </svg>
-            </button>
-          )}
+          <div className="r9-composer-actions">
+            {!isStreaming && (
+              <button
+                type="button"
+                className={`r9-mic-btn ${isRecording ? "r9-mic-recording" : ""}`}
+                disabled={disabled}
+                onClick={isRecording ? stopRecording : startRecording}
+                title={isRecording ? "Stop recording" : "Dictate"}
+              >
+                {isRecording ? <Square size={16} fill="currentColor" /> : <Mic size={16} />}
+              </button>
+            )}
+            {isStreaming ? (
+              <button
+                type="button"
+                className="r9-send-btn r9-send-cancel"
+                onClick={onCancel}
+                title="Cancel operation"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="r9-send-btn"
+                disabled={disabled || !value.trim()}
+                onClick={handleSubmitClick}
+                title={`${actionLabelByMode[mode]} (Cmd+Enter)`}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="m22 2-7 20-4-9-9-4Z" />
+                  <path d="M22 2 11 13" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </footer>
