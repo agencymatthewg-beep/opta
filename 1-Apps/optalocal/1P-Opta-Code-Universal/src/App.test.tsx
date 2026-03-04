@@ -132,6 +132,7 @@ describe("App account controls wiring", () => {
       setConnection: vi.fn(),
       submitMessage: vi.fn().mockResolvedValue(undefined),
       timelineBySession: {},
+      rawEventsBySession: {},
       trackSession: vi.fn().mockResolvedValue(undefined),
       createSession: vi.fn().mockResolvedValue("sess_1"),
       removeSession: vi.fn(),
@@ -157,65 +158,68 @@ describe("App account controls wiring", () => {
     vi.useRealTimers();
   });
 
-  it("renders Account tab and switches to AccountControlPage", async () => {
+  const openPalette = async () => {
+    fireEvent.keyDown(window, { key: "k", ctrlKey: true });
+    return screen.findByRole("dialog", { name: /command palette/i });
+  };
+
+  const runPaletteCommand = async (
+    query: string,
+    commandName: RegExp,
+  ) => {
+    const paletteDialog = await openPalette();
+    fireEvent.change(
+      within(paletteDialog).getByPlaceholderText("Type to search commands..."),
+      {
+        target: { value: query },
+      },
+    );
+    const commandButton = await within(paletteDialog).findByRole("button", {
+      name: commandName,
+    });
+    fireEvent.click(commandButton);
+    await waitFor(() =>
+      expect(
+        screen.queryByRole("dialog", { name: /command palette/i }),
+      ).not.toBeInTheDocument(),
+    );
+  };
+
+  it("renders topbar accounts button", async () => {
     render(<App />);
 
-    const accountTab = await screen.findByRole("button", { name: "Account" });
-    fireEvent.click(accountTab);
-
-    expect(screen.getByText("AccountControlPageMock")).toBeInTheDocument();
+    const accountsButton = await screen.findByRole("button", {
+      name: /accounts/i,
+    });
+    expect(accountsButton).toBeInTheDocument();
   });
 
   it("opens account controls via command palette command", async () => {
     render(<App />);
-
-    const paletteTrigger = await screen.findByRole("button", {
-      name: /Palette/i,
-    });
-    fireEvent.click(paletteTrigger);
-
-    const paletteDialog = await screen.findByRole("dialog", {
-      name: "Command palette",
-    });
-
-    fireEvent.change(
-      within(paletteDialog).getByPlaceholderText("Type to search commands..."),
-      {
-        target: { value: "account controls" },
-      },
-    );
-
-    const commandButton = await within(paletteDialog).findByRole("button", {
-      name: /Open account controls/i,
-    });
-    fireEvent.click(commandButton);
+    await runPaletteCommand("account controls", /open account controls/i);
 
     await waitFor(() => {
       expect(screen.getByText("AccountControlPageMock")).toBeInTheDocument();
     });
   });
 
-  it("renders CLI Bridge, Env, and MCP tabs and switches pages", async () => {
+  it("opens CLI bridge, env management, and MCP via command palette", async () => {
     render(<App />);
 
-    const cliTab = await screen.findByRole("button", { name: "CLI Bridge" });
-    fireEvent.click(cliTab);
+    await runPaletteCommand("cli bridge", /open cli bridge/i);
     expect(screen.getByText("CliOperationsPageMock")).toBeInTheDocument();
 
-    const envTab = await screen.findByRole("button", { name: "Env" });
-    fireEvent.click(envTab);
+    await runPaletteCommand("env management", /open env management/i);
     expect(screen.getByText("EnvProfilesPageMock")).toBeInTheDocument();
 
-    const mcpTab = screen.getByRole("button", { name: "MCP" });
-    fireEvent.click(mcpTab);
+    await runPaletteCommand("mcp management", /open mcp management/i);
     expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
   });
 
-  it("renders System tab and switches to contextual system operations", async () => {
+  it("opens system control plane via command palette", async () => {
     render(<App />);
 
-    const systemTab = await screen.findByRole("button", { name: "System" });
-    fireEvent.click(systemTab);
+    await runPaletteCommand("system control", /open system control plane/i);
 
     expect(screen.getByText("SystemOperationsPageMock")).toBeInTheDocument();
   });
@@ -229,7 +233,8 @@ describe("App account controls wiring", () => {
     );
 
     const view = render(<App />);
-    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
+    await screen.findByText("OPTA CODE");
+    await act(async () => {});
 
     stateRef.current = makeDaemonState({
       connectionState: "disconnected",
@@ -250,7 +255,8 @@ describe("App account controls wiring", () => {
     );
 
     const view = render(<App />);
-    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
+    await screen.findByText("OPTA CODE");
+    await act(async () => {});
 
     stateRef.current = makeDaemonState({
       connectionState: "disconnected",
@@ -319,7 +325,8 @@ describe("App account controls wiring", () => {
     );
 
     const view = render(<App />);
-    await waitFor(() => expect(screen.getByText(/127\.0\.0\.1:9999/)).toBeInTheDocument());
+    await screen.findByText("OPTA CODE");
+    await act(async () => {});
     stateRef.current = makeDaemonState({
       connectionState: "disconnected",
       connectionError: "daemon unreachable",

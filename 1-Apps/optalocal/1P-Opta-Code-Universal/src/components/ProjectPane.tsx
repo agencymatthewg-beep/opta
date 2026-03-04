@@ -73,49 +73,20 @@ export function ProjectPane({
 
     return (
         <aside className="project-pane">
-            {/* Agent Status Section — always visible */}
+            {/* Projects Section */}
             <div className="pp-header">
-                <span className="pp-title">ACTIVE AGENTS</span>
+                <span className="pp-title">Projects</span>
                 <button
                     className="pp-icon-btn"
                     onClick={onCreateSession}
                     type="button"
                     title="New Session"
                 >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                         <line x1="12" y1="5" x2="12" y2="19" />
                         <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                 </button>
-            </div>
-            <div className="pp-agent-list">
-                {agentItems.length === 0 ? (
-                    <div className="pp-empty pp-empty-agents">No active agents</div>
-                ) : (
-                    agentItems.map((agent) => (
-                        <button
-                            key={agent.sessionId}
-                            className={`pp-agent-pill pp-agent-${agent.state}`}
-                            onClick={() => onSelectSession(agent.sessionId)}
-                            type="button"
-                        >
-                            <span className="pp-agent-dot" />
-                            <span className="pp-agent-name">{agent.sessionTitle}</span>
-                            <span className="pp-agent-status">
-                                {agent.state === "streaming"
-                                    ? "Running"
-                                    : agent.state === "blocked"
-                                        ? "REVIEW"
-                                        : agent.state}
-                            </span>
-                        </button>
-                    ))
-                )}
-            </div>
-
-            {/* Projects Section */}
-            <div className="pp-header">
-                <span className="pp-title">PROJECTS</span>
             </div>
 
             <div className="pp-tree">
@@ -146,30 +117,36 @@ export function ProjectPane({
                 )}
             </div>
 
-            {/* Bottom Area: Health + Profile */}
-            <div className="pp-bottom">
-                <div className="pp-health">
-                    <div className="pp-health-row">
-                        <span>Daemon</span>
-                        <span className={`pp-health-status ${isConnected ? "pp-status-online" : "pp-status-offline"}`}>
-                            <span className="pp-health-dot" />
-                            {isConnected ? `${connectionHost}:${connectionPort}` : "OFFLINE"}
-                        </span>
+            {/* Bottom: redesign-9 health block */}
+            <div className="pp-health-block">
+                <div className="pp-health-row">
+                    <span>Daemon</span>
+                    <div className={`pp-h-server ${isConnected ? "" : "pp-h-offline"}`}>
+                        <span className="pp-health-dot" />
+                        {isConnected ? "ONLINE" : "OFFLINE"}
                     </div>
                 </div>
-                <a
-                    className="pp-user-profile"
-                    href="https://accounts.optalocal.com"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                >
-                    <div className="pp-avatar">M</div>
-                    <div className="pp-user-info">
-                        <span className="pp-user-name">Matthew Byrden</span>
-                        <span className="pp-user-team">Opta Local Pro</span>
-                    </div>
-                </a>
+                <div className="pp-health-row">
+                    <span>LMX Engine</span>
+                    <span className="pp-h-perf">—</span>
+                </div>
+                <div className="pp-health-row pp-health-model">
+                    <span>Loaded</span>
+                    <span className="pp-m-pill">—</span>
+                </div>
             </div>
+            <a
+                className="pp-user-profile"
+                href="https://accounts.optalocal.com"
+                target="_blank"
+                rel="noopener noreferrer"
+            >
+                <div className="pp-avatar">M</div>
+                <div className="pp-user-info">
+                    <span className="pp-user-name">Matthew Byrden</span>
+                    <span className="pp-user-team">Opta Local Pro</span>
+                </div>
+            </a>
         </aside>
     );
 }

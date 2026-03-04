@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T04:29:05.630Z",
+  "generatedAt": "2026-03-04T04:56:05.893Z",
   "source": {
     "desktopRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal",
     "cliRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
@@ -48,6 +48,7 @@
       "serve.*",
       "sessions.*",
       "update.run",
+      "vault.*",
       "version.check"
     ],
     "hasOperationCatalogParitySignal": true,
@@ -72,9 +73,9 @@
       },
       {
         "command": "browser",
-        "status": "missing",
+        "status": "covered",
         "required": true,
-        "rationale": "No parity mapping found for this command family."
+        "rationale": "Browser runtime and host controls are exposed through daemon-backed browser.* operations."
       },
       {
         "command": "ceo-bench",
@@ -228,9 +229,9 @@
       },
       {
         "command": "vault",
-        "status": "missing",
+        "status": "covered",
         "required": true,
-        "rationale": "No parity mapping found for this command family."
+        "rationale": "Vault sync workflows are exposed through daemon-backed vault.* operations."
       },
       {
         "command": "version",
@@ -240,13 +241,12 @@
       }
     ],
     "commandStatusCounts": {
-      "covered": 28,
-      "missing": 2,
+      "covered": 30,
       "adapted": 1
     },
     "operationScopeCoverage": {
-      "totalCliOperations": 81,
-      "scopedMatches": 81,
+      "totalCliOperations": 86,
+      "scopedMatches": 86,
       "unmatched": []
     }
   },
@@ -276,6 +276,7 @@
       "version.check",
       "completions.generate",
       "daemon.*",
+      "browser.*",
       "mcp.*",
       "serve.*",
       "sessions.*",
@@ -286,20 +287,15 @@
       "ceo.benchmark",
       "apps.*",
       "models.*",
+      "vault.*",
       "keychain.*"
     ],
     "missingRequiredSessionModes": [],
     "missingRequiredOverrideKeys": [],
     "missingRequiredScopes": [],
-    "missingRequiredCommands": [
-      "browser",
-      "vault"
-    ],
-    "requiredFailures": [
-      "command:browser",
-      "command:vault"
-    ],
-    "pass": false
+    "missingRequiredCommands": [],
+    "requiredFailures": [],
+    "pass": true
   },
   "serverStance": {
     "status": "adapted_via_daemon_and_serve",

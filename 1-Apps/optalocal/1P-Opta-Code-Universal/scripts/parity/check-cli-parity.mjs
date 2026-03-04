@@ -37,6 +37,7 @@ const REQUIRED_CLI_OPERATION_SCOPES = [
   "version.check",
   "completions.generate",
   "daemon.*",
+  "browser.*",
   "mcp.*",
   "serve.*",
   "sessions.*",
@@ -47,6 +48,7 @@ const REQUIRED_CLI_OPERATION_SCOPES = [
   "ceo.benchmark",
   "apps.*",
   "models.*",
+  "vault.*",
   "keychain.*",
 ];
 
@@ -113,6 +115,11 @@ const COMMAND_STATUS_MAP = {
       "Server lifecycle is represented via dedicated System Control Plane daemon/serve operations and daemon panel.",
   },
   daemon: { status: "covered", required: true, rationale: "Dedicated daemon panel + daemon.* operations." },
+  browser: {
+    status: "covered",
+    required: true,
+    rationale: "Browser runtime and host controls are exposed through daemon-backed browser.* operations.",
+  },
   doctor: { status: "covered", required: true, rationale: "doctor operation available via CLI Operations page." },
   version: { status: "covered", required: true, rationale: "version.check operation available." },
   completions: {
@@ -121,6 +128,11 @@ const COMMAND_STATUS_MAP = {
     rationale: "completions.generate available via CLI Operations page.",
   },
   keychain: { status: "covered", required: true, rationale: "keychain.* operations available." },
+  vault: {
+    status: "covered",
+    required: true,
+    rationale: "Vault sync workflows are exposed through daemon-backed vault.* operations.",
+  },
 };
 
 function readUtf8(filePath) {

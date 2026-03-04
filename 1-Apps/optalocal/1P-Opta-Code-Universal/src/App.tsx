@@ -169,7 +169,8 @@ function App() {
 
   const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
-  const { status: browserLiveHostStatus, getSlotForSession } = useBrowserLiveHost();
+  const { status: browserLiveHostStatus, getSlotForSession } =
+    useBrowserLiveHost(connection);
 
   const activeSession = useMemo(
     () =>
@@ -688,39 +689,52 @@ function App() {
           className="app-shell-body"
           aria-hidden={palette.isOpen ? "true" : undefined}
         >
-          {/* V1 Topbar */}
+          {/* V1 Topbar — redesign-9: logo + Accounts only, no search */}
           <header className="v1-topbar">
             <div className="v1-top-left">
-              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg">
-                <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" />
-                <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
-                <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
-              </svg>
-              <span className="v1-logo-text">OPTA CODE</span>
+              <div className="v1-logo">
+                <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg">
+                  <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" />
+                  <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
+                  <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                <span className="v1-logo-text">OPTA CODE</span>
+              </div>
             </div>
-
-            <div className="v1-top-center">
-              <button type="button" className="v1-global-cmd" onClick={palette.open}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /></svg>
-                <span>Search or run CLI tool...</span>
-                <span className="v1-cmd-key">⌘ K</span>
-              </button>
-            </div>
-
             <div className="v1-top-right">
               <div className="v1-app-btn-group">
-                <button type="button" className="v1-app-btn" onClick={() => setActivePage("models")}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-neon-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                    <line x1="6" y1="6" x2="6.01" y2="6" />
-                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                <button type="button" className="v1-app-btn" onClick={() => openSettings("connection")}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
-                  <span>LMX ROUTER</span>
+                  <span>ACCOUNTS</span>
                 </button>
               </div>
             </div>
           </header>
+
+          {/* V1 Agent Bar — horizontal strip above body */}
+          {Object.values(streamingBySession).some(Boolean) && (
+            <div className="v1-agent-bar">
+              <span className="v1-agent-label">AGENTS</span>
+              {sessions
+                .filter((s) => streamingBySession[s.sessionId])
+                .map((s) => (
+                  <button
+                    key={s.sessionId}
+                    type="button"
+                    className="v1-agent-pill"
+                    onClick={() => { setActiveSessionId(s.sessionId); setActivePage("sessions"); }}
+                  >
+                    <span className="v1-agent-dot" />
+                    {s.title || s.sessionId.slice(0, 8)}
+                    {" "}
+                    <span style={{ opacity: 0.6 }}>[{s.workspace}]</span>
+                  </button>
+                ))}
+            </div>
+          )}
 
           {/* V1 3-Column Layout */}
           <div className="v1-body">
@@ -796,12 +810,18 @@ function App() {
                 ) : (
                   /* Default: Sessions view */
                   <>
-                    {/* No session: show brand splash + composer only */}
                     {!activeSessionId ? (
                       <>
+                        {/* Ctrl+S hint */}
+                        <div className="v1-chat-header">
+                          Try pressing <b>Ctrl+S</b>
+                        </div>
                         <div className="v1-branding">
                           <div className="v1-brand-text">OPTA</div>
                           <div className="v1-brand-sub">Code Environment</div>
+                        </div>
+                        <div className="v1-messages">
+                          <div className="v1-empty-msg">No messages yet. Select a project and start a task.</div>
                         </div>
                         <Composer
                           value={composerDraft}
@@ -815,7 +835,6 @@ function App() {
                         />
                       </>
                     ) : (
-                      /* Active session: show timeline + export + composer */
                       <>
                         <div className="v1-timeline-area">
                           {timelineItems.length > 0 && (

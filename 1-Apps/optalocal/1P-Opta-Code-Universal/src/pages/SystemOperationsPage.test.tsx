@@ -50,7 +50,7 @@ describe("SystemOperationsPage", () => {
         "completions.generate",
         "daemon.*",
         "serve.*",
-        "browser.host",
+        "browser.*",
         "init.run",
         "update.run",
         "onboard.apply",

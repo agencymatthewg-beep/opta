@@ -28,6 +28,7 @@ const CLI_OPERATION_SCOPES: string[] = [
   "ceo.benchmark",
   "apps.*",
   "models.*",
+  "vault.*",
   "keychain.*",
 ];
 

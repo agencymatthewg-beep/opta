@@ -5627,8 +5627,1167 @@ button.active,
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   V1 — BLENDED MODULAR WORKSPACE DESIGN
+   REDESIGN-9 — COMPLETE FAITHFUL PORT
+   All styles, animations, and tokens ported directly from
+   design-prototypes/redesign-9-opta-code-branding.html
    ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Keyframe Animations ────────────────────────────────────────────────── */
+
+@keyframes r9-pulse {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes r9-wiggle {
+  0% {
+    transform: rotate(-0.5deg);
+  }
+
+  100% {
+    transform: rotate(0.5deg);
+  }
+}
+
+/* ── Full-Viewport App Shell ────────────────────────────────────────────── */
+
+.app-shell {
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-shell::before {
+  content: none;
+}
+
+.app-shell-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
+}
+
+/* ── Ambient Background Blobs ───────────────────────────────────────────── */
+
+.v1-ambient {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.v1-blob {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.12;
+}
+
+.v1-blob-1 {
+  background: var(--opta-primary-glow);
+  top: -100px;
+  right: -100px;
+}
+
+.v1-blob-2 {
+  background: var(--opta-neon-cyan);
+  bottom: -200px;
+  left: 10%;
+}
+
+/* ── Topbar ─────────────────────────────────────────────────────────────── */
+
+.v1-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  height: 50px;
+  background: rgba(9, 9, 11, 0.6);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 10;
+}
+
+.v1-top-left {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Logo: icon + text side by side, matches redesign-9 exactly */
+.v1-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: var(--opta-text-primary);
+  font-family: "Sora", sans-serif;
+}
+
+.v1-logo-svg {
+  filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.4));
+}
+
+.v1-logo-text {
+  font-family: "Sora", sans-serif;
+  font-weight: 700;
+  letter-spacing: 2px;
+  font-size: 0.8rem;
+  color: var(--opta-text-primary);
+}
+
+.v1-top-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--opta-text-muted);
+}
+
+.v1-app-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  padding-left: 1rem;
+}
+
+.v1-app-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: transparent;
+  border: 1px solid transparent;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--opta-text-primary);
+}
+
+.v1-app-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+.v1-app-btn svg {
+  filter: drop-shadow(0 0 4px rgba(168, 85, 247, 0.3));
+}
+
+.v1-app-btn span {
+  font-family: "Sora", sans-serif;
+  font-size: 0.7rem;
+  color: var(--opta-text-secondary);
+  font-weight: 600;
+}
+
+/* ── Agent Bar — horizontal strip above body ────────────────────────────── */
+
+.v1-agent-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 1rem;
+  height: 36px;
+  background: rgba(9, 9, 11, 0.4);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  flex-shrink: 0;
+  position: relative;
+  z-index: 9;
+}
+
+.v1-agent-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--opta-text-muted);
+  margin-right: 0.5rem;
+  font-family: "Sora", sans-serif;
+  text-transform: uppercase;
+}
+
+.v1-agent-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.65rem;
+  font-family: "JetBrains Mono", monospace;
+  background: rgba(34, 197, 94, 0.06);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  color: var(--opta-text-secondary);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.v1-agent-pill:hover {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.v1-agent-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--opta-neon-green);
+  box-shadow: 0 0 6px var(--opta-neon-green);
+  animation: r9-pulse 1.5s infinite;
+  flex-shrink: 0;
+}
+
+/* ── V1 Body — 3-Column Flex ────────────────────────────────────────────── */
+
+.v1-body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Center Container ───────────────────────────────────────────────────── */
+
+.v1-center {
+  flex: 1;
+  position: relative;
+  min-width: 400px;
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  overflow: hidden;
+}
+
+/* ── Chat Pane — absolute fill with fade/scale transition ───────────────── */
+
+.v1-chat-pane {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transition:
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v1-chat-hidden {
+  opacity: 0;
+  transform: scale(0.97);
+  pointer-events: none;
+}
+
+/* Ctrl+S hint above branding */
+.v1-chat-header {
+  position: absolute;
+  top: 1rem;
+  left: 1.25rem;
+  z-index: 10;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: var(--opta-text-muted);
+  opacity: 0.6;
+}
+
+.v1-chat-header b {
+  color: var(--opta-text-secondary);
+}
+
+/* ── Timeline / Messages area ───────────────────────────────────────────── */
+
+.v1-timeline-area {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 0 1.5rem;
+}
+
+.v1-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  justify-content: flex-end;
+}
+
+.v1-empty-msg {
+  text-align: center;
+  font-family: "JetBrains Mono", monospace;
+  color: var(--opta-text-muted);
+  font-size: 0.75rem;
+  padding-bottom: 2rem;
+}
+
+/* ── Retro Branding ─────────────────────────────────────────────────────── */
+
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+.v1-branding {
+  padding: 3rem 0 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.v1-brand-text {
+  font-family: "Press Start 2P", monospace;
+  font-size: 4.5rem;
+  color: var(--opta-primary-glow);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  /* Layered multi-stroke pixel shadow — exact from redesign-9 */
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 var(--opta-primary-glow),
+    5px 5px 0 var(--opta-primary-glow),
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 var(--opta-primary-glow),
+    10px 10px 0 var(--opta-primary-glow);
+  filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.3));
+  margin-bottom: 2rem;
+}
+
+.v1-brand-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.85rem;
+  color: var(--opta-text-muted);
+  letter-spacing: 0.5em;
+  text-transform: uppercase;
+  font-weight: 600;
+}
+
+/* ── Settings Overlay — in-place Ctrl+S transition ─────────────────────── */
+
+.v1-settings-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  padding: 3rem;
+  background: rgba(9, 9, 11, 0.85);
+  -webkit-backdrop-filter: blur(32px);
+  backdrop-filter: blur(32px);
+  z-index: 20;
+  opacity: 0;
+  transform: scale(1.03);
+  pointer-events: none;
+  transition:
+    opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.v1-settings-overlay.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+/* Settings is always visible (rendered conditionally in React) */
+.v1-settings-overlay {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.settings-view {
+  padding: 0;
+}
+
+.settings-view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3rem;
+}
+
+.settings-view-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--opta-text-primary);
+}
+
+.settings-view-hint {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: var(--opta-text-muted);
+  padding: 0.3rem 0.6rem;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 4px;
+}
+
+.settings-view-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1.5rem;
+  max-width: 1000px;
+}
+
+.settings-view-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 2rem 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  color: var(--opta-text-primary);
+}
+
+.settings-view-card svg {
+  color: var(--opta-text-muted);
+  transition: all 0.3s;
+  width: 40px;
+  height: 40px;
+}
+
+.settings-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--opta-text-secondary);
+  transition: color 0.3s;
+}
+
+.settings-card-desc {
+  font-size: 0.75rem;
+  color: var(--opta-text-muted);
+  line-height: 1.5;
+}
+
+.settings-view-card:hover {
+  transform: translateY(-4px);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+/* Per-card accent colors matching redesign-9 exactly */
+.settings-view-card.c-general:hover {
+  border-color: rgba(168, 85, 247, 0.4);
+  box-shadow: 0 10px 30px rgba(168, 85, 247, 0.1);
+}
+
+.settings-view-card.c-general:hover svg {
+  color: var(--opta-primary-glow);
+  filter: drop-shadow(0 0 8px var(--opta-primary-glow));
+  transform: scale(1.1);
+}
+
+.settings-view-card.c-general:hover .settings-card-title {
+  color: var(--opta-text-primary);
+}
+
+.settings-view-card.c-conn:hover {
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 10px 30px rgba(34, 197, 94, 0.1);
+}
+
+.settings-view-card.c-conn:hover svg {
+  color: var(--opta-neon-green);
+  filter: drop-shadow(0 0 8px var(--opta-neon-green));
+  transform: scale(1.1);
+}
+
+.settings-view-card.c-conn:hover .settings-card-title {
+  color: var(--opta-text-primary);
+}
+
+.settings-view-card.c-intel:hover {
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.1);
+}
+
+.settings-view-card.c-intel:hover svg {
+  color: var(--opta-neon-cyan);
+  filter: drop-shadow(0 0 8px var(--opta-neon-cyan));
+  transform: scale(1.1);
+}
+
+.settings-view-card.c-intel:hover .settings-card-title {
+  color: var(--opta-text-primary);
+}
+
+.settings-view-card.c-ui:hover {
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 10px 30px rgba(236, 72, 153, 0.1);
+}
+
+.settings-view-card.c-ui:hover svg {
+  color: #ec4899;
+  filter: drop-shadow(0 0 8px #ec4899);
+  transform: scale(1.1);
+}
+
+.settings-view-card.c-ui:hover .settings-card-title {
+  color: var(--opta-text-primary);
+}
+
+/* ── Project Pane (Left) ────────────────────────────────────────────────── */
+
+.project-pane {
+  width: 260px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: rgba(24, 24, 27, 0.3);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  position: relative;
+}
+
+.pp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pp-title {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--opta-text-muted);
+  text-transform: uppercase;
+  font-family: "Sora", sans-serif;
+}
+
+.pp-icon-btn {
+  background: none;
+  border: none;
+  color: var(--opta-text-muted);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: color 0.2s;
+}
+
+.pp-icon-btn:hover {
+  color: var(--opta-text-primary);
+}
+
+.pp-tree {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+/* Tree items — exact from redesign-9 */
+.pp-workspace {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 1rem 0.3rem 2.2rem;
+  font-size: 0.75rem;
+  color: var(--opta-text-secondary);
+}
+
+.pp-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 1rem;
+  cursor: pointer;
+}
+
+.pp-ws-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pp-ws-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.pp-ws-name {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.pp-session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem 0.3rem 3rem;
+  font-size: 0.75rem;
+  color: var(--opta-text-muted);
+  border-left: 2px solid transparent;
+  margin-left: 0.5rem;
+  border-radius: 0 4px 4px 0;
+  cursor: pointer;
+  background: none;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  width: 100%;
+  text-align: left;
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.pp-session-item:hover {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--opta-text-secondary);
+}
+
+.pp-session-item.active {
+  background: rgba(168, 85, 247, 0.12);
+  color: var(--opta-primary-glow);
+  border-left-color: var(--opta-primary-glow);
+}
+
+.pp-session-status {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.pp-session-status.streaming {
+  background: var(--opta-neon-green);
+  box-shadow: 0 0 6px var(--opta-neon-green);
+  animation: r9-pulse 1.5s infinite;
+}
+
+.pp-session-status.blocked {
+  background: var(--opta-neon-amber);
+  box-shadow: 0 0 6px var(--opta-neon-amber);
+}
+
+.pp-empty {
+  padding: 1rem;
+  color: var(--opta-text-muted);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+/* ── ProjectPane Bottom Health Block — redesign-9 ───────────────────────── */
+
+.pp-health-block {
+  padding: 1rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.pp-health-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: var(--opta-text-secondary);
+}
+
+.pp-h-server {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--opta-neon-green);
+}
+
+.pp-h-server .pp-health-dot,
+.pp-health-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--opta-neon-green);
+  box-shadow: 0 0 4px var(--opta-neon-green);
+  animation: r9-pulse 2s infinite;
+  flex-shrink: 0;
+}
+
+.pp-h-offline {
+  color: var(--opta-neon-red) !important;
+}
+
+.pp-h-offline .pp-health-dot {
+  background: var(--opta-neon-red) !important;
+  box-shadow: 0 0 4px var(--opta-neon-red) !important;
+  animation: none;
+}
+
+.pp-h-perf {
+  color: var(--opta-neon-cyan);
+}
+
+.pp-m-pill {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: var(--opta-primary-glow);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+/* ── User Profile Card ──────────────────────────────────────────────────── */
+
+.pp-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  text-decoration: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  transition: background 0.2s;
+}
+
+.pp-user-profile:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.pp-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: var(--opta-primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.pp-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.pp-user-name {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pp-user-team {
+  font-size: 0.65rem;
+  color: var(--opta-text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Right Pane (Widget Grid) ───────────────────────────────────────────── */
+
+.widget-pane {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(9, 9, 11, 0.2);
+  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(24px);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s;
+}
+
+.widget-pane.collapsed {
+  width: 0;
+  border-left: none;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.wp-controls {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.75rem;
+}
+
+.btn-edit,
+.wp-edit-btn {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--opta-text-secondary);
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  font-family: "Sora", sans-serif;
+}
+
+.btn-edit:hover,
+.wp-edit-btn:hover {
+  border-color: var(--opta-primary-glow);
+  color: var(--opta-primary-glow);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.wp-grid {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0 0.75rem 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: min-content;
+  gap: 0.75rem;
+  align-content: start;
+}
+
+/* Widget tiles */
+.wp-tile {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Editing mode — wiggle + dashed violet border */
+.wp-grid.editing .wp-tile {
+  border: 1px dashed rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.03);
+  cursor: grab;
+  animation: r9-wiggle 0.4s infinite alternate ease-in-out;
+}
+
+.wp-grid.editing .wp-tile:nth-child(even) {
+  animation-direction: alternate-reverse;
+}
+
+/* Size variants */
+.wp-tile.size-m {
+  grid-column: span 2;
+}
+
+.wp-tile.size-t {
+  grid-column: span 2;
+  grid-row: span 2;
+  min-height: 220px;
+}
+
+.wp-tile.size-s {
+  grid-column: span 1;
+}
+
+/* Remove button — only visible in edit mode */
+.wp-remove-btn {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #09090b;
+  border: 1px solid var(--opta-text-muted);
+  color: var(--opta-text-secondary);
+  font-size: 10px;
+  font-weight: bold;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.wp-grid.editing .wp-remove-btn {
+  display: flex;
+}
+
+.wp-remove-btn:hover {
+  border-color: var(--opta-neon-red);
+  color: var(--opta-neon-red);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+/* Add slot — only visible in edit mode */
+.wp-add-slot {
+  display: none;
+  border: 1px dashed rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  min-height: 80px;
+  align-items: center;
+  justify-content: center;
+  color: var(--opta-text-muted);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  grid-column: span 2;
+}
+
+.wp-grid.editing .wp-add-slot {
+  display: flex;
+}
+
+.wp-add-slot:hover {
+  border-color: var(--opta-primary-glow);
+  color: var(--opta-primary-glow);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+/* Widget inner: header + content */
+.wp-tile-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.wp-tile-title {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--opta-text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: "Sora", sans-serif;
+}
+
+.wp-tile-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--opta-text-secondary);
+}
+
+/* ATPO widget items */
+.atpo-phase {
+  color: var(--opta-text-secondary);
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.atpo-active {
+  color: var(--opta-primary-glow);
+  background: rgba(168, 85, 247, 0.1);
+  padding: 0.35rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.atpo-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--opta-primary-glow);
+  box-shadow: 0 0 6px var(--opta-primary-glow);
+  flex-shrink: 0;
+}
+
+.wp-progress-bar {
+  height: 3px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 2px;
+  margin-top: 0.4rem;
+  overflow: hidden;
+}
+
+.wp-progress-fill {
+  height: 100%;
+  background: var(--opta-primary-glow);
+  border-radius: 2px;
+}
+
+/* CLI Stream widget */
+.wp-cli-body {
+  flex: 1;
+  overflow-y: auto;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  color: rgba(255, 255, 255, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.wp-cli-prompt-row {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.wp-cli-prompt-char {
+  color: var(--opta-neon-green);
+}
+
+/* ── Session Export Bar ─────────────────────────────────────────────────── */
+
+.session-export-bar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0.5rem 0 0;
+}
+
+.session-export-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--opta-text-muted);
+  font-size: 0.65rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 5px;
+  cursor: pointer;
+  font-family: "Sora", sans-serif;
+  transition: all 0.2s;
+}
+
+.session-export-btn:hover {
+  color: var(--opta-text-secondary);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+/* ── Workspace Rail ─────────────────────────────────────────────────────── */
+
+.workspace-rail {
+  width: 48px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0;
+  gap: 0.25rem;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(9, 9, 11, 0.4);
+}
+
+.wr-item {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  color: var(--opta-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.7rem;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 700;
+  text-decoration: none;
+  position: relative;
+}
+
+.wr-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: var(--opta-text-secondary);
+}
+
+.wr-item.active {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.3);
+  color: var(--opta-primary-glow);
+}
+
+.wr-badge {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 14px;
+  height: 14px;
+  background: var(--opta-neon-amber);
+  border-radius: 50%;
+  font-size: 0.55rem;
+  color: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+}
+
+.wr-separator {
+  width: 24px;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.25rem 0;
+}
+
+/* ── Spinner / Loading ──────────────────────────────────────────────────── */
+.spin {
+  animation: r9-spin 1s linear infinite;
+}
+
+@keyframes r9-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Legacy alias kept for compatibility */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+══════════════════════════════════════════════════════════════════════════ */
 
 /* Ambient Background Blobs */
 .v1-ambient {

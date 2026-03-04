@@ -4,11 +4,42 @@ import {
   type BrowserLiveHostStatus,
   type BrowserLiveHostSlot,
 } from "../lib/browserLiveHostClient";
+import { daemonClient } from "../lib/daemonClient";
+import type { DaemonConnectionOptions } from "../types";
 
 const FAST_POLL_INTERVAL_MS = 3000;
 const SLOW_POLL_INTERVAL_MS = 30000;
 
-export function useBrowserLiveHost() {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isBrowserLiveHostStatus(value: unknown): value is BrowserLiveHostStatus {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.running === "boolean" &&
+    Array.isArray(value.safePorts) &&
+    Array.isArray(value.slots) &&
+    typeof value.requiredPortCount === "number" &&
+    typeof value.maxSessionSlots === "number"
+  );
+}
+
+async function fetchStatusFromDaemon(
+  connection: DaemonConnectionOptions,
+): Promise<BrowserLiveHostStatus | null> {
+  try {
+    const response = await daemonClient.runOperation(connection, "browser.host", {
+      input: { action: "status" },
+    });
+    if (!response.ok) return null;
+    return isBrowserLiveHostStatus(response.result) ? response.result : null;
+  } catch {
+    return null;
+  }
+}
+
+export function useBrowserLiveHost(connection?: DaemonConnectionOptions) {
   const [status, setStatus] = useState<BrowserLiveHostStatus | null>(null);
   const inFlightRef = useRef(false);
   const nextPollDelayRef = useRef(FAST_POLL_INTERVAL_MS);
@@ -17,7 +48,10 @@ export function useBrowserLiveHost() {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     try {
-      const activeStatus = await fetchBrowserLiveHostStatus();
+      const daemonStatus = connection
+        ? await fetchStatusFromDaemon(connection)
+        : null;
+      const activeStatus = daemonStatus ?? (await fetchBrowserLiveHostStatus());
       setStatus(activeStatus);
       nextPollDelayRef.current = activeStatus?.running
         ? FAST_POLL_INTERVAL_MS
@@ -28,7 +62,7 @@ export function useBrowserLiveHost() {
     } finally {
       inFlightRef.current = false;
     }
-  }, []);
+  }, [connection]);
 
   useEffect(() => {
     let cancelled = false;
