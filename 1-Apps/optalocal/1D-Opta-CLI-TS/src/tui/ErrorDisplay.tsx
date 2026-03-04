@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { Box, Text } from 'ink';
+import { TUI_COLORS } from './palette.js';
 
 export interface ErrorDisplayProps {
   message: string;
@@ -25,7 +26,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('econnrefused') || lower.includes('econnreset') || lower.includes('fetch failed')) {
     return {
       label: 'Connection Error',
-      color: 'red',
+      color: TUI_COLORS.danger,
       suggestion: 'Run `opta doctor` to diagnose, or check if LMX is running',
     };
   }
@@ -33,7 +34,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('timeout') || lower.includes('etimedout') || lower.includes('aborted')) {
     return {
       label: 'Timeout',
-      color: 'yellow',
+      color: TUI_COLORS.warning,
       suggestion: 'The server may be overloaded. Try again or check `opta status`',
     };
   }
@@ -41,7 +42,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('cannot find module') || lower.includes('err_module_not_found') || lower.includes('cannot require module')) {
     return {
       label: 'Build Error',
-      color: 'red',
+      color: TUI_COLORS.danger,
       suggestion: 'The compiled dist is stale. Run `npm run build` then restart Opta',
     };
   }
@@ -49,7 +50,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('permission denied') || lower.includes('permission')) {
     return {
       label: 'Permission Denied',
-      color: 'yellow',
+      color: TUI_COLORS.warning,
       suggestion: 'Check tool permissions with `opta config list`',
     };
   }
@@ -57,7 +58,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('api key') || lower.includes('unauthorized') || lower.includes('401') || lower.includes('403')) {
     return {
       label: 'Authentication Error',
-      color: 'red',
+      color: TUI_COLORS.danger,
       suggestion: 'Check your API key configuration',
     };
   }
@@ -65,7 +66,7 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('rate limit') || lower.includes('429') || lower.includes('too many')) {
     return {
       label: 'Rate Limited',
-      color: 'yellow',
+      color: TUI_COLORS.warning,
       suggestion: 'Wait a moment and try again',
     };
   }
@@ -73,14 +74,14 @@ function categorizeError(message: string): ErrorCategory {
   if (lower.includes('model') && (lower.includes('not found') || lower.includes('404'))) {
     return {
       label: 'Model Not Found',
-      color: 'red',
+      color: TUI_COLORS.danger,
       suggestion: 'Check available models with `opta models`',
     };
   }
 
   return {
     label: 'Error',
-    color: 'red',
+    color: TUI_COLORS.danger,
     suggestion: '',
   };
 }
