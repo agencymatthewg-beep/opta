@@ -165,6 +165,7 @@ async function resolvePlatformAvailability(
       available: true,
       label: labelFor(target.fallbackUrl, true),
       source: "fallback",
+      version: "2.0",
     };
   }
 
