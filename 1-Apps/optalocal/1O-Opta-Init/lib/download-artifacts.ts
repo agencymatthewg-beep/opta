@@ -17,6 +17,7 @@ const GITHUB_RELEASES = "https://github.com/agencymatthewg-beep/opta/releases/do
 
 // Latest Opta Init Manager — stable v0.6.1 (2026-03-04)
 const INIT_TAG = "opta-init-manager-stable-v0.6.1";
+const INIT_VERSION = "0.6.1";
 const INIT_MACOS_DMG = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_aarch64.dmg`;
 // x64 DMG also available for Intel Macs
 const INIT_MACOS_DMG_X64 = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64.dmg`;
@@ -24,6 +25,7 @@ const INIT_WINDOWS_NSIS = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64-
 
 // Latest Opta CLI — v0.5.0-alpha.15 (2026-03-01)
 const CLI_TAG = "v0.5.0-alpha.15";
+const CLI_VERSION = "0.5.0-alpha.15";
 const CLI_NPM_TGZ = `${GITHUB_RELEASES}/${CLI_TAG}/opta-cli-npm.tgz`;
 
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
@@ -44,6 +46,7 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       },
     },
   },
+
   cli: {
     name: "Opta CLI (npm package)",
     description:
@@ -137,7 +140,8 @@ function isInstallerAsset(url: string) {
 }
 
 async function resolvePlatformAvailability(
-  target: ReleaseTarget | null
+  target: ReleaseTarget | null,
+  fallbackVersion: string,
 ): Promise<DownloadAvailability> {
   if (!target) {
     return {
@@ -165,7 +169,7 @@ async function resolvePlatformAvailability(
       available: true,
       label: labelFor(target.fallbackUrl, true),
       source: "fallback",
-      version: "2.0",
+      version: fallbackVersion,
     };
   }
 
@@ -178,10 +182,16 @@ async function resolvePlatformAvailability(
 }
 
 export async function resolveDownloadAvailability(): Promise<DownloadAvailabilityMap> {
+  const versionMap: Record<string, string> = {
+    init: INIT_VERSION,
+    cli: CLI_VERSION,
+  };
+
   const entries = await Promise.all(
     Object.entries(DOWNLOAD_TARGETS).map(async ([key, target]) => {
-      const mac = await resolvePlatformAvailability(target.platforms.macos);
-      const windows = await resolvePlatformAvailability(target.platforms.windows);
+      const fallbackVersion = versionMap[key] ?? "";
+      const mac = await resolvePlatformAvailability(target.platforms.macos, fallbackVersion);
+      const windows = await resolvePlatformAvailability(target.platforms.windows, fallbackVersion);
 
       return [
         key,

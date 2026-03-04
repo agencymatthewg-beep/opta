@@ -69,13 +69,7 @@ export default function HomePage() {
                   href="https://learn.optalocal.com"
                   className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-primary/10 border border-primary/20 text-primary hover:text-white rounded-lg font-medium transition-all"
                 >
-                  User Guide ↗
-                </a>
-                <a
-                  href="https://learn.optalocal.com"
-                  className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-muted hover:text-text-secondary rounded-lg font-medium transition-all text-sm"
-                >
-                  Don&apos;t understand?
+                  User Guides ↗
                 </a>
               </div>
             </motion.div>
@@ -138,20 +132,20 @@ export default function HomePage() {
             <div className="pl-8 text-text-muted">&#9474;</div>
             <div className="text-text-secondary pl-4">
               <span className="text-neon-green">opta daemon</span>
-              <span className="text-text-muted ml-2">127.0.0.1:9999</span>
+              <span className="text-text-muted ml-2">127.0.0.1:&lt;port&gt;</span>
               <span className="text-text-muted ml-4"># Session orchestration</span>
             </div>
-            <div className="pl-8 text-text-muted">&#9474; HTTP v3 REST + WebSocket</div>
+            <div className="pl-8 text-text-muted">&#9474; HTTP v3 REST + WebSocket streaming</div>
             <div className="text-text-secondary pl-4">
               <span className="text-neon-amber">Opta LMX</span>
-              <span className="text-text-muted ml-2">localhost:1234</span>
-              <span className="text-text-muted ml-4"># MLX inference</span>
+              <span className="text-text-muted ml-2">192.168.x.x:1234</span>
+              <span className="text-text-muted ml-4"># MLX inference (LAN)</span>
             </div>
             <div className="pl-8 text-text-muted">&#9474; OpenAI-compatible API</div>
             <div className="text-text-secondary pl-4">
-              <span className="text-neon-purple">Opta Local Web</span>
-              <span className="text-text-muted ml-2">localhost:3004</span>
-              <span className="text-text-muted ml-4"># Dashboard + Chat</span>
+              <span className="text-neon-purple">Opta Code Desktop</span>
+              <span className="text-text-muted ml-2">Native + localhost:5173</span>
+              <span className="text-text-muted ml-4"># Connects via daemon</span>
             </div>
           </div>
         </section>
