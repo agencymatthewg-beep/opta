@@ -1,0 +1,91 @@
+{
+  "version": 1,
+  "websites": [
+    {
+      "key": "home",
+      "name": "Opta Home",
+      "domain": "optalocal.com",
+      "localUrl": "http://localhost:3000",
+      "healthPath": "/api/health",
+      "appPath": "1T-Opta-Home",
+      "statusServiceId": "local",
+      "purpose": "Primary ecosystem landing surface"
+    },
+    {
+      "key": "init",
+      "name": "Opta Init",
+      "domain": "init.optalocal.com",
+      "localUrl": "http://localhost:3001",
+      "healthPath": "/",
+      "appPath": "1O-Opta-Init",
+      "statusServiceId": "init",
+      "purpose": "Distribution + update metadata control plane"
+    },
+    {
+      "key": "lmx",
+      "name": "Opta LMX Dashboard",
+      "domain": "lmx.optalocal.com",
+      "localUrl": "http://localhost:3003",
+      "healthPath": "/",
+      "appPath": "1L-Opta-LMX-Dashboard",
+      "statusServiceId": "lmx-site",
+      "purpose": "Model management and inference operations surface"
+    },
+    {
+      "key": "accounts",
+      "name": "Opta Accounts",
+      "domain": "accounts.optalocal.com",
+      "localUrl": "http://localhost:3002",
+      "healthPath": "/api/health/supabase",
+      "appPath": "1R-Opta-Accounts",
+      "statusServiceId": "accounts",
+      "purpose": "Identity, session, and account access management"
+    },
+    {
+      "key": "status",
+      "name": "Opta Status",
+      "domain": "status.optalocal.com",
+      "localUrl": "http://localhost:3005",
+      "healthPath": "/",
+      "appPath": "1S-Opta-Status",
+      "statusServiceId": "status",
+      "purpose": "Public health and release-state visibility"
+    },
+    {
+      "key": "help",
+      "name": "Opta Help",
+      "domain": "help.optalocal.com",
+      "localUrl": "http://localhost:3006",
+      "healthPath": "/",
+      "appPath": "1U-Opta-Help",
+      "statusServiceId": "help",
+      "purpose": "Support docs and implementation references"
+    },
+    {
+      "key": "learn",
+      "name": "Opta Learn",
+      "domain": "learn.optalocal.com",
+      "localUrl": "http://localhost:3007",
+      "healthPath": "/",
+      "appPath": "1V-Opta-Learn",
+      "statusServiceId": "learn",
+      "purpose": "Guide inventory and learning pipeline"
+    },
+    {
+      "key": "admin",
+      "name": "Opta Admin",
+      "domain": "admin.optalocal.com",
+      "localUrl": "http://localhost:3008",
+      "healthPath": "/api/health",
+      "appPath": "1X-Opta-Admin",
+      "statusServiceId": "admin",
+      "purpose": "Private website operations cockpit"
+    }
+  ],
+  "syntheticStatusProbeServiceIds": [
+    "admin",
+    "lmx",
+    "lmx-site",
+    "daemon"
+  ]
+}

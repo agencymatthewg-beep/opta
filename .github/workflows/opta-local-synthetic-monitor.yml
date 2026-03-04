@@ -1,0 +1,152 @@
+name: Opta Local Synthetic Monitor
+
+on:
+  schedule:
+    - cron: "15 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthetic-monitor:
+    name: Run optalocal synthetic checks
+    runs-on: ubuntu-latest
+    env:
+      LATENCY_WARN_MS: ${{ vars.OPTA_MONITOR_LATENCY_WARN_MS }}
+      LATENCY_FAIL_MS: ${{ vars.OPTA_MONITOR_LATENCY_FAIL_MS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify website registry sync
+        run: |
+          set -euo pipefail
+          node 1-Apps/optalocal/scripts/sync-websites-registry.mjs --check
+
+      - name: Run synthetic monitor
+        id: monitor
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          args=(--json)
+          if [ -n "${LATENCY_WARN_MS:-}" ]; then
+            args+=(--warn-latency-ms "$LATENCY_WARN_MS")
+          fi
+          if [ -n "${LATENCY_FAIL_MS:-}" ]; then
+            args+=(--fail-latency-ms "$LATENCY_FAIL_MS")
+          fi
+          if [ -n "${LATENCY_WARN_MS:-}" ] || [ -n "${LATENCY_FAIL_MS:-}" ]; then
+            args+=(--latency-summary)
+          fi
+
+          node 1-Apps/optalocal/scripts/synthetic-web-health.mjs "${args[@]}" | tee synthetic-report.json
+
+      - name: Evaluate latency warnings
+        id: latency
+        if: always()
+        run: |
+          if [ ! -f synthetic-report.json ]; then
+            echo "warnings=0" >> "$GITHUB_OUTPUT"
+            echo "has_warnings=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          WARNINGS=$(node -e 'const fs=require("fs");try{const payload=JSON.parse(fs.readFileSync("synthetic-report.json","utf8"));process.stdout.write(String(payload.summary?.latencyWarnings ?? 0));}catch{process.stdout.write("0");}')
+          if [ "${WARNINGS}" -gt 0 ]; then
+            echo "has_warnings=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_warnings=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "warnings=${WARNINGS}" >> "$GITHUB_OUTPUT"
+
+      - name: Send failure alert
+        if: always() && steps.monitor.outcome == 'failure'
+        env:
+          OPTA_MONITOR_ALERT_WEBHOOK_URL: ${{ secrets.OPTA_MONITOR_ALERT_WEBHOOK_URL }}
+        run: |
+          if [ -z "${OPTA_MONITOR_ALERT_WEBHOOK_URL:-}" ]; then
+            echo "OPTA_MONITOR_ALERT_WEBHOOK_URL not set; skipping failure alert."
+            exit 0
+          fi
+
+          PAYLOAD=$(node - <<'NODE'
+          const fs = require('fs');
+          let summary = {};
+          try {
+            const report = JSON.parse(fs.readFileSync('synthetic-report.json', 'utf8'));
+            summary = report.summary ?? {};
+          } catch {
+            summary = {};
+          }
+          const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          const payload = {
+            level: 'error',
+            text: 'Opta synthetic monitor failed',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflow: process.env.GITHUB_WORKFLOW,
+            runUrl,
+            summary,
+          };
+          process.stdout.write(JSON.stringify(payload));
+          NODE
+          )
+
+          curl -sS -X POST "${OPTA_MONITOR_ALERT_WEBHOOK_URL}" \
+            -H "Content-Type: application/json" \
+            --data "${PAYLOAD}"
+
+      - name: Send latency warning alert
+        if: always() && steps.monitor.outcome == 'success' && steps.latency.outputs.has_warnings == 'true'
+        env:
+          OPTA_MONITOR_ALERT_WEBHOOK_URL: ${{ secrets.OPTA_MONITOR_ALERT_WEBHOOK_URL }}
+        run: |
+          if [ -z "${OPTA_MONITOR_ALERT_WEBHOOK_URL:-}" ]; then
+            echo "OPTA_MONITOR_ALERT_WEBHOOK_URL not set; skipping latency warning alert."
+            exit 0
+          fi
+
+          PAYLOAD=$(node - <<'NODE'
+          const fs = require('fs');
+          let summary = {};
+          let latency = {};
+          try {
+            const report = JSON.parse(fs.readFileSync('synthetic-report.json', 'utf8'));
+            summary = report.summary ?? {};
+            latency = report.latency ?? {};
+          } catch {
+            summary = {};
+            latency = {};
+          }
+          const runUrl = `${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`;
+          const payload = {
+            level: 'warning',
+            text: 'Opta synthetic monitor latency warning',
+            repository: process.env.GITHUB_REPOSITORY,
+            workflow: process.env.GITHUB_WORKFLOW,
+            runUrl,
+            summary,
+            latency,
+          };
+          process.stdout.write(JSON.stringify(payload));
+          NODE
+          )
+
+          curl -sS -X POST "${OPTA_MONITOR_ALERT_WEBHOOK_URL}" \
+            -H "Content-Type: application/json" \
+            --data "${PAYLOAD}"
+
+      - name: Upload synthetic report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-local-synthetic-report
+          path: synthetic-report.json
+          if-no-files-found: ignore
+
+      - name: Mark workflow as failed when monitor fails
+        if: steps.monitor.outcome == 'failure'
+        run: |
+          echo "Synthetic monitor reported a failure."
+          exit 1
