@@ -142,6 +142,17 @@ function App() {
   const [browserViewMode, setBrowserViewMode] =
     useState<BrowserViewMode>("default");
   const [designMode, setDesignMode] = useState("3");
+  const [deviceLabel, setDeviceLabel] = useState<string>(() => {
+    try { return localStorage.getItem("opta:deviceLabel") ?? "Workstation - Opta48"; }
+    catch { return "Workstation - Opta48"; }
+  });
+
+  // Persist deviceLabel to localStorage whenever it changes
+  const handleDeviceLabelChange = useCallback((label: string) => {
+    setDeviceLabel(label);
+    try { localStorage.setItem("opta:deviceLabel", label); } catch { /* noop */ }
+  }, []);
+
 
   const openSettings = useCallback((tab: SettingsTabId = "connection") => {
     setSettingsInitialTab(tab);
@@ -881,7 +892,7 @@ function App() {
                 setNotice(`New session created in "${ws}"`);
               }}
               deviceLabel={deviceLabel}
-              onDeviceLabelChange={setDeviceLabel}
+              onDeviceLabelChange={handleDeviceLabelChange}
             />
 
             {/* Center: Chat or Page Content */}
