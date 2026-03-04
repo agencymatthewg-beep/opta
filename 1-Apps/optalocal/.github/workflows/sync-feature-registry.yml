@@ -1,0 +1,61 @@
+name: Sync Feature Registry
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "optalocal-updates/**"
+      - ".github/workflows/sync-feature-registry.yml"
+  workflow_dispatch: # allow manual trigger
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    name: Update Status feature files from optalocal-updates
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install js-yaml
+        run: npm install js-yaml --no-save
+
+      - name: Run feature registry sync script
+        run: node scripts/sync-feature-registry.mjs
+
+      - name: Check for changes
+        id: changes
+        run: |
+          git diff --quiet || echo "has_changes=true" >> $GITHUB_OUTPUT
+
+      - name: Commit updated feature files
+        if: steps.changes.outputs.has_changes == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add 1S-Opta-Status/docs/features/
+          git commit -m "ci: Auto-sync feature registry from optalocal-updates [skip ci]"
+          git push
+
+      - name: Trigger Vercel redeploy — Opta Status
+        if: steps.changes.outputs.has_changes == 'true'
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_STATUS_HOOK: ${{ secrets.VERCEL_STATUS_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_STATUS_HOOK" ]; then
+            curl -X POST "$VERCEL_STATUS_HOOK"
+            echo "Triggered Opta Status Vercel deploy"
+          else
+            echo "VERCEL_STATUS_DEPLOY_HOOK not set — skipping Vercel trigger"
+          fi
