@@ -382,7 +382,6 @@ export function SettingsModal({
   const renderTabContent = () => {
     switch (activeTab) {
       case "connection":
-      case "connection":
         return (
           <motion.div
             key="connection"
