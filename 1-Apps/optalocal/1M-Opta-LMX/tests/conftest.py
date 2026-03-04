@@ -21,6 +21,12 @@ from opta_lmx.presets.manager import PresetManager
 from opta_lmx.router.strategy import TaskRouter
 
 
+@pytest.fixture(autouse=True)
+def _allow_local_models_for_tests(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent host-specific Opta48 local-model policy from breaking generic tests."""
+    monkeypatch.setenv("OPTA48_ALLOW_LOCAL_MODELS", "1")
+
+
 @pytest.fixture
 def config() -> LMXConfig:
     """Default test configuration."""

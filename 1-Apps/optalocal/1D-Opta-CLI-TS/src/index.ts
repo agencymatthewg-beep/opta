@@ -1349,7 +1349,43 @@ keychainCmd
     await runKeychainCommand('delete-opencode-zen');
   });
 
-// --- Global Error Handling ---
+// ── New providers added by Sync Vault ────────────────────────────────────────
+
+const NEW_PROVIDERS: Array<{ slug: string; label: string; envHint: string }> = [
+  { slug: 'github', label: 'GitHub Personal Access Token', envHint: 'GITHUB_TOKEN' },
+  { slug: 'vercel', label: 'Vercel API token', envHint: 'VERCEL_TOKEN' },
+  { slug: 'cloudflare', label: 'Cloudflare API token', envHint: 'CLOUDFLARE_API_TOKEN' },
+  { slug: 'perplexity', label: 'Perplexity API key', envHint: 'PERPLEXITY_API_KEY' },
+  { slug: 'tavily', label: 'Tavily API key', envHint: 'TAVILY_API_KEY' },
+  { slug: 'brave', label: 'Brave Search API key', envHint: 'BRAVE_API_KEY' },
+  { slug: 'exa', label: 'Exa API key', envHint: 'EXA_API_KEY' },
+  { slug: 'groq', label: 'Groq API key', envHint: 'GROQ_API_KEY' },
+  { slug: 'codex', label: 'Codex API key', envHint: 'CODEX_API_KEY' },
+  { slug: 'google', label: 'Google API key', envHint: 'GOOGLE_API_KEY' },
+  { slug: 'twitter', label: 'Twitter/X Bearer token', envHint: 'TWITTER_BEARER_TOKEN' },
+];
+
+for (const { slug, label, envHint } of NEW_PROVIDERS) {
+  keychainCmd
+    .command(`set-${slug} <key>`)
+    .description(`Store a ${label} in the OS keychain (env: ${envHint})`)
+    .action(async (key: string) => {
+      const { runKeychainCommand } = await import('./commands/keychain.js');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await runKeychainCommand(`set-${slug}` as any, key);
+    });
+
+  keychainCmd
+    .command(`delete-${slug}`)
+    .description(`Remove the ${label} from the OS keychain`)
+    .action(async () => {
+      const { runKeychainCommand } = await import('./commands/keychain.js');
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await runKeychainCommand(`delete-${slug}` as any);
+    });
+}
+
+
 
 program.parseAsync().catch((err: unknown) => {
   if (err instanceof ExitError) {

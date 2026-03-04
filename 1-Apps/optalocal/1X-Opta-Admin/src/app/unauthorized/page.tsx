@@ -1,3 +1,7 @@
+const ACCOUNTS_SIGN_IN_URL =
+  process.env.NEXT_PUBLIC_ACCOUNTS_SIGN_IN_URL?.trim() ||
+  'https://accounts.optalocal.com/login';
+
 export default function UnauthorizedPage() {
   return (
     <div className="flex h-screen w-full items-center justify-center bg-[#09090b] text-white">
@@ -10,7 +14,7 @@ export default function UnauthorizedPage() {
         </p>
         <div className="pt-4">
           <a
-            href="http://localhost:3002/login"
+            href={ACCOUNTS_SIGN_IN_URL}
             className="inline-block px-4 py-2 bg-white text-black font-medium rounded hover:bg-zinc-200 transition-colors"
           >
             Sign in via Accounts

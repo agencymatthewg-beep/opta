@@ -2,7 +2,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { AdminDashboardUI } from './components/AdminDashboardUI';
-import type { GuideManifestEntry, GuideRecord, GuideSection, GuidesManifest } from './lib/types';
+import { buildAdminOpsSnapshot } from './lib/adminOps';
+import type {
+  GuideManifestEntry,
+  GuideRecord,
+  GuideSection,
+  GuidesManifest,
+  PromotionPolicy,
+} from './lib/types';
 import { MANAGED_WEBSITES, checkManagedWebsiteHealth } from './lib/websites';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +18,8 @@ const OPTA_LEARN_DIR = path.resolve(process.cwd(), '../1V-Opta-Learn');
 const GUIDES_DIR = path.join(OPTA_LEARN_DIR, 'content/guides');
 const MANIFEST_PATH = path.join(OPTA_LEARN_DIR, 'public/guides-manifest.json');
 const LEARN_MANIFEST_URL = 'https://learn.optalocal.com/api/guides-manifest';
+const LEARN_GUIDES_URL = 'https://learn.optalocal.com/api/guides';
+const DEFAULT_PROMOTION_ALLOWED_SLUGS = ['cli'];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -87,6 +96,80 @@ function normalizeManifest(input: unknown): GuidesManifest {
   return { published, draft } as GuidesManifest;
 }
 
+function toGuideStatus(value: unknown): GuideRecord['status'] {
+  return value === 'verified' ? 'verified' : 'draft';
+}
+
+function parsePromotionPolicy(rawValue: string | undefined): PromotionPolicy {
+  const raw = (rawValue ?? '').trim();
+  if (!raw) {
+    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+  }
+
+  const allowed = new Set<string>();
+  let allowAll = false;
+  for (const token of raw.split(',')) {
+    const slug = token.trim().toLowerCase();
+    if (!slug) continue;
+    if (slug === '*' || slug === 'all') {
+      allowAll = true;
+      continue;
+    }
+    allowed.add(slug);
+  }
+
+  if (!allowAll && allowed.size === 0) {
+    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+  }
+  return { allowAll, allowedSlugs: Array.from(allowed) };
+}
+
+function toRemoteGuideRecord(
+  value: unknown,
+  statusBySlug: Map<string, GuideRecord['status']>
+): GuideRecord | null {
+  if (!isRecord(value)) return null;
+
+  const slug = toStringValue(value.slug);
+  const title = toStringValue(value.title);
+  if (!slug || !title) return null;
+
+  return {
+    slug,
+    title,
+    summary: toStringValue(value.summary, 'No summary available.'),
+    updatedAt: toOptionalStringValue(value.updatedAt),
+    app: toOptionalStringValue(value.app),
+    category: toOptionalStringValue(value.category),
+    sections: toSections(value.sections),
+    status: statusBySlug.get(slug) ?? toGuideStatus(value.status),
+    file: toOptionalStringValue(value.file),
+  };
+}
+
+async function readRemoteGuides(
+  statusBySlug: Map<string, GuideRecord['status']>
+): Promise<GuideRecord[]> {
+  try {
+    const response = await fetch(LEARN_GUIDES_URL, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const payload = await response.json();
+    if (!isRecord(payload) || !Array.isArray(payload.guides)) return [];
+
+    return payload.guides
+      .map((guide): GuideRecord | null => toRemoteGuideRecord(guide, statusBySlug))
+      .filter((guide): guide is GuideRecord => guide !== null);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`Remote guides fetch failed: ${message}`);
+    return [];
+  }
+}
+
 async function readGuidesManifest(): Promise<GuidesManifest> {
   if (fs.existsSync(MANIFEST_PATH)) {
     try {
@@ -117,8 +200,7 @@ async function getDynamicGuides(): Promise<GuideRecord[]> {
   const manifest = await readGuidesManifest();
   const manifestEntries: GuideManifestEntry[] = [...manifest.published, ...manifest.draft];
   const statusBySlug = new Map(manifestEntries.map((entry) => [entry.slug, entry.status]));
-
-  const guides: GuideRecord[] = [];
+  const guidesBySlug = new Map<string, GuideRecord>();
 
   if (fs.existsSync(GUIDES_DIR)) {
     const files = fs
@@ -130,7 +212,7 @@ async function getDynamicGuides(): Promise<GuideRecord[]> {
         const parsedGuide = parseGuideFile(fileName);
         if (!parsedGuide) continue;
 
-        guides.push({
+        guidesBySlug.set(parsedGuide.slug, {
           ...parsedGuide,
           status: statusBySlug.get(parsedGuide.slug) ?? 'draft',
         });
@@ -141,10 +223,16 @@ async function getDynamicGuides(): Promise<GuideRecord[]> {
     }
   }
 
-  const knownSlugs = new Set(guides.map((guide) => guide.slug));
+  const remoteGuides = await readRemoteGuides(statusBySlug);
+  for (const guide of remoteGuides) {
+    if (guidesBySlug.has(guide.slug)) continue;
+    guidesBySlug.set(guide.slug, guide);
+  }
+
+  const knownSlugs = new Set(guidesBySlug.keys());
   for (const entry of manifestEntries) {
     if (knownSlugs.has(entry.slug)) continue;
-    guides.push({
+    guidesBySlug.set(entry.slug, {
       slug: entry.slug,
       title: entry.title,
       summary: 'Guide metadata available in manifest. Open source file for full content.',
@@ -154,14 +242,17 @@ async function getDynamicGuides(): Promise<GuideRecord[]> {
     });
   }
 
+  const guides = Array.from(guidesBySlug.values());
   return guides.sort((a, b) => a.title.localeCompare(b.title));
 }
 
 export default async function AdminDashboard() {
-  const [guides, websiteStatus] = await Promise.all([
+  const [guides, websiteStatus, adminOps] = await Promise.all([
     getDynamicGuides(),
     Promise.all(MANAGED_WEBSITES.map((website) => checkManagedWebsiteHealth(website))),
+    buildAdminOpsSnapshot(),
   ]);
+  const promotionPolicy = parsePromotionPolicy(process.env.PROMOTION_ALLOWED_SLUGS);
 
   return (
     <main className="min-h-screen bg-void flex flex-col items-center pt-8 relative overflow-hidden admin-perimeter border-x-[3px] border-admin">
@@ -169,7 +260,12 @@ export default async function AdminDashboard() {
         RESTRICTED ADMIN ZONE
       </div>
 
-      <AdminDashboardUI initialGuides={guides} websites={websiteStatus} />
+      <AdminDashboardUI
+        initialGuides={guides}
+        websites={websiteStatus}
+        promotionPolicy={promotionPolicy}
+        adminOps={adminOps}
+      />
     </main>
   );
 }

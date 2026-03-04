@@ -19,13 +19,16 @@ const SERVICES: Record<
     // Health-only hostname for LMX. Legacy env is still accepted for compatibility.
     urlEnv: 'OPTA_LMX_HEALTH_URL',
     urlEnvFallbacks: ['OPTA_LMX_TUNNEL_URL'],
-    path: '/healthz',
+    paths: ['/readyz', '/healthz'],
   },
   daemon: {
-    urlEnv: 'OPTA_DAEMON_TUNNEL_URL',
-    path: '/health',
+    // Optional deep status URL can be set separately from the simple health tunnel.
+    urlEnv: 'OPTA_DAEMON_STATUS_URL',
+    urlEnvFallbacks: ['OPTA_DAEMON_TUNNEL_URL'],
+    paths: ['/v3/health', '/health'],
   },
   code: {
+    urlEnv: 'OPTA_CODE_URL',
     urlFallback: 'https://optalocal.com',
     path: '/',
   },
@@ -117,9 +120,14 @@ export async function GET(
 
     try {
       const start = Date.now()
+      const headers: Record<string, string> = { Accept: 'application/json' }
+      const daemonToken = process.env['OPTA_DAEMON_TOKEN']?.trim()
+      if (service === 'daemon' && probePath === '/v3/health' && daemonToken) {
+        headers['Authorization'] = `Bearer ${daemonToken}`
+      }
       const response = await fetch(url, {
         signal: AbortSignal.timeout(6000),
-        headers: { Accept: 'application/json' },
+        headers,
         cache: 'no-store',
       })
       const latency = Date.now() - start
@@ -141,9 +149,19 @@ export async function GET(
       }
 
       const { status: upstreamStatus, ...rest } = data
+      const statusText = typeof upstreamStatus === 'string' ? upstreamStatus.toLowerCase() : ''
+      const okField = typeof rest.ok === 'boolean' ? rest.ok : undefined
+      const upstreamDegraded =
+        statusText === 'degraded' ||
+        statusText === 'unavailable' ||
+        statusText === 'fail' ||
+        statusText === 'failed'
+      const derivedStatus: 'online' | 'degraded' =
+        upstreamDegraded || okField === false ? 'degraded' : 'online'
+
       return NextResponse.json(
         {
-          status: 'online',
+          status: derivedStatus,
           latency,
           ...(typeof upstreamStatus === 'string' ? { upstreamStatus } : {}),
           ...rest,

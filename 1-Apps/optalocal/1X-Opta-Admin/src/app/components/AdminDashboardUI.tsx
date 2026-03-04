@@ -3,17 +3,22 @@
 import { useMemo, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import type {
+  AdminAuditOutcome,
+  AdminOpsSnapshot,
   GuideRecord,
   GuideSection,
+  PromoteApiResponse,
+  PromotionPolicy,
+  StatusIntegrationState,
   WebsiteHealthSnapshot,
   WebsiteRuntimeStatus,
 } from '../lib/types';
 
-const CLI_MASTERCLASS_SLUG = 'cli';
-
 interface AdminDashboardUIProps {
   initialGuides: GuideRecord[];
   websites: WebsiteHealthSnapshot[];
+  promotionPolicy: PromotionPolicy;
+  adminOps: AdminOpsSnapshot;
 }
 
 function getStatusClasses(status: WebsiteRuntimeStatus): string {
@@ -33,12 +38,64 @@ function appColorHex(app?: string): string {
   return '#a855f7';
 }
 
-export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIProps) {
+function getIntegrationStatusClasses(status: StatusIntegrationState): string {
+  if (status === 'online') return 'bg-green-500/15 text-green-400 border-green-500/30';
+  if (status === 'degraded' || status === 'checking') return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  if (status === 'unconfigured' || status === 'unknown') return 'bg-zinc-500/15 text-zinc-300 border-zinc-500/30';
+  return 'bg-red-500/15 text-red-300 border-red-500/30';
+}
+
+function getAuditOutcomeClasses(outcome: AdminAuditOutcome): string {
+  if (outcome === 'success') return 'bg-green-500/15 text-green-400 border-green-500/30';
+  if (outcome === 'attempt') return 'bg-amber-500/15 text-amber-300 border-amber-500/30';
+  return 'bg-red-500/15 text-red-300 border-red-500/30';
+}
+
+function normalizeSlug(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function formatPromotionLockLabel(policy: PromotionPolicy): string {
+  if (policy.allowAll) return 'PROMOTION OPEN';
+  if (policy.allowedSlugs.length === 1 && policy.allowedSlugs[0] === 'cli') {
+    return 'PROMOTION LOCKED (CLI MASTERCLASS ONLY)';
+  }
+  if (policy.allowedSlugs.length === 0) return 'PROMOTION LOCKED';
+  return `PROMOTION LOCKED (${policy.allowedSlugs.join(', ').toUpperCase()} ONLY)`;
+}
+
+function isPromoteApiResponse(value: unknown): value is PromoteApiResponse {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Partial<PromoteApiResponse>;
+  return typeof candidate.message === 'string' && typeof candidate.promoted === 'boolean';
+}
+
+export function AdminDashboardUI({
+  initialGuides,
+  websites,
+  promotionPolicy,
+  adminOps,
+}: AdminDashboardUIProps) {
   const router = useRouter();
   const [guides, setGuides] = useState(initialGuides);
   const [selectedGuide, setSelectedGuide] = useState<GuideRecord | null>(null);
   const [activeAppFilter, setActiveAppFilter] = useState('all');
   const [promoting, setPromoting] = useState<string | null>(null);
+  const [promotionFeedback, setPromotionFeedback] = useState<PromoteApiResponse | null>(null);
+
+  const allowedPromotionSlugs = useMemo(() => {
+    return new Set(promotionPolicy.allowedSlugs.map((slug) => normalizeSlug(slug)));
+  }, [promotionPolicy.allowedSlugs]);
+
+  const promotionLockLabel = useMemo(() => {
+    return formatPromotionLockLabel(promotionPolicy);
+  }, [promotionPolicy]);
+
+  function canPromoteGuide(guide: GuideRecord): boolean {
+    if (guide.status !== 'draft') return false;
+    if (promotionPolicy.allowAll) return true;
+    return allowedPromotionSlugs.has(normalizeSlug(guide.slug));
+  }
 
   const appFilters = useMemo(() => {
     const apps = new Set<string>();
@@ -53,8 +110,11 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
     return guides.filter((guide) => guide.app?.trim().toLowerCase() === activeAppFilter);
   }, [guides, activeAppFilter]);
 
+  const recentActions = useMemo(() => adminOps.actions.slice(0, 10), [adminOps.actions]);
+
   async function handlePromote(slug: string): Promise<void> {
     setPromoting(slug);
+    setPromotionFeedback(null);
     try {
       const response = await fetch('/api/promote', {
         method: 'POST',
@@ -62,19 +122,38 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
         body: JSON.stringify({ slug }),
       });
 
-      if (!response.ok) {
-        const body = (await response.json()) as { error?: string };
-        alert(`Promotion failed: ${body.error ?? 'Unknown error'}`);
+      const payload = (await response.json()) as unknown;
+      if (!isPromoteApiResponse(payload)) {
+        setPromotionFeedback({
+          outcome: 'error',
+          mode: 'fallback',
+          promoted: false,
+          slug,
+          message: response.ok ? 'Promotion response was invalid.' : 'Promotion failed with an invalid response body.',
+          error: 'INVALID_PROMOTION_RESPONSE',
+        });
         return;
       }
+      setPromotionFeedback(payload);
 
-      setGuides((current) =>
-        current.map((guide) => (guide.slug === slug ? { ...guide, status: 'verified' } : guide))
-      );
-      setSelectedGuide((current) => (current && current.slug === slug ? { ...current, status: 'verified' } : current));
-      router.refresh();
+      if (payload.promoted) {
+        setGuides((current) =>
+          current.map((guide) => (guide.slug === slug ? { ...guide, status: 'verified' } : guide))
+        );
+        setSelectedGuide((current) =>
+          current && current.slug === slug ? { ...current, status: 'verified' } : current
+        );
+        router.refresh();
+      }
     } catch {
-      alert('Network error during promotion.');
+      setPromotionFeedback({
+        outcome: 'error',
+        mode: 'fallback',
+        promoted: false,
+        slug,
+        message: 'Network error during promotion.',
+        error: 'NETWORK_ERROR',
+      });
     } finally {
       setPromoting(null);
     }
@@ -213,6 +292,80 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
         </section>
 
         <section className="glass border-admin/30 rounded-3xl p-6 mb-8 shadow-[0_0_40px_rgba(245,158,11,0.05)]">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="font-mono text-admin text-sm font-bold tracking-widest uppercase">Ops Audit & Status Integration</h2>
+            <span className="text-[10px] font-mono text-text-muted">
+              Snapshot {new Date(adminOps.generatedAt).toLocaleString()}
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="obsidian rounded-xl p-5 border border-white/10">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-sm font-mono uppercase tracking-wider text-text-secondary">Status API Probe</h3>
+                <span className={`text-[10px] font-mono px-2 py-1 rounded border ${getIntegrationStatusClasses(adminOps.statusProbe.status)}`}>
+                  {adminOps.statusProbe.status.toUpperCase()}
+                </span>
+              </div>
+
+              <p className="text-sm text-text-secondary mb-3">
+                Live check against <span className="font-mono text-text-primary">status.optalocal.com/api/health/admin</span>.
+              </p>
+              <p className="text-xs font-mono text-text-muted">
+                Latency: {adminOps.statusProbe.latencyMs != null ? `${adminOps.statusProbe.latencyMs}ms` : 'n/a'} | Checked{' '}
+                {new Date(adminOps.statusProbe.checkedAt).toLocaleTimeString()}
+              </p>
+              {adminOps.statusProbe.error ? (
+                <p className="mt-2 text-xs font-mono text-red-300">{adminOps.statusProbe.error}</p>
+              ) : null}
+
+              <div className="mt-5 pt-4 border-t border-white/10">
+                <h4 className="text-xs font-mono uppercase tracking-wider text-text-secondary">Feature Registry Snapshot</h4>
+                <p className="mt-2 text-sm text-text-secondary">
+                  {adminOps.featureRegistry.complete ?? '-'} complete / {adminOps.featureRegistry.total ?? '-'} total (
+                  {adminOps.featureRegistry.completion ?? 'n/a'})
+                </p>
+                <p className="text-xs font-mono text-text-muted mt-1">
+                  Risk: {adminOps.featureRegistry.risk ?? 'n/a'} | Source: {adminOps.featureRegistry.source}
+                </p>
+                {adminOps.featureRegistry.topGaps.length > 0 ? (
+                  <p className="text-xs text-text-muted mt-2">
+                    Top gap: {adminOps.featureRegistry.topGaps[0]}
+                  </p>
+                ) : null}
+              </div>
+            </div>
+
+            <div className="obsidian rounded-xl p-5 border border-white/10">
+              <div className="flex items-center justify-between gap-3 mb-4">
+                <h3 className="text-sm font-mono uppercase tracking-wider text-text-secondary">Recent Admin Actions</h3>
+                <span className="text-[10px] font-mono text-text-muted">{recentActions.length} records</span>
+              </div>
+
+              <div className="space-y-2">
+                {recentActions.map((entry) => (
+                  <div key={entry.id} className="rounded-lg border border-white/10 bg-black/30 px-3 py-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-mono text-text-secondary">{entry.action}</span>
+                      <span className={`text-[10px] font-mono px-2 py-1 rounded border ${getAuditOutcomeClasses(entry.outcome)}`}>
+                        {entry.outcome.toUpperCase()}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-text-primary">{entry.message}</p>
+                    <p className="mt-1 text-[10px] font-mono text-text-muted">
+                      {new Date(entry.createdAt).toLocaleTimeString()} | {entry.slug ?? 'n/a'} | {entry.requestId}
+                    </p>
+                  </div>
+                ))}
+                {recentActions.length === 0 ? (
+                  <p className="text-sm text-text-muted">No admin actions recorded in this runtime yet.</p>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="glass border-admin/30 rounded-3xl p-6 mb-8 shadow-[0_0_40px_rgba(245,158,11,0.05)]">
           <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
             <h2 className="font-mono text-admin text-sm font-bold tracking-widest uppercase">Guide Index & Promotion Pipeline</h2>
             <div className="flex items-center gap-2 flex-wrap">
@@ -251,7 +404,10 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
                 return (
                   <div
                     key={guide.slug}
-                    onClick={() => setSelectedGuide(guide)}
+                    onClick={() => {
+                      setPromotionFeedback(null);
+                      setSelectedGuide(guide);
+                    }}
                     className={`guide-row grid grid-cols-12 gap-4 px-6 py-4 border-b border-white/5 items-center cursor-pointer ${rowClass}`}
                   >
                     <div className={`col-span-4 font-bold ${isDraft ? 'text-white' : 'text-text-primary'} flex items-center gap-3`}>
@@ -266,6 +422,7 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
                         <button
                           onClick={(event) => {
                             event.stopPropagation();
+                            setPromotionFeedback(null);
                             setSelectedGuide(guide);
                           }}
                           className="text-[10px] font-bold font-mono px-3 py-1.5 rounded-md bg-admin text-black hover:bg-yellow-400 shadow-[0_0_10px_rgba(245,158,11,0.3)] transition-colors"
@@ -310,9 +467,9 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
               </div>
               <div className="flex items-center gap-4 border-l border-white/10 pl-6">
                 {selectedGuide.status === 'draft' ? (
-                  selectedGuide.slug !== CLI_MASTERCLASS_SLUG ? (
+                  !canPromoteGuide(selectedGuide) ? (
                     <span className="bg-zinc-800 text-zinc-300 font-bold font-mono text-sm px-8 py-3.5 rounded-xl border border-zinc-700">
-                      PROMOTION LOCKED (CLI MASTERCLASS ONLY)
+                      {promotionLockLabel}
                     </span>
                   ) : (
                     <button
@@ -334,7 +491,10 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
                   </a>
                 )}
                 <button
-                  onClick={() => setSelectedGuide(null)}
+                  onClick={() => {
+                    setPromotionFeedback(null);
+                    setSelectedGuide(null);
+                  }}
                   className="w-12 h-12 rounded-full border border-white/10 flex items-center justify-center text-text-secondary hover:text-white hover:bg-white/10 transition-all bg-black/50"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -343,6 +503,40 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
                 </button>
               </div>
             </div>
+
+            {selectedGuide.status === 'draft' && promotionFeedback ? (
+              <div className="w-full max-w-6xl mx-auto mb-6 rounded-xl border border-white/10 bg-surface/70 px-5 py-4">
+                <p className="text-sm font-semibold text-text-primary">{promotionFeedback.message}</p>
+                {promotionFeedback.error ? (
+                  <p className="mt-1 text-[11px] font-mono text-text-muted">Code: {promotionFeedback.error}</p>
+                ) : null}
+                {promotionFeedback.nextSteps?.length ? (
+                  <div className="mt-3 space-y-3">
+                    {promotionFeedback.nextSteps.map((step, index) => (
+                      <div key={`${step.title}-${index}`} className="rounded-lg border border-white/10 bg-black/30 px-3 py-3">
+                        <p className="text-xs font-mono text-admin uppercase tracking-wider">{step.title}</p>
+                        <p className="mt-1 text-sm text-text-secondary">{step.detail}</p>
+                        {step.command ? (
+                          <pre className="mt-2 overflow-x-auto rounded bg-black/60 px-3 py-2 text-[11px] font-mono text-green-400">
+                            <code>{step.command}</code>
+                          </pre>
+                        ) : null}
+                        {step.url ? (
+                          <a
+                            href={step.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="mt-2 inline-flex text-xs font-mono text-admin hover:text-yellow-300"
+                          >
+                            Open Link
+                          </a>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
 
             <div className="flex-1 rounded-3xl border border-white/10 bg-void bg-dot-subtle shadow-[0_40px_100px_rgba(0,0,0,0.8)] relative flex max-w-6xl mx-auto w-full overflow-hidden">
               <div className="flex-1 overflow-y-auto preview-scroll p-12 lg:p-20 pb-40">

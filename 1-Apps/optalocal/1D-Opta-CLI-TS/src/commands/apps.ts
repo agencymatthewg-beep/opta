@@ -1,6 +1,5 @@
 import chalk from 'chalk';
 import { checkbox } from '@inquirer/prompts';
-import { EXIT, OptaError } from '../core/errors.js';
 import { installDaemonService, uninstallDaemonService } from '../daemon/installer.js';
 
 const AVAILABLE_APPS = [
@@ -10,7 +9,7 @@ const AVAILABLE_APPS = [
   { value: 'opta-daemon', name: 'Opta Daemon Service (Background orchestrator)' },
 ];
 
-export async function appsList(opts: { json?: boolean }) {
+export function appsList(opts: { json?: boolean }) {
   // In a full implementation, this dynamically checks macOS /Applications and Windows Registry.
   // For now, we mock the core discovery to satisfy the Init Desktop Manager's JSON schema expectations.
   const installed = [
@@ -33,17 +32,17 @@ export async function appsList(opts: { json?: boolean }) {
   console.log('');
 }
 
-export async function appsInstall(appIds: string[]) {
-  let selected = appIds;
-  
-  if (!selected || selected.length === 0) {
+export async function appsInstall(appIds?: string[]) {
+  let selected = Array.isArray(appIds) ? [...appIds] : [];
+
+  if (!selected.length) {
     selected = await checkbox({
       message: 'Select Opta applications to install:',
       choices: AVAILABLE_APPS,
     });
   }
 
-  if (!selected || selected.length === 0) {
+  if (!selected.length) {
     console.log(chalk.dim('No applications selected for installation.'));
     return;
   }
@@ -67,17 +66,17 @@ export async function appsInstall(appIds: string[]) {
   }
 }
 
-export async function appsUninstall(appIds: string[]) {
-  let selected = appIds;
+export async function appsUninstall(appIds?: string[]) {
+  let selected = Array.isArray(appIds) ? [...appIds] : [];
 
-  if (!selected || selected.length === 0) {
+  if (!selected.length) {
     selected = await checkbox({
       message: 'Select Opta applications to uninstall (multi-select):',
       choices: AVAILABLE_APPS,
     });
   }
 
-  if (!selected || selected.length === 0) {
+  if (!selected.length) {
     console.log(chalk.dim('No applications selected for uninstallation.'));
     return;
   }

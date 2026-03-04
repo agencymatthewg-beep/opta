@@ -35,7 +35,6 @@ export async function markOnboarded(): Promise<void> {
   await writeFile(ONBOARD_MARKER, new Date().toISOString(), 'utf-8');
 }
 
-type ProviderName = OptaConfig['provider']['active'];
 export type OnboardingProvider = string;
 
 function normalizeOnboardingProvider(input: string | undefined): OnboardingProvider {
@@ -439,13 +438,13 @@ export async function runOnboarding(): Promise<void> {
         }
         process.stdout.write(
           '\r' +
-            chalk.green(`  Found ${discoveredHosts.length} LMX server${discoveredHosts.length !== 1 ? 's' : ''} on LAN`) +
-            '                    \n'
+          chalk.green(`  Found ${discoveredHosts.length} LMX server${discoveredHosts.length !== 1 ? 's' : ''} on LAN`) +
+          '                    \n'
         );
         for (const d of discoveredHosts) {
           console.log(
             chalk.dim(`    ${d.host}:${d.port}`) +
-              chalk.dim(` (${d.latencyMs}ms)`)
+            chalk.dim(` (${d.latencyMs}ms)`)
           );
         }
         console.log('');
@@ -505,10 +504,10 @@ export async function runOnboarding(): Promise<void> {
             ) {
               process.stdout.write(
                 '\r' +
-                  chalk.yellow(
-                    '  ! LMX is reachable but /admin endpoints are unauthorized (invalid or missing admin key)'
-                  ) +
-                  '\n'
+                chalk.yellow(
+                  '  ! LMX is reachable but /admin endpoints are unauthorized (invalid or missing admin key)'
+                ) +
+                '\n'
               );
               console.log(
                 chalk.dim(
@@ -528,19 +527,19 @@ export async function runOnboarding(): Promise<void> {
             } else {
               process.stdout.write(
                 '\r' +
-                  chalk.yellow(
-                    '  ! LMX reachable, but admin check could not be completed'
-                  ) +
-                  '\n'
+                chalk.yellow(
+                  '  ! LMX reachable, but admin check could not be completed'
+                ) +
+                '\n'
               );
             }
           }
         } catch {
           process.stdout.write(
             '\r' +
-              chalk.red('  ✗ Could not reach ' + lmxHost + ':' + lmxPort) +
-              chalk.dim(' (saved anyway)') +
-              '\n'
+            chalk.red('  ✗ Could not reach ' + lmxHost + ':' + lmxPort) +
+            chalk.dim(' (saved anyway)') +
+            '\n'
           );
         }
       }
@@ -662,7 +661,50 @@ export async function runOnboarding(): Promise<void> {
     console.log(chalk.cyan('    opta do "..."') + chalk.dim(' — One-shot agent task'));
     console.log(chalk.cyan('    opta status') + chalk.dim('   — Check connection'));
     console.log('');
+
+    // ── Step 4: Sync Vault (optional) ──────────────────────────────────────────
+    console.log(chalk.bold.hex('#8b5cf6')('Sync Vault (optional)'));
+    console.log(chalk.dim('  Sync API keys and AI rules from your Opta Accounts vault.'));
+    console.log('');
+
+    try {
+      const { loadAccountState } = await import('../accounts/storage.js');
+      const state = await loadAccountState();
+
+      if (state?.session?.access_token) {
+        const doVaultSync = await confirm(rl, '  Sync keys from Opta Vault now?', true);
+        if (doVaultSync) {
+          process.stdout.write(chalk.dim('  Syncing vault…'));
+          const { syncVault } = await import('../accounts/vault.js');
+          const { keys, rules } = await syncVault(state);
+          process.stdout.write('\r');
+          if (keys.synced > 0) {
+            console.log(chalk.green(`  ✓ ${keys.synced} API keys synced to keychain`));
+          }
+          if (keys.skipped > 0) {
+            console.log(chalk.yellow(`  ⚠ ${keys.skipped} keys skipped`));
+          }
+          if (rules.configured && rules.content) {
+            console.log(chalk.green('  ✓ non-negotiables.md synced'));
+          }
+          if (keys.synced === 0 && !rules.configured) {
+            console.log(chalk.dim('  — No keys or rules found in your vault yet.'));
+            console.log(chalk.dim('    Add them at: ') + chalk.cyan('https://accounts.optalocal.com/keys'));
+          }
+        }
+      } else {
+        console.log(chalk.dim('  Not signed in — to sync your vault later, run:'));
+        console.log(chalk.cyan('    opta account login --oauth'));
+        console.log(chalk.cyan('    opta vault pull'));
+      }
+    } catch {
+      // Vault sync is best-effort — don't break onboarding
+      console.log(chalk.dim('  Vault sync skipped (not signed in or network unavailable).'));
+    }
+
+    console.log('');
   } finally {
     rl.close();
   }
 }
+

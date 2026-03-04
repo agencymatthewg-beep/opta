@@ -41,6 +41,12 @@ def _loaded_model(model_id: str = "test/model", **kwargs) -> LoadedModel:
     return mock
 
 
+def _enable_downloads_for_test(client: AsyncClient) -> None:
+    """Force-enable download policy for download-flow endpoint tests."""
+    app = client._transport.app  # type: ignore[union-attr]
+    app.state.config.security.downloads_enabled = True
+
+
 # ─── Auth Tests ──────────────────────────────────────────────────────────
 
 
@@ -186,6 +192,7 @@ class TestAdminLoad:
     @pytest.mark.asyncio
     async def test_load_not_on_disk_returns_202(self, client: AsyncClient) -> None:
         """Loading a model not on disk returns 202 with confirmation token."""
+        _enable_downloads_for_test(client)
         app = client._transport.app  # type: ignore[union-attr]
         # Make is_model_available return False
         app.state.model_manager.is_model_available = AsyncMock(return_value=False)
@@ -219,6 +226,7 @@ class TestAdminLoad:
         client: AsyncClient,
     ) -> None:
         """Cached-but-incomplete models should require a repair download instead of 500."""
+        _enable_downloads_for_test(client)
         app = client._transport.app  # type: ignore[union-attr]
         app.state.model_manager.is_model_available = AsyncMock(return_value=True)
         app.state.model_manager.is_local_snapshot_complete = AsyncMock(return_value=False)
@@ -238,6 +246,7 @@ class TestAdminLoad:
         client: AsyncClient,
     ) -> None:
         """auto_download should surface disk-space failures with structured 507."""
+        _enable_downloads_for_test(client)
         app = client._transport.app  # type: ignore[union-attr]
         app.state.model_manager.is_model_available = AsyncMock(return_value=False)
         app.state.model_manager.estimate_size = AsyncMock(return_value=2_000_000_000)

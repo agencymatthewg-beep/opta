@@ -46,25 +46,6 @@ function authHeaders(token: string): Record<string, string> {
 // Key Provider → Keychain mapping
 // ---------------------------------------------------------------------------
 
-const PROVIDER_TO_ENV: Record<string, string> = {
-    anthropic: 'ANTHROPIC_API_KEY',
-    openai: 'OPENAI_API_KEY',
-    gemini: 'GEMINI_API_KEY',
-    groq: 'GROQ_API_KEY',
-    lmx: 'OPTA_LMX_API_KEY',
-    opencode: 'OPENCODE_API_KEY',
-    codex: 'CODEX_API_KEY',
-    tavily: 'TAVILY_API_KEY',
-    brave: 'BRAVE_API_KEY',
-    exa: 'EXA_API_KEY',
-    perplexity: 'PERPLEXITY_API_KEY',
-    github: 'GITHUB_TOKEN',
-    vercel: 'VERCEL_TOKEN',
-    cloudflare: 'CLOUDFLARE_API_TOKEN',
-    google: 'GOOGLE_API_KEY',
-    twitter: 'TWITTER_BEARER_TOKEN',
-};
-
 type VaultKeyEntry = {
     id: string;
     provider: string;

@@ -58,7 +58,7 @@ export async function ensureLspServerInstalled(
     // For rust/go, we currently fallback to manual installation hints
     // as their toolchains (rustup, go install) are complex to sandbox cleanly.
     return { available: false, command: config.command };
-  } catch (err) {
+  } catch {
     // If auto-provisioning fails (e.g., npm not found), fail gracefully
     return { available: false, command: config.command };
   }

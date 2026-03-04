@@ -33,6 +33,33 @@ export interface GuidesManifest {
   draft: GuideManifestEntry[];
 }
 
+export interface PromotionPolicy {
+  allowAll: boolean;
+  allowedSlugs: string[];
+}
+
+export interface PromoteNextStep {
+  title: string;
+  detail: string;
+  command?: string;
+  url?: string;
+}
+
+export type PromoteOutcome = 'promoted' | 'action_required' | 'blocked' | 'error';
+export type PromoteMode = 'local' | 'fallback';
+
+export interface PromoteApiResponse {
+  outcome: PromoteOutcome;
+  mode: PromoteMode;
+  promoted: boolean;
+  requestId?: string;
+  slug?: string;
+  message: string;
+  nextSteps?: PromoteNextStep[];
+  policy?: PromotionPolicy;
+  error?: string;
+}
+
 export type WebsiteRuntimeStatus = 'online' | 'degraded' | 'offline';
 
 export interface ManagedWebsite {
@@ -49,4 +76,51 @@ export interface WebsiteHealthSnapshot extends ManagedWebsite {
   checkedAt: string;
   localStatus: WebsiteRuntimeStatus;
   productionStatus: WebsiteRuntimeStatus;
+}
+
+export type AdminAuditAction = 'guide.promote';
+export type AdminAuditOutcome = 'attempt' | 'success' | 'failure';
+
+export interface AdminAuditEntry {
+  id: string;
+  action: AdminAuditAction;
+  outcome: AdminAuditOutcome;
+  slug?: string;
+  message: string;
+  requestId: string;
+  createdAt: string;
+}
+
+export type StatusIntegrationState =
+  | WebsiteRuntimeStatus
+  | 'checking'
+  | 'unconfigured'
+  | 'unknown';
+
+export interface AdminStatusProbe {
+  source: string;
+  url?: string;
+  status: StatusIntegrationState;
+  latencyMs?: number;
+  checkedAt: string;
+  error?: string;
+}
+
+export interface AdminFeatureRegistrySnapshot {
+  source: string;
+  generatedAt?: string;
+  complete?: number;
+  pending?: number;
+  total?: number;
+  completion?: string;
+  risk?: string;
+  topGaps: string[];
+  error?: string;
+}
+
+export interface AdminOpsSnapshot {
+  generatedAt: string;
+  actions: AdminAuditEntry[];
+  statusProbe: AdminStatusProbe;
+  featureRegistry: AdminFeatureRegistrySnapshot;
 }

@@ -158,6 +158,18 @@ def _configure_hf_cache_environment(config: LMXConfig) -> None:
         os.environ["HF_HOME"] = hf_home
 
 
+def _configure_download_policy_environment(config: LMXConfig) -> None:
+    """Enforce a process-wide download policy for Hugging Face-backed loaders."""
+    if config.security.downloads_enabled:
+        if os.environ.get("HF_HUB_OFFLINE") == "1":
+            logger.warning("hf_hub_offline_env_set_while_downloads_enabled")
+        return
+
+    os.environ["HF_HUB_OFFLINE"] = "1"
+    os.environ["TRANSFORMERS_OFFLINE"] = "1"
+    logger.info("hf_downloads_disabled_offline_mode_enforced")
+
+
 def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
     """Block local LMX hosting on Opta48 unless explicitly overridden."""
     host = socket.gethostname().lower().strip()
@@ -209,6 +221,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     _enforce_opta48_no_local_models(config)
     _ensure_runtime_directories(config)
     _configure_hf_cache_environment(config)
+    _configure_download_policy_environment(config)
 
     # Crash loop detection — record startup and check for rapid restarts
     runtime_state = RuntimeState()

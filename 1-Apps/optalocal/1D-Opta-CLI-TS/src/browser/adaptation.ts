@@ -122,7 +122,7 @@ export function normalizeBrowserAdaptationConfig(
 ): BrowserAdaptationConfig {
   const fallback = DEFAULT_BROWSER_ADAPTATION_CONFIG;
   return {
-    enabled: input?.enabled === true,
+    enabled: input?.enabled ?? false,
     minAssessedSessions: Math.max(1, Math.floor(input?.minAssessedSessions ?? fallback.minAssessedSessions)),
     regressionPressureThreshold: normalizedRatio(input?.regressionPressureThreshold ?? fallback.regressionPressureThreshold),
     meanRegressionScoreThreshold: normalizedRatio(input?.meanRegressionScoreThreshold ?? fallback.meanRegressionScoreThreshold),

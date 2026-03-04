@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T04:29:05.624Z",
+  "generatedAt": "2026-03-04T04:56:05.888Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -156,7 +156,7 @@
     ]
   },
   "operations": {
-    "count": 81,
+    "count": 86,
     "ids": [
       "account.keys.delete",
       "account.keys.list",
@@ -238,6 +238,11 @@
       "sessions.list",
       "sessions.search",
       "update.run",
+      "vault.pull",
+      "vault.pull-keys",
+      "vault.pull-rules",
+      "vault.push-rules",
+      "vault.status",
       "version.check"
     ],
     "families": [
@@ -328,6 +333,10 @@
       {
         "name": "update",
         "count": 1
+      },
+      {
+        "name": "vault",
+        "count": 5
       },
       {
         "name": "version",

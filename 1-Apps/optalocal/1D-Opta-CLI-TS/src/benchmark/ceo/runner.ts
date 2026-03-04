@@ -45,7 +45,8 @@ function applyDotPathUpdate(target: Record<string, unknown>, key: string, value:
 
   let cursor: Record<string, unknown> = target;
   for (let i = 0; i < segments.length - 1; i += 1) {
-    const segment = segments[i]!;
+    const segment = segments[i];
+    if (!segment) continue;
     const next = cursor[segment];
     if (!next || typeof next !== 'object' || Array.isArray(next)) {
       const replacement: Record<string, unknown> = {};
@@ -56,7 +57,10 @@ function applyDotPathUpdate(target: Record<string, unknown>, key: string, value:
     cursor = next as Record<string, unknown>;
   }
 
-  cursor[segments[segments.length - 1]!] = value;
+  const terminal = segments[segments.length - 1];
+  if (terminal) {
+    cursor[terminal] = value;
+  }
 }
 
 export async function runCeoBenchmark(
@@ -79,8 +83,9 @@ export async function runCeoBenchmark(
   }
   config.model.default = modelId;
 
-  const tasks = options.filter 
-    ? DEFAULT_TASKS.filter(t => t.id.includes(options.filter!))
+  const filterId = options.filter?.trim();
+  const tasks = filterId
+    ? DEFAULT_TASKS.filter((t) => t.id.includes(filterId))
     : DEFAULT_TASKS;
 
   if (!options.json) {

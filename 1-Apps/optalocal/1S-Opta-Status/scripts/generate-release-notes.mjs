@@ -25,6 +25,13 @@ const SOURCES = [
     updatesDir: path.join(OPTALOCAL_ROOT, '1M-Opta-LMX', 'updates'),
     featuresHref: '/features?app=lmx',
   },
+  {
+    key: 'local-web',
+    label: 'Opta Home',
+    updatesDir: path.join(OPTALOCAL_ROOT, '1T-Opta-Home', 'updates'),
+    changelogFile: path.join(OPTALOCAL_ROOT, '1T-Opta-Home', 'docs', 'CHANGELOG.md'),
+    featuresHref: '/features?app=local-web',
+  },
 ]
 
 function toLocalDateIso(date = new Date()) {
@@ -107,14 +114,14 @@ function normalizeTitle(rawTitle) {
 }
 
 async function readEntriesFromSource(source) {
-  let files
+  const entries = []
+  let files = []
   try {
     files = await fs.readdir(source.updatesDir)
   } catch {
-    return []
+    files = []
   }
 
-  const entries = []
   for (const file of files) {
     if (!file.endsWith('.md') || file.toLowerCase() === 'readme.md') continue
 
@@ -152,6 +159,60 @@ async function readEntriesFromSource(source) {
       summaryBullets,
       promoted: frontmatter.promoted === true,
     })
+  }
+
+  if (source.changelogFile) {
+    let changelog = ''
+    try {
+      changelog = await fs.readFile(source.changelogFile, 'utf-8')
+    } catch {
+      changelog = ''
+    }
+
+    if (changelog) {
+      const headingRegex = /^##\s+(.+?)\s+[—-]\s+([0-9]{4}-[0-9]{2}-[0-9]{2})\s*$/gm
+      const headings = []
+      let match
+      while ((match = headingRegex.exec(changelog)) !== null) {
+        headings.push({
+          heading: match[1].trim(),
+          date: match[2],
+          headingStart: match.index,
+          contentStart: headingRegex.lastIndex,
+        })
+      }
+
+      for (let index = 0; index < headings.length; index += 1) {
+        const current = headings[index]
+        const next = headings[index + 1]
+        const contentEnd = next ? next.headingStart : changelog.length
+        const section = changelog.slice(current.contentStart, contentEnd)
+        const summaryBullets = section
+          .split('\n')
+          .map((line) => line.trim())
+          .filter((line) => line.startsWith('- '))
+          .map((line) => line.slice(2).trim())
+
+        const slug = current.heading
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+
+        entries.push({
+          source: source.key,
+          sourceLabel: source.label,
+          sourceFeaturesHref: source.featuresHref,
+          file: path.basename(source.changelogFile),
+          numericId: 10_000 - index,
+          date: current.date,
+          time: '',
+          slug: slug ? `changelog-${slug}` : `changelog-${index + 1}`,
+          title: normalizeTitle(`${source.label} ${current.heading}`),
+          summaryBullets,
+          promoted: false,
+        })
+      }
+    }
   }
 
   return entries
@@ -312,6 +373,10 @@ async function main() {
     sourceEntries.length > 0
       ? [...sourceEntries].sort((a, b) => b.date.localeCompare(a.date))[0].date
       : null
+  const latestAnySourceDate =
+    allEntries.length > 0
+      ? [...allEntries].sort((a, b) => b.date.localeCompare(a.date))[0].date
+      : null
 
   if (sourceEntries.length === 0) {
     const existingNotes = await readExistingGeneratedNotes()
@@ -330,6 +395,7 @@ async function main() {
   const metadata = {
     sourceScope: promotedEntries.length > 0 ? 'promoted' : 'all',
     latestSourceDate,
+    latestAnySourceDate,
     sourceEntryCount: sourceEntries.length,
     totalEntryCount: allEntries.length,
   }

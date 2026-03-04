@@ -9,6 +9,34 @@ import type { BrowserPolicyAdaptationHint } from './adaptation.js';
 import { classifyBrowserRetryTaxonomy } from './retry-taxonomy.js';
 import { isScreenshotResult, compressBrowserScreenshot, type ScreenshotCompressOptions } from './screenshot-compress.js';
 
+type TextContentBlock = { type: string; text?: string };
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function getTextContentBlocks(value: unknown): TextContentBlock[] | null {
+  if (!isObjectRecord(value)) return null;
+  const content = value['content'];
+  if (!Array.isArray(content)) return null;
+  if (!content.every((item) => isObjectRecord(item) && typeof item.type === 'string')) {
+    return null;
+  }
+  return content as TextContentBlock[];
+}
+
+function firstTextBlock(value: unknown): TextContentBlock | null {
+  const blocks = getTextContentBlocks(value);
+  if (!blocks || blocks.length === 0) return null;
+  return blocks[0].type === 'text' ? blocks[0] : null;
+}
+
+function resolveSelectorArg(args: Record<string, unknown>): string {
+  if (typeof args.selector === 'string') return args.selector;
+  if (typeof args.element === 'string') return args.element;
+  return '';
+}
+
 export class BrowserPolicyDeniedError extends Error {
   constructor(
     public readonly toolName: string,
@@ -126,12 +154,12 @@ export async function interceptBrowserMcpCall(
       if (toolName === 'browser_snapshot' && config.executeEvaluate) {
         try {
           const evalResult = await config.executeEvaluate('window.__optaInjectMarks && window.__optaInjectMarks()');
-          if (evalResult && typeof evalResult === 'object' && 'result' in evalResult) {
-            somDictionary = String(evalResult.result);
+          if (isObjectRecord(evalResult) && 'result' in evalResult && typeof evalResult.result === 'string') {
+            somDictionary = evalResult.result;
           } else if (typeof evalResult === 'string') {
             somDictionary = evalResult;
           }
-        } catch (e) {
+        } catch {
           // ignore SoM failure
         }
       }
@@ -140,14 +168,15 @@ export async function interceptBrowserMcpCall(
 
       // Append SoM dictionary to snapshot output
       if (toolName === 'browser_snapshot' && somDictionary) {
+        const dictionaryPrefix =
+          `Set-of-Marks Dictionary (use element_id instead of selector for actions):\n${somDictionary}\n\n---\n\n`;
         if (typeof result === 'string') {
-          result = `Set-of-Marks Dictionary (use element_id instead of selector for actions):\n${somDictionary}\n\n---\n\n${result}`;
-        } else if (result && typeof result === 'object' && Array.isArray((result as any).content)) {
-           // MCP format `[{ type: "text", text: ... }]`
-           const contentArr = (result as any).content;
-           if (contentArr.length > 0 && contentArr[0].type === 'text') {
-             contentArr[0].text = `Set-of-Marks Dictionary (use element_id instead of selector for actions):\n${somDictionary}\n\n---\n\n${contentArr[0].text}`;
-           }
+          result = `${dictionaryPrefix}${result}`;
+        } else {
+          const block = firstTextBlock(result);
+          if (block) {
+            block.text = `${dictionaryPrefix}${block.text ?? ''}`;
+          }
         }
       }
 
@@ -175,8 +204,8 @@ export async function interceptBrowserMcpCall(
           await new Promise((resolve) => setTimeout(resolve, 800));
           const evalResult = await config.executeEvaluate('window.__optaInjectMarks && window.__optaInjectMarks()');
           let newState = '';
-          if (evalResult && typeof evalResult === 'object' && 'result' in evalResult) {
-            newState = String(evalResult.result);
+          if (isObjectRecord(evalResult) && 'result' in evalResult && typeof evalResult.result === 'string') {
+            newState = evalResult.result;
           } else if (typeof evalResult === 'string') {
             newState = evalResult;
           }
@@ -184,14 +213,14 @@ export async function interceptBrowserMcpCall(
             const stateMsg = `\n\n--- Post-Action UI State (Set-of-Marks) ---\n${newState}`;
             if (typeof result === 'string') {
               result += stateMsg;
-            } else if (result && typeof result === 'object' && Array.isArray((result as any).content)) {
-               const contentArr = (result as any).content;
-               if (contentArr.length > 0 && contentArr[0].type === 'text') {
-                 contentArr[0].text += stateMsg;
-               }
+            } else {
+              const block = firstTextBlock(result);
+              if (block) {
+                block.text = `${block.text ?? ''}${stateMsg}`;
+              }
             }
           }
-        } catch (e) {
+        } catch {
           // ignore verification failure
         }
       }
@@ -220,7 +249,7 @@ export async function interceptBrowserMcpCall(
     if (taxonomy.retryCategory === 'selector') {
       try {
         const snapshot = await config.executeSnapshot();
-        const selector = String(args.selector ?? args.element ?? '');
+        const selector = resolveSelectorArg(args);
         await config.onSelectorFail(toolName, selector, snapshot);
       } catch {
         // Healing is best-effort — don't mask the original error

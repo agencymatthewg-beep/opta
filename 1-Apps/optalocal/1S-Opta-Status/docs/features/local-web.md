@@ -1,6 +1,6 @@
 # Opta Local Features
 
-Opta Local (`1T-Opta-Home`) is the web dashboard and chat interface for the LMX inference server.
+Opta Local (`1T-Opta-Home`) is the public home/marketing experience for Opta Local.
 
 ## Chat Interface
 
@@ -14,7 +14,7 @@ Opta Local (`1T-Opta-Home`) is the web dashboard and chat interface for the LMX 
 
 ## Dashboard
 
-- [ ] LMX connection status — production degraded due `/api/health` vs `/healthz` path mismatch
+- [x] LMX connection status — production health is routed via `/api/health`; regressions are deployment-target related, not endpoint parity
 - [x] Throughput metrics — tokens/sec via circular buffer (300 samples)
 - [x] Active model display — currently loaded model name and size
 - [x] Memory gauge — Metal GPU memory usage from `/admin/health`
@@ -67,4 +67,4 @@ Opta Local (`1T-Opta-Home`) is the web dashboard and chat interface for the LMX 
 
 ## Current Production Reality (2026-03-04)
 
-- Local-web health integration is currently degraded in production until endpoint path parity is corrected.
+- Local-web health endpoint exists in 1T; degraded states are deployment/target issues when `https://optalocal.com/api/health` is unreachable.

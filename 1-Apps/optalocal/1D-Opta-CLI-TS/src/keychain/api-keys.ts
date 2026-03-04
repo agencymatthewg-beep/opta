@@ -298,3 +298,16 @@ export async function getKeyByProvider(
   if (!account) return null;
   return getSecret(KEYCHAIN_SERVICE, account);
 }
+
+/**
+ * Delete any provider's key from the OS keychain by provider name.
+ */
+export async function deleteKeyByProvider(
+  provider: string,
+): Promise<void> {
+  if (!isKeychainAvailable()) return;
+  const account = PROVIDER_ACCOUNT_MAP[provider.toLowerCase().trim()];
+  if (!account) return;
+  await deleteSecret(KEYCHAIN_SERVICE, account);
+}
+

@@ -876,6 +876,8 @@ async def test_available_models_returns_disk_inventory(client: AsyncClient) -> N
 
 async def test_download_returns_download_id(client: AsyncClient) -> None:
     """POST /admin/models/download returns a download_id."""
+    app = client._transport.app  # type: ignore[union-attr]
+    app.state.config.security.downloads_enabled = True
     mock_task = DownloadTask(
         download_id="abc123",
         repo_id="mlx-community/test-model",

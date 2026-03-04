@@ -321,6 +321,52 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
   const [localResult, setLocalResult] = useState<unknown>(null);
   const [accountKeys, setAccountKeys] = useState<AccountKeySummary[]>([]);
 
+  // ── Vault Sync State ─────────────────────────────────────────────────────
+  const [vaultSyncing, setVaultSyncing] = useState(false);
+  const [vaultResult, setVaultResult] = useState<{
+    synced: number;
+    skipped: number;
+    syncedAt: string;
+    keys: Array<{ provider: string; label: string | null }>;
+  } | null>(null);
+  const [vaultError, setVaultError] = useState<string | null>(null);
+
+  const ACCOUNTS_URL = "https://accounts.optalocal.com";
+
+  const VAULT_PROVIDERS: Array<{ category: string; providers: Array<{ slug: string; label: string }> }> = [
+    {
+      category: "AI Models",
+      providers: [
+        { slug: "anthropic", label: "Anthropic" },
+        { slug: "openai", label: "OpenAI" },
+        { slug: "gemini", label: "Gemini" },
+        { slug: "groq", label: "Groq" },
+        { slug: "codex", label: "Codex" },
+        { slug: "lmx", label: "LMX" },
+      ],
+    },
+    {
+      category: "Research Tools",
+      providers: [
+        { slug: "perplexity", label: "Perplexity" },
+        { slug: "tavily", label: "Tavily" },
+        { slug: "exa", label: "Exa" },
+        { slug: "brave", label: "Brave Search" },
+      ],
+    },
+    {
+      category: "Developer Platforms",
+      providers: [
+        { slug: "github", label: "GitHub" },
+        { slug: "vercel", label: "Vercel" },
+        { slug: "cloudflare", label: "Cloudflare" },
+        { slug: "google", label: "Google" },
+        { slug: "twitter", label: "Twitter/X" },
+      ],
+    },
+  ];
+
+
   useEffect(() => {
     let cancelled = false;
 
@@ -945,7 +991,128 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
             )}
           </div>
         </section>
+
+        {/* ── Sync Vault ──────────────────────────────────────────────────── */}
+        <section className="account-panel">
+          <header>
+            <h3>Sync Vault</h3>
+            <p>
+              Pull API keys and AI rules from your Opta Accounts vault into the
+              local keychain in one click.
+            </p>
+          </header>
+
+          <div className="account-inline-actions">
+            <button
+              type="button"
+              className="action-btn"
+              disabled={vaultSyncing}
+              onClick={() => {
+                setVaultSyncing(true);
+                setVaultError(null);
+                // Call vault.pull daemon operation if available, otherwise
+                // call the /api/sync/keys endpoint directly.
+                const doSync = async () => {
+                  try {
+                    const result = await daemonClient.runOperation(connection, "account.vault.pull", {});
+                    if (result.ok && result.result) {
+                      const r = result.result as {
+                        synced?: number;
+                        skipped?: number;
+                        syncedAt?: string;
+                        keys?: Array<{ provider: string; label: string | null }>;
+                      };
+                      setVaultResult({
+                        synced: r.synced ?? 0,
+                        skipped: r.skipped ?? 0,
+                        syncedAt: r.syncedAt ?? new Date().toISOString(),
+                        keys: r.keys ?? [],
+                      });
+                    } else {
+                      setVaultError("Vault sync operation unavailable — upgrade daemon or run `opta vault pull` in terminal.");
+                    }
+                  } catch {
+                    setVaultError("Could not connect to daemon. Ensure daemon is running.");
+                  } finally {
+                    setVaultSyncing(false);
+                  }
+                };
+                void doSync();
+              }}
+            >
+              {vaultSyncing ? "Syncing…" : "↓ Sync from Vault"}
+            </button>
+            <a
+              href={`${ACCOUNTS_URL}/keys`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="action-btn"
+              style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6 }}
+            >
+              Manage keys ↗
+            </a>
+          </div>
+
+          {vaultError ? (
+            <p className="account-availability-hint" style={{ color: "var(--color-error, #f87171)" }}>
+              {vaultError}
+            </p>
+          ) : null}
+
+          {vaultResult ? (
+            <div className="account-result-block">
+              <h4>
+                Sync complete — {vaultResult.synced} keys synced
+                {vaultResult.skipped > 0 ? `, ${vaultResult.skipped} skipped` : ""}
+              </h4>
+              <p className="account-empty" style={{ marginBottom: 8 }}>
+                {new Date(vaultResult.syncedAt).toLocaleString()}
+              </p>
+            </div>
+          ) : null}
+
+          <div className="account-result-block">
+            <h4>Provider Status</h4>
+            {VAULT_PROVIDERS.map((group) => (
+              <div key={group.category} style={{ marginBottom: 12 }}>
+                <p className="account-empty" style={{ marginBottom: 4, fontWeight: 600 }}>
+                  {group.category}
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))", gap: "4px 8px" }}>
+                  {group.providers.map(({ slug, label }) => {
+                    const issynced = vaultResult?.keys.some((k) => k.provider === slug);
+                    return (
+                      <span
+                        key={slug}
+                        style={{
+                          fontSize: 11,
+                          color: issynced ? "var(--color-success, #34d399)" : "var(--text-dim, rgba(255,255,255,0.3))",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                        }}
+                      >
+                        {issynced ? "✓" : "○"} {label}
+                      </span>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+            {!vaultResult ? (
+              <p className="account-empty">
+                Click "Sync from Vault" to populate. Configure keys at{" "}
+                <a href={`${ACCOUNTS_URL}/keys`} target="_blank" rel="noopener noreferrer">
+                  accounts.optalocal.com/keys
+                </a>
+                .
+              </p>
+            ) : null}
+          </div>
+        </section>
+
       </div>
     </div>
   );
 }
+

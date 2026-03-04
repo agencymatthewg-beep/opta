@@ -19,6 +19,11 @@ export const OPERATION_IDS = [
   'account.keys.push',
   'account.keys.delete',
   'account.logout',
+  'vault.pull',
+  'vault.pull-keys',
+  'vault.pull-rules',
+  'vault.push-rules',
+  'vault.status',
   'key.create',
   'key.show',
   'key.copy',
@@ -193,6 +198,15 @@ export const OperationInputSchemaById = {
     })
     .strict(),
   'account.logout': EmptyInputSchema,
+  'vault.pull': EmptyInputSchema,
+  'vault.pull-keys': EmptyInputSchema,
+  'vault.pull-rules': EmptyInputSchema,
+  'vault.push-rules': z
+    .object({
+      file: z.string().min(1).optional(),
+    })
+    .strict(),
+  'vault.status': EmptyInputSchema,
   'key.create': z
     .object({
       value: z.string().min(1).optional(),
@@ -595,6 +609,11 @@ export const OperationOutputSchemaById = {
       warning: z.string().nullable(),
     })
     .strict(),
+  'vault.pull': TextCommandOutputSchema,
+  'vault.pull-keys': TextCommandOutputSchema,
+  'vault.pull-rules': TextCommandOutputSchema,
+  'vault.push-rules': TextCommandOutputSchema,
+  'vault.status': TextCommandOutputSchema,
   'key.create': z.unknown(),
   'key.show': z.unknown(),
   'key.copy': z.unknown(),
@@ -730,6 +749,11 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('account.keys.push'),
   makeExecuteRequestVariant('account.keys.delete'),
   makeExecuteRequestVariant('account.logout'),
+  makeExecuteRequestVariant('vault.pull'),
+  makeExecuteRequestVariant('vault.pull-keys'),
+  makeExecuteRequestVariant('vault.pull-rules'),
+  makeExecuteRequestVariant('vault.push-rules'),
+  makeExecuteRequestVariant('vault.status'),
   makeExecuteRequestVariant('key.create'),
   makeExecuteRequestVariant('key.show'),
   makeExecuteRequestVariant('key.copy'),
@@ -956,6 +980,36 @@ export const OPERATION_TAXONOMY = [
     title: 'Account Logout',
     description: 'Clear local account session and revoke remote auth token when available.',
     safety: 'write',
+  },
+  {
+    id: 'vault.pull',
+    title: 'Vault Pull',
+    description: 'Sync account vault API keys and global rules to local machine.',
+    safety: 'write',
+  },
+  {
+    id: 'vault.pull-keys',
+    title: 'Vault Pull Keys',
+    description: 'Sync only account vault API keys to local keychain.',
+    safety: 'write',
+  },
+  {
+    id: 'vault.pull-rules',
+    title: 'Vault Pull Rules',
+    description: 'Sync only account vault global rules to local cache.',
+    safety: 'write',
+  },
+  {
+    id: 'vault.push-rules',
+    title: 'Vault Push Rules',
+    description: 'Push local non-negotiables rules file to account vault.',
+    safety: 'write',
+  },
+  {
+    id: 'vault.status',
+    title: 'Vault Status',
+    description: 'Inspect account vault sync state and local rules cache.',
+    safety: 'read',
   },
   {
     id: 'key.create',

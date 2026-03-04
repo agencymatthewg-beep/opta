@@ -11,12 +11,19 @@ import logging
 import time
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.responses import Response
 
-from opta_lmx.api.deps import AdminAuth, Embeddings, RagStore, RemoteEmbedding, RerankerDep
+from opta_lmx.api.deps import (
+    AdminAuth,
+    Embeddings,
+    RagStore,
+    RemoteEmbedding,
+    RerankerDep,
+    verify_inference_key,
+)
 from opta_lmx.api.errors import internal_error, openai_error
 from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 from opta_lmx.inference.embedding_engine import EmbeddingEngine
@@ -25,7 +32,7 @@ from opta_lmx.rag.store import SearchResult, VectorStore
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(verify_inference_key)])
 
 
 def _require_store(store: VectorStore | None) -> VectorStore:

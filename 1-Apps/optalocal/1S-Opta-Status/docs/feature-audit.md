@@ -12,7 +12,7 @@ Generated: 2026-03-04T14:05
 | init | 23 | 0 | 23 | 100.0% | Low |  |
 | learn | 15 | 2 | 17 | 88.2% | Medium | Personalized knowledge tracking per user profile; Versioned guide changelog with migration notes |
 | lmx | 29 | 5 | 34 | 85.3% | Medium | Reference LMX endpoint can be degraded when the local service is offline; LoRA adapter loading; Function calling (tool_use) +2 more |
-| local-web | 26 | 9 | 35 | 74.3% | High | Missing `/api/health` endpoint keeps status degraded under strict health probing; File attachments — image and document upload; Multimodal input — paste screenshots for vision models +6 more |
+| local-web | 26 | 9 | 35 | 74.3% | High | Production target availability for `/api/health` has regressed in some deploys (endpoint exists in 1T source); File attachments — image and document upload; Multimodal input — paste screenshots for vision models +6 more |
 | status | 15 | 1 | 16 | 93.8% | Low | Route caching policy alignment — route currently probes upstream with `no-store` for freshness |
 
 ## App mapping (status registry)
@@ -30,5 +30,5 @@ Generated: 2026-03-04T14:05
 ## Recommended priority actions
 - Keep production LMX + Daemon references stable and verify daemon/lmx probe latency SLOs.
 - Maintain reachable production `/api/health` in Opta Admin and guard against regression in CI.
-- Add local-web `/api/health` endpoint (or align health route policy) to clear strict degraded status.
+- Keep local-web deployment target healthy for `/api/health` and guard with CI probes to prevent regressions.
 - Keep release-note metadata and feature-audit totals regenerated on each status deploy.

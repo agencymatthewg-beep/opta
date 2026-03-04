@@ -14,6 +14,12 @@ from opta_lmx.manager.model import ModelManager
 # ─── Unit Tests: is_model_available ──────────────────────────────────────────
 
 
+def _enable_downloads_for_test(client: AsyncClient) -> None:
+    """Force-enable download policy for feature-specific auto-download tests."""
+    app = client._transport.app  # type: ignore[union-attr]
+    app.state.config.security.downloads_enabled = True
+
+
 async def test_is_model_available_local_file(tmp_path: Path) -> None:
     """is_model_available returns True for existing local file paths."""
     model_file = tmp_path / "model.gguf"
@@ -70,6 +76,7 @@ def test_human_size() -> None:
 
 async def test_load_available_model_returns_200(client: AsyncClient) -> None:
     """Loading a model that's on disk returns 200 (existing behavior)."""
+    _enable_downloads_for_test(client)
     # mock_model_manager.is_model_available always returns True
     resp = await client.post(
         "/admin/models/load",
@@ -81,6 +88,7 @@ async def test_load_available_model_returns_200(client: AsyncClient) -> None:
 
 async def test_load_unavailable_model_returns_202_with_token(client: AsyncClient) -> None:
     """Loading a model not on disk returns 202 with confirmation token."""
+    _enable_downloads_for_test(client)
     app = client._transport.app  # type: ignore[union-attr]
 
     # Make is_model_available return False for this model
@@ -115,6 +123,7 @@ async def test_load_unavailable_model_returns_202_with_token(client: AsyncClient
 
 async def test_confirm_valid_token_starts_download(client: AsyncClient) -> None:
     """Confirming with a valid token starts download."""
+    _enable_downloads_for_test(client)
     app = client._transport.app  # type: ignore[union-attr]
 
     # Insert a pending download token
@@ -155,6 +164,7 @@ async def test_confirm_valid_token_starts_download(client: AsyncClient) -> None:
 
 async def test_confirm_invalid_token_returns_404(client: AsyncClient) -> None:
     """Confirming with an invalid/expired token returns 404."""
+    _enable_downloads_for_test(client)
     resp = await client.post(
         "/admin/models/load/confirm",
         json={"confirmation_token": "dl-doesnotexist"},
@@ -164,6 +174,7 @@ async def test_confirm_invalid_token_returns_404(client: AsyncClient) -> None:
 
 async def test_confirm_expired_token_returns_404(client: AsyncClient) -> None:
     """Confirming with an expired token (>10 min) returns 404."""
+    _enable_downloads_for_test(client)
     app = client._transport.app  # type: ignore[union-attr]
 
     token = "dl-expired123"
@@ -183,6 +194,7 @@ async def test_confirm_expired_token_returns_404(client: AsyncClient) -> None:
 
 async def test_auto_download_skips_confirmation(client: AsyncClient) -> None:
     """auto_download=True skips confirmation and starts download immediately."""
+    _enable_downloads_for_test(client)
     app = client._transport.app  # type: ignore[union-attr]
 
     # Make model unavailable
@@ -223,6 +235,7 @@ async def test_auto_download_skips_confirmation(client: AsyncClient) -> None:
 
 async def test_load_already_loaded_model_returns_200(client: AsyncClient) -> None:
     """Loading a model that's already loaded returns success immediately."""
+    _enable_downloads_for_test(client)
     app = client._transport.app  # type: ignore[union-attr]
 
     # Pre-load the model
@@ -238,6 +251,7 @@ async def test_load_already_loaded_model_returns_200(client: AsyncClient) -> Non
 
 async def test_confirm_requires_auth(client_with_auth: AsyncClient) -> None:
     """Confirm endpoint requires admin key when auth is configured."""
+    _enable_downloads_for_test(client_with_auth)
     resp = await client_with_auth.post(
         "/admin/models/load/confirm",
         json={"confirmation_token": "dl-test"},

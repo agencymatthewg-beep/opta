@@ -3,20 +3,50 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'production' ? '.optalocal.com' : undefined;
+const ADMIN_ALLOWLIST_ENV = 'OPTA_ADMIN_ALLOWED_EMAILS';
+
+function parseAllowedAdminEmails(raw: string | undefined): Set<string> {
+  if (!raw) return new Set();
+
+  return new Set(
+    raw
+      .split(',')
+      .map((entry) => entry.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function unauthorizedResponse(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+
+  if (path.startsWith('/api/')) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+  }
+
+  const redirect = request.nextUrl.clone();
+  redirect.pathname = '/unauthorized';
+  return NextResponse.redirect(redirect);
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+
+  const path = request.nextUrl.pathname;
+  const isHealthEndpoint = path === '/api/health';
+  const isUnauthorizedPage = path === '/unauthorized';
+  const requiresAdminAuth = !isHealthEndpoint && !isUnauthorizedPage;
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  const allowedAdminEmails = parseAllowedAdminEmails(
+    process.env[ADMIN_ALLOWLIST_ENV],
+  );
+  const hasAllowlist = allowedAdminEmails.size > 0;
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    const path = request.nextUrl.pathname;
-    const allowWhenAuthUnavailable = path === '/api/health' || path === '/unauthorized';
-
-    // Fail closed in production if auth env is missing, while preserving
-    // health probe visibility for status monitoring.
-    if (process.env.NODE_ENV === 'production' && !allowWhenAuthUnavailable) {
+    if (requiresAdminAuth) {
       if (path.startsWith('/api/')) {
         return NextResponse.json({ error: 'Auth backend unavailable' }, { status: 503 });
       }
@@ -59,19 +89,31 @@ export async function updateSession(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  const path = request.nextUrl.pathname;
-  const isHealthEndpoint = path === '/api/health';
+  if (requiresAdminAuth) {
+    if (!user) {
+      return unauthorizedResponse(request);
+    }
 
-  // Protect all routes except the public health endpoint and /unauthorized.
-  if (path !== '/unauthorized' && !isHealthEndpoint) {
-    if (!user || user.email !== 'agencymatthewg@gmail.com') {
-      if (path.startsWith('/api/')) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-      } else {
+    if (!hasAllowlist) {
+      if (isProduction) {
+        if (path.startsWith('/api/')) {
+          return NextResponse.json(
+            { error: `Admin allowlist missing: set ${ADMIN_ALLOWLIST_ENV}` },
+            { status: 503 },
+          );
+        }
+
         const redirect = request.nextUrl.clone();
         redirect.pathname = '/unauthorized';
         return NextResponse.redirect(redirect);
       }
+
+      return supabaseResponse;
+    }
+
+    const email = user.email?.toLowerCase();
+    if (!email || !allowedAdminEmails.has(email)) {
+      return unauthorizedResponse(request);
     }
   }
 

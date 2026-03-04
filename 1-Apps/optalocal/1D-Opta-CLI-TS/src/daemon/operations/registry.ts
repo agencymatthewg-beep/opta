@@ -24,6 +24,7 @@ import {
   accountSignup,
   accountStatus,
 } from '../../commands/account.js';
+import { runVaultCommand } from '../../commands/vault.js';
 import { completions } from '../../commands/completions.js';
 import { config as configCommand } from '../../commands/config.js';
 import { getConfigStore } from '../../core/config.js';
@@ -459,6 +460,31 @@ export const operationRegistry = {
   'account.logout': defineOperation('account.logout', async () =>
     runCommandForJson('account.logout', async () => {
       await accountLogout({ json: true });
+    })
+  ),
+  'vault.pull': defineOperation('vault.pull', async () =>
+    runCommandForText(async () => {
+      await runVaultCommand('pull');
+    })
+  ),
+  'vault.pull-keys': defineOperation('vault.pull-keys', async () =>
+    runCommandForText(async () => {
+      await runVaultCommand('pull-keys');
+    })
+  ),
+  'vault.pull-rules': defineOperation('vault.pull-rules', async () =>
+    runCommandForText(async () => {
+      await runVaultCommand('pull-rules');
+    })
+  ),
+  'vault.push-rules': defineOperation('vault.push-rules', async (input) =>
+    runCommandForText(async () => {
+      await runVaultCommand('push-rules', input.file);
+    })
+  ),
+  'vault.status': defineOperation('vault.status', async () =>
+    runCommandForText(async () => {
+      await runVaultCommand('status');
     })
   ),
   'key.create': defineOperation('key.create', async (input) =>

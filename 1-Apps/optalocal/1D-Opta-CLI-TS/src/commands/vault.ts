@@ -18,7 +18,7 @@ import {
     pushVaultRules,
     readCachedRules,
 } from '../accounts/vault.js';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getConfigDir } from '../platform/paths.js';
 
