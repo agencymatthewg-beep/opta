@@ -2,9 +2,14 @@ import { z } from 'zod';
 import { normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
 import {
   ADMIN_KEYS_BY_HOST_ENV_VAR,
+  normalizeAdminKeyHost,
   parseAdminKeysByHost,
 } from '../lmx/admin-keys.js';
-import { detectLocalAdminKey, isLoopbackHost } from '../lmx/local-config.js';
+import {
+  detectLocalAdminKey,
+  isLoopbackHost,
+  type LocalAdminKeyDetection,
+} from '../lmx/local-config.js';
 import { DEFAULT_BROWSER_ADAPTATION_CONFIG } from '../browser/adaptation.js';
 
 const ToolPermission = z.enum(['allow', 'ask', 'deny']);
@@ -682,6 +687,67 @@ export function clearLoadConfigCache(): void {
 export const DEFAULT_PERMISSIONS: Record<string, 'allow' | 'ask' | 'deny'> =
   DEFAULT_CONFIG.permissions;
 
+type DetectLocalAdminKeyFn = () => Promise<LocalAdminKeyDetection>;
+
+export async function applyLoopbackAdminKeyDetection(
+  connectionInput: Record<string, unknown>,
+  detectFn: DetectLocalAdminKeyFn = detectLocalAdminKey
+): Promise<Record<string, unknown>> {
+  const connection = { ...connectionInput };
+  const resolvedHost =
+    typeof connection.host === 'string' && connection.host.trim().length > 0
+      ? connection.host.trim()
+      : DEFAULT_CONFIG.connection.host;
+  const rawFallbackHosts = Array.isArray(connection.fallbackHosts)
+    ? connection.fallbackHosts
+    : DEFAULT_CONFIG.connection.fallbackHosts;
+  const fallbackHosts = rawFallbackHosts
+    .map((value) => (typeof value === 'string' ? value.trim() : String(value ?? '').trim()))
+    .filter((value) => value.length > 0);
+
+  const existingAdminKey =
+    typeof connection.adminKey === 'string' ? connection.adminKey.trim() : '';
+  const existingHostMap =
+    connection.adminKeysByHost &&
+    typeof connection.adminKeysByHost === 'object' &&
+    !Array.isArray(connection.adminKeysByHost)
+      ? { ...(connection.adminKeysByHost as Record<string, string>) }
+      : undefined;
+
+  const fallbacksNeedingKeys: string[] = [];
+  for (const fallbackHost of fallbackHosts) {
+    if (!isLoopbackHost(fallbackHost)) continue;
+    const normalized = normalizeAdminKeyHost(fallbackHost);
+    const existingValue = existingHostMap?.[normalized];
+    if (existingValue && existingValue.trim().length > 0) continue;
+    fallbacksNeedingKeys.push(normalized);
+  }
+
+  const needsPrimaryKey = isLoopbackHost(resolvedHost) && existingAdminKey.length === 0;
+  if (!needsPrimaryKey && fallbacksNeedingKeys.length === 0) {
+    return connection;
+  }
+
+  const detection = await detectFn();
+  const detectedKey = detection.key?.trim();
+  if (!detectedKey) {
+    return connection;
+  }
+
+  const nextConnection = { ...connection };
+  if (needsPrimaryKey) {
+    nextConnection.adminKey = detectedKey;
+  }
+  if (fallbacksNeedingKeys.length > 0) {
+    const nextMap = { ...(existingHostMap ?? {}) };
+    for (const normalized of fallbacksNeedingKeys) {
+      nextMap[normalized] = detectedKey;
+    }
+    nextConnection.adminKeysByHost = nextMap;
+  }
+  return nextConnection;
+}
+
 // ---------------------------------------------------------------------------
 // Part D: Zod error formatting
 // ---------------------------------------------------------------------------
@@ -828,28 +894,10 @@ export async function loadConfig(overrides?: Record<string, unknown>): Promise<O
   if (process.env['OPTA_API_KEY']) connectionPatch['apiKey'] = process.env['OPTA_API_KEY'];
   const existingConnection =
     (raw as Record<string, Record<string, unknown>>)['connection'] ?? {};
-  let mergedConnection: Record<string, unknown> = { ...existingConnection };
-  if (Object.keys(connectionPatch).length > 0) {
-    mergedConnection = { ...mergedConnection, ...connectionPatch };
-  }
-
-  const configuredHost =
-    typeof mergedConnection['host'] === 'string' && mergedConnection['host'].trim().length > 0
-      ? (mergedConnection['host'] as string)
-      : DEFAULT_CONFIG.connection.host;
-  const configuredAdminKey =
-    typeof mergedConnection['adminKey'] === 'string'
-      ? (mergedConnection['adminKey'] as string).trim()
-      : '';
-
-  if (isLoopbackHost(configuredHost) && !configuredAdminKey) {
-    const detected = await detectLocalAdminKey();
-    if (detected.key) {
-      mergedConnection = { ...mergedConnection, adminKey: detected.key };
-    }
-  }
-
-  raw['connection'] = mergedConnection;
+  raw['connection'] =
+    Object.keys(connectionPatch).length > 0
+      ? { ...existingConnection, ...connectionPatch }
+      : existingConnection;
   const envModel = normalizeConfiguredModelId(process.env['OPTA_MODEL']);
   if (envModel) {
     raw.model = {
@@ -871,6 +919,11 @@ export async function loadConfig(overrides?: Record<string, unknown>): Promise<O
   if (overrides) {
     Object.assign(raw, overrides);
   }
+
+  const connectionWithDetection = await applyLoopbackAdminKeyDetection(
+    ((raw as Record<string, Record<string, unknown>>)['connection'] ?? {}) as Record<string, unknown>
+  );
+  raw['connection'] = connectionWithDetection;
 
   // 5. Validate with safeParse — self-heal on failure
   const result = OptaConfigSchema.safeParse(raw);

@@ -1,5 +1,9 @@
-import { describe, it, expect } from 'vitest';
-import { OptaConfigSchema, DEFAULT_CONFIG } from '../../src/core/config.js';
+import { describe, it, expect, vi } from 'vitest';
+import {
+  OptaConfigSchema,
+  DEFAULT_CONFIG,
+  applyLoopbackAdminKeyDetection,
+} from '../../src/core/config.js';
 
 describe('config', () => {
   it('produces valid defaults', () => {
@@ -417,5 +421,36 @@ describe('hooks config schema', () => {
       hooks: [{ event: 'session.end', command: 'git commit', background: true }],
     });
     expect(c.hooks[0]!.background).toBe(true);
+  });
+});
+
+describe('loopback admin key detection helper', () => {
+  it('assigns detected key when primary host is loopback', async () => {
+    const detect = vi.fn().mockResolvedValue({ key: 'detected-key', source: 'local-config' });
+    const result = await applyLoopbackAdminKeyDetection({ host: 'localhost' }, detect);
+    expect(result.adminKey).toBe('detected-key');
+    expect(detect).toHaveBeenCalledTimes(1);
+  });
+
+  it('adds adminKeysByHost entries for loopback fallback hosts', async () => {
+    const detect = vi.fn().mockResolvedValue({ key: 'detected-key', source: 'local-config' });
+    const result = await applyLoopbackAdminKeyDetection(
+      { host: 'mono.local', fallbackHosts: ['::1', '192.168.1.10'], adminKeysByHost: {} },
+      detect
+    );
+    expect(result.adminKey).toBeUndefined();
+    expect(result.adminKeysByHost).toEqual({ '::1': 'detected-key' });
+    expect(detect).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips detection when no loopback hosts are configured', async () => {
+    const detect = vi.fn();
+    const result = await applyLoopbackAdminKeyDetection(
+      { host: 'mono.local', fallbackHosts: ['192.168.1.10'] },
+      detect
+    );
+    expect(result.adminKey).toBeUndefined();
+    expect(result.adminKeysByHost).toBeUndefined();
+    expect(detect).not.toHaveBeenCalled();
   });
 });
