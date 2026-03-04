@@ -1,7 +1,7 @@
 ---
 title: ECOSYSTEM.md — How LMX Fits
 created: 2026-02-15
-updated: 2026-02-15
+updated: 2026-03-04
 type: context
 audience: Architects, integrators, Matthew
 status: Active
@@ -29,6 +29,8 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 │  │  │                                                         │   │  │
 │  │  │  /v1/chat/completions  ← OpenAI-compatible API         │   │  │
 │  │  │  /v1/models             ← Model listing                 │   │  │
+│  │  │  /v1/audio/transcriptions ← STT (mlx-whisper)           │   │  │
+│  │  │  /v1/audio/speech         ← TTS (mlx-audio/Kokoro)     │   │  │
 │  │  │  /admin/model/load      ← Admin endpoints               │   │  │
 │  │  │  /admin/model/download  ← Model management              │   │  │
 │  │  │  /admin/status          ← Health & memory               │   │  │
@@ -91,16 +93,21 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 ## Component Responsibilities
 
 ### Opta-LMX (This Project)
+
 **What it is:** Headless inference server on Mac Studio (port 1234)
 
 **What it does:**
+
 - Loads and runs MLX models (or GGUF as fallback)
 - Serves `/v1/chat/completions` (OpenAI-compatible)
+- Serves `/v1/audio/transcriptions` (STT via `mlx-whisper`)
+- Serves `/v1/audio/speech` (TTS via `mlx-audio` + Kokoro models)
 - Provides admin API for model management
 - Monitors memory, reports system status
 - Handles concurrent inference requests from all clients
 
 **What it does NOT do:**
+
 - ❌ Manage CLI configuration (that's Opta CLI)
 - ❌ Orchestrate bots or tasks (that's OpenClaw)
 - ❌ Store conversation history (that's optional in CLI)
@@ -110,18 +117,21 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 ---
 
 ### Opta CLI (TypeScript) — Integration Point
+
 **What it is:** Agentic coding assistant that communicates with LMX
 
 **Current State:** Uses LM Studio on port 1234  
 **After Migration:** Uses Opta-LMX on port 1234 (zero config change!)
 
 **Key Changes:**
+
 - `src/providers/lmx.ts` — replaces `src/providers/lmstudio.ts`
 - `src/commands/connect.ts` — calls `GET http://mac-studio:1234/v1/models` instead
 - `src/commands/models.ts` — same (parse LMX models list)
 - `src/commands/serve.ts` — NEW: start/stop/status of LMX daemon via ssh to Mac Studio
 
 **Uses LMX for:**
+
 - All inference requests (via `/v1/chat/completions`)
 - Model enumeration (via `/v1/models`)
 - Optional: model management (load/unload via `/admin/*`)
@@ -129,17 +139,20 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 ---
 
 ### OpenClaw Bots (6 instances) — Inference Consumers
+
 **What they are:** Autonomous agent instances running in OpenClaw
 
 **Current State:** Likely using LM Studio (need to verify)  
 **After Migration:** Use LMX via openai SDK (same as now)
 
 **Key Changes:**
+
 - Config points to `http://mac-studio:1234` (same as LM Studio, so no change!)
 - Use standard `openai` Python library (already do)
 - Optional: use Admin API to manage models autonomously (new feature)
 
 **Uses LMX for:**
+
 - Inference requests (all `/v1/chat/completions` calls)
 - Concurrent requests (LMX queues + routes)
 - Optional: autonomous model loading/unloading via `/admin/*`
@@ -147,9 +160,11 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 ---
 
 ### HuggingFace Hub (External) — Model Source
+
 **What it is:** Public repository of model weights
 
 **How LMX uses it:**
+
 - `huggingface_hub` library downloads models
 - Admin API endpoint `/admin/model/download?model_id=...` fetches from HF
 - SHA256 verification against known hashes (GUARDRAILS.md G-LMX-02)
@@ -225,15 +240,19 @@ Return JSON:
 ## Integration Checklist (Phase 5)
 
 ### Opta CLI Integration
-- [ ] Create `src/providers/lmx.ts` provider
-- [ ] Update `connect.ts` to call LMX `/v1/models` endpoint
-- [ ] Update `models.ts` to parse LMX response
-- [ ] Create `serve.ts` command to manage LMX daemon
-- [ ] Test: `opta connect` successfully discovers LMX
-- [ ] Test: `opta models` lists MLX models
-- [ ] Test: `opta do "fix this bug"` gets response from LMX
+
+- [x] Create `src/providers/lmx.ts` provider
+- [x] Update `connect.ts` to call LMX `/v1/models` endpoint
+- [x] Update `models.ts` to parse LMX response
+- [x] Create `serve.ts` command to manage LMX daemon
+- [x] Test: `opta connect` successfully discovers LMX
+- [x] Test: `opta models` lists MLX models
+- [x] Test: `opta do "fix this bug"` gets response from LMX
+- [x] Audio: `audio.transcribe` operation added to daemon registry (routes to `/v1/audio/transcriptions`)
+- [x] Audio: `audio.tts` operation added to daemon registry (routes to `/v1/audio/speech`)
 
 ### OpenClaw Bot Integration
+
 - [ ] Verify 6 bots point to port 1234 (LM Studio → LMX, same port)
 - [ ] Update configs (if needed) to LMX-specific model IDs
 - [ ] Test: each bot can send/receive from LMX
@@ -241,6 +260,7 @@ Return JSON:
 - [ ] Test: autonomous model management (load/unload via Admin API)
 
 ### Mac Studio Deployment
+
 - [ ] Install plist at `/Library/LaunchDaemons/com.opta.lmx.plist`
 - [ ] Create log directory: `/var/log/opta-lmx/`
 - [ ] Create model directory: `/Users/Shared/Opta-LMX/models/`
@@ -259,10 +279,13 @@ Opta-LMX (this project)
 ├── Depends On:
 │   ├── MLX (inference runtime)
 │   ├── mlx-lm (model loading utilities)
+│   ├── mlx-whisper (speech-to-text / STT)
+│   ├── mlx-audio (text-to-speech / TTS — Kokoro models)
 │   ├── FastAPI (HTTP server)
 │   ├── huggingface_hub (model downloads)
 │   ├── llama-cpp-python (GGUF fallback)
 │   ├── psutil (memory monitoring)
+│   ├── soundfile (audio I/O)
 │   └── Apple Silicon hardware (M3 Ultra / M4 Max)
 │
 └── Depended On By:
@@ -277,6 +300,7 @@ Opta-LMX (this project)
 ## Network Architecture
 
 ### Mac Studio (Primary Inference Host)
+
 ```
 Internal Network: 192.168.1.X/24
 
@@ -289,6 +313,7 @@ Can be accessed from:
 ```
 
 ### MacBook / Clients
+
 ```
 Opta CLI:
   - Configured with: "inference_host": "mac-studio.local"
@@ -304,12 +329,14 @@ Bots (via OpenClaw):
 ## Authorization & Security
 
 ### Current Model (Phase 2-3)
+
 - LMX listens on localhost:1234 (LAN-only, not exposed to internet)
 - Admin API has NO authentication (trust LAN)
 - Inference API has NO authentication (stateless)
 - No API keys needed (local-only)
 
 ### Future Consideration (Phase 4+)
+
 - Admin API could require token-based auth (optional)
 - Inference API stays open (clients are trusted)
 - TLS encryption (if exposed beyond LAN)
@@ -319,16 +346,19 @@ Bots (via OpenClaw):
 ## Performance Expectations
 
 ### Single Request Latency
+
 - First token: ~500ms (model already loaded)
 - Subsequent tokens: ~100-150ms per token (depends on model size)
 - Streaming: SSE delivers tokens as fast as they're generated
 
 ### Throughput
+
 - Single request: 20-50 tokens/sec (depending on model)
 - Concurrent requests: Handled by async queuing
 - All 6 bots simultaneously: LMX queues, doesn't drop
 
 ### Memory Usage
+
 - Mistral 7B (MLX): ~14GB
 - Llama2 70B (MLX): ~140GB
 - GGUF fallback: Similar, depends on quantization
@@ -338,11 +368,13 @@ Bots (via OpenClaw):
 ## Monitoring & Observability
 
 ### Built-in Endpoints
+
 - `GET /admin/status` — Memory, models, performance
 - `GET /admin/health` — Liveness check
 - Logs → `/var/log/opta-lmx/` (structured JSON, if configured)
 
 ### Future (Phase 4+)
+
 - Prometheus metrics export (`GET /metrics`)
 - Per-model benchmark tracking
 - Request history / audit log
@@ -350,6 +382,7 @@ Bots (via OpenClaw):
 ---
 
 ## Related Documents
+
 - Project identity: `APP.md`
 - Development phases: `docs/ROADMAP.md` (§5 Integration phase)
 - Architectural decisions: `docs/DECISIONS.md`

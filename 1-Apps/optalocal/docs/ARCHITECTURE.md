@@ -12,13 +12,15 @@ last_updated: 2026-03-04
 OptaLocal has two layers:
 
 1. **Runtime/control plane**
+
 - `1D-Opta-CLI-TS` (CLI + daemon contract authority)
 - `1M-Opta-LMX` (inference runtime)
 - `1P-Opta-Code-Universal` (desktop/web daemon client)
 - `1O-Opta-Init` (distribution + lifecycle manager)
 - `1L-Opta-LMX-Dashboard` (LMX operational dashboard)
 
-2. **Web surfaces**
+1. **Web surfaces**
+
 - `1T` Home, `1U` Help, `1V` Learn, `1R` Accounts, `1S` Status, `1X` Admin
 
 ## Core Runtime Data Flows
@@ -40,6 +42,14 @@ OptaLocal has two layers:
 1. Users land on `init.optalocal.com` (`1O` web).
 2. Opta Init Manager handles lifecycle of local stack components.
 
+### Flow D: Voice Dictation
+
+1. User taps the mic button in `1P-Opta-Code-Universal` (`Composer.tsx`).
+2. Browser MediaStream API captures audio; `useAudioRecorder` hook encodes to base64 WebM.
+3. Payload dispatched to daemon (`1D`) via `POST /v3/operations/audio.transcribe`.
+4. Daemon routes to LMX (`POST /v1/audio/transcriptions` via `mlx-whisper`) or OpenAI Whisper-1 depending on configured provider.
+5. Transcribed text is appended to the composer input automatically.
+
 ## Contract Boundaries
 
 - `1D` is contract authority for daemon protocol and operations.
@@ -50,6 +60,7 @@ OptaLocal has two layers:
 ## Discovery and Connectivity
 
 LMX discovery contract is exposed by `1M`:
+
 - `/.well-known/opta-lmx`
 - `/v1/discovery`
 
@@ -60,3 +71,7 @@ Clients use these with health/model probes for resilient connection behavior.
 - Workspace map: `README.md`
 - Runtime coupling audit: `docs/audit/2026-03-system-map.md`
 - Product taxonomy: `docs/PRODUCT-MODEL.md`
+
+## Cross-App Coordination
+
+The `todo-optalocal/` directory is the cross-agent coordination hub. When an agent working in one app identifies ripple-effect updates needed in other apps, it drops a structured markdown document here (named `{TargetApp}-{reason}-{timestamp}.md`) rather than context-switching into unfamiliar codebases. Agents native to the target app pick up and implement the work with full local context. See `todo-optalocal/README.md` for the full protocol.

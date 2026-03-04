@@ -77,7 +77,7 @@ pytest tests/ -v
 pytest tests/ --cov=src -v
 ```
 
-Python 3.12 venv. Pydantic v2 + async/await everywhere. API: `/v1/chat/completions` (OpenAI-compatible), `/admin/models/load`, `/admin/models/unload`, `/healthz`. Has comprehensive CLAUDE.md.
+Python 3.12 venv. Pydantic v2 + async/await everywhere. API: `/v1/chat/completions` (OpenAI-compatible), `/v1/audio/transcriptions` (STT via `mlx-whisper`), `/v1/audio/speech` (TTS via `mlx-audio`), `/admin/models/load`, `/admin/models/unload`, `/healthz`. Has comprehensive CLAUDE.md.
 
 ### Opta Code Desktop (1P-Opta-Code-Universal)
 
@@ -146,6 +146,8 @@ The root `optalocal/` now includes a lightweight command hub (`apps.registry.jso
 | `design/` | Logos (SVG/PNG), aesthetic specs per app category, architecture diagrams |
 | `docs/` | Cross-app standards, audit reports, Gemini workflow docs |
 | `scripts/` | Python utilities for logo generation via Gemini |
+| `todo-optalocal/` | Cross-agent coordination hub — pending cross-app update tasks |
+| `optalocal-updates/` | Immutable log of all live production updates |
 
 ## Opta Learn Guide Generation (1V)
 
@@ -177,3 +179,23 @@ All apps share one Supabase project. Cookie domain `.optalocal.com` enables cros
 ### Autonomous Source Control
 
 - **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.
+
+## Cross-App Coordination (todo-optalocal)
+
+When you are in one app and identify changes needed in another, **do NOT switch contexts blindly**. Instead, drop a markdown document in `todo-optalocal/` using the filename format:
+
+```
+{TargetApp}-{brief-reason}-{YYYYMMDD-HHmm}.md
+```
+
+Example: `1P-Opta-Code-Universal-add-audio-protocol-events-20260304-1814.md`
+
+At the start of any session, check `todo-optalocal/` for documents targeting your current app and implement them. See `todo-optalocal/README.md` for the full template and agent directives.
+
+## Voice & Audio Capabilities (2026-03-04)
+
+Full voice dictation and TTS pipeline is now live across the stack:
+
+- **LMX** (`1M`): `POST /v1/audio/transcriptions` (STT, `mlx-whisper`) and `POST /v1/audio/speech` (TTS, `mlx-audio`)
+- **Daemon** (`1D`): `audio.transcribe` and `audio.tts` operations in `src/daemon/operations/audio.ts`. Provider: LMX local (default) or OpenAI cloud (keychain fallback)
+- **Desktop** (`1P`): `useAudioRecorder` hook + pulsating mic button in `Composer.tsx`. Transcription auto-appended to composer draft.

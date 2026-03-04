@@ -21,6 +21,7 @@ Every request requires a Bearer token.
 
 - **HTTP**: `Authorization: Bearer <token>` header on all requests.
 - **WebSocket**: Token passed as query parameter because browsers cannot set custom headers during WS handshake:
+
   ```
   ws://127.0.0.1:9999/v3/ws?sessionId=<sid>&afterSeq=0&token=<token>
   ```
@@ -68,6 +69,7 @@ Returns runtime snapshot (session count, active turns, subscriber count, etc.).
 Create a new session.
 
 **Request body:**
+
 ```json
 {
   "title": "Optional display name",
@@ -77,6 +79,7 @@ Create a new session.
 ```
 
 **Response:**
+
 ```json
 {
   "sessionId": "sess_abc123",
@@ -104,6 +107,7 @@ Fetch session detail including message history.
 Submit a user turn (triggers the agent loop).
 
 **Request body:**
+
 ```json
 {
   "clientId": "opta-code-desktop-abc12345",
@@ -118,6 +122,7 @@ Submit a user turn (triggers the agent loop).
 - `mode`: `"chat"` (conversational) or `"do"` (agentic, auto-approves safe tools)
 
 **Response:**
+
 ```json
 {
   "turnId": "turn_xyz789",
@@ -132,6 +137,7 @@ Submit a user turn (triggers the agent loop).
 Poll for missed events since `afterSeq`. Used for initial load or reconnect catch-up. Prefer WebSocket for ongoing streaming.
 
 **Response:**
+
 ```json
 {
   "events": [ ... V3Envelope array ... ]
@@ -145,6 +151,7 @@ Poll for missed events since `afterSeq`. Used for initial load or reconnect catc
 Cancel the active or queued turn.
 
 **Request body (all fields optional):**
+
 ```json
 { "turnId": "turn_xyz789", "writerId": "opta-code-desktop-abc12345" }
 ```
@@ -158,6 +165,7 @@ Cancel the active or queued turn.
 Resolve a tool permission request.
 
 **Request body:**
+
 ```json
 {
   "requestId": "perm_req_001",
@@ -177,6 +185,7 @@ Resolve a tool permission request.
 Lists canonical non-session daemon operations (CLI capability families exposed via typed endpoints).
 
 **Response:**
+
 ```json
 {
   "operations": [
@@ -197,6 +206,7 @@ Lists canonical non-session daemon operations (CLI capability families exposed v
 Execute a typed daemon operation.
 
 **Request body:**
+
 ```json
 {
   "input": { },
@@ -211,6 +221,7 @@ Execute a typed daemon operation.
   - Failure mode: `policy.runtimeEnforcement.failOpen` (`true` allow on evaluator failure, `false` deny)
 
 **Success response:**
+
 ```json
 {
   "ok": true,
@@ -221,6 +232,7 @@ Execute a typed daemon operation.
 ```
 
 **Error response:**
+
 ```json
 {
   "ok": false,
@@ -255,9 +267,17 @@ Execute a typed daemon operation.
 | `benchmark` | `dangerous` | Generate benchmark suite artifacts |
 | `keychain.status` | `read` | Inspect keychain/key presence |
 | `keychain.set-anthropic` | `write` | Store Anthropic key |
+| `keychain.set-gemini` | `write` | Store Gemini key |
+| `keychain.set-openai` | `write` | Store OpenAI key |
 | `keychain.set-lmx` | `write` | Store LMX key |
+| `keychain.set-opencode-zen` | `write` | Store Opencode Zen key |
 | `keychain.delete-anthropic` | `write` | Delete Anthropic key |
+| `keychain.delete-gemini` | `write` | Delete Gemini key |
+| `keychain.delete-openai` | `write` | Delete OpenAI key |
 | `keychain.delete-lmx` | `write` | Delete LMX key |
+| `keychain.delete-opencode-zen` | `write` | Delete Opencode Zen key |
+| `audio.transcribe` | `read` | Transcribe audio via STT (LMX local or OpenAI cloud) |
+| `audio.tts` | `read` | Generate speech via TTS (LMX local or OpenAI cloud) |
 
 ---
 
@@ -294,7 +314,9 @@ ws://127.0.0.1:9999/v3/ws?sessionId=<sid>&afterSeq=<n>&token=<token>
 All messages are JSON objects with a `type` discriminant.
 
 #### `hello`
+
 Identify the client after connecting.
+
 ```json
 {
   "type": "hello",
@@ -305,7 +327,9 @@ Identify the client after connecting.
 ```
 
 #### `turn.submit`
+
 Submit a user turn over WS (alternative to HTTP POST).
+
 ```json
 {
   "type": "turn.submit",
@@ -318,7 +342,9 @@ Submit a user turn over WS (alternative to HTTP POST).
 ```
 
 #### `permission.resolve`
+
 Approve or deny a tool permission request over WS.
+
 ```json
 {
   "type": "permission.resolve",
@@ -330,7 +356,9 @@ Approve or deny a tool permission request over WS.
 ```
 
 #### `turn.cancel`
+
 Cancel an active or queued turn over WS.
+
 ```json
 {
   "type": "turn.cancel",
@@ -379,6 +407,9 @@ interface V3Envelope {
 | `session.cancelled` | Session shut down | `{}` |
 | `background.output` | Shell process produced output | `{ processId, pid, seq, stream, text }` |
 | `background.status` | Shell process state changed | `{ process: BackgroundProcessSnapshot, reason }` |
+| `audio.transcription.result` | STT transcription complete | `{ text: string, provider: string }` |
+| `audio.tts.chunk` | TTS audio chunk ready | `{ audioBase64: string, provider: string, isFinal: boolean }` |
+| `voice.state` | Voice pipeline state changed | `{ state: 'idle' \| 'listening' \| 'transcribing' \| 'thinking' \| 'speaking' }` |
 
 #### `TurnDonePayload`
 

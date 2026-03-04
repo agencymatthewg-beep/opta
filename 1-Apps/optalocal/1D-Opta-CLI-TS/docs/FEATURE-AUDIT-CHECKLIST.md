@@ -74,6 +74,17 @@ Verify each command family has both automated coverage and at least one manual s
 - [x] Rendering integrity, interaction fuzzing, and menu navigation validated
 - [x] Tests: `tests/tui/*.test.tsx`, especially `App.test.tsx`, `menus-navigation.test.tsx`, `interaction-fuzz.test.tsx`
 
+### 4) Voice & Audio Operations
+
+- [x] `audio.transcribe` operation registered in daemon registry (`src/daemon/operations/registry.ts`)
+- [x] `audio.tts` operation registered in daemon registry
+- [x] LMX local routing (base64 audio → `POST /v1/audio/transcriptions`) implemented
+- [x] OpenAI cloud routing fallback (Whisper-1 / TTS-1) implemented via keychain key retrieval
+- [x] Protocol types defined: `audio.transcription.result`, `audio.tts.chunk`, `voice.state` in `v3/types.ts`
+- [x] Input schemas defined in `v3/operations.ts` (audioBase64, provider, language, audioFormat, voice)
+- [ ] Unit tests for `audio` daemon operations (`tests/daemon/audio.test.ts` — to be written)
+- [ ] Integration test: STT round-trip via LMX on Apple Silicon hardware
+
 ## D. Quality and Security Audit
 
 - [x] No P0/P1 defects open for current release (GitHub issue query on 2026-02-28 returned none)
