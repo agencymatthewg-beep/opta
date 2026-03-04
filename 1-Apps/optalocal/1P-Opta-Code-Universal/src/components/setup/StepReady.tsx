@@ -129,12 +129,15 @@ export function StepReady({
 
       try {
         const mcpListRes = await daemonClient.runOperation(connection, "mcp.list", {});
-        const operations = (mcpListRes as any)?.result?.operations || [];
-        if (operations.length === 0 || !mcpListRes.ok) {
-           await daemonClient.runOperation(connection, "mcp.add-playwright", { input: { name: "browser", mode: "isolated" } });
+        const operations = (mcpListRes as { result?: { operations?: unknown[] } })?.result?.operations || [];
+        if (!mcpListRes.ok || operations.length === 0) {
+           const addRes = await daemonClient.runOperation(connection, "mcp.add-playwright", { input: { name: "browser", mode: "isolated" } });
+           if (!addRes.ok) {
+             console.warn(`Failed to provision MCP starter pack: [${addRes.error?.code}] ${addRes.error?.message}`);
+           }
         }
       } catch (e: unknown) {
-        console.warn("Failed to provision MCP starter pack", e);
+        console.warn("Failed to provision MCP starter pack (network error):", e);
       }
     } catch (error) {
       if (nativeDesktop) {
