@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Daemon - Canonical Variations</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600&display=swap');
+
+        :root {
+            --color-void: #09090b;
+            --color-surface: #18181b;
+            --color-elevated: #27272a;
+            --color-border: #3f3f46;
+            --color-primary: #a855f7;
+            --color-text-primary: #fafafa;
+            --color-text-secondary: #a1a1aa;
+        }
+
+        body {
+            background: var(--color-void);
+            color: var(--color-text-primary);
+            font-family: 'Sora', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 4rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin: 0 0 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168, 85, 247, 0.5) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+        }
+
+        .card:hover {
+            background: rgba(12, 12, 18, 0.9);
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(168, 85, 247, 0.15);
+        }
+
+        .card-title {
+            margin-top: 2.5rem;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .card-desc {
+            color: var(--color-text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Standard Canonical 210x210 container */
+        .orbit-container {
+            width: 210px;
+            height: 210px;
+            color: var(--color-primary);
+            position: relative;
+        }
+
+        .orbit-container svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Animation Classes */
+        .spin {
+            animation: spin 40s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        .spin-fast {
+            animation: spin 20s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        .spin-rev {
+            animation: spin-rev 30s linear infinite;
+            transform-origin: 0 0;
+        }
+
+        .pulse {
+            animation: pulse 3s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .flow {
+            animation: flow 1.5s linear infinite;
+            stroke-dasharray: 4 6;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin-rev {
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes flow {
+            100% {
+                stroke-dashoffset: -20;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Daemon Canonical Marks</h1>
+        <p>3 variations of the "Orchestrator Core" archetype, strictly adhering to the Opta Local 210x210 Orbit Motif
+            standard and Void/Violet aesthetic.</p>
+    </header>
+
+    <div class="grid">
+
+        <!-- Variation A: Tri-Node Convergence -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Main Ring from canonical standard -->
+                    <g class="spin">
+                        <circle cx="105" cy="105" r="100" fill="none" stroke="currentColor" stroke-width="0.5"
+                            opacity="0.2" />
+                        <circle cx="105" cy="105" r="80" fill="none" stroke="currentColor" stroke-width="1.5"
+                            stroke-dasharray="2 12" opacity="0.4" />
+                    </g>
+
+                    <!-- Canonical Orbit Ellipse (-30deg) -->
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-30)">
+                            <ellipse cx="0" cy="0" rx="90" ry="30" fill="none" stroke="currentColor" stroke-width="0.5"
+                                opacity="0.4" />
+                            <g class="spin-rev">
+                                <circle cx="-90" cy="0" r="3" fill="#ffffff" />
+                                <circle cx="90" cy="0" r="2" fill="currentColor" opacity="0.5" />
+                            </g>
+                        </g>
+                    </g>
+
+                    <!-- Core Glyph: Tri-Node Convergence -->
+                    <!-- Represents Code, LMX, and CLI feeding into the central process -->
+                    <g transform="translate(105, 105)">
+                        <!-- IPC/HTTP Streams -->
+                        <line x1="0" y1="-25" x2="0" y2="-65" stroke="currentColor" stroke-width="1.5" opacity="0.7"
+                            class="flow" />
+                        <line x1="-21.6" y1="12.5" x2="-56.3" y2="32.5" stroke="currentColor" stroke-width="1.5"
+                            opacity="0.7" class="flow" />
+                        <line x1="21.6" y1="12.5" x2="56.3" y2="32.5" stroke="currentColor" stroke-width="1.5"
+                            opacity="0.7" class="flow" />
+
+                        <!-- Nodes -->
+                        <circle cx="0" cy="-65" r="2.5" fill="#ffffff" class="pulse" />
+                        <circle cx="-56.3" cy="32.5" r="2.5" fill="#ffffff" class="pulse" style="animation-delay: 1s" />
+                        <circle cx="56.3" cy="32.5" r="2.5" fill="#ffffff" class="pulse" style="animation-delay: 2s" />
+
+                        <!-- Center Reactor -->
+                        <circle cx="0" cy="0" r="25" fill="none" stroke="currentColor" stroke-width="2" />
+                        <circle cx="0" cy="0" r="18" fill="currentColor" opacity="0.1" />
+
+                        <!-- Central processing diamond/triangle -->
+                        <path d="M0 -12 L10 6 L-10 6 Z" fill="none" stroke="#ffffff" stroke-width="1.5" />
+                        <circle cx="0" cy="0" r="2" fill="#ffffff" />
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">A. Tri-Node Convergence</div>
+            <div class="card-desc">Three discrete client nodes streaming tightly into an unyielding central reactor
+                ring.</div>
+        </div>
+
+
+        <!-- Variation B: Technical Prism -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <!-- Multi-Ring Base -->
+                    <g class="spin-fast">
+                        <circle cx="105" cy="105" r="95" fill="none" stroke="currentColor" stroke-width="0.5"
+                            opacity="0.2" />
+                        <circle cx="105" cy="105" r="75" fill="none" stroke="currentColor" stroke-width="0.5"
+                            stroke-dasharray="4 4" opacity="0.4" />
+                    </g>
+
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-40)">
+                            <ellipse cx="0" cy="0" rx="95" ry="25" fill="none" stroke="currentColor" stroke-width="1"
+                                opacity="0.3" />
+                            <g class="spin-rev">
+                                <circle cx="95" cy="0" r="3.5" fill="#ffffff" class="pulse" />
+                            </g>
+                        </g>
+                    </g>
+
+                    <!-- Core Glyph: Technical Prism -->
+                    <g transform="translate(105, 105)">
+                        <!-- Outer containment triangle -->
+                        <polygon points="0,-45 39,22.5 -39,22.5" fill="none" stroke="currentColor" stroke-width="1.5"
+                            opacity="0.4" />
+                        <polygon points="0,-35 30.3,17.5 -30.3,17.5" fill="currentColor" opacity="0.05" />
+
+                        <!-- Inner routing core -->
+                        <path d="M0 0 L0 -35 M0 0 L-30.3 17.5 M0 0 L30.3 17.5" stroke="currentColor" stroke-width="2"
+                            opacity="0.8" />
+
+                        <!-- Prism Nodes -->
+                        <circle cx="0" cy="-35" r="3" fill="#ffffff" />
+                        <circle cx="-30.3" cy="17.5" r="3" fill="#ffffff" />
+                        <circle cx="30.3" cy="17.5" r="3" fill="#ffffff" />
+
+                        <!-- Hex center -->
+                        <polygon points="0,-8 6.9,-4 6.9,4 0,8 -6.9,4 -6.9,-4" fill="#ffffff" />
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">B. Technical Prism</div>
+            <div class="card-desc">A highly geometric layout illustrating the parsing and directing of requests through
+                a stable 3-axis hub.</div>
+        </div>
+
+
+        <!-- Variation C: Concentric Router -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <g class="spin">
+                        <circle cx="105" cy="105" r="100" fill="none" stroke="currentColor" stroke-width="1"
+                            opacity="0.2" />
+                    </g>
+
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-30)">
+                            <ellipse cx="0" cy="0" rx="90" ry="35" fill="none" stroke="currentColor" stroke-width="0.5"
+                                opacity="0.5" />
+                            <g class="spin-rev" style="animation-duration: 15s">
+                                <circle cx="90" cy="0" r="2.5" fill="currentColor" />
+                                <circle cx="-90" cy="0" r="2.5" fill="currentColor" />
+                            </g>
+                        </g>
+                    </g>
+
+                    <!-- Core Glyph: Concentric Router -->
+                    <g transform="translate(105, 105)">
+                        <!-- Outer segmented ring -->
+                        <path
+                            d="M0 -40 A 40 40 0 0 1 34.6 20 M34.6 20 A 40 40 0 0 1 -34.6 20 M-34.6 20 A 40 40 0 0 1 0 -40"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="10 30" opacity="0.6" />
+
+                        <!-- Inner segmented ring -->
+                        <g class="spin-fast">
+                            <circle cx="0" cy="0" r="25" fill="none" stroke="currentColor" stroke-width="3"
+                                stroke-dasharray="15 37" opacity="0.8" />
+                        </g>
+
+                        <!-- Network Hub lines -->
+                        <path d="M0 -15 L0 -25 M-13 7.5 L-21.6 12.5 M13 7.5 L21.6 12.5" stroke="#ffffff"
+                            stroke-width="2" stroke-linecap="round" />
+
+                        <circle cx="0" cy="0" r="10" fill="currentColor" opacity="0.1" />
+                        <circle cx="0" cy="0" r="4" fill="#ffffff" class="pulse" />
+
+                        <!-- Entry dots -->
+                        <circle cx="0" cy="-40" r="2" fill="#ffffff" />
+                        <circle cx="-34.6" cy="20" r="2" fill="#ffffff" />
+                        <circle cx="34.6" cy="20" r="2" fill="#ffffff" />
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">C. Concentric Router</div>
+            <div class="card-desc">Rotating internal bands representing the daemon's continuous port listeners and
+                internal message broker.</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

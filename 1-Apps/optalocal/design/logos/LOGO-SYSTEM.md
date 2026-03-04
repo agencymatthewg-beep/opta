@@ -14,12 +14,14 @@
 ## What Every App Logo Shares (Locked — Do Not Change)
 
 ### 1. General Aesthetic, Style & Colouring
+
 - Void black background: radial gradient `#0d0c14` (centre) → `#09090b` (edge)
 - Gravitational particle field: 120 violet/white particles biased toward the ring, density falling off with distance (inverse-square distribution)
 - 30 bright inner sparks concentrated at the ring radius
 - Two-layer violet ambient glow (tight core bloom + wide soft halo)
 
 ### 2. The Outer Ring
+
 - 3-layer depth system:
   - Outermost halo: `stroke="#a855f7"` `stroke-width="6"` `stroke-opacity="0.06"`
   - Mid soft ring: `stroke="#a855f7"` `stroke-width="3"` `stroke-opacity="0.10"`
@@ -28,14 +30,17 @@
 - Deep void fill inside the ring: radial gradient `#100e18` → `#09090b`
 
 ### 3. The Orbit Ellipse
+
 - Gradient stroke `#c084fc` → `#7c3aed` with glow filter
 - Sharp edge overlay for crispness
 - Two orbit node dots: periapsis (brighter, `#c084fc`) + apoapsis (dimmer, `#a855f7`)
 
 ### 4. The Centre Point
+
 - Layered: large soft radial bloom → inner glow filter → crisp core dot (`#f5d0fe`) → bright specular flare offset top-left (`#ffffff`)
 
 ### 5. Typography (Wordmark)
+
 - Font: **Sora SemiBold 600**, tracking `0.22em`, uppercase
 - "opta local" — colour `#71717a` (muted grey)
 - Vertical divider — `rgba(113,113,122,0.35)`
@@ -66,6 +71,7 @@ All other elements — ring, background, particles, glow, typography style, colo
 | **Opta LMX** | `lmx` (violet) | CPU Core + Tensor Grid | ✅ Rendered |
 | **Opta CLI** | `cli` (violet) | Chevrons + Square | ✅ Rendered |
 | **Opta Code** | `code` (violet) | Code Brackets + Data Rings | ✅ Rendered |
+| **Opta Daemon** | `daemon` (violet) | Binary Matrix Atmosphere + Tri-Node Convergence | ✅ Rendered March 2026 |
 
 ---
 

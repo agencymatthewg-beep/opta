@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Daemon - Premium Tri-Node Variations</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600&display=swap');
+
+        :root {
+            --color-void: #09090b;
+            --color-primary: #a855f7;
+            --color-primary-dim: rgba(168, 85, 247, 0.3);
+            --color-text-primary: #fafafa;
+            --color-text-secondary: #a1a1aa;
+        }
+
+        body {
+            background: radial-gradient(circle at center, #100e18 0%, var(--color-void) 100%);
+            color: var(--color-text-primary);
+            font-family: 'Sora', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 4rem 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        h1 {
+            font-size: 2.25rem;
+            margin: 0 0 1rem;
+            background: linear-gradient(135deg, #ffffff 0%, #ffffff 50%, rgba(168, 85, 247, 0.5) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            color: var(--color-text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 3rem;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .card {
+            background: rgba(5, 3, 10, 0.8);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: inset 0 0 20px rgba(168, 85, 247, 0.05);
+        }
+
+        .card:hover {
+            background: rgba(12, 12, 18, 0.9);
+            border-color: rgba(168, 85, 247, 0.4);
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 20px 40px -10px rgba(168, 85, 247, 0.2), inset 0 0 20px rgba(168, 85, 247, 0.1);
+        }
+
+        .card-title {
+            margin-top: 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card-desc {
+            color: var(--color-text-secondary);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            text-align: center;
+            margin-top: 0.75rem;
+            line-height: 1.6;
+        }
+
+        /* Standard Canonical 210x210 container */
+        .orbit-container {
+            width: 210px;
+            height: 210px;
+            position: relative;
+        }
+
+        .orbit-container svg {
+            width: 100%;
+            height: 100%;
+            overflow: visible;
+        }
+
+        /* Animation Classes */
+        .spin {
+            animation: spin 40s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        .spin-fast {
+            animation: spin 20s linear infinite;
+            transform-origin: 105px 105px;
+        }
+
+        .spin-rev {
+            animation: spin-rev 30s linear infinite;
+            transform-origin: 0 0;
+        }
+
+        .pulse {
+            animation: pulse 3s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .pulse-fast {
+            animation: pulse 1s infinite alternate cubic-bezier(0.4, 0, 0.6, 1);
+        }
+
+        .glow {
+            filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.6));
+        }
+
+        .flow {
+            animation: flow 2s linear infinite;
+            stroke-dasharray: 4 6;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin-rev {
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes flow {
+            100% {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        /* Binary Matrix Typography inside SVG */
+        text.binary {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 6px;
+            fill: var(--color-primary);
+            opacity: 0.4;
+        }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <h1>Premium Tri-Node Explorations</h1>
+        <p>3 advanced variations of the "Tri-Node Convergence" concept, pulling high-end elements from the final Opta
+            Code 2026 rendering—specifically the Binary Matrix texture, Attention Rays, and intense focal blooms.</p>
+    </header>
+
+    <div class="grid">
+
+        <!-- Prototype 1: Code-Aligned Binary Matrix -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <radialGradient id="ringGlow" cx="50%" cy="50%" r="50%">
+                            <stop offset="80%" stop-color="#a855f7" stop-opacity="0" />
+                            <stop offset="100%" stop-color="#a855f7" stop-opacity="0.3" />
+                        </radialGradient>
+                        <filter id="bloom">
+                            <feGaussianBlur stdDeviation="3" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <!-- Pattern for binary overlay ring -->
+                        <path id="textPathOut" d="M 105, 15 A 90,90 0 1,1 104.9, 15" fill="none" />
+                        <path id="textPathIn" d="M 105, 30 A 75,75 0 1,1 104.9, 30" fill="none" />
+                    </defs>
+
+                    <!-- Outer Matrix Rings -->
+                    <g class="spin">
+                        <text class="binary">
+                            <textPath href="#textPathOut" startOffset="0%">0 1 0 1 1 0 0 1 0 1 1 0 0 1 1 0 1 0 1 1 0 0 1
+                                0 1 1 0 0 1 1 0 1</textPath>
+                        </text>
+                        <text class="binary">
+                            <textPath href="#textPathOut" startOffset="33%">1 0 1 0 0 1 1 0 1 0 0 1 1 0 0 1 0 1 0 0 1 1
+                                0 1 0 0 1 1 0 0 1 1</textPath>
+                        </text>
+                        <text class="binary">
+                            <textPath href="#textPathOut" startOffset="66%">0 0 1 1 0 1 0 1 0 0 1 1 0 1 0 1 1 0 0 1 1 0
+                                1 0 1 0 0 1 1 0 1 0</textPath>
+                        </text>
+                    </g>
+                    <g class="spin" style="animation-direction: reverse; animation-duration: 60s;">
+                        <text class="binary" style="font-size: 5px; opacity: 0.2;">
+                            <textPath href="#textPathIn" startOffset="0%">1011 0100 1101 0010 1011 0100 1101 0010
+                            </textPath>
+                        </text>
+                        <text class="binary" style="font-size: 5px; opacity: 0.2;">
+                            <textPath href="#textPathIn" startOffset="50%">0010 1101 0100 1011 0010 1101 0100 1011
+                            </textPath>
+                        </text>
+                    </g>
+
+                    <!-- Canonical Orbit Ring -->
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-30)">
+                            <ellipse cx="0" cy="0" rx="90" ry="30" fill="none" stroke="#a855f7" stroke-width="0.5"
+                                opacity="0.3" />
+                            <g class="spin-rev">
+                                <circle cx="-90" cy="0" r="3" fill="#ffffff" filter="url(#bloom)" />
+                                <circle cx="90" cy="0" r="2" fill="#a855f7" opacity="0.8" />
+                            </g>
+                        </g>
+                    </g>
+
+                    <!-- Tri-Node Core (Glowing) -->
+                    <g transform="translate(105, 105)">
+                        <circle cx="0" cy="0" r="45" fill="url(#ringGlow)" />
+
+                        <!-- Radiating Streams -->
+                        <line x1="0" y1="-20" x2="0" y2="-60" stroke="#a855f7" stroke-width="1.5" opacity="0.8"
+                            class="flow" />
+                        <line x1="-17.3" y1="10" x2="-52" y2="30" stroke="#a855f7" stroke-width="1.5" opacity="0.8"
+                            class="flow" />
+                        <line x1="17.3" y1="10" x2="52" y2="30" stroke="#a855f7" stroke-width="1.5" opacity="0.8"
+                            class="flow" />
+
+                        <!-- Ingress Nodes -->
+                        <circle cx="0" cy="-60" r="2" fill="#ffffff" class="pulse" />
+                        <circle cx="-52" cy="30" r="2" fill="#ffffff" class="pulse" style="animation-delay: 1s" />
+                        <circle cx="52" cy="30" r="2" fill="#ffffff" class="pulse" style="animation-delay: 2s" />
+
+                        <!-- Central Reactor -->
+                        <circle cx="0" cy="0" r="20" fill="none" stroke="#a855f7" stroke-width="1.5"
+                            stroke-dasharray="2 4" />
+                        <circle cx="0" cy="0" r="14" fill="#a855f7" opacity="0.1" />
+                        <path d="M0 -8 L7 4 L-7 4 Z" fill="none" stroke="#ffffff" stroke-width="2"
+                            filter="url(#bloom)" />
+                        <circle cx="0" cy="-1" r="1.5" fill="#ffffff" />
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">1. Binary Atmosphere</div>
+            <div class="card-desc">Injects the Opta Code JetBrains Mono binary matrix texture into the outer orbit,
+                creating a dense, technical gravity well around the Tri-Node hub.</div>
+        </div>
+
+
+        <!-- Prototype 2: The Attention Ray Core -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="bloom2">
+                            <feGaussianBlur stdDeviation="2" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <!-- Heavy glow for the rays -->
+                        <linearGradient id="rayGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stop-color="#ffffff" />
+                            <stop offset="100%" stop-color="#a855f7" stop-opacity="0" />
+                        </linearGradient>
+                    </defs>
+
+                    <g class="spin-fast">
+                        <circle cx="105" cy="105" r="95" fill="none" stroke="#a855f7" stroke-width="0.5"
+                            opacity="0.3" />
+                        <circle cx="105" cy="105" r="75" fill="none" stroke="#a855f7" stroke-width="1"
+                            stroke-dasharray="1 10" opacity="0.6" />
+                    </g>
+
+                    <!-- Canonical Orbit Base -->
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-40)">
+                            <ellipse cx="0" cy="0" rx="90" ry="25" fill="none" stroke="#a855f7" stroke-width="1"
+                                opacity="0.4" />
+                        </g>
+                    </g>
+
+                    <!-- Intense Tri-Node Attention Head -->
+                    <g transform="translate(105, 105)">
+                        <!-- 3 Weighted Attention Rays (Like the Code Logo) -->
+                        <g opacity="0.8">
+                            <path d="M-2 -50 L2 -50 L1 -15 L-1 -15 Z" fill="url(#rayGrad)" transform="rotate(0)" />
+                            <path d="M-1.5 -50 L1.5 -50 L1 -15 L-1 -15 Z" fill="url(#rayGrad)"
+                                transform="rotate(120)" />
+                            <path d="M-3 -50 L3 -50 L1 -15 L-1 -15 Z" fill="url(#rayGrad)" transform="rotate(240)" />
+                        </g>
+
+                        <!-- Node Caps -->
+                        <circle cx="0" cy="-50" r="3" fill="#ffffff" filter="url(#bloom2)" />
+                        <circle cx="43.3" cy="25" r="2.5" fill="#ffffff" filter="url(#bloom2)" />
+                        <circle cx="-43.3" cy="25" r="4" fill="#ffffff" filter="url(#bloom2)" />
+
+                        <!-- Center Focal Node -->
+                        <circle cx="0" cy="0" r="16" fill="black" stroke="#a855f7" stroke-width="2" />
+                        <circle cx="0" cy="0" r="6" fill="#ffffff" filter="url(#bloom2)" class="pulse-fast" />
+
+                        <!-- Sub-orbit token ring -->
+                        <g class="spin">
+                            <circle cx="0" cy="-24" r="1.5" fill="#a855f7" />
+                            <circle cx="20.7" cy="12" r="1.5" fill="#a855f7" />
+                            <circle cx="-20.7" cy="12" r="1.5" fill="#a855f7" />
+                        </g>
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">2. Attention Tri-Ray</div>
+            <div class="card-desc">Adapts the variable-weight "Attention Head" rays from the Opta Code logo to form the
+                3 inputs (CLI/LMX/Code) striking the core.</div>
+        </div>
+
+
+        <!-- Prototype 3: Hybrid Singularity -->
+        <div class="card obsidian-interactive">
+            <div class="orbit-container">
+                <svg viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="bloom3">
+                            <feGaussianBlur stdDeviation="4" result="blur" />
+                            <feMerge>
+                                <feMergeNode in="blur" />
+                                <feMergeNode in="SourceGraphic" />
+                            </feMerge>
+                        </filter>
+                        <!-- Background Singularity Fog -->
+                        <radialGradient id="singularity" cx="50%" cy="50%" r="50%">
+                            <stop offset="0%" stop-color="#a855f7" stop-opacity="0.15" />
+                            <stop offset="60%" stop-color="#a855f7" stop-opacity="0.05" />
+                            <stop offset="100%" stop-color="#a855f7" stop-opacity="0" />
+                        </radialGradient>
+                    </defs>
+
+                    <!-- Heavy Orbit Base -->
+                    <circle cx="105" cy="105" r="105" fill="url(#singularity)" />
+
+                    <g class="spin">
+                        <circle cx="105" cy="105" r="90" fill="none" stroke="#a855f7" stroke-width="0.5"
+                            opacity="0.3" />
+                        <path d="M15 105 A 90 90 0 0 1 195 105" fill="none" stroke="#a855f7" stroke-width="1.5"
+                            stroke-dasharray="1 15" opacity="0.8" />
+                    </g>
+
+                    <g transform="translate(105, 105)">
+                        <g transform="rotate(-30)">
+                            <ellipse cx="0" cy="0" rx="90" ry="20" fill="none" stroke="#a855f7" stroke-width="1"
+                                opacity="0.4" />
+                            <g class="spin-rev">
+                                <circle cx="-90" cy="0" r="4" fill="#ffffff" filter="url(#bloom3)" />
+                            </g>
+                        </g>
+                    </g>
+
+                    <!-- Core Glyph: Sharp Tri-Node Hybrid -->
+                    <g transform="translate(105, 105)">
+
+                        <!-- Connection web -->
+                        <path d="M0 -45 L39 22.5 L-39 22.5 Z" fill="none" stroke="#a855f7" stroke-width="1"
+                            opacity="0.3" />
+
+                        <!-- Nodes -->
+                        <circle cx="0" cy="-45" r="3" fill="#ffffff" />
+                        <circle cx="39" cy="22.5" r="3" fill="#ffffff" />
+                        <circle cx="-39" cy="22.5" r="3" fill="#ffffff" />
+
+                        <!-- Heavy Hex Core (Code Logo Geometry) -->
+                        <polygon points="0,-16 13.8,-8 13.8,8 0,16 -13.8,8 -13.8,-8" fill="#09090b" stroke="#a855f7"
+                            stroke-width="2" />
+
+                        <!-- Central Tri-Mark -->
+                        <path d="M0 -8 L6 3 L-6 3 Z" fill="#ffffff" filter="url(#bloom3)" />
+
+                        <!-- Streaming data particles -->
+                        <circle cx="0" cy="-25" r="1.5" fill="#ffffff" opacity="0.5" class="pulse" />
+                        <circle cx="22" cy="12" r="1.5" fill="#ffffff" opacity="0.5" class="pulse"
+                            style="animation-delay: 0.5s" />
+                        <circle cx="-22" cy="12" r="1.5" fill="#ffffff" opacity="0.5" class="pulse"
+                            style="animation-delay: 1s" />
+                    </g>
+                </svg>
+            </div>
+            <div class="card-title">3. Geometric Web</div>
+            <div class="card-desc">A sharp, angular take combining the Tri-Node layout with the heavier, structured
+                geometry and thick strokes of the new Opta Code logo.</div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

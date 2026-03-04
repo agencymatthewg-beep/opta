@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Daemon - Concept 1: Orchestrator Core</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Sora:wght@400;600&display=swap');
+
+        :root {
+            --color-void: #09090b;
+            --color-primary: #a855f7;
+            --color-text: #fafafa;
+        }
+
+        body {
+            background: var(--color-void);
+            color: var(--color-text);
+            font-family: 'Sora', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(109, 40, 217, 0.05);
+            border: 1px solid rgba(139, 92, 246, 0.15);
+            border-radius: 24px;
+            padding: 4rem;
+            text-align: center;
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.1);
+        }
+
+        .orbit-container {
+            width: 280px;
+            height: 280px;
+            margin: 0 auto 2rem;
+            color: var(--color-primary);
+        }
+
+        .desc {
+            font-family: 'JetBrains Mono', monospace;
+            color: #a1a1aa;
+            font-size: 0.85rem;
+            max-width: 300px;
+            margin: 1rem auto;
+            line-height: 1.6;
+        }
+
+        /* SVG Animations */
+        .spin {
+            animation: spin 20s linear infinite;
+            transform-origin: 140px 140px;
+        }
+
+        .spin-rev {
+            animation: spin-rev 25s linear infinite;
+            transform-origin: 0 0;
+        }
+
+        .pulse {
+            animation: pulse 3s infinite alternate ease-in-out;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes spin-rev {
+            100% {
+                transform: rotate(-360deg);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.2;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        @keyframes flow {
+            100% {
+                stroke-dashoffset: -20;
+            }
+        }
+
+        .data-flow {
+            stroke-dasharray: 4 6;
+            animation: flow 1s linear infinite;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="orbit-container">
+            <svg viewBox="0 0 280 280" xmlns="http://www.w3.org/2000/svg">
+                <g class="spin">
+                    <circle cx="140" cy="140" r="130" fill="none" stroke="currentColor" stroke-width="0.5"
+                        opacity="0.2" />
+                    <circle cx="140" cy="140" r="100" fill="none" stroke="currentColor" stroke-width="1.5"
+                        stroke-dasharray="1 8" opacity="0.4" />
+                </g>
+
+                <g transform="translate(140, 140)">
+                    <g transform="rotate(-30)">
+                        <ellipse cx="0" cy="0" rx="120" ry="40" fill="none" stroke="currentColor" stroke-width="1"
+                            opacity="0.3" />
+                        <g class="spin-rev">
+                            <circle cx="-120" cy="0" r="4" fill="currentColor" />
+                        </g>
+                    </g>
+                </g>
+
+                <!-- The Orchestrator Core -->
+                <g transform="translate(140, 140)">
+                    <!-- Three inputs: CLI, LMX, Code -->
+                    <line x1="0" y1="-30" x2="0" y2="-90" stroke="currentColor" stroke-width="2" opacity="0.6"
+                        class="data-flow" />
+                    <line x1="-26" y1="15" x2="-78" y2="45" stroke="currentColor" stroke-width="2" opacity="0.6"
+                        class="data-flow" />
+                    <line x1="26" y1="15" x2="78" y2="45" stroke="currentColor" stroke-width="2" opacity="0.6"
+                        class="data-flow" />
+
+                    <circle cx="0" cy="-90" r="3" fill="#ffffff" class="pulse" />
+                    <circle cx="-78" cy="45" r="3" fill="#ffffff" class="pulse" />
+                    <circle cx="78" cy="45" r="3" fill="#ffffff" class="pulse" />
+
+                    <!-- Central Hub -->
+                    <circle cx="0" cy="0" r="30" fill="none" stroke="currentColor" stroke-width="2" />
+                    <circle cx="0" cy="0" r="24" fill="currentColor" opacity="0.1" />
+                    <path d="M-10 -10 L10 10 M-10 10 L10 -10 M0 -14 L0 14 M-14 0 L14 0" stroke="#ffffff"
+                        stroke-width="2" stroke-linecap="round" />
+                    <circle cx="0" cy="0" r="6" fill="#ffffff" />
+                </g>
+            </svg>
+        </div>
+        <h2>1. The Orchestrator Core</h2>
+        <div class="desc">Highlights the Daemon's primary role as a central hub synchronizing 3 endpoints: CLI, LMX, and
+            Code Desktop.</div>
+    </div>
+</body>
+
+</html>
