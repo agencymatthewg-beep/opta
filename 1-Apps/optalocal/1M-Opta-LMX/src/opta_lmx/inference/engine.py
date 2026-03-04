@@ -81,6 +81,7 @@ class InferenceEngine:
         speculative_require_supported: bool = False,
         kv_bits: int | None = None,
         kv_group_size: int = 64,
+        quantized_kv_start: int | None = None,
         prefix_cache_enabled: bool = True,
         max_concurrent_requests: int = 4,
         inference_timeout_sec: int = 300,
@@ -147,6 +148,7 @@ class InferenceEngine:
         self._speculative_require_supported = speculative_require_supported
         self._kv_bits = kv_bits
         self._kv_group_size = kv_group_size
+        self._quantized_kv_start = quantized_kv_start
         self._prefix_cache_enabled = prefix_cache_enabled
         self._loader_isolation_enabled = loader_isolation_enabled
         self._loader_timeout_sec = loader_timeout_sec
@@ -181,6 +183,7 @@ class InferenceEngine:
             speculative_require_supported=speculative_require_supported,
             kv_bits=kv_bits,
             kv_group_size=kv_group_size,
+            quantized_kv_start=quantized_kv_start,
             prefix_cache_enabled=prefix_cache_enabled,
             loader_isolation_enabled=loader_isolation_enabled,
             loader_timeout_sec=loader_timeout_sec,
@@ -212,6 +215,14 @@ class InferenceEngine:
             predictor=self._predictor,
             runtime_failure_quarantine_threshold=self._runtime_failure_quarantine_threshold,
         )
+
+        from opta_lmx.inference.engine_status import EngineStatusDelegator
+        from opta_lmx.inference.engine_autotune import EngineAutotuneDelegator
+        from opta_lmx.inference.engine_predictor import EnginePredictorDelegator
+
+        self._status_delegator = EngineStatusDelegator(self)
+        self._autotune_delegator = EngineAutotuneDelegator(self)
+        self._predictor_delegator = EnginePredictorDelegator(self)
 
     # ══════════════════════════════════════════════════════════════════
     #  Concurrency — delegated properties
@@ -632,72 +643,46 @@ class InferenceEngine:
 
     def get_loaded_backend_label(self, model_id: str) -> str | None:
         """Return loaded backend label (vllm-mlx/mlx-lm/gguf) or None."""
-        loaded = self._models.get(model_id)
-        if loaded is None:
-            return None
-        return self._loaded_backend_name(loaded)
+        return self._status_delegator.get_loaded_backend_label(model_id)
 
     def model_backend_label(self, model_id: str) -> str | None:
-        """Backward-compatible alias for backend label lookup."""
         return self.get_loaded_backend_label(model_id)
 
     def get_model_backend(self, model_id: str) -> str | None:
-        """Compatibility alias for API metric attribution helpers."""
         return self.get_loaded_backend_label(model_id)
 
     def resolve_model_backend(self, model_id: str) -> str | None:
-        """Compatibility alias for backend resolution helpers."""
         return self.get_loaded_backend_label(model_id)
 
     def resolve_backend_for_model(self, model_id: str) -> str | None:
-        """Compatibility alias for backend resolution helpers."""
         return self.get_loaded_backend_label(model_id)
 
     def readiness_snapshot(self) -> dict[str, dict[str, Any]]:
         """Return readiness rows for all known models."""
-        return self._readiness.snapshot()
+        return self._status_delegator.readiness_snapshot()
 
     def get_readiness_snapshot(self) -> dict[str, dict[str, Any]]:
-        """Alias for readiness snapshot retrieval."""
         return self.readiness_snapshot()
 
     def compatibility_summary_by_model(self) -> dict[str, dict[str, Any]]:
         """Return compatibility totals grouped by model."""
-        return self._compatibility.summary_by_model()
+        return self._status_delegator.compatibility_summary_by_model()
 
     def compatibility_summary(self) -> dict[str, dict[str, Any]]:
-        """Compatibility alias for admin metrics endpoint helpers."""
         return self.compatibility_summary_by_model()
 
     def get_compatibility_summary(self) -> dict[str, dict[str, Any]]:
-        """Compatibility alias for admin metrics endpoint helpers."""
         return self.compatibility_summary_by_model()
 
     def model_compatibility_summary(self) -> dict[str, dict[str, Any]]:
-        """Compatibility alias for admin metrics endpoint helpers."""
         return self.compatibility_summary_by_model()
 
     def get_compatibility_summary_by_model(self) -> dict[str, dict[str, Any]]:
-        """Alias for compatibility summary retrieval."""
         return self.compatibility_summary_by_model()
 
     def autotune_backend_version(self, backend: str) -> str:
         """Resolve backend package version used for autotune keying."""
-        try:
-            if backend == "mlx-lm":
-                return importlib_metadata.version("mlx-lm")
-            if backend == "vllm-mlx":
-                return importlib_metadata.version("vllm-mlx")
-            if backend == "gguf":
-                return importlib_metadata.version("llama-cpp-python")
-        except Exception:
-            pass
-
-        if backend in {"vllm-mlx", "mlx-lm"}:
-            return backend_version("mlx")
-        if backend == "gguf":
-            return backend_version("gguf")
-        return "unknown"
+        return self._autotune_delegator.autotune_backend_version(backend)
 
     def resolve_autotune_backend(
         self,
@@ -706,17 +691,7 @@ class InferenceEngine:
         allow_failed: bool = False,
     ) -> str:
         """Pick backend label used to resolve tuned profile for a model load."""
-        loaded = self._models.get(model_id)
-        if loaded is not None:
-            return self._loaded_backend_name(loaded)
-
-        candidates = backend_candidates(
-            model_id,
-            self,
-            self._compatibility,
-            allow_failed=allow_failed,
-        )
-        return candidates[0] if candidates else "vllm-mlx"
+        return self._autotune_delegator.resolve_autotune_backend(model_id, allow_failed=allow_failed)
 
     def get_tuned_profile(
         self,
@@ -727,15 +702,11 @@ class InferenceEngine:
         allow_failed: bool = False,
     ) -> dict[str, Any] | None:
         """Return best-known tuned profile record for model/backend/version."""
-        resolved_backend = backend or self.resolve_autotune_backend(
+        return self._autotune_delegator.get_tuned_profile(
             model_id,
+            backend=backend,
+            backend_version_value=backend_version_value,
             allow_failed=allow_failed,
-        )
-        resolved_version = backend_version_value or self.autotune_backend_version(resolved_backend)
-        return self._autotune.get_best(
-            model_id=model_id,
-            backend=resolved_backend,
-            backend_version=resolved_version,
         )
 
     def save_tuned_profile(
@@ -748,10 +719,10 @@ class InferenceEngine:
         metrics: dict[str, Any],
     ) -> float:
         """Persist scored profile and return computed score."""
-        return self._autotune.save_scored_profile(
+        return self._autotune_delegator.save_tuned_profile(
             model_id=model_id,
             backend=backend,
-            backend_version=backend_version_value,
+            backend_version_value=backend_version_value,
             profile=profile,
             metrics=metrics,
         )
@@ -763,79 +734,33 @@ class InferenceEngine:
 
     def predict_next_model(self) -> str | None:
         """Predict which model to preload based on access patterns."""
-        loaded = set(self._models.keys())
-        return self._predictor.predict_next(loaded, exclude=self._loading_models)
+        return self._predictor_delegator.predict_next_model()
 
     def suggest_prefetch_models(self, max_candidates: int = 1) -> list[str]:
         """Suggest models to prefetch based on access patterns."""
-        candidates: list[str] = []
-        excluded = set(self._models.keys()) | set(self._loading_models)
-        while len(candidates) < max(1, max_candidates):
-            predicted = self._predictor.predict_next(set(self._models.keys()), exclude=excluded)
-            if predicted is None:
-                break
-            candidates.append(predicted)
-            excluded.add(predicted)
-        return candidates
+        return self._predictor_delegator.suggest_prefetch_models(max_candidates)
 
     def get_inference_defaults(self) -> dict[str, Any]:
         """Return current global inference defaults for admin reporting."""
-        return {
-            "kv_bits": self._kv_bits,
-            "kv_group_size": self._kv_group_size,
-            "prefix_cache_enabled": self._prefix_cache_enabled,
-            "speculative_model": self._speculative_model,
-            "speculative_num_tokens": self._speculative_num_tokens,
-            "speculative_require_supported": self._speculative_require_supported,
-            "warmup_on_load": self._warmup_on_load,
-            "stream_interval": self._stream_interval,
-            "adaptive": {
-                "enabled": self._adaptive_concurrency_enabled,
-                "latency_target_ms": round(
-                    self._concurrency._adaptive_latency_target_sec * 1000.0,
-                    2,
-                ),
-                "latency_window_size": self._concurrency._adaptive_latency_samples.maxlen,
-                "latency_p95_sec": self.latency_p95_sec,
-                "min_concurrent_requests": self._concurrency._adaptive_min_concurrent,
-                "last_reason": self._concurrency._last_adapt_reason,
-            },
-            "scheduler": {
-                "max_num_seqs": self._scheduler_max_num_seqs,
-                "prefill_batch_size": self._scheduler_prefill_batch_size,
-                "completion_batch_size": self._scheduler_completion_batch_size,
-                "cache_memory_percent": self._scheduler_cache_memory_percent,
-            },
-        }
+        return self._status_delegator.get_inference_defaults()
 
     def is_model_routable(self, model_id: str) -> bool:
-        if model_id not in self._models:
-            return False
-        return self._readiness.is_routable(model_id)
+        return self._status_delegator.is_model_routable(model_id)
 
     def model_readiness(self, model_id: str) -> dict[str, Any]:
-        return self._readiness.get(model_id)
+        return self._status_delegator.model_readiness(model_id)
 
     def get_loaded_models(self) -> list[ModelInfo]:
         """Return info about all currently loaded models."""
-        return [
-            ModelInfo(
-                model_id=m.model_id,
-                loaded=True,
-                memory_used_gb=m.estimated_memory_gb,
-                loaded_at=m.loaded_at,
-                use_batching=m.use_batching,
-            )
-            for m in self._models.values()
-        ]
+        return self._status_delegator.get_loaded_models()
 
     def get_loaded_model_ids(self) -> list[str]:
         """Return loaded model IDs without allocating ModelInfo objects."""
-        return list(self._models.keys())
+        return self._status_delegator.get_loaded_model_ids()
 
     def is_model_loaded(self, model_id: str) -> bool:
         """Check if a model is currently loaded."""
-        return model_id in self._models
+        return self._status_delegator.is_model_loaded(model_id)
 
     def get_loaded_models_detailed(self) -> list[LoadedModel]:
         """Return internal LoadedModel objects for admin endpoints."""
@@ -843,6 +768,4 @@ class InferenceEngine:
 
     def get_model(self, model_id: str) -> LoadedModel:
         """Get a loaded model or raise KeyError."""
-        if model_id not in self._models:
-            raise KeyError(f"Model '{model_id}' is not loaded")
-        return self._models[model_id]
+        return self._status_delegator.get_model(model_id)

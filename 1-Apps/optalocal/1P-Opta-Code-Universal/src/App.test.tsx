@@ -62,8 +62,20 @@ vi.mock("./pages/ModelsPage", () => ({
   ModelsPage: () => <div>ModelsPageMock</div>,
 }));
 
-vi.mock("./pages/OperationsPage", () => ({
-  OperationsPage: () => <div>OperationsPageMock</div>,
+vi.mock("./pages/ToolingOperationsPage", () => ({
+  ToolingOperationsPage: () => <div>ToolingOperationsPageMock</div>,
+}));
+
+vi.mock("./pages/AppCatalogPage", () => ({
+  AppCatalogPage: () => <div>AppCatalogPageMock</div>,
+}));
+
+vi.mock("./pages/SessionMemoryPage", () => ({
+  SessionMemoryPage: () => <div>SessionMemoryPageMock</div>,
+}));
+
+vi.mock("./pages/SystemOperationsPage", () => ({
+  SystemOperationsPage: () => <div>SystemOperationsPageMock</div>,
 }));
 
 vi.mock("./pages/CliOperationsPage", () => ({
@@ -180,10 +192,10 @@ describe("App account controls wiring", () => {
     });
   });
 
-  it("renders Env and MCP tabs and switches pages", async () => {
+  it("renders CLI Bridge, Env, and MCP tabs and switches pages", async () => {
     render(<App />);
 
-    const cliTab = await screen.findByRole("button", { name: "CLI" });
+    const cliTab = await screen.findByRole("button", { name: "CLI Bridge" });
     fireEvent.click(cliTab);
     expect(screen.getByText("CliOperationsPageMock")).toBeInTheDocument();
 
@@ -194,6 +206,15 @@ describe("App account controls wiring", () => {
     const mcpTab = screen.getByRole("button", { name: "MCP" });
     fireEvent.click(mcpTab);
     expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
+  });
+
+  it("renders System tab and switches to contextual system operations", async () => {
+    render(<App />);
+
+    const systemTab = await screen.findByRole("button", { name: "System" });
+    fireEvent.click(systemTab);
+
+    expect(screen.getByText("SystemOperationsPageMock")).toBeInTheDocument();
   });
 
   it("shows reconnect overlay after losing connection from a previously connected state", async () => {

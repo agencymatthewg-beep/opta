@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Local — Master Assessment (Variant 2: Priority List)</title>
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --border: #27272a;
+      --text: #e2e8f0;
+      --muted: #64748b;
+      --accent: #a855f7;
+      --font-main: 'Inter', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    body {
+      background: var(--void);
+      color: var(--text);
+      font-family: var(--font-main);
+      padding: 60px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      font-size: 2.5rem;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      margin-bottom: 10px;
+    }
+    p.lead {
+      color: var(--muted);
+      margin-bottom: 50px;
+    }
+    .priority-group {
+      margin-bottom: 40px;
+    }
+    .priority-header {
+      font-family: var(--font-mono);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 8px;
+      margin-bottom: 20px;
+      letter-spacing: 0.1em;
+    }
+    .task-item {
+      display: flex;
+      padding: 16px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.02);
+      transition: background 0.2s;
+    }
+    .task-item:hover {
+      background: rgba(255,255,255,0.02);
+    }
+    .task-app {
+      width: 150px;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: 0.8rem;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+    }
+    .task-app::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--border);
+      border-radius: 50%;
+      margin-right: 12px;
+    }
+    .task-app.lmx::before { background: #06b6d4; }
+    .task-app.code::before { background: #22c55e; }
+    .task-app.cli::before { background: #a855f7; }
+    .task-app.admin::before { background: #f59e0b; }
+    
+    .task-content {
+      flex: 1;
+      font-size: 0.95rem;
+    }
+  </style>
+</head>
+<body>
+  <h1>Execution Assessment</h1>
+  <p class="lead">Cross-application requirements for the Opta Local ecosystem.</p>
+
+  <div class="priority-group">
+    <div class="priority-header">High Priority (P0/P1)</div>
+    
+    <div class="task-item">
+      <div class="task-app lmx">Opta LMX</div>
+      <div class="task-content">Rate-limit enforcement tests (Auth fail-closed is verified)</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app lmx">Opta LMX</div>
+      <div class="task-content">Investigate duplicate process spawning on launchd restart</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app code">Opta Code</div>
+      <div class="task-content">Add adapted-parity acceptance tests for tui/server/memory</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app cli">Opta CLI</div>
+      <div class="task-content">Fix promptTokens always returning 0 from upstream LMX</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app admin">Opta Admin</div>
+      <div class="task-content">Refactor 600-line HTML SSE dashboard into Next.js React architecture</div>
+    </div>
+  </div>
+
+  <div class="priority-group">
+    <div class="priority-header">Normal Priority (P2/UX/CI)</div>
+    
+    <div class="task-item">
+      <div class="task-app lmx">Opta LMX</div>
+      <div class="task-content">Create .github/workflows/ci.yml</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app code">Opta Code</div>
+      <div class="task-content">Add explicit memory-focused desktop affordances (pin, retrieve, retention)</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app code">Opta Code</div>
+      <div class="task-content">Enforce CI parity gates to fail builds on coverage regressions</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app cli">Opta CLI</div>
+      <div class="task-content">Update hardcoded cost estimation to support external cloud providers</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app">Opta Init</div>
+      <div class="task-content">Finalize Windows stable promotion & beta channel user-visibility logic</div>
+    </div>
+  </div>
+
+  <div class="priority-group">
+    <div class="priority-header">Backlog / Tech Debt (P3)</div>
+    
+    <div class="task-item">
+      <div class="task-app lmx">Opta LMX</div>
+      <div class="task-content">Split engine.py (2.5k LOC) into granular sub-modules</div>
+    </div>
+    <div class="task-item">
+      <div class="task-app lmx">Opta LMX</div>
+      <div class="task-content">Never-crash load tasks 7–14 implementation</div>
+    </div>
+  </div>
+</body>
+</html>

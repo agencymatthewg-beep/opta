@@ -26,3 +26,4 @@ opta chat
 
 - If you need LMX management commands, run them from a macOS/Linux machine.
 - If your goal is coding-agent use only (no local model runtime), Windows can provide near-full CLI functionality.
+- For startup/connectivity incidents, use `WINDOWS-INCIDENT-RUNBOOK.md`.

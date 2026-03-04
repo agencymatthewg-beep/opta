@@ -1,27 +1,29 @@
 ---
-title: CLAUDE.md — Coding Rules for Opta-LMX
+title: GEMINI.md — Coding Rules for Opta-LMX
 created: 2026-02-15
-updated: 2026-02-15
+updated: 2026-03-04
 type: development-guide
-audience: Claude Code (coding agent)
+audience: AI coding agents (Claude, Gemini)
 status: Active
 ---
 
-# CLAUDE.md — Opta-LMX Coding Rules
+# GEMINI.md — Opta-LMX Coding Rules
 
-This file defines how Claude Code should approach coding work on Opta-LMX. **Read this before every coding session.**
+This file defines how AI coding agents should approach coding work on Opta-LMX. **Read this before every coding session.**
 
 ---
 
 ## 1. Foundations
 
 ### Language & Version
+
 - **Python 3.11+** — type hints required everywhere
 - **No Python < 3.11** — features like `from __future__ import annotations` must work
 - **Async/await first** — all I/O is async, use `asyncio` throughout
 - **Type hints in signatures AND docstrings** — `def foo(x: int) -> str: ...`
 
 ### Key Technologies
+
 | Tech | Role | Version |
 |------|------|---------|
 | **MLX** | Inference engine | Latest (Apple) |
@@ -33,39 +35,56 @@ This file defines how Claude Code should approach coding work on Opta-LMX. **Rea
 | **llama-cpp-python** | GGUF fallback | Latest |
 | **pytest** | Testing | Latest |
 
-### Project Structure (from MASTER-PLAN.md)
+### Project Structure (current state, 2026-03-04)
+
 ```
 opta-lmx/
 ├── pyproject.toml              # Project config, deps, build
-├── src/opta_lmx/               # Main package
-│   ├── __init__.py
-│   ├── main.py                 # Entry point (uvicorn)
-│   ├── config.py               # Configuration loading
-│   ├── inference/              # MLX inference core
-│   │   ├── __init__.py
-│   │   ├── engine.py           # MLX model loading/generation
-│   │   ├── schema.py           # Type models
-│   │   └── streaming.py        # SSE streaming logic
-│   ├── api/                    # FastAPI routes
-│   │   ├── __init__.py
+├── src/opta_lmx/               # Main package (100+ source files)
+│   ├── main.py                 # FastAPI app factory + CLI entry (1059 LOC)
+│   ├── config.py               # Configuration loading (Pydantic v2)
+│   ├── model.py                # Core model definitions
+│   ├── model_safety.py         # Safety guardrails for model ops
+│   ├── runtime_state.py        # Crash recovery state persistence
+│   ├── discovery.py            # LAN service discovery
+│   ├── discovery_mdns.py       # mDNS advertisement
+│   ├── hardware_probe.py       # Hardware introspection
+│   ├── agents/                 # Multi-step agent runtime + scheduler
+│   ├── api/                    # FastAPI routes (25 modules)
 │   │   ├── inference.py        # /v1/chat/completions, /v1/models
-│   │   ├── admin.py            # /admin/load, /admin/unload, etc.
-│   │   └── health.py           # Health checks
+│   │   ├── admin.py            # Admin operations
+│   │   ├── admin_models.py     # Model lifecycle (load/unload/download)
+│   │   ├── admin_config.py     # Config hot-reload
+│   │   ├── admin_diagnostics.py # System diagnostics
+│   │   ├── admin_metrics.py    # Prometheus metrics
+│   │   ├── agents.py           # Agent runtime API
+│   │   ├── anthropic.py        # Anthropic-compatible API
+│   │   ├── benchmark.py        # Benchmark API
+│   │   ├── embeddings.py       # Embedding generation
+│   │   ├── health.py           # Health checks
+│   │   ├── rag.py              # RAG vector search API
+│   │   ├── rerank.py           # Reranking API
+│   │   ├── sessions.py         # Session management
+│   │   ├── skills.py           # Skill/tool execution API
+│   │   ├── websocket.py        # WebSocket streaming
+│   │   └── ...                 # middleware, validation, rate_limit, etc.
+│   ├── helpers/                # LAN helper node clients
+│   ├── inference/              # MLX inference core (engine, GGUF, embeddings)
+│   ├── maintenance/            # Metal cache maintenance
 │   ├── manager/                # Model + memory management
-│   │   ├── __init__.py
-│   │   ├── model.py            # Model inventory, download
-│   │   ├── memory.py           # Memory monitoring
-│   │   └── gguf.py             # GGUF fallback handler
-│   └── router/                 # Smart routing (Phase 4)
-│       ├── __init__.py
-│       └── strategy.py         # Task-to-model routing
-├── tests/
-│   ├── conftest.py             # pytest fixtures
-│   ├── test_api.py             # API contract tests
-│   ├── test_inference.py       # MLX tests
-│   ├── test_manager.py         # Model manager tests
-│   └── test_integration.py     # End-to-end tests
-├── docs/                       # All docs (already populated)
+│   ├── monitoring/             # Benchmark, metrics, observability
+│   ├── presets/                # Model behavior profiles
+│   ├── rag/                    # Vector store, reranker, document ingestion
+│   ├── router/                 # Smart task-to-model routing
+│   ├── runtime/                # Runtime state, crash recovery
+│   ├── security/               # Auth, mTLS, JWT verification
+│   ├── sessions/               # CLI session file access
+│   ├── skills/                 # MCP bridge, skill registry, sandboxed executor
+│   └── utils/                  # Utility helpers
+├── tests/                      # 200+ tests
+├── docs/                       # Architecture, research, plans
+├── config/                     # Production configs
+├── presets/                    # Model preset definitions
 └── README.md
 ```
 
@@ -74,6 +93,7 @@ opta-lmx/
 ## 2. Code Patterns & Conventions
 
 ### Async First
+
 ```python
 # ✅ Good
 async def stream_completion(request: CompletionRequest) -> AsyncIterator[str]:
@@ -87,6 +107,7 @@ def stream_completion(request: CompletionRequest):
 ```
 
 ### Pydantic for All API Types
+
 ```python
 # ✅ From Pydantic v2
 from pydantic import BaseModel, Field
@@ -104,6 +125,7 @@ class CompletionRequest(BaseModel):
 ```
 
 ### Error Handling (Never Crash)
+
 ```python
 # ✅ Graceful degradation
 try:
@@ -123,6 +145,7 @@ except Exception:
 ```
 
 ### Logging (Structured, Queryable)
+
 ```python
 # ✅ Good — every relevant event logged with context
 import logging
@@ -140,6 +163,7 @@ print(f"Loaded {model_id}")  # Not structured, not queryable
 ```
 
 ### Type Hints Everywhere
+
 ```python
 # ✅ Full typing
 async def select_model(
@@ -160,17 +184,20 @@ def select_model(task, available, preferences=None):
 ## 3. OpenAI API Compatibility (Non-Negotiable)
 
 ### What "Compatible" Means
+
 - Any Python `openai` SDK client must work with zero config changes
 - Requests sent to LMX `/v1/chat/completions` must return the exact same JSON shape
 - Streaming responses must be identical SSE format
 - Error codes must match OpenAI conventions
 
 ### Reference Docs
+
 - See: `docs/research/openai-api-spec.md` (Appendix A)
 - See: `docs/DECISIONS.md` for why this is non-negotiable
 - **Test**: Every API change must pass OpenAI SDK compatibility test
 
 ### Key Contract Points
+
 ```python
 # Request shape (exact OpenAI format)
 POST /v1/chat/completions
@@ -199,6 +226,7 @@ data: [DONE]
 ## 4. Testing Requirements
 
 ### Unit Tests (pytest)
+
 - **Router logic**: Task classification, model selection
 - **Model manager**: Download, convert, inventory tracking
 - **Config parsing**: YAML validation
@@ -213,6 +241,7 @@ pytest --cov=src/opta_lmx tests/
 ```
 
 ### Integration Tests
+
 - Load real (small) MLX model
 - Send actual completion request
 - Verify streaming output format
@@ -224,6 +253,7 @@ pytest tests/test_integration.py -v --log-cli-level=DEBUG
 ```
 
 ### API Contract Tests
+
 - Load OpenAI Python SDK
 - Point at LMX on port 1234
 - Run standard chat completion examples
@@ -249,12 +279,14 @@ assert response["choices"][0]["message"]["role"] == "assistant"
 ## 5. Build, Test, Run
 
 ### Install for Development
+
 ```bash
 cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
 pip install -e ".[dev]"  # Editable install with dev deps
 ```
 
 ### Run Tests
+
 ```bash
 pytest tests/ -v                          # All tests
 pytest tests/test_api.py -v               # API only
@@ -262,6 +294,7 @@ pytest tests/ --cov=src -v                # With coverage
 ```
 
 ### Run Locally (for debugging)
+
 ```bash
 # Start on port 1234 (replace LM Studio)
 uvicorn src.opta_lmx.main:app --host 127.0.0.1 --port 1234
@@ -276,6 +309,7 @@ curl -X POST http://localhost:1234/v1/chat/completions \
 ```
 
 ### Run as Daemon (Production)
+
 ```bash
 # Install plist
 sudo cp docs/launchd/com.opta.lmx.plist /Library/LaunchDaemons/
@@ -295,6 +329,7 @@ launchctl unload /Library/LaunchDaemons/com.opta.lmx.plist
 ## 6. Key Constraints & Requirements
 
 ### Constraints (Hard Limits)
+
 | Constraint | Reason |
 |-----------|--------|
 | **No GUI ever** | This is a daemon, not an app |
@@ -306,7 +341,9 @@ launchctl unload /Library/LaunchDaemons/com.opta.lmx.plist
 | **OpenAI API compat** | Any breaking change = bug |
 
 ### Requirements (From APP.md)
+
 See full list in [APP.md §4 — Core Capabilities](../APP.md#4-core-capabilities-non-negotiable). Implement in order:
+
 1. OpenAI-compatible `/v1/chat/completions` ✓ (Phase 2B)
 2. MLX-native inference ✓ (Phase 2B)
 3. SSE streaming ✓ (Phase 2C)
@@ -319,6 +356,7 @@ See full list in [APP.md §4 — Core Capabilities](../APP.md#4-core-capabilitie
 ## 7. Before Every Coding Session
 
 **Checklist (non-negotiable):**
+
 - [ ] Read `APP.md` (identity, purpose, 12 non-negotiable capabilities)
 - [ ] Check `docs/MASTER-PLAN.md` for current phase
 - [ ] Check `docs/GUARDRAILS.md` for safety rules
@@ -326,6 +364,7 @@ See full list in [APP.md §4 — Core Capabilities](../APP.md#4-core-capabilitie
 - [ ] Understand any recent decisions from `docs/DECISIONS.md`
 
 **For complex changes:**
+
 - [ ] Write a plan in `docs/plans/` (or a comment in the task)
 - [ ] Link to relevant research in `docs/research/`
 - [ ] Test locally before merging/committing
@@ -358,6 +397,7 @@ A: Log the error, return 400 or 503, try to unload least-recently-used model, re
 ## 9. Guardrails (Safety First)
 
 See `docs/GUARDRAILS.md` for full rules. Key ones for development:
+
 - C01: No keys/tokens in logs
 - C02: No hardcoded credentials
 - C06: All model downloads verified (SHA256)
@@ -368,6 +408,7 @@ See `docs/GUARDRAILS.md` for full rules. Key ones for development:
 ---
 
 ## References
+
 - Project charter: `APP.md` (read first)
 - Architecture plan: `docs/plans/MASTER-PLAN.md`
 - API details: `docs/research/openai-api-spec.md`
@@ -379,4 +420,5 @@ See `docs/GUARDRAILS.md` for full rules. Key ones for development:
 *This file defines the standard for all Python code on Opta-LMX. Update it as patterns evolve, but keep the core principles stable.*
 
 ### Autonomous Source Control
+
 - **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.

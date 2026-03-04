@@ -12,7 +12,7 @@ vi.mock("./OperationsPage", () => ({
 }));
 
 describe("CliOperationsPage", () => {
-  it("scopes CLI operations to include models operation families", () => {
+  it("scopes CLI operations to include models, CEO benchmark, and apps families", () => {
     render(
       <CliOperationsPage
         connection={{ host: "127.0.0.1", port: 8080, token: "token" }}
@@ -26,7 +26,7 @@ describe("CliOperationsPage", () => {
       scopedOperationIds?: string[];
     };
     expect(props.scopedOperationIds).toEqual(
-      expect.arrayContaining(["models.*"]),
+      expect.arrayContaining(["models.*", "ceo.benchmark", "apps.*"]),
     );
   });
 });

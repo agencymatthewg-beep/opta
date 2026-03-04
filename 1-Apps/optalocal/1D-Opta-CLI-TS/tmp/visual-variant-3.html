@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Local — Master Assessment (Variant 3: Terminal View)</title>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #00ff41;
+      --dim: #008f11;
+      --err: #ff003c;
+      --warn: #f5a623;
+      --font: "JetBrains Mono", Consolas, Courier, monospace;
+    }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      padding: 40px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .prompt::before {
+      content: 'opta-admin@local ~ % ';
+      color: var(--dim);
+    }
+    .cmd {
+      color: #fff;
+      font-weight: bold;
+    }
+    .output {
+      margin-top: 20px;
+      white-space: pre;
+    }
+    .app-header {
+      color: #fff;
+      margin-top: 20px;
+      border-bottom: 1px dashed var(--dim);
+      display: inline-block;
+      padding-bottom: 2px;
+    }
+    .item {
+      display: flex;
+      margin-top: 4px;
+    }
+    .item-id {
+      width: 80px;
+      color: var(--dim);
+    }
+    .item-state.pending { color: var(--warn); }
+    .item-state.debt { color: var(--dim); }
+    .item-state { width: 100px; }
+  </style>
+</head>
+<body>
+  <div><span class="prompt"></span><span class="cmd">opta check --all-apps --plans</span></div>
+  <div class="output">
+[SYS] Scanning workspace... Found 5 active projects with pending objectives.
+
+<div class="app-header">[1M-Opta-LMX] Inference Engine</div>
+<div class="item"><div class="item-id">TASK-01</div><div class="item-state pending">[ P0_REQ ]</div><div>Add rate-limit enforcement tests (Auth fail-closed done)</div></div>
+<div class="item"><div class="item-id">TASK-02</div><div class="item-state pending">[ P1_BUG ]</div><div>Investigate duplicate process spawning on launchd restart</div></div>
+<div class="item"><div class="item-id">TASK-03</div><div class="item-state pending">[ P2_INF ]</div><div>Create .github/workflows/ci.yml</div></div>
+<div class="item"><div class="item-id">TASK-04</div><div class="item-state debt">[ P3_REF ]</div><div>Split engine.py (2.5k LOC) into modules</div></div>
+<div class="item"><div class="item-id">TASK-05</div><div class="item-state debt">[ P3_FUT ]</div><div>Never-crash load tasks 7–14</div></div>
+
+<div class="app-header">[1P-Opta-Code-Universal] Tauri Editor</div>
+<div class="item"><div class="item-id">TASK-06</div><div class="item-state pending">[ P1_REQ ]</div><div>Add adapted-parity acceptance tests (tui/server/memory)</div></div>
+<div class="item"><div class="item-id">TASK-07</div><div class="item-state pending">[ P2_UX  ]</div><div>Add memory-focused desktop affordances</div></div>
+<div class="item"><div class="item-id">TASK-08</div><div class="item-state pending">[ P2_CI  ]</div><div>Maintain parity gates in CI pipelines</div></div>
+
+<div class="app-header">[1D-Opta-CLI-TS] Terminal Agent</div>
+<div class="item"><div class="item-id">TASK-09</div><div class="item-state pending">[ P1_BUG ]</div><div>Fix promptTokens returning 0 (requires LMX upstream)</div></div>
+<div class="item"><div class="item-id">TASK-10</div><div class="item-state pending">[ P2_FEA ]</div><div>Update hardcoded cost estimation for external clouds</div></div>
+
+<div class="app-header">[1O-Opta-Init] Web / Installer</div>
+<div class="item"><div class="item-id">TASK-11</div><div class="item-state pending">[ OPS    ]</div><div>Decide Windows stable promotion timeline</div></div>
+<div class="item"><div class="item-id">TASK-12</div><div class="item-state pending">[ OPS    ]</div><div>Determine beta channel user-visibility rules</div></div>
+
+<div class="app-header">[1X-Opta-Admin] Dashboard</div>
+<div class="item"><div class="item-id">TASK-13</div><div class="item-state pending">[ P1_REQ ]</div><div>Port static SSE HTML dashboard into Next.js app</div></div>
+
+[SYS] Run `opta execute TASK-ID` to begin implementation.
+  </div>
+</body>
+</html>

@@ -13,7 +13,7 @@
 | **Type** | Headless API service (daemon) |
 | **Platform** | macOS (Apple Silicon — M3 Ultra primary, M4 Max secondary) |
 | **Language** | Python 3.11+ |
-| **Frameworks** | MLX, FastAPI, Uvicorn, huggingface_hub |
+| **Frameworks** | MLX, FastAPI, Uvicorn, Pydantic v2, huggingface_hub |
 | **Location** | `~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX/` |
 | **Status** | Active — v0.5 (LM Studio Replacement) |
 
@@ -22,12 +22,15 @@
 ## 2. Purpose
 
 ### What It Does
+
 Opta-LMX runs large language models natively on Apple Silicon using MLX, serves them via an OpenAI-compatible API, and provides full programmatic control over model lifecycle — downloading, loading, unloading, routing, and benchmarking — all without a GUI.
 
 ### What Problem It Solves
+
 LM Studio requires a human at a screen to manage models. Bots can't click download buttons, drag GPU sliders, or switch models. LM Studio also bundles its own llama.cpp, meaning new model architectures (like GLM-5) are blocked until LM Studio updates. Opta-LMX removes the human bottleneck and the version dependency, giving bots full autonomy over the inference stack.
 
 ### What Makes It Different
+
 - **MLX-native** — 15-30% faster than GGUF/llama.cpp on Apple Silicon (zero-copy unified memory)
 - **Bot-autonomous** — Full Admin API for programmatic model management (no GUI)
 - **Smart routing** — Automatically picks the best model for each task
@@ -35,22 +38,27 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 - **Purpose-built for our ecosystem** — Designed for OpenClaw bots, Opta CLI, and OptaPlus from day one
 
 ### What It Does NOT Do
-- ❌ Chat UI (that's OptaPlus / Telegram)
+
 - ❌ Coding tools — read files, edit code, run commands (that's Opta CLI)
-- ❌ Conversation management, sessions, or memory (that's Opta CLI / OpenClaw)
 - ❌ Bot orchestration or automation (that's OpenClaw)
 - ❌ Fine-tuning or training (separate concern, may be added later)
+
+### Companion Product
+
+The **Opta LMX Dashboard** (`1L-Opta-LMX-Dashboard`, `lmx.optalocal.com`) is the primary user-facing management surface for Opta LMX. The same relationship as **Opta Code → Opta CLI**: the dashboard visualizes the headless engine's state. See `1L-Opta-LMX-Dashboard/APP.md` for details.
 
 ---
 
 ## 3. Target Audience
 
 ### Primary Users
+
 1. **OpenClaw bots** (Opta512, Mono, Floda, Saturday, Lin) — autonomous consumers of inference API
 2. **Opta CLI** — agentic coding assistant that needs fast, reliable local inference
 3. **Matthew** — via `opta serve` commands and Opta CLI
 
 ### Use Cases
+
 1. **Bot sends a message → LMX serves response** — 6 bots on Mac Studio all hitting `/v1/chat/completions`, LMX handles queuing and routing to the best loaded model
 2. **Bot detects new model on HuggingFace → downloads and loads it** — Autonomous model management via Admin API, zero human intervention
 3. **Matthew runs `opta do "fix this bug"` from MacBook** — Opta CLI sends request over LAN to LMX on Mac Studio, gets streamed response from the best coding model
@@ -58,6 +66,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 5. **New model architecture released** — Add Python support in hours, not waiting weeks for LM Studio to update their C++ engine
 
 ### User Expectations
+
 - **Always running** — daemon starts on boot, stays up 24/7
 - **Fast** — MLX-native performance, no overhead from unnecessary GUI rendering
 - **Reliable** — handles concurrent requests, doesn't crash on OOM, graceful degradation
@@ -88,6 +97,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 ## 5. Key Characteristics
 
 ### Design Philosophy
+
 - **Headless-first** — No GUI, ever. API-only interaction
 - **Bot-autonomous** — Every operation achievable without human intervention
 - **Performance-obsessed** — MLX native, zero-copy memory, optimized for Apple Silicon
@@ -95,6 +105,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 - **Observable** — Every metric, status, and health indicator exposed via API
 
 ### Performance Requirements
+
 - Startup: < 5 seconds (without loading a model)
 - Model load: < 60 seconds for typical model (24-128GB)
 - Inference: Match or exceed LM Studio tok/s on same hardware
@@ -102,6 +113,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 - Concurrent: Handle 10+ simultaneous requests without dropping
 
 ### Quality Bar
+
 - Production-grade reliability (this is infrastructure, not a prototype)
 - Clean error handling (never crash, always return meaningful errors)
 - Well-documented API (OpenAPI/Swagger for admin endpoints)
@@ -112,6 +124,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 ## 6. Architecture Overview
 
 ### Key Components
+
 1. **Inference Engine** — MLX model loading, generation, streaming
 2. **API Server** — FastAPI/Uvicorn serving OpenAI-compatible + Admin endpoints
 3. **Model Manager** — Download, convert, inventory, disk management
@@ -120,6 +133,7 @@ LM Studio requires a human at a screen to manage models. Bots can't click downlo
 6. **GGUF Backend** — llama-cpp-python fallback for non-MLX models
 
 ### Data Flow
+
 ```
 Client Request → API Server → Router (picks model) → Inference Engine (MLX/GGUF)
                                                             ↓
@@ -127,6 +141,7 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 ```
 
 ### Dependencies
+
 - **MLX** (Apple) — inference runtime
 - **mlx-lm** (Apple) — model loading, generation utilities
 - **FastAPI** — async API server
@@ -139,17 +154,21 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 ## 7. Ecosystem Context
 
 ### Depends On
+
 - Apple Silicon hardware (M3 Ultra on Mono512)
 - HuggingFace Hub (model downloads)
 - MLX framework (Apple)
 
 ### Depended On By
+
 - **Opta CLI** — primary inference backend
+- **Opta LMX Dashboard** (`1L`) — management UI (REST API consumer)
 - **OpenClaw bots** (6 bots) — inference API
 - **Claude Code Router** — inference routing
 - **OptaPlus** (indirect, via bots) — chat responses
 
 ### Shares With
+
 - Opta CLI: API contract (OpenAI-compatible format)
 - OpenClaw: Same API contract
 
@@ -158,6 +177,7 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 ## 8. Development Rules
 
 ### Coding Conventions
+
 - Python 3.11+ with type hints everywhere
 - Async/await for all I/O operations
 - Structured logging (not print statements)
@@ -165,6 +185,7 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 - Ruff for linting, mypy for type checking
 
 ### AI Development Guidelines
+
 - **READ THIS FILE FIRST** before any coding session
 - **Research existing solutions** before building anything new
 - **Leverage mlx-lm** — don't reimplement what Apple provides
@@ -172,12 +193,14 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 - **Keep the API contract stable** — any change that breaks OpenAI compatibility is a bug
 
 ### Testing Requirements
+
 - Unit tests for router, model manager, config
 - Integration tests against real MLX models (small test model)
 - API contract tests (verify OpenAI SDK compatibility)
 - Load tests (concurrent requests)
 
 ### Deployment
+
 - launchd plist on Mono512 (`/Library/LaunchDaemons/com.opta.lmx.plist`)
 - KeepAlive, RunAtLoad
 - Logs to `/var/log/opta-lmx/` or `~/.opta-lmx/logs/`
@@ -189,26 +212,30 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 ## 9. Roadmap Priorities
 
 ### Now (Current Phase)
+
 - Phases 0-6 complete (149 tests, 30 source files, 23+ endpoints)
 - Benchmark endpoint and performance tuning
 - Ecosystem integration (Opta CLI provider in 5A, OpenClaw in 5B)
 
 ### Next
+
 - Phase 5A: Opta CLI provider (in 1D-Opta-CLI-TS repo)
 - Phase 5B: OpenClaw bot integration (in 1I-OptaPlus repo)
 - Phase 4B-future: Speculative decoding, KV-cache tuning, published benchmarks
 
 ### Later
+
 - v1.0 release with full ecosystem integration
 - Published benchmarks (vs LM Studio, vs Ollama)
 
 ### Never (Anti-Features)
-- ❌ GUI / graphical interface
-- ❌ Chat UI
+
 - ❌ Built-in coding tools
 - ❌ Cloud API proxying (use OpenRouter/LiteLLM for that)
 - ❌ Multi-machine distributed inference (single machine only)
 - ❌ Training / fine-tuning (separate tool)
+
+> **Note:** The GUI/dashboard for LMX management lives in `1L-Opta-LMX-Dashboard`, not in the engine itself. The engine remains headless — the dashboard consumes its API.
 
 ---
 
@@ -223,5 +250,5 @@ Client ← SSE Stream ← API Server ← Token Stream ← Generation Loop
 
 ---
 
-*Last updated: 2026-02-16*
+*Last updated: 2026-03-04*
 *This file is the source of truth for what Opta-LMX is. Update it as the app evolves.*

@@ -136,4 +136,27 @@ describe("ConfigStudioPage", () => {
       expect(screen.getByLabelText("Config value editor")).toHaveValue("42");
     });
   });
+
+  it("masks sensitive values by default and reveals them on demand", async () => {
+    vi.mocked(daemonClient.runOperation).mockResolvedValueOnce(
+      opSuccess("config.list", {
+        provider: { openai: { apiKey: "sk-secret-1234" } },
+      }),
+    );
+
+    render(<ConfigStudioPage connection={connection} />);
+
+    expect(
+      await screen.findByRole("button", { name: /provider\.openai\.apiKey/i }),
+    ).toBeInTheDocument();
+
+    expect(screen.getByText("**********1234")).toBeInTheDocument();
+    expect(screen.queryByText("sk-secret-1234")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Reveal sensitive" }));
+
+    await waitFor(() => {
+      expect(screen.getAllByText("sk-secret-1234").length).toBeGreaterThan(0);
+    });
+  });
 });

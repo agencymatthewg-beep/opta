@@ -53,6 +53,37 @@ function compactValue(value: unknown): string {
   }
 }
 
+function isSensitiveConfigKey(key: string): boolean {
+  const normalized = key.toLowerCase();
+  return (
+    normalized.includes("apikey") ||
+    normalized.includes("api_key") ||
+    normalized.includes("token") ||
+    normalized.includes("secret") ||
+    normalized.includes("password") ||
+    normalized.endsWith(".key") ||
+    normalized.includes("adminkey")
+  );
+}
+
+function maskSensitiveValue(value: unknown): string {
+  const raw = compactValue(value);
+  if (!raw || raw === "undefined") return "(none)";
+  if (raw.length <= 6) return "******";
+  return `${"*".repeat(Math.max(0, raw.length - 4))}${raw.slice(-4)}`;
+}
+
+function formatDisplayValue(
+  key: string,
+  value: unknown,
+  revealSensitive: boolean,
+): string {
+  if (revealSensitive || !isSensitiveConfigKey(key)) {
+    return compactValue(value);
+  }
+  return maskSensitiveValue(value);
+}
+
 function formatEditorValue(value: unknown): string {
   if (typeof value === "string") return value;
   if (value === undefined) return "";
@@ -215,6 +246,7 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [editorValue, setEditorValue] = useState("");
+  const [revealSensitive, setRevealSensitive] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [actionState, setActionState] = useState<ActionState>(null);
@@ -231,20 +263,28 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
 
     return entries.filter((entry) => {
       const keyMatch = entry.key.toLowerCase().includes(normalizedQuery);
-      const valueMatch = entry.valueText
+      const valueMatch = formatDisplayValue(
+        entry.key,
+        entry.value,
+        revealSensitive,
+      )
         .toLowerCase()
         .includes(normalizedQuery);
       return keyMatch || valueMatch;
     });
-  }, [entries, searchQuery]);
+  }, [entries, revealSensitive, searchQuery]);
 
   useEffect(() => {
     if (!selectedEntry) {
       setEditorValue("");
       return;
     }
+    if (isSensitiveConfigKey(selectedEntry.key) && !revealSensitive) {
+      setEditorValue("");
+      return;
+    }
     setEditorValue(formatEditorValue(selectedEntry.value));
-  }, [selectedEntry?.key, selectedEntry?.value]);
+  }, [revealSensitive, selectedEntry?.key, selectedEntry?.value]);
 
   useEffect(() => {
     if (!selectedKey) {
@@ -359,12 +399,19 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
       });
       const value = extractConfigValue(result, selectedKey);
       updateEntryValue(selectedKey, value);
-      setEditorValue(formatEditorValue(value));
+      if (isSensitiveConfigKey(selectedKey) && !revealSensitive) {
+        setEditorValue("");
+      } else {
+        setEditorValue(formatEditorValue(value));
+      }
       setNotice({
         tone: "success",
         operationId: CONFIG_GET_OPERATION,
         message: `Fetched ${selectedKey}.`,
-        details: value,
+        details:
+          isSensitiveConfigKey(selectedKey) && !revealSensitive
+            ? "[hidden]"
+            : value,
       });
     } catch (error) {
       setNotice({
@@ -394,7 +441,10 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
         tone: "success",
         operationId: CONFIG_SET_OPERATION,
         message: `Updated ${selectedKey}.`,
-        details: result,
+        details:
+          isSensitiveConfigKey(selectedKey) && !revealSensitive
+            ? "[hidden]"
+            : result,
       });
       void loadConfig(false);
     } catch (error) {
@@ -477,6 +527,16 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
 
   const detailsText = notice ? prettyDetails(notice.details) : "";
 
+  const toggleRevealSensitive = useCallback(() => {
+    if (!revealSensitive) {
+      const shouldReveal = window.confirm(
+        "Reveal sensitive config values in this view?",
+      );
+      if (!shouldReveal) return;
+    }
+    setRevealSensitive((current) => !current);
+  }, [revealSensitive]);
+
   return (
     <div className="config-studio-page">
       <header className="config-studio-header">
@@ -499,6 +559,14 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
               aria-label="Search config keys"
             />
           </label>
+          <button
+            type="button"
+            className="action-btn"
+            onClick={toggleRevealSensitive}
+            disabled={catalogLoading || actionState !== null}
+          >
+            {revealSensitive ? "Hide sensitive" : "Reveal sensitive"}
+          </button>
           <button
             type="button"
             className="refresh-btn"
@@ -575,7 +643,13 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
                   aria-pressed={entry.key === selectedKey}
                 >
                   <span className="config-key-name">{entry.key}</span>
-                  <span className="config-key-value">{entry.valueText}</span>
+                  <span className="config-key-value">
+                    {formatDisplayValue(
+                      entry.key,
+                      entry.value,
+                      revealSensitive,
+                    )}
+                  </span>
                 </button>
               </li>
             ))}
@@ -587,7 +661,14 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
             <>
               <header className="config-editor-header">
                 <h3>{selectedEntry.key}</h3>
-                <p>Current value preview: {selectedEntry.valueText}</p>
+                <p>
+                  Current value preview:{" "}
+                  {formatDisplayValue(
+                    selectedEntry.key,
+                    selectedEntry.value,
+                    revealSensitive,
+                  )}
+                </p>
               </header>
 
               <label className="config-editor-label">
@@ -604,6 +685,9 @@ export function ConfigStudioPage({ connection }: ConfigStudioPageProps) {
               <p className="config-editor-hint">
                 Input accepts JSON when valid; otherwise the raw text is
                 submitted.
+                {isSensitiveConfigKey(selectedEntry.key) && !revealSensitive
+                  ? " Sensitive key is hidden; click Reveal sensitive to view current value."
+                  : ""}
               </p>
 
               <div className="config-editor-actions">

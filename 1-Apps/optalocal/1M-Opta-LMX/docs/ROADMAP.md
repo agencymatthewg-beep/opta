@@ -1,7 +1,7 @@
 ---
 title: ROADMAP.md — Development Phases & Milestones
 created: 2026-02-15
-updated: 2026-02-16
+updated: 2026-03-04
 type: planning
 audience: All (understanding timeline and phases)
 status: Active
@@ -34,6 +34,7 @@ This document maps out all development phases, what each delivers, and how the 1
 **Goal:** Understand the landscape before designing anything
 
 ### Outputs
+
 1. **0A: `docs/research/existing-mlx-servers.md`** — Can we build on existing projects?
 2. **0B: `docs/research/mlx-capabilities.md`** — What can MLX really do?
 3. **0C: `docs/research/openai-api-spec.md`** — What API must we implement?
@@ -41,15 +42,18 @@ This document maps out all development phases, what each delivers, and how the 1
 5. **0E: `docs/research/apple-silicon-optimization.md`** — M3 Ultra optimization techniques
 
 ### Capabilities Addressed
+
 - None (research phase — no code yet)
 
 ### Success Criteria
+
 - ✓ All 5 research documents complete
 - ✓ No major surprises (MLX is viable, OpenAI format is clear)
 - ✓ Clear technology stack emerging (MLX + FastAPI consensus)
 - ✓ Ready to design architecture (Phase 1)
 
 ### Research Outputs Location
+
 ```
 docs/research/
 ├── existing-mlx-servers.md         (0A)
@@ -68,15 +72,18 @@ docs/research/
 **Goal:** Lock down design before writing Python
 
 ### Outputs
+
 1. **1A: `docs/plans/ARCHITECTURE.md`** — System design, modules, data flow
 2. **1B: `docs/plans/TECH-DECISIONS.md`** — Why MLX? Why FastAPI? Why port 1234?
 3. **1C: `docs/plans/API-SPEC.md`** (OpenAPI/Swagger) — Full API contract
 4. **1D: Enhance `docs/OPTA-CLI-MIGRATION.md`** — Detailed CLI migration plan
 
 ### Capabilities Addressed
+
 - None (design phase — decision-making)
 
 ### Success Criteria
+
 - ✓ ARCHITECTURE.md defines all modules and data flow
 - ✓ TECH-DECISIONS.md justifies every major choice (with research citations)
 - ✓ API-SPEC.md matches OpenAI format exactly
@@ -84,6 +91,7 @@ docs/research/
 - ✓ Team consensus on design (no big changes in Phase 2)
 
 ### Deliverables Checklist
+
 - [x] Module structure defined (see CLAUDE.md project structure)
 - [x] Data flow diagram (request → inference → response)
 - [x] API contract (request/response schemas)
@@ -120,7 +128,9 @@ docs/research/
 ### Sub-Phases
 
 #### 2A: Project Scaffolding ✅
+
 **Deliverables:**
+
 - [x] `pyproject.toml` with dependencies pinned
 - [x] Project structure created (see CLAUDE.md structure)
 - [x] `src/opta_lmx/__init__.py` and `main.py` stubs
@@ -129,7 +139,9 @@ docs/research/
 - [x] README.md with quick start
 
 #### 2B: MLX Inference Core ✅
+
 **Deliverables:**
+
 - [x] `src/opta_lmx/inference/engine.py` — MLX model loading
 - [x] `src/opta_lmx/inference/schema.py` — Type models (Request, Response)
 - [x] Token generation loop (streaming)
@@ -138,7 +150,9 @@ docs/research/
 - [x] Tests: load real model, generate tokens
 
 #### 2C: OpenAI-Compatible API ✅
+
 **Deliverables:**
+
 - [x] `src/opta_lmx/api/inference.py` — FastAPI routes
 - [x] `/v1/chat/completions` (streaming + non-streaming)
 - [x] `/v1/models` (list available models)
@@ -148,7 +162,9 @@ docs/research/
 - [x] Tests: OpenAI SDK compatibility
 
 #### 2D: Drop-in LM Studio Test ✅
+
 **Deliverables:**
+
 - [x] Start LMX on port 1234
 - [ ] `opta connect` works (zero config change) — deferred to 5A (Opta CLI repo)
 - [x] `opta models` lists loaded models
@@ -157,6 +173,7 @@ docs/research/
 - [x] Verify: exact feature parity with LM Studio API
 
 ### Success Criteria
+
 - ✓ MVP runs on port 1234
 - ✓ Loads one MLX model (e.g., Mistral 7B)
 - ✓ `/v1/chat/completions` works with streaming
@@ -166,6 +183,7 @@ docs/research/
 - ✓ All 5 core capabilities (1-3, 5, 10, 12) working
 
 ### Code Guidelines
+
 - See CLAUDE.md (§1-7) for all Python standards
 - Type hints everywhere
 - Async first
@@ -193,7 +211,9 @@ docs/research/
 ### Sub-Phases
 
 #### 3A: Admin API Endpoints ✅
+
 **Deliverables:**
+
 - [x] `src/opta_lmx/api/admin.py` — Admin routes
 - [x] `POST /admin/models/load` — Load model by ID
 - [x] `POST /admin/models/unload` — Unload loaded model
@@ -203,7 +223,9 @@ docs/research/
 - [x] Request/response validation
 
 #### 3B: Model Manager & HuggingFace Integration ✅
+
 **Deliverables:**
+
 - [x] `src/opta_lmx/manager/model.py` — Model inventory
 - [x] `src/opta_lmx/manager/memory.py` — Memory monitoring
 - [x] Download from HuggingFace with progress
@@ -213,7 +235,9 @@ docs/research/
 - [x] Tests: download, verify, load
 
 #### 3C: GGUF Fallback ✅
+
 **Deliverables:**
+
 - [x] `src/opta_lmx/inference/gguf_backend.py` — llama-cpp-python wrapper
 - [x] Detect model format (MLX vs GGUF) — engine auto-detects
 - [x] Load GGUF if MLX weights not available
@@ -223,6 +247,7 @@ docs/research/
 - [x] 14 GGUF-specific tests passing
 
 ### Success Criteria
+
 - ✓ Admin API fully functional
 - ✓ Can load/unload models without restart
 - ✓ Can download models from HuggingFace
@@ -252,7 +277,9 @@ docs/research/
 ### Sub-Phases
 
 #### 4A: Smart Router ✅
+
 **Deliverables:**
+
 - [x] Task classifier (`TaskRouter` with configurable alias resolution)
 - [x] Model capability matcher (alias → model preference list mapping)
 - [x] Routing rules (auto, code, reasoning, chat aliases)
@@ -260,7 +287,9 @@ docs/research/
 - [x] Tests: 10 unit tests + 3 API integration tests
 
 #### 4B: Performance Optimization (Deferred to 4B-future)
+
 **Deliverables:**
+
 - [x] Prompt caching — vllm-mlx prefix cache built-in (upstream)
 - [x] Request batching — vllm-mlx continuous batching built-in (upstream)
 - [ ] KV-cache configuration exposure (deferred — expose via admin when needed)
@@ -268,7 +297,9 @@ docs/research/
 - [ ] Performance benchmarks (tok/s vs LM Studio) — deferred
 
 #### 4C: Monitoring & Telemetry ✅
+
 **Deliverables:**
+
 - [x] Prometheus metrics export (`GET /admin/metrics`)
 - [x] Per-model speed tracking (request counts, error counts, token counts)
 - [x] Memory usage history (latency histogram with 9 buckets)
@@ -277,13 +308,16 @@ docs/research/
 - [x] Tests: 7 unit tests + 4 API tests
 
 #### 4D: Config Hot-Reload ✅
+
 **Deliverables:**
+
 - [x] `POST /admin/config/reload` — re-reads YAML, updates runtime state
 - [x] Updates routing aliases, memory thresholds, logging level, admin key
 - [x] Does NOT restart server or unload models
 - [x] Tests: 2 API tests (success + auth)
 
 ### Success Criteria
+
 - ✓ Smart routing working (picks best model)
 - ✓ Performance = or exceeds LM Studio on same hardware
 - ✓ Observable metrics available
@@ -300,7 +334,9 @@ docs/research/
 ### Sub-Phases
 
 #### 5A: Opta CLI Provider (Deferred — separate repo: 1D-Opta-CLI-TS)
+
 **Deliverables:**
+
 - [ ] `src/opta_cli/providers/lmx.ts` — TypeScript provider
 - [ ] Rewrite `connect.ts`, `models.ts` to use LMX API
 - [ ] Add `serve.ts` command (start/stop LMX daemon)
@@ -308,14 +344,18 @@ docs/research/
 - [ ] Tests: CLI commands work
 
 #### 5B: OpenClaw Bot Integration (Deferred — separate repo: 1I-OptaPlus)
+
 **Deliverables:**
+
 - [ ] All 6 bots tested with LMX
 - [ ] Update bot configs (if needed)
 - [ ] Document any breaking changes
 - [ ] Performance tuning (memory allocation, routing rules)
 
 #### 5C: Production Deployment ✅
+
 **Deliverables:**
+
 - [x] launchd plist (for Mac Studio) — `docs/launchd/com.opta.lmx.plist`
 - [x] Auto-start on boot (RunAtLoad + KeepAlive on crash)
 - [x] Log rotation (RotatingFileHandler: 50MB max, 5 backups)
@@ -324,6 +364,7 @@ docs/research/
 - [x] Documentation for operations team
 
 ### Success Criteria
+
 - ✓ launchd daemon deployment ready (5C)
 - Deferred: Opta CLI migration (5A — separate repo)
 - Deferred: OpenClaw bot integration (5B — separate repo)
@@ -339,25 +380,30 @@ docs/research/
 ### Deliverables
 
 #### 6A: Model Presets ✅
+
 - [x] Preset configurations for common models
 - [x] Quick-load via preset name
 
 #### 6B: SSE Events ✅
+
 - [x] Enhanced SSE event types for richer client integration
 - [x] Mid-stream error handling improvements
 
 #### 6C: WebSocket Support ✅
+
 - [x] WebSocket endpoint for persistent connections
 - [x] Bidirectional streaming
 
 #### 6D: Code Audit ✅
+
 - [x] Full codebase audit and cleanup
-- [x] 149 tests passing across 8 test files
-- [x] 30 source files in `src/opta_lmx/`
-- [x] 23+ API endpoints implemented
+- [x] 200+ tests passing across 15+ test files
+- [x] 100+ source files in `src/opta_lmx/` (16 subdirectories)
+- [x] 50+ API endpoints implemented
 
 ### Success Criteria
-- ✓ All tests passing (149 across 8 files)
+
+- ✓ All tests passing (200+ across 15+ files)
 - ✓ Code audit clean
 - ✓ WebSocket support operational
 - ✓ Presets and SSE enhancements complete
@@ -370,13 +416,13 @@ These are explicitly NOT planned:
 
 | Anti-Feature | Why |
 |--------------|-----|
-| ❌ GUI / graphical interface | This is a daemon |
-| ❌ Chat UI | That's OptaPlus / Telegram bots |
 | ❌ Built-in coding tools | That's Opta CLI |
 | ❌ Cloud API proxying | Use OpenRouter/LiteLLM for that |
 | ❌ Multi-machine distributed inference | Single machine only |
 | ❌ Training / fine-tuning | Separate tool, not LMX |
 | ❌ Mobile support | macOS only, Apple Silicon |
+
+> **Note:** The management dashboard (`lmx.optalocal.com`) lives in `1L-Opta-LMX-Dashboard` as a separate web project. The engine itself remains headless.
 
 ---
 
@@ -397,6 +443,7 @@ These are explicitly NOT planned:
 ---
 
 ## References
+
 - Detailed capabilities: `APP.md` §4
 - Current phase plan: `docs/plans/MASTER-PLAN.md`
 - Architectural decisions: `docs/DECISIONS.md`

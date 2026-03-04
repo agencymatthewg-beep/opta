@@ -14,6 +14,20 @@
     }
   },
   {
+    "id": "1l",
+    "slug": "opta-lmx-dashboard",
+    "name": "Opta LMX Dashboard",
+    "type": "node",
+    "path": "1L-Opta-LMX-Dashboard",
+    "port": 3003,
+    "tasks": {
+      "dev": "dev",
+      "build": "build",
+      "check": "check",
+      "start": "start"
+    }
+  },
+  {
     "id": "1m",
     "slug": "opta-lmx",
     "name": "Opta LMX",

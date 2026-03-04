@@ -13,6 +13,8 @@ const HIGH_RISK_WRITE_OPERATIONS = new Set<OperationId>([
   'serve.stop',
   'serve.restart',
   'update.run',
+  'apps.install',
+  'apps.uninstall',
   'keychain.delete-anthropic',
   'keychain.delete-lmx',
   'keychain.delete-gemini',

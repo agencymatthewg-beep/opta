@@ -154,6 +154,7 @@ async function discoverViaMdns(timeoutMs: number): Promise<DiscoveredHost[]> {
     const hosts: DiscoveredHost[] = [];
     const seen = new Set<string>();
     const started = Date.now();
+    let finished = false;
 
     let socket: dgram.Socket;
     try {
@@ -164,6 +165,9 @@ async function discoverViaMdns(timeoutMs: number): Promise<DiscoveredHost[]> {
     }
 
     const finish = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
       try { socket.close(); } catch { /* ignore */ }
       resolve(hosts);
     };
@@ -171,7 +175,6 @@ async function discoverViaMdns(timeoutMs: number): Promise<DiscoveredHost[]> {
     const timer = setTimeout(finish, timeoutMs);
 
     socket.on('error', () => {
-      clearTimeout(timer);
       finish();
     });
 
@@ -199,7 +202,6 @@ async function discoverViaMdns(timeoutMs: number): Promise<DiscoveredHost[]> {
       const query = buildMdnsQuery();
       socket.send(query, 0, query.length, MDNS_PORT, MDNS_MULTICAST_ADDR, (err) => {
         if (err) {
-          clearTimeout(timer);
           finish();
         }
       });

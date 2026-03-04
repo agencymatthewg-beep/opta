@@ -231,6 +231,7 @@ class ModelLifecycleManager:
         speculative_require_supported: bool,
         kv_bits: int | None,
         kv_group_size: int,
+        quantized_kv_start: int | None,
         prefix_cache_enabled: bool,
         loader_isolation_enabled: bool,
         loader_timeout_sec: int,
@@ -267,6 +268,7 @@ class ModelLifecycleManager:
         self._speculative_require_supported = speculative_require_supported
         self._kv_bits = kv_bits
         self._kv_group_size = kv_group_size
+        self._quantized_kv_start = quantized_kv_start
         self._prefix_cache_enabled = prefix_cache_enabled
         self._loader_isolation_enabled = loader_isolation_enabled
         self._loader_timeout_sec = loader_timeout_sec
@@ -1220,9 +1222,13 @@ class ModelLifecycleManager:
 
         kv_bits = perf.get("kv_bits", self._kv_bits)
         kv_group_size = perf.get("kv_group_size", self._kv_group_size)
+        quantized_kv_start = perf.get("quantized_kv_start", self._quantized_kv_start)
+
         if kv_bits is not None:
             optional_kwargs["kv_bits"] = kv_bits
             optional_kwargs["kv_group_size"] = kv_group_size
+            if quantized_kv_start is not None:
+                optional_kwargs["quantized_kv_start"] = quantized_kv_start
 
         prefix_cache = perf.get("prefix_cache", self._prefix_cache_enabled)
         if not use_batching and not prefix_cache:

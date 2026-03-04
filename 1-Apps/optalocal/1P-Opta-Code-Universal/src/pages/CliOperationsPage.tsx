@@ -24,17 +24,26 @@ const CLI_OPERATION_SCOPES: string[] = [
   "embed",
   "rerank",
   "benchmark",
+  "ceo.benchmark",
+  "apps.*",
   "models.*",
   "keychain.*",
 ];
 
 export function CliOperationsPage({ connection }: CliOperationsPageProps) {
   return (
-    <OperationsPage
-      connection={connection}
-      scopedOperationIds={CLI_OPERATION_SCOPES}
-      title="CLI Operations"
-      subtitle="Full Opta CLI operation-family access via daemon API."
-    />
+    <div className="cli-bridge-page">
+      <div className="cli-bridge-note glass-subtle" role="status">
+        <strong>CLI Bridge:</strong> Opta CLI remains the primary TUI coding
+        interface. Opta Code provides frontend-optimized controls over the same
+        daemon-backed capabilities.
+      </div>
+      <OperationsPage
+        connection={connection}
+        scopedOperationIds={CLI_OPERATION_SCOPES}
+        title="CLI Bridge"
+        subtitle="Advanced parity bridge for full Opta CLI operation-family access via daemon API."
+      />
+    </div>
   );
 }

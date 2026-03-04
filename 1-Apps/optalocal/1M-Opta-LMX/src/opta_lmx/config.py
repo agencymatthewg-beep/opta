@@ -109,6 +109,7 @@ class ModelsConfig(BaseModel):
     )
     kv_bits: int | None = Field(None, description="KV cache quantization bits (4 or 8, None=FP16)")
     kv_group_size: int = Field(64, ge=1, description="KV cache quantization group size")
+    quantized_kv_start: int | None = Field(None, description="Step to start KV quantization")
 
     @field_validator("models_directory")
     @classmethod

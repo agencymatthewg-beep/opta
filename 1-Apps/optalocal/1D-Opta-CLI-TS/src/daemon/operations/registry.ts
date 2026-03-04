@@ -40,6 +40,7 @@ import { envCommand } from '../../commands/env.js';
 import { init } from '../../commands/init.js';
 import { benchmark } from '../../commands/benchmark.js';
 import { runCeoBenchmark } from '../../benchmark/ceo/runner.js';
+import { appsInstall, appsList, appsUninstall } from '../../commands/apps.js';
 import { embed } from '../../commands/embed.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { models } from '../../commands/models/index.js';
@@ -580,6 +581,21 @@ export const operationRegistry = {
         pull: input.pull,
         json: true,
       });
+    })
+  ),
+  'apps.list': defineOperation('apps.list', async () =>
+    runCommandForJson('apps.list', async () => {
+      await appsList({ json: true });
+    })
+  ),
+  'apps.install': defineOperation('apps.install', async (input) =>
+    runCommandForText(async () => {
+      await appsInstall(input.appIds);
+    })
+  ),
+  'apps.uninstall': defineOperation('apps.uninstall', async (input) =>
+    runCommandForText(async () => {
+      await appsUninstall(input.appIds);
     })
   ),
   'sessions.list': defineOperation('sessions.list', async (input) =>

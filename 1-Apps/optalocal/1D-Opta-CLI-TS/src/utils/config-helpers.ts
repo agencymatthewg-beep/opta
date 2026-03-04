@@ -31,6 +31,11 @@ export function parseProviderOverride(input: string): ProviderOverrideName {
   if (!normalized) {
     throw new Error('Provider name cannot be empty.');
   }
+  if (!PROVIDER_OVERRIDE_NAMES.includes(normalized as (typeof PROVIDER_OVERRIDE_NAMES)[number])) {
+    throw new Error(
+      `Invalid provider "${normalized}". Expected one of: ${PROVIDER_OVERRIDE_NAMES.join(', ')}.`
+    );
+  }
   return normalized;
 }
 

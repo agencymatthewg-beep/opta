@@ -38,6 +38,9 @@ export const OPERATION_IDS = [
   'serve.logs',
   'init.run',
   'update.run',
+  'apps.list',
+  'apps.install',
+  'apps.uninstall',
   'sessions.list',
   'sessions.search',
   'sessions.export',
@@ -257,6 +260,17 @@ export const OperationInputSchemaById = {
       dryRun: z.boolean().optional(),
       build: z.boolean().optional(),
       pull: z.boolean().optional(),
+    })
+    .strict(),
+  'apps.list': EmptyInputSchema,
+  'apps.install': z
+    .object({
+      appIds: z.array(z.string().min(1)).min(1),
+    })
+    .strict(),
+  'apps.uninstall': z
+    .object({
+      appIds: z.array(z.string().min(1)).min(1),
     })
     .strict(),
   'sessions.list': z
@@ -619,6 +633,9 @@ export const OperationOutputSchemaById = {
   'serve.logs': TextCommandOutputSchema,
   'init.run': TextCommandOutputSchema,
   'update.run': z.unknown(),
+  'apps.list': z.unknown(),
+  'apps.install': TextCommandOutputSchema,
+  'apps.uninstall': TextCommandOutputSchema,
   'sessions.list': z.array(SessionSummarySchema),
   'sessions.search': z.array(SessionSummarySchema),
   'sessions.export': z.unknown(),
@@ -712,6 +729,9 @@ export const OperationExecuteRequestSchema = z.discriminatedUnion('id', [
   makeExecuteRequestVariant('serve.logs'),
   makeExecuteRequestVariant('init.run'),
   makeExecuteRequestVariant('update.run'),
+  makeExecuteRequestVariant('apps.list'),
+  makeExecuteRequestVariant('apps.install'),
+  makeExecuteRequestVariant('apps.uninstall'),
   makeExecuteRequestVariant('sessions.list'),
   makeExecuteRequestVariant('sessions.search'),
   makeExecuteRequestVariant('sessions.export'),
@@ -1027,6 +1047,24 @@ export const OPERATION_TAXONOMY = [
     id: 'update.run',
     title: 'Update Run',
     description: 'Run Opta component updates for configured targets.',
+    safety: 'write',
+  },
+  {
+    id: 'apps.list',
+    title: 'Apps List',
+    description: 'List installed Opta ecosystem applications.',
+    safety: 'read',
+  },
+  {
+    id: 'apps.install',
+    title: 'Apps Install',
+    description: 'Install one or more Opta ecosystem applications.',
+    safety: 'write',
+  },
+  {
+    id: 'apps.uninstall',
+    title: 'Apps Uninstall',
+    description: 'Uninstall one or more Opta ecosystem applications.',
     safety: 'write',
   },
   {

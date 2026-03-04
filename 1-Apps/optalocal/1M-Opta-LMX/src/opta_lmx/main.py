@@ -263,6 +263,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         speculative_require_supported=config.models.speculative_require_supported,
         kv_bits=config.models.kv_bits,
         kv_group_size=config.models.kv_group_size,
+        quantized_kv_start=config.models.quantized_kv_start,
         prefix_cache_enabled=config.models.prefix_cache_enabled,
         max_concurrent_requests=config.models.max_concurrent_requests,
         inference_timeout_sec=config.models.inference_timeout_sec,

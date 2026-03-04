@@ -1,0 +1,140 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-sora: "Sora";
+  --font-jetbrains: "JetBrains Mono";
+
+  /* Opta Design Tokens */
+  --opta-bg: #09090b;
+  --opta-surface: #18181b;
+  --opta-elevated: #27272a;
+  --opta-border: rgba(255, 255, 255, 0.05);
+  --opta-border-strong: rgba(255, 255, 255, 0.15);
+  --opta-text-primary: #fafafa;
+  --opta-text-secondary: #a1a1aa;
+  --opta-text-muted: #52525b;
+  --opta-primary: #8b5cf6;
+  --opta-primary-glow: #a855f7;
+  --opta-secondary: #3b1d5a;
+  --opta-neon-purple: #8b5cf6;
+  --opta-neon-blue: #3b82f6;
+  --opta-neon-green: #22c55e;
+  --opta-neon-amber: #f59e0b;
+  --opta-neon-red: #ef4444;
+  --opta-neon-cyan: #06b6d4;
+  --opta-glass-bg: rgba(109, 40, 217, 0.15);
+  --opta-glass-bg-subtle: rgba(9, 9, 11, 0.4);
+  --opta-glass-border: rgba(139, 92, 246, 0.35);
+  --opta-glass-border-subtle: rgba(255, 255, 255, 0.08);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--opta-bg);
+  color: var(--opta-text-primary);
+  font-family: var(--font-sora), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% -10%,
+    rgba(139, 92, 246, 0.18) 0%,
+    transparent 70%
+  );
+  background-attachment: fixed;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Film grain noise overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+
+code, pre, .font-mono {
+  font-family: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/* ── Glass System ─────────────────────────────── */
+.glass {
+  background: var(--opta-glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--opta-glass-border);
+}
+
+.glass-subtle {
+  background: var(--opta-glass-bg-subtle);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--opta-glass-border-subtle);
+}
+
+.glass-strong {
+  background: rgba(109, 40, 217, 0.25);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.5);
+}
+
+/* ── Neon Line Divider ─────────────────────────── */
+.neon-line {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(139, 92, 246, 0.6) 30%,
+    rgba(168, 85, 247, 0.8) 50%,
+    rgba(139, 92, 246, 0.6) 70%,
+    transparent 100%
+  );
+}
+
+/* ── Dashboard Card ─────────────────────────────── */
+.dashboard-card {
+  background: var(--opta-surface);
+  border: 1px solid var(--opta-border);
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: border-color 150ms ease;
+}
+
+.dashboard-card:hover {
+  border-color: var(--opta-glass-border-subtle);
+}
+
+/* ── Status Indicators ─────────────────────────── */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-dot-online {
+  background: var(--opta-neon-green);
+  box-shadow: 0 0 6px var(--opta-neon-green);
+}
+
+.status-dot-offline {
+  background: var(--opta-neon-red);
+  box-shadow: 0 0 6px var(--opta-neon-red);
+}
+
+.status-dot-loading {
+  background: var(--opta-neon-amber);
+  box-shadow: 0 0 6px var(--opta-neon-amber);
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}

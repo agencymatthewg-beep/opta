@@ -1,3 +1,9 @@
+---
+status: archived
+date: 2026-03-04
+owner: opta-core-team
+---
+
 # Opta CLI — LSP Optimization & Universal Provider Plan
 
 **Date:** 2026-03-04

@@ -10,13 +10,15 @@ import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ModelsPage } from "./pages/ModelsPage";
 import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
-import { OperationsPage } from "./pages/OperationsPage";
+import { ToolingOperationsPage } from "./pages/ToolingOperationsPage";
+import { AppCatalogPage } from "./pages/AppCatalogPage";
+import { SessionMemoryPage } from "./pages/SessionMemoryPage";
+import { SystemOperationsPage } from "./pages/SystemOperationsPage";
 import { EnvProfilesPage } from "./pages/EnvProfilesPage";
 import { McpManagementPage } from "./pages/McpManagementPage";
 import { ConfigStudioPage } from "./pages/ConfigStudioPage";
 import { AccountControlPage } from "./pages/AccountControlPage";
 import { CliOperationsPage } from "./pages/CliOperationsPage";
-import { DaemonPanel } from "./components/DaemonPanel";
 import { TelemetryPanel } from "./components/TelemetryPanel";
 import { downloadAsFile, exportToMarkdown } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
@@ -39,7 +41,10 @@ import type {
 type AppPage =
   | "sessions"
   | "models"
-  | "operations"
+  | "tools"
+  | "apps"
+  | "memory"
+  | "system"
   | "cli"
   | "env"
   | "mcp"
@@ -414,34 +419,64 @@ function App() {
       },
       {
         id: "open-operations",
-        title: "Open operations console",
-        description: "Run any CLI command-family operation via the daemon API",
+        title: "Open agent tooling",
+        description:
+          "Run diff, embedding, rerank, and benchmark operations via daemon API",
         keywords: [
+          "tools",
           "operations",
-          "doctor",
-          "env",
-          "mcp",
-          "keychain",
           "benchmark",
+          "ceo",
           "embed",
           "rerank",
+          "diff",
         ],
-        run: () => setActivePage("operations"),
+        run: () => setActivePage("tools"),
+      },
+      {
+        id: "open-app-catalog",
+        title: "Open app catalog",
+        description: "Install and manage Opta apps through daemon-backed CLI ops",
+        keywords: ["apps", "install", "uninstall", "catalog"],
+        run: () => setActivePage("apps"),
+      },
+      {
+        id: "open-session-memory",
+        title: "Open session memory",
+        description:
+          "Search, export, and manage persisted sessions via sessions.* operations",
+        keywords: ["sessions", "memory", "search", "export", "delete"],
+        run: () => setActivePage("memory"),
+      },
+      {
+        id: "open-system-operations",
+        title: "Open system control plane",
+        description:
+          "Diagnostics, lifecycle, onboarding, and maintenance operations",
+        keywords: [
+          "system",
+          "daemon",
+          "serve",
+          "doctor",
+          "version",
+          "update",
+          "init",
+          "onboard",
+          "keychain",
+        ],
+        run: () => setActivePage("system"),
       },
       {
         id: "open-cli-operations",
-        title: "Open CLI operations",
+        title: "Open CLI bridge",
         description:
-          "Run daemon, serve, session, onboarding, and keychain CLI operations",
+          "Advanced bridge to full CLI operation families while keeping Opta CLI as primary TUI",
         keywords: [
           "cli",
-          "daemon",
-          "serve",
-          "sessions",
-          "doctor",
-          "onboard",
-          "update",
-          "keychain",
+          "bridge",
+          "advanced",
+          "tui",
+          "parity",
         ],
         run: () => setActivePage("cli"),
       },
@@ -647,11 +682,20 @@ function App() {
               <button type="button" className={`nav-item ${activePage === "models" ? "active" : ""}`} onClick={() => setActivePage("models")}>
                 Models
               </button>
-              <button type="button" className={`nav-item ${activePage === "operations" ? "active" : ""}`} onClick={() => setActivePage("operations")}>
-                Operations
+              <button type="button" className={`nav-item ${activePage === "tools" ? "active" : ""}`} onClick={() => setActivePage("tools")}>
+                Tools
+              </button>
+              <button type="button" className={`nav-item ${activePage === "apps" ? "active" : ""}`} onClick={() => setActivePage("apps")}>
+                Apps
+              </button>
+              <button type="button" className={`nav-item ${activePage === "memory" ? "active" : ""}`} onClick={() => setActivePage("memory")}>
+                Memory
+              </button>
+              <button type="button" className={`nav-item ${activePage === "system" ? "active" : ""}`} onClick={() => setActivePage("system")}>
+                System
               </button>
               <button type="button" className={`nav-item ${activePage === "cli" ? "active" : ""}`} onClick={() => setActivePage("cli")}>
-                CLI
+                CLI Bridge
               </button>
               <button type="button" className={`nav-item ${activePage === "env" ? "active" : ""}`} onClick={() => setActivePage("env")}>
                 Env
@@ -692,8 +736,18 @@ function App() {
                   connection={connection}
                   onOpenSettings={() => setIsSettingsOpen(true)}
                 />
-              ) : activePage === "operations" ? (
-                <OperationsPage connection={connection} />
+              ) : activePage === "tools" ? (
+                <ToolingOperationsPage connection={connection} />
+              ) : activePage === "apps" ? (
+                <AppCatalogPage connection={connection} />
+              ) : activePage === "memory" ? (
+                <SessionMemoryPage connection={connection} />
+              ) : activePage === "system" ? (
+                <SystemOperationsPage
+                  connection={connection}
+                  connectionState={connectionState}
+                  onOpenCliBridge={() => setActivePage("cli")}
+                />
               ) : activePage === "cli" ? (
                 <CliOperationsPage connection={connection} />
               ) : activePage === "env" ? (

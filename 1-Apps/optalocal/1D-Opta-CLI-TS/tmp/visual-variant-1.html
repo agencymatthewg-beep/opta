@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta Local — Master Assessment (Variant 1: Grid Dashboard)</title>
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --border: rgba(255, 255, 255, 0.1);
+      --primary: #a855f7;
+      --cyan: #06b6d4;
+      --green: #22c55e;
+      --orange: #f59e0b;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sora: 'Sora', system-ui, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    body {
+      background-color: var(--void);
+      color: var(--text-main);
+      font-family: var(--font-sora);
+      margin: 0;
+      padding: 40px;
+      background-image: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15), transparent 40%);
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h1::before {
+      content: '';
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--primary);
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 40px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent, var(--primary));
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .app-name {
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+    .status-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+    }
+    ul.tasks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    ul.tasks li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+    ul.tasks li::before {
+      content: '[]';
+      font-family: var(--font-mono);
+      color: var(--border);
+      font-size: 0.8rem;
+      margin-top: 2px;
+    }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin-right: 8px;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <h1>Opta Local Master Assessment</h1>
+  <p class="subtitle">Global ecosystem state & pending execution queues</p>
+
+  <div class="grid">
+    <!-- LMX -->
+    <div class="card" style="--accent: var(--cyan)">
+      <div class="card-header">
+        <div class="app-name">Opta LMX</div>
+        <div class="status-badge">v0.6.2 · Python</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag" style="color: var(--orange); border-color: rgba(245,158,11,0.3)">P0</span>Rate-limit enforcement tests (Auth fail-closed verified)</div></li>
+        <li><div><span class="tag" style="color: var(--orange); border-color: rgba(245,158,11,0.3)">P1</span>Investigate duplicate process spawning on launchd restart</div></li>
+        <li><div><span class="tag" style="color: var(--green); border-color: rgba(34,197,94,0.3)">P2</span>Create .github/workflows/ci.yml</div></li>
+        <li><div><span class="tag" style="color: var(--text-muted)">P3</span>Split engine.py (2.5k LOC) into cleaner sub-modules</div></li>
+        <li><div><span class="tag" style="color: var(--text-muted)">P3</span>Never-crash load tasks 7–14 implementation</div></li>
+      </ul>
+    </div>
+
+    <!-- Code -->
+    <div class="card" style="--accent: var(--green)">
+      <div class="card-header">
+        <div class="app-name">Opta Code Universal</div>
+        <div class="status-badge">v0.5.4 · Tauri/React</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag" style="color: var(--orange); border-color: rgba(245,158,11,0.3)">P1</span>Add adapted-parity acceptance tests for tui/server/memory commands</div></li>
+        <li><div><span class="tag" style="color: var(--cyan); border-color: rgba(6,182,212,0.3)">UX</span>Add memory-focused desktop affordances (pin, retrieve, retain)</div></li>
+        <li><div><span class="tag" style="color: var(--green); border-color: rgba(34,197,94,0.3)">CI</span>Maintain parity gates (fail builds on override/scope regressions)</div></li>
+      </ul>
+    </div>
+
+    <!-- CLI -->
+    <div class="card" style="--accent: var(--primary)">
+      <div class="card-header">
+        <div class="app-name">Opta CLI</div>
+        <div class="status-badge">v0.5.0-a.15 · Node</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag" style="color: var(--orange); border-color: rgba(245,158,11,0.3)">P1</span>Fix promptTokens always returning 0 (requires LMX upstream fix)</div></li>
+        <li><div><span class="tag" style="color: var(--text-muted)">P2</span>Update hardcoded $0.00 cost estimation to support cloud provider logic</div></li>
+      </ul>
+    </div>
+
+    <!-- Init -->
+    <div class="card" style="--accent: var(--text-muted)">
+      <div class="card-header">
+        <div class="app-name">Opta Init</div>
+        <div class="status-badge">v1.1.0 · Next.js</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag" style="color: var(--cyan); border-color: rgba(6,182,212,0.3)">Ops</span>Decide Windows stable promotion timeline</div></li>
+        <li><div><span class="tag" style="color: var(--cyan); border-color: rgba(6,182,212,0.3)">Ops</span>Determine beta channel user-visibility logic</div></li>
+      </ul>
+    </div>
+
+    <!-- Admin -->
+    <div class="card" style="--accent: var(--orange)">
+      <div class="card-header">
+        <div class="app-name">Opta Admin</div>
+        <div class="status-badge">v0.1.0 · Next.js</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag" style="color: var(--orange); border-color: rgba(245,158,11,0.3)">P1</span>Port static 600-line HTML SSE dashboard into full Next.js components</div></li>
+        <li><div><span class="tag" style="color: var(--green); border-color: rgba(34,197,94,0.3)">CI</span>Setup deployment pipeline to Cloudflare Pages/Vercel</div></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

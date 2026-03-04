@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Opta LMX — Codebase vs. Plans Assessment</title>
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --border: rgba(255, 255, 255, 0.1);
+      --primary: #a855f7;
+      --cyan: #06b6d4;
+      --green: #22c55e;
+      --orange: #f59e0b;
+      --red: #ef4444;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --font-sora: 'Sora', system-ui, sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+    body {
+      background-color: var(--void);
+      color: var(--text-main);
+      font-family: var(--font-sora);
+      margin: 0;
+      padding: 40px;
+      background-image: radial-gradient(circle at 50% 0%, rgba(168, 85, 247, 0.15), transparent 40%);
+      line-height: 1.6;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    h1::before {
+      content: '';
+      display: block;
+      width: 12px;
+      height: 12px;
+      background: var(--primary);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--primary);
+    }
+    p.subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-bottom: 40px;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 24px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 2px;
+      background: var(--accent, var(--primary));
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .app-name {
+      font-weight: 600;
+      font-size: 1.25rem;
+    }
+    .status-badge {
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--border);
+    }
+    ul.tasks {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    ul.tasks li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+    ul.tasks li::before {
+      content: '[]';
+      font-family: var(--font-mono);
+      color: var(--border);
+      font-size: 0.8rem;
+      margin-top: 2px;
+    }
+    .completed li {
+      color: var(--text-muted);
+    }
+    .completed li::before {
+      content: '[x]';
+      color: var(--green);
+    }
+    .tag {
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      padding: 2px 6px;
+      border-radius: 4px;
+      border: 1px solid var(--border);
+      margin-right: 8px;
+      display: inline-block;
+      white-space: nowrap;
+    }
+    .tag-p0 { color: var(--red); border-color: rgba(239,68,68,0.3); }
+    .tag-p1 { color: var(--orange); border-color: rgba(245,158,11,0.3); }
+    .tag-p2 { color: var(--green); border-color: rgba(34,197,94,0.3); }
+    .tag-p3 { color: var(--text-muted); border-color: var(--border); }
+  </style>
+</head>
+<body>
+  <h1>Opta LMX: Codebase vs. Plans Assessment</h1>
+  <p class="subtitle">Generated dynamically via codebase cross-reference</p>
+
+  <div class="grid">
+    <!-- Unfinished Tasks -->
+    <div class="card" style="--accent: var(--red)">
+      <div class="card-header">
+        <div class="app-name">Pending Implementation</div>
+        <div class="status-badge" style="color: var(--red); border-color: rgba(239,68,68,0.3)">Action Required</div>
+      </div>
+      <ul class="tasks">
+        <li><div><span class="tag tag-p0">P0</span><strong>Benchmark & Guardrails:</strong> Build comparative perf matrix runner (`scripts/run_perf_matrix.py`).</div></li>
+        <li><div><span class="tag tag-p1">P1</span><strong>KV/Cache Gaps:</strong> Implement `quantized_kv_start` config option and capability detection.</div></li>
+        <li><div><span class="tag tag-p1">P1</span><strong>Admin UI Visibility:</strong> Update `lm-admin.html` to surface active serving lane/backend and speculative acceptance ratio.</div></li>
+        <li><div><span class="tag tag-p3">P3</span><strong>Tech Debt:</strong> Split `engine.py` (2.5k LOC) into granular sub-modules.</div></li>
+      </ul>
+    </div>
+
+    <!-- Completed Tasks -->
+    <div class="card" style="--accent: var(--green)">
+      <div class="card-header">
+        <div class="app-name">Successfully Implemented</div>
+        <div class="status-badge" style="color: var(--green); border-color: rgba(34,197,94,0.3)">Verified in Code</div>
+      </div>
+      <ul class="tasks completed">
+        <li><div><strong>Never-Crash Load Flow:</strong> Multi-backend routing (`backend_candidates`), Autotune API (`/admin/models/autotune`), and child loader isolation are fully merged.</div></li>
+        <li><div><strong>Quantize Hard-Cancel:</strong> Subprocess isolation with `QuantizeProcessHandle` and `child_quantize_worker` is active.</div></li>
+        <li><div><strong>Dual-Lane Routing:</strong> Explicit interactive vs throughput routing via `x-serving-lane` headers is merged.</div></li>
+        <li><div><strong>Speculative Decoding:</strong> `draft_model` wiring in `mlx_lm_backend.py` is fully implemented.</div></li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>

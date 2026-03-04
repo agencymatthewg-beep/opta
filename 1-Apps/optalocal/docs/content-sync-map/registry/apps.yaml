@@ -147,11 +147,14 @@ apps:
     logo: null
 
   - id: opta-local
-    name: Opta Local
-    short_name: Local
+    name: Opta LMX Dashboard
+    short_name: LMX Dashboard
     type: management
-    role: LMX management dashboard
-    description: Web dashboard for LMX management. Lives at lmx.optalocal.com.
+    role: Primary management surface for Opta LMX
+    description: >
+      Web dashboard for Opta LMX inference engine management. The visual
+      companion for the headless LMX API — same relationship as Opta Code
+      to Opta CLI.
     domain: lmx.optalocal.com
-    repo_dir: null  # Separate repo
+    repo_dir: 1L-Opta-LMX-Dashboard
     logo: opta-local-mark.svg

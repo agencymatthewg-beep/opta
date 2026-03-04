@@ -81,6 +81,7 @@ function summarizeFamilies(values) {
 function readSubcommandCatalog() {
   return {
     account: parseCommandNames(runHelp(["account", "--help"])),
+    apps: parseCommandNames(runHelp(["apps", "--help"])),
     mcp: parseCommandNames(runHelp(["mcp", "--help"])),
     daemon: parseCommandNames(runHelp(["daemon", "--help"])),
     keychain: parseCommandNames(runHelp(["keychain", "--help"])),

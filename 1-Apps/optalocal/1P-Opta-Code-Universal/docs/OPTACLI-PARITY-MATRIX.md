@@ -1,6 +1,6 @@
 # Opta CLI -> Opta Code Parity Matrix
 
-Date: 2026-03-03  
+Date: 2026-03-04  
 Scope:
 - CLI engine: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS`
 - Desktop/web client: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
@@ -17,7 +17,8 @@ Scope:
 ## Canonical Architecture Boundary
 
 - `1D-Opta-CLI-TS` owns runtime behavior and command execution.
-- `1P-Opta-Code-Universal` is a daemon client/operator surface.
+- `1P-Opta-Code-Universal` is a frontend optimization layer over daemon/CLI capabilities.
+- Opta CLI is the primary TUI coding interface and is not redundant.
 - Command-family parity should be delivered through daemon operations first, then UI.
 
 ## Current Coverage Summary
@@ -36,8 +37,12 @@ Legend:
 | Config operations (`config.get/set/list/reset`) | Dedicated | `ConfigStudioPage` |
 | Account auth + cloud keys (`account.*`) | Dedicated | `AccountControlPage` |
 | Local keys (`key.create/show/copy`) | Dedicated | `AccountControlPage` local shortcut panel |
-| Daemon lifecycle (`daemon.*`) | Dedicated + Console | `DaemonPanel` + operations |
-| CLI utility ops (`doctor`, `version.check`, `completions.generate`, `keychain.*`, `serve.*`, `init.run`, `update.run`, `sessions.*`, `diff`, `embed`, `rerank`, `benchmark`, `mcp.*`) | Console | `CliOperationsPage` scoped families |
+| Daemon lifecycle (`daemon.*`) | Dedicated + Console | `SystemOperationsPage` + `DaemonPanel` + CLI bridge |
+| CLI utility ops (`doctor`, `version.check`, `completions.generate`, `keychain.*`, `serve.*`, `init.run`, `update.run`) | Dedicated + Console | `SystemOperationsPage` scoped families + CLI bridge |
+| App management (`apps.*`) | Dedicated + Console | `AppCatalogPage` + CLI bridge |
+| Session memory management (`sessions.*`) | Dedicated + Console | `SessionMemoryPage` + CLI bridge |
+| Tooling ops (`diff`, `embed`, `rerank`, `benchmark`, `ceo.benchmark`) | Dedicated + Console | `ToolingOperationsPage` + CLI bridge |
+| Full operation-family fallback | Console | `CliOperationsPage` (advanced parity bridge) |
 | Onboarding (`onboard`, `setup`) | Adapted | In-app setup wizard now routes through canonical `onboard.apply` (all providers, key storage mode, marker write) instead of separate config writer |
 | HTTP server command (`server`) | Adapted | Legacy server runtime behavior is represented by desktop daemon panel + `serve.*` operations |
 | Chat mode flags (`--plan`, `--review`, `--research`) | Dedicated | Composer/runtime submit API supports all CLI intent modes |
@@ -46,18 +51,20 @@ Legend:
 
 ## Parity Verdict
 
-Opta Code does **not** currently contain all Opta CLI features.
+Opta Code now has required command-family and daemon-operation parity with Opta CLI.
 
-It has strong parity for:
-- session runtime workflows,
-- core model lifecycle,
-- daemon operation families in `OPERATION_IDS`,
-- advanced models capability via operation + targeted dedicated UI.
+Current parity status:
+- command-family mapping: `29/29` (including `apps`)
+- scoped CLI operations coverage: `79/79` (including `ceo.benchmark` and `apps.*`)
+- required runtime mode/override coverage: complete
 
-Known intentional / partial differences:
-- Onboarding remains a desktop-native flow (form-based), but it now executes the same backend profile application path as CLI (`onboard.apply`).
+Known intentional adapted behaviors (documented and accepted):
+- `tui`
+- `server`
+- `memory`
+- `onboard` / `setup`
 
-## Immediate Next Gaps To Close
+## Ongoing Maintenance
 
-1. Keep parity artifacts (`docs/parity/*.json`) fresh during release prep and CI.
-2. Add dedicated UI affordances for additional high-frequency advanced model actions as usage data warrants.
+1. Keep parity artifacts (`docs/parity/*.json`) fresh during release prep and CI (always regenerate before check).
+2. Track adapted-command acceptance criteria (`tui`, `server`, `memory`, `onboard`, `setup`) as product behavior evolves.

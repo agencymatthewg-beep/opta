@@ -44,6 +44,7 @@ To keep platform workflows unambiguous, this repo now keeps explicitly labeled p
 
 - `platforms/windows/` - Windows-first workflow (no local LMX lifecycle)
 - `platforms/macos/` - macOS-first workflow (full LMX lifecycle)
+- Windows incident triage runbook: `platforms/windows/WINDOWS-INCIDENT-RUNBOOK.md`
 
 ## Usage
 

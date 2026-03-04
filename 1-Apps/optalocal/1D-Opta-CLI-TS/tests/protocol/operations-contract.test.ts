@@ -48,6 +48,9 @@ describe('v3 operations contract', () => {
       'serve.logs',
       'init.run',
       'update.run',
+      'apps.list',
+      'apps.install',
+      'apps.uninstall',
       'sessions.list',
       'sessions.search',
       'sessions.export',
@@ -228,6 +231,27 @@ describe('v3 operations contract', () => {
         input: {
           target: 'invalid-target',
         },
+      })
+    ).toThrow();
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'apps.list',
+        input: {},
+      })
+    ).toMatchObject({ id: 'apps.list' });
+
+    expect(
+      OperationExecuteRequestSchema.parse({
+        id: 'apps.install',
+        input: { appIds: ['opta-cli'] },
+      })
+    ).toMatchObject({ id: 'apps.install' });
+
+    expect(() =>
+      OperationExecuteRequestSchema.parse({
+        id: 'apps.install',
+        input: { appIds: [] },
       })
     ).toThrow();
 

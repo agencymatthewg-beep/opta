@@ -28,6 +28,7 @@ class MockDgramSocket extends EventEmitter {
   public bindCallback: (() => void) | null = null;
   public sendCallback: ((err: Error | null) => void) | null = null;
   public closed = false;
+  public closeCallCount = 0;
 
   bind(_port: number, callback: () => void): void {
     this.bindCallback = callback;
@@ -49,12 +50,18 @@ class MockDgramSocket extends EventEmitter {
   }
 
   close(): void {
+    this.closeCallCount += 1;
     this.closed = true;
   }
 
   triggerBoundAndSent(): void {
     this.bindCallback?.();
     this.sendCallback?.(null);
+  }
+
+  triggerBoundAndSendError(err: Error): void {
+    this.bindCallback?.();
+    this.sendCallback?.(err);
   }
 
   simulateMessage(buf: Buffer): void {
@@ -400,6 +407,23 @@ describe('discoverLmxHosts — total failure', () => {
     const results = await discoveryPromise;
     expect(Array.isArray(results)).toBe(true);
     expect(results).toHaveLength(0);
+  });
+
+  it('closes the mDNS socket once when overlapping failure paths fire', async () => {
+    mockNetworkInterfaces.mockReturnValue({});
+
+    const discoveryPromise = discoverLmxHosts(800);
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+
+    const socket = activeMockSocket;
+    expect(socket, 'MockDgramSocket should have been created').not.toBeNull();
+
+    socket!.triggerBoundAndSendError(new Error('send failed'));
+    socket!.simulateError(new Error('EACCES: permission denied'));
+
+    const results = await discoveryPromise;
+    expect(results).toEqual([]);
+    expect(socket!.closeCallCount).toBe(1);
   });
 });
 

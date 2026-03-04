@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What Is This
 
-The `optalocal/` directory is the Opta Local product family — a local-first AI coding assistant ecosystem. It contains 4 core apps and 7 management websites, all under the `optalocal.com` domain.
+The `optalocal/` directory is the Opta Local product family — a local-first AI coding assistant ecosystem. It contains 4 core apps and 8 management websites, all under the `optalocal.com` domain.
 
 ## Product Taxonomy (Non-Negotiable)
 
@@ -15,9 +15,8 @@ The `optalocal/` directory is the Opta Local product family — a local-first AI
 | Opta CLI | `1D-Opta-CLI-TS/` | TypeScript, Commander, Ink, Vitest | Terminal-first control surface + daemon |
 | Opta LMX | `1M-Opta-LMX/` | Python 3.12, FastAPI, MLX | Local inference engine (Apple Silicon) |
 | Opta Code Desktop | `1P-Opta-Code-Universal/` | Tauri v2, React 18, Vite 7 | Native desktop client (macOS + Windows) |
-| Opta Local | (web dashboard for LMX — separate repo location) | — | LMX management dashboard |
 
-**7 Management Websites** (support infrastructure, NOT core apps):
+**8 Management Websites** (support infrastructure, NOT core apps):
 
 | App | Dir | Domain | Stack |
 |-----|-----|--------|-------|
@@ -28,6 +27,7 @@ The `optalocal/` directory is the Opta Local product family — a local-first AI
 | Opta Accounts | `1R-Opta-Accounts/` | accounts.optalocal.com | Next.js 16 + Supabase |
 | Opta Status | `1S-Opta-Status/` | status.optalocal.com | Next.js 16, SWR polling |
 | Opta Admin | `1X-Opta-Admin/` | admin.optalocal.com | Next.js 16 |
+| Opta LMX Dashboard | `1L-Opta-LMX-Dashboard/` | lmx.optalocal.com | Next.js 16, SWR polling |
 
 Do not label management websites as core apps. "Your Opta Apps" sections list only the 4 core apps.
 
@@ -94,7 +94,7 @@ npm run typecheck
 
 Uses `@opta/daemon-client` and `@opta/protocol-shared` via tsconfig path aliases (not npm deps). Token auth: bearer header for HTTP, `?token=T` query param for WebSocket. Event routing by `envelope.event`.
 
-### Next.js Management Sites (1O, 1R, 1S, 1T, 1U, 1V, 1X)
+### Next.js Management Sites (1L, 1O, 1R, 1S, 1T, 1U, 1V, 1X)
 
 All share the same pattern:
 
@@ -108,6 +108,7 @@ npm run lint
 
 | App | Port | Static Export | Special Commands |
 |-----|------|--------------|------------------|
+| 1L-Opta-LMX-Dashboard | 3003 | No (needs API polling) | — |
 | 1O-Opta-Init | 3001 | Yes (`output: 'export'`) | `npm run sync:desktop-manifests`, `npm run validate:release-contract` |
 | 1R-Opta-Accounts | 3002 | No (SSR) | `npm run test` (Node test runner) |
 | 1S-Opta-Status | 3005 | No (needs API routes) | `npm run release-notes:generate` |
@@ -134,7 +135,7 @@ npm run lint
 
 | App | Manager |
 |-----|---------|
-| 1D, 1O, 1P, 1R, 1S, 1T, 1U, 1V | npm |
+| 1D, 1L, 1O, 1P, 1R, 1S, 1T, 1U, 1V | npm |
 | 1M | pip / uv (Python venv at `.venv/`) |
 
 The root `optalocal/` now includes a lightweight command hub (`apps.registry.json`, `scripts/opta-local-workspace.mjs`) for cross-app orchestration. App dependency graphs remain independent.

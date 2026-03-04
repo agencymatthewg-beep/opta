@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -44,6 +44,8 @@ const REQUIRED_CLI_OPERATION_SCOPES = [
   "embed",
   "rerank",
   "benchmark",
+  "ceo.benchmark",
+  "apps.*",
   "models.*",
   "keychain.*",
 ];
@@ -59,6 +61,11 @@ const COMMAND_STATUS_MAP = {
   embed: { status: "covered", required: true, rationale: "Available through CLI Operations page." },
   rerank: { status: "covered", required: true, rationale: "Available through CLI Operations page." },
   benchmark: { status: "covered", required: true, rationale: "Available through CLI Operations page." },
+  apps: {
+    status: "covered",
+    required: true,
+    rationale: "apps.* operations are available through the CLI Operations page.",
+  },
   "ceo-bench": {
     status: "adapted",
     required: true,
@@ -120,7 +127,6 @@ function readJson(filePath) {
 }
 
 function ensureCliSurface() {
-  if (existsSync(cliSurfacePath)) return;
   const result = spawnSync("node", [cliExportScript], {
     cwd: cliRoot,
     encoding: "utf8",
@@ -316,6 +322,23 @@ function main() {
       2,
     )}\n`,
   );
+
+  if ((summary.unmatchedOperationsOutsideCliScope ?? 0) > 0) {
+    process.stderr.write(
+      `WARN unmatched operations outside scoped CLI operations: ${operationScopeCoverage.unmatched.join(
+        ", ",
+      )}\n`,
+    );
+  }
+
+  const adaptedCommands = commandCoverage
+    .filter((entry) => entry.status === "adapted")
+    .map((entry) => entry.command);
+  if (adaptedCommands.length > 0) {
+    process.stderr.write(
+      `WARN adapted command families (intentional non-1:1): ${adaptedCommands.join(", ")}\n`,
+    );
+  }
 
   if (!exportOnly && requiredFailures.length > 0) {
     process.exit(1);
