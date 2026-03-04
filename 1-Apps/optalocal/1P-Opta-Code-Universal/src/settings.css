@@ -37,12 +37,10 @@
   left: 0;
   right: 0;
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(139, 92, 246, 0.5),
-    transparent
-  );
+  background: linear-gradient(90deg,
+      transparent,
+      rgba(139, 92, 246, 0.5),
+      transparent);
 }
 
 .opta-studio-header {
@@ -132,11 +130,9 @@
   padding: 2rem;
   overflow-y: auto;
   position: relative;
-  background-image: radial-gradient(
-    circle at 2px 2px,
-    rgba(255, 255, 255, 0.02) 1px,
-    transparent 0
-  );
+  background-image: radial-gradient(circle at 2px 2px,
+      rgba(255, 255, 255, 0.02) 1px,
+      transparent 0);
   background-size: 32px 32px;
 }
 
@@ -333,7 +329,270 @@
   from {
     opacity: 0;
   }
+
   to {
     opacity: 1;
   }
+}
+
+/* ── Tab divider between groups ──────────────────────────────── */
+.opta-studio-tab-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.06);
+  margin: 0.5rem 1rem;
+}
+
+/* ── Loading state ──────────────────────────────────────────── */
+.settings-tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+  color: #a1a1aa;
+  font-family: "Sora", sans-serif;
+  font-size: 0.9rem;
+}
+
+/* ── Shared settings tab classes (st- prefix) ────────────── */
+.st-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+}
+
+.st-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.st-desc {
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin: 0.25rem 0 0;
+}
+
+.st-save-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  border: none;
+  background: #8b5cf6;
+  color: #fafafa;
+  font-family: "Sora", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.st-save-btn:hover {
+  background: #7c3aed;
+}
+
+.st-save-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.st-reset-btn {
+  padding: 0.5rem 0.8rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: transparent;
+  color: #a1a1aa;
+  font-family: "Sora", sans-serif;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.st-reset-btn:hover {
+  color: #fafafa;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.st-fieldset {
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin: 0 0 1rem 0;
+  background: rgba(18, 18, 20, 0.35);
+}
+
+.st-fieldset-inner {
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 0 0;
+  background: rgba(9, 9, 11, 0.3);
+}
+
+.st-legend {
+  font-family: "Sora", sans-serif;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #c4b5fd;
+  padding: 0 0.5rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.st-legend-inner {
+  font-family: "Sora", sans-serif;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #a1a1aa;
+  padding: 0 0.35rem;
+}
+
+.st-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.8rem;
+  color: #a1a1aa;
+  margin-bottom: 0.6rem;
+  flex: 1;
+}
+
+.st-label .st-hint {
+  font-size: 0.7rem;
+  opacity: 0.6;
+}
+
+.st-checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.6rem !important;
+}
+
+.st-checkbox-label input[type="checkbox"] {
+  accent-color: #8b5cf6;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.st-input {
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  color: #fafafa;
+  transition: all 0.2s;
+  width: 100%;
+}
+
+.st-input:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
+}
+
+.st-input.st-secret {
+  letter-spacing: 0.1em;
+}
+
+.st-select {
+  background: rgba(9, 9, 11, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.8rem;
+  color: #fafafa;
+  width: 100%;
+  cursor: pointer;
+  appearance: none;
+}
+
+.st-select:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+.st-row {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+/* ── Permissions Grid ──────────────────────────────────────── */
+.st-perm-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.st-perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.3rem 0.5rem;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.st-perm-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.st-perm-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.75rem;
+  color: #e4e4e7;
+}
+
+.st-perm-pills {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.st-perm-pill {
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  background: rgba(255, 255, 255, 0.03);
+  color: #71717a;
+}
+
+.st-perm-pill:hover {
+  color: #fafafa;
+}
+
+.st-perm-allow.st-perm-active {
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.st-perm-ask.st-perm-active {
+  background: rgba(234, 179, 8, 0.15);
+  color: #eab308;
+  border-color: rgba(234, 179, 8, 0.3);
+}
+
+.st-perm-deny.st-perm-active {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
 }

@@ -11,6 +11,14 @@ import {
   Lightbulb,
   Copy,
   CheckCircle,
+  Layers,
+  Shield,
+  AlertTriangle,
+  Globe,
+  BookOpen,
+  Wrench,
+  Brain,
+  FileCheck,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -20,6 +28,14 @@ import {
   type DaemonLmxEndpointCandidate,
 } from "../lib/daemonClient";
 import { ConnectionAddressBook } from "./settings/ConnectionAddressBook";
+import { SettingsTabModelProvider } from "./settings/SettingsTabModelProvider";
+import { SettingsTabPermissions } from "./settings/SettingsTabPermissions";
+import { SettingsTabSafety } from "./settings/SettingsTabSafety";
+import { SettingsTabBrowser } from "./settings/SettingsTabBrowser";
+import { SettingsTabResearch } from "./settings/SettingsTabResearch";
+import { SettingsTabToolsAgents } from "./settings/SettingsTabToolsAgents";
+import { SettingsTabLearning } from "./settings/SettingsTabLearning";
+import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -28,7 +44,8 @@ interface SettingsModalProps {
   onSaveConnection: (conn: DaemonConnectionOptions) => void;
 }
 
-type TabId = "connection" | "lmx" | "models" | "autonomy" | "genui" | "daemon";
+type TabId = "connection" | "lmx" | "models" | "autonomy" | "genui" | "daemon"
+  | "model-provider" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy";
 
 const DEFAULT_CONNECTION_FORM = {
   host: "127.0.0.1",
@@ -973,6 +990,22 @@ export function SettingsModal({
             </div>
           </motion.div>
         );
+      case "model-provider":
+        return <SettingsTabModelProvider connection={connection} />;
+      case "permissions":
+        return <SettingsTabPermissions connection={connection} />;
+      case "safety":
+        return <SettingsTabSafety connection={connection} />;
+      case "browser":
+        return <SettingsTabBrowser connection={connection} />;
+      case "research":
+        return <SettingsTabResearch connection={connection} />;
+      case "tools-agents":
+        return <SettingsTabToolsAgents connection={connection} />;
+      case "learning":
+        return <SettingsTabLearning connection={connection} />;
+      case "policy":
+        return <SettingsTabPolicy connection={connection} />;
       default:
         return null;
     }
@@ -1030,6 +1063,57 @@ export function SettingsModal({
               onClick={() => setActiveTab("daemon")}
             >
               <Terminal size={16} /> Daemon Controls
+            </button>
+
+            <div className="opta-studio-tab-divider" />
+
+            <button
+              className={`opta-studio-tab ${activeTab === "model-provider" ? "active" : ""}`}
+              onClick={() => setActiveTab("model-provider")}
+            >
+              <Layers size={16} /> Model &amp; Provider
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "permissions" ? "active" : ""}`}
+              onClick={() => setActiveTab("permissions")}
+            >
+              <Shield size={16} /> Permissions
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "safety" ? "active" : ""}`}
+              onClick={() => setActiveTab("safety")}
+            >
+              <AlertTriangle size={16} /> Safety &amp; Limits
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "browser" ? "active" : ""}`}
+              onClick={() => setActiveTab("browser")}
+            >
+              <Globe size={16} /> Browser
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "research" ? "active" : ""}`}
+              onClick={() => setActiveTab("research")}
+            >
+              <BookOpen size={16} /> Research
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "tools-agents" ? "active" : ""}`}
+              onClick={() => setActiveTab("tools-agents")}
+            >
+              <Wrench size={16} /> Tools &amp; Agents
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "learning" ? "active" : ""}`}
+              onClick={() => setActiveTab("learning")}
+            >
+              <Brain size={16} /> Learning &amp; Journal
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "policy" ? "active" : ""}`}
+              onClick={() => setActiveTab("policy")}
+            >
+              <FileCheck size={16} /> Policy &amp; Audit
             </button>
           </aside>
 
