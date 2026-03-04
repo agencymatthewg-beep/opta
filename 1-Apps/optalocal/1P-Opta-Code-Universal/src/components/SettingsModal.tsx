@@ -20,6 +20,7 @@ import {
   Brain,
   FileCheck,
   Activity,
+  Server,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -38,6 +39,7 @@ import { SettingsTabToolsAgents } from "./settings/SettingsTabToolsAgents";
 import { SettingsTabLearning } from "./settings/SettingsTabLearning";
 import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
 import { SettingsTabMcp } from "./settings/SettingsTabMcp";
+import { SettingsTabFleet } from "./settings/SettingsTabFleet";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -48,7 +50,7 @@ interface SettingsModalProps {
 }
 
 export type SettingsTabId = "connection" | "lmx" | "autonomy" | "genui" | "daemon"
-  | "model-provider" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp";
+  | "model-provider" | "fleet" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp";
 
 const DEFAULT_CONNECTION_FORM = {
   host: "127.0.0.1",
@@ -1012,6 +1014,8 @@ export function SettingsModal({
         );
       case "model-provider":
         return <SettingsTabModelProvider connection={connection} />;
+      case "fleet":
+        return <SettingsTabFleet connection={connection} />;
       case "permissions":
         return <SettingsTabPermissions connection={connection} />;
       case "safety":
@@ -1094,6 +1098,12 @@ export function SettingsModal({
               onClick={() => setActiveTab("model-provider")}
             >
               <Layers size={16} /> Model &amp; Provider
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "fleet" ? "active" : ""}`}
+              onClick={() => setActiveTab("fleet")}
+            >
+              <Server size={16} /> Fleet Health
             </button>
             <button
               className={`opta-studio-tab ${activeTab === "permissions" ? "active" : ""}`}
