@@ -555,3 +555,227 @@ export interface ConnectionState {
     lastChecked: number | null
     error: string | null
 }
+
+// ── Audio (TTS / STT) ────────────────────────────────────────────────────────
+
+export interface SpeechRequest {
+    model?: string
+    input: string
+    voice?: string
+    response_format?: 'mp3' | 'opus' | 'aac' | 'flac' | 'wav' | 'pcm'
+    speed?: number
+}
+
+export interface TranscriptionResponse {
+    text: string
+    language?: string
+    duration?: number
+    words?: Array<{ word: string; start: number; end: number }>
+}
+
+// ── RAG & Embeddings ─────────────────────────────────────────────────────────
+
+export interface RagIngestRequest {
+    collection: string
+    documents: string[]
+    metadata?: Array<Record<string, unknown>>
+    chunk_size?: number
+    chunk_overlap?: number
+    chunking?: 'auto' | 'text' | 'code' | 'markdown_headers' | 'none'
+    model?: string
+}
+
+export interface RagIngestResponse {
+    collection: string
+    documents_ingested: number
+    chunks_created: number
+    document_ids: string[]
+    duration_ms: number
+}
+
+export interface RagQueryRequest {
+    collection: string
+    query: string
+    top_k?: number
+    min_score?: number
+    model?: string
+    search_mode?: 'vector' | 'keyword' | 'hybrid'
+    rerank?: boolean
+    rerank_top_k?: number
+}
+
+export interface RagQueryResult {
+    id: string
+    text: string
+    score: number
+    metadata: Record<string, unknown>
+}
+
+export interface RagQueryResponse {
+    collection: string
+    query: string
+    results: RagQueryResult[]
+    total_in_collection: number
+    duration_ms: number
+}
+
+export interface RagCollection {
+    name: string
+    document_count: number
+    embedding_dimensions: number
+}
+
+export interface RagCollectionsResponse {
+    total_documents: number
+    collection_count: number
+    collections: RagCollection[]
+}
+
+export interface EmbeddingData {
+    object: 'embedding'
+    index: number
+    embedding: number[]
+}
+
+export interface EmbeddingResponse {
+    object: 'list'
+    data: EmbeddingData[]
+    model: string
+    usage: { prompt_tokens: number; total_tokens: number }
+}
+
+// ── Skills & MCP Registry ────────────────────────────────────────────────────
+
+export interface Skill {
+    schema: string
+    name: string
+    namespace: string
+    version: string
+    qualified_name: string
+    reference: string
+    description: string
+    kind: string
+    timeout_sec: number
+    permission_tags: string[]
+    risk_tags: string[]
+    input_schema: Record<string, unknown>
+}
+
+export interface SkillListResponse {
+    object: 'list'
+    data: Skill[]
+}
+
+export interface SkillExecuteRequest {
+    arguments: Record<string, unknown>
+    approved?: boolean
+    timeout_sec?: number
+}
+
+export interface SkillExecuteResponse {
+    skill: string
+    ok: boolean
+    output: unknown
+    error?: string
+    duration_ms: number
+    timed_out: boolean
+    denied: boolean
+    requires_approval: boolean
+}
+
+export interface MCPTool {
+    name: string
+    description: string
+    input_schema: Record<string, unknown>
+    namespace?: string
+    version?: string
+    aliases?: string[]
+}
+
+export interface MCPToolsResponse {
+    tools: MCPTool[]
+    list_changed_at: string
+}
+
+export interface MCPToolCallRequest {
+    name: string
+    arguments?: Record<string, unknown>
+    approved?: boolean
+}
+
+export interface MCPToolCallResponse {
+    skill_name: string
+    kind: string
+    ok: boolean
+    output: unknown
+    error?: string
+    duration_ms: number
+    timed_out: boolean
+    denied: boolean
+    requires_approval: boolean
+}
+
+// ── Agent Orchestration ───────────────────────────────────────────────────────
+
+export type AgentRunStatus =
+    | 'queued'
+    | 'running'
+    | 'completed'
+    | 'failed'
+    | 'cancelled'
+
+export interface AgentStep {
+    id: string
+    role: string
+    status: AgentRunStatus
+    error?: string
+    completed_at?: number
+}
+
+export interface AgentRequest {
+    prompt: string
+    roles?: string[]
+    model?: string
+    strategy?: string
+    max_parallelism?: number
+    timeout_sec?: number
+    priority?: string
+    metadata?: Record<string, unknown>
+    approval_required?: boolean
+}
+
+export interface AgentRun {
+    object: 'agent.run'
+    id: string
+    status: AgentRunStatus
+    request: AgentRequest
+    steps: AgentStep[]
+    result: unknown
+    output: unknown
+    error?: string
+    resolved_model?: string
+    created_at: number
+    updated_at: number
+}
+
+export interface AgentRunCreateRequest {
+    request?: AgentRequest
+    agent?: string
+    input?: Record<string, unknown>
+    metadata?: Record<string, unknown>
+}
+
+export interface AgentRunListResponse {
+    object: 'list'
+    data: AgentRun[]
+    total: number
+}
+
+// ── Journal Logs ──────────────────────────────────────────────────────────────
+
+export interface LogFileEntry {
+    filename: string
+    size_bytes: number
+    created_at: string
+}
+

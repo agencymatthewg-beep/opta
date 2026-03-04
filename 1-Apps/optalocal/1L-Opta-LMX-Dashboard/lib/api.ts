@@ -170,8 +170,75 @@ export async function lmxDelete<T>(
 
 // ── SWR Fetcher ─────────────────────────────────────────────────────────────
 
-/** SWR-compatible fetcher. */
+/** SWR-compatible fetcher for JSON endpoints. */
 export const lmxFetcher = <T>(path: string) => lmxFetch<T>(path)
+
+/**
+ * SWR-compatible fetcher for /admin/* endpoints.
+ * Alias of lmxFetcher — auth headers are already injected by lmxFetch
+ * when the path starts with '/admin'.
+ */
+export const lmxAdminFetcher = <T>(path: string) => lmxFetch<T>(path)
+
+/** SWR-compatible fetcher that returns plain text (e.g. log file contents). */
+export const lmxTextFetcher = async (path: string): Promise<string> => {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 30_000)
+    try {
+        const res = await fetch(`${_baseUrl}${path}`, {
+            signal: controller.signal,
+            headers: _buildHeaders(path),
+        })
+        if (!res.ok) {
+            throw new LmxError(res.status, `LMX API ${res.status}: ${res.statusText}`)
+        }
+        return await res.text()
+    } catch (err) {
+        if (err instanceof LmxError) throw err
+        if ((err as Error).name === 'AbortError') {
+            throw new LmxError(0, 'Request timed out', 'timeout')
+        }
+        throw new LmxError(0, (err as Error).message, 'network_error')
+    } finally {
+        clearTimeout(timer)
+    }
+}
+
+/**
+ * POST multipart/form-data to the LMX API.
+ * Used for audio transcription (file upload).
+ */
+export async function lmxFormPost<T>(
+    path: string,
+    formData: FormData
+): Promise<T> {
+    const controller = new AbortController()
+    const timer = setTimeout(() => controller.abort(), 60_000)
+
+    // Build headers — skip Content-Type (browser sets multipart boundary)
+    const headers: Record<string, string> = {}
+    if (_adminKey && path.startsWith('/admin')) headers['X-Admin-Key'] = _adminKey
+    if (_adminKey && path.startsWith('/v1') && !_inferenceKey) headers['X-Admin-Key'] = _adminKey
+    if (_inferenceKey && path.startsWith('/v1')) headers['Authorization'] = `Bearer ${_inferenceKey}`
+
+    try {
+        const res = await fetch(`${_baseUrl}${path}`, {
+            method: 'POST',
+            signal: controller.signal,
+            headers,
+            body: formData,
+        })
+        return await _handleResponse<T>(res)
+    } catch (err) {
+        if (err instanceof LmxError) throw err
+        if ((err as Error).name === 'AbortError') {
+            throw new LmxError(0, 'Request timed out', 'timeout')
+        }
+        throw new LmxError(0, (err as Error).message, 'network_error')
+    } finally {
+        clearTimeout(timer)
+    }
+}
 
 // ── Connection Check ────────────────────────────────────────────────────────
 
