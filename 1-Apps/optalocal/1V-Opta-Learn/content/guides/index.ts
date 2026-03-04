@@ -41,9 +41,9 @@ import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
 import { deepDiveTemplate } from './template-deep-dive';
 
-import { lmxMasterclassGuide } from './lmx-masterclass';
-import { codeDesktopMasterclassGuide } from './code-desktop-masterclass';
-import { accountsMasterclassGuide } from './accounts-masterclass';
+import { lmxMasterclass } from './lmx-masterclass';
+import { codeDesktopMasterclass } from './code-desktop-masterclass';
+import { accountsMasterclass } from './accounts-masterclass';
 export const allGuides: RegisteredGuide[] = [
   { ...optaLocalIntro, status: 'draft' },
   { ...lmxOverview, status: 'draft' },
@@ -52,9 +52,9 @@ export const allGuides: RegisteredGuide[] = [
   { ...codeDesktopOverview, status: 'draft' },
   { ...accountsSync, status: 'draft' },
   { ...deepDiveTemplate, status: 'draft' },
-  { ...lmxMasterclassGuide, status: 'draft' },
-  { ...codeDesktopMasterclassGuide, status: 'draft' },
-  { ...accountsMasterclassGuide, status: 'draft' },
+  { ...lmxMasterclass, status: 'draft' },
+  { ...codeDesktopMasterclass, status: 'draft' },
+  { ...accountsMasterclass, status: 'draft' },
 ];
 
 function extractGuideLinks(content: string): string[] {

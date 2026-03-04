@@ -101,6 +101,21 @@ export const codeDesktopMasterclass: Guide = {
            <div class="w-1/2 h-1.5 bg-white/10 rounded"></div>
         </div>
       </div>`
+    },
+    {
+      heading: 'Session Triage Workflow (First 10 Minutes)',
+      body: 'When a desktop session starts behaving strangely, operators need a deterministic triage loop instead of ad-hoc clicking. Begin by validating session identity and routing: confirm the active workspace, provider pill, and permission level in the Composer header before sending any new instruction. Next, inspect the live telemetry side panel and verify the expected model is receiving tokens, the stream rate is non-zero, and VRAM pressure is not in sustained saturation. Then review the most recent timeline cards for the exact event where latency or behavior changed: model switch, tool escalation, context injection, or daemon reconnect. If symptoms are still ambiguous, issue one minimal probe prompt and observe whether UI rendering, daemon response, and tool approval flow all complete in a single cycle. This isolates whether the fault is interaction state, orchestration state, or inference state.',
+      note: '<strong>Operator checklist:</strong> 1) Confirm route + permissions, 2) verify telemetry heartbeat, 3) identify divergence point in timeline, 4) run a single probe turn, 5) classify failure domain before attempting fixes.'
+    },
+    {
+      heading: 'Failure Analysis & Recovery Routine',
+      body: 'Recovering quickly from desktop failures is mostly about preserving evidence before restarting components. If the Composer freezes, do not immediately relaunch the app. Capture the active timeline node, recent tool event, and telemetry snapshot first; these three artifacts usually identify whether the fault came from UI hydration drift, WebSocket transport interruption, or daemon-side task deadlock. For transport issues, prefer a soft reconnect path so session state is retained and unsent context is not lost. For daemon contention, reduce concurrent workload by pausing non-critical runs, then replay the failing prompt with a smaller context window to test determinism. After recovery, record the incident in a short postmortem note: trigger, observable symptom, containment action, and confirmed fix. This creates reusable runbooks and makes future incidents faster to diagnose.',
+      code: `Recovery mini-runbook
+1. Capture: timeline event ID + telemetry metrics + last tool invocation.
+2. Contain: stop new high-risk tasks and keep current session state alive.
+3. Reconnect: restore transport first, then validate one probe turn.
+4. Replay: rerun failing prompt with reduced context to isolate root cause.
+5. Document: trigger, fix, and prevention rule for operator handoff.`
     }
   ],
 };

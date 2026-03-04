@@ -13,6 +13,9 @@ User-facing documentation website for the Opta Local private AI stack.
 ## Scope
 
 Comprehensive user guides for:
+- Ecosystem & Synergies (runtime layer vs web surfaces, change-impact workflow)
+- Opta Accounts (auth, SSO, sync, troubleshooting)
+- Opta Status (service cards, release notes, feature-state interpretation)
 - Opta CLI (commands, configuration, slash commands)
 - Opta Daemon (setup, API, event streaming)
 - Opta LMX (local inference server, model management)

@@ -260,6 +260,39 @@ content_nodes:
       - Browser automation tool protocol changes
       - New browser automation capabilities added
 
+  - id: help.ecosystem-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/ecosystem/
+    describes: [opta-cli, opta-daemon, opta-lmx, opta-code, opta-init, opta-home, opta-help, opta-learn, opta-status, opta-admin, opta-local]
+    content_type: doc
+    stale_when:
+      - Runtime layer boundaries change (CLI/daemon/LMX/Code)
+      - Web surface set changes (added/removed/renamed)
+      - Domain to app mapping changes
+      - Change-impact workflow or content-sync-map registry schema changes
+
+  - id: help.accounts-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/accounts/
+    describes: [opta-accounts, opta-cli, opta-daemon]
+    content_type: doc
+    stale_when:
+      - Auth providers added/removed or flow changes
+      - Cross-subdomain session/cookie policy changes
+      - CLI browser auth contract changes
+      - Sync model boundaries (what stays local vs synced) change
+
+  - id: help.status-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/status/
+    describes: [opta-status, opta-cli, opta-daemon, opta-lmx, opta-code, opta-init, opta-accounts, opta-help, opta-learn, opta-admin]
+    content_type: doc
+    stale_when:
+      - Service card semantics or monitored services change
+      - Release notes model or rollout policy changes
+      - Feature registry states/taxonomy change
+      - Incident status definitions or operational response model change
+
   # ════════════════════════════════════════════════════════════════════════════
   # OPTA LEARN (learn.optalocal.com)
   # ════════════════════════════════════════════════════════════════════════════

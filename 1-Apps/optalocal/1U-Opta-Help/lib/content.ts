@@ -22,6 +22,25 @@ export const navigation: NavSection[] = [
     ],
   },
   {
+    title: "Ecosystem",
+    slug: "ecosystem",
+    items: [
+      { title: "Overview", href: "/docs/ecosystem/", description: "Runtime layer, web surfaces, and ownership boundaries" },
+      { title: "Synergies", href: "/docs/ecosystem/synergies/", description: "Cross-app interactions and dependency hotspots" },
+      { title: "Change Impact", href: "/docs/ecosystem/change-impact/", description: "How to run ripple-effect analysis after changes" },
+    ],
+  },
+  {
+    title: "Accounts",
+    slug: "accounts",
+    items: [
+      { title: "Overview", href: "/docs/accounts/", description: "Identity, SSO, and capability-control surface" },
+      { title: "Auth", href: "/docs/accounts/auth/", description: "Browser auth flow, token paths, and session expectations" },
+      { title: "Sync", href: "/docs/accounts/sync/", description: "What syncs, what stays local, and operational controls" },
+      { title: "Troubleshooting", href: "/docs/accounts/troubleshooting/", description: "Common account and session failure patterns" },
+    ],
+  },
+  {
     title: "CLI Reference",
     slug: "cli",
     items: [
@@ -81,6 +100,16 @@ export const navigation: NavSection[] = [
       { title: "Overview", href: "/docs/browser-automation/", description: "AI-driven browser control via Playwright" },
       { title: "Tools", href: "/docs/browser-automation/tools/", description: "Available browser tools and actions" },
       { title: "Recording & Replay", href: "/docs/browser-automation/recording/", description: "Session recording and visual diff" },
+    ],
+  },
+  {
+    title: "Status",
+    slug: "status",
+    items: [
+      { title: "Overview", href: "/docs/status/", description: "How to interpret fleet status and incident state" },
+      { title: "Service Cards", href: "/docs/status/service-cards/", description: "Service health semantics and triage signals" },
+      { title: "Releases", href: "/docs/status/releases/", description: "Release-note streams and rollout context" },
+      { title: "Feature Registry", href: "/docs/status/feature-registry/", description: "Feature-state interpretation and drift checks" },
     ],
   },
   {

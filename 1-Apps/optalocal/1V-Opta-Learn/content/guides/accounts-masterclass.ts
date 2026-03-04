@@ -48,6 +48,38 @@ export const accountsMasterclass: Guide = {
       code: `$ opta login\n\n> Opening browser to accounts.optalocal.com...\n> Authenticated as matthew@optamize.biz\n> Synced 3 provider keys to in-memory keychain.\n> Ready.`
     },
     {
+      heading: 'Security Boundaries & Blast Radius Control',
+      body: 'Accounts is intentionally split into trust zones so a failure in one layer does not automatically leak the rest of your stack. The identity plane mints short-lived Supabase sessions, the secret plane holds envelope-encrypted provider credentials, and the policy plane decides what each local daemon can request. A signed local session may decrypt keys for runtime use, but it still cannot export raw secret payloads or bypass org policy checks. High-risk operations such as profile schema edits, license overrides, and org-wide policy pushes require scoped service roles and produce immutable audit event IDs. This design keeps login and sync workflows fast for developers while limiting blast radius during suspicious activity.',
+      code: `opta accounts policy inspect --effective\n\nSession Scope: [profile:read, keychain:decrypt]\nBlocked Cloud Ops: [key_export, license_override, telemetry_delete]\nAudit Stream: append-only (retention: 365d)`
+    },
+    {
+      heading: 'Incident Recovery & Break-Glass Workflow',
+      body: 'When a workstation is lost, malware is suspected, or token anomalies are detected, recovery should be deterministic rather than ad hoc. The recommended order is: open an incident, revoke all active refresh tokens, quarantine the affected device identity, rotate provider keys, and then re-authenticate from a clean machine. Accounts propagates revocation through websocket fan-out and heartbeat checks so stale sessions are cut quickly, while preserving read-only audit visibility for investigation. Because license manifests are signed, air-gapped commands remain available, but privileged account mutations are denied until trust is restored. Teams should run this playbook in a quarterly drill so responders can execute the sequence quickly under pressure and verify every control works as intended.',
+      code: `opta accounts incident start --device "mbp-14-matt" --reason "token anomaly"\nopta accounts revoke --all-sessions --user matthew@optamize.biz\nopta accounts keychain rotate --providers openai,anthropic --invalidate-old\nopta login --force --device-trust-check`
+    },
+    {
+      heading: 'Team Rollout Patterns For New Orgs',
+      body: 'Large teams should not enable full autonomy on day one. A reliable rollout pattern starts with Ring 0 platform owners, then expands to a pilot group, and only then to all engineers once audit quality and recovery metrics are stable. During Ring 1, enforce strict defaults: read-heavy automation enabled, destructive write actions gated, and policy changes requiring two maintainers. During Ring 2, gradually relax controls per team based on measured incident rate and command approval latency. Accounts supports this by syncing profile bundles per org unit, mapping SSO groups to policy tiers, and providing drift alerts when local settings diverge from baseline. This staged model reduces onboarding friction while keeping governance consistent across devices and regions.',
+      visual: `<div class="visual-wrapper my-8 bg-void border border-white/10 rounded-xl p-5">
+        <div class="text-xs font-mono text-white mb-3 uppercase tracking-wider">Rollout Rings</div>
+        <div class="grid grid-cols-3 gap-3 text-[11px] font-mono">
+          <div class="rounded-lg border border-[#22c55e]/40 bg-[#052e16]/40 p-3">
+            <div class="text-[#22c55e] font-bold mb-1">Ring 0</div>
+            <div class="text-text-muted">Platform owners validate SSO mapping, keychain import, and baseline policy.</div>
+          </div>
+          <div class="rounded-lg border border-[#f59e0b]/40 bg-[#451a03]/40 p-3">
+            <div class="text-[#f59e0b] font-bold mb-1">Ring 1</div>
+            <div class="text-text-muted">Pilot teams run with guarded writes and two-maintainer policy approvals.</div>
+          </div>
+          <div class="rounded-lg border border-[#3b82f6]/40 bg-[#0c1f3f]/40 p-3">
+            <div class="text-[#3b82f6] font-bold mb-1">Ring 2</div>
+            <div class="text-text-muted">Org-wide rollout after drift, incident, and recovery SLOs remain healthy.</div>
+          </div>
+        </div>
+      </div>`,
+      code: `opta accounts rollout init --org "opta-core" --baseline "guarded-default"\nopta accounts rollout promote --from ring-0 --to ring-1 --require-approvals 2\nopta accounts rollout status --show-drift --show-sso-groups`
+    },
+    {
       heading: 'Autonomy Preset Syncing',
       body: 'Your "Do Mode" preferences (e.g., auto-approving terminal commands but requiring approval for file writes) are deeply personal. Opta Accounts serializes your <code>agent-profiles.json</code> and syncs it. If you switch from your Mac Studio to your MacBook Air, your agent behaves with the exact same level of trust and operational boundaries seamlessly.',
       visual: `<div class="visual-wrapper my-8 bg-void border border-white/10 rounded-xl p-5 font-mono text-xs text-text-muted">

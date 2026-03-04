@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-03T23:25:56.538Z",
+  "generatedAt": "2026-03-04T02:57:06.015Z",
   "root": "content/guides",
   "counts": {
     "published": 1,
@@ -62,21 +62,21 @@
       "slug": "lmx-masterclass",
       "title": "LMX Masterclass",
       "file": "content/guides/lmx-masterclass.ts",
-      "exportName": "lmxMasterclassGuide",
+      "exportName": "lmxMasterclass",
       "status": "draft"
     },
     {
       "slug": "code-desktop-masterclass",
       "title": "Code Desktop Masterclass",
       "file": "content/guides/code-desktop-masterclass.ts",
-      "exportName": "codeDesktopMasterclassGuide",
+      "exportName": "codeDesktopMasterclass",
       "status": "draft"
     },
     {
       "slug": "accounts-masterclass",
       "title": "Accounts Masterclass",
       "file": "content/guides/accounts-masterclass.ts",
-      "exportName": "accountsMasterclassGuide",
+      "exportName": "accountsMasterclass",
       "status": "draft"
     }
   ],

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Terminal, Server, Globe, Monitor, Shield, Code2, BookOpen,
-  ArrowRight, Cpu, Layers
+  ArrowRight, Cpu, Layers, Network, UserRound, Activity
 } from "lucide-react";
 import { Nav } from "@/components/layout/Nav";
 import { Footer } from "@/components/layout/Footer";
@@ -15,12 +15,15 @@ const spring = { type: "spring" as const, stiffness: 400, damping: 30 };
 
 const sectionIcons: Record<string, React.ElementType> = {
   "getting-started": BookOpen,
+  ecosystem: Network,
+  accounts: UserRound,
   cli: Terminal,
   daemon: Server,
   lmx: Cpu,
   "local-web": Globe,
   "code-desktop": Monitor,
   "browser-automation": Layers,
+  status: Activity,
   security: Shield,
   developer: Code2,
   "feature-status": BookOpen,

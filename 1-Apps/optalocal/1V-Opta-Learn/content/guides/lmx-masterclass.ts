@@ -90,6 +90,31 @@ export const lmxMasterclass: Guide = {
            </div>
         </div>
       </div>`
+    },
+    {
+      heading: 'Reliability Playbooks & SLO Guardrails',
+      body: 'Local-first does not mean reliability-light. In production teams, LMX should be operated with explicit SLOs such as p95 Time to First Token, token throughput, error budget burn, and cold-start recovery windows. A practical baseline is to define thresholds for GPU saturation, unified memory pressure, and queue depth, then trigger progressive remediation before user-facing failure. The first stage is backpressure: rate-limit new sessions while preserving in-flight chats. The second stage is controlled model shedding: unload low-priority models and preserve the primary serving path. The final stage is daemon restart with session-aware drain and warmup. LMX logs are structured so operators can correlate KV cache misses, paging events, and latency spikes to a single incident timeline. This makes postmortems actionable instead of anecdotal.',
+      code: `# Observe health + saturation
+opta serve status
+opta serve metrics --watch 2s
+
+# Progressive recovery sequence
+opta serve drain --session-timeout 30s
+opta serve unload --model deepseek-r1-32b
+opta serve reload --model deepseek-r1-8b
+opta serve warmup --session-template coding`
+    },
+    {
+      heading: 'Deployment Patterns & Failure Handling',
+      body: 'LMX supports multiple deployment patterns depending on how strict you need isolation and uptime. A single-daemon desktop profile is ideal for solo workflows, but teams usually run a dual-instance pattern: one active process for real traffic and one standby process preloaded with the next model version. During rollout, clients are switched via localhost port aliasing or a thin local proxy, enabling near-zero interruption while preserving on-device privacy. For failure handling, use a circuit-breaker policy around dependency calls (embedding services, tool routers, or filesystem indexers) so model inference remains available even when non-critical integrations degrade. If swap thrash or thermal throttling is detected, LMX should automatically reduce context ceilings and reject oversized prompts with deterministic guidance instead of timing out. Deterministic degradation keeps developer workflows predictable under stress.',
+      code: `# Blue/green local rollout example
+opta serve start --profile lmx-blue --port 3456
+opta serve start --profile lmx-green --port 4456
+opta serve switch --from 3456 --to 4456 --graceful
+
+# Failure-mode signal (example log)
+[LMX-Guard] Thermal throttle detected (GPU freq drop 21%).
+[LMX-Guard] Applying safe mode: max_context_tokens=64000`
     }
   ],
 };
