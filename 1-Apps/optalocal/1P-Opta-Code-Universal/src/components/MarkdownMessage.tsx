@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { handleExternalClick } from "../lib/openUrl";
 
 // ── Inline node types ──────────────────────────────────────────────────────
 type InlineNode =
@@ -66,6 +67,7 @@ function renderInlineNodes(nodes: InlineNode[]): ReactNode[] {
             target="_blank"
             rel="noreferrer noopener"
             className="md-link"
+            onClick={handleExternalClick}
           >
             {node.content}
           </a>

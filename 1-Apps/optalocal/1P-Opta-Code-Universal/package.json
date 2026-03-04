@@ -30,6 +30,7 @@
   "dependencies": {
     "@opta/daemon-client": "file:../1D-Opta-CLI-TS/packages/daemon-client",
     "@opta/protocol-shared": "file:../1D-Opta-CLI-TS/packages/protocol-shared",
+    "@tauri-apps/plugin-opener": "^2.5.3",
     "clsx": "^2.1.1",
     "framer-motion": "^12.34.4",
     "lucide-react": "^0.575.0",

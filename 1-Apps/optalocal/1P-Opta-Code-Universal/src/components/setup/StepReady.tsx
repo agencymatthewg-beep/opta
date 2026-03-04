@@ -3,6 +3,7 @@ import { isNativeDesktop } from "../../lib/runtime";
 import { daemonClient } from "../../lib/daemonClient";
 import type { DaemonConnectionOptions } from "../../types";
 import { type WizardFormData, wizardInvoke, WIZARD_THEME } from "./shared";
+import { handleExternalClick } from "../../lib/openUrl";
 
 interface BootstrapMetadata {
   host?: string;
@@ -131,10 +132,10 @@ export function StepReady({
         const mcpListRes = await daemonClient.runOperation(connection, "mcp.list", {});
         const operations = (mcpListRes as { result?: { operations?: unknown[] } })?.result?.operations || [];
         if (!mcpListRes.ok || operations.length === 0) {
-           const addRes = await daemonClient.runOperation(connection, "mcp.add-playwright", { input: { name: "browser", mode: "isolated" } });
-           if (!addRes.ok) {
-             console.warn(`Failed to provision MCP starter pack: [${addRes.error?.code}] ${addRes.error?.message}`);
-           }
+          const addRes = await daemonClient.runOperation(connection, "mcp.add-playwright", { input: { name: "browser", mode: "isolated" } });
+          if (!addRes.ok) {
+            console.warn(`Failed to provision MCP starter pack: [${addRes.error?.code}] ${addRes.error?.message}`);
+          }
         }
       } catch (e: unknown) {
         console.warn("Failed to provision MCP starter pack (network error):", e);
@@ -355,6 +356,7 @@ export function StepReady({
           href="https://help.optalocal.com/docs/cli"
           target="_blank"
           rel="noopener noreferrer"
+          onClick={handleExternalClick}
           style={{
             fontFamily: "'JetBrains Mono', monospace",
             fontSize: 11,

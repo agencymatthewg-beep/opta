@@ -804,34 +804,33 @@ function App() {
                 </div>
               </div>
             )}
+            {/* Floating Action Island — inside topbar, positioned top-right */}
+            <div className="v1-action-island">
+              <button
+                type="button"
+                className="v1-island-btn"
+                onClick={() => widgetLayout.toggleEditMode()}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 20h9" />
+                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+                Tiles
+              </button>
+              <div className="v1-island-divider" />
+              <button
+                type="button"
+                className="v1-island-btn"
+                onClick={() => openSettings("connection")}
+              >
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                Accounts
+              </button>
+            </div>
           </header>
-
-          {/* Floating Action Island — always shown, styled via CSS */}
-          <div className="v1-action-island">
-            <button
-              type="button"
-              className="v1-island-btn"
-              onClick={() => widgetLayout.toggleEditMode()}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M12 20h9" />
-                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
-              </svg>
-              Tiles
-            </button>
-            <div className="v1-island-divider" />
-            <button
-              type="button"
-              className="v1-island-btn"
-              onClick={() => openSettings("connection")}
-            >
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
-              Accounts
-            </button>
-          </div>
 
 
           {/* V1 Agent Bar — horizontal strip above body */}
@@ -881,6 +880,8 @@ function App() {
                 setActivePage("sessions");
                 setNotice(`New session created in "${ws}"`);
               }}
+              deviceLabel={deviceLabel}
+              onDeviceLabelChange={setDeviceLabel}
             />
 
             {/* Center: Chat or Page Content */}

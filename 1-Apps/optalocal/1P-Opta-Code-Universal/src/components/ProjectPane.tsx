@@ -1,5 +1,6 @@
 import type { DaemonSessionSummary, AgentBarItem } from "../types";
 import type { ConnectionHealthState } from "../hooks/useConnectionHealth";
+import { handleExternalClick } from "../lib/openUrl";
 
 interface ProjectPaneProps {
     sessions: DaemonSessionSummary[];
@@ -12,6 +13,8 @@ interface ProjectPaneProps {
     connectionPort: number;
     onSelectSession: (sessionId: string) => void;
     onCreateSession: () => void;
+    deviceLabel?: string;
+    onDeviceLabelChange?: (label: string) => void;
 }
 
 function deriveAgentItems(
@@ -54,6 +57,8 @@ export function ProjectPane({
     connectionPort,
     onSelectSession,
     onCreateSession,
+    deviceLabel,
+    onDeviceLabelChange,
 }: ProjectPaneProps) {
     const agentItems = deriveAgentItems(
         sessions,
@@ -140,11 +145,20 @@ export function ProjectPane({
                 href="https://accounts.optalocal.com"
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={handleExternalClick}
             >
                 <div className="pp-avatar">M</div>
                 <div className="pp-user-info">
                     <span className="pp-user-name">Matthew Byrden</span>
-                    <span className="pp-user-team">Opta Local Pro</span>
+                    <span
+                        className="pp-user-team pp-device-label"
+                        contentEditable
+                        suppressContentEditableWarning
+                        onBlur={(e) => onDeviceLabelChange?.(e.currentTarget.textContent || "Workstation - Opta48")}
+                        onClick={(e) => e.preventDefault()}
+                    >
+                        {deviceLabel ?? "Workstation - Opta48"}
+                    </span>
                 </div>
             </a>
         </aside>
