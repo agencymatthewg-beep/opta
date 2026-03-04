@@ -1,6 +1,6 @@
 # Opta Software State Registry (Long-Term)
 
-_Last updated: 2026-03-03 22:40 AEDT (Australia/Melbourne)_
+_Last updated: 2026-03-04 23:30 AEDT (Australia/Melbourne)_
 
 Purpose: single source of truth for external software/services Opta depends on, including ownership, auth state, current usage, risk posture, and next action.
 
@@ -24,15 +24,16 @@ Purpose: single source of truth for external software/services Opta depends on, 
 ### Vercel
 - **Team:** `team_gU9yOVESJwOUWdYC0SLGGoGv`
 - **State:** Active (domains linked and routing managed)
-- **Recent outcome:** `help.optalocal.com` live; old `opta-help.vercel.app` redirects 308
-- **Next action:** maintain domain mapping in canonical SOT docs
+- **Recent outcome:** duplicate legacy `status` project removed; `status.optalocal.com` is served by `status-fix` and `READY`
+- **Current production endpoints:** `optalocal.com`, `init.optalocal.com`, `accounts.optalocal.com`, `status.optalocal.com`, `help.optalocal.com`, `learn.optalocal.com`, `admin.optalocal.com`
+- **Next action:** keep canonical project/domain mapping in SOT docs and avoid duplicate project names for the same domain
 
 ### Learn experience (new)
-- **Planned domain:** `learn.optalocal.com`
+- **Domain:** `learn.optalocal.com`
 - **Intent:** central searchable guide hub for Opta Local app/features/issues (visual + explanatory guides)
 - **Navigation plan:** add CTA buttons on `optalocal.com` and `help.optalocal.com` ("Learn More", "Users Guide", "Don’t understand?") redirecting to `learn.optalocal.com`
 - **Execution owner:** Opta512 (frontend design skill + Gemini workflow)
-- **State:** Planned / in-progress handoff
+- **State:** Live (reachable in production)
 
 ---
 
@@ -77,11 +78,13 @@ Purpose: single source of truth for external software/services Opta depends on, 
 ## C) Identity, Auth & Data
 
 ### Supabase
-- **Project ref:** `cytjsmezydytbmjrolyz`
-- **State:** Linked and migration parity confirmed through current baseline
+- **Primary project ref:** `cytjsmezydytbmjrolyz` (`Opta-ecosystem`)
+- **State:** `ACTIVE_HEALTHY`
+- **Secondary project ref:** `gnaezspcrjxsyxcezlrr` (`agencymatthewg-beep's Project`)
+- **Secondary state:** `INACTIVE`
 - **Helper script:** `~/Synced/AI26/2-Bot-Ops/2F-Scripts/supabase-opta.sh`
 - **Open risk:** `api_keys.key_value` plaintext at rest
-- **Next action:** introduce key hardening plan (masking/encryption strategy)
+- **Next action:** introduce key hardening plan (masking/encryption strategy) and decide whether to archive/remove inactive Supabase project
 
 ### Cloudflare
 - **Primary zones:** `optalocal.com`, `optamize.biz`

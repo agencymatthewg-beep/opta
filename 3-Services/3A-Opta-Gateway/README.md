@@ -29,7 +29,7 @@ Create `.env.local`:
 
 ```bash
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezyldytbmjrolyz.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezydytbmjrolyz.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 
@@ -245,7 +245,7 @@ opta-lm-backend/
 
 ### Test Authentication
 ```bash
-curl -X POST https://cytjsmezyldytbmjrolyz.supabase.co/auth/v1/signup \
+curl -X POST https://cytjsmezydytbmjrolyz.supabase.co/auth/v1/signup \
   -H "Content-Type: application/json" \
   -H "apikey: YOUR_ANON_KEY" \
   -d '{"email":"test@example.com","password":"password123"}'

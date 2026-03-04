@@ -4,7 +4,7 @@
 
 | Service | Key | Where to Find |
 |---------|-----|---------------|
-| Supabase URL | `https://cytjsmezyldytbmjrolyz.supabase.co` | This file |
+| Supabase URL | `https://cytjsmezydytbmjrolyz.supabase.co` | This file |
 | Supabase Anon | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` | SOT: MASTER.CREDS.md |
 | Supabase Service | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` | SOT: MASTER.CREDS.md |
 | Google Client ID | — | Google Cloud Console |
@@ -14,7 +14,7 @@
 
 ```sql
 -- Connect
-psql "$DATABASE_URL" -h db.cytjsmezyldytbmjrolyz.supabase.co -U postgres
+psql "$DATABASE_URL" -h db.cytjsmezydytbmjrolyz.supabase.co -U postgres
 
 -- Tables
 profiles        -- User profiles
@@ -45,7 +45,7 @@ user_api_keys   -- Encrypted API keys
 CFBundleURLTypes: com.yourapp://oauth/callback
 
 # .env (Web)
-NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezyldytbmjrolyz.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezydytbmjrolyz.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 

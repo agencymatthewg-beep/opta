@@ -244,7 +244,7 @@ ver=3               // Protocol version
 - App works fully without sign-in (iCloud Keychain handles device sync)
 - Sign-in offered as enhancement: "Sign in to back up your bots to the cloud"
 - Auth providers: Apple Sign-In, Google Sign-In (matching Opta Life iOS)
-- Shared Supabase project: `cytjsmezyldytbmjrolyz.supabase.co`
+- Shared Supabase project: `cytjsmezydytbmjrolyz.supabase.co`
 
 ### Write-Through Cache Pattern
 

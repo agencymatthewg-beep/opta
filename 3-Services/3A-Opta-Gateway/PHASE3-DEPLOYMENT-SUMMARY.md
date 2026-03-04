@@ -70,7 +70,7 @@ CNAME  lm  →  cname.vercel-dns.com
 curl https://lm.optamize.biz
 
 # 2. Sign up
-curl -X POST https://cytjsmezyldytbmjrolyz.supabase.co/auth/v1/signup \
+curl -X POST https://cytjsmezydytbmjrolyz.supabase.co/auth/v1/signup \
   -H "Content-Type: application/json" \
   -H "apikey: YOUR_ANON_KEY" \
   -d '{"email":"test@example.com","password":"TestPass123!"}'
@@ -124,7 +124,7 @@ curl -X POST https://lm.optamize.biz/api/chat \
 - **Backend Code:** `/Users/Shared/312/Opta/1-Apps/opta-lm-backend/`
 - **Deployment Guide:** `DEPLOYMENT.md`
 - **API Documentation:** `README.md`
-- **Supabase Dashboard:** https://cytjsmezyldytbmjrolyz.supabase.co
+- **Supabase Dashboard:** https://cytjsmezydytbmjrolyz.supabase.co
 - **Vercel Dashboard:** https://vercel.com/dashboard
 
 ---

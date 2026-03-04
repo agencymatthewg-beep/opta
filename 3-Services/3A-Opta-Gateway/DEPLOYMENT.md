@@ -25,7 +25,7 @@ vercel --prod
 When prompted, add these environment variables:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezyldytbmjrolyz.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezydytbmjrolyz.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWR5dGJtanJvbHl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTcyNDUsImV4cCI6MjA4NjU3MzI0NX0.DuYyYixsjdl9R5Uq4hIL4TQMGvCCssw_1wNo-J7De6Q
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWR5dGJtanJvbHl6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDk5NzI0NSwiZXhwIjoyMDg2NTczMjQ1fQ.XLpqeLBcPTGNFE4SHhfcxS6YL3YD-ngb0fbHoq6c2CA
 NEXTAUTH_SECRET=opta-lm-production-secret-$(openssl rand -base64 32)
@@ -59,7 +59,7 @@ In Vercel dashboard → Settings → Environment Variables, add:
 
 | Key | Value |
 |-----|-------|
-| `NEXT_PUBLIC_SUPABASE_URL` | `https://cytjsmezyldytbmjrolyz.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://cytjsmezydytbmjrolyz.supabase.co` |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | `eyJhbGci...` (see above) |
 | `SUPABASE_SERVICE_ROLE_KEY` | `eyJhbGci...` (see above) |
 | `NEXTAUTH_SECRET` | Generate via `openssl rand -base64 32` |
@@ -111,7 +111,7 @@ You should see the API documentation page.
 
 **Sign Up:**
 ```bash
-curl -X POST https://cytjsmezyldytbmjrolyz.supabase.co/auth/v1/signup \
+curl -X POST https://cytjsmezydytbmjrolyz.supabase.co/auth/v1/signup \
   -H "Content-Type: application/json" \
   -H "apikey: YOUR_ANON_KEY" \
   -d '{
@@ -197,7 +197,7 @@ Monitor deployment health at:
 ### Supabase Dashboard
 
 Monitor database and auth at:
-- https://cytjsmezyldytbmjrolyz.supabase.co
+- https://cytjsmezydytbmjrolyz.supabase.co
 
 ### Key Metrics
 

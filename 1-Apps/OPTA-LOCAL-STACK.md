@@ -1,6 +1,6 @@
 # Opta Local Stack
 
-**Last updated:** 2026-02-28
+**Last updated:** 2026-03-04
 
 ## Components
 
@@ -10,6 +10,20 @@
 | Opta LMX | `1M-Opta-LMX/` | Local inference server (`/v1/chat/completions`, `/v1/chat/stream`) |
 | Opta Code Desktop (Universal) | `1P-Opta-Code-Universal/` | Unified web + native client for daemon sessions and operations |
 | Opta Admin | `1X-Opta-Admin/` | Private website-management control plane (website fleet health + Learn guide promotion) |
+
+## Website Fleet (production)
+
+| Website | Domain | Local Port | Health Path | Current Prod Status |
+|---|---|---:|---|---|
+| Opta Home | `optalocal.com` | `3000` | `/` | `200` |
+| Opta Init | `init.optalocal.com` | `3001` | `/` | `200` |
+| Opta Accounts | `accounts.optalocal.com` | `3002` | `/api/health/supabase` | `200` |
+| Opta Status | `status.optalocal.com` | `3005` | `/` | `200` |
+| Opta Help | `help.optalocal.com` | `3006` | `/` | `200` |
+| Opta Learn | `learn.optalocal.com` | `3007` | `/` | `200` |
+| Opta Admin | `admin.optalocal.com` | `3008` | `/` | `401` (expected auth gate) |
+
+Production status above was verified on 2026-03-04 during the website fleet health pass.
 
 ## Current Architecture (Level 3)
 

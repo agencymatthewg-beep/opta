@@ -38,7 +38,7 @@
 
 | Item | Value |
 |------|-------|
-| **URL** | `https://cytjsmezyldytbmjrolyz.supabase.co` |
+| **URL** | `https://cytjsmezydytbmjrolyz.supabase.co` |
 | **Anon Key** | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWR5dGJtanJvbHl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA5OTcyNDUsImV4cCI6MjA4NjU3MzI0NX0.DuYyYixsjdl9R5Uq4hIL4TQMGvCCssw_1wNo-J7De6Q` |
 | **Service Role** | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5dGpzbWV6eWx5dGJtanJvbHl6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDk5NzI0NSwiZXhwIjoyMDg2NTczMjQ1fQ.XLpqeLBcPTGNFE4SHhfcxS6YL3YD-ngb0fbHoq6c2CA` |
 
@@ -214,7 +214,7 @@ import Foundation
 import Supabase
 
 public struct OptaCloud {
-  public static let supabaseURL = "https://cytjsmezyldytbmjrolyz.supabase.co"
+  public static let supabaseURL = "https://cytjsmezydytbmjrolyz.supabase.co"
   public static let anonKey = "eyJ..."
   
   public static func signInWithGoogle() async throws -> Session {
@@ -246,7 +246,7 @@ For web apps:
 
 ```bash
 # .env.local
-NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezyldytbmjrolyz.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://cytjsmezydytbmjrolyz.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 ```
 
