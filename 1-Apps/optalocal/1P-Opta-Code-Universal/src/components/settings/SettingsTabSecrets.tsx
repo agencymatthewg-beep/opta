@@ -3,16 +3,20 @@ import { useOperations } from "../../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../../types";
 import { RefreshCw, Key, Shield, CheckCircle, AlertTriangle } from "lucide-react";
 
+const PROVIDERS = [
+  { id: "anthropic", label: "Anthropic API Key", placeholder: "sk-ant-..." },
+  { id: "openai", label: "OpenAI API Key", placeholder: "sk-..." },
+  { id: "lmx", label: "LMX API Key", placeholder: "lmx-..." },
+  { id: "gemini", label: "Gemini API Key", placeholder: "AIzaSy..." },
+];
+
 export function SettingsTabSecrets({
   connection,
 }: {
   connection: DaemonConnectionOptions;
 }) {
   const { runOperation, running } = useOperations(connection);
-  const [anthropicKey, setAnthropicKey] = useState("");
-  const [openAiKey, setOpenAiKey] = useState("");
-  const [lmxKey, setLmxKey] = useState("");
-  const [geminiKey, setGeminiKey] = useState("");
+  const [keys, setKeys] = useState<Record<string, string>>({});
   const [statusMsg, setStatusMsg] = useState<{
     type: "success" | "error";
     text: string;
@@ -42,10 +46,7 @@ export function SettingsTabSecrets({
           type: "success",
           text: `Successfully saved ${provider} key.`,
         });
-        if (provider === "anthropic") setAnthropicKey("");
-        if (provider === "openai") setOpenAiKey("");
-        if (provider === "lmx") setLmxKey("");
-        if (provider === "gemini") setGeminiKey("");
+        setKeys((prev) => ({ ...prev, [provider]: "" }));
       } else {
         setStatusMsg({
           type: "error",
@@ -122,121 +123,38 @@ export function SettingsTabSecrets({
       )}
 
       <div className="flex flex-col gap-4">
-        <div className="bg-black/20 border border-white/10 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Anthropic API Key
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Key
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-              <input
-                type="password"
-                value={anthropicKey}
-                onChange={(e) => setAnthropicKey(e.target.value)}
-                placeholder="sk-ant-..."
-                className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
-              />
+        {PROVIDERS.map((provider) => (
+          <div key={provider.id} className="bg-black/20 border border-white/10 rounded-lg p-4">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              {provider.label}
+            </label>
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Key
+                  size={16}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                />
+                <input
+                  type="password"
+                  value={keys[provider.id] || ""}
+                  onChange={(e) =>
+                    setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))
+                  }
+                  placeholder={provider.placeholder}
+                  className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleSaveKey(provider.id, keys[provider.id] || "")}
+                disabled={!(keys[provider.id] || "").trim() || running}
+                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
+              >
+                Save
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => void handleSaveKey("anthropic", anthropicKey)}
-              disabled={!anthropicKey.trim() || running}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
-            >
-              Save
-            </button>
           </div>
-        </div>
-
-        <div className="bg-black/20 border border-white/10 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            OpenAI API Key
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Key
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-              <input
-                type="password"
-                value={openAiKey}
-                onChange={(e) => setOpenAiKey(e.target.value)}
-                placeholder="sk-..."
-                className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleSaveKey("openai", openAiKey)}
-              disabled={!openAiKey.trim() || running}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-black/20 border border-white/10 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            LMX API Key
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Key
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-              <input
-                type="password"
-                value={lmxKey}
-                onChange={(e) => setLmxKey(e.target.value)}
-                placeholder="lmx-..."
-                className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleSaveKey("lmx", lmxKey)}
-              disabled={!lmxKey.trim() || running}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
-            >
-              Save
-            </button>
-          </div>
-        </div>
-
-        <div className="bg-black/20 border border-white/10 rounded-lg p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Gemini API Key
-          </label>
-          <div className="flex gap-2">
-            <div className="relative flex-1">
-              <Key
-                size={16}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
-              />
-              <input
-                type="password"
-                value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="AIzaSy..."
-                className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
-              />
-            </div>
-            <button
-              type="button"
-              onClick={() => void handleSaveKey("gemini", geminiKey)}
-              disabled={!geminiKey.trim() || running}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
-            >
-              Save
-            </button>
-          </div>
-        </div>
+        ))}
       </div>
     </div>
   );
