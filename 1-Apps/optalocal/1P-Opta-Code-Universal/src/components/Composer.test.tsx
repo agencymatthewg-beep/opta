@@ -36,23 +36,25 @@ describe("Composer", () => {
   it("submits all extended turn overrides when controls are enabled", () => {
     const { onSubmit } = renderComposer();
 
-    fireEvent.change(screen.getByTitle("Override provider for this turn"), {
+    // Open the advanced overrides panel first
+    fireEvent.click(screen.getByTitle("Override model, provider, autonomy"));
+
+    // Select overrides using the new (shorter) title strings
+    fireEvent.change(screen.getByTitle("Override provider"), {
       target: { value: "anthropic" },
     });
-    fireEvent.change(
-      screen.getByTitle("Override the default model for this turn"),
-      {
-        target: { value: "gpt-4o" },
-      },
-    );
-    fireEvent.change(screen.getByTitle("Adapt response format for this turn"), {
+    fireEvent.change(screen.getByTitle("Override model"), {
+      target: { value: "gpt-4o" },
+    });
+    fireEvent.change(screen.getByTitle("Override output format"), {
       target: { value: "json" },
     });
 
-    fireEvent.click(screen.getByText("Auto"));
+    // Toggle flag buttons (exact text as rendered in Composer.tsx)
+    fireEvent.click(screen.getByText("Auto (skip edit approvals)"));
     fireEvent.click(screen.getByText("No Commit"));
     fireEvent.click(screen.getByText("No Checkpoints"));
-    fireEvent.click(screen.getByText("L4 Autonomy"));
+    fireEvent.click(screen.getByText("⚡ L4 Autonomy"));
 
     fireEvent.click(screen.getByTitle("Send (Cmd+Enter)"));
 
