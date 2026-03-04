@@ -34,13 +34,21 @@ function toSections(value: unknown): GuideSection[] {
       const body = toStringValue(section.body);
       if (!heading || !body) return null;
 
-      return {
+      const sectionRecord: Record<string, string> = {
         heading,
         body,
-        visual: toOptionalStringValue(section.visual),
-        note: toOptionalStringValue(section.note),
-        code: toOptionalStringValue(section.code),
       };
+      
+      const visual = toOptionalStringValue(section.visual);
+      if (visual !== undefined) sectionRecord.visual = visual;
+      
+      const note = toOptionalStringValue(section.note);
+      if (note !== undefined) sectionRecord.note = note;
+      
+      const code = toOptionalStringValue(section.code);
+      if (code !== undefined) sectionRecord.code = code;
+
+      return sectionRecord as unknown as GuideSection;
     })
     .filter((section): section is GuideSection => section !== null);
 }
