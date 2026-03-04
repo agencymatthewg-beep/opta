@@ -134,11 +134,11 @@ Working directory: ${workingDir}`;
   // Load export map (gated by config.context.exportMap)
   if (config.context.exportMap) {
     try {
-      const { scanExports, formatExportMap } = await import('../context/exports.js');
-      const exportMap = await scanExports(workingDir);
+      const { buildRepoMap, formatRepoMapTree } = await import('../context/repomap.js');
+      const repoMap = await buildRepoMap(workingDir);
 
-      if (exportMap.entries.length > 0) {
-        prompt += `\n\nCodebase exports:\n${formatExportMap(exportMap)}`;
+      if (repoMap.entries.length > 0) {
+        prompt += `\n\nRepository Map (Symbols):\n${formatRepoMapTree(repoMap)}`;
       }
     } catch {
       // Export scanning failed — continue without map
