@@ -126,6 +126,16 @@ export function StepReady({
       } catch (e: unknown) {
         console.warn("Failed to pull vault secrets (network error):", e);
       }
+
+      try {
+        const mcpListRes = await daemonClient.runOperation(connection, "mcp.list", {});
+        const operations = (mcpListRes as any)?.result?.operations || [];
+        if (operations.length === 0 || !mcpListRes.ok) {
+           await daemonClient.runOperation(connection, "mcp.add-playwright", { input: { name: "browser", mode: "isolated" } });
+        }
+      } catch (e: unknown) {
+        console.warn("Failed to provision MCP starter pack", e);
+      }
     } catch (error) {
       if (nativeDesktop) {
         setLaunching(false);
@@ -320,7 +330,7 @@ export function StepReady({
           {launched ? (
             "Onboarding saved - starting Opta"
           ) : launching ? (
-            "Applying onboarding..."
+            "Applying onboarding, syncing vault, and provisioning tools..."
           ) : (
             <>
               Launch Opta
