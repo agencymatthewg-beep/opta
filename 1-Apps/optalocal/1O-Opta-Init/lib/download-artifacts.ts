@@ -26,7 +26,7 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       windows: {
         manifestUrl: "/desktop-updates/beta.json",
         platformKeys: ["windows-x86_64"],
-        fallbackUrl: null,
+        fallbackUrl: "/downloads/opta-init/latest/opta-init-windows.exe",
       },
     },
   },
