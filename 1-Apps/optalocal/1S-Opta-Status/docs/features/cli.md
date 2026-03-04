@@ -94,3 +94,12 @@
 ## Cross-App Coordination
 
 - [x] `todo-optalocal/` cross-agent hub — structured handoff documents for multi-app feature changes
+
+## Recent Updates
+
+- 2026-03-04 — This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio p...
+
+## Auto-Synced Features
+- [x] Introduced typed protocols via `protocol/v3` schemas (`V3Event` and `audio.transcribe`/`audio.tts`). Connected logic for proxying directly into LMX and fallback routines natively into the OpenAI APIs (`whisper-1`/`tts-1`) if configured that way via the `keychain` integration.
+
+<!-- opta-sync-applied: 0004-opta-core-voice-integration -->

@@ -55,3 +55,36 @@ Whenever an autonomous agent completes a task that falls under the [Scope](#scop
 1. Check the highest `NNNN` number in this directory.
 2. Create the next `NNNN+1` file using the template.
 3. Commit the log file alongside or immediately after the deployment commit.
+
+## CI Integration (Automatic)
+
+When you push a new `optalocal-updates/NNNN-*.md` file to `main`, the following happens **automatically**:
+
+1. **GitHub Action** `.github/workflows/sync-feature-registry.yml` triggers.
+2. **`scripts/sync-feature-registry.mjs`** parses the `**Target:**` field of every update file.
+3. Matching `1S-Opta-Status/docs/features/{appId}.md` files are updated with:
+   - A new entry in `## Recent Updates`
+   - New `- [x]` lines in `## Auto-Synced Features`
+4. The bot commits the changes back to `main` with `[skip ci]`.
+5. A Vercel deploy hook fires, making [status.optalocal.com](https://status.optalocal.com) live within ~30 seconds.
+
+### Target Field Mapping
+
+The `**Target:**` field uses comma-separated app names. These are matched **case-insensitively** and partially:
+
+| Target text contains | Updates file |
+|---------------------|-------------|
+| `Opta LMX` | `lmx.md` |
+| `Opta CLI` | `cli.md` |
+| `Opta Code Desktop` | `code-desktop.md` |
+| `Opta Accounts` | `accounts.md` |
+| `Opta Init` | `init.md` |
+| `Opta Status` | `status.md` |
+| `Opta Help` | `help.md` |
+| `Opta Learn` | `learn.md` |
+| `Opta Admin` | `admin.md` |
+| `LMX Dashboard` or `Opta Local` | `local-web.md` |
+
+### Required GitHub Secret
+
+Add `VERCEL_STATUS_DEPLOY_HOOK` to your repository secrets to enable automatic Vercel redeployment. Get the hook URL from Vercel → Project Settings → Git → Deploy Hooks.

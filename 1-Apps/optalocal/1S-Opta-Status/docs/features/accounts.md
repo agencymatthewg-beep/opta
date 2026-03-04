@@ -22,3 +22,17 @@ Opta Accounts (`1R-Opta-Accounts`) is the central identity, SSO, and capability 
 - [x] Opta design system — consistent typography (Sora) and colors
 - [x] Glassmorphism UI — elevated aesthetic and modern look
 - [x] Responsive design — mobile-friendly authentication flows
+
+## Recent Updates
+
+- 2026-03-04 — Transformed Opta Accounts into a centralized "Sync Vault" for configuring the entire local coding...
+
+- 2026-03-04 — Resolved critical frontend bugs in the Opta Accounts dashboard where the Opta Logo and user avata...
+
+## Auto-Synced Features
+- [x] Feature: Transformed Opta Accounts into a centralized "Sync Vault" for configuring the en
+- [x] Fix: Resolved critical frontend bugs in the Opta Accounts dashboard where the Opta Lo
+
+<!-- opta-sync-applied: 0002-opta-accounts-logo-fix -->
+
+<!-- opta-sync-applied: 0003-opta-accounts-sync-vault -->

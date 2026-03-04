@@ -57,3 +57,12 @@
 - [x] `soundfile` I/O for audio processing
 - [ ] Real-time streaming transcription (WebSocket STT)
 - [ ] Voice activity detection (VAD)
+
+## Recent Updates
+
+- 2026-03-04 — This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio p...
+
+## Auto-Synced Features
+- [x] Integrated the `mlx-whisper` package for STT processing at `POST /v1/audio/transcriptions` and `mlx-audio` for TTS generation at `POST /v1/audio/speech`. Handled natively using the MLX framework with no system-crashing processes.
+
+<!-- opta-sync-applied: 0004-opta-core-voice-integration -->

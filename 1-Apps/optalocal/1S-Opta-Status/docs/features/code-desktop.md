@@ -70,8 +70,15 @@ Opta Code Desktop (`1P-Opta-Code-Universal`) is a native-feeling desktop client 
 
 ## Recent Updates
 
+- 2026-03-04 — This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio p...
+
 - 2026-03-04 — Voice dictation: mic button + useAudioRecorder + daemon audio.transcribe routing
 - 2026-02-28 — Session search, copy, remove; Chat/Do toggle; turn stats; tool cards; Markdown rendering
 - 2026-02-26 — Background jobs launcher form; Codex Desktop parity sprint
 - 2026-02-25 — Fix: timer leaks, dead memo, type precision improvements
 - 2026-02-24 — Daemon v3 WebSocket event routing fixed (`envelope.event` not `envelope.kind`)
+
+## Auto-Synced Features
+- [x] Implemented a new `useAudioRecorder` React hook which hooks directly into window MediaStreams. Configured a newly-designed pulsating microphone UI on the Chat `Composer.tsx` panel which passes base64 audio directly to the Daemon processes.
+
+<!-- opta-sync-applied: 0004-opta-core-voice-integration -->
