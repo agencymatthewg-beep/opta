@@ -45,18 +45,11 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add 1-Apps/optalocal/1S-Opta-Status/docs/features/
-          git commit -m "ci: Auto-sync feature registry from optalocal-updates [skip ci]"
+          git commit -m "ci: Auto-sync feature registry from optalocal-updates"
           git push
 
-      - name: Trigger Vercel redeploy — Opta Status
-        if: steps.changes.outputs.has_changes == 'true'
-        env:
-          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
-          VERCEL_STATUS_HOOK: ${{ secrets.VERCEL_STATUS_DEPLOY_HOOK }}
+      - name: Fix git config for checkout cleanup
+        if: always()
         run: |
-          if [ -n "$VERCEL_STATUS_HOOK" ]; then
-            curl -X POST "$VERCEL_STATUS_HOOK"
-            echo "Triggered Opta Status Vercel deploy"
-          else
-            echo "VERCEL_STATUS_DEPLOY_HOOK not set — skipping Vercel trigger"
-          fi
+          git config --local --remove-section submodule._worktrees/recent-branch-resolution || true
+          rm -rf .git/modules/_worktrees/recent-branch-resolution || true
