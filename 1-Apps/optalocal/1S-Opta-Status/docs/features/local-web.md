@@ -60,6 +60,8 @@ Opta Local (`1T-Opta-Home`) is the public home/marketing experience for Opta Loc
 
 ## Recent Updates
 
+- 2026-03-04 — 
+
 - 2026-03-04 — The LMX Dashboard data layer now has 100% coverage of the Opta LMX backend API surface.
 
 - 2026-02-26 — Production readiness improvements
@@ -72,6 +74,9 @@ Opta Local (`1T-Opta-Home`) is the public home/marketing experience for Opta Loc
 - Local-web health endpoint exists in 1T; degraded states are deployment/target issues when `https://optalocal.com/api/health` is unreachable.
 
 ## Auto-Synced Features
+- [x] Feature: 
 - [x] Feature: The LMX Dashboard data layer now has 100% coverage of the Opta LMX backend API s
 
 <!-- opta-sync-applied: 0005-lmx-dashboard-full-api-coverage -->
+
+<!-- opta-sync-applied: 0006-lmx-dashboard-sidebar-and-feature-pages -->
