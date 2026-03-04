@@ -73,38 +73,9 @@ export function ProjectPane({
 
     return (
         <aside className="project-pane">
-            {/* Agent Status Section */}
-            {agentItems.length > 0 && (
-                <>
-                    <div className="pp-header">
-                        <span className="pp-title">ACTIVE AGENTS</span>
-                    </div>
-                    <div className="pp-agent-list">
-                        {agentItems.map((agent) => (
-                            <button
-                                key={agent.sessionId}
-                                className={`pp-agent-pill pp-agent-${agent.state}`}
-                                onClick={() => onSelectSession(agent.sessionId)}
-                                type="button"
-                            >
-                                <span className="pp-agent-dot" />
-                                <span className="pp-agent-name">{agent.sessionTitle}</span>
-                                <span className="pp-agent-status">
-                                    {agent.state === "streaming"
-                                        ? "Running"
-                                        : agent.state === "blocked"
-                                            ? "REVIEW"
-                                            : agent.state}
-                                </span>
-                            </button>
-                        ))}
-                    </div>
-                </>
-            )}
-
-            {/* Projects Section */}
+            {/* Agent Status Section — always visible */}
             <div className="pp-header">
-                <span className="pp-title">PROJECTS</span>
+                <span className="pp-title">ACTIVE AGENTS</span>
                 <button
                     className="pp-icon-btn"
                     onClick={onCreateSession}
@@ -116,6 +87,35 @@ export function ProjectPane({
                         <line x1="5" y1="12" x2="19" y2="12" />
                     </svg>
                 </button>
+            </div>
+            <div className="pp-agent-list">
+                {agentItems.length === 0 ? (
+                    <div className="pp-empty pp-empty-agents">No active agents</div>
+                ) : (
+                    agentItems.map((agent) => (
+                        <button
+                            key={agent.sessionId}
+                            className={`pp-agent-pill pp-agent-${agent.state}`}
+                            onClick={() => onSelectSession(agent.sessionId)}
+                            type="button"
+                        >
+                            <span className="pp-agent-dot" />
+                            <span className="pp-agent-name">{agent.sessionTitle}</span>
+                            <span className="pp-agent-status">
+                                {agent.state === "streaming"
+                                    ? "Running"
+                                    : agent.state === "blocked"
+                                        ? "REVIEW"
+                                        : agent.state}
+                            </span>
+                        </button>
+                    ))
+                )}
+            </div>
+
+            {/* Projects Section */}
+            <div className="pp-header">
+                <span className="pp-title">PROJECTS</span>
             </div>
 
             <div className="pp-tree">

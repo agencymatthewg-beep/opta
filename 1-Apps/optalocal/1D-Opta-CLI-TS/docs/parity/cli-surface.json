@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-04T03:58:36.621Z",
+  "generatedAt": "2026-03-04T04:29:05.624Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -38,6 +38,7 @@
       "status",
       "tui",
       "update",
+      "vault",
       "version"
     ],
     "families": [
@@ -70,6 +71,7 @@
       "status",
       "tui",
       "update",
+      "vault",
       "version"
     ],
     "subcommands": {

@@ -26,3 +26,8 @@ npm run check
 npm run build
 npm run start
 ```
+
+## Health Probe Environment
+
+- `OPTA_LMX_HEALTH_URL` should point to a health-only tunnel hostname that only forwards `/healthz`.
+- `OPTA_LMX_TUNNEL_URL` remains supported as a legacy fallback.

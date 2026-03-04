@@ -245,3 +245,56 @@ export async function keychainStatus(): Promise<{
     github: hasKey(githubKey),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Universal dispatch — used by vault sync
+// ---------------------------------------------------------------------------
+
+const PROVIDER_ACCOUNT_MAP: Record<string, string> = {
+  anthropic: ACCOUNT_ANTHROPIC,
+  lmx: ACCOUNT_LMX,
+  gemini: ACCOUNT_GEMINI,
+  openai: ACCOUNT_OPENAI,
+  'opencode-zen': ACCOUNT_OPENCODE_ZEN,
+  opencode: ACCOUNT_OPENCODE_ZEN,
+  github: ACCOUNT_GITHUB,
+  // New vault providers — stored under their own account IDs
+  vercel: 'vercel-api-key',
+  cloudflare: 'cloudflare-api-key',
+  perplexity: 'perplexity-api-key',
+  tavily: 'tavily-api-key',
+  brave: 'brave-api-key',
+  exa: 'exa-api-key',
+  groq: 'groq-api-key',
+  codex: 'codex-api-key',
+  google: 'google-api-key',
+  twitter: 'twitter-api-key',
+};
+
+/**
+ * Store any provider's key in the OS keychain by provider name.
+ * Returns true if stored successfully, false if keychain unavailable.
+ */
+export async function storeKeyByProvider(
+  provider: string,
+  apiKey: string,
+): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  const account = PROVIDER_ACCOUNT_MAP[provider.toLowerCase().trim()];
+  if (!account) return false;
+  await setSecret(KEYCHAIN_SERVICE, account, apiKey);
+  const verify = await getSecret(KEYCHAIN_SERVICE, account);
+  return verify === apiKey;
+}
+
+/**
+ * Retrieve any provider's key from the OS keychain by provider name.
+ */
+export async function getKeyByProvider(
+  provider: string,
+): Promise<string | null> {
+  if (!isKeychainAvailable()) return null;
+  const account = PROVIDER_ACCOUNT_MAP[provider.toLowerCase().trim()];
+  if (!account) return null;
+  return getSecret(KEYCHAIN_SERVICE, account);
+}

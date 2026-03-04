@@ -118,14 +118,16 @@ h6 {
 }
 
 .app-shell {
-  width: min(1600px, 96vw);
-  margin: 1.25rem auto;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: rgba(0, 0, 0, 0.78);
-  box-shadow: var(--shadow);
+  width: 100%;
+  height: 100vh;
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .app-shell::before {
@@ -135,9 +137,12 @@ h6 {
 .app-shell-body {
   position: relative;
   z-index: 1;
-  display: grid;
-  gap: 1rem;
-  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  padding: 0;
+  gap: 0;
 }
 
 .app-topbar {
@@ -5753,10 +5758,19 @@ button.active,
   border-color: var(--opta-border);
 }
 
+.v1-app-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-left: 1px solid var(--opta-border);
+  padding-left: 1rem;
+}
+
 /* V1 Body — 3-Column Flex */
 .v1-body {
   display: flex;
   flex: 1;
+  min-height: 0;
   overflow: hidden;
   position: relative;
   z-index: 1;
@@ -5776,7 +5790,8 @@ button.active,
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow-y: auto;
+  min-height: 0;
+  overflow: hidden;
   transition:
     opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
     transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -5794,17 +5809,20 @@ button.active,
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding: 0 1.5rem;
 }
 
 /* V1 Branding */
 @import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
 
 .v1-branding {
-  padding: 3rem 0 1rem;
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  padding: 2rem 0;
+  pointer-events: none;
 }
 
 .v1-brand-text {

@@ -5,6 +5,7 @@ export const revalidate = 30
 // Service definitions: maps service ID → { base URL env var or literal, health path }
 type ServiceDefinition = {
   urlEnv?: string
+  urlEnvFallbacks?: string[]
   urlFallback?: string
   path?: string
   paths?: string[]
@@ -15,7 +16,9 @@ const SERVICES: Record<
   ServiceDefinition
 > = {
   lmx: {
-    urlEnv: 'OPTA_LMX_TUNNEL_URL',
+    // Health-only hostname for LMX. Legacy env is still accepted for compatibility.
+    urlEnv: 'OPTA_LMX_HEALTH_URL',
+    urlEnvFallbacks: ['OPTA_LMX_TUNNEL_URL'],
     path: '/healthz',
   },
   daemon: {
@@ -73,14 +76,20 @@ export async function GET(
     )
   }
 
-  // Resolve base URL from env var (trimmed) or fallback.
+  // Resolve base URL from env var(s) (trimmed) or fallback.
   // Trimming avoids subtle failures from newline-contaminated env values.
-  const envUrl = def.urlEnv ? process.env[def.urlEnv]?.trim() : undefined
+  const envVars = [def.urlEnv, ...(def.urlEnvFallbacks ?? [])].filter(
+    (name): name is string => Boolean(name)
+  )
+  const envUrl = envVars
+    .map((name) => process.env[name]?.trim())
+    .find((value): value is string => Boolean(value))
   const baseUrl = envUrl || def.urlFallback?.trim()
 
   if (!baseUrl) {
+    const missingEnvLabel = envVars.length > 0 ? envVars.join(' or ') : def.urlEnv
     return NextResponse.json(
-      { status: 'unconfigured', error: `${def.urlEnv} is not set` },
+      { status: 'unconfigured', error: `${missingEnvLabel} is not set` },
       { status: 200 }
     )
   }

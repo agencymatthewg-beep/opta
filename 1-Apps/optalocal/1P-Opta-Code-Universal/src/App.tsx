@@ -5,7 +5,7 @@ import { Composer } from "./components/Composer";
 import { SetupWizard } from "./components/SetupWizard";
 import { SettingsModal } from "./components/SettingsModal";
 import type { SettingsTabId } from "./components/SettingsModal";
-import { Download, Settings as SettingsIcon } from "lucide-react";
+import { Download } from "lucide-react";
 import { TimelineCards } from "./components/TimelineCards";
 import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ProjectPane } from "./components/ProjectPane";
@@ -708,23 +708,17 @@ function App() {
             </div>
 
             <div className="v1-top-right">
-              <button type="button" className="v1-app-btn" onClick={() => setActivePage("models")}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-neon-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
-                  <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
-                  <line x1="6" y1="6" x2="6.01" y2="6" />
-                  <line x1="6" y1="18" x2="6.01" y2="18" />
-                </svg>
-                <span>LMX</span>
-              </button>
-              <button
-                type="button"
-                className="v1-app-btn"
-                onClick={() => openSettings("connection")}
-              >
-                <SettingsIcon size={16} />
-                <span>Settings</span>
-              </button>
+              <div className="v1-app-btn-group">
+                <button type="button" className="v1-app-btn" onClick={() => setActivePage("models")}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-neon-cyan)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="8" rx="2" ry="2" />
+                    <rect x="2" y="14" width="20" height="8" rx="2" ry="2" />
+                    <line x1="6" y1="6" x2="6.01" y2="6" />
+                    <line x1="6" y1="18" x2="6.01" y2="18" />
+                  </svg>
+                  <span>LMX ROUTER</span>
+                </button>
+              </div>
             </div>
           </header>
 
@@ -802,54 +796,68 @@ function App() {
                 ) : (
                   /* Default: Sessions view */
                   <>
-                    {/* Branding (shown when no active session) */}
-                    {!activeSessionId && (
-                      <div className="v1-branding">
-                        <div className="v1-brand-text">OPTA</div>
-                        <div className="v1-brand-sub">Code Environment</div>
-                      </div>
-                    )}
-
-                    <div className="v1-timeline-area">
-                      {activeSessionId && timelineItems.length > 0 && (
-                        <div className="session-export-bar">
-                          <button
-                            type="button"
-                            className="session-export-btn"
-                            onClick={() => {
-                              const md = exportToMarkdown(activeSessionId, timelineItems);
-                              downloadAsFile(`opta-session-${activeSessionId}.md`, md);
-                              setNotice("Session exported as Markdown");
-                            }}
-                            title="Export session as Markdown"
-                          >
-                            <Download size={12} aria-hidden="true" />
-                            Export
-                          </button>
+                    {/* No session: show brand splash + composer only */}
+                    {!activeSessionId ? (
+                      <>
+                        <div className="v1-branding">
+                          <div className="v1-brand-text">OPTA</div>
+                          <div className="v1-brand-sub">Code Environment</div>
                         </div>
-                      )}
-                      <TimelineCards
-                        sessionId={activeSessionId}
-                        sessionTitle={activeSession?.title}
-                        items={timelineItems}
-                        isStreaming={isStreaming}
-                        pendingPermissions={pendingPermissions}
-                        onResolvePermission={resolvePermission}
-                        connectionState={connectionState}
-                        browserVisualState={activeBrowserVisual}
-                      />
-                    </div>
-
-                    <Composer
-                      value={composerDraft}
-                      onChange={setComposerDraft}
-                      onSubmit={onSubmitComposer}
-                      onCancel={() => void cancelActiveTurn()}
-                      isStreaming={isStreaming}
-                      disabled={!activeSessionId}
-                      mode={submissionMode}
-                      onModeChange={setSubmissionMode}
-                    />
+                        <Composer
+                          value={composerDraft}
+                          onChange={setComposerDraft}
+                          onSubmit={onSubmitComposer}
+                          onCancel={() => void cancelActiveTurn()}
+                          isStreaming={isStreaming}
+                          disabled={true}
+                          mode={submissionMode}
+                          onModeChange={setSubmissionMode}
+                        />
+                      </>
+                    ) : (
+                      /* Active session: show timeline + export + composer */
+                      <>
+                        <div className="v1-timeline-area">
+                          {timelineItems.length > 0 && (
+                            <div className="session-export-bar">
+                              <button
+                                type="button"
+                                className="session-export-btn"
+                                onClick={() => {
+                                  const md = exportToMarkdown(activeSessionId, timelineItems);
+                                  downloadAsFile(`opta-session-${activeSessionId}.md`, md);
+                                  setNotice("Session exported as Markdown");
+                                }}
+                                title="Export session as Markdown"
+                              >
+                                <Download size={12} aria-hidden="true" />
+                                Export
+                              </button>
+                            </div>
+                          )}
+                          <TimelineCards
+                            sessionId={activeSessionId}
+                            sessionTitle={activeSession?.title}
+                            items={timelineItems}
+                            isStreaming={isStreaming}
+                            pendingPermissions={pendingPermissions}
+                            onResolvePermission={resolvePermission}
+                            connectionState={connectionState}
+                            browserVisualState={activeBrowserVisual}
+                          />
+                        </div>
+                        <Composer
+                          value={composerDraft}
+                          onChange={setComposerDraft}
+                          onSubmit={onSubmitComposer}
+                          onCancel={() => void cancelActiveTurn()}
+                          isStreaming={isStreaming}
+                          disabled={false}
+                          mode={submissionMode}
+                          onModeChange={setSubmissionMode}
+                        />
+                      </>
+                    )}
                   </>
                 )}
               </div>

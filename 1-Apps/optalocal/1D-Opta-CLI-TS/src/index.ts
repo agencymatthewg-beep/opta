@@ -1213,6 +1213,54 @@ const keychainCmd = program
   .command('keychain')
   .description('Manage API keys in the OS secure keychain (macOS Keychain / Linux secret-tool)');
 
+// ── Sync Vault ───────────────────────────────────────────────────────────────
+
+const vaultCmd = program
+  .command('vault')
+  .description('Sync API keys and global AI rules from your Opta Accounts vault');
+
+vaultCmd
+  .command('pull')
+  .description('Pull all keys and non-negotiables.md from vault to local keychain')
+  .action(async () => {
+    const { runVaultCommand } = await import('./commands/vault.js');
+    await runVaultCommand('pull');
+  });
+
+vaultCmd
+  .command('pull-keys')
+  .description('Pull only API keys from vault into keychain')
+  .action(async () => {
+    const { runVaultCommand } = await import('./commands/vault.js');
+    await runVaultCommand('pull-keys');
+  });
+
+vaultCmd
+  .command('pull-rules')
+  .description('Pull non-negotiables.md from vault and cache locally')
+  .action(async () => {
+    const { runVaultCommand } = await import('./commands/vault.js');
+    await runVaultCommand('pull-rules');
+  });
+
+vaultCmd
+  .command('push-rules [file]')
+  .description('Push a local rules file to the Accounts vault (default: ~/.config/opta/non-negotiables.md)')
+  .action(async (file: string | undefined) => {
+    const { runVaultCommand } = await import('./commands/vault.js');
+    await runVaultCommand('push-rules', file);
+  });
+
+vaultCmd
+  .command('status')
+  .description('Show vault sync status')
+  .action(async () => {
+    const { runVaultCommand } = await import('./commands/vault.js');
+    await runVaultCommand('status');
+  });
+
+
+
 keychainCmd
   .command('status')
   .description('Show keychain availability and stored key presence')

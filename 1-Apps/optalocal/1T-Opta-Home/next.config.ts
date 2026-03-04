@@ -3,11 +3,10 @@ import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
 
 const configDir = path.dirname(fileURLToPath(import.meta.url))
+const staticExportEnabled = process.env['OPTA_HOME_STATIC_EXPORT'] === '1'
 
 const nextConfig: NextConfig = {
-  output: 'export',
-  distDir: 'out',
-  trailingSlash: true,
+  ...(staticExportEnabled ? { output: 'export' as const } : {}),
   images: {
     unoptimized: true,
   },

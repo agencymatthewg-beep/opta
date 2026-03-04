@@ -5,7 +5,7 @@ Opta Status (`1S-Opta-Status`) provides real-time health monitoring and feature 
 ## Health Monitoring
 
 - [x] Service status overview — live operational state of apps
-- [x] LMX reference instance monitoring — configured via `OPTA_LMX_TUNNEL_URL` and reported as online/degraded/offline
+- [x] LMX reference instance monitoring — configured via `OPTA_LMX_HEALTH_URL` (legacy fallback: `OPTA_LMX_TUNNEL_URL`) and reported as online/degraded/offline
 - [x] Daemon reference instance monitoring — configured via `OPTA_DAEMON_TUNNEL_URL` and reported as online/degraded/offline
 - [x] Management websites tracking — Opta Local (optalocal.com), Init, Accounts, Help, Learn, and Admin
 - [x] Priority policy: when management websites drift, those are treated as highest-priority repair tasks before single-surface feature work

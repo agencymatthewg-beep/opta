@@ -25,6 +25,8 @@ import { daemonLogsPath } from './telemetry.js';
 import { expectedDaemonContract } from './contract.js';
 import { isStorageRelatedError } from '../utils/disk.js';
 import { errorMessage } from '../utils/errors.js';
+import { resolveSupabaseAuthConfig, exchangeAuthCodeForSession } from '../accounts/supabase.js';
+import { loadAccountState, saveAccountState } from '../accounts/storage.js';
 import { loadConfig } from '../core/config.js';
 import { LmxClient } from '../lmx/client.js';
 import { LmxApiError, type LmxLoadModelOptions } from '../lmx/types.js';
@@ -169,7 +171,7 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     }
 
     try {
-      const authConfig = resolveSupabaseAuthConfig({ cwd: process.cwd() });
+      const authConfig = resolveSupabaseAuthConfig(process.env, { cwd: process.cwd() });
       if (!authConfig) throw new Error('Supabase configuration missing');
 
       // Note: State parameter usually contains the code verifier from the CLI initiator
