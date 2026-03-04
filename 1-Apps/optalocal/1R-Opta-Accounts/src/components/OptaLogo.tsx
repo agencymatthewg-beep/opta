@@ -1,4 +1,4 @@
-import Image from 'next/image';
+/* eslint-disable @next/next/no-img-element */
 import { cn } from '@/lib/utils';
 import { OptaRing } from '@/components/OptaRing';
 
@@ -43,14 +43,12 @@ export function OptaLogo({
       )}
     >
       {logoSrc ? (
-        <Image
+        <img
           src={logoSrc}
           alt={`${suffix ? `Opta ${suffix}` : 'Opta'} logo`}
           width={size}
           height={size}
           className="shrink-0 pointer-events-none"
-          unoptimized
-          priority
         />
       ) : (
         <OptaRing size={size as any} paused={paused} className="shrink-0 pointer-events-none" />

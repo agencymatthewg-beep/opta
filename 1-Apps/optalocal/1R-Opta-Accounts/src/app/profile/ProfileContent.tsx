@@ -1,7 +1,7 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { motion } from "framer-motion";
-import Image from "next/image";
 import type { User } from "@supabase/supabase-js";
 import { LogOut, Shield, Mail, Phone, ExternalLink, Key } from "lucide-react";
 import Link from "next/link";
@@ -92,7 +92,7 @@ export function ProfileContent({ user }: ProfileContentProps) {
           {/* Avatar + Name */}
           <div className="flex items-center gap-4 mb-6">
             {user.user_metadata?.avatar_url ? (
-              <Image
+              <img
                 src={user.user_metadata.avatar_url as string}
                 alt=""
                 width={48}
