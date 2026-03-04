@@ -25,7 +25,7 @@ export async function versionCommand(opts: { check?: boolean }): Promise<void> {
     console.log(
       `Current: ${chalk.bold(VERSION)} | Latest: ${chalk.bold(chalk.green(latest))} | ${chalk.yellow('Update available')}`
     );
-    console.log(chalk.dim(`  npm install -g opta-cli`));
+    console.log(chalk.dim(`  npm install -g @opta/opta-cli`));
   }
 }
 
