@@ -13,6 +13,7 @@ import { WidgetPane } from "./components/WidgetPane";
 import { SettingsView } from "./components/SettingsView";
 import { useWidgetLayout } from "./hooks/useWidgetLayout";
 import { ModelsPage } from "./pages/ModelsPage";
+import { PermissionModal } from "./components/PermissionModal";
 import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
 import { DaemonLogsPage } from "./pages/DaemonLogsPage";
 import { ToolingOperationsPage } from "./pages/ToolingOperationsPage";
@@ -160,6 +161,7 @@ function App() {
     repairConnection,
     refreshNow,
     resolvePermission,
+    resolveSessionPermission,
     runtime,
     sessions,
     setActiveSessionId,
@@ -206,6 +208,15 @@ function App() {
       ),
     [pendingPermissionsBySession],
   );
+
+  const firstPendingPermission = useMemo(() => {
+    for (const [sessionId, reqs] of Object.entries(pendingPermissionsBySession)) {
+      if (reqs && reqs.length > 0) {
+        return { ...reqs[0], sessionId };
+      }
+    }
+    return null;
+  }, [pendingPermissionsBySession]);
 
   const timelineItems = activeSessionId
     ? (timelineBySession[activeSessionId] ?? [])
@@ -1090,6 +1101,12 @@ function App() {
           onClose={palette.close}
         />
       </div >
+      {firstPendingPermission && (
+        <PermissionModal
+          request={firstPendingPermission}
+          onResolve={resolveSessionPermission}
+        />
+      )}
     </>
   );
 }

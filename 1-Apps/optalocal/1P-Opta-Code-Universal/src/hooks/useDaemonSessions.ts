@@ -710,32 +710,37 @@ export function useDaemonSessions() {
     [activeSessionId, connection],
   );
 
-  const resolvePermission = useCallback(
-    async (requestId: string, decision: "allow" | "deny") => {
-      if (!activeSessionId) return;
-      // Optimistically remove from pending — the 'permission.resolved' WS event
-      // will also remove it if it arrives, but this keeps the UI snappy
+  const resolveSessionPermission = useCallback(
+    async (sessionId: string, requestId: string, decision: "allow" | "deny") => {
       setPendingPermissionsBySession((prev) => {
-        const existing = prev[activeSessionId];
+        const existing = prev[sessionId];
         if (!existing) return prev;
         return {
           ...prev,
-          [activeSessionId]: existing.filter((p) => p.requestId !== requestId),
+          [sessionId]: existing.filter((p) => p.requestId !== requestId),
         };
       });
       try {
         await daemonClient.resolvePermission(
           connectionRef.current,
-          activeSessionId,
+          sessionId,
           requestId,
           decision,
           clientIdRef.current,
         );
       } catch (error) {
-        console.error("resolvePermission failed:", error);
+        console.error("resolveSessionPermission failed:", error);
       }
     },
-    [activeSessionId],
+    [],
+  );
+
+  const resolvePermission = useCallback(
+    async (requestId: string, decision: "allow" | "deny") => {
+      if (!activeSessionId) return;
+      await resolveSessionPermission(activeSessionId, requestId, decision);
+    },
+    [activeSessionId, resolveSessionPermission],
   );
 
   const cancelActiveTurn = useCallback(async () => {
@@ -788,6 +793,7 @@ export function useDaemonSessions() {
     repairConnection,
     removeSession,
     resolvePermission,
+    resolveSessionPermission,
     runtime,
     sessions,
     setActiveSessionId,
