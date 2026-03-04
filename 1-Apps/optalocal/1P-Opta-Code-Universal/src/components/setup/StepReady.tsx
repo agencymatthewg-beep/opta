@@ -117,6 +117,12 @@ export function StepReady({
       if (!response.ok) {
         throw new Error(`[${response.error.code}] ${response.error.message}`);
       }
+
+      try {
+        await daemonClient.runOperation(connection, "vault.pull", {});
+      } catch (e) {
+        console.warn("Failed to pull vault secrets:", e);
+      }
     } catch (error) {
       if (nativeDesktop) {
         setLaunching(false);
