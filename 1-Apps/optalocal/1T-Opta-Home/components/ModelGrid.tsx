@@ -9,28 +9,28 @@ const models = [
     class: "7B – 9B Params",
     vram: "8 GB+",
     useCase: "Opta Code assistant, chat",
-    formats: "GGUF · AWQ · MLX",
+    formats: "MLX · GGUF",
     highlight: false,
   },
   {
     class: "13B – 34B Params",
     vram: "16 GB+",
     useCase: "Complex reasoning, agents",
-    formats: "GGUF · EXL2 · MLX",
+    formats: "MLX · GGUF",
     highlight: false,
   },
   {
     class: "70B+ Params",
     vram: "64 GB+",
     useCase: "Enterprise RAG, heavy tasks",
-    formats: "GGUF · MLX",
+    formats: "MLX · GGUF",
     highlight: true,
   },
   {
     class: "MoE / 100B+",
     vram: "128 GB+",
     useCase: "Frontier inference",
-    formats: "GGUF · MLX",
+    formats: "MLX · GGUF",
     highlight: false,
   },
 ];
@@ -75,9 +75,8 @@ export function ModelGrid() {
           {models.map((model, i) => (
             <motion.div
               key={model.class}
-              className={`grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/5 last:border-0 transition-colors hover:bg-white/5 ${
-                model.highlight ? "bg-primary/5" : ""
-              }`}
+              className={`grid grid-cols-4 gap-4 px-6 py-4 border-b border-white/5 last:border-0 transition-colors hover:bg-white/5 ${model.highlight ? "bg-primary/5" : ""
+                }`}
               initial={{ opacity: 0, x: -10 }}
               animate={isInView ? { opacity: 1, x: 0 } : {}}
               transition={{ duration: 0.4, delay: 0.3 + i * 0.06, ease: [0.16, 1, 0.3, 1] }}
@@ -110,9 +109,9 @@ export function ModelGrid() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
-          Compatible with any hardware meeting minimum VRAM requirements.
+          Opta LMX runs exclusively on Apple Silicon architecture.
           <br />
-          MLX format recommended for Apple Silicon.
+          MLX format models are strongly recommended for optimal performance.
         </motion.p>
       </div>
     </section>

@@ -7,21 +7,21 @@ import { Cloud, Settings2, ShieldCheck } from "lucide-react";
 const syncItems = [
   {
     icon: Settings2,
-    title: "You control what syncs",
+    title: "Centralized Authentication",
     text:
-      "Opta Accounts is the control plane for profile sync. Users explicitly choose whether significant data categories sync at all, then configure exactly which credentials, model aliases, and safety preferences are pushed to connected devices.",
+      "A single identity provider for the entire Opta ecosystem. Sign in via CLI or browser once, and your session is automatically trusted across LMX, Code Desktop, and all management portals.",
   },
   {
     icon: Cloud,
-    title: "Selective cross-device state",
+    title: "Secure Edge Sessions",
     text:
-      "Enable or disable sync categories such as defaults, tool permissions, and fallback routing so each environment remains compliant with your operational constraints.",
+      "Opta Accounts issues encrypted session cookies scoped exclusively to the .optalocal.com domain, ensuring your local authentication state never leaks to the public web.",
   },
   {
     icon: ShieldCheck,
-    title: "Security-first propagation",
+    title: "Zero Profile Lock-in",
     text:
-      "Every synced change stays in your identity boundary and can be revoked. Use Accounts to rotate credentials and re-scope connected apps without reinstalling the stack.",
+      "Your credentials, API keys, and model preferences remain within your local system boundaries. The auth layer grants access without requiring centralized storage of your operational data.",
   },
 ];
 
@@ -38,9 +38,9 @@ export function DataSync() {
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
-          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">Sync that is explicitly yours.</h2>
+          <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">One identity. Universal local access.</h2>
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            Accounts does not treat sync as one-way magic. You decide what state moves across devices and where.
+            Opta Accounts is the SSO control plane for your entire local stack. Sign in once, authenticate everywhere.
           </p>
         </motion.div>
 

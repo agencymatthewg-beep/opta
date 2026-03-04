@@ -49,7 +49,7 @@ export function ArchDiagram() {
                 </div>
                 <div className="text-center">
                   <div className="text-xs font-bold text-white font-mono tracking-widest uppercase">Your Compute Node</div>
-                  <div className="text-[10px] text-text-muted font-mono">Apple Silicon / NVIDIA / AMD</div>
+                  <div className="text-[10px] text-text-muted font-mono">Apple Silicon Only</div>
                 </div>
               </div>
 
