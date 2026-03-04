@@ -290,6 +290,16 @@ function AppInner({
         const { saveConfig } = await import('../core/config.js');
         await saveConfig(changes);
         await refreshConfig();
+        
+        // Automatic Reconnect Optimization
+        if (
+          'connection.host' in changes || 
+          'connection.port' in changes || 
+          'provider.active' in changes ||
+          'connection.apiKey' in changes
+        ) {
+          void appConfig.reconnectLmx();
+        }
       } catch (err: unknown) {
         appendAction({
           kind: 'error',
@@ -300,7 +310,7 @@ function AppInner({
         });
       }
     })();
-  }, [appendAction, refreshConfig]);
+  }, [appendAction, refreshConfig, appConfig]);
 
   // Imperative scroll handle -- filled by ScrollView via MessageList scrollRef prop
   const scrollRef = useRef<ScrollViewHandle | null>(null);

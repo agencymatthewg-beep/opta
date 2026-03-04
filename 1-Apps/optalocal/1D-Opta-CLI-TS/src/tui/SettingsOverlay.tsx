@@ -170,14 +170,35 @@ function openInBrowser(url: string): void {
 
 const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
   connection: [
-    { label: 'LMX Host',            configKey: 'connection.host',              defaultValue: 'localhost',           description: 'Hostname or IP of LMX inference server',                  hint: 'e.g. 192.168.188.11 or localhost' },
-    { label: 'LMX Port',            configKey: 'connection.port',              defaultValue: '1234',                description: 'Port number for LMX API',                                  hint: 'Default: 1234' },
+    { label: 'LMX Host',            configKey: 'connection.host',              defaultValue: 'localhost',           description: 'Hostname or IP of LMX inference server',                  hint: 'e.g. 192.168.188.11 or localhost',
+      validate: (v) => {
+        if (!v.trim()) return 'Host cannot be empty';
+        if (v.includes('://')) return 'Do not include http:// or https://';
+        return null;
+      }
+    },
+    { label: 'LMX Port',            configKey: 'connection.port',              defaultValue: '1234',                description: 'Port number for LMX API',                                  hint: 'Default: 1234',
+      validate: (v) => {
+        const p = parseInt(v, 10);
+        return (!isNaN(p) && p > 0 && p <= 65535) ? null : 'Port must be a number between 1 and 65535';
+      }
+    },
     { label: 'LMX Admin Key',       configKey: 'connection.adminKey',          defaultValue: '',                    description: 'Admin key for protected /admin endpoints', sensitive: true, hint: 'Used by status/models/load on secured hosts' },
     { label: 'LMX API Key',         configKey: 'connection.apiKey',            defaultValue: 'opta-lmx',            description: 'API key for LMX (if auth enabled)', sensitive: true,      hint: 'Default: opta-lmx (no auth)' },
     { label: 'Auto Discover',       configKey: 'connection.autoDiscover',      defaultValue: 'true',                description: 'Automatically discover local inference hosts',
       inputType: 'toggle', options: [{ label: 'Enabled', value: 'true'}, { label: 'Disabled', value: 'false'}] },
     { label: 'Fallback Hosts',      configKey: 'connection.fallbackHosts',     defaultValue: '',                    description: 'Comma-separated fallback LMX hosts',                       hint: 'e.g. 10.0.0.2:1234,10.0.0.3:1234' },
-    { label: 'Admin Keys by Host',  configKey: 'connection.adminKeysByHost',   defaultValue: '{}',                  description: 'Per-host admin keys override the default admin key',       hint: 'JSON: {\"192.168.188.11\":\"keyA\",\"192.168.188.8\":\"keyB\"}' },
+    { label: 'Admin Keys by Host',  configKey: 'connection.adminKeysByHost',   defaultValue: '{}',                  description: 'Per-host admin keys override the default admin key',       hint: 'JSON: {"192.168.188.11":"keyA"}',
+      validate: (v) => {
+        try {
+          const parsed = JSON.parse(v);
+          if (typeof parsed !== 'object' || Array.isArray(parsed)) return 'Must be a JSON object';
+          return null;
+        } catch (e) {
+          return 'Invalid JSON';
+        }
+      }
+    },
     { label: 'Check LMX Status',    configKey: '__action_lmx_status',          defaultValue: '',                    description: 'Run an immediate LMX health check in chat',                hint: 'Runs `/lmx status`', inputType: 'action', action: () => {} },
     { label: 'Reconnect LMX',       configKey: '__action_lmx_reconnect',       defaultValue: '',                    description: 'Force reconnection against configured host(s)',            hint: 'Runs `/lmx reconnect`', inputType: 'action', action: () => {} },
     { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the Mac Studio' },
@@ -972,6 +993,7 @@ export function SettingsOverlay({
     setChanges(prev => ({ ...prev, [configKey]: value }));
     if (autoSave) {
       onSave({ [configKey]: value });
+      setLastSavedKey(configKey);
     }
   }, [autoSave, onSave]);
 
@@ -1228,6 +1250,8 @@ export function SettingsOverlay({
                 const glyph = isActionItem ? '→' : statusGlyph(configVal, item.defaultValue, item.sensitive);
                 const glyphColor = isActionItem ? pageColor : statusColor(configVal, item.defaultValue, item.sensitive);
                 const isChanged = !autoSave && !isActionItem && changes[item.configKey] !== undefined;
+                const isJustSaved = item.configKey === lastSavedKey;
+                
                 // Keyboard hint shown next to the active item based on its input type.
                 const interactionHint = isSelected && isActionItem
                   ? 'Enter to open'
@@ -1241,7 +1265,8 @@ export function SettingsOverlay({
                       <Text color={isSelected ? pageColor : undefined}>{isSelected ? '▶ ' : '  '}</Text>
                       <Text color={isSelected ? pageColor : undefined} bold={isSelected}>{item.label}</Text>
                       <Text color={glyphColor}> {glyph}</Text>
-                      {isChanged && <Text color={COLOR.warning}> *</Text>}
+                      {isChanged && <Text color={TUI_COLORS.warning}> *</Text>}
+                      {isJustSaved && <Text color={TUI_COLORS.success}> ✓ Saved</Text>}
                       <Text dimColor>  {displayVal}</Text>
                       {isSelected && displayProfile !== 'compact' && <Text dimColor>  — {item.description}</Text>}
                       {interactionHint && <Text dimColor>  ({interactionHint})</Text>}
