@@ -19,6 +19,7 @@ import {
   Wrench,
   Brain,
   FileCheck,
+  Activity,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -36,6 +37,7 @@ import { SettingsTabResearch } from "./settings/SettingsTabResearch";
 import { SettingsTabToolsAgents } from "./settings/SettingsTabToolsAgents";
 import { SettingsTabLearning } from "./settings/SettingsTabLearning";
 import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
+import { SettingsTabMcp } from "./settings/SettingsTabMcp";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -46,7 +48,7 @@ interface SettingsModalProps {
 }
 
 export type SettingsTabId = "connection" | "lmx" | "autonomy" | "genui" | "daemon"
-  | "model-provider" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy";
+  | "model-provider" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp";
 
 const DEFAULT_CONNECTION_FORM = {
   host: "127.0.0.1",
@@ -1024,6 +1026,8 @@ export function SettingsModal({
         return <SettingsTabLearning connection={connection} />;
       case "policy":
         return <SettingsTabPolicy connection={connection} />;
+      case "mcp":
+        return <SettingsTabMcp connection={connection} />;
       default:
         return null;
     }
@@ -1120,6 +1124,12 @@ export function SettingsModal({
               onClick={() => setActiveTab("tools-agents")}
             >
               <Wrench size={16} /> Tools &amp; Agents
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "mcp" ? "active" : ""}`}
+              onClick={() => setActiveTab("mcp")}
+            >
+              <Activity size={16} /> MCP Integrations
             </button>
             <button
               className={`opta-studio-tab ${activeTab === "learning" ? "active" : ""}`}
