@@ -24,9 +24,9 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
         fallbackUrl: "/downloads/opta-init/latest/opta-init-mac.dmg",
       },
       windows: {
-        manifestUrl: "/desktop-updates/beta.json",
+        manifestUrl: "/desktop-updates/stable.json",
         platformKeys: ["windows-x86_64"],
-        fallbackUrl: "/downloads/opta-init/latest/opta-init-windows.exe",
+        fallbackUrl: "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
       },
     },
   },
