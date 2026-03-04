@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { daemonClient } from "../../lib/daemonClient";
 import type { Platform } from "../../hooks/usePlatform.js";
 import {
@@ -10,6 +10,10 @@ import {
 import { type WizardFormData, WIZARD_THEME } from "./shared";
 
 import type { DaemonConnectionOptions } from "../../types";
+
+function PrefGroup({ children }: { children: React.ReactNode }) {
+  return <div style={{ marginBottom: 20 }}>{children}</div>;
+}
 
 export function StepPreferences({
   form,
@@ -23,6 +27,7 @@ export function StepPreferences({
   connection?: DaemonConnectionOptions | null;
 }) {
   const [profiled, setProfiled] = useState(false);
+  const userModifiedAutonomy = useRef(false);
 
   useEffect(() => {
     let active = true;
@@ -30,22 +35,18 @@ export function StepPreferences({
       daemonClient.runOperation(connection, "doctor", {}).then((res) => {
         if (!active) return;
         setProfiled(true);
-        if (res.ok) {
+        if (res.ok && !userModifiedAutonomy.current) {
           setForm((prev) => ({
             ...prev,
             autonomyLevel: prev.autonomyLevel === 2 ? 3 : prev.autonomyLevel
           }));
         }
-      }).catch(() => {
-        // fail silently
+      }).catch((err) => {
+        console.warn("Auto-Doctor profiling failed:", err);
       });
     }
     return () => { active = false; };
   }, [connection, profiled, setForm]);
-
-  const prefGroup = (children: React.ReactNode) => (
-    <div style={{ marginBottom: 20 }}>{children}</div>
-  );
 
   return (
     <div>
@@ -83,7 +84,7 @@ export function StepPreferences({
         </div>
       )}
 
-      {prefGroup(
+      <PrefGroup>
         <>
           <MonoLabel>Config folder (CLI canonical)</MonoLabel>
           <div
@@ -99,10 +100,10 @@ export function StepPreferences({
           >
             {form.configDir}
           </div>
-        </>,
-      )}
+        </>
+      </PrefGroup>
 
-      {prefGroup(
+      <PrefGroup>
         <>
           <MonoLabel>Autonomy level</MonoLabel>
           <SegControl<"1" | "2" | "3">
@@ -112,18 +113,19 @@ export function StepPreferences({
               { value: "3", label: "Autonomous" },
             ]}
             value={String(form.autonomyLevel) as "1" | "2" | "3"}
-            onChange={(nextValue) =>
+            onChange={(nextValue) => {
+              userModifiedAutonomy.current = true;
               setForm((prev) => ({
                 ...prev,
                 autonomyLevel: Number(nextValue) as 1 | 2 | 3,
-              }))
-            }
+              }));
+            }}
             violet
           />
-        </>,
-      )}
+        </>
+      </PrefGroup>
 
-      {prefGroup(
+      <PrefGroup>
         <>
           <MonoLabel>Shell</MonoLabel>
           <SegControl<"auto" | "bash" | "zsh" | "powershell">
@@ -160,10 +162,10 @@ export function StepPreferences({
               Recommended for Windows
             </p>
           ) : null}
-        </>,
-      )}
+        </>
+      </PrefGroup>
 
-      {prefGroup(
+      <PrefGroup>
         <div
           style={{
             display: "flex",
@@ -205,8 +207,8 @@ export function StepPreferences({
               setForm((prev) => ({ ...prev, tuiDefault: !prev.tuiDefault }))
             }
           />
-        </div>,
-      )}
+        </div>
+      </PrefGroup>
     </div>
   );
 }
