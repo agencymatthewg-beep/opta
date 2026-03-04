@@ -18,12 +18,20 @@ export const metadata: Metadata = {
   title: 'Opta Accounts — Sign In',
   description:
     'Sign in to your Opta account. One login for Opta Local, Life Manager, and all Opta apps.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Opta Accounts — Sign In',
     description: 'One login for all Opta apps.',
     url: 'https://accounts.optalocal.com',
     siteName: 'Opta Accounts',
     type: 'website',
+  },
+  alternates: {
+    canonical: 'https://accounts.optalocal.com',
   },
 };
 

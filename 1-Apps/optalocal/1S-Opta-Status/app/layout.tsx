@@ -21,6 +21,9 @@ export const metadata: Metadata = {
     locale: 'en_US',
     type: 'website',
   },
+  alternates: {
+    canonical: 'https://status.optalocal.com',
+  },
 }
 
 function NavBar() {

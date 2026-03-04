@@ -38,6 +38,11 @@ export const metadata: Metadata = {
   },
   description: 'Comprehensive documentation for the Opta Local private AI stack — CLI, Daemon, LMX, Local Web, Code Desktop, and more.',
   keywords: 'Opta, documentation, help, CLI, daemon, LMX, local AI, Apple Silicon, MLX',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.ico',
+    apple: '/favicon.svg',
+  },
   openGraph: {
     title: 'Opta Help — Documentation for the Opta Local stack',
     description: 'Comprehensive documentation for the Opta Local private AI stack.',
@@ -45,6 +50,9 @@ export const metadata: Metadata = {
     siteName: 'Opta Help',
     locale: 'en_US',
     type: 'website',
+  },
+  alternates: {
+    canonical: 'https://help.optalocal.com',
   },
 }
 

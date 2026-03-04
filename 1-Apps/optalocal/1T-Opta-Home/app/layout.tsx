@@ -52,6 +52,9 @@ export const metadata: Metadata = {
     title: 'Opta Local — The complete local AI stack for developers',
     description: 'A unified ecosystem to serve, manage, and code with open-weight models.',
   },
+  alternates: {
+    canonical: 'https://optalocal.com',
+  },
 }
 
 export default function RootLayout({

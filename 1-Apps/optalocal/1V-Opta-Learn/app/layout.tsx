@@ -20,6 +20,9 @@ export const metadata: Metadata = {
   icons: {
     icon: '/favicon.svg',
   },
+  alternates: {
+    canonical: 'https://learn.optalocal.com',
+  },
 };
 
 export default function RootLayout({

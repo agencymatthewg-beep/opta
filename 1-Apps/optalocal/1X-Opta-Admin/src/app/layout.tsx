@@ -15,6 +15,9 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: 'Opta Admin',
   description: 'Private Control Plane for Opta Local ecosystem',
+  alternates: {
+    canonical: 'https://admin.optalocal.com',
+  },
 };
 
 export default function RootLayout({
