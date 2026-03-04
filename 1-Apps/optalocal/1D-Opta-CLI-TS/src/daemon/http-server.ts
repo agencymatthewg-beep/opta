@@ -160,6 +160,86 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
     daemon: true,
   }));
 
+  app.get('/auth/callback', async (req, reply) => {
+    // This endpoint handles the redirect from Opta Accounts (accounts.optalocal.com)
+    // Master Sync Hub: Captures token and syncs Cloud API keys.
+    const query = req.query as { code?: string; state?: string };
+    if (!query.code) {
+      return reply.type('text/html').send('<h1>Auth Error</h1><p>Missing authorization code.</p>');
+    }
+
+    try {
+      const authConfig = resolveSupabaseAuthConfig({ cwd: process.cwd() });
+      if (!authConfig) throw new Error('Supabase configuration missing');
+
+      // Note: State parameter usually contains the code verifier from the CLI initiator
+      // For now, if missing, we assume a flow that doesn't strictly need the local PKCE verification 
+      // or we decode it from the state. 
+      const codeVerifier = query.state || 'local-daemon-verifier'; 
+
+      const result = await exchangeAuthCodeForSession(authConfig, query.code, codeVerifier);
+      
+      const currentState = await loadAccountState() || {
+        project: authConfig.project,
+        session: null,
+        user: null,
+        updatedAt: new Date().toISOString(),
+      };
+
+      currentState.session = result.session;
+      currentState.user = result.user;
+      currentState.updatedAt = new Date().toISOString();
+
+      // Step 2: Cloud Sync (Triggered immediately on auth)
+      // We will perform a basic API keys fetch if session is valid
+      if (result.session?.access_token) {
+        try {
+          const fetchKeys = await fetch(`${authConfig.url}/rest/v1/api_keys?select=provider,token,updated_at`, {
+            headers: {
+              'apikey': authConfig.anonKey,
+              'Authorization': `Bearer ${result.session.access_token}`,
+              'Content-Profile': 'application/json'
+            }
+          });
+          if (fetchKeys.ok) {
+            const keysData = await fetchKeys.json() as any[];
+            currentState.api_keys = keysData.map(k => ({
+              provider: k.provider,
+              token: k.token,
+              updatedAt: k.updated_at
+            }));
+          }
+        } catch (e) {
+          req.log.warn({ err: e }, 'Failed to sync API keys during callback');
+        }
+      }
+
+      await saveAccountState(currentState);
+
+      // Step 3: Broadcast to Opta Code / Local Clients
+      opts.sessionManager.broadcastAccountSync({
+        user: result.user?.email || 'Authenticated User',
+        keyCount: currentState.api_keys?.length || 0,
+        capabilities: currentState.capabilities?.length || 0
+      });
+
+      return reply.type('text/html').send(`
+        <html>
+          <head><title>Authentication Successful</title></head>
+          <body style="background: #09090b; color: #fff; font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #22c55e;">Authentication Successful</h1>
+            <p>Your Opta Local apps are now securely connected to your account.</p>
+            <p style="color: #94a3b8;">You may close this window.</p>
+            <script>setTimeout(() => window.close(), 3000);</script>
+          </body>
+        </html>
+      `);
+    } catch (err) {
+      req.log.error({ err }, 'OAuth callback failed');
+      return reply.type('text/html').send(`<h1>Auth Error</h1><p>${err instanceof Error ? err.message : String(err)}</p>`);
+    }
+  });
+
   app.get('/v3/health', (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     return {

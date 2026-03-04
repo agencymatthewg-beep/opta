@@ -19,12 +19,25 @@ export interface SupabaseSession {
   [key: string]: unknown;
 }
 
+export interface CloudApiKey {
+  provider: string;
+  token: string;
+  updatedAt: string;
+}
+
+export interface CloudCapability {
+  name: string;
+  grantedAt: string;
+}
+
 export interface AccountState {
   project: string;
   session: SupabaseSession | null;
   user: SupabaseUser | null;
   updatedAt: string;
   deviceId?: string | null;
+  api_keys?: CloudApiKey[];
+  capabilities?: CloudCapability[];
 }
 
 export type AccountIdentifier =

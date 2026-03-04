@@ -142,6 +142,18 @@ export class SessionManager {
     }
   }
 
+  broadcastAccountSync(payload: { user: string; keyCount: number; capabilities: number }) {
+    for (const subscribers of this.subscribers.values()) {
+      for (const cb of subscribers) {
+        cb({
+          kind: 'opta:account_synced',
+          payload,
+          ts: new Date().toISOString(),
+        } as any);
+      }
+    }
+  }
+
   async hydrateFromDisk(): Promise<void> {
     const sessionIds = await listStoredSessions();
     for (const sessionId of sessionIds) {
