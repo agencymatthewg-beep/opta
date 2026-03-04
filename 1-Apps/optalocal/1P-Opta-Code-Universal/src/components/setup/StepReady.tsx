@@ -119,9 +119,12 @@ export function StepReady({
       }
 
       try {
-        await daemonClient.runOperation(connection, "vault.pull", {});
-      } catch (e) {
-        console.warn("Failed to pull vault secrets:", e);
+        const vaultResponse = await daemonClient.runOperation(connection, "vault.pull", {});
+        if (!vaultResponse.ok) {
+          console.warn(`Failed to pull vault secrets: [${vaultResponse.error?.code}] ${vaultResponse.error?.message}`);
+        }
+      } catch (e: unknown) {
+        console.warn("Failed to pull vault secrets (network error):", e);
       }
     } catch (error) {
       if (nativeDesktop) {
