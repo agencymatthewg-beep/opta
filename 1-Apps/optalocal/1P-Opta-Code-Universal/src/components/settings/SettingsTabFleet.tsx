@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useOperations } from "../../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../../types";
-import { Activity, Server } from "lucide-react";
+import { Activity, Server, HardDrive } from "lucide-react";
 
 export function SettingsTabFleet({ connection }: { connection: DaemonConnectionOptions }) {
   const { runOperation, lastResult, running } = useOperations(connection);
@@ -12,6 +12,10 @@ export function SettingsTabFleet({ connection }: { connection: DaemonConnectionO
 
   const fetchModels = async () => {
     await runOperation("models.dashboard", {});
+  };
+
+  const fetchLocalModels = async () => {
+    await runOperation("models.browse.local", {});
   };
 
   useEffect(() => { 
@@ -41,6 +45,13 @@ export function SettingsTabFleet({ connection }: { connection: DaemonConnectionO
           disabled={running}
         >
           <Server size={16} /> Browse Models
+        </button>
+        <button 
+          onClick={() => void fetchLocalModels()} 
+          className="bg-zinc-800 hover:bg-zinc-700 text-zinc-100 border border-zinc-700 px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled={running}
+        >
+          <HardDrive size={16} /> Local Models
         </button>
       </div>
 
