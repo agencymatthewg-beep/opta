@@ -1,0 +1,140 @@
+name: Opta Init Component Manifest Sync
+
+on:
+  workflow_call:
+    inputs:
+      channel:
+        description: "Target release channel (stable|beta)"
+        required: true
+        type: string
+      component_id:
+        description: "Component id in Opta Init channel manifest"
+        required: true
+        type: string
+      payload_json:
+        description: "JSON payload for component upsert script"
+        required: true
+        type: string
+      metadata_ref:
+        description: "Git ref to update"
+        required: false
+        default: "main"
+        type: string
+      commit_changes:
+        description: "Commit/push manifest changes"
+        required: false
+        default: true
+        type: boolean
+      strict_require_artifacts:
+        description: "Require at least one artifact for component in target channel"
+        required: false
+        default: true
+        type: boolean
+      strict_require_signatures:
+        description: "Require signatures for component artifacts in target channel"
+        required: false
+        default: false
+        type: boolean
+      strict_require_platforms_for:
+        description: "Require artifact entries on listed platforms for target component, format: component:platform1,platform2"
+        required: false
+        default: ""
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  sync-manifest:
+    name: Sync ${{ inputs.component_id }} -> ${{ inputs.channel }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1O-Opta-Init
+    steps:
+      - name: Checkout metadata ref
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.metadata_ref }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Write component payload
+        run: |
+          cat > "${RUNNER_TEMP}/component-payload.json" <<'JSON'
+          ${{ inputs.payload_json }}
+          JSON
+
+      - name: Upsert channel component
+        run: |
+          npm run sync:channel-component -- \
+            --channel "${{ inputs.channel }}" \
+            --payload-file "${RUNNER_TEMP}/component-payload.json"
+
+      - name: Sync generated manifests + redirects
+        run: |
+          npm run sync:desktop-manifests
+          npm run sync:vercel-redirects
+
+      - name: Validate target channel manifest
+        run: npm run validate:release-manifests -- "channels/${{ inputs.channel }}.json"
+
+      - name: Strict validation (component artifacts)
+        if: inputs.strict_require_artifacts
+        run: |
+          npm run validate:release-manifests -- \
+            --require-populated-artifacts-for "${{ inputs.component_id }}" \
+            "channels/${{ inputs.channel }}.json"
+
+      - name: Strict validation (component platforms)
+        if: inputs.strict_require_platforms_for != ''
+        run: |
+          npm run validate:release-manifests -- \
+            --require-populated-artifacts-for "${{ inputs.component_id }}" \
+            --require-populated-platforms-for "${{ inputs.strict_require_platforms_for }}" \
+            "channels/${{ inputs.channel }}.json"
+
+      - name: Strict validation (component signatures)
+        if: inputs.strict_require_signatures
+        run: |
+          npm run validate:release-manifests -- \
+            --require-populated-artifacts-for "${{ inputs.component_id }}" \
+            --require-signatures-for "${{ inputs.component_id }}" \
+            "channels/${{ inputs.channel }}.json"
+
+      - name: Validate target channel links
+        run: npm run validate:manifest-links -- "channels/${{ inputs.channel }}.json"
+
+      - name: Validate public contract
+        run: npm run validate:public-contract
+
+      - name: Commit and push
+        if: inputs.commit_changes
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          COMPONENT_ID: ${{ inputs.component_id }}
+          METADATA_REF: ${{ inputs.metadata_ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add "channels/${CHANNEL}.json"
+          git add "public/desktop/manifest-${CHANNEL}.json"
+          git add "vercel.json"
+
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore(opta-init): sync ${COMPONENT_ID} ${CHANNEL} manifest"
+          git push origin "HEAD:${METADATA_REF}"

@@ -1,0 +1,35 @@
+name: Opta Local Vercel Health Watch
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  health-watch:
+    name: Check OptaLocal production domains + deployment artifacts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Vercel health snapshot
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "VERCEL_TOKEN not set; skipping"
+            exit 0
+          fi
+          ./scripts/vercel-health-snapshot.sh
+
+      - name: Upload health snapshot artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vercel-health-snapshot
+          path: |
+            12-Session-Logs/vercel-health/state.json
+            12-Session-Logs/vercel-health/*.json
+          if-no-files-found: ignore

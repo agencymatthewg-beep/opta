@@ -1,0 +1,75 @@
+name: Opta Init CI
+
+on:
+  pull_request:
+    paths:
+      - "1-Apps/optalocal/1O-Opta-Init/**"
+      - ".github/workflows/opta-init-ci.yml"
+  push:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1O-Opta-Init/**"
+      - ".github/workflows/opta-init-ci.yml"
+
+jobs:
+  init-web-quality:
+    name: Init Web Quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1O-Opta-Init
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Validate release contract
+        run: npm run validate:release-contract
+
+      - name: Build
+        run: npm run build
+
+  desktop-manager-quality:
+    name: Desktop Manager Quality
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1O-Opta-Init/desktop-manager
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/desktop-manager/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build

@@ -1,0 +1,45 @@
+name: Opta Status Feature Registry Checks
+
+on:
+  pull_request:
+    paths:
+      - "1-Apps/optalocal/1S-Opta-Status/docs/features/**"
+      - "1-Apps/optalocal/1S-Opta-Status/app/features/page.tsx"
+      - "1-Apps/optalocal/1S-Opta-Status/scripts/validate-feature-registry.mjs"
+      - "1-Apps/optalocal/1S-Opta-Status/package.json"
+      - "1-Apps/optalocal/1S-Opta-Status/package-lock.json"
+      - ".github/workflows/opta-status-feature-registry-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "1-Apps/optalocal/1S-Opta-Status/docs/features/**"
+      - "1-Apps/optalocal/1S-Opta-Status/app/features/page.tsx"
+      - "1-Apps/optalocal/1S-Opta-Status/scripts/validate-feature-registry.mjs"
+      - "1-Apps/optalocal/1S-Opta-Status/package.json"
+      - "1-Apps/optalocal/1S-Opta-Status/package-lock.json"
+      - ".github/workflows/opta-status-feature-registry-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  feature-registry:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1S-Opta-Status
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1S-Opta-Status/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate feature registry
+        run: npm run validate:feature-registry

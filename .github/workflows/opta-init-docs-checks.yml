@@ -1,0 +1,43 @@
+name: Opta Init Docs Checks
+
+on:
+  pull_request:
+    paths:
+      - "1-Apps/optalocal/1O-Opta-Init/docs/**"
+      - "1-Apps/optalocal/1O-Opta-Init/scripts/validate-docs-references.mjs"
+      - "1-Apps/optalocal/1O-Opta-Init/package.json"
+      - "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+      - ".github/workflows/opta-init-docs-checks.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "1-Apps/optalocal/1O-Opta-Init/docs/**"
+      - "1-Apps/optalocal/1O-Opta-Init/scripts/validate-docs-references.mjs"
+      - "1-Apps/optalocal/1O-Opta-Init/package.json"
+      - "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+      - ".github/workflows/opta-init-docs-checks.yml"
+  workflow_dispatch:
+
+jobs:
+  docs-checks:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1O-Opta-Init
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate docs references
+        run: npm run validate:docs

@@ -37,6 +37,43 @@ public struct AgentStreamEvent: Identifiable, Equatable {
     }
 }
 
+// MARK: - Error Recovery
+
+/// User-selectable recovery choices shown after a chat/network error.
+public enum ErrorRecoveryActionKind: String, Sendable, Equatable {
+    case retry
+    case reconnect
+    case pairDevice
+    case openSettings
+    case dismiss
+}
+
+/// A concrete action option to present in the error banner.
+public struct ErrorRecoveryAction: Identifiable, Sendable, Equatable {
+    public let kind: ErrorRecoveryActionKind
+    public let title: String
+
+    public var id: String { kind.rawValue }
+
+    public init(kind: ErrorRecoveryActionKind, title: String) {
+        self.kind = kind
+        self.title = title
+    }
+}
+
+/// Full prompt payload for deciding what to do next after an error.
+public struct ErrorRecoveryPrompt: Sendable, Equatable {
+    public let message: String
+    public let context: String
+    public let actions: [ErrorRecoveryAction]
+
+    public init(message: String, context: String, actions: [ErrorRecoveryAction]) {
+        self.message = message
+        self.context = context
+        self.actions = actions
+    }
+}
+
 // MARK: - Bot Configuration
 
 /// Configuration for a bot connection.
@@ -186,6 +223,9 @@ public final class ChatViewModel: ObservableObject {
     /// Last error message.
     @Published public var errorMessage: String?
 
+    /// Optional recovery prompt/actions for the active error.
+    @Published public var errorRecoveryPrompt: ErrorRecoveryPrompt?
+
     /// Uptime tracking: when the current connection was established.
     @Published public var connectedSince: Date?
 
@@ -239,6 +279,12 @@ public final class ChatViewModel: ObservableObject {
     /// Sync coordinator for dual-channel (gateway + Telegram) messaging.
     public var syncCoordinator: SyncCoordinator?
 
+    /// Host-provided callback to open bot pairing flow when recovery requires pairing.
+    public var onRequestPairing: (() -> Void)?
+
+    /// Host-provided callback to open settings when recovery requires auth/config updates.
+    public var onRequestSettings: (() -> Void)?
+
     // MARK: - Network Environment
 
     private let networkEnv: NetworkEnvironment
@@ -257,6 +303,9 @@ public final class ChatViewModel: ObservableObject {
 
     /// Per-session streaming state
     var sessionStreamContent: [String: String] = [:]
+
+    /// Optional retry action for the most recent recoverable error context.
+    private var errorRetryAction: (() -> Void)?
 
     /// Message stats for this bot
     var messageStats: BotMessageStats
@@ -358,7 +407,7 @@ public final class ChatViewModel: ObservableObject {
 
         Task {
             guard let url = await networkEnv.resolveURL(for: botConfig) else {
-                errorMessage = "No connection URL available"
+                handleError(OpenClawError.requestFailed("No connection URL available"), context: "connect")
                 return
             }
             connectionRoute = networkEnv.connectionType
@@ -385,7 +434,7 @@ public final class ChatViewModel: ObservableObject {
                 self?.connectionState = state
                 if state == .connected {
                     self?.stopReconnectCountdown()
-                    self?.errorMessage = nil
+                    self?.dismissErrorPrompt()
                     // Uptime tracking
                     if oldState != .connected {
                         if self?.connectedSince != nil {
@@ -443,6 +492,14 @@ public final class ChatViewModel: ObservableObject {
                 self?.handleEvent(event)
             }
         }
+
+        newClient.$lastError
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] rawError in
+                guard let self, let rawError, !rawError.isEmpty else { return }
+                handleError(mapClientError(rawError), context: "connect")
+            }
+            .store(in: &cancellables)
         
         self.client = newClient
         newClient.connect()
@@ -534,6 +591,15 @@ public final class ChatViewModel: ObservableObject {
     /// Send a message to the bot via the active session.
     /// If disconnected, queues the message for later delivery.
     public func send(_ text: String, attachments: [ChatAttachment] = []) async {
+        await sendMessage(text, attachments: attachments)
+    }
+
+    private func sendMessage(
+        _ text: String,
+        attachments: [ChatAttachment] = [],
+        existingMessageId: String? = nil,
+        existingReplyTo: String? = nil
+    ) async {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty || !attachments.isEmpty,
               let session = activeSession else { return }
@@ -548,30 +614,42 @@ public final class ChatViewModel: ObservableObject {
 
         Self.logger.info("Sending message: '\(displayText.prefix(50))' with \(attachments.count) attachments to session '\(session.sessionKey)' mode=\(session.mode.rawValue) deliver=\(session.resolvedShouldDeliver)")
 
-        // Capture and clear reply state
-        let replyId = replyingTo?.id
-        replyingTo = nil
+        let replyId: String?
+        if existingMessageId == nil {
+            // Capture and clear reply state for brand-new messages only.
+            replyId = replyingTo?.id
+            replyingTo = nil
+        } else {
+            replyId = existingReplyTo
+        }
 
-        // Add user message immediately
-        let userMessage = ChatMessage(
-            content: displayText,
-            sender: .user,
-            status: connectionState == .connected ? .sent : .pending,
-            source: .optaplus,
-            attachments: attachments,
-            replyTo: replyId
-        )
-        messages.append(userMessage)
-        sessionMessages[session.id] = messages
-        messageStats.recordSent(at: userMessage.timestamp)
-        lastSendTime = Date()
-        persistStats()
-        schedulePersist()
-        Self.logger.debug("User message appended, total messages: \(self.messages.count)")
+        let userMessageId: String
+        if let existingMessageId {
+            userMessageId = existingMessageId
+            updateMessageStatus(for: existingMessageId, status: connectionState == .connected ? .sent : .pending)
+        } else {
+            // Add user message immediately.
+            let userMessage = ChatMessage(
+                content: displayText,
+                sender: .user,
+                status: connectionState == .connected ? .sent : .pending,
+                source: .optaplus,
+                attachments: attachments,
+                replyTo: replyId
+            )
+            userMessageId = userMessage.id
+            messages.append(userMessage)
+            sessionMessages[session.id] = messages
+            messageStats.recordSent(at: userMessage.timestamp)
+            lastSendTime = Date()
+            persistStats()
+            schedulePersist()
+            Self.logger.debug("User message appended, total messages: \(self.messages.count)")
+        }
 
         // If disconnected, queue for later
         guard let client = client, connectionState == .connected else {
-            enqueueMessage(text: wireText, attachments: attachments, messageId: userMessage.id)
+            enqueueMessage(text: wireText, attachments: attachments, messageId: userMessageId)
             return
         }
 
@@ -594,12 +672,8 @@ public final class ChatViewModel: ObservableObject {
             Self.logger.info("Send success, idempotencyKey: \(key)")
             currentIdempotencyKey = key
             isSending = false
-            
-            // Update message status to sent
-            if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
-                messages[idx].status = .sent
-                sessionMessages[session.id] = messages
-            }
+
+            updateMessageStatus(for: userMessageId, status: .sent)
 
             // Dual-channel: mirror to Telegram in synced mode
             if session.mode == .synced, let sync = syncCoordinator {
@@ -613,10 +687,7 @@ public final class ChatViewModel: ObservableObject {
             handleError(error, context: "send message")
 
             // Mark user message as failed
-            if let idx = messages.lastIndex(where: { $0.id == userMessage.id }) {
-                messages[idx].status = .failed
-                sessionMessages[session.id] = messages
-            }
+            updateMessageStatus(for: userMessageId, status: .failed)
         }
     }
     
@@ -642,7 +713,7 @@ public final class ChatViewModel: ObservableObject {
         do {
             try await client.chatAbort(sessionKey: session.sessionKey)
         } catch {
-            errorMessage = "Abort failed: \(error.localizedDescription)"
+            handleError(error, context: "abort")
         }
     }
 
@@ -678,16 +749,33 @@ public final class ChatViewModel: ObservableObject {
     // MARK: - Error Recovery
     
     func handleError(_ error: Error, context: String) {
-        if let ocError = error as? OpenClawError {
-            errorMessage = ocError.errorDescription
-            if !ocError.isTransient {
-                Self.logger.error("Permanent error in \(context): \(ocError.localizedDescription)")
-                // Don't auto-retry permanent errors
-                return
-            }
+        let openClawError = error as? OpenClawError
+        let message: String
+        if let openClawError, let description = openClawError.errorDescription {
+            message = description
         } else {
-            errorMessage = "\(context) failed: \(error.localizedDescription)"
+            message = "\(context) failed: \(error.localizedDescription)"
         }
+
+        errorMessage = message
+        configureRetryAction(for: context)
+        errorRecoveryPrompt = buildRecoveryPrompt(
+            for: openClawError,
+            context: context,
+            message: message
+        )
+
+        if let openClawError, !openClawError.isTransient {
+            Self.logger.error("Permanent error in \(context): \(openClawError.localizedDescription)")
+            ActivityFeedManager.shared.addEvent(
+                botName: botConfig.name,
+                botEmoji: botConfig.emoji,
+                message: "error: \(context)",
+                kind: .error
+            )
+            return
+        }
+
         Self.logger.error("Transient error in \(context): \(error.localizedDescription)")
         errorCount += 1
         updateHealth()
@@ -697,6 +785,132 @@ public final class ChatViewModel: ObservableObject {
             message: "error: \(context)",
             kind: .error
         )
+    }
+
+    /// Dismiss current error text + action prompt.
+    public func dismissErrorPrompt() {
+        errorMessage = nil
+        errorRecoveryPrompt = nil
+        errorRetryAction = nil
+    }
+
+    /// Execute a user-selected recovery action.
+    public func handleErrorRecoveryAction(_ actionKind: ErrorRecoveryActionKind) {
+        switch actionKind {
+        case .retry:
+            if let retry = errorRetryAction {
+                retry()
+            } else {
+                reconnect()
+            }
+            dismissErrorPrompt()
+        case .reconnect:
+            reconnect()
+            dismissErrorPrompt()
+        case .pairDevice:
+            if let onRequestPairing {
+                onRequestPairing()
+                dismissErrorPrompt()
+            } else {
+                errorMessage = "Pairing required. Open the bot map and pair this device first."
+                errorRecoveryPrompt = nil
+            }
+        case .openSettings:
+            if let onRequestSettings {
+                onRequestSettings()
+                dismissErrorPrompt()
+            } else {
+                errorMessage = "Authentication/config update required. Open settings to refresh credentials."
+                errorRecoveryPrompt = nil
+            }
+        case .dismiss:
+            dismissErrorPrompt()
+        }
+    }
+
+    private func configureRetryAction(for context: String) {
+        switch context {
+        case "load history":
+            errorRetryAction = { [weak self] in
+                guard let self else { return }
+                Task { await self.loadHistory() }
+            }
+        case "send message":
+            errorRetryAction = { [weak self] in
+                guard let self else { return }
+                Task { await self.retryLastFailedUserMessage() }
+            }
+        default:
+            errorRetryAction = nil
+        }
+    }
+
+    private func buildRecoveryPrompt(
+        for error: OpenClawError?,
+        context: String,
+        message: String
+    ) -> ErrorRecoveryPrompt {
+        var actions: [ErrorRecoveryAction] = []
+
+        switch error {
+        case .notPaired:
+            if onRequestPairing != nil {
+                actions.append(ErrorRecoveryAction(kind: .pairDevice, title: "Pair Device"))
+            }
+            actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+
+        case .authenticationFailed(_):
+            if onRequestSettings != nil {
+                actions.append(ErrorRecoveryAction(kind: .openSettings, title: "Open Settings"))
+            }
+            actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+
+        case .notConnected:
+            actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+            if errorRetryAction != nil {
+                actions.append(ErrorRecoveryAction(kind: .retry, title: "Try Again"))
+            }
+
+        case .timeout:
+            if errorRetryAction != nil {
+                actions.append(ErrorRecoveryAction(kind: .retry, title: "Try Again"))
+            }
+            actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+
+        case .requestFailed(let details):
+            if let error, error.isTransient {
+                if errorRetryAction != nil {
+                    actions.append(ErrorRecoveryAction(kind: .retry, title: "Try Again"))
+                }
+                actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+            } else if details.uppercased().contains("NOT_PAIRED") {
+                if onRequestPairing != nil {
+                    actions.append(ErrorRecoveryAction(kind: .pairDevice, title: "Pair Device"))
+                }
+            } else if details.uppercased().contains("AUTH") || details.uppercased().contains("TOKEN") {
+                if onRequestSettings != nil {
+                    actions.append(ErrorRecoveryAction(kind: .openSettings, title: "Open Settings"))
+                }
+            }
+
+        case .encodingFailed:
+            break
+
+        case nil:
+            if errorRetryAction != nil {
+                actions.append(ErrorRecoveryAction(kind: .retry, title: "Try Again"))
+            }
+            actions.append(ErrorRecoveryAction(kind: .reconnect, title: "Reconnect"))
+        }
+
+        actions.append(ErrorRecoveryAction(kind: .dismiss, title: "Dismiss"))
+
+        var deduped: [ErrorRecoveryAction] = []
+        for action in actions where !deduped.contains(where: { $0.kind == action.kind }) {
+            deduped.append(action)
+        }
+
+        return ErrorRecoveryPrompt(message: message, context: context, actions: deduped)
     }
     
     // MARK: - Helpers
@@ -789,14 +1003,62 @@ public final class ChatViewModel: ObservableObject {
 
     /// Retry sending a specific failed message by content. Marks the original as pending and re-sends.
     public func retrySend(_ message: ChatMessage) async {
-        // Mark the failed message as pending
-        if let idx = messages.lastIndex(where: { $0.id == message.id }) {
-            messages[idx].status = .pending
+        let retryText = isAttachmentPlaceholder(message.content, attachmentCount: message.attachments.count)
+            ? ""
+            : message.content
+
+        await sendMessage(
+            retryText,
+            attachments: message.attachments,
+            existingMessageId: message.id,
+            existingReplyTo: message.replyTo
+        )
+    }
+
+    /// Retries the most recent failed user message if one exists.
+    private func retryLastFailedUserMessage() async {
+        guard let latestFailed = messages.last(where: { message in
+            if case .user = message.sender {
+                return message.status == .failed
+            }
+            return false
+        }) else {
+            return
+        }
+
+        await retrySend(latestFailed)
+    }
+
+    private func updateMessageStatus(for messageId: String, status: ChatMessage.MessageStatus) {
+        if let idx = messages.lastIndex(where: { $0.id == messageId }) {
+            messages[idx].status = status
             if let session = activeSession {
                 sessionMessages[session.id] = messages
             }
         }
-        // Re-send the message content
-        await send(message.content, attachments: message.attachments)
+    }
+
+    private func isAttachmentPlaceholder(_ text: String, attachmentCount: Int) -> Bool {
+        guard attachmentCount > 0 else { return false }
+        let singular = "[\(attachmentCount) file]"
+        let plural = "[\(attachmentCount) files]"
+        return text == singular || text == plural
+    }
+
+    private func mapClientError(_ rawError: String) -> OpenClawError {
+        let upper = rawError.uppercased()
+        if upper.contains("NOT_PAIRED") {
+            return .notPaired
+        }
+        if upper.contains("AUTH") || upper.contains("TOKEN") || upper.contains("UNAUTHORIZED") {
+            return .authenticationFailed(rawError)
+        }
+        if upper.contains("TIMEOUT") {
+            return .timeout
+        }
+        if upper.contains("NOT_CONNECTED") {
+            return .notConnected
+        }
+        return .requestFailed(rawError)
     }
 }

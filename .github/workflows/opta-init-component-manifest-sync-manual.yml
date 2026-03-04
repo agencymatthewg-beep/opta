@@ -1,0 +1,201 @@
+name: Opta Init Component Manifest Sync (Manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: "Target channel"
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+          - stable
+      component_id:
+        description: "Component to update"
+        required: true
+        default: opta-cli
+        type: choice
+        options:
+          - opta-cli
+          - opta-lmx
+          - opta-code-universal
+          - opta-daemon
+      version:
+        description: "Component semver version"
+        required: true
+        type: string
+      notes_url:
+        description: "Optional release notes URL to patch into channel release metadata"
+        required: false
+        type: string
+      metadata_ref:
+        description: "Git ref to update"
+        required: false
+        default: main
+        type: string
+      macos_artifact_url:
+        description: "Optional macOS artifact URL"
+        required: false
+        type: string
+      macos_arch:
+        description: "macOS artifact arch"
+        required: false
+        default: universal
+        type: choice
+        options:
+          - universal
+          - arm64
+          - x64
+      macos_package_type:
+        description: "macOS package type"
+        required: false
+        default: dmg
+        type: choice
+        options:
+          - dmg
+          - pkg
+          - tar.gz
+          - zip
+      windows_artifact_url:
+        description: "Optional Windows artifact URL"
+        required: false
+        type: string
+      windows_arch:
+        description: "Windows artifact arch"
+        required: false
+        default: x64
+        type: choice
+        options:
+          - x64
+          - arm64
+      windows_package_type:
+        description: "Windows package type"
+        required: false
+        default: exe
+        type: choice
+        options:
+          - exe
+          - msi
+          - zip
+          - tar.gz
+      strict_require_artifacts:
+        description: "Require component to contain artifacts after sync"
+        required: false
+        default: true
+        type: boolean
+      strict_require_signatures:
+        description: "Require signatures for all artifacts after sync"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  prepare-payload:
+    name: Build sync payload
+    runs-on: ubuntu-latest
+    outputs:
+      payload_json: ${{ steps.payload.outputs.payload_json }}
+    steps:
+      - name: Build payload JSON
+        id: payload
+        env:
+          CHANNEL: ${{ inputs.channel }}
+          COMPONENT_ID: ${{ inputs.component_id }}
+          VERSION: ${{ inputs.version }}
+          NOTES_URL: ${{ inputs.notes_url }}
+          MACOS_ARTIFACT_URL: ${{ inputs.macos_artifact_url }}
+          MACOS_ARCH: ${{ inputs.macos_arch }}
+          MACOS_PACKAGE_TYPE: ${{ inputs.macos_package_type }}
+          WINDOWS_ARTIFACT_URL: ${{ inputs.windows_artifact_url }}
+          WINDOWS_ARCH: ${{ inputs.windows_arch }}
+          WINDOWS_PACKAGE_TYPE: ${{ inputs.windows_package_type }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+          const httpsRegex = /^https:\/\//;
+          const version = process.env.VERSION?.trim();
+          const channel = process.env.CHANNEL?.trim();
+          const componentId = process.env.COMPONENT_ID?.trim();
+          const notesUrl = process.env.NOTES_URL?.trim();
+          const macUrl = process.env.MACOS_ARTIFACT_URL?.trim();
+          const winUrl = process.env.WINDOWS_ARTIFACT_URL?.trim();
+
+          if (!['stable', 'beta'].includes(channel)) {
+            throw new Error(`Invalid channel '${channel}'`);
+          }
+          if (!componentId) {
+            throw new Error('Missing component id');
+          }
+          if (!version || !semverRegex.test(version)) {
+            throw new Error(`Invalid version '${version}'`);
+          }
+          if (!macUrl && !winUrl) {
+            throw new Error('Provide at least one artifact URL (macOS or Windows).');
+          }
+          if (macUrl && !httpsRegex.test(macUrl)) {
+            throw new Error(`macOS artifact URL must be https: ${macUrl}`);
+          }
+          if (winUrl && !httpsRegex.test(winUrl)) {
+            throw new Error(`Windows artifact URL must be https: ${winUrl}`);
+          }
+          if (notesUrl && !httpsRegex.test(notesUrl)) {
+            throw new Error(`notes_url must be https when provided: ${notesUrl}`);
+          }
+
+          const payload = {
+            publishedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            component: {
+              id: componentId,
+              version,
+              artifacts: {},
+            },
+          };
+
+          if (notesUrl) {
+            payload.release = { notesUrl };
+          }
+
+          if (macUrl) {
+            payload.component.artifacts.macos = [
+              {
+                platform: 'macos',
+                arch: process.env.MACOS_ARCH || 'universal',
+                packageType: process.env.MACOS_PACKAGE_TYPE || 'dmg',
+                url: macUrl,
+              },
+            ];
+          }
+
+          if (winUrl) {
+            payload.component.artifacts.windows = [
+              {
+                platform: 'windows',
+                arch: process.env.WINDOWS_ARCH || 'x64',
+                packageType: process.env.WINDOWS_PACKAGE_TYPE || 'exe',
+                url: winUrl,
+              },
+            ];
+          }
+
+          const outputPath = process.env.GITHUB_OUTPUT;
+          fs.appendFileSync(outputPath, `payload_json<<JSON\n${JSON.stringify(payload)}\nJSON\n`);
+          NODE
+
+  sync:
+    name: Sync component manifest
+    needs: prepare-payload
+    uses: ./.github/workflows/opta-init-component-manifest-sync.yml
+    with:
+      channel: ${{ inputs.channel }}
+      component_id: ${{ inputs.component_id }}
+      payload_json: ${{ needs.prepare-payload.outputs.payload_json }}
+      metadata_ref: ${{ inputs.metadata_ref }}
+      strict_require_artifacts: ${{ inputs.strict_require_artifacts }}
+      strict_require_signatures: ${{ inputs.strict_require_signatures }}
+    secrets: inherit

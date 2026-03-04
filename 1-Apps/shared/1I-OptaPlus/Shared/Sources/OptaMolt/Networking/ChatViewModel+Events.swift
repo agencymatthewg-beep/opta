@@ -133,7 +133,7 @@ extension ChatViewModel {
 
         case "error":
             let errorMsg = dict["errorMessage"] as? String ?? "Chat error"
-            errorMessage = errorMsg
+            handleError(OpenClawError.requestFailed(errorMsg), context: "stream")
             resetStreamState()
 
         default:

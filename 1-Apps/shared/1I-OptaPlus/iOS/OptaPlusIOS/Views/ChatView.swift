@@ -113,6 +113,85 @@ private struct TypingIndicator: View {
     }
 }
 
+// MARK: - Error Banner
+
+private struct RecoveryErrorBanner: View {
+    let message: String
+    let actions: [ErrorRecoveryAction]
+    let onAction: (ErrorRecoveryActionKind) -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.optaAmber)
+                    .font(.system(size: 14))
+
+                Text(message)
+                    .font(.system(size: 12))
+                    .foregroundColor(.optaTextSecondary)
+                    .lineLimit(3)
+
+                Spacer()
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.optaTextMuted)
+                        .font(.system(size: 14))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss error")
+            }
+
+            if !actions.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(actions) { action in
+                        Button(action.title) {
+                            onAction(action.kind)
+                        }
+                        .font(.caption.weight(.semibold))
+                        .foregroundColor(actionForeground(for: action.kind))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule().fill(actionBackground(for: action.kind))
+                        )
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.optaAmber.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.optaAmber.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
+    private func actionForeground(for kind: ErrorRecoveryActionKind) -> Color {
+        switch kind {
+        case .dismiss:
+            return .optaTextSecondary
+        case .pairDevice, .openSettings, .retry, .reconnect:
+            return .optaPrimary
+        }
+    }
+
+    private func actionBackground(for kind: ErrorRecoveryActionKind) -> Color {
+        switch kind {
+        case .dismiss:
+            return .optaSurface
+        case .pairDevice, .openSettings, .retry, .reconnect:
+            return .optaPrimary.opacity(0.14)
+        }
+    }
+}
+
 // MARK: - Scroll Position Tracking
 
 private struct BottomAnchorYKey: PreferenceKey {
@@ -475,6 +554,20 @@ struct ChatView: View {
                     if !viewModel.streamingContent.isEmpty {
                         streamingBubble
                             .id("streaming")
+                    }
+
+                    if let error = viewModel.errorMessage {
+                        RecoveryErrorBanner(
+                            message: error,
+                            actions: viewModel.errorRecoveryPrompt?.actions ?? [],
+                            onAction: { action in
+                                viewModel.handleErrorRecoveryAction(action)
+                            },
+                            onDismiss: {
+                                viewModel.dismissErrorPrompt()
+                            }
+                        )
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
 
                     // Bottom sentinel for scroll position tracking

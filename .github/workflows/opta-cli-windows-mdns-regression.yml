@@ -1,0 +1,60 @@
+name: Opta CLI - Windows mDNS Regression
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/src/lmx/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/tests/lmx/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/package.json"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json"
+      - ".github/workflows/opta-cli-windows-mdns-regression.yml"
+  push:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/src/lmx/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/tests/lmx/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/package.json"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json"
+      - ".github/workflows/opta-cli-windows-mdns-regression.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-mdns-race-guard:
+    name: Windows mDNS close-race guard
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: 1-Apps/optalocal/1D-Opta-CLI-TS/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run baseline mDNS discovery suite
+        run: npx vitest run tests/lmx/mdns-discovery.test.ts --reporter=dot
+
+      - name: Stress close-race regression on Windows
+        shell: pwsh
+        run: |
+          $iterations = 25
+          for ($i = 1; $i -le $iterations; $i++) {
+            Write-Host "[mDNS-race] Iteration $i/$iterations"
+            npx vitest run tests/lmx/mdns-discovery.test.ts --reporter=dot --testNamePattern "closes the mDNS socket once when overlapping failure paths fire"
+            if ($LASTEXITCODE -ne 0) {
+              exit $LASTEXITCODE
+            }
+          }
+

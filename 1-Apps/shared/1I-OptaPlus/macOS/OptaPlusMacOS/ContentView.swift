@@ -1299,9 +1299,16 @@ struct ChatContainerView: View {
 
         // Error display
         if let error = viewModel.errorMessage {
-            ErrorBanner(message: error) {
-                viewModel.errorMessage = nil
-            }
+            ErrorBanner(
+                message: error,
+                actions: viewModel.errorRecoveryPrompt?.actions ?? [],
+                onAction: { action in
+                    viewModel.handleErrorRecoveryAction(action)
+                },
+                onDismiss: {
+                    viewModel.dismissErrorPrompt()
+                }
+            )
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
 
@@ -1625,28 +1632,64 @@ struct MessageRow: View {
 
 struct ErrorBanner: View {
     let message: String
+    let actions: [ErrorRecoveryAction]
+    let onAction: (ErrorRecoveryActionKind) -> Void
     let onDismiss: () -> Void
+
+    init(
+        message: String,
+        actions: [ErrorRecoveryAction] = [],
+        onAction: @escaping (ErrorRecoveryActionKind) -> Void = { _ in },
+        onDismiss: @escaping () -> Void
+    ) {
+        self.message = message
+        self.actions = actions
+        self.onAction = onAction
+        self.onDismiss = onDismiss
+    }
     
     var body: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.optaAmber)
-                .font(.system(size: 14))
-            
-            Text(message)
-                .font(.sora(12))
-                .foregroundColor(.optaTextSecondary)
-                .lineLimit(2)
-            
-            Spacer()
-            
-            Button(action: onDismiss) {
-                Image(systemName: "xmark.circle.fill")
-                    .foregroundColor(.optaTextMuted)
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.optaAmber)
                     .font(.system(size: 14))
+
+                Text(message)
+                    .font(.sora(12))
+                    .foregroundColor(.optaTextSecondary)
+                    .lineLimit(2)
+
+                Spacer()
+
+                Button(action: onDismiss) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.optaTextMuted)
+                        .font(.system(size: 14))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Dismiss error")
             }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Dismiss error")
+
+            if !actions.isEmpty {
+                HStack(spacing: 8) {
+                    ForEach(actions) { action in
+                        Button(action.title) {
+                            onAction(action.kind)
+                        }
+                        .buttonStyle(.plain)
+                        .font(.sora(11, weight: .semibold))
+                        .foregroundColor(actionForeground(for: action.kind))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(
+                            Capsule()
+                                .fill(actionBackground(for: action.kind))
+                        )
+                    }
+                }
+                .accessibilityElement(children: .contain)
+            }
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -1658,6 +1701,24 @@ struct ErrorBanner: View {
                         .stroke(Color.optaAmber.opacity(0.3), lineWidth: 1)
                 )
         )
+    }
+
+    private func actionForeground(for kind: ErrorRecoveryActionKind) -> Color {
+        switch kind {
+        case .dismiss:
+            return .optaTextSecondary
+        case .pairDevice, .openSettings, .retry, .reconnect:
+            return .optaPrimary
+        }
+    }
+
+    private func actionBackground(for kind: ErrorRecoveryActionKind) -> Color {
+        switch kind {
+        case .dismiss:
+            return Color.optaSurface
+        case .pairDevice, .openSettings, .retry, .reconnect:
+            return Color.optaPrimary.opacity(0.14)
+        }
     }
 }
 

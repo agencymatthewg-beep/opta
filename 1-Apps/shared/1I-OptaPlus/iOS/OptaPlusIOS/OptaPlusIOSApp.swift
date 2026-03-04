@@ -10,6 +10,11 @@ import WidgetKit
 import OptaPlus
 import OptaMolt
 
+extension Notification.Name {
+    static let optaPlusNavigateToMap = Notification.Name("optaPlus.navigateToMap")
+    static let optaPlusNavigateToSettings = Notification.Name("optaPlus.navigateToSettings")
+}
+
 // MARK: - App State
 
 @MainActor
@@ -56,6 +61,12 @@ final class AppState: ObservableObject {
     func viewModel(for bot: BotConfig) -> ChatViewModel {
         if let existing = chatViewModels[bot.id] { return existing }
         let vm = ChatViewModel(botConfig: bot)
+        vm.onRequestPairing = {
+            NotificationCenter.default.post(name: .optaPlusNavigateToMap, object: bot.id)
+        }
+        vm.onRequestSettings = {
+            NotificationCenter.default.post(name: .optaPlusNavigateToSettings, object: bot.id)
+        }
         chatViewModels[bot.id] = vm
         return vm
     }

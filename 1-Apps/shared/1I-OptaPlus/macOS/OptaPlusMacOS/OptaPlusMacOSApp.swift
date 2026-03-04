@@ -362,6 +362,12 @@ final class AppState: ObservableObject {
             return existing
         }
         let vm = ChatViewModel(botConfig: bot, syncCoordinator: syncCoordinator)
+        vm.onRequestPairing = {
+            NotificationCenter.default.post(name: .toggleBotMap, object: nil)
+        }
+        vm.onRequestSettings = {
+            NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+        }
         chatViewModels[bot.id] = vm
         return vm
     }

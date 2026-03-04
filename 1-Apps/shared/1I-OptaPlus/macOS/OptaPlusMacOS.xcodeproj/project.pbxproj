@@ -45,6 +45,16 @@
 		CT000001EEEE000100000001 /* OptaPlusMacOSTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CT000002EEEE000100000001 /* OptaPlusMacOSTests.swift */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		CT00000AEEEE000100000001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CD000014BBBB000100000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CD000010BBBB000100000001;
+			remoteInfo = OptaPlusMacOS;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		BP000002FFFF000100000001 /* BotProfileSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BotProfileSheet.swift; sourceTree = "<group>"; };
 		CD000002BBBB000100000001 /* OptaPlusMacOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OptaPlusMacOSApp.swift; sourceTree = "<group>"; };
@@ -208,6 +218,7 @@
 			buildRules = (
 			);
 			dependencies = (
+				CT00000BEEEE000100000001 /* PBXTargetDependency */,
 			);
 			name = OptaPlusMacOSTests;
 			packageProductDependencies = (
@@ -316,6 +327,14 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CT00000BEEEE000100000001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CD000010BBBB000100000001 /* OptaPlusMacOS */;
+			targetProxy = CT00000AEEEE000100000001 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CD000016BBBB000200000001 /* Debug */ = {
@@ -501,6 +520,11 @@
 		CT000007EEEE000100000001 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = NM9ZUH276T;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -511,12 +535,18 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.macos.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptaPlusMacOS.app/Contents/MacOS/OptaPlusMacOS";
 			};
 			name = Debug;
 		};
 		CT000008EEEE000100000001 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = NM9ZUH276T;
+				ENABLE_TESTING_SEARCH_PATHS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -527,6 +557,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.optamolt.macos.tests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/OptaPlusMacOS.app/Contents/MacOS/OptaPlusMacOS";
 			};
 			name = Release;
 		};

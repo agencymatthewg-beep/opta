@@ -66,6 +66,20 @@ struct ContentView: View {
             .onChange(of: selectedTab) { _, _ in
                 HapticManager.shared.selection()
             }
+            .onReceive(NotificationCenter.default.publisher(for: .optaPlusNavigateToMap)) { note in
+                if let botId = note.object as? String,
+                   let bot = appState.bots.first(where: { $0.id == botId }) {
+                    appState.selectBot(bot)
+                }
+                selectedTab = .map
+            }
+            .onReceive(NotificationCenter.default.publisher(for: .optaPlusNavigateToSettings)) { note in
+                if let botId = note.object as? String,
+                   let bot = appState.bots.first(where: { $0.id == botId }) {
+                    appState.selectBot(bot)
+                }
+                selectedTab = .settings
+            }
         }
     }
 }

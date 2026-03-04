@@ -1,0 +1,226 @@
+name: Opta LMX Release
+
+on:
+  push:
+    tags:
+      - "opta-lmx-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Opta LMX version (semver). Optional when tag is provided."
+        required: false
+        type: string
+      tag:
+        description: "Release tag (defaults to opta-lmx-v<version>)"
+        required: false
+        type: string
+      channel:
+        description: "Target channel (auto when omitted)"
+        required: false
+        default: auto
+        type: choice
+        options:
+          - auto
+          - beta
+          - stable
+      metadata_ref:
+        description: "Git ref to update"
+        required: false
+        default: main
+        type: string
+      publish_pypi:
+        description: "Publish wheel/sdist to PyPI (requires PYPI_API_TOKEN)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    name: Build and publish LMX release assets
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.meta.outputs.channel }}
+      metadata_ref: ${{ steps.meta.outputs.metadata_ref }}
+      payload_json: ${{ steps.payload.outputs.payload_json }}
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1M-Opta-LMX
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release metadata
+        id: meta
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+          INPUT_TAG: ${{ github.event.inputs.tag || '' }}
+          INPUT_CHANNEL: ${{ github.event.inputs.channel || 'auto' }}
+          INPUT_METADATA_REF: ${{ github.event.inputs.metadata_ref || 'main' }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+          function fail(message) {
+            console.error(message);
+            process.exit(1);
+          }
+          function parseVersionFromTag(tag) {
+            const match = tag.match(/^opta-lmx-v(.+)$/);
+            return match ? match[1] : null;
+          }
+
+          const eventName = process.env.EVENT_NAME;
+          const refName = process.env.REF_NAME;
+          let version = (process.env.INPUT_VERSION || '').trim();
+          let tag = (process.env.INPUT_TAG || '').trim();
+          const inputChannel = (process.env.INPUT_CHANNEL || 'auto').trim();
+          const metadataRef = (process.env.INPUT_METADATA_REF || 'main').trim() || 'main';
+
+          if (eventName === 'push') {
+            tag = refName;
+            version = parseVersionFromTag(tag) || '';
+            if (!version) fail(`Tag '${tag}' must match opta-lmx-v<version>`);
+          } else {
+            if (!version && tag) {
+              version = parseVersionFromTag(tag) || '';
+            }
+            if (!version) fail('Provide version or tag for workflow_dispatch.');
+            if (!tag) tag = `opta-lmx-v${version}`;
+          }
+
+          if (!semverRegex.test(version)) {
+            fail(`Resolved version '${version}' is not valid semver.`);
+          }
+
+          let channel;
+          if (inputChannel === 'auto') {
+            channel = version.includes('-') ? 'beta' : 'stable';
+          } else if (inputChannel === 'beta' || inputChannel === 'stable') {
+            channel = inputChannel;
+          } else {
+            fail(`Invalid channel '${inputChannel}'.`);
+          }
+
+          const outputPath = process.env.GITHUB_OUTPUT;
+          fs.appendFileSync(outputPath, `version=${version}\n`);
+          fs.appendFileSync(outputPath, `tag=${tag}\n`);
+          fs.appendFileSync(outputPath, `channel=${channel}\n`);
+          fs.appendFileSync(outputPath, `metadata_ref=${metadataRef}\n`);
+          NODE
+
+      - name: Ensure release tag exists (workflow_dispatch)
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/${RELEASE_TAG}" >/dev/null; then
+            echo "Tag ${RELEASE_TAG} already exists."
+            exit 0
+          fi
+          git tag "${RELEASE_TAG}" "${GITHUB_SHA}"
+          git push origin "refs/tags/${RELEASE_TAG}"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel and sdist
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install hatch
+          hatch build
+          ls -la dist
+
+      - name: Publish release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Opta LMX v${{ steps.meta.outputs.version }}
+          prerelease: ${{ steps.meta.outputs.channel != 'stable' }}
+          files: |
+            1-Apps/optalocal/1M-Opta-LMX/dist/*.tar.gz
+            1-Apps/optalocal/1M-Opta-LMX/dist/*.whl
+          fail_on_unmatched_files: true
+
+      - name: Publish to PyPI
+        if: github.event.inputs.publish_pypi == 'true'
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          if [ -z "${PYPI_API_TOKEN}" ]; then
+            echo "publish_pypi=true but PYPI_API_TOKEN is not configured."
+            exit 1
+          fi
+          python -m pip install --upgrade twine
+          python -m twine upload -u __token__ -p "${PYPI_API_TOKEN}" dist/*
+
+      - name: Build Opta Init payload
+        id: payload
+        env:
+          REPOSITORY: ${{ github.repository }}
+          RELEASE_TAG: ${{ steps.meta.outputs.tag }}
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+
+          const distDir = path.join(process.cwd(), 'dist');
+          const entries = fs.readdirSync(distDir);
+          const sdistName = entries.find((name) => name.endsWith('.tar.gz'));
+          if (!sdistName) {
+            console.error('No sdist (.tar.gz) found in dist/.');
+            process.exit(1);
+          }
+
+          const sdistUrl = `https://github.com/${process.env.REPOSITORY}/releases/download/${process.env.RELEASE_TAG}/${sdistName}`;
+          const notesUrl = `https://github.com/${process.env.REPOSITORY}/releases/tag/${process.env.RELEASE_TAG}`;
+
+          const payload = {
+            publishedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            release: {
+              notesUrl,
+            },
+            component: {
+              id: 'opta-lmx',
+              version: process.env.VERSION,
+              artifacts: {
+                macos: [
+                  {
+                    platform: 'macos',
+                    arch: 'universal',
+                    packageType: 'tar.gz',
+                    url: sdistUrl,
+                  },
+                ],
+                windows: [],
+              },
+            },
+          };
+
+          const outputPath = process.env.GITHUB_OUTPUT;
+          fs.appendFileSync(outputPath, `payload_json<<JSON\n${JSON.stringify(payload)}\nJSON\n`);
+          NODE
+
+  sync:
+    name: Sync Opta LMX manifest
+    needs: build-release
+    uses: ./.github/workflows/opta-init-component-manifest-sync.yml
+    with:
+      channel: ${{ needs.build-release.outputs.channel }}
+      component_id: opta-lmx
+      payload_json: ${{ needs.build-release.outputs.payload_json }}
+      metadata_ref: ${{ needs.build-release.outputs.metadata_ref }}
+      strict_require_artifacts: true
+      strict_require_signatures: false
+    secrets: inherit

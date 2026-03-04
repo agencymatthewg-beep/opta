@@ -1,0 +1,284 @@
+name: Opta Daemon Release Manifest Sync
+
+on:
+  push:
+    tags:
+      - "opta-daemon-v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Daemon version (semver). Optional when tag is provided."
+        required: false
+        type: string
+      tag:
+        description: "Release tag (defaults to opta-daemon-v<version>)"
+        required: false
+        type: string
+      channel:
+        description: "Target channel (auto when omitted)"
+        required: false
+        default: auto
+        type: choice
+        options:
+          - auto
+          - beta
+          - stable
+      metadata_ref:
+        description: "Git ref to update"
+        required: false
+        default: main
+        type: string
+      macos_artifact_url:
+        description: "Optional override for macOS daemon artifact URL"
+        required: false
+        type: string
+      windows_artifact_url:
+        description: "Optional override for Windows daemon artifact URL"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    name: Resolve daemon payload
+    runs-on: ubuntu-latest
+    outputs:
+      channel: ${{ steps.resolve.outputs.channel }}
+      payload_json: ${{ steps.resolve.outputs.payload_json }}
+      metadata_ref: ${{ steps.resolve.outputs.metadata_ref }}
+    steps:
+      - name: Resolve daemon release payload
+        id: resolve
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_VERSION: ${{ github.event.inputs.version || '' }}
+          INPUT_TAG: ${{ github.event.inputs.tag || '' }}
+          INPUT_CHANNEL: ${{ github.event.inputs.channel || 'auto' }}
+          INPUT_METADATA_REF: ${{ github.event.inputs.metadata_ref || 'main' }}
+          INPUT_MAC_URL: ${{ github.event.inputs.macos_artifact_url || '' }}
+          INPUT_WINDOWS_URL: ${{ github.event.inputs.windows_artifact_url || '' }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
+          const httpsRegex = /^https:\/\//;
+
+          function fail(message) {
+            console.error(message);
+            process.exit(1);
+          }
+
+          function sleep(ms) {
+            return new Promise((resolve) => setTimeout(resolve, ms));
+          }
+
+          function parseVersionFromTag(tag) {
+            const match = tag.match(/^opta-daemon-v(.+)$/);
+            return match ? match[1] : null;
+          }
+
+          function pickAsset(assets, regexes) {
+            for (const regex of regexes) {
+              const match = assets.find((asset) => regex.test(asset.name));
+              if (match) return match;
+            }
+            return null;
+          }
+
+          function inferPackageType(url) {
+            if (/\.dmg(?:[?#].*)?$/i.test(url)) return 'dmg';
+            if (/\.pkg(?:[?#].*)?$/i.test(url)) return 'pkg';
+            if (/\.msi(?:[?#].*)?$/i.test(url)) return 'msi';
+            if (/\.exe(?:[?#].*)?$/i.test(url)) return 'exe';
+            if (/\.zip(?:[?#].*)?$/i.test(url)) return 'zip';
+            if (/\.tar\.gz(?:[?#].*)?$/i.test(url)) return 'tar.gz';
+            return 'zip';
+          }
+
+          async function fetchReleaseByTag({ repository, tag, token }) {
+            const url = `https://api.github.com/repos/${repository}/releases/tags/${tag}`;
+            const response = await fetch(url, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github+json',
+                'User-Agent': 'opta-daemon-release-manifest-sync',
+              },
+            });
+
+            if (response.status === 404) return null;
+            if (!response.ok) {
+              const body = await response.text();
+              throw new Error(`GitHub API ${response.status} for tag '${tag}': ${body}`);
+            }
+            return response.json();
+          }
+
+          async function resolveReleaseAssets({ repository, tag, token }) {
+            const maxAttempts = 30;
+            const waitMs = 15000;
+
+            for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+              const release = await fetchReleaseByTag({ repository, tag, token });
+              if (!release) {
+                console.log(`Release ${tag} not found yet (attempt ${attempt}/${maxAttempts})`);
+                await sleep(waitMs);
+                continue;
+              }
+
+              const assets = Array.isArray(release.assets)
+                ? release.assets
+                    .filter((asset) => asset && typeof asset.name === 'string' && typeof asset.browser_download_url === 'string')
+                    .map((asset) => ({ name: asset.name, url: asset.browser_download_url }))
+                : [];
+
+              const mac = pickAsset(assets, [
+                /daemon.*\.dmg$/i,
+                /daemon.*\.pkg$/i,
+                /daemon.*\.tar\.gz$/i,
+                /macos.*daemon.*\.(?:zip|tar\.gz)$/i,
+              ]);
+              const windows = pickAsset(assets, [
+                /daemon.*\.msi$/i,
+                /daemon.*\.exe$/i,
+                /daemon.*\.zip$/i,
+                /windows.*daemon.*\.(?:zip|exe|msi)$/i,
+              ]);
+
+              if (!mac && !windows) {
+                console.log(`Release ${tag} exists but no daemon assets matched yet (attempt ${attempt}/${maxAttempts})`);
+                await sleep(waitMs);
+                continue;
+              }
+
+              return {
+                notesUrl: typeof release.html_url === 'string' ? release.html_url : `https://github.com/${repository}/releases/tag/${tag}`,
+                macUrl: mac ? mac.url : '',
+                windowsUrl: windows ? windows.url : '',
+              };
+            }
+
+            fail(`Timed out waiting for daemon release assets for tag '${tag}'.`);
+          }
+
+          const eventName = process.env.EVENT_NAME;
+          const refName = process.env.REF_NAME;
+          const repository = process.env.REPOSITORY;
+          const token = process.env.GITHUB_TOKEN;
+
+          let version = (process.env.INPUT_VERSION || '').trim();
+          let tag = (process.env.INPUT_TAG || '').trim();
+          const inputChannel = (process.env.INPUT_CHANNEL || 'auto').trim();
+          const metadataRef = (process.env.INPUT_METADATA_REF || 'main').trim() || 'main';
+          let notesUrl = '';
+          let macUrl = (process.env.INPUT_MAC_URL || '').trim();
+          let windowsUrl = (process.env.INPUT_WINDOWS_URL || '').trim();
+
+          if (eventName === 'push') {
+            tag = refName;
+            version = parseVersionFromTag(tag) || '';
+            if (!version) fail(`Tag '${tag}' must match opta-daemon-v<version>`);
+          } else {
+            if (!version && tag) {
+              version = parseVersionFromTag(tag) || '';
+            }
+            if (!version) {
+              fail('Provide version or tag for workflow_dispatch.');
+            }
+            if (!tag) {
+              tag = `opta-daemon-v${version}`;
+            }
+          }
+
+          if (!semverRegex.test(version)) {
+            fail(`Resolved version '${version}' is not valid semver.`);
+          }
+
+          let channel;
+          if (inputChannel === 'auto') {
+            channel = version.includes('-') ? 'beta' : 'stable';
+          } else if (inputChannel === 'beta' || inputChannel === 'stable') {
+            channel = inputChannel;
+          } else {
+            fail(`Invalid channel '${inputChannel}'.`);
+          }
+
+          if ((eventName === 'push' || (!macUrl && !windowsUrl))) {
+            const resolved = await resolveReleaseAssets({ repository, tag, token });
+            notesUrl = resolved.notesUrl;
+            if (!macUrl) macUrl = resolved.macUrl;
+            if (!windowsUrl) windowsUrl = resolved.windowsUrl;
+          } else {
+            notesUrl = `https://github.com/${repository}/releases/tag/${tag}`;
+          }
+
+          if (!macUrl && !windowsUrl) {
+            fail('No daemon artifacts resolved. Provide overrides or ensure release assets exist.');
+          }
+
+          if (macUrl && !httpsRegex.test(macUrl)) {
+            fail(`macOS artifact URL must be https: ${macUrl}`);
+          }
+          if (windowsUrl && !httpsRegex.test(windowsUrl)) {
+            fail(`Windows artifact URL must be https: ${windowsUrl}`);
+          }
+          if (!httpsRegex.test(notesUrl)) {
+            fail(`Resolved notes URL must be https: ${notesUrl}`);
+          }
+
+          const payload = {
+            publishedAt: new Date().toISOString().replace(/\.\d{3}Z$/, 'Z'),
+            release: {
+              notesUrl,
+            },
+            component: {
+              id: 'opta-daemon',
+              version,
+              artifacts: {
+                macos: macUrl
+                  ? [
+                      {
+                        platform: 'macos',
+                        arch: 'universal',
+                        packageType: inferPackageType(macUrl),
+                        url: macUrl,
+                      },
+                    ]
+                  : [],
+                windows: windowsUrl
+                  ? [
+                      {
+                        platform: 'windows',
+                        arch: 'x64',
+                        packageType: inferPackageType(windowsUrl),
+                        url: windowsUrl,
+                      },
+                    ]
+                  : [],
+              },
+            },
+          };
+
+          const outputPath = process.env.GITHUB_OUTPUT;
+          fs.appendFileSync(outputPath, `channel=${channel}\n`);
+          fs.appendFileSync(outputPath, `metadata_ref=${metadataRef}\n`);
+          fs.appendFileSync(outputPath, `payload_json<<JSON\n${JSON.stringify(payload)}\nJSON\n`);
+          NODE
+
+  sync:
+    name: Sync Opta Daemon manifest
+    needs: prepare
+    uses: ./.github/workflows/opta-init-component-manifest-sync.yml
+    with:
+      channel: ${{ needs.prepare.outputs.channel }}
+      component_id: opta-daemon
+      payload_json: ${{ needs.prepare.outputs.payload_json }}
+      metadata_ref: ${{ needs.prepare.outputs.metadata_ref }}
+      strict_require_artifacts: true
+      strict_require_signatures: false
+    secrets: inherit

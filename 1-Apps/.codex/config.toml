@@ -1,0 +1,48 @@
+# Project-scoped Codex defaults for Xcode work in this repository.
+# Quick use:
+#   codex -p xcode-local
+#   codex -p xcode-readonly
+#   codex exec -p xcode-ci "<task>"
+
+# Default profile when no -p/--profile is supplied.
+profile = "xcode-local"
+
+[profiles.xcode-local]
+# Safe local development: writable workspace with approval prompts as needed.
+model = "gpt-5-codex"
+approval_policy = "on-request"
+sandbox_mode = "workspace-write"
+
+[profiles.xcode-local.sandbox_workspace_write]
+# Keep network enabled for package resolution and normal developer workflows.
+network_access = true
+# Permit common Xcode/SPM write paths used during local builds.
+writable_roots = [
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.build",
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.swiftpm",
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.xcode-derived-data",
+  "/Users/matthewbyrden/Library/Developer/Xcode/DerivedData",
+  "/Users/matthewbyrden/Library/Caches/org.swift.swiftpm",
+]
+
+[profiles.xcode-readonly]
+# Read-only analysis/audit profile: never mutate files.
+model = "gpt-5-codex"
+approval_policy = "never"
+sandbox_mode = "read-only"
+
+[profiles.xcode-ci]
+# CI-like non-interactive profile for scripted codex exec runs.
+model = "gpt-5-codex"
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+
+[profiles.xcode-ci.sandbox_workspace_write]
+# Keep network enabled for explicit resolve steps in CI-style tasks.
+network_access = true
+# Constrain writes to deterministic repo-local build/package paths.
+writable_roots = [
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.build",
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.swiftpm",
+  "/Users/matthewbyrden/Synced/Opta/1-Apps/.xcode-derived-data",
+]

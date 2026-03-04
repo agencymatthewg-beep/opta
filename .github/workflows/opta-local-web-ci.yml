@@ -1,67 +1,69 @@
-name: Web CI
+name: Opta Code Universal CI
 
 on:
   pull_request:
     paths:
-      - '1-Apps/optalocal/1L-Opta-Local/web/**'
-      - '.github/workflows/opta-local-web-ci.yml'
-      - '1-Apps/optalocal/1L-Opta-Local/docs/WORKFLOWS.md'
-      - '1-Apps/optalocal/1L-Opta-Local/docs/CHANGELOG.md'
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/protocol-shared/**"
+      - ".github/workflows/opta-local-web-ci.yml"
   push:
-    branches:
-      - main
+    branches: [main]
     paths:
-      - '1-Apps/optalocal/1L-Opta-Local/web/**'
-      - '.github/workflows/opta-local-web-ci.yml'
-      - '1-Apps/optalocal/1L-Opta-Local/docs/WORKFLOWS.md'
-      - '1-Apps/optalocal/1L-Opta-Local/docs/CHANGELOG.md'
+      - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client/**"
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/protocol-shared/**"
+      - ".github/workflows/opta-local-web-ci.yml"
   workflow_dispatch:
     inputs:
       run_e2e:
-        description: 'Run Playwright smoke tests'
+        description: "Run Playwright smoke tests"
         required: false
         type: boolean
         default: false
 
 jobs:
   web-quality:
-    name: Lint, Typecheck, Unit, Integration, Build
+    name: Lint, Typecheck, Unit, Build
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1P-Opta-Code-Universal/package-lock.json"
 
-      - name: Install dependencies
-        run: pnpm --filter @opta/local-web... install --frozen-lockfile
+      - name: Install CLI workspace dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+        run: npm install --ignore-scripts
 
-      - name: Lint
-        run: pnpm --filter @opta/local-web lint
+      - name: Install daemon-client dependencies (types only)
+        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
+        run: npm install --ignore-scripts
+
+      - name: Install desktop dependencies
+        run: npm ci
 
       - name: Typecheck
-        run: pnpm --filter @opta/local-web typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
 
       - name: Unit tests
-        run: pnpm --filter @opta/local-web test:unit
-
-      - name: Integration tests
-        run: pnpm --filter @opta/local-web test:integration
+        run: npm run test:run
 
       - name: Build
-        run: pnpm --filter @opta/local-web build
+        run: npm run build
 
   web-e2e:
     name: Playwright Smoke
@@ -70,30 +72,28 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 9.15.0
-
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20.18.1'
-          cache: 'pnpm'
-          cache-dependency-path: pnpm-lock.yaml
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1P-Opta-Code-Universal/package-lock.json"
 
-      - name: Install dependencies
-        run: pnpm --filter @opta/local-web... install --frozen-lockfile
+      - name: Install desktop dependencies
+        run: npm ci
 
       - name: Install Playwright browser
-        run: pnpm --filter @opta/local-web test:e2e:install
+        run: npx playwright install --with-deps
 
       - name: Run Playwright smoke tests
-        run: pnpm --filter @opta/local-web test:e2e:smoke
+        run: npm run test:e2e:strict
 
       - name: Upload Playwright artifacts
         if: always()
@@ -101,6 +101,6 @@ jobs:
         with:
           name: playwright-report
           path: |
-            1-Apps/optalocal/1L-Opta-Local/web/playwright-report
-            1-Apps/optalocal/1L-Opta-Local/web/test-results
+            1-Apps/optalocal/1P-Opta-Code-Universal/playwright-report
+            1-Apps/optalocal/1P-Opta-Code-Universal/test-results
           if-no-files-found: ignore
