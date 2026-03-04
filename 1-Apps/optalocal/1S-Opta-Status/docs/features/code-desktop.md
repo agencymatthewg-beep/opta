@@ -58,8 +58,19 @@ Opta Code Desktop (`1P-Opta-Code-Universal`) is a native-feeling desktop client 
 - [x] macOS DMG — distributable installer
 - [ ] Code signing — Apple Developer ID signing
 
+## Voice Dictation
+
+- [x] `useAudioRecorder` hook — MediaRecorder API for in-browser audio capture
+- [x] Mic toggle button in Composer — pulsating red ring while recording
+- [x] Base64 WebM audio dispatch to daemon `audio.transcribe` operation
+- [x] Transcription auto-appended to composer input draft
+- [x] Spring physics animation on mic button (`.r9-mic-recording` CSS state)
+- [ ] Waveform visualizer during active recording
+- [ ] Native Tauri microphone plugin (bypasses browser permission prompt)
+
 ## Recent Updates
 
+- 2026-03-04 — Voice dictation: mic button + useAudioRecorder + daemon audio.transcribe routing
 - 2026-02-28 — Session search, copy, remove; Chat/Do toggle; turn stats; tool cards; Markdown rendering
 - 2026-02-26 — Background jobs launcher form; Codex Desktop parity sprint
 - 2026-02-25 — Fix: timer leaks, dead memo, type precision improvements

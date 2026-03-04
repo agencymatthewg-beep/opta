@@ -72,6 +72,7 @@ export const navigation: NavSection[] = [
       { title: "API Reference", href: "/docs/lmx/api/", description: "OpenAI-compatible inference endpoints" },
       { title: "Model Management", href: "/docs/lmx/models/", description: "Load, unload, and download models" },
       { title: "Monitoring", href: "/docs/lmx/monitoring/", description: "Health checks, VRAM, and throughput metrics" },
+      { title: "Voice & Audio", href: "/docs/lmx/voice/", description: "Speech-to-text (STT) and text-to-speech (TTS) via mlx-whisper and mlx-audio" },
     ],
   },
   {

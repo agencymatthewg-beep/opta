@@ -1,6 +1,7 @@
 # Opta LMX Features
 
 ## Inference Server
+
 - [x] MLX-native inference on Apple Silicon
 - [x] OpenAI-compatible `/v1/chat/completions` endpoint
 - [x] Streaming SSE responses
@@ -13,6 +14,7 @@
 - [x] vLLM backend for parallel batching
 
 ## Model Management
+
 - [x] Model inventory API (`/admin/models`)
 - [x] Dynamic load/unload API
 - [x] Memory headroom enforcement (never crash on OOM)
@@ -23,6 +25,7 @@
 - [x] Model benchmarking suite
 
 ## API Compatibility
+
 - [x] OpenAI `/v1/chat/completions`
 - [x] OpenAI `/v1/models`
 - [x] Health endpoint `/healthz`
@@ -34,6 +37,7 @@
 - [ ] Function calling (tool_use)
 
 ## Performance
+
 - [x] ANE (Apple Neural Engine) utilization
 - [x] Batch request coalescing
 - [x] Throughput metrics (tokens/sec)
@@ -42,4 +46,14 @@
 - [ ] Thermal throttle detection
 
 ## Deployment Readiness
+
 - [ ] Production LMX + Daemon configuration for status/admin/local-web health wiring
+
+## Voice & Audio
+
+- [x] Speech-to-text endpoint `POST /v1/audio/transcriptions` (mlx-whisper)
+- [x] Text-to-speech endpoint `POST /v1/audio/speech` (mlx-audio + Kokoro)
+- [x] Multipart form upload for audio files (WebM, WAV, MP3)
+- [x] `soundfile` I/O for audio processing
+- [ ] Real-time streaming transcription (WebSocket STT)
+- [ ] Voice activity detection (VAD)
