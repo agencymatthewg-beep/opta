@@ -1,0 +1,114 @@
+# Opta Logo Registry
+# Maps every SVG logo asset to its canonical source file and EVERY file
+# across the monorepo that references it. When a logo changes, update
+# ALL entries in that logo's referenced_in list.
+# Last updated: 2026-03-04
+
+logos:
+  - file: opta-code-mark.svg
+    description: "Opta Code — Attention head + binary field disc (210×210 viewBox)"
+    design_notes: "Final March 2026 design. Binary field rings + 8 weighted attention rays + { } braces + focal node."
+    canonical_source: 1O-Opta-Init/public/logos/opta-code-mark.svg
+    design_copy: design/logos/Opta-Code-Desktop/opta-code-mark.svg
+    referenced_in:
+      - path: 1T-Opta-Home/components/Hero.tsx
+        line: 10
+        context: "Hero section floating app grid — served as /logos/opta-code-mark.svg"
+        surface: opta-home
+      - path: 1T-Opta-Home/components/Ecosystem.tsx
+        line: 37
+        context: "Core apps ecosystem section — served as /logos/opta-code-mark.svg"
+        surface: opta-home
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        line: 23
+        context: "LOGOS map, key: opta-code-universal — served as /logos/opta-code-mark.svg"
+        surface: opta-init-desktop
+      - path: 1P-Opta-Code-Universal/src/App.tsx
+        line: ~500
+        context: "Top-bar .app-logo-mark img — served as /opta-code-mark.svg (root, not /logos/)"
+        surface: opta-code-desktop
+
+  - file: opta-cli-mark.svg
+    description: "Opta CLI mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-cli-mark.svg
+    referenced_in:
+      - path: 1T-Opta-Home/components/Hero.tsx
+        context: "Hero section floating app grid"
+        surface: opta-home
+      - path: 1T-Opta-Home/components/Ecosystem.tsx
+        context: "Core apps ecosystem section"
+        surface: opta-home
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-cli"
+        surface: opta-init-desktop
+
+  - file: opta-lmx-mark.svg
+    description: "Opta LMX mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-lmx-mark.svg
+    referenced_in:
+      - path: 1T-Opta-Home/components/Hero.tsx
+        context: "Hero section floating app grid"
+        surface: opta-home
+      - path: 1T-Opta-Home/components/Ecosystem.tsx
+        context: "Core apps ecosystem section"
+        surface: opta-home
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-lmx"
+        surface: opta-init-desktop
+
+  - file: opta-local-mark.svg
+    description: "Opta Local / Opta Home mark — used as the global nav brand mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-local-mark.svg
+    referenced_in:
+      - path: 1T-Opta-Home/components/Nav.tsx
+        context: "Global nav brand mark — 24px"
+        surface: opta-home
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-local and default fallback"
+        surface: opta-init-desktop
+
+  - file: opta-init-mark.svg
+    description: "Opta Init mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-init-mark.svg
+    referenced_in:
+      - path: 1T-Opta-Home/components/Ecosystem.tsx
+        context: "Core apps ecosystem section, Opta Init card"
+        surface: opta-home
+      - path: 1T-Opta-Home/components/Hero.tsx
+        context: "Hero section floating app grid"
+        surface: opta-home
+
+  - file: opta-accounts-mark.svg
+    description: "Opta Accounts mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-accounts-mark.svg
+    referenced_in:
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-accounts"
+        surface: opta-init-desktop
+
+  - file: opta-status-mark.svg
+    description: "Opta Status mark — also used as daemon placeholder"
+    canonical_source: 1O-Opta-Init/public/logos/opta-status-mark.svg
+    referenced_in:
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-status AND opta-daemon (placeholder)"
+        surface: opta-init-desktop
+    notes: >
+      opta-daemon has no dedicated logo. A dedicated opta-daemon-mark.svg
+      should be created and the App.tsx LOGOS map updated.
+
+  - file: opta-help-mark.svg
+    description: "Opta Help mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-help-mark.svg
+    referenced_in:
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-help"
+        surface: opta-init-desktop
+
+  - file: opta-learn-mark.svg
+    description: "Opta Learn mark"
+    canonical_source: 1O-Opta-Init/public/logos/opta-learn-mark.svg
+    referenced_in:
+      - path: 1O-Opta-Init/desktop-manager/src/App.tsx
+        context: "LOGOS map, key: opta-learn"
+        surface: opta-init-desktop

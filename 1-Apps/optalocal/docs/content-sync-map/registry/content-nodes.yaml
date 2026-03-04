@@ -1,0 +1,448 @@
+# Opta Content Nodes Registry
+# Every content node across all websites and apps that describes Opta apps/features.
+# Used by AI to determine what needs updating when a change is made.
+# Last updated: 2026-03-04
+#
+# Fields:
+#   id           - unique slug for this content node
+#   surface      - which site/app contains it (matches apps.yaml id)
+#   file         - repo-relative path to the file
+#   describes    - list of app IDs (from apps.yaml) that this content discusses
+#   content_type - guide | doc | homepage_section | status_card | release_note |
+#                  download_manifest | app_description | feature_registry
+#   status       - active | draft | deprecated (default: active)
+#   stale_when   - conditions that make this content outdated
+
+content_nodes:
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA HOME (optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: home.nav
+    surface: opta-home
+    file: 1T-Opta-Home/components/Nav.tsx
+    describes: [opta-init, opta-lmx, opta-cli, opta-code, opta-accounts, opta-status, opta-help, opta-learn]
+    content_type: homepage_section
+    stale_when:
+      - Any app name changes
+      - A new app is added to the top nav
+      - A site URL changes
+      - The opta-local-mark.svg logo changes
+
+  - id: home.hero
+    surface: opta-home
+    file: 1T-Opta-Home/components/Hero.tsx
+    describes: [opta-init, opta-lmx, opta-cli, opta-code]
+    content_type: homepage_section
+    stale_when:
+      - Any core app name or tagline role changes
+      - A core app logo is updated
+      - The install command (curl) changes
+      - Platform support changes (e.g. Windows added to hero)
+
+  - id: home.benchmark-strip
+    surface: opta-home
+    file: 1T-Opta-Home/components/BenchmarkStrip.tsx
+    describes: [opta-lmx]
+    content_type: homepage_section
+    stale_when:
+      - Headline performance numbers change (tok/s, TTFT, context length)
+      - Supported hardware changes
+
+  - id: home.quickstart
+    surface: opta-home
+    file: 1T-Opta-Home/components/QuickStart.tsx
+    describes: [opta-cli, opta-lmx, opta-init]
+    content_type: homepage_section
+    stale_when:
+      - The `opta stack start` command output changes
+      - Default port numbers change (LMX: 1234, daemon: 9999)
+      - Stack startup sequence changes
+      - CLI version badge in the terminal demo changes
+
+  - id: home.ecosystem
+    surface: opta-home
+    file: 1T-Opta-Home/components/Ecosystem.tsx
+    describes: [opta-init, opta-lmx, opta-cli, opta-code, opta-accounts, opta-status, opta-learn, opta-help, opta-admin]
+    content_type: homepage_section
+    stale_when:
+      - Any app name changes
+      - Any core app role tagline changes
+      - Any core app description changes (72-90 word blurb)
+      - Any core app logo changes
+      - Any management app is added, renamed, or deprecated
+      - A management app description (short blurb) changes
+      - Any site URL changes
+
+  - id: home.data-sync
+    surface: opta-home
+    file: 1T-Opta-Home/components/DataSync.tsx
+    describes: [opta-accounts]
+    content_type: homepage_section
+    stale_when:
+      - Opta Accounts sync feature set changes
+      - Privacy model changes
+
+  - id: home.arch-diagram
+    surface: opta-home
+    file: 1T-Opta-Home/components/ArchDiagram.tsx
+    describes: [opta-cli, opta-daemon, opta-lmx, opta-code]
+    content_type: homepage_section
+    stale_when:
+      - Stack architecture changes (new component, removed component)
+      - Host policy changes (Mono512 hostname)
+      - Port numbers change
+
+  - id: home.model-grid
+    surface: opta-home
+    file: 1T-Opta-Home/components/ModelGrid.tsx
+    describes: [opta-lmx]
+    content_type: homepage_section
+    stale_when:
+      - New model format support added to LMX (GGUF, MLX, EXL2, AWQ, etc)
+      - VRAM requirement tiers change
+
+  - id: home.hardware-stats
+    surface: opta-home
+    file: 1T-Opta-Home/components/HardwareStats.tsx
+    describes: [opta-lmx]
+    content_type: homepage_section
+    stale_when:
+      - Reference hardware (Mono512) specs change
+      - Benchmark numbers change (tok/s, TTFT, largest model)
+
+  - id: home.feature-trio
+    surface: opta-home
+    file: 1T-Opta-Home/components/FeatureTrio.tsx
+    describes: [opta-lmx, opta-cli, opta-code]
+    content_type: homepage_section
+    stale_when:
+      - Core value props change (air-gap, unmetered inference, integrations)
+
+  - id: home.cta-block
+    surface: opta-home
+    file: 1T-Opta-Home/components/CtaBlock.tsx
+    describes: [opta-init]
+    content_type: homepage_section
+    stale_when:
+      - The main CTA URL changes
+      - Setup time claim changes ("10 minutes")
+
+  - id: home.footer
+    surface: opta-home
+    file: 1T-Opta-Home/components/Footer.tsx
+    describes: [opta-init, opta-lmx, opta-cli, opta-code, opta-accounts, opta-status, opta-help, opta-learn]
+    content_type: homepage_section
+    stale_when:
+      - Any site URL changes
+      - A new app is added to the nav footer
+      - Company name or copyright year changes
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA STATUS (status.optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: status.service-cards
+    surface: opta-status
+    file: 1S-Opta-Status/app/page.tsx
+    describes: [opta-lmx, opta-daemon, opta-code, opta-local, opta-init, opta-accounts, opta-admin, opta-help, opta-learn]
+    content_type: status_card
+    stale_when:
+      - A new app/service is added to the stack
+      - An app is renamed, deprecated, or URL changes
+      - A new service needs health monitoring added
+      - Health metric fields change (e.g. daemon adds a new `sessions` metric)
+
+  - id: status.release-notes
+    surface: opta-status
+    file: 1S-Opta-Status/app/release-notes.ts
+    describes: [opta-lmx, opta-cli, opta-code, opta-daemon, opta-init]
+    content_type: release_note
+    stale_when:
+      - ANY new version is released for any core app
+      - A significant feature ships or reaches GA
+      - A major bug is fixed with user-facing impact
+
+  - id: status.release-notes-generated
+    surface: opta-status
+    file: 1S-Opta-Status/app/release-notes.generated.ts
+    describes: [opta-lmx, opta-cli, opta-code, opta-daemon, opta-init]
+    content_type: release_note
+    stale_when:
+      - Regenerated by `npm run release-notes:generate`
+      - Source commits change
+
+  - id: status.features-page
+    surface: opta-status
+    file: 1S-Opta-Status/app/features/page.tsx
+    describes: [opta-lmx, opta-cli, opta-code, opta-daemon, opta-init]
+    content_type: feature_registry
+    stale_when:
+      - A new feature is added to any core app
+      - A feature status changes (planned → in-progress → shipped)
+      - A feature is renamed or removed
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA HELP (help.optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: help.home
+    surface: opta-help
+    file: 1U-Opta-Help/app/page.tsx
+    describes: [opta-cli, opta-daemon, opta-lmx, opta-code]
+    content_type: doc
+    stale_when:
+      - Navigation section list changes (new section added)
+      - Stack overview diagram changes
+      - Port numbers in the stack diagram change
+
+  - id: help.getting-started
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/getting-started/
+    describes: [opta-cli, opta-daemon, opta-lmx, opta-init]
+    content_type: doc
+    stale_when:
+      - Install command or process changes
+      - Stack startup sequence changes
+      - Prerequisites change (OS, hardware requirements)
+
+  - id: help.cli-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/cli/
+    describes: [opta-cli]
+    content_type: doc
+    stale_when:
+      - CLI commands are added, removed, or renamed
+      - Flags or argument formats change
+      - Command output format changes
+      - New opta modes added (do, plan, review, research, etc)
+
+  - id: help.daemon-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/daemon/
+    describes: [opta-daemon]
+    content_type: doc
+    stale_when:
+      - Daemon API endpoints change
+      - WebSocket event types change
+      - Port or auth mechanism changes
+      - New daemon operations added
+
+  - id: help.lmx-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/lmx/
+    describes: [opta-lmx]
+    content_type: doc
+    stale_when:
+      - LMX API changes (/v1/chat/completions, /admin/models/*)
+      - New model format support added
+      - Memory management behaviour changes
+      - New backend drivers added (MLX, vLLM, GGUF)
+
+  - id: help.code-desktop-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/code-desktop/
+    describes: [opta-code]
+    content_type: doc
+    stale_when:
+      - Code Desktop UI changes significantly (new panels, renamed views)
+      - New navigation modes added (sessions, models, operations, etc)
+      - Setup wizard steps change
+      - Connection configuration changes
+
+  - id: help.browser-automation-docs
+    surface: opta-help
+    file: 1U-Opta-Help/app/docs/browser-automation/
+    describes: [opta-cli, opta-daemon]
+    content_type: doc
+    stale_when:
+      - Browser automation tool protocol changes
+      - New browser automation capabilities added
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA LEARN (learn.optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: learn.opta-local-intro
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/opta-local-intro.ts
+    describes: [opta-cli, opta-lmx, opta-code, opta-init]
+    content_type: guide
+    status: draft
+    stale_when:
+      - The stack architecture overview changes
+      - A core app's role or description changes
+      - Getting-started flow changes
+
+  - id: learn.lmx-overview
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/lmx-overview.ts
+    describes: [opta-lmx]
+    content_type: guide
+    status: draft
+    stale_when:
+      - LMX feature set changes
+      - Model compatibility list changes
+      - API endpoint changes
+
+  - id: learn.cli-masterclass
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/cli-masterclass.ts
+    describes: [opta-cli]
+    content_type: guide
+    status: verified
+    stale_when:
+      - CLI commands or flags change
+      - New opta modes added
+      - CEO Mode or agentic workflow patterns change
+      - New CLI features ship
+
+  - id: learn.lmx-masterclass
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/lmx-masterclass.ts
+    describes: [opta-lmx]
+    content_type: guide
+    status: draft
+    stale_when:
+      - LMX model management flow changes
+      - API contract changes
+      - Memory management patterns change
+
+  - id: learn.code-desktop-masterclass
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/code-desktop-masterclass.ts
+    describes: [opta-code]
+    content_type: guide
+    status: draft
+    stale_when:
+      - Code Desktop UX significantly updates
+      - New views, modes, or workflows added
+      - Setup wizard steps change
+
+  - id: learn.code-desktop-overview
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/code-desktop-overview.ts
+    describes: [opta-code]
+    content_type: guide
+    status: draft
+    stale_when:
+      - Code Desktop feature set changes
+      - New major capabilities ship
+
+  - id: learn.accounts-sync
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/accounts-sync.ts
+    describes: [opta-accounts]
+    content_type: guide
+    status: draft
+    stale_when:
+      - Accounts sync categories change
+      - Cross-device sync behaviour changes
+
+  - id: learn.accounts-masterclass
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/accounts-masterclass.ts
+    describes: [opta-accounts]
+    content_type: guide
+    status: draft
+    stale_when:
+      - Accounts auth flow changes
+      - OAuth providers added/removed
+      - Capability control mechanics change
+
+  - id: learn.browser-automation
+    surface: opta-learn
+    file: 1V-Opta-Learn/content/guides/browser-automation.ts
+    describes: [opta-cli, opta-daemon]
+    content_type: guide
+    status: draft
+    stale_when:
+      - Browser automation tool API changes
+      - New capabilities added
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA INIT (init.optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: init.download-targets
+    surface: opta-init
+    file: 1O-Opta-Init/lib/download-artifacts.ts
+    describes: [opta-init, opta-cli, opta-code, opta-lmx]
+    content_type: download_manifest
+    stale_when:
+      - A new platform is added (e.g. Linux, Windows ARM)
+      - A platform moves from beta to stable channel
+      - A manifest URL changes
+      - A fallback installer URL changes
+
+  - id: init.channels-stable
+    surface: opta-init
+    file: 1O-Opta-Init/channels/stable.json
+    describes: [opta-cli, opta-lmx, opta-code, opta-daemon]
+    content_type: download_manifest
+    stale_when:
+      - A new component version is released on stable
+      - A component gains real download artifacts (currently CLI only has real URLs)
+      - A component is added to or removed from the release
+
+  - id: init.channels-beta
+    surface: opta-init
+    file: 1O-Opta-Init/channels/beta.json
+    describes: [opta-cli, opta-lmx, opta-code, opta-daemon]
+    content_type: download_manifest
+    stale_when:
+      - A new beta version is cut for any component
+
+  - id: init.desktop-updates-stable
+    surface: opta-init
+    file: 1O-Opta-Init/public/desktop-updates/stable.json
+    describes: [opta-init]
+    content_type: download_manifest
+    stale_when:
+      - A new Init Manager version ships to stable (macOS or Windows)
+      - Installer signature changes
+      - A new platform is added
+
+  - id: init.desktop-updates-beta
+    surface: opta-init
+    file: 1O-Opta-Init/public/desktop-updates/beta.json
+    describes: [opta-init]
+    content_type: download_manifest
+    stale_when:
+      - A new Init Manager version ships to beta
+
+  - id: init.desktop-manager-app
+    surface: opta-init
+    file: 1O-Opta-Init/desktop-manager/src/App.tsx
+    describes: [opta-cli, opta-lmx, opta-code, opta-daemon, opta-local, opta-accounts, opta-status, opta-learn, opta-help]
+    content_type: app_description
+    stale_when:
+      - An app is added to or removed from the stack
+      - An app name, short description, or website URL changes
+      - A logo is updated (LOGOS map at top of file)
+      - The daemon status check behaviour changes
+
+  - id: init.main-site
+    surface: opta-init
+    file: 1O-Opta-Init/src/app/page.tsx
+    describes: [opta-init, opta-cli, opta-lmx, opta-code]
+    content_type: homepage_section
+    stale_when:
+      - Download URLs change
+      - Platform support changes
+      - Release notes change
+      - Opta Init version bumps
+
+  # ════════════════════════════════════════════════════════════════════════════
+  # OPTA ADMIN (admin.optalocal.com)
+  # ════════════════════════════════════════════════════════════════════════════
+
+  - id: admin.guide-promotion
+    surface: opta-admin
+    file: 1X-Opta-Admin/
+    describes: [opta-learn]
+    content_type: app_description
+    stale_when:
+      - A guide in opta-learn is promoted from draft to verified
+      - A new guide template is added to opta-learn

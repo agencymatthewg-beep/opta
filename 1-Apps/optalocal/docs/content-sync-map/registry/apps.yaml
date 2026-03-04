@@ -1,0 +1,157 @@
+# Opta Apps Registry
+# Canonical identity for every Opta app and management website.
+# This is the single source of truth that content-nodes.yaml and logos.yaml reference.
+# Last updated: 2026-03-04
+
+apps:
+  # ── Core Apps (the 4 products users install and run) ───────────────────────
+
+  - id: opta-init
+    name: Opta Init
+    short_name: Init
+    type: core
+    role: Distribution + lifecycle manager
+    description: >
+      The canonical onboarding surface and desktop manager for the full Opta
+      Local stack. Users install once and then onboard CLI, LMX, and Code
+      through signed manifests.
+    domain: init.optalocal.com
+    repo_dir: 1O-Opta-Init
+    current_version: "0.6.1"
+    platforms: [macos, windows]
+    logo: opta-init-mark.svg
+
+  - id: opta-lmx
+    name: Opta LMX
+    short_name: LMX
+    type: core
+    role: Local inference engine
+    description: >
+      Apple Silicon MLX inference server. OpenAI-compatible API at
+      192.168.188.11:1234. Manages model loading, memory, and local endpoints.
+    domain: lmx.optalocal.com
+    repo_dir: 1M-Opta-LMX
+    current_version: "0.7.0-beta.2"
+    platforms: [macos]
+    logo: opta-lmx-mark.svg
+
+  - id: opta-cli
+    name: Opta CLI
+    short_name: CLI
+    type: core
+    role: Terminal control plane
+    description: >
+      Terminal-first control surface and daemon for the stack. Connects local
+      tools and projects to the local inference engine for agentic workflows.
+    domain: null
+    repo_dir: 1D-Opta-CLI-TS
+    current_version: "0.5.0-alpha.15"
+    platforms: [macos, windows]
+    logo: opta-cli-mark.svg
+
+  - id: opta-code
+    name: Opta Code
+    short_name: Code
+    type: core
+    role: Desktop IDE
+    description: >
+      Daemon-powered desktop client for session telemetry, multi-mode
+      interaction, and local context execution. Tauri v2 + React 18.
+    domain: null
+    repo_dir: 1P-Opta-Code-Universal
+    current_version: "0.6.0-beta.1"
+    platforms: [macos, windows]
+    logo: opta-code-mark.svg
+    note: "Also referenced internally as opta-code-universal in manifests"
+
+  - id: opta-daemon
+    name: Opta Daemon
+    short_name: Daemon
+    type: core
+    role: Session orchestration service
+    description: >
+      Background HTTP + WebSocket daemon. Proxies inference to LMX, owns
+      session orchestration, permission gating, and tool dispatch.
+    domain: null
+    repo_dir: 1D-Opta-CLI-TS
+    current_version: "0.5.0-beta.1"
+    platforms: [macos, windows]
+    logo: null  # Currently using opta-status-mark.svg as placeholder
+
+  # ── Management Websites (support infrastructure) ───────────────────────────
+
+  - id: opta-home
+    name: Opta Home
+    short_name: Home
+    type: management
+    role: Marketing homepage
+    description: Main optalocal.com website. Introduces the stack.
+    domain: optalocal.com
+    repo_dir: 1T-Opta-Home
+    logo: opta-local-mark.svg
+
+  - id: opta-accounts
+    name: Opta Accounts
+    short_name: Accounts
+    type: management
+    role: Identity, SSO and capability control
+    description: >
+      Cross-subdomain SSO via .optalocal.com cookies. Google OAuth, Apple
+      OAuth, email/password, CLI browser auth flow.
+    domain: accounts.optalocal.com
+    repo_dir: 1R-Opta-Accounts
+    logo: opta-accounts-mark.svg
+
+  - id: opta-status
+    name: Opta Status
+    short_name: Status
+    type: management
+    role: Fleet health and incident transparency
+    description: Real-time health dashboard for all Opta services.
+    domain: status.optalocal.com
+    repo_dir: 1S-Opta-Status
+    logo: opta-status-mark.svg
+
+  - id: opta-help
+    name: Opta Help
+    short_name: Help
+    type: management
+    role: Technical reference documentation
+    description: >
+      Reference docs for CLI, daemon, LMX, Code Desktop, APIs and setup.
+      Static export via Next.js.
+    domain: help.optalocal.com
+    repo_dir: 1U-Opta-Help
+    logo: opta-help-mark.svg
+
+  - id: opta-learn
+    name: Opta Learn
+    short_name: Learn
+    type: management
+    role: Guides and onboarding
+    description: >
+      Guide portal powered by TypeScript guide objects. Four template levels
+      from holistic (L4) to setting-level (L1).
+    domain: learn.optalocal.com
+    repo_dir: 1V-Opta-Learn
+    logo: opta-learn-mark.svg
+
+  - id: opta-admin
+    name: Opta Admin
+    short_name: Admin
+    type: management
+    role: Private control plane
+    description: Guide promotion, feature toggles, fleet operations.
+    domain: admin.optalocal.com
+    repo_dir: 1X-Opta-Admin
+    logo: null
+
+  - id: opta-local
+    name: Opta Local
+    short_name: Local
+    type: management
+    role: LMX management dashboard
+    description: Web dashboard for LMX management. Lives at lmx.optalocal.com.
+    domain: lmx.optalocal.com
+    repo_dir: null  # Separate repo
+    logo: opta-local-mark.svg
