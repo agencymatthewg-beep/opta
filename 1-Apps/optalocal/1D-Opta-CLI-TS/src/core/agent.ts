@@ -1060,5 +1060,16 @@ export async function agentLoop(
     }
   }
 
+  // Fire OS Desktop Notification if it was a long-running autonomous task
+  if (toolCallCount > 3 && !isSubAgent && !options?.silent) {
+    import('node-notifier').then(({ default: notifier }) => {
+      notifier.notify({
+        title: 'Opta CLI',
+        message: `Task complete! Executed ${toolCallCount} tool calls.`,
+        sound: true,
+      });
+    }).catch(() => { /* ignore */ });
+  }
+
   return { messages, toolCallCount, lastThinkingRenderer };
 }
