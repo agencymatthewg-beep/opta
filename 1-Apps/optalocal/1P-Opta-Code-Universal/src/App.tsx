@@ -141,7 +141,7 @@ function App() {
   const [offlineSeconds, setOfflineSeconds] = useState(0);
   const [browserViewMode, setBrowserViewMode] =
     useState<BrowserViewMode>("default");
-  const [designMode, setDesignMode] = useLocalStorage("opta:designMode", "0");
+  const [designMode, setDesignMode] = useState("3");
 
   const openSettings = useCallback((tab: SettingsTabId = "connection") => {
     setSettingsInitialTab(tab);
