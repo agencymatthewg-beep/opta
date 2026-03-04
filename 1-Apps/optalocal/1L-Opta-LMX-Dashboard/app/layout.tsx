@@ -1,6 +1,8 @@
 import './globals.css'
 import type { Metadata } from 'next'
 
+import { Providers } from '@/lib/providers'
+
 export const metadata: Metadata = {
     title: 'Opta LMX Dashboard — Model Management & Inference',
     description:
@@ -31,7 +33,7 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="bg-void text-text-primary selection:bg-primary/30 selection:text-white">
-                {children}
+                <Providers>{children}</Providers>
             </body>
         </html>
     )
