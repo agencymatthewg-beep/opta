@@ -7,7 +7,7 @@ last_updated: 2026-03-04
 
 # OptaLocal Workspace
 
-Canonical workspace for Opta Local apps at `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal`.
+Canonical workspace for Opta Local apps at `<optalocal-root>`.
 
 ## Purpose
 

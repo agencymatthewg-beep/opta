@@ -9,7 +9,7 @@ Primary marketing/home surface for `optalocal.com`.
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1T-Opta-Home
+cd <optalocal-root>/1T-Opta-Home
 npm install
 npm run dev
 ```

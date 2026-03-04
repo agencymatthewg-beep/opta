@@ -1,7 +1,7 @@
 ---
 title: Opta Daemon Operator Runbook
 purpose: Start, monitor, and recover the opta daemon in production
-updated: 2026-02-28
+updated: 2026-03-04
 audience: Matthew, bots deploying the daemon
 ---
 
@@ -217,7 +217,7 @@ opta daemon start
 **Fix:**
 ```bash
 # Check LMX health
-curl http://192.168.188.11:1234/healthz
+curl http://lmx-host.local:1234/healthz
 
 # If LMX is down, Opta falls back to SSE — this is expected behavior.
 # The lmxWsUnavailable flag suppresses reconnect noise after turn 1.
@@ -345,3 +345,85 @@ opta do "say hello"
 ```
 
 Expected: All steps succeed, `opta do` completes without reconnect errors.
+
+---
+
+## 12. LMX Admin Key Detection Helper
+
+The CLI now owns a `detectLocalAdminKey` helper that spares operators from manually pasting admin
+keys every time a loopback host boots.
+
+### Detection order
+
+1. Environment (`OPTA_LMX_ADMIN_KEY`), project config, and CLI overrides are applied first.
+2. If the resolved `connection.host` or any `connection.fallbackHosts` entry is loopback
+   (`127.0.0.1`, `::1`, or `localhost`), the helper reads `server.admin_key` from
+   `~/.opta-lmx/config.yaml`.
+3. The discovered key is copied into `connection.adminKey`, and each loopback fallback host is added
+   to `connection.adminKeysByHost`.
+4. Changing `connection.host` to a non-loopback value clears the detected key so nothing leaks to
+   remote LMX deployments.
+
+`opta status --json` now prints a `adminKeySource` field so you can confirm whether the key came from
+the YAML file, an env var, or an explicit override.
+
+### Manual override commands
+
+```bash
+opta config get connection.adminKey
+opta config set connection.adminKey <key>
+opta config delete connection.adminKey
+
+opta config get connection.adminKeysByHost
+opta config set connection.adminKeysByHost '{"127.0.0.1":"<key>","lmx-host.local":"<key>"}'
+opta config delete connection.adminKeysByHost
+```
+
+If detection ever fails, open `~/.opta-lmx/config.yaml` and verify `server.admin_key` still matches
+the server. Updating that file plus rerunning `opta status` is usually faster than touching CLI
+config.
+
+---
+
+## 13. CLI Offline Startup Notice
+
+When LMX discovery fails (host unreachable, admin key rejected, or no fallback accepts a probe) the
+Ink UI surfaces an Offline notice instead of throwing stack traces. You will see:
+
+- A banner listing each attempted host and HTTP error
+- Disabled composer and Quick Actions
+- A CTA describing which recovery commands to run
+
+Use this fixed sequence to recover:
+
+```bash
+opta status                        # Re-run discovery and show admin-key source
+/server status                     # Slash command inside opta chat to reprobe without restarting
+opta config delete connection.adminKey   # Drop stale overrides to re-enable auto-detection
+opta models --json                 # Confirms the admin key can access /admin/model endpoints again
+```
+
+Once `opta models` succeeds the composer re-enables automatically; no restart is required.
+
+---
+
+## 14. Desktop Accounts Deep-Link Flow
+
+Opta Code and Opta Init now ship an **Accounts** button that mirrors the CLI login flow:
+
+1. Button click launches the system browser and navigates to `accounts.optalocal.com`.
+2. After sign-in, Supabase redirects to `opta-code://auth/callback`.
+3. The desktop app listens for that deep-link, refreshes account state, shows a toast, and closes the
+   transient browser tab.
+
+### Troubleshooting stuck desktop logins
+
+- Ensure macOS still allows the `opta-code://` (or `opta-init://`) protocol. System Settings →
+  Privacy & Security → Default web browser.
+- Keep the desktop app open and run `opta account status` to confirm the daemon picked up the new
+  session file.
+- If the browser closes but state never updates, run `opta account login --oauth` once, then click
+  the Accounts button again—the deep-link listener unsubscribes/subscribe automatically so retries
+  are safe.
+- When the CLI shows the Offline startup notice at the same time, fix LMX first (Section 13) so the
+  refreshed Supabase token can be used immediately.

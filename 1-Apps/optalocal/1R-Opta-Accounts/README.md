@@ -10,7 +10,7 @@ Accounts, identity, sessions, and device-policy UX for the Opta ecosystem.
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1R-Opta-Accounts
+cd <optalocal-root>/1R-Opta-Accounts
 npm install
 npm run dev
 ```

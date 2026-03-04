@@ -141,7 +141,7 @@ export default function HomePage() {
             <div className="pl-8 text-text-muted">&#9474; HTTP v3 REST + WebSocket</div>
             <div className="text-text-secondary pl-4">
               <span className="text-neon-amber">Opta LMX</span>
-              <span className="text-text-muted ml-2">192.168.188.11:1234</span>
+              <span className="text-text-muted ml-2">lmx-host.local:1234</span>
               <span className="text-text-muted ml-4"># MLX inference</span>
             </div>
             <div className="pl-8 text-text-muted">&#9474; OpenAI-compatible API</div>

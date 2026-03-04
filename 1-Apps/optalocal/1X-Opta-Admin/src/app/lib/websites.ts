@@ -10,6 +10,7 @@ type CanonicalWebsiteRecord = {
   localUrl: string;
   healthPath: string;
   appPath: string;
+  statusServiceId: string | null;
   purpose?: string;
 };
 
@@ -17,21 +18,27 @@ function isNonEmptyString(value: unknown): value is string {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function isCanonicalWebsiteRecord(value: unknown): value is CanonicalWebsiteRecord {
+  if (!value || typeof value !== 'object') return false;
+  const website = value as Partial<CanonicalWebsiteRecord>;
+  return (
+    isNonEmptyString(website.key) &&
+    isNonEmptyString(website.name) &&
+    isNonEmptyString(website.domain) &&
+    isNonEmptyString(website.localUrl) &&
+    isNonEmptyString(website.healthPath) &&
+    isNonEmptyString(website.appPath) &&
+    (typeof website.statusServiceId === 'string' || website.statusServiceId === null)
+  );
+}
+
 function readCanonicalManagedWebsites(): ManagedWebsite[] {
-  const websites = Array.isArray(websitesRegistry.websites) ? websitesRegistry.websites : [];
+  const websites = Array.isArray(websitesRegistry.websites)
+    ? (websitesRegistry.websites as unknown[])
+    : [];
 
   return websites
-    .filter((website): website is CanonicalWebsiteRecord => {
-      return (
-        website != null &&
-        isNonEmptyString(website.key) &&
-        isNonEmptyString(website.name) &&
-        isNonEmptyString(website.domain) &&
-        isNonEmptyString(website.localUrl) &&
-        isNonEmptyString(website.healthPath) &&
-        isNonEmptyString(website.appPath)
-      );
-    })
+    .filter(isCanonicalWebsiteRecord)
     .map((website) => ({
       key: website.key,
       name: website.name,

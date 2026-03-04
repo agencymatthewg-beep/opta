@@ -81,7 +81,7 @@ export const accountsMasterclass: Guide = {
     },
     {
       heading: 'Autonomy Preset Syncing',
-      body: 'Your "Do Mode" preferences (e.g., auto-approving terminal commands but requiring approval for file writes) are deeply personal. Opta Accounts serializes your <code>agent-profiles.json</code> and syncs it. If you switch from your Mac Studio to your MacBook Air, your agent behaves with the exact same level of trust and operational boundaries seamlessly.',
+      body: 'Your "Do Mode" preferences (e.g., auto-approving terminal commands but requiring approval for file writes) are deeply personal. Opta Accounts serializes your <code>agent-profiles.json</code> and syncs it. If you switch between your workstation and your laptop, your agent keeps the same trust boundaries seamlessly.',
       visual: `<div class="visual-wrapper my-8 bg-void border border-white/10 rounded-xl p-5 font-mono text-xs text-text-muted">
         <div class="text-white mb-2">// Synced Profile Payload</div>
         <div class="pl-4 border-l border-[#3b82f6]/30">

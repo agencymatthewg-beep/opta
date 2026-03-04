@@ -125,7 +125,8 @@ export type WidgetId =
   | "next-steps"
   | "tool-log"
   | "plan-completion"
-  | "cli-stream";
+  | "cli-stream"
+  | "git-diff";
 
 export type WidgetSize = "S" | "M" | "T";
 

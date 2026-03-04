@@ -88,7 +88,7 @@ const BASE_SERVICES: ServiceDef[] = [
   },
 ]
 
-const WEBSITE_STATUS_ORDER = ['local', 'init', 'accounts', 'status', 'admin', 'help', 'learn'] as const
+const WEBSITE_STATUS_ORDER = ['local', 'init', 'lmx-site', 'accounts', 'status', 'admin', 'help', 'learn'] as const
 
 const WEBSITE_STATUS_PRESENTATION: Record<string, { name: string; subtitle: string; icon: React.ElementType }> = {
   local: {
@@ -99,6 +99,11 @@ const WEBSITE_STATUS_PRESENTATION: Record<string, { name: string; subtitle: stri
   init: {
     name: 'Opta Init',
     subtitle: 'Setup & download portal',
+    icon: Globe,
+  },
+  'lmx-site': {
+    name: 'Opta LMX Dashboard',
+    subtitle: 'Model management web surface',
     icon: Globe,
   },
   accounts: {
@@ -149,21 +154,24 @@ function buildWebsiteServiceDefs(): ServiceDef[] {
     byId.set(serviceId.trim().toLowerCase(), rawWebsite)
   }
 
-  return WEBSITE_STATUS_ORDER
-    .map((serviceId) => {
-      const website = byId.get(serviceId)
-      if (!website) return null
-      const presentation = WEBSITE_STATUS_PRESENTATION[serviceId]
-      const domain = website.domain.trim()
-      return {
-        id: serviceId,
-        name: presentation?.name ?? website.name,
-        subtitle: presentation?.subtitle ?? website.purpose?.trim() ?? `${website.name} website`,
-        icon: presentation?.icon ?? Globe,
-        docs: `https://${domain}`,
-      } satisfies ServiceDef
+  const services: ServiceDef[] = []
+
+  for (const serviceId of WEBSITE_STATUS_ORDER) {
+    const website = byId.get(serviceId)
+    if (!website) continue
+
+    const presentation = WEBSITE_STATUS_PRESENTATION[serviceId]
+    const domain = website.domain.trim()
+    services.push({
+      id: serviceId,
+      name: presentation?.name ?? website.name,
+      subtitle: presentation?.subtitle ?? website.purpose?.trim() ?? `${website.name} website`,
+      icon: presentation?.icon ?? Globe,
+      docs: `https://${domain}`,
     })
-    .filter((service): service is ServiceDef => service !== null)
+  }
+
+  return services
 }
 
 const SERVICES: ServiceDef[] = [...BASE_SERVICES, ...buildWebsiteServiceDefs()]

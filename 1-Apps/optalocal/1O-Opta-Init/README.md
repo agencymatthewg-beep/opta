@@ -12,7 +12,7 @@ Opta Init is the Opta Local Initializer (short for `opta init`), handling first-
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init
+cd <optalocal-root>/1O-Opta-Init
 npm install
 npm run dev
 ```
@@ -37,7 +37,7 @@ npm run sync:vercel-redirects
 ## Desktop Manager
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1O-Opta-Init/desktop-manager
+cd <optalocal-root>/1O-Opta-Init/desktop-manager
 npm install
 npm run typecheck
 npm run build

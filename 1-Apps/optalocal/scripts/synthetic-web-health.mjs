@@ -25,6 +25,7 @@ const FALLBACK_HEALTH_ENDPOINTS = [
   { id: 'accounts', name: 'Accounts Health', url: 'https://accounts.optalocal.com/api/health/supabase' },
   { id: 'status-admin', name: 'Status Admin Probe', url: 'https://status.optalocal.com/api/health/admin' },
   { id: 'status-lmx', name: 'Status LMX Probe', url: 'https://status.optalocal.com/api/health/lmx' },
+  { id: 'status-lmx-site', name: 'Status LMX Site Probe', url: 'https://status.optalocal.com/api/health/lmx-site' },
   { id: 'status-daemon', name: 'Status Daemon Probe', url: 'https://status.optalocal.com/api/health/daemon' },
   { id: 'admin', name: 'Admin Health', url: 'https://admin.optalocal.com/api/health' },
 ];

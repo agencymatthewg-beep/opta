@@ -112,7 +112,7 @@ Inherits canonical Opta design system — identical to init.optalocal.com:
 optalocal.com (Vercel CDN, static export)
 └── Next.js 16 App Router
     ├── Nav (sticky glass + OptaRing logo)
-    ├── Hero (split layout — headline + technical flow diagram, Mac Studio→LMX→Apps)
+    ├── Hero (split layout — headline + technical flow diagram, Client→LMX→Apps)
     ├── Benchmark Strip (full-width: 512GB · 22.2 tok/s · 836GB · 0 cloud · <200ms)
     ├── Ecosystem (split view: Main Local Apps + Management Websites)
     ├── Arch Diagram (Local active vs Cloud crossed out, side-by-side)

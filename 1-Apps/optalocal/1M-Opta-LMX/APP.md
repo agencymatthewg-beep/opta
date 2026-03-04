@@ -55,13 +55,13 @@ The **Opta LMX Dashboard** (`1L-Opta-LMX-Dashboard`, `lmx.optalocal.com`) is the
 
 1. **OpenClaw bots** (Opta512, Mono, Floda, Saturday, Lin) — autonomous consumers of inference API
 2. **Opta CLI** — agentic coding assistant that needs fast, reliable local inference
-3. **Matthew** — via `opta serve` commands and Opta CLI
+3. **Operators** — via `opta serve` commands and Opta CLI
 
 ### Use Cases
 
-1. **Bot sends a message → LMX serves response** — 6 bots on Mac Studio all hitting `/v1/chat/completions`, LMX handles queuing and routing to the best loaded model
+1. **Bot sends a message → LMX serves response** — multiple bots hit `/v1/chat/completions`; LMX handles queuing and routing to the best loaded model
 2. **Bot detects new model on HuggingFace → downloads and loads it** — Autonomous model management via Admin API, zero human intervention
-3. **Matthew runs `opta do "fix this bug"` from MacBook** — Opta CLI sends request over LAN to LMX on Mac Studio, gets streamed response from the best coding model
+3. **Operator runs `opta do "fix this bug"` from a client device** — Opta CLI sends request over LAN to the LMX host and gets a streamed response from the best coding model
 4. **Night shift: bots swap to smaller model** — At quiet hours, bots unload the 420GB model and load a faster 24GB model to save memory for other tasks
 5. **New model architecture released** — Add Python support in hours, not waiting weeks for LM Studio to update their C++ engine
 

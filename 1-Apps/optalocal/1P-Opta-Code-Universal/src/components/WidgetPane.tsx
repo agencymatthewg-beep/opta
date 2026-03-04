@@ -1,6 +1,7 @@
-import type { WidgetSlot, WidgetId, TimelineItem } from "../types";
+import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../types";
 import { WidgetAtpo } from "./widgets/WidgetAtpo";
 import { WidgetCliStream } from "./widgets/WidgetCliStream";
+import { WidgetGitDiff } from "./widgets/WidgetGitDiff";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -12,6 +13,8 @@ interface WidgetPaneProps {
     rawEvents: unknown[];
     designMode?: string; // TEMP for prototyping
     openSettings?: (tab: string) => void; // TEMP for prototyping
+    connection?: DaemonConnectionOptions;
+    sessionId?: string | null;
 }
 
 export function WidgetContent(props: {
@@ -19,13 +22,17 @@ export function WidgetContent(props: {
     timelineItems: TimelineItem[];
     rawEvents: unknown[];
     designMode?: string;
+    connection?: DaemonConnectionOptions;
+    sessionId?: string | null;
 }) {
-    const { widgetId, timelineItems, rawEvents, designMode } = props;
+    const { widgetId, timelineItems, rawEvents, designMode, connection, sessionId } = props;
     switch (widgetId) {
         case "atpo":
             return <WidgetAtpo timelineItems={timelineItems} designMode={designMode} />;
         case "cli-stream":
             return <WidgetCliStream rawEvents={rawEvents} designMode={designMode} />;
+        case "git-diff":
+            return <WidgetGitDiff connection={connection} sessionId={sessionId} />;
         default:
             return (
                 <div className="widget-placeholder">
@@ -48,6 +55,8 @@ export function WidgetPane({
     rawEvents,
     designMode = "0",
     openSettings,
+    connection,
+    sessionId,
 }: WidgetPaneProps) {
     const hasWidgets = slots.length > 0;
 
@@ -102,6 +111,8 @@ export function WidgetPane({
                                 timelineItems={timelineItems}
                                 rawEvents={rawEvents}
                                 designMode={designMode}
+                                connection={connection}
+                                sessionId={sessionId}
                             />
                         )}
                     </div>
@@ -114,14 +125,21 @@ export function WidgetPane({
                             onClick={() => onAddWidget("atpo")}
                             type="button"
                         >
-                            +
+                            + ATPO
+                        </button>
+                        <button
+                            className="wp-add-slot"
+                            onClick={() => onAddWidget("git-diff")}
+                            type="button"
+                        >
+                            + DIFF
                         </button>
                         <button
                             className="wp-add-slot wp-add-slot-wide"
                             onClick={() => onAddWidget("cli-stream")}
                             type="button"
                         >
-                            +
+                            + CLI
                         </button>
                     </>
                 )}

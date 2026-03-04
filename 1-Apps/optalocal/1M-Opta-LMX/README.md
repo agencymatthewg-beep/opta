@@ -2,7 +2,7 @@
 
 Private AI inference engine for Apple Silicon — MLX-native, OpenAI-compatible.
 
-Opta LMX serves local MLX models via an OpenAI-compatible API on port 1234 (drop-in LM Studio replacement). Designed for Mac Studio / MacBook Pro with Apple Silicon.
+Opta LMX serves local MLX models via an OpenAI-compatible API on port 1234 (drop-in LM Studio replacement). Designed for Apple Silicon Macs.
 
 ## Requirements
 

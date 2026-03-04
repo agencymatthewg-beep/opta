@@ -9,7 +9,7 @@ Guides, workflows, and learning hub for Opta Local.
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1V-Opta-Learn
+cd <optalocal-root>/1V-Opta-Learn
 npm install
 npm run dev
 ```

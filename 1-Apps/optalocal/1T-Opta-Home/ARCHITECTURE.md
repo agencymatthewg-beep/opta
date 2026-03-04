@@ -23,7 +23,7 @@ app/page.tsx
 ├── <Nav />             — Sticky glass header, ecosystem links, OptaRing logo
 ├── <Hero />            — Split layout: headline + technical flow diagram
 │                         Animated tok/s counter, dark grid texture bg
-│                         Mac Studio → LMX → Apps diagram (Framer Motion)
+│                         Client → LMX → Apps diagram (Framer Motion)
 ├── <BenchmarkStrip />  — Full-width stats bar, animated counters on scroll
 │                         512GB RAM · 22.2 tok/s · 836GB models · 0 cloud · <200ms TTFT
 ├── <Ecosystem />       — 4-app obsidian bento grid

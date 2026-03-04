@@ -2,7 +2,7 @@
 
 **Version: 0.5.0-alpha.1** — Core feature set complete. See [docs/ROADMAP.md](docs/ROADMAP.md) for path to v1.0.
 
-A local-first agentic coding assistant powered by Apple Silicon LLM inference. Your code stays on your hardware — Opta routes through [Opta LMX](https://github.com/opta-operations/opta-lmx) running locally on a Mac Studio, with automatic cloud fallback to Anthropic Claude when needed.
+A local-first agentic coding assistant powered by Apple Silicon LLM inference. Your code stays on your hardware — Opta routes through [Opta LMX](https://github.com/opta-operations/opta-lmx) running locally on a dedicated Apple Silicon host, with automatic cloud fallback to Anthropic Claude when needed.
 
 ## Install
 
@@ -74,7 +74,7 @@ opta chat --review
 opta chat --auto
 
 # Target a specific device for inference
-opta chat --device mono512:1234
+opta chat --device lmx-host.local:1234
 
 # Resume a previous session
 opta chat --resume <session-id>
@@ -82,16 +82,16 @@ opta chat --resume <session-id>
 
 ## Startup Host Setup (Important)
 
-If your primary host is `localhost:1234` but LMX actually runs on another machine (for example `mono512:1234`), startup now probes both `connection.host` and `connection.fallbackHosts` before failing.
+If your primary host is `localhost:1234` but LMX actually runs on another machine (for example `lmx-host.local:1234`), startup now probes both `connection.host` and `connection.fallbackHosts` before failing.
 
 Recommended setup:
 
 ```bash
-# Keep localhost as primary but add studio fallback(s)
-opta config set connection.fallbackHosts mono512,192.168.188.11
+# Keep localhost as primary but add LAN fallback host(s)
+opta config set connection.fallbackHosts lmx-host.local,lmx-backup.local
 
 # Or make your remote host the primary endpoint
-opta config set connection.host mono512
+opta config set connection.host lmx-host.local
 opta config set connection.port 1234
 ```
 
@@ -364,8 +364,8 @@ Save and switch between named configurations:
 
 ```bash
 opta env save laptop
-opta env save studio --host 192.168.188.11 --port 1234
-opta env use studio
+opta env save remote --host lmx-host.local --port 1234
+opta env use remote
 opta env list
 ```
 
@@ -406,7 +406,7 @@ opta completions fish | source
 
 - **Node.js** 20 or later
 - **macOS** recommended (Apple Silicon for local inference)
-- **Opta LMX** on a Mac Studio or local machine for local inference (optional -- falls back to Anthropic cloud)
+- **Opta LMX** on a dedicated Apple Silicon or local machine for local inference (optional -- falls back to Anthropic cloud)
 - **Playwright** for browser automation (optional, installed on first use)
 
 ## License

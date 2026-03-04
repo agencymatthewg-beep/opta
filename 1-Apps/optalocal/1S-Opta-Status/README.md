@@ -9,7 +9,7 @@ Service and release status dashboard for Opta Local products.
 ## Local Development
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1S-Opta-Status
+cd <optalocal-root>/1S-Opta-Status
 npm install
 npm run dev
 ```

@@ -80,7 +80,7 @@ Based on the LMX API surface, the dashboard targets these page groups:
 
 All data flows through `lib/api.ts` which wraps `fetch()` with:
 
-- Configurable base URL (env `NEXT_PUBLIC_LMX_API_URL`, default `http://192.168.188.11:1234`)
+- Configurable base URL (env `NEXT_PUBLIC_LMX_API_URL`, default `http://127.0.0.1:1234`)
 - Timeout + AbortController
 - SWR-compatible fetcher for reactive data
 

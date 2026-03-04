@@ -1,6 +1,6 @@
 # Opta Local Workspace
 
-Canonical workspace for Opta Local apps under `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal`.
+Canonical workspace for Opta Local apps under `<optalocal-root>`.
 
 ## App Matrix
 
