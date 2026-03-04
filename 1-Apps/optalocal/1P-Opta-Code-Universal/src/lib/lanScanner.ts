@@ -50,13 +50,14 @@ const DEFAULT_CONCURRENCY = 20;
 const OPTA_LMX_PORT = 1234;
 const OPTA_DAEMON_PORT = 9999;
 
-// Well-known .local hostnames to always try first (common Mac Studio names).
+// Well-known .local hostnames to always try first (common local host naming patterns).
 // macOS mDNS (Bonjour) resolves these via the OS resolver — no special APIs needed.
 const MDNS_HINT_HOSTNAMES = [
-    "mono512",
     "mac-studio",
     "mac-mini",
     "mac-pro",
+    "lmx-host",
+    "lmx-server",
     "opta-studio",
     "opta-mac",
     "macstudio",
@@ -75,7 +76,7 @@ function makeTimeoutSignal(ms: number): AbortSignal {
 
 /**
  * Derives the /24 base from an IP address string.
- * e.g. "192.168.188.11" → "192.168.188"
+ * e.g. "192.168.1.25" → "192.168.1"
  * Falls back to "192.168.1" if parse fails.
  */
 export function deriveSubnetBase(ip: string): string {
@@ -168,7 +169,7 @@ async function probeHost(host: string, port: number): Promise<LanScanResult> {
  * On macOS, the system mDNS resolver (Bonjour/mDNSResponder) resolves `.local`
  * names transparently in `fetch()`. If LMX is advertising itself via
  * `_opta-lmx._tcp.local.` (enabled by default), its machine hostname
- * (e.g. `mono512.local`) will resolve to its LAN IP in < 50ms.
+ * (e.g. `lmx-host.local`) will resolve to its LAN IP in < 50ms.
  *
  * This is an instant, zero-scan discovery path — no subnet probing required.
  */
@@ -211,7 +212,7 @@ export interface FullDiscoveryResult {
  * 1. Probe well-known .local hostnames for LMX (≈ 50–200ms each, parallel)
  * 2. Run /24 subnet scan on daemonPort and lmxPort simultaneously
  *
- * @param subnetBase - e.g. "192.168.188" (derived from current connection host)
+ * @param subnetBase - e.g. "192.168.1" (derived from current connection host)
  * @param daemonPort - Opta Daemon port (default 9999)
  * @param lmxPort - LMX port (default 1234)
  * @param concurrency - parallel probes in subnet scan (default 20)

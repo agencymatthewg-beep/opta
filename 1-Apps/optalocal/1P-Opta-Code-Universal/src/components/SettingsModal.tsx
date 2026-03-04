@@ -402,11 +402,11 @@ export function SettingsModal({
         );
       } else if (lower.includes("timed out")) {
         setLmxNotice(
-          "✗ LMX check timed out. The Mac Studio at this IP may be offline or the port is blocked. Try pinging it first.",
+          "✗ LMX check timed out. The configured host may be offline or the port is blocked. Try pinging it first.",
         );
       } else if (lower.includes("connection refused") || lower.includes("econnrefused")) {
         setLmxNotice(
-          "✗ Connection refused — LMX is not running at this host/port. Start it with `opta-lmx` on the Mac Studio.",
+          "✗ Connection refused — LMX is not running at this host/port. Start it with `opta-lmx` on the target host.",
         );
       } else {
         setLmxNotice(`✗ LMX probe failed: ${message}`);
@@ -688,7 +688,7 @@ export function SettingsModal({
               <div>
                 <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>LMX Inference Routing</h3>
                 <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
-                  Where the daemon routes inference requests. Point this to your Mac Studio.
+                  Where the daemon routes inference requests. Point this to your LMX host.
                 </p>
               </div>
               <button
@@ -722,7 +722,7 @@ export function SettingsModal({
             >
               <Lightbulb size={14} style={{ color: "#a855f7", marginTop: "2px", flexShrink: 0 }} />
               <p style={{ margin: 0, fontSize: "0.79rem", color: "#c4b5fd", lineHeight: 1.5 }}>
-                Your Mac Studio address is typically <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>192.168.188.11</code> on port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>. Get the LMX admin key by running <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>opta config get connection.adminKey</code> on the Mac Studio.
+                Use <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>localhost</code> for local LMX or <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>lmx-host.local</code> for LAN discovery, usually on port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>. Get the LMX admin key by running <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>opta config get connection.adminKey</code> on that host.
               </p>
             </div>
 
@@ -809,7 +809,7 @@ export function SettingsModal({
                 onChange={(e) => setLmxAdminKeysByHost(e.target.value)}
                 rows={6}
                 spellCheck={false}
-                placeholder='{"192.168.188.11":"keyA","192.168.188.8":"keyB"}'
+                placeholder='{"localhost":"keyA","lmx-host.local":"keyB"}'
               />
             </div>
 

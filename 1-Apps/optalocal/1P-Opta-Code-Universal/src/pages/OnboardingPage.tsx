@@ -102,7 +102,7 @@ export function OnboardingPage({ host, port, onRetry, onDismiss }: Props) {
               the header to set a custom host and port. The daemon can run on
               any machine reachable from this device —{" "}
               {platform === "macos"
-                ? "including your Mac Studio on the local network."
+                ? "including another Mac on the local network."
                 : "including a remote server on your local network."}
             </p>
           )}

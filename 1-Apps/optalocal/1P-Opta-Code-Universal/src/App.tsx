@@ -44,6 +44,14 @@ import type {
   SessionTurnOverrides,
 } from "./types";
 
+interface TranscriptionResult {
+  text: string;
+}
+
+interface TTSResult {
+  audioBase64: string;
+}
+
 type AppPage =
   | "sessions"
   | "models"
@@ -641,7 +649,7 @@ function App() {
     [activeSessionId, composerDraft, createSession, selectedWorkspace, submitMessage, submissionMode],
   );
 
-  const onDictate = useCallback(async (audioBase64: string) => {
+  const onDictate = useCallback(async (audioBase64: string, autoSubmit?: boolean) => {
     if (!connection) return;
     setNotice("Transcribing audio...");
     try {
@@ -650,10 +658,28 @@ function App() {
         audioFormat: 'webm'
       });
       if (res.ok) {
-        const text = (res.result as any).text;
+        const text = (res.result as TranscriptionResult).text;
         if (text) {
-          setComposerDraft((prev) => prev ? `${prev} ${text}` : text);
-          setNotice("Dictation complete.");
+          const finalDraft = composerDraft ? `${composerDraft} ${text}` : text;
+          if (autoSubmit) {
+            setComposerDraft("");
+            let sessionId = activeSessionId;
+            if (!sessionId) {
+              const ws = selectedWorkspace === "all" ? "default" : selectedWorkspace;
+              sessionId = await createSession({ workspace: ws });
+              setActiveSessionId(sessionId);
+              setActivePage("sessions");
+            }
+            try {
+              await submitMessage(finalDraft, submissionMode);
+              setNotice(modeSubmitNotice(submissionMode));
+            } catch (error) {
+              setNotice(error instanceof Error ? error.message : String(error));
+            }
+          } else {
+            setComposerDraft(finalDraft);
+            setNotice("Dictation complete.");
+          }
         }
       } else {
         setNotice(`Transcription failed: ${res.error?.message || 'Unknown error'}`);
@@ -661,14 +687,14 @@ function App() {
     } catch (err) {
       setNotice(`Dictation error: ${err instanceof Error ? err.message : String(err)}`);
     }
-  }, [connection]);
+  }, [connection, composerDraft, activeSessionId, selectedWorkspace, createSession, setActiveSessionId, submitMessage, submissionMode]);
 
   const onTts = useCallback(async (text: string) => {
     if (!connection) return undefined;
     try {
       const res = await daemonClient.runOperation(connection, 'audio.tts', { text });
       if (res.ok) {
-        return (res.result as any).audioBase64 as string;
+        return (res.result as TTSResult).audioBase64;
       } else {
         console.error("TTS failed:", res.error);
       }
@@ -1013,6 +1039,20 @@ function App() {
                   </p>
                 ) : null}
                 <div className="daemon-reconnect-overlay__actions">
+                  <button
+                    type="button"
+                    className="opta-button primary"
+                    onClick={repairConnection}
+                  >
+                    Repair daemon connection
+                  </button>
+                  <button
+                    type="button"
+                    className="opta-button secondary"
+                    onClick={copyReconnectDiagnostics}
+                  >
+                    Copy diagnostics
+                  </button>
                   <button type="button" onClick={() => setDesignMode("0")} style={{ color: designMode === "0" ? "#fff" : "#888", padding: "2px 6px" }}>0: Def</button>
                   <button type="button" onClick={() => setDesignMode("1")} style={{ color: designMode === "1" ? "#fff" : "#888", padding: "2px 6px" }}>1: Topbar</button>
                   <button type="button" onClick={() => setDesignMode("2")} style={{ color: designMode === "2" ? "#fff" : "#888", padding: "2px 6px" }}>2: Widget</button>

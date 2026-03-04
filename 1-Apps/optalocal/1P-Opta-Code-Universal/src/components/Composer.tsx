@@ -14,7 +14,7 @@ interface ComposerProps {
   onChange: (next: string) => void;
   onSubmit: (overrides?: SessionTurnOverrides) => void;
   onCancel?: () => void;
-  onDictate?: (audioBase64: string) => Promise<void>;
+  onDictate?: (audioBase64: string, autoSubmit?: boolean) => Promise<void>;
   disabled?: boolean;
   isStreaming?: boolean;
   mode: SessionSubmitMode;
@@ -68,12 +68,15 @@ export function Composer({
 
   useEffect(() => {
     if (audioBase64 && onDictate) {
-      onDictate(audioBase64).finally(() => setAudioBase64(null));
+      const base64 = audioBase64;
+      setAudioBase64(null);
+      onDictate(base64, continuousMode).catch(console.error);
     }
-  }, [audioBase64, onDictate, setAudioBase64]);
+  }, [audioBase64, onDictate, setAudioBase64, continuousMode]);
 
   const prevStreamingRef = useRef(isStreaming);
   useEffect(() => {
+    let isMounted = true;
     if (continuousMode && prevStreamingRef.current && !isStreaming) {
       // Message finished streaming
       if (timelineItems && timelineItems.length > 0) {
@@ -82,12 +85,15 @@ export function Composer({
         const lastItem = assistantItems[assistantItems.length - 1];
         if (lastItem && lastItem.body && onTts) {
           onTts(lastItem.body).then((base64) => {
-            if (base64) playAudioBase64(base64);
+            if (isMounted && base64) playAudioBase64(base64);
           });
         }
       }
     }
     prevStreamingRef.current = isStreaming;
+    return () => {
+      isMounted = false;
+    };
   }, [isStreaming, continuousMode, timelineItems, onTts, playAudioBase64]);
 
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
@@ -327,6 +333,7 @@ export function Composer({
                 disabled={disabled}
                 onMouseDown={continuousMode ? startRecording : undefined}
                 onMouseUp={continuousMode ? stopRecording : undefined}
+                onMouseLeave={continuousMode ? stopRecording : undefined}
                 onClick={!continuousMode ? (isRecording ? stopRecording : startRecording) : undefined}
                 title={continuousMode ? "Hold to speak" : (isRecording ? "Stop recording" : "Dictate")}
               >

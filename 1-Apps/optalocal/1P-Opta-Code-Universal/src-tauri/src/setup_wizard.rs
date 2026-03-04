@@ -6,7 +6,7 @@ use std::path::PathBuf;
 #[allow(dead_code)] // config_dir and shell received from JS wizard but not written to conf JSON
 pub struct SetupConfig {
     pub provider: String,       // "lmx" | "anthropic"
-    pub lmx_host: String,       // e.g. "192.168.188.11"
+    pub lmx_host: String,       // e.g. "192.168.1.25"
     pub lmx_port: u16,          // e.g. 1234
     pub anthropic_key: String,  // only if provider == "anthropic"
     pub config_dir: String,     // e.g. "~/.config/opta"

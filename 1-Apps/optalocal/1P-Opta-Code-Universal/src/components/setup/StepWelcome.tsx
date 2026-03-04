@@ -5,7 +5,7 @@ export function StepWelcome({ platform }: { platform: Platform | null }) {
   const desc =
     platform === "windows"
       ? "Routes prompts to your Opta LMX inference server or Anthropic cloud - fully private when running locally. Takes about 90 seconds to configure."
-      : "Routes prompts through your own Mac Studio inference server - zero cloud latency, fully private. Takes about 90 seconds to configure.";
+      : "Routes prompts through your own local LMX inference server - zero cloud latency, fully private. Takes about 90 seconds to configure.";
 
   return (
     <div>

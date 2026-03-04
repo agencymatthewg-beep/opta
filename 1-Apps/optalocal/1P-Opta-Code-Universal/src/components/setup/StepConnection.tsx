@@ -365,7 +365,7 @@ export function StepConnection({
               Recommended
             </span>
           </>,
-          "Mac Studio inference - private, near-zero latency",
+          "Local LMX inference - private, near-zero latency",
           <div>
             <MonoLabel>Host : Port</MonoLabel>
             <p
