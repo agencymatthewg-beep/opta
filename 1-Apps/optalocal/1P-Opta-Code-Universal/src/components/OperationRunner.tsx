@@ -12,7 +12,7 @@ interface OperationRunnerProps {
     id: string,
     input: Record<string, unknown>,
     confirmDangerous?: boolean,
-  ) => Promise<void>;
+  ) => Promise<OperationResult | void>;
 }
 
 export function OperationRunner({

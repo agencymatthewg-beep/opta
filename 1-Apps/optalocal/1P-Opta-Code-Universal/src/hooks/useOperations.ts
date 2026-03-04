@@ -45,7 +45,7 @@ export interface UseOperationsState {
     id: string,
     input: Record<string, unknown>,
     confirmDangerous?: boolean,
-  ) => Promise<void>;
+  ) => Promise<OperationResult>;
   refresh: () => Promise<void>;
 }
 
@@ -107,9 +107,11 @@ export function useOperations(
           id,
           payload,
         );
-        setLastResult(normalizeOperationResult(result, id, fallbackSafety));
+        const opResult = normalizeOperationResult(result, id, fallbackSafety);
+        setLastResult(opResult);
+        return opResult;
       } catch (err) {
-        setLastResult({
+        const errResult = {
           ok: false,
           id,
           safety: fallbackSafety,
@@ -117,7 +119,9 @@ export function useOperations(
             code: "client_error",
             message: err instanceof Error ? err.message : String(err),
           },
-        });
+        };
+        setLastResult(errResult);
+        return errResult;
       } finally {
         setRunning(false);
       }
