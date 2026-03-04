@@ -619,12 +619,16 @@ function App() {
 
   const onSubmitComposer = useCallback(
     async (overrides?: SessionTurnOverrides) => {
-      if (!activeSessionId) {
-        setNotice("Select or create a session first.");
-        return;
-      }
       const outbound = composerDraft.trim();
       if (!outbound) return;
+      let sessionId = activeSessionId;
+      if (!sessionId) {
+        // Auto-create a session when the user types their first prompt
+        const ws = selectedWorkspace === "all" ? "default" : selectedWorkspace;
+        sessionId = await createSession({ workspace: ws });
+        setActiveSessionId(sessionId);
+        setActivePage("sessions");
+      }
       try {
         await submitMessage(outbound, submissionMode, overrides);
         setComposerDraft("");
@@ -633,7 +637,7 @@ function App() {
         setNotice(error instanceof Error ? error.message : String(error));
       }
     },
-    [activeSessionId, composerDraft, submitMessage, submissionMode],
+    [activeSessionId, composerDraft, createSession, selectedWorkspace, submitMessage, submissionMode],
   );
 
   const onDictate = useCallback(async (audioBase64: string) => {
@@ -854,8 +858,8 @@ function App() {
                           onSubmit={onSubmitComposer}
                           onCancel={() => void cancelActiveTurn()}
                           onDictate={onDictate}
-                          isStreaming={isStreaming}
-                          disabled={true}
+                          isStreaming={false}
+                          disabled={false}
                           mode={submissionMode}
                           onModeChange={setSubmissionMode}
                         />

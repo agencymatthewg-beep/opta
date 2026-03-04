@@ -22,6 +22,15 @@ export const MANAGED_WEBSITES: ManagedWebsite[] = [
     healthPath: '/',
   },
   {
+    key: 'lmx',
+    name: 'Opta LMX Dashboard',
+    domain: 'lmx.optalocal.com',
+    path: '1L-Opta-LMX-Dashboard',
+    purpose: 'Model management and inference operations surface',
+    localUrl: 'http://localhost:3003',
+    healthPath: '/',
+  },
+  {
     key: 'accounts',
     name: 'Opta Accounts',
     domain: 'accounts.optalocal.com',

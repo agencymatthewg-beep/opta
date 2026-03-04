@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Opta Text Logo (Canonical)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@600&display=swap');
+
+        :root {
+            --opta-primary-glow: #a855f7;
+            --opta-text-muted: #a1a1aa;
+        }
+
+        body {
+            background-color: #09090b;
+            margin: 0;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .v1-branding {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .v1-brand-text {
+            font-family: "Press Start 2P", monospace;
+            font-size: 4.5rem;
+            color: var(--opta-primary-glow);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            /* Layered multi-stroke pixel shadow */
+            text-shadow:
+                2px 2px 0 #09090b,
+                3px 3px 0 #09090b,
+                4px 4px 0 var(--opta-primary-glow),
+                5px 5px 0 var(--opta-primary-glow),
+                7px 7px 0 #09090b,
+                8px 8px 0 #09090b,
+                9px 9px 0 var(--opta-primary-glow),
+                10px 10px 0 var(--opta-primary-glow);
+            filter: drop-shadow(0 0 30px rgba(168, 85, 247, 0.3));
+            margin-bottom: 2rem;
+        }
+
+        .v1-brand-sub {
+            font-family: "JetBrains Mono", monospace;
+            font-size: 0.85rem;
+            color: var(--opta-text-muted);
+            letter-spacing: 0.5em;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="v1-branding">
+        <div class="v1-brand-text">OPTA</div>
+        <div class="v1-brand-sub">Code Environment</div>
+    </div>
+</body>
+
+</html>

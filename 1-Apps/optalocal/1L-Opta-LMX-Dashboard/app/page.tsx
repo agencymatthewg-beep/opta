@@ -71,8 +71,9 @@ export default function DashboardHome() {
         <main className="min-h-screen">
             {/* Header */}
             <header className="border-b border-[var(--opta-border)] glass-subtle">
-                <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                <div className="max-w-6xl mx-auto px-6 py-4 grid grid-cols-3 items-center">
+                    {/* Left: Branding */}
+                    <div className="flex items-center gap-3 justify-start">
                         <div className="flex items-center justify-center w-8 h-8 rounded-md bg-primary/15 border border-primary/30">
                             <Zap size={16} className="text-primary" />
                         </div>
@@ -89,7 +90,18 @@ export default function DashboardHome() {
                             Opta LMX
                         </h1>
                     </div>
-                    <div className="flex items-center gap-2">
+
+                    {/* Center: New Logo */}
+                    <div className="flex items-center justify-center">
+                        <img
+                            src="/opta-code-env-logo.png"
+                            alt="Opta Code Environment"
+                            className="h-10 object-contain drop-shadow-[0_0_12px_rgba(168,85,247,0.4)] mix-blend-screen"
+                        />
+                    </div>
+
+                    {/* Right: Status */}
+                    <div className="flex items-center gap-2 justify-end">
                         <span className={`status-dot ${statusDotClass}`} />
                         <span className="text-xs text-text-muted font-mono">
                             {statusLabel}
@@ -170,10 +182,10 @@ export default function DashboardHome() {
                                 </h2>
                                 <span
                                     className={`text-xs font-mono px-2 py-0.5 rounded ${dashboard.healthStatus === 'ok'
-                                            ? 'bg-[var(--opta-neon-green)]/15 text-[var(--opta-neon-green)]'
-                                            : dashboard.healthStatus === 'degraded'
-                                                ? 'bg-[var(--opta-neon-amber)]/15 text-[var(--opta-neon-amber)]'
-                                                : 'bg-[var(--opta-neon-red)]/15 text-[var(--opta-neon-red)]'
+                                        ? 'bg-[var(--opta-neon-green)]/15 text-[var(--opta-neon-green)]'
+                                        : dashboard.healthStatus === 'degraded'
+                                            ? 'bg-[var(--opta-neon-amber)]/15 text-[var(--opta-neon-amber)]'
+                                            : 'bg-[var(--opta-neon-red)]/15 text-[var(--opta-neon-red)]'
                                         }`}
                                 >
                                     {dashboard.healthStatus}
