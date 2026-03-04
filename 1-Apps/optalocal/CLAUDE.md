@@ -164,3 +164,12 @@ All apps share one Supabase project. Cookie domain `.optalocal.com` enables cros
 **Opta Init (1O):** Matthew explicitly wants the current design preserved. Do NOT redesign or alter the aesthetic. Only targeted feature additions.
 
 **Opta Home (1T):** Non-negotiable design philosophy — precision over decoration, real data as texture, terminal DNA (JetBrains Mono for stats), no generic AI aesthetics. Never add `output: 'export'` to next.config.
+
+### Live Production Update Logging
+
+**CRITICAL RULE:** Any time you complete a task that involves a **live production release** or an update to a **live-facing website** (e.g. shipping a feature to `optalocal.com`, `accounts.optalocal.com`, or standard core apps), you **MUST** document it in the `/optalocal-updates/` directory.
+
+1. Check `/optalocal-updates/` for the latest `NNNN-slug.md` file.
+2. Create the next sequential file (e.g. `0042-feature-name.md`).
+3. Follow the exact Markdown template defined in `/optalocal-updates/README.md`.
+4. Commit it alongside your changes.
