@@ -7,7 +7,32 @@ export interface SetupWizardProps {
     onComplete: () => void;
 }
 
+type WizardPlatform = 'windows' | 'macos' | 'linux';
+
+function detectPlatform(): WizardPlatform {
+    if (typeof navigator === 'undefined') return 'linux';
+    const ua = navigator.userAgent.toLowerCase();
+    if (ua.includes('win')) return 'windows';
+    if (ua.includes('mac')) return 'macos';
+    return 'linux';
+}
+
+function defaultPaths(platform: WizardPlatform): { installPath: string; docsPath: string } {
+    if (platform === 'windows') {
+        return {
+            installPath: '%LOCALAPPDATA%\\Opta\\apps',
+            docsPath: '%USERPROFILE%\\Documents\\Opta\\docs',
+        };
+    }
+    return {
+        installPath: '~/optalocal/apps',
+        docsPath: '~/optalocal/docs',
+    };
+}
+
 export function SetupWizard({ onComplete }: SetupWizardProps) {
+    const platform = detectPlatform();
+    const defaults = defaultPaths(platform);
     const [step, setStep] = useState(1);
     const [cmdProgress, setCmdProgress] = useState<Record<string, { line: string, pct?: number }>>({});
 
@@ -15,8 +40,8 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const [profile, setProfile] = useState<'workstation' | 'host'>('workstation');
 
     // Step 2 State
-    const [installPath, setInstallPath] = useState('~/optalocal/apps');
-    const [docsPath, setDocsPath] = useState('~/optalocal/docs');
+    const [installPath, setInstallPath] = useState(defaults.installPath);
+    const [docsPath, setDocsPath] = useState(defaults.docsPath);
 
     // Step 3 State
     const [deps, setDeps] = useState({
@@ -136,7 +161,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                     type="text"
                                     value={installPath}
                                     onChange={e => setInstallPath(e.target.value)}
-                                    placeholder="~/optalocal/apps"
+                                    placeholder={defaults.installPath}
                                 />
                             </div>
 
@@ -146,7 +171,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
                                     type="text"
                                     value={docsPath}
                                     onChange={e => setDocsPath(e.target.value)}
-                                    placeholder="~/optalocal/docs"
+                                    placeholder={defaults.docsPath}
                                 />
                             </div>
                         </div>

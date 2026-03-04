@@ -1,0 +1,36 @@
+{
+  "generated_at": "2026-03-04T11:27:00+11:00",
+  "scope": [
+    "1D-Opta-CLI-TS",
+    "1M-Opta-LMX",
+    "1P-Opta-Code-Universal"
+  ],
+  "scores": {
+    "contract_integrity": 8.1,
+    "runtime_stability": 8.4,
+    "code_health": 6.6,
+    "modularity": 6.9,
+    "duplication_control": 7.2,
+    "perf_observability": 5.8,
+    "ownership_clarity": 6.7,
+    "overall_weighted": 7.1
+  },
+  "weights": {
+    "contract_integrity": 0.2,
+    "runtime_stability": 0.2,
+    "code_health": 0.2,
+    "modularity": 0.1,
+    "duplication_control": 0.1,
+    "perf_observability": 0.1,
+    "ownership_clarity": 0.1
+  },
+  "evidence": {
+    "contract_tests_passed": true,
+    "parity_required_failures": 0,
+    "parity_unmatched_operations": 1,
+    "duplicate_groups": 2,
+    "ts_prune_unused_export_signals": true,
+    "runtime_baseline_file": "docs/audit/perf-baseline.json"
+  },
+  "risk_grade": "B-"
+}

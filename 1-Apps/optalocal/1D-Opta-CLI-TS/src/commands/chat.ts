@@ -5,7 +5,7 @@ import { agentLoop, buildSystemPrompt } from '../core/agent.js';
 import type { AgentMessage } from '../core/agent.js';
 import { formatError, OptaError, ExitError, EXIT, ensureModel } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
-import { errorMessage } from '../utils/errors.js';
+import { errorMessage, NO_MODEL_ERROR } from '../utils/errors.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom, isStorageRelatedError } from '../utils/disk.js';
 import { modelIdsEqual, normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
 import {
@@ -344,7 +344,43 @@ export async function startChat(opts: ChatOptions): Promise<void> {
       }
     } catch (err) {
       // probeProvider threw — means both LMX unreachable AND no ANTHROPIC_API_KEY.
-      // Re-throw so the CLI framework handles graceful exit with cleanup.
+      // Translate to a user-actionable OptaError instead of surfacing raw JSON payloads.
+      const message = errorMessage(err);
+      try {
+        const parsed = JSON.parse(message) as {
+          code?: string;
+          attemptedSummary?: string;
+          probeFailures?: string[];
+          noCloudFallbackConfigured?: boolean;
+        };
+        if (
+          parsed.code === 'lmx_unreachable' &&
+          parsed.noCloudFallbackConfigured
+        ) {
+          const causes: string[] = [];
+          if (parsed.attemptedSummary) {
+            causes.push(`LMX endpoints unreachable: ${parsed.attemptedSummary}`);
+          }
+          if (Array.isArray(parsed.probeFailures) && parsed.probeFailures.length > 0) {
+            causes.push(
+              `Probe failures: ${parsed.probeFailures.slice(0, 3).join(' | ')}`
+            );
+          }
+          throw new OptaError(NO_MODEL_ERROR, EXIT.NO_CONNECTION, causes, [
+            'Load directly: opta models load <model-id>',
+            'Set default: opta config set model.default <model-name>',
+            'Discover models: opta models',
+            'Run onboarding: opta onboard',
+            'Check connection: opta status',
+            'Run diagnostics: opta doctor',
+            'Set cloud fallback key: ANTHROPIC_API_KEY',
+          ]);
+        }
+      } catch (parseErr) {
+        if (parseErr instanceof OptaError) {
+          throw parseErr;
+        }
+      }
       throw err;
     }
   }

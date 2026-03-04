@@ -160,8 +160,9 @@ def _configure_hf_cache_environment(config: LMXConfig) -> None:
 
 def _enforce_opta48_no_local_models(config: LMXConfig) -> None:
     """Block local LMX hosting on Opta48 unless explicitly overridden."""
-    host = socket.gethostname().lower()
-    if host != "opta48":
+    host = socket.gethostname().lower().strip()
+    host_label = host.split(".", 1)[0]
+    if host_label != "opta48":
         return
     if os.environ.get("OPTA48_ALLOW_LOCAL_MODELS") == "1":
         logger.warning("opta48_local_model_policy_override_enabled")

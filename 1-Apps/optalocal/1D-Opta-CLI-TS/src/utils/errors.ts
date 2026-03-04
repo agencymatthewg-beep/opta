@@ -5,7 +5,7 @@
  * Use NO_MODELS_LOADED when LMX is reachable but has zero loaded models.
  */
 export const NO_MODEL_ERROR =
-  'No model configured — run `opta /load <model-id>` or set ANTHROPIC_API_KEY for cloud fallback.';
+  'No model configured — run `opta models load <model-id>` or set ANTHROPIC_API_KEY for cloud fallback.';
 export const NO_MODELS_LOADED =
   'No models loaded on LMX — run `/lmx load <model-id>` to load one.';
 

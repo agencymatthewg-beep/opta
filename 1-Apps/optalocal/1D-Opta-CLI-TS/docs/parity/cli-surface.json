@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-03T20:55:53.480Z",
+  "generatedAt": "2026-03-04T00:35:47.724Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -10,6 +10,7 @@
   "commands": {
     "topLevel": [
       "account",
+      "apps",
       "benchmark",
       "ceo-bench",
       "chat",
@@ -40,6 +41,7 @@
     ],
     "families": [
       "account",
+      "apps",
       "benchmark",
       "ceo-bench",
       "chat",

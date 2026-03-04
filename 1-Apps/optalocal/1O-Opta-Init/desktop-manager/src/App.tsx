@@ -115,6 +115,26 @@ const MANAGER_UPDATE_LABELS: Record<ManagerUpdateState, string> = {
 
 const CHANNEL_STORAGE_KEY = "opta_init_manager_channel";
 
+type DesktopPlatform = "windows" | "macos" | "linux";
+
+function detectDesktopPlatform(): DesktopPlatform {
+  if (typeof navigator === "undefined") return "linux";
+  const ua = navigator.userAgent.toLowerCase();
+  if (ua.includes("win")) return "windows";
+  if (ua.includes("mac")) return "macos";
+  return "linux";
+}
+
+function managerInstallLocation(platform: DesktopPlatform): string {
+  if (platform === "windows") {
+    return "%LOCALAPPDATA%\\Programs\\Opta Init";
+  }
+  if (platform === "macos") {
+    return "/Applications/OptaInit.app";
+  }
+  return "~/.local/share/OptaInit";
+}
+
 function normalizeChannel(value: unknown): Channel {
   return value === "beta" ? "beta" : "stable";
 }
@@ -270,6 +290,7 @@ export function App() {
   const tauriAvailable =
     typeof window !== "undefined" &&
     Boolean((window as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__);
+  const platform = useMemo<DesktopPlatform>(() => detectDesktopPlatform(), []);
   const [channel, setChannel] = useState<Channel>(resolveInitialChannel);
   const [cmdProgress, setCmdProgress] = useState<Record<string, { line: string, pct?: number }>>({});
 
@@ -764,7 +785,7 @@ export function App() {
               <div className="settings-row">
                 <div className="settings-info">
                   <div className="settings-label">Opta Init Manager</div>
-                  <div className="settings-sub">/Applications/OptaInit.app</div>
+                  <div className="settings-sub">{managerInstallLocation(platform)}</div>
                 </div>
                 <div className="settings-value">v1.0.0</div>
               </div>
@@ -773,7 +794,7 @@ export function App() {
                   <div className="settings-info">
                     <div className="settings-label">{app.name}</div>
                     <div className="settings-sub">
-                      {installedIndex.has(app.id) ? `/Users/Shared/OptaLocal/${app.id}` : "Not Installed"}
+                      {installedIndex.has(app.id) ? installedIndex.get(app.id)?.path || "Installed" : "Not Installed"}
                     </div>
                   </div>
                   <div className="settings-value">

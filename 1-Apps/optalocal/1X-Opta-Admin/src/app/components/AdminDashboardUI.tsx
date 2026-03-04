@@ -81,13 +81,81 @@ export function AdminDashboardUI({ initialGuides, websites }: AdminDashboardUIPr
   }
 
   return (
-    <div className="w-full h-full flex flex-col relative z-20 overflow-hidden text-sora">
+    <div className="w-full h-full flex flex-col relative z-20 overflow-hidden text-text-primary">
+      <div
+        className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] opacity-[0.08] blur-[100px] pointer-events-none rounded-b-[100%] transition-colors duration-1000 z-10"
+        style={{ backgroundColor: appColorHex(activeAppFilter === 'all' ? 'learn' : activeAppFilter) }}
+      ></div>
+
       <header className="w-full border-b border-admin/20 bg-surface/80 backdrop-blur-3xl pt-12 relative z-20">
-        <div className="max-w-6xl mx-auto px-8 py-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-moonlight-admin">Opta Admin Website Operations</h1>
-          <p className="text-text-secondary mt-2">
-            Private control plane for managing Opta Local websites and the Opta Learn guide promotion pipeline.
-          </p>
+        <div className="flex justify-center items-end px-12 gap-2 h-20">
+          <button
+            onClick={() => setActiveAppFilter('all')}
+            className={`nav-link flex flex-col items-center gap-2 px-8 py-3 pb-4 outline-none border-b-2 transition-all group ${
+              activeAppFilter === 'all' ? 'border-admin bg-admin/10' : 'border-transparent hover:bg-white/5'
+            }`}
+          >
+            <svg width="40" height="40" viewBox="0 0 210 210" fill="none" className={`shrink-0 transition-transform ${activeAppFilter === 'all' ? 'text-admin scale-110' : 'text-white/50'}`}>
+              <circle cx="105" cy="105" r="90" stroke="currentColor" strokeWidth="2" className="opacity-20" />
+              <g className="anim-ring" style={{ animation: 'spin 8s linear infinite' }}>
+                <ellipse cx="105" cy="105" rx="52" ry="23" stroke="currentColor" strokeWidth="2" className="opacity-80" transform="rotate(-30 105 105)" />
+                <circle cx="53" cy="105" r="6" fill="currentColor" transform="rotate(-30 105 105)" />
+                <circle cx="157" cy="105" r="6" fill="currentColor" transform="rotate(-30 105 105)" />
+              </g>
+              <g transform="translate(105, 105)">
+                <circle cx="0" cy="0" r="10" fill="currentColor" className="opacity-30" />
+                <circle cx="0" cy="0" r="4" fill="#ffffff" className="opacity-90" />
+              </g>
+            </svg>
+            <div className={`hidden sm:block font-bold text-xs text-center transition-colors ${activeAppFilter === 'all' ? 'text-admin' : 'text-white/50 group-hover:text-white'}`}>
+              Global Index
+            </div>
+          </button>
+          
+          <button
+            onClick={() => setActiveAppFilter('lmx')}
+            className={`nav-link flex flex-col items-center gap-2 px-8 py-3 pb-4 outline-none border-b-2 transition-all group ${
+              activeAppFilter === 'lmx' ? 'border-[#a855f7] bg-[#a855f7]/10' : 'border-transparent hover:bg-white/5'
+            }`}
+          >
+            <svg width="40" height="40" viewBox="0 0 210 210" fill="none" className={`shrink-0 transition-transform ${activeAppFilter === 'lmx' ? 'text-[#a855f7] scale-110' : 'text-[#a855f7]/50'}`}>
+              <circle cx="105" cy="105" r="90" stroke="currentColor" strokeWidth="2" className="opacity-20" />
+              <g className="anim-ring-rev" style={{ animation: 'spin 9s linear infinite reverse' }}>
+                <ellipse cx="105" cy="105" rx="52" ry="23" stroke="currentColor" strokeWidth="2" className="opacity-80" transform="rotate(-30 105 105)" />
+                <circle cx="53" cy="105" r="5" fill="currentColor" transform="rotate(-30 105 105)" />
+                <circle cx="157" cy="105" r="5" fill="currentColor" transform="rotate(-30 105 105)" />
+              </g>
+              <g transform="translate(105, 105)">
+                <path d="M0 -18 L18 0 L0 18 L-18 0 Z" fill="none" stroke="currentColor" strokeWidth="3" strokeLinejoin="round" className="opacity-90" />
+              </g>
+            </svg>
+            <div className={`hidden sm:block font-bold text-xs text-center transition-colors ${activeAppFilter === 'lmx' ? 'text-[#a855f7]' : 'text-white/50 group-hover:text-white'}`}>
+              Opta LMX
+            </div>
+          </button>
+
+          <button
+            onClick={() => setActiveAppFilter('cli')}
+            className={`nav-link flex flex-col items-center gap-2 px-8 py-3 pb-4 outline-none border-b-2 transition-all group ${
+              activeAppFilter === 'cli' ? 'border-[#22c55e] bg-[#22c55e]/10' : 'border-transparent hover:bg-white/5'
+            }`}
+          >
+            <svg width="40" height="40" viewBox="0 0 210 210" fill="none" className={`shrink-0 transition-transform ${activeAppFilter === 'cli' ? 'text-[#22c55e] scale-110' : 'text-[#22c55e]/50'}`}>
+              <circle cx="105" cy="105" r="90" stroke="currentColor" strokeWidth="2" className="opacity-20" />
+              <g className="anim-ring" style={{ animation: 'spin 6s linear infinite' }}>
+                <ellipse cx="105" cy="105" rx="52" ry="23" stroke="currentColor" strokeWidth="2" className="opacity-80" transform="rotate(-30 105 105)" />
+                <circle cx="53" cy="105" r="8" fill="currentColor" transform="rotate(-30 105 105)" />
+              </g>
+              <g transform="translate(105, 105)">
+                 <rect x="-12" y="-12" width="24" height="24" rx="4" fill="none" stroke="currentColor" strokeWidth="2.5" />
+                 <path d="M-6 -6 L0 0 L-6 6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                 <line x1="2" y1="6" x2="8" y2="6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+              </g>
+            </svg>
+            <div className={`hidden sm:block font-bold text-xs text-center transition-colors ${activeAppFilter === 'cli' ? 'text-[#22c55e]' : 'text-white/50 group-hover:text-white'}`}>
+              Opta CLI
+            </div>
+          </button>
         </div>
       </header>
 

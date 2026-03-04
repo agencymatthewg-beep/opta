@@ -1,0 +1,64 @@
+{
+  "generated_at": "2026-03-04T11:26:56+1100",
+  "stale_candidates": [],
+  "duplication_groups": [
+    {
+      "size": 129753,
+      "count": 2,
+      "files": [
+        "1P-Opta-Code-Universal/src-tauri/gen/schemas/desktop-schema.json",
+        "1P-Opta-Code-Universal/src-tauri/gen/schemas/macOS-schema.json"
+      ]
+    },
+    {
+      "size": 18152,
+      "count": 2,
+      "files": [
+        "1M-Opta-LMX/ANALYSIS-REPORT.md",
+        "1M-Opta-LMX/docs/research/artifacts/ANALYSIS-REPORT.md"
+      ]
+    }
+  ],
+  "orphan_candidates": [
+    "1D-Opta-CLI-TS/src/types.d.ts",
+    "1D-Opta-CLI-TS/src/journal/session-log.ts",
+    "1D-Opta-CLI-TS/src/ui/toolcards.ts",
+    "1D-Opta-CLI-TS/src/ui/html-report.ts",
+    "1D-Opta-CLI-TS/src/ui/genui-manager.ts",
+    "1D-Opta-CLI-TS/src/core/device-target.ts",
+    "1D-Opta-CLI-TS/src/core/tool-protocol.ts",
+    "1D-Opta-CLI-TS/src/core/post-flight.ts",
+    "1D-Opta-CLI-TS/src/core/pre-flight.ts",
+    "1D-Opta-CLI-TS/src/tui/actionHistoryStore.ts",
+    "1D-Opta-CLI-TS/src/tui/optimiser-intent.ts",
+    "1D-Opta-CLI-TS/src/tui/input-highlighting.ts",
+    "1D-Opta-CLI-TS/src/tui/skill-runtime.ts",
+    "1D-Opta-CLI-TS/src/learning/summarizer.ts",
+    "1D-Opta-CLI-TS/src/browser/trigger-session.ts",
+    "1D-Opta-CLI-TS/src/browser/sub-agent-delegator.ts",
+    "1D-Opta-CLI-TS/src/browser/mcp-interceptor.ts",
+    "1D-Opta-CLI-TS/src/browser/intent-router.ts",
+    "1D-Opta-CLI-TS/src/browser/screenshot-compress.ts",
+    "1D-Opta-CLI-TS/src/daemon/permission-coordinator.ts",
+    "1D-Opta-CLI-TS/src/daemon/http-server.ts",
+    "1D-Opta-CLI-TS/src/daemon/turn-queue.ts",
+    "1D-Opta-CLI-TS/src/daemon/ws-server.ts",
+    "1D-Opta-CLI-TS/src/daemon/background-manager.ts",
+    "1D-Opta-CLI-TS/src/daemon/operations/capability-evaluator.ts",
+    "1P-Opta-Code-Universal/src/App.test.tsx",
+    "1P-Opta-Code-Universal/src/components/TimelineCards.test.tsx",
+    "1P-Opta-Code-Universal/src/components/OperationRunner.test.tsx",
+    "1P-Opta-Code-Universal/src/components/SetupWizard.test.tsx",
+    "1P-Opta-Code-Universal/src/components/Composer.test.tsx",
+    "1P-Opta-Code-Universal/src/hooks/useOperations.test.ts",
+    "1P-Opta-Code-Universal/src/hooks/useDaemonSessions.test.tsx",
+    "1P-Opta-Code-Universal/src/hooks/daemonSessions/connectionStorage.ts",
+    "1P-Opta-Code-Universal/src/lib/secureConnectionStore.ts",
+    "1P-Opta-Code-Universal/src/pages/ConfigStudioPage.test.tsx",
+    "1P-Opta-Code-Universal/src/pages/CliOperationsPage.test.tsx",
+    "1P-Opta-Code-Universal/src/pages/AccountControlPage.test.tsx",
+    "1P-Opta-Code-Universal/src/pages/OnboardingPage.tsx",
+    "1P-Opta-Code-Universal/src/pages/OperationsPage.test.tsx",
+    "1P-Opta-Code-Universal/src/pages/ModelsPage.test.tsx"
+  ]
+}

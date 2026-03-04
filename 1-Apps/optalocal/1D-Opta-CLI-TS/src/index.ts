@@ -1246,11 +1246,15 @@ keychainCmd
 
 program.parseAsync().catch((err: unknown) => {
   if (err instanceof ExitError) {
-    process.exit(err.exitCode);
+    process.exitCode = err.exitCode;
+    return;
   }
   if (err instanceof OptaError) {
     console.error(formatError(err));
-    process.exit(err.code);
+    process.exitCode = err.code;
+    return;
   }
-  throw err;
+  const detail = err instanceof Error ? err.stack || err.message : String(err);
+  console.error(chalk.red('✗') + ` ${detail}`);
+  process.exitCode = EXIT.ERROR;
 });

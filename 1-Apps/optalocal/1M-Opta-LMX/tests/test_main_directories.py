@@ -5,8 +5,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+import pytest
+
 from opta_lmx.config import LMXConfig
-from opta_lmx.main import _configure_hf_cache_environment, _ensure_runtime_directories
+from opta_lmx.main import (
+    _configure_hf_cache_environment,
+    _ensure_runtime_directories,
+    _enforce_opta48_no_local_models,
+)
 
 
 def test_ensure_runtime_directories_creates_required_paths(
@@ -70,3 +76,23 @@ def test_configure_hf_cache_environment_uses_models_directory(
 
     assert Path(str(os.environ.get("HF_HUB_CACHE"))).expanduser() == models_dir
     assert Path(str(os.environ.get("HF_HOME"))).expanduser() == models_dir.parent
+
+
+def test_enforce_opta48_no_local_models_blocks_fqdn_hostname(monkeypatch) -> None:
+    """Opta48 policy should trigger for both bare and FQDN hostnames."""
+    monkeypatch.setattr("socket.gethostname", lambda: "Opta48.lan")
+    monkeypatch.delenv("OPTA48_ALLOW_LOCAL_MODELS", raising=False)
+
+    config = LMXConfig.model_validate({})
+
+    with pytest.raises(RuntimeError, match="Opta48 policy violation"):
+        _enforce_opta48_no_local_models(config)
+
+
+def test_enforce_opta48_no_local_models_allows_override(monkeypatch) -> None:
+    """Explicit override should bypass Opta48 local-hosting guard."""
+    monkeypatch.setattr("socket.gethostname", lambda: "opta48.lan")
+    monkeypatch.setenv("OPTA48_ALLOW_LOCAL_MODELS", "1")
+
+    config = LMXConfig.model_validate({})
+    _enforce_opta48_no_local_models(config)

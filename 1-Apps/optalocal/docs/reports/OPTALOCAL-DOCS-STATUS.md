@@ -31,7 +31,7 @@ Scope: `1-Apps/optalocal/*`
 | `status.optalocal.com` | 1S-Opta-Status | `status-fix` | ✅ Live |
 | `help.optalocal.com` | 1U-Opta-Help | `opta-help` | ✅ Live |
 | `learn.optalocal.com` | 1V-Opta-Learn | `opta-learn` | ✅ Live |
-| `admin.optalocal.com` | 1X-Opta-Admin | `opta-admin` | ✅ Live (auth-gated) |
+| `admin.optalocal.com` | 1X-Opta-Admin | `opta-admin` | ✅ Live (standalone static dashboard) |
 
 ## Vercel Deploy Notes
 
@@ -62,6 +62,8 @@ Scope: `1-Apps/optalocal/*`
 - Redeployed latest source for all live website apps:
   - `1T-Opta-Home`, `1O-Opta-Init`, `1R-Opta-Accounts`, `1S-Opta-Status`, `1U-Opta-Help`, `1V-Opta-Learn`, `1X-Opta-Admin`
 - Re-ran web SLO checks: all 8 domains passed (`OPTA_LOCAL_SLO_OK`).
+- Re-architected `1X-Opta-Admin` as static zero-dependency app (`index.html` only + Vercel metadata), removed stale Next.js scaffolding, and deployed.
+- Bound `admin.optalocal.com` alias to latest `opta-admin` production deployment and disabled project SSO gating for public dashboard access.
 
 ## Maintenance rule
 When a major architecture/path/policy change occurs, update:

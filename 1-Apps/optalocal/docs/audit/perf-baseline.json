@@ -1,0 +1,45 @@
+{
+  "generated_at": "2026-03-04T11:26:39+1100",
+  "results": [
+    {
+      "project": "1D-Opta-CLI-TS",
+      "command": "npm run -s typecheck",
+      "exit_code": 0,
+      "duration_sec": 2.862,
+      "stdout_tail": "",
+      "stderr_tail": ""
+    },
+    {
+      "project": "1D-Opta-CLI-TS",
+      "command": "npm run -s test:contract",
+      "exit_code": 0,
+      "duration_sec": 1.116,
+      "stdout_tail": "\n\u001b[1m\u001b[46m RUN \u001b[49m\u001b[22m \u001b[36mv4.0.18 \u001b[39m\u001b[90m/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS\u001b[39m\n\n \u001b[32m\u2713\u001b[39m tests/daemon/client-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m3 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 59\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m\u2713\u001b[39m tests/protocol/operations-contract.test.ts \u001b[2m(\u001b[22m\u001b[2m5 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 7\u001b[2mms\u001b[22m\u001b[39m\n \u001b[32m\u2713\u001b[39m tests/daemon/http-server.test.ts \u001b[2m(\u001b[22m\u001b[2m8 tests\u001b[22m\u001b[2m)\u001b[22m\u001b[32m 74\u001b[2mms\u001b[22m\u001b[39m\n\n\u001b[2m Test Files \u001b[22m \u001b[1m\u001b[32m3 passed\u001b[39m\u001b[22m\u001b[90m (3)\u001b[39m\n\u001b[2m      Tests \u001b[22m \u001b[1m\u001b[32m16 passed\u001b[39m\u001b[22m\u001b[90m (16)\u001b[39m\n\u001b[2m   Start at \u001b[22m 11:26:31\n\u001b[2m   Duration \u001b[22m 761ms\u001b[2m (transform 508ms, setup 0ms, import 716ms, tests 140ms, environment 0ms)\u001b[22m\n",
+      "stderr_tail": ""
+    },
+    {
+      "project": "1M-Opta-LMX",
+      "command": ". .venv/bin/activate && pytest -q tests/test_discovery_contract.py tests/test_quantize_schema.py",
+      "exit_code": 0,
+      "duration_sec": 5.282,
+      "stdout_tail": "..........                                                               [100%]\n10 passed in 1.21s",
+      "stderr_tail": ""
+    },
+    {
+      "project": "1P-Opta-Code-Universal",
+      "command": "npm run -s typecheck",
+      "exit_code": 0,
+      "duration_sec": 2.17,
+      "stdout_tail": "",
+      "stderr_tail": ""
+    },
+    {
+      "project": "1P-Opta-Code-Universal",
+      "command": "npm run -s parity:check",
+      "exit_code": 0,
+      "duration_sec": 0.219,
+      "stdout_tail": "PASS parity check -> /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal/docs/parity/desktop-surface.json\n{\n  \"commands\": 28,\n  \"requiredFailures\": 0,\n  \"missingRequiredSessionModes\": 0,\n  \"missingRequiredOverrideKeys\": 0,\n  \"missingRequiredScopes\": 0,\n  \"missingRequiredCommands\": 0,\n  \"unmatchedOperationsOutsideCliScope\": 1\n}",
+      "stderr_tail": ""
+    }
+  ]
+}

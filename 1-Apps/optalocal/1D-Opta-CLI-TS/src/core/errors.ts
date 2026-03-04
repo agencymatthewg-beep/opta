@@ -1,4 +1,5 @@
 import chalk from 'chalk';
+import { NO_MODEL_ERROR } from '../utils/errors.js';
 
 export const EXIT = {
   SUCCESS: 0,
@@ -60,13 +61,17 @@ export function formatError(error: OptaError): string {
 export function ensureModel(model: string | undefined): asserts model is string {
   if (!model) {
     throw new OptaError(
-      'No model configured. Run `opta connect` to set up your Opta-LMX connection, or `opta status` to check.',
+      NO_MODEL_ERROR,
       EXIT.NO_CONNECTION,
       [],
       [
+        'Load directly: opta models load <model-id>',
+        'Set default: opta config set model.default <model-name>',
+        'Discover models: opta models',
+        'Run onboarding: opta onboard',
         'Run: opta connect <host>:<port>',
         'Check: opta status',
-        'Set manually: opta config set model <name>',
+        'Diagnose: opta doctor',
       ],
     );
   }
