@@ -8,6 +8,7 @@ import { buildConfigOverrides } from '../utils/config-helpers.js';
 import { errorMessage, NO_MODEL_ERROR } from '../utils/errors.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom, isStorageRelatedError } from '../utils/disk.js';
 import { modelIdsEqual, normalizeConfiguredModelId } from '../lmx/model-lifecycle.js';
+import { detectLocalAdminKey, isLoopbackHost } from '../lmx/local-config.js';
 import {
   createSession,
   loadSession,
@@ -176,16 +177,25 @@ function readProvider(config: Awaited<ReturnType<typeof loadConfig>>): {
 }
 
 async function createLmxClient(options: LmxClientOptions): Promise<LmxClientLike> {
+  const finalOptions: LmxClientOptions = { ...options };
+  if (!finalOptions.adminKey && isLoopbackHost(finalOptions.host)) {
+    const detected = await detectLocalAdminKey();
+    if (detected.key) {
+      finalOptions.adminKey = detected.key;
+    }
+  }
   const { LmxClient } = await import('../lmx/client.js');
   try {
-    return new (LmxClient as unknown as new (options: LmxClientOptions) => LmxClientLike)(options);
+    return new (LmxClient as unknown as new (options: LmxClientOptions) => LmxClientLike)(
+      finalOptions
+    );
   } catch (err) {
     if (
       err instanceof TypeError &&
       typeof err.message === 'string' &&
       err.message.includes('is not a constructor')
     ) {
-      return (LmxClient as unknown as (options: LmxClientOptions) => LmxClientLike)(options);
+      return (LmxClient as unknown as (options: LmxClientOptions) => LmxClientLike)(finalOptions);
     }
     throw err;
   }

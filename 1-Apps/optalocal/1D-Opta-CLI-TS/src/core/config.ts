@@ -4,6 +4,7 @@ import {
   ADMIN_KEYS_BY_HOST_ENV_VAR,
   parseAdminKeysByHost,
 } from '../lmx/admin-keys.js';
+import { detectLocalAdminKey, isLoopbackHost } from '../lmx/local-config.js';
 import { DEFAULT_BROWSER_ADAPTATION_CONFIG } from '../browser/adaptation.js';
 
 const ToolPermission = z.enum(['allow', 'ask', 'deny']);
@@ -825,12 +826,30 @@ export async function loadConfig(overrides?: Record<string, unknown>): Promise<O
     }
   }
   if (process.env['OPTA_API_KEY']) connectionPatch['apiKey'] = process.env['OPTA_API_KEY'];
+  const existingConnection =
+    (raw as Record<string, Record<string, unknown>>)['connection'] ?? {};
+  let mergedConnection: Record<string, unknown> = { ...existingConnection };
   if (Object.keys(connectionPatch).length > 0) {
-    raw['connection'] = {
-      ...((raw as Record<string, Record<string, unknown>>)['connection'] ?? {}),
-      ...connectionPatch,
-    };
+    mergedConnection = { ...mergedConnection, ...connectionPatch };
   }
+
+  const configuredHost =
+    typeof mergedConnection['host'] === 'string' && mergedConnection['host'].trim().length > 0
+      ? (mergedConnection['host'] as string)
+      : DEFAULT_CONFIG.connection.host;
+  const configuredAdminKey =
+    typeof mergedConnection['adminKey'] === 'string'
+      ? (mergedConnection['adminKey'] as string).trim()
+      : '';
+
+  if (isLoopbackHost(configuredHost) && !configuredAdminKey) {
+    const detected = await detectLocalAdminKey();
+    if (detected.key) {
+      mergedConnection = { ...mergedConnection, adminKey: detected.key };
+    }
+  }
+
+  raw['connection'] = mergedConnection;
   const envModel = normalizeConfiguredModelId(process.env['OPTA_MODEL']);
   if (envModel) {
     raw.model = {
