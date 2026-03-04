@@ -12,6 +12,20 @@ type ProductTarget = {
   platforms: Record<Platform, ReleaseTarget | null>;
 };
 
+// ── Release constants ────────────────────────────────────────────────────────
+const GITHUB_RELEASES = "https://github.com/agencymatthewg-beep/opta/releases/download";
+
+// Latest Opta Init Manager — stable v0.6.1 (2026-03-04)
+const INIT_TAG = "opta-init-manager-stable-v0.6.1";
+const INIT_MACOS_DMG = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_aarch64.dmg`;
+// x64 DMG also available for Intel Macs
+const INIT_MACOS_DMG_X64 = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64.dmg`;
+const INIT_WINDOWS_NSIS = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64-setup.nsis.zip`;
+
+// Latest Opta CLI — v0.5.0-alpha.15 (2026-03-01)
+const CLI_TAG = "v0.5.0-alpha.15";
+const CLI_NPM_TGZ = `${GITHUB_RELEASES}/${CLI_TAG}/opta-cli-npm.tgz`;
+
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
   init: {
     name: "Opta Init Manager",
@@ -21,16 +35,34 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       macos: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: ["darwin-aarch64", "darwin-x86_64"],
-        fallbackUrl: "/downloads/opta-init/latest/opta-init-mac.dmg",
+        fallbackUrl: INIT_MACOS_DMG,
       },
       windows: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: ["windows-x86_64"],
-        fallbackUrl: "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
+        fallbackUrl: INIT_WINDOWS_NSIS,
+      },
+    },
+  },
+  cli: {
+    name: "Opta CLI (npm package)",
+    description:
+      "Install the Opta CLI directly via npm for terminal-first control, daemon management, and AI provider configuration.",
+    platforms: {
+      macos: {
+        manifestUrl: "/desktop-updates/stable.json",
+        platformKeys: [],
+        fallbackUrl: CLI_NPM_TGZ,
+      },
+      windows: {
+        manifestUrl: "/desktop-updates/stable.json",
+        platformKeys: [],
+        fallbackUrl: CLI_NPM_TGZ,
       },
     },
   },
 };
+
 
 export type DownloadAvailability = {
   url: string | null;

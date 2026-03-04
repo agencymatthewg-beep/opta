@@ -330,7 +330,8 @@ export default function Home() {
                   </div>
                 </div>
               </div>
-              <div className="bg-[#05030a] p-8 lg:p-16 border-l border-white/5 flex flex-col justify-center font-mono">
+              <div className="bg-[#05030a] p-8 lg:p-16 border-l border-white/5 flex flex-col justify-center font-mono gap-6">
+                {/* Bootstrap bash command */}
                 <div className="w-full rounded-xl border border-white/10 bg-[#0a0a0c] shadow-2xl overflow-hidden relative group">
                   <div className="absolute inset-0 bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
                   {/* Mac Window Controls */}
@@ -357,10 +358,53 @@ export default function Home() {
                     </div>
                   </div>
                 </div>
+
+                {/* npm CLI install — alternative for Node.js users */}
+                <div className="w-full rounded-xl border border-primary/20 bg-[#0a0a0c] shadow-2xl overflow-hidden relative group">
+                  <div className="absolute inset-0 bg-primary/3 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="h-10 border-b border-white/5 bg-white/[0.02] flex items-center px-4 gap-2">
+                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
+                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
+                    <div className="w-3 h-3 rounded-full bg-white/10"></div>
+                    <div className="ml-auto text-[10px] text-primary/60 font-mono">npm — Opta CLI</div>
+                  </div>
+                  <div className="p-6 text-sm text-text-secondary space-y-3 relative z-10">
+                    <div className="text-[10px] text-text-muted uppercase tracking-widest mb-2">Or install the CLI directly via npm</div>
+                    <p className="flex items-center gap-3">
+                      <span className="text-primary">❯</span>
+                      <span className="text-white">npm install -g @opta/opta-cli</span>
+                    </p>
+                    <div className="pt-3 space-y-1 opacity-70">
+                      <p><span className="text-neon-green">+</span> @opta/opta-cli@0.5.0-alpha.15</p>
+                      <p className="text-text-muted">added 1 package in 3s</p>
+                      <p className="text-neon-green mt-2">✔ opta command available. Run `opta --help` to get started.</p>
+                    </div>
+                    <div className="pt-3 border-t border-white/5 flex gap-3 flex-wrap">
+                      <a
+                        href="https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz"
+                        className="text-[11px] text-primary/70 hover:text-primary transition-colors underline underline-offset-2"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Download .tgz (v0.5.0-alpha.15)
+                      </a>
+                      <span className="text-white/10">|</span>
+                      <a
+                        href="https://github.com/agencymatthewg-beep/opta"
+                        className="text-[11px] text-text-muted hover:text-primary transition-colors"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        View on GitHub ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </motion.div>
         </motion.section>
+
 
         {/* --- ARCHITECTURE SECTION --- */}
         <motion.section

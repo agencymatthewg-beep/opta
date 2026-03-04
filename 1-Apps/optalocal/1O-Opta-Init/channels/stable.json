@@ -3,17 +3,17 @@
   "schemaVersion": "1.0.0",
   "manifestVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-03-02T02:10:00Z",
+  "publishedAt": "2026-03-04T08:00:00Z",
   "release": {
-    "id": "2026.03.02-stable.1",
-    "notesUrl": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+    "id": "2026.03.04-stable.1",
+    "notesUrl": "https://init.optalocal.com/releases/2026-03-04-stable-1",
     "minManagerVersion": "0.6.0"
   },
   "rollout": {
     "strategy": "immediate",
     "percentage": 100,
     "cohort": "all",
-    "startsAt": "2026-03-02T02:30:00Z",
+    "startsAt": "2026-03-04T08:30:00Z",
     "allowDowngrade": false
   },
   "components": [
@@ -64,7 +64,7 @@
     {
       "id": "opta-code-universal",
       "displayName": "Opta Code Universal",
-      "version": "0.5.4",
+      "version": "0.2.0",
       "minManagerVersion": "0.6.0",
       "track": "stable",
       "rollout": {
@@ -72,8 +72,22 @@
         "priority": 3
       },
       "artifacts": {
-        "macos": [],
-        "windows": []
+        "macos": [
+          {
+            "platform": "macos",
+            "arch": "arm64",
+            "packageType": "dmg",
+            "url": "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-code-macos-aarch64.dmg"
+          }
+        ],
+        "windows": [
+          {
+            "platform": "windows",
+            "arch": "x64",
+            "packageType": "exe",
+            "url": "https://github.com/agencymatthewg-beep/opta/releases/latest/download/opta-code-windows-x64-setup.exe"
+          }
+        ]
       }
     },
     {
