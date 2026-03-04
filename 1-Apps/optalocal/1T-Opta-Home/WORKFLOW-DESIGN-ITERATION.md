@@ -1,7 +1,7 @@
 # optalocal.com — Design Iteration Workflow
 
 > How to make high-quality changes to the landing page using Gemini + Claude Code (frontend-design plugin).
-> Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
+> Canonical key/workflow index: `<optalocal-root>/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
 
 ---
 
@@ -66,7 +66,7 @@ You are a senior product designer specialising in developer-tool landing pages.
 
 Context:
 - Site: optalocal.com — brand homepage for a local AI infrastructure stack
-- Stack: Mac Studio M3 Ultra 512GB, MLX inference, 836GB models, 22.2 tok/s
+- Stack: dedicated Apple Silicon host M3 Ultra 512GB, MLX inference, 836GB models, 22.2 tok/s
 - Brand: precision engineering, not generic AI SaaS. Dark void aesthetic, Electric Violet (#a855f7), grid textures, JetBrains Mono for stats.
 - Current sections: Nav, Hero (technical diagram), Benchmark Strip, Ecosystem (main local apps + management websites), Arch Diagram, Model Grid, CLI Preview, Feature Trio, CTA, Footer
 - Design rules: no blobs, no gradients-on-white, real data as texture, violet used sparingly

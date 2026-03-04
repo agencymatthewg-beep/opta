@@ -171,7 +171,7 @@ import OpenAI from 'openai';
 // Create client pointing to Opta-LMX
 const client = new OpenAI({
   apiKey: 'any-value',  // Opta-LMX doesn't authenticate
-  baseURL: 'http://192.168.188.11:1234/v1',
+  baseURL: 'http://lmx-host.local:1234/v1',
 });
 
 // Chat completions with streaming
@@ -214,7 +214,7 @@ import { z } from 'zod';
 // Config validation
 const ConfigSchema = z.object({
   connection: z.object({
-    host: z.string().default('192.168.188.11'),
+    host: z.string().default('lmx-host.local'),
     port: z.number().default(1234),
   }),
   model: z.object({
@@ -315,7 +315,7 @@ const config = new Conf({
 });
 
 // Store config
-config.set('connection.host', '192.168.188.11');
+config.set('connection.host', 'lmx-host.local');
 config.set('model.default', 'Qwen2.5-72B');
 
 // Retrieve config

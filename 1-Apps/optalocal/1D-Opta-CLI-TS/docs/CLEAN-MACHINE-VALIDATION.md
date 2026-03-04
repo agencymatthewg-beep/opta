@@ -7,7 +7,7 @@ Phase 3 gate: these steps must pass on a machine with **no prior Opta CLI instal
 - macOS 13+ with Node 20 or 22 installed (`node --version`)
 - No existing `~/.config/opta/` directory
 - No existing `ANTHROPIC_API_KEY`, `OPTA_API_KEY`, or `OPTA_ACCOUNTS_URL` env vars set
-- Network access to 192.168.188.11 (Mono512 LAN, for LMX validation) _or_ cloud fallback
+- Network access to lmx-host.local (Primary LMX Host LAN, for LMX validation) _or_ cloud fallback
 
 ---
 
@@ -36,7 +36,7 @@ opta onboard
 ```
 
 Expected flow:
-1. LAN discovery: scans for Opta-LMX at `192.168.188.11:1234` (or times out gracefully)
+1. LAN discovery: scans for Opta-LMX at `lmx-host.local:1234` (or times out gracefully)
 2. Provider selection: offers Local LMX or Anthropic Cloud
 3. Preference prompts: autonomy level, TUI default
 4. Summary + confirmation

@@ -19,13 +19,13 @@ opta chat / opta tui / opta do    (1D-Opta-CLI-TS)
         │
 opta daemon   127.0.0.1:9999      (1D-Opta-CLI-TS/src/daemon/)
         │   HTTP v3 REST + WebSocket streaming
-Opta LMX  192.168.188.11:1234     (1M-Opta-LMX)
+Opta LMX  lmx-host.local:1234     (1M-Opta-LMX)
         │   OpenAI-compatible /v1/chat/completions + WebSocket /v1/chat/stream
 Opta Local Web  localhost:3004    (1L-Opta-Local/web/)
 ```
 
 The daemon owns session orchestration, permission gating, and event persistence.
-LMX runs on Mac Studio (Mono512, 512GB RAM) and is never hosted on the MacBook.
+LMX runs on dedicated Apple Silicon host (Primary LMX Host, 512GB RAM) and is never hosted on the MacBook.
 
 ---
 
@@ -44,10 +44,10 @@ LMX runs on Mac Studio (Mono512, 512GB RAM) and is never hosted on the MacBook.
 │           │                    │                     │           │
 └───────────┼────────────────────┼─────────────────────┼───────────┘
             │                    │                     │
-            └──────────LAN (192.168.188.11)────────────┘
+            └──────────LAN (lmx-host.local)────────────┘
             │
 ┌───────────┼──────────────────────────────────────────────────────┐
-│ Mac Studio (Mono512 — 192.168.188.11)                             │
+│ dedicated Apple Silicon host (Primary LMX Host — lmx-host.local)                             │
 ├───────────┼──────────────────────────────────────────────────────┤
 │           ▼                                                       │
 │  ┌──────────────────────────────────┐                            │
@@ -80,14 +80,14 @@ LMX runs on Mac Studio (Mono512, 512GB RAM) and is never hosted on the MacBook.
 **File location:** `1-Apps/optalocal/1D-Opta-CLI-TS/`
 
 **Provider routing:**
-1. LMX (primary) — direct WebSocket stream to Mac Studio; falls back to SSE
+1. LMX (primary) — direct WebSocket stream to dedicated Apple Silicon host; falls back to SSE
 2. Anthropic (cloud fallback) — used when LMX is unreachable; requires `ANTHROPIC_API_KEY`
 
 ---
 
 ### Opta LMX (1M-Opta-LMX)
 
-**What it is:** MLX-native inference server running on Mac Studio.
+**What it is:** MLX-native inference server running on dedicated Apple Silicon host.
 
 **What it does:**
 - Loads and serves open-source LLMs via Apple MLX framework
@@ -96,7 +96,7 @@ LMX runs on Mac Studio (Mono512, 512GB RAM) and is never hosted on the MacBook.
 - Exposes `/admin/*` management API (model load/unload, metrics, health)
 - Never crashes on OOM — degrades gracefully by refusing or unloading
 
-**Connection:** `192.168.188.11:1234` (LAN only, no Tailscale)
+**Connection:** `lmx-host.local:1234` (LAN only, no Tailscale)
 
 **API contracts used by CLI:**
 ```bash
@@ -125,7 +125,7 @@ POST /admin/models/unload          # Unload model
 - Session-aware chat (via opta daemon in WS mode)
 
 **Connection modes:**
-- LAN: No auth, direct LMX connection at `192.168.188.11:1234`
+- LAN: No auth, direct LMX connection at `lmx-host.local:1234`
 - Cloud: Supabase auth via Cloudflare Tunnel
 
 ---
@@ -160,10 +160,10 @@ POST /admin/models/unload          # Unload model
 2. CLI loads config (host, port, provider, permissions)
 
 3. CLI resolves LMX endpoint:
-   GET http://192.168.188.11:1234/healthz  → OK
+   GET http://lmx-host.local:1234/healthz  → OK
 
 4. CLI opens LMX WebSocket stream:
-   WS  ws://192.168.188.11:1234/v1/chat/stream
+   WS  ws://lmx-host.local:1234/v1/chat/stream
    POST body: { model, messages, tools, stream: true }
 
 5. LMX streams back chunk-by-chunk:
@@ -243,7 +243,7 @@ Sessions written by the CLI, daemon, and Opta Local Web share this format and ar
 ```
 Opta CLI
   ├─ Opta LMX (HTTP/WS — primary inference)
-  │   └─ MLX models on Mac Studio
+  │   └─ MLX models on dedicated Apple Silicon host
   │
   ├─ Anthropic Claude (HTTPS — cloud fallback, optional)
   │

@@ -7,7 +7,7 @@
 
 ## Summary
 
-This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio processing across the Opta Local stack. Users can now dictate commands across the ecosystem securely, and LMX natively translates these voice commands directly within the Mac Studio network.
+This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio processing across the Opta Local stack. Users can now dictate commands across the ecosystem securely, and LMX natively translates these voice commands directly within the dedicated Apple Silicon host network.
 
 ## Detailed Changes
 

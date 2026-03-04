@@ -2,7 +2,7 @@
 
 Date: 2026-03-02
 Operator: Codex autonomous run
-Workspace: /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal
+Workspace: <optalocal-root>
 
 ## Scope
 - `1D-Opta-CLI-TS`
@@ -50,13 +50,13 @@ Local stack health:
 - `http://localhost:3007` -> `200`
 - `http://localhost:5173` -> `200`
 
-Mono512 (Mac Studio) verification from MacBook control plane:
-- `http://mono512.local:1234/healthz` -> `200`
-- `http://mono512.local:1234/readyz` -> `503` (`no models loaded`)
-- `http://mono512.local:1234/v1/models` -> embedding model only
-- CLI check against Mono512:
-  - `OPTA_HOST=mono512.local OPTA_PORT=1234 node dist/index.js status --json`
-  - Confirmed device identity: `Mono512`, `Apple M3 Ultra`, `512GB RAM`.
+Primary LMX Host (dedicated Apple Silicon host) verification from MacBook control plane:
+- `http://lmx-host.local:1234/healthz` -> `200`
+- `http://lmx-host.local:1234/readyz` -> `503` (`no models loaded`)
+- `http://lmx-host.local:1234/v1/models` -> embedding model only
+- CLI check against Primary LMX Host:
+  - `OPTA_HOST=lmx-host.local OPTA_PORT=1234 node dist/index.js status --json`
+  - Confirmed device identity: `Primary LMX Host`, `Apple M3 Ultra`, `512GB RAM`.
   - Confirmed `models: []` for inference path (not chat-ready yet).
 
 ## Peekaboo E2E Evidence
@@ -65,15 +65,15 @@ Automation method:
 - `peekaboo image --mode frontmost --path <artifact>`
 
 Artifacts:
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/home-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/init-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/accounts-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/status-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/help-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/learn-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/code-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/lmx-health-safari.png`
-- `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/lmx-ready-safari.png`
+- `<optalocal-root>/.e2e-artifacts/home-safari.png`
+- `<optalocal-root>/.e2e-artifacts/init-safari.png`
+- `<optalocal-root>/.e2e-artifacts/accounts-safari.png`
+- `<optalocal-root>/.e2e-artifacts/status-safari.png`
+- `<optalocal-root>/.e2e-artifacts/help-safari.png`
+- `<optalocal-root>/.e2e-artifacts/learn-safari.png`
+- `<optalocal-root>/.e2e-artifacts/code-safari.png`
+- `<optalocal-root>/.e2e-artifacts/lmx-health-safari.png`
+- `<optalocal-root>/.e2e-artifacts/lmx-ready-safari.png`
 
 All Safari-driven `peekaboo app launch ... --open` calls succeeded for the full URL matrix.
 
@@ -88,25 +88,25 @@ All Safari-driven `peekaboo app launch ... --open` calls succeeded for the full 
   - Learn (`pagedown`, `pageup`)
   - Code (`tab x3`)
 - Artifacts:
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/home.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/init.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/accounts.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/status.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/help.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/learn.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/code.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/lmx-health.png`
-  - `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/.e2e-artifacts/interactive3-live/lmx-ready.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/home.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/init.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/accounts.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/status.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/help.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/learn.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/code.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/lmx-health.png`
+  - `<optalocal-root>/.e2e-artifacts/interactive3-live/lmx-ready.png`
 
 ## Remaining Constraint
-- Mono512 model provisioning is blocked by remote filesystem permissions.
+- Primary LMX Host model provisioning is blocked by remote filesystem permissions.
 - Attempted from MacBook control plane:
-  - `opta models download mlx-community/Qwen2.5-0.5B-Instruct-4bit --device mono512.local:1234`
+  - `opta models download mlx-community/Qwen2.5-0.5B-Instruct-4bit --device lmx-host.local:1234`
   - Failure: `Permission denied: /Users/Shared/LMX-Models/gguf/opta-lmx-models/...`
-- This prevents automatic loading of an inference model on Mono512 from this session.
+- This prevents automatic loading of an inference model on Primary LMX Host from this session.
 
 ## Conclusion
 - Opta Local ecosystem runtime endpoints are operational across all local apps.
 - Critical runtime instability uncovered during dev-mode testing was mitigated for reliable operation.
 - MacBook is validated as control/coding plane.
-- Mono512 is reachable and admin-accessible, but not inference-ready until model directory permissions are corrected and at least one inference model is downloaded/loaded.
+- Primary LMX Host is reachable and admin-accessible, but not inference-ready until model directory permissions are corrected and at least one inference model is downloaded/loaded.

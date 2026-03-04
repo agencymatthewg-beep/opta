@@ -2,14 +2,14 @@
 
 Updated: 2026-02-27
 
-**Target host:** Mono512 Mac Studio M3 Ultra (192.168.188.11, 512GB unified memory)
+**Target host:** Primary LMX Host dedicated Apple Silicon host M3 Ultra (lmx-host.local, 512GB unified memory)
 **Service port:** 1234
-**Base URL:** `http://192.168.188.11:1234`
+**Base URL:** `http://lmx-host.local:1234`
 
 ### Opta48 policy (critical)
 - Do not run `python -m opta_lmx` on Opta48 (MacBook).
 - Do not store models on Opta48.
-- Opta48 is client/orchestrator only; Mono512 is the inference host.
+- Opta48 is client/orchestrator only; Primary LMX Host is the inference host.
 
 ---
 
@@ -72,7 +72,7 @@ launchctl unload /Library/LaunchDaemons/com.opta.lmx.plist
 launchctl list | grep opta.lmx
 ```
 
-#### Via CLI entry point (development/debugging on Mono512 host)
+#### Via CLI entry point (development/debugging on Primary LMX Host host)
 
 ```bash
 cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
@@ -87,7 +87,7 @@ python -m opta_lmx --host 0.0.0.0 --port 1234 --log-level DEBUG
 python -m opta_lmx --config /path/to/custom-config.yaml
 ```
 
-#### Via uvicorn directly (maximum control on Mono512 host)
+#### Via uvicorn directly (maximum control on Primary LMX Host host)
 
 ```bash
 cd ~/Synced/Opta/1-Apps/optalocal/1M-Opta-LMX
@@ -145,23 +145,23 @@ log stream --level debug --predicate 'process == "opta-lmx"'
 
 ```bash
 # Liveness probe (unauthenticated, always 200 if process is alive)
-curl http://192.168.188.11:1234/healthz
+curl http://lmx-host.local:1234/healthz
 # {"status": "ok", "version": "..."}
 
 # Readiness probe (unauthenticated, 200 when models loaded, 503 during startup)
-curl http://192.168.188.11:1234/readyz
+curl http://lmx-host.local:1234/readyz
 # {"status": "ready", "version": "...", "models_loaded": 2}
 
 # Detailed health (admin auth required if admin_key is set)
-curl http://192.168.188.11:1234/admin/health \
+curl http://lmx-host.local:1234/admin/health \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Returns: status (ok/degraded), memory_usage_percent, metal info, helper node health
 
 # Discovery contract (unauthenticated): preferred base URL + auth requirements
-curl http://192.168.188.11:1234/v1/discovery
+curl http://lmx-host.local:1234/v1/discovery
 
 # Well-known discovery alias for auto-pairing clients
-curl http://192.168.188.11:1234/.well-known/opta-lmx
+curl http://lmx-host.local:1234/.well-known/opta-lmx
 ```
 
 ---
@@ -176,11 +176,11 @@ The examples below include `$ADMIN_KEY` -- omit the `-H "X-Admin-Key: ..."` head
 
 ```bash
 # OpenAI-compatible (inference auth)
-curl http://192.168.188.11:1234/v1/models
+curl http://lmx-host.local:1234/v1/models
 # {"object": "list", "data": [{"id": "mlx-community/...", "object": "model", ...}]}
 
 # Admin detailed view (with memory, readiness, request counts)
-curl http://192.168.188.11:1234/admin/models \
+curl http://lmx-host.local:1234/admin/models \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {"loaded": [...], "count": 2}
 ```
@@ -189,7 +189,7 @@ curl http://192.168.188.11:1234/admin/models \
 
 ```bash
 # Load a model already on disk
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -197,7 +197,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
   }'
 
 # Load with auto-download if not on disk
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -206,7 +206,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
   }'
 
 # Load with performance overrides
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -218,7 +218,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
   }'
 
 # Force load a quarantined model (use with caution)
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -227,7 +227,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
   }'
 
 # Load with specific backend preference
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -246,7 +246,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
 ### 2.3 Unload a Model
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "mlx-community/Qwen2.5-Coder-32B-Instruct-8bit"}'
@@ -257,7 +257,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/unload \
 
 ```bash
 # Start download (returns download_id for progress tracking)
-curl -X POST http://192.168.188.11:1234/admin/models/download \
+curl -X POST http://lmx-host.local:1234/admin/models/download \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -266,7 +266,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/download \
 # {"download_id": "dl-xxx", "repo_id": "...", "status": "downloading"}
 
 # Check download progress
-curl http://192.168.188.11:1234/admin/models/download/dl-xxx/progress \
+curl http://lmx-host.local:1234/admin/models/download/dl-xxx/progress \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {"status": "downloading", "progress_percent": 45.2, ...}
 ```
@@ -274,7 +274,7 @@ curl http://192.168.188.11:1234/admin/models/download/dl-xxx/progress \
 ### 2.5 List Available Models on Disk
 
 ```bash
-curl http://192.168.188.11:1234/admin/models/available \
+curl http://lmx-host.local:1234/admin/models/available \
   -H "X-Admin-Key: $ADMIN_KEY"
 # [{"repo_id": "...", "local_path": "...", "size_bytes": ...}, ...]
 ```
@@ -283,7 +283,7 @@ curl http://192.168.188.11:1234/admin/models/available \
 
 ```bash
 # Must unload first if loaded (returns 409 if still loaded)
-curl -X DELETE "http://192.168.188.11:1234/admin/models/mlx-community/some-model" \
+curl -X DELETE "http://lmx-host.local:1234/admin/models/mlx-community/some-model" \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {"success": true, "model_id": "...", "freed_bytes": ...}
 ```
@@ -291,7 +291,7 @@ curl -X DELETE "http://192.168.188.11:1234/admin/models/mlx-community/some-model
 ### 2.7 Check Memory
 
 ```bash
-curl http://192.168.188.11:1234/admin/memory \
+curl http://lmx-host.local:1234/admin/memory \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {
 #   "total_unified_memory_gb": 512.0,
@@ -308,7 +308,7 @@ curl http://192.168.188.11:1234/admin/memory \
 ### 2.8 Full System Status
 
 ```bash
-curl http://192.168.188.11:1234/admin/status \
+curl http://lmx-host.local:1234/admin/status \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {
 #   "version": "...",
@@ -326,7 +326,7 @@ curl http://192.168.188.11:1234/admin/status \
 Re-reads `~/.opta-lmx/config.yaml` and updates routing, memory thresholds, logging level, auth settings, and presets without restarting. Does NOT unload/reload models or change server bind address.
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {"success": true, "updated": ["routing", "memory", "security", "logging", "presets"]}
 ```
@@ -334,7 +334,7 @@ curl -X POST http://192.168.188.11:1234/admin/config/reload \
 ### 2.10 Run a Benchmark
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/benchmark \
+curl -X POST http://lmx-host.local:1234/admin/benchmark \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -352,7 +352,7 @@ curl -X POST http://192.168.188.11:1234/admin/benchmark \
 Benchmarks multiple load profiles and persists the best-performing one.
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/models/autotune \
+curl -X POST http://lmx-host.local:1234/admin/models/autotune \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -368,7 +368,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/autotune \
 Tests candidate backends without fully loading the model into memory.
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/models/probe \
+curl -X POST http://lmx-host.local:1234/admin/models/probe \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -380,7 +380,7 @@ curl -X POST http://192.168.188.11:1234/admin/models/probe \
 ### 2.13 Reload Presets
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/presets/reload \
+curl -X POST http://lmx-host.local:1234/admin/presets/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 # {"success": true, "presets_loaded": 5}
 ```
@@ -388,7 +388,7 @@ curl -X POST http://192.168.188.11:1234/admin/presets/reload \
 ### 2.14 View Model Stack Status
 
 ```bash
-curl http://192.168.188.11:1234/admin/stack \
+curl http://lmx-host.local:1234/admin/stack \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Returns: roles (routing aliases and resolved models), helper nodes, loaded models, backends
 ```
@@ -396,7 +396,7 @@ curl http://192.168.188.11:1234/admin/stack \
 ### 2.15 Start a Quantization Job
 
 ```bash
-curl -X POST http://192.168.188.11:1234/admin/quantize \
+curl -X POST http://lmx-host.local:1234/admin/quantize \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -407,7 +407,7 @@ curl -X POST http://192.168.188.11:1234/admin/quantize \
 # {"job_id": "...", "status": "running", ...}
 
 # Check progress
-curl http://192.168.188.11:1234/admin/quantize/JOB_ID \
+curl http://lmx-host.local:1234/admin/quantize/JOB_ID \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -415,7 +415,7 @@ curl http://192.168.188.11:1234/admin/quantize/JOB_ID \
 
 ```bash
 # Standard OpenAI-compatible chat completion
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mlx-community/Qwen2.5-Coder-32B-Instruct-8bit",
@@ -425,7 +425,7 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
   }'
 
 # Streaming
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "mlx-community/Qwen2.5-Coder-32B-Instruct-8bit",
@@ -434,7 +434,7 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
   }'
 
 # Using a routing alias (resolves to first loaded model matching the alias)
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "code",
@@ -442,7 +442,7 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
   }'
 
 # Using a preset
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -d '{
     "model": "preset:code-assistant",
@@ -450,7 +450,7 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
   }'
 
 # Route to interactive lane (maps to high priority / queue bypass)
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-Serving-Lane: interactive" \
   -d '{
@@ -459,7 +459,7 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
   }'
 
 # Route to throughput lane (maps to normal priority)
-curl -X POST http://192.168.188.11:1234/v1/chat/completions \
+curl -X POST http://lmx-host.local:1234/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "X-Serving-Lane: throughput" \
   -d '{
@@ -487,30 +487,30 @@ curl -X POST http://192.168.188.11:1234/v1/chat/completions \
 
 ```bash
 # Step 1: Check the exact error code in the response
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "problematic-model"}' | python3 -m json.tool
 
 # Step 2: Check compatibility registry for this model
-curl "http://192.168.188.11:1234/admin/models/compatibility?model_id=problematic-model&include_summary=true" \
+curl "http://lmx-host.local:1234/admin/models/compatibility?model_id=problematic-model&include_summary=true" \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 
 # Step 3: Check readiness state (if model was previously loaded)
-curl http://192.168.188.11:1234/admin/models \
+curl http://lmx-host.local:1234/admin/models \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 # Look for readiness.state and readiness.reason in each model entry
 
 # Step 4: Check memory (may be insufficient)
-curl http://192.168.188.11:1234/admin/memory \
+curl http://lmx-host.local:1234/admin/memory \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 5: Check local snapshot completeness (incomplete downloads)
-curl http://192.168.188.11:1234/admin/models/available \
+curl http://lmx-host.local:1234/admin/models/available \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 6: Probe the model without loading
-curl -X POST http://192.168.188.11:1234/admin/models/probe \
+curl -X POST http://lmx-host.local:1234/admin/models/probe \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "problematic-model", "timeout_sec": 120}'
@@ -539,16 +539,16 @@ curl -X POST http://192.168.188.11:1234/admin/models/probe \
 
 ```bash
 # Step 1: Check current memory state
-curl http://192.168.188.11:1234/admin/memory \
+curl http://lmx-host.local:1234/admin/memory \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 2: Check which models are using the most memory
-curl http://192.168.188.11:1234/admin/models \
+curl http://lmx-host.local:1234/admin/models \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 # Sort by memory_gb to find largest residents
 
 # Step 3: Check Metal GPU memory
-curl http://192.168.188.11:1234/admin/health \
+curl http://lmx-host.local:1234/admin/health \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Look at "metal" section: active_memory_gb, peak_memory_gb, cache_memory_gb
 ```
@@ -557,19 +557,19 @@ curl http://192.168.188.11:1234/admin/health \
 
 ```bash
 # Option A: Unload least-used model to free memory
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "least-used-model-id"}'
 
 # Option B: Reduce load shedding threshold (temporary)
 # Edit ~/.opta-lmx/config.yaml -> memory.load_shedding_percent: 97
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Option C: Enable TTL eviction for idle models
 # Edit config: memory.ttl_enabled: true, memory.ttl_seconds: 1800
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -596,10 +596,10 @@ cat ~/.opta-lmx/runtime-state.json | python3 -m json.tool
 #   "last_startup_at": <recent timestamp>
 
 # Step 2: Check if service is running but in safe mode
-curl http://192.168.188.11:1234/readyz
+curl http://lmx-host.local:1234/readyz
 # Will return 503 (no models loaded) if in safe mode
 
-curl http://192.168.188.11:1234/admin/status \
+curl http://lmx-host.local:1234/admin/status \
   -H "X-Admin-Key: $ADMIN_KEY"
 # loaded_models: 0
 ```
@@ -634,8 +634,8 @@ cat ~/.opta-lmx/runtime-state.json | python3 -m json.tool
 python -m opta_lmx
 
 # Step 6: Manually load models one at a time, checking memory between loads
-curl http://192.168.188.11:1234/admin/memory -H "X-Admin-Key: $ADMIN_KEY"
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl http://lmx-host.local:1234/admin/memory -H "X-Admin-Key: $ADMIN_KEY"
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "smaller-model-first"}'
@@ -661,13 +661,13 @@ python -m opta_lmx
 
 ```bash
 # Step 1: Check readiness state
-curl http://192.168.188.11:1234/admin/models \
+curl http://lmx-host.local:1234/admin/models \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 # Look for models with readiness.state: "quarantined"
 # The readiness.reason will say "crash_loop:N" indicating N failures
 
 # Step 2: Check compatibility registry for failure history
-curl "http://192.168.188.11:1234/admin/models/compatibility?model_id=quarantined-model&outcome=fail" \
+curl "http://lmx-host.local:1234/admin/models/compatibility?model_id=quarantined-model&outcome=fail" \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 
 # Step 3: Check which backend and version failed
@@ -680,19 +680,19 @@ A model is quarantined after 3 consecutive inference failures (configurable via 
 
 ```bash
 # Option A: Unload and try a different backend
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "quarantined-model"}'
 
 # Reload with different backend
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "quarantined-model", "backend": "gguf"}'
 
 # Option B: Force-override quarantine (diagnostics only)
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{
@@ -701,15 +701,15 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
   }'
 
 # Option C: Re-download model (may be corrupt)
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "quarantined-model"}'
 
-curl -X DELETE "http://192.168.188.11:1234/admin/models/quarantined-model" \
+curl -X DELETE "http://lmx-host.local:1234/admin/models/quarantined-model" \
   -H "X-Admin-Key: $ADMIN_KEY"
 
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "quarantined-model", "auto_download": true}'
@@ -726,21 +726,21 @@ curl -X POST http://192.168.188.11:1234/admin/models/load \
 
 ```bash
 # Step 1: Check current concurrency and queue status
-curl http://192.168.188.11:1234/admin/status \
+curl http://lmx-host.local:1234/admin/status \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Look at: in_flight_requests vs max_concurrent_requests
 
 # Step 2: Check metrics for latency breakdown
-curl http://192.168.188.11:1234/admin/metrics/json \
+curl http://lmx-host.local:1234/admin/metrics/json \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 # Check per_model errors, completion_tokens, request counts
 
 # Step 3: Check per-model performance
-curl "http://192.168.188.11:1234/admin/models/MODEL_ID/performance" \
+curl "http://lmx-host.local:1234/admin/models/MODEL_ID/performance" \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 
 # Step 4: Check memory pressure (causes throttling)
-curl http://192.168.188.11:1234/admin/memory \
+curl http://lmx-host.local:1234/admin/memory \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 5: Check if adaptive concurrency has throttled down
@@ -752,27 +752,27 @@ curl http://192.168.188.11:1234/admin/memory \
 ```bash
 # Option A: Increase max concurrent requests
 # Edit config: models.max_concurrent_requests: 8
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Option B: Adjust adaptive concurrency target latency
 # Edit config: models.adaptive_latency_target_ms: 5000
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Option C: Set per-model concurrency limits (isolate slow models)
 # Edit config: models.per_model_concurrency_limits: {"slow-model": 1}
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Option D: Unload unused models to free memory/Metal capacity
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "idle-model"}'
 
 # Option E: Run autotune to optimize model load profile
-curl -X POST http://192.168.188.11:1234/admin/models/autotune \
+curl -X POST http://lmx-host.local:1234/admin/models/autotune \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "slow-model", "runs": 5}'
@@ -793,9 +793,9 @@ The load shedding middleware checks system memory before every non-exempt reques
 
 ```bash
 # Health endpoints still work during load shedding
-curl http://192.168.188.11:1234/healthz
-curl http://192.168.188.11:1234/readyz
-curl http://192.168.188.11:1234/admin/health \
+curl http://lmx-host.local:1234/healthz
+curl http://lmx-host.local:1234/readyz
+curl http://lmx-host.local:1234/admin/health \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Check memory state -- admin/memory may also be blocked during load shedding
@@ -810,7 +810,7 @@ curl http://192.168.188.11:1234/admin/health \
 # with reduced auto_load
 
 # Step 2: If admin endpoints work, unload the largest model
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "largest-model"}'
@@ -831,7 +831,7 @@ LMX_MODELS__AUTO_LOAD='[]' python -m opta_lmx
 
 ```bash
 # Check current in-flight vs limit
-curl http://192.168.188.11:1234/admin/status \
+curl http://lmx-host.local:1234/admin/status \
   -H "X-Admin-Key: $ADMIN_KEY"
 # If in_flight_requests == max_concurrent_requests, the semaphore is full
 
@@ -851,7 +851,7 @@ curl http://192.168.188.11:1234/admin/status \
 # Option C: Enable adaptive concurrency (auto-scales based on latency)
 # Edit config: models.adaptive_concurrency_enabled: true
 
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -865,7 +865,7 @@ curl -X POST http://192.168.188.11:1234/admin/config/reload \
 
 ```bash
 # Step 1: Check which security profile is active
-curl http://192.168.188.11:1234/healthz
+curl http://lmx-host.local:1234/healthz
 # This always works (no auth). If it returns OK, the server is running.
 
 # Step 2: Check the config security section
@@ -902,7 +902,7 @@ curl http://192.168.188.11:1234/healthz
 #   inference_api_key: "my-inference-secret"
 
 # After editing config:
-curl -X POST http://192.168.188.11:1234/admin/config/reload \
+curl -X POST http://lmx-host.local:1234/admin/config/reload \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Note: if you change admin_key via config reload, subsequent requests must use the NEW key
@@ -916,7 +916,7 @@ curl -X POST http://192.168.188.11:1234/admin/config/reload \
 
 ```bash
 # Scrape endpoint (Prometheus text format)
-curl http://192.168.188.11:1234/admin/metrics \
+curl http://lmx-host.local:1234/admin/metrics \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -948,7 +948,7 @@ curl http://192.168.188.11:1234/admin/metrics \
 ### 4.2 JSON Metrics Summary
 
 ```bash
-curl http://192.168.188.11:1234/admin/metrics/json \
+curl http://lmx-host.local:1234/admin/metrics/json \
   -H "X-Admin-Key: $ADMIN_KEY" | python3 -m json.tool
 # Returns: top-level totals + compatibility aliases:
 #   requests.{total,errors,stream_total,throughput_1m}
@@ -962,7 +962,7 @@ Real-time event feed for admin dashboards and automation.
 
 ```bash
 # Connect to SSE stream (keep-alive connection)
-curl -N http://192.168.188.11:1234/admin/events \
+curl -N http://lmx-host.local:1234/admin/events \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Events: model_loaded, model_unloaded, download_progress, download_completed,
 #          download_failed, request_completed, memory_warning, config_reloaded
@@ -988,11 +988,11 @@ Track model/backend compatibility over time.
 
 ```bash
 # All records
-curl http://192.168.188.11:1234/admin/models/compatibility \
+curl http://lmx-host.local:1234/admin/models/compatibility \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Filter by model and outcome
-curl "http://192.168.188.11:1234/admin/models/compatibility?model_id=some-model&outcome=fail&include_summary=true" \
+curl "http://lmx-host.local:1234/admin/models/compatibility?model_id=some-model&outcome=fail&include_summary=true" \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -1000,15 +1000,15 @@ curl "http://192.168.188.11:1234/admin/models/compatibility?model_id=some-model&
 
 ```bash
 # List session logs
-curl http://192.168.188.11:1234/admin/logs/sessions \
+curl http://lmx-host.local:1234/admin/logs/sessions \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Read a specific session log
-curl http://192.168.188.11:1234/admin/logs/sessions/FILENAME \
+curl http://lmx-host.local:1234/admin/logs/sessions/FILENAME \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # List update logs
-curl http://192.168.188.11:1234/admin/logs/updates \
+curl http://lmx-host.local:1234/admin/logs/updates \
   -H "X-Admin-Key: $ADMIN_KEY"
 ```
 
@@ -1017,7 +1017,7 @@ curl http://192.168.188.11:1234/admin/logs/updates \
 View model usage prediction data (used by warm pool prefetch).
 
 ```bash
-curl http://192.168.188.11:1234/admin/predictor \
+curl http://lmx-host.local:1234/admin/predictor \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Returns usage history and predicted next model
 ```
@@ -1025,7 +1025,7 @@ curl http://192.168.188.11:1234/admin/predictor \
 ### 4.7 Helper Node Health
 
 ```bash
-curl http://192.168.188.11:1234/admin/helpers \
+curl http://lmx-host.local:1234/admin/helpers \
   -H "X-Admin-Key: $ADMIN_KEY"
 # Returns health status, circuit breaker state for embedding/reranking helper nodes
 ```
@@ -1069,7 +1069,7 @@ When the server is under severe memory pressure and load shedding is active:
 
 ```bash
 # Step 1: Try admin unload (may fail if load shedding blocks admin routes)
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "largest-model-id"}'
@@ -1082,11 +1082,11 @@ sleep 5  # Wait for graceful shutdown
 LMX_MODELS__AUTO_LOAD='[]' python -m opta_lmx --host 0.0.0.0 --port 1234
 
 # Step 4: Verify service is up and empty
-curl http://192.168.188.11:1234/healthz
-curl http://192.168.188.11:1234/admin/memory -H "X-Admin-Key: $ADMIN_KEY"
+curl http://lmx-host.local:1234/healthz
+curl http://lmx-host.local:1234/admin/memory -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 5: Manually load only what is needed
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "essential-model-only"}'
@@ -1152,17 +1152,17 @@ rm ~/.opta-lmx/rag-store.json
 # Symptoms: model loads but canary fails, or produces garbage output
 
 # Step 1: Unload the model
-curl -X POST http://192.168.188.11:1234/admin/models/unload \
+curl -X POST http://lmx-host.local:1234/admin/models/unload \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "corrupted-model"}'
 
 # Step 2: Delete from disk
-curl -X DELETE "http://192.168.188.11:1234/admin/models/corrupted-model" \
+curl -X DELETE "http://lmx-host.local:1234/admin/models/corrupted-model" \
   -H "X-Admin-Key: $ADMIN_KEY"
 
 # Step 3: Re-download and load
-curl -X POST http://192.168.188.11:1234/admin/models/load \
+curl -X POST http://lmx-host.local:1234/admin/models/load \
   -H "Content-Type: application/json" \
   -H "X-Admin-Key: $ADMIN_KEY" \
   -d '{"model_id": "corrupted-model", "auto_download": true}'

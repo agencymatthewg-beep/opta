@@ -5,7 +5,7 @@ This is the baseline Opta CLI setup for a single primary LMX host with failover 
 ## 1) Primary host + port
 
 ```bash
-opta config set connection.host 192.168.188.11
+opta config set connection.host lmx-host.local
 opta config set connection.port 1234
 ```
 
@@ -14,7 +14,7 @@ opta config set connection.port 1234
 Use one stable primary host and add fallbacks for LAN failover:
 
 ```bash
-opta config set connection.fallbackHosts mono512.local,192.168.188.12
+opta config set connection.fallbackHosts lmx-host.local,lmx-host.local
 ```
 
 Opta will try `connection.host` first, then entries in `connection.fallbackHosts`.

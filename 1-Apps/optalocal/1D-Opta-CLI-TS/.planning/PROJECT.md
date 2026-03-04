@@ -43,7 +43,7 @@ Fast, reliable, self-hosted AI coding agent with a premium terminal experience t
 - **Codebase:** 87 source files, 13,267 lines, 735 tests across 70 files
 - **TUI status:** Scaffolded (15 files, 21 tests) but ~40% complete vs REPL feature parity
 - **Inspiration:** OpenCode's TUI is the gold standard for terminal AI coding UX
-- **LMX backend:** Local MLX inference server at 192.168.188.11:1234
+- **LMX backend:** Local MLX inference server at lmx-host.local:1234
 
 ## Constraints
 

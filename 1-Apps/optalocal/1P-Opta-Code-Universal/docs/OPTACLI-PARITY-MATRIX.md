@@ -2,8 +2,8 @@
 
 Date: 2026-03-04  
 Scope:
-- CLI engine: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS`
-- Desktop/web client: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal`
+- CLI engine: `<optalocal-root>/1D-Opta-CLI-TS`
+- Desktop/web client: `<optalocal-root>/1P-Opta-Code-Universal`
 
 ## Investigation Inputs (Local)
 

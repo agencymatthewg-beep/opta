@@ -21,7 +21,7 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 ├─────────────────────────────────────────────────────────────────────────┤
 │                                                                          │
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │ Mac Studio (M3 Ultra, 512GB) — Primary Inference Server          │  │
+│  │ dedicated Apple Silicon host (M3 Ultra, 512GB) — Primary Inference Server          │  │
 │  │                                                                  │  │
 │  │  ┌─────────────────────────────────────────────────────────┐   │  │
 │  │  │  Opta-LMX (This Project)                                │   │  │
@@ -94,7 +94,7 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 
 ### Opta-LMX (This Project)
 
-**What it is:** Headless inference server on Mac Studio (port 1234)
+**What it is:** Headless inference server on dedicated Apple Silicon host (port 1234)
 
 **What it does:**
 
@@ -128,7 +128,7 @@ This document explains where LMX sits in the larger Opta ecosystem, what it depe
 - `src/providers/lmx.ts` — replaces `src/providers/lmstudio.ts`
 - `src/commands/connect.ts` — calls `GET http://mac-studio:1234/v1/models` instead
 - `src/commands/models.ts` — same (parse LMX models list)
-- `src/commands/serve.ts` — NEW: start/stop/status of LMX daemon via ssh to Mac Studio
+- `src/commands/serve.ts` — NEW: start/stop/status of LMX daemon via ssh to dedicated Apple Silicon host
 
 **Uses LMX for:**
 
@@ -259,7 +259,7 @@ Return JSON:
 - [ ] Load test: all 6 bots simultaneously (verify queuing)
 - [ ] Test: autonomous model management (load/unload via Admin API)
 
-### Mac Studio Deployment
+### dedicated Apple Silicon host Deployment
 
 - [ ] Install plist at `/Library/LaunchDaemons/com.opta.lmx.plist`
 - [ ] Create log directory: `/var/log/opta-lmx/`
@@ -299,7 +299,7 @@ Opta-LMX (this project)
 
 ## Network Architecture
 
-### Mac Studio (Primary Inference Host)
+### dedicated Apple Silicon host (Primary Inference Host)
 
 ```
 Internal Network: 192.168.1.X/24

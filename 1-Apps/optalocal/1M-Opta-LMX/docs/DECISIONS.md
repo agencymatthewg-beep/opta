@@ -331,7 +331,7 @@ Never load a model if it would use > 90% of unified memory.
 #### Why
 - Beyond 90%, OOM risk is high
 - Want buffer for other processes
-- Mac Studio has 512GB, but much is shared with system
+- dedicated Apple Silicon host has 512GB, but much is shared with system
 - Graceful degradation: unload a model if needed
 
 #### Implication

@@ -93,7 +93,7 @@ npm run dev -- chat
 /exit
 
 # Check LMX
-curl http://192.168.188.11:1234/v1/models
+curl http://lmx-host.local:1234/v1/models
 ```
 
 ---

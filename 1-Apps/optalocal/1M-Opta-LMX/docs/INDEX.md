@@ -183,7 +183,7 @@ Read in this order:
 | **Write Python code** | `CLAUDE.md` (§1-7) | Project structure in CLAUDE.md |
 | **Review a pull request** | `CLAUDE.md` (§2-6) | `GUARDRAILS.md`, `DECISIONS.md` |
 | **Debug a bug** | `APP.md` (§8 rules) | Test checklist in `CLAUDE.md` |
-| **Deploy to Mac Studio** | `CLAUDE.md` (§5) | `docs/WORKFLOWS.md` |
+| **Deploy to dedicated Apple Silicon host** | `CLAUDE.md` (§5) | `docs/WORKFLOWS.md` |
 | **Integrate with Opta CLI** | `docs/OPTA-CLI-MIGRATION.md` | `docs/ECOSYSTEM.md`, API spec |
 | **Add a new model** | `docs/WORKFLOWS.md` | `docs/research/mlx-capabilities.md` |
 

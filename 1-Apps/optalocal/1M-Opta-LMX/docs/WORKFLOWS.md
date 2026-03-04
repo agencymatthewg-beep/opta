@@ -297,16 +297,16 @@ llama2-7b:
 
 ---
 
-## Workflow 5: Deploy to Mac Studio (launchd)
+## Workflow 5: Deploy to dedicated Apple Silicon host (launchd)
 
-**Goal:** Install and run LMX as a persistent daemon on Mac Studio.
+**Goal:** Install and run LMX as a persistent daemon on dedicated Apple Silicon host.
 
 **Time:** ~15 minutes  
 **Prerequisites:** LMX code is finalized, models are ready
 
 ### Steps
 
-1. **SSH to Mac Studio**
+1. **SSH to dedicated Apple Silicon host**
    ```bash
    ssh matthew@mac-studio.local
    ```
@@ -412,7 +412,7 @@ llama2-7b:
 
 ## Workflow 6: Monitor & Debug in Production
 
-**Goal:** Troubleshoot issues on Mac Studio without interactive access.
+**Goal:** Troubleshoot issues on dedicated Apple Silicon host without interactive access.
 
 **Time:** Variable
 
@@ -464,7 +464,7 @@ sudo launchctl start com.opta.lmx
 
 1. **Start LMX (if not already running)**
    ```bash
-   # On Mac Studio
+   # On dedicated Apple Silicon host
    uvicorn src.opta_lmx.main:app --host 127.0.0.1 --port 1234
    ```
 
@@ -491,7 +491,7 @@ sudo launchctl start com.opta.lmx
    opta do --stream "Count to 5" | head -20
    ```
 
-4. **Check memory on Mac Studio**
+4. **Check memory on dedicated Apple Silicon host**
    ```bash
    curl http://localhost:1234/admin/status | jq .
    ```

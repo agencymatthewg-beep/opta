@@ -10,7 +10,7 @@ All published guides on learn.optalocal.com must match the CLI masterclass quali
 - No thin summaries for verified guides
 
 This document outlines the strict process for generating content and guides for the `learn.optalocal.com` platform.
-Canonical key/workflow index: `/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
+Canonical key/workflow index: `<optalocal-root>/docs/GEMINI-GEMDESIGN-WORKFLOW-AND-KEYS.md`
 
 ## 1. Tooling Requirements
 

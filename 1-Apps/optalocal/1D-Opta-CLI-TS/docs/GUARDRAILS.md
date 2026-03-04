@@ -424,16 +424,16 @@ if (!lmx.isReachable()) {
 ```
 If Opta-LMX is unreachable:
 
-✗ Cannot reach Opta-LMX at 192.168.188.11:1234
+✗ Cannot reach Opta-LMX at lmx-host.local:1234
 
 Possible causes:
-  • Mac Studio (Mono512) is offline
+  • dedicated Apple Silicon host (Primary LMX Host) is offline
   • Opta-LMX is not running
   • Firewall blocking port 1234
 
 Try:
-  • Check connectivity: ping 192.168.188.11
-  • Start Opta-LMX on the Mac Studio
+  • Check connectivity: ping lmx-host.local
+  • Start Opta-LMX on the dedicated Apple Silicon host
   • Use a different host: opta connect --host <ip>
 
 (V1 has NO cloud fallback. This is V2+)

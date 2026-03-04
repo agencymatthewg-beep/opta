@@ -155,7 +155,7 @@ src/providers/anthropic.ts    — No changes (cloud fallback)
 ```typescript
 {
   connection: {
-    host: "192.168.188.11",    // LM Studio host
+    host: "lmx-host.local",    // LM Studio host
     port: 1234,                 // LM Studio port
     protocol: "http"
   },
@@ -173,10 +173,10 @@ src/providers/anthropic.ts    — No changes (cloud fallback)
 ```typescript
 {
   lmx: {
-    endpoint: "http://192.168.188.11:1234",   // LMX inference API
-    adminEndpoint: "http://192.168.188.11:1235", // LMX admin API (optional, can be same port)
+    endpoint: "http://lmx-host.local:1234",   // LMX inference API
+    adminEndpoint: "http://lmx-host.local:1235", // LMX admin API (optional, can be same port)
     // OR just one endpoint if admin is on same server:
-    // endpoint: "http://192.168.188.11:1234"  // Admin at /admin/* on same port
+    // endpoint: "http://lmx-host.local:1234"  // Admin at /admin/* on same port
   },
   model: {
     default: "glm-5-4bit",     // Default model (LMX loads it)
@@ -226,7 +226,7 @@ opta models --json                 # Machine-readable for all subcommands
 ```
 $ opta models
 
-Models on Opta-LMX (192.168.188.11)
+Models on Opta-LMX (lmx-host.local)
 
   LOADED
   ★ glm-5-4bit              420 GB   128K context   4.2 tok/s   MLX
@@ -253,7 +253,7 @@ Models on Opta-LMX (192.168.188.11)
 
 ```bash
 opta serve status              # Is LMX running? What's loaded? Memory?
-opta serve start               # Start LMX daemon on Mac Studio
+opta serve start               # Start LMX daemon on dedicated Apple Silicon host
 opta serve stop                # Stop LMX daemon
 opta serve restart             # Restart LMX
 opta serve logs                # Tail LMX logs
@@ -268,12 +268,12 @@ opta serve config set <k> <v>  # Update LMX config remotely
 ```
 Option A: LMX Admin API (preferred)
   opta serve status → GET http://lmx:1235/admin/health
-  opta serve start  → SSH to Mac Studio, start launchd service
+  opta serve start  → SSH to dedicated Apple Silicon host, start launchd service
   opta serve stop   → POST http://lmx:1235/admin/shutdown
-  opta serve logs   → SSH to Mac Studio, tail log file
+  opta serve logs   → SSH to dedicated Apple Silicon host, tail log file
 
 Option B: SSH for everything (fallback)
-  All commands via SSH to Mac Studio
+  All commands via SSH to dedicated Apple Silicon host
 ```
 
 ---
@@ -281,7 +281,7 @@ Option B: SSH for everything (fallback)
 ## 7. Opta CLI Purpose Statement (Post-Migration)
 
 ### Before (Current V1 Design Doc)
-> "Opta CLI is a local-first, agentic AI coding assistant that connects to LM Studio on your Mac Studio via its OpenAI-compatible API."
+> "Opta CLI is a local-first, agentic AI coding assistant that connects to LM Studio on your dedicated Apple Silicon host via its OpenAI-compatible API."
 
 ### After (With Opta-LMX)
 > "Opta CLI is a local-first, agentic AI coding assistant powered by Opta-LMX. It uses LLMs running on your own hardware to read, edit, search, and build code — with the intelligence of frontier models and the privacy of local inference."

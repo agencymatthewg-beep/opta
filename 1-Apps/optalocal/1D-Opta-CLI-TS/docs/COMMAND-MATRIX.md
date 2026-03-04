@@ -74,7 +74,7 @@ This matrix documents every top-level command and key flag combination that is v
 | `opta config set provider.active lmx` | 🔧 | Switch to LMX (default) |
 | `opta config set permissions.edit_file allow` | ✅ | Auto-approve file edits |
 | `opta config set permissions.run_command ask` | ✅ | Prompt before shell commands (default) |
-| `opta config set connection.host 192.168.188.11` | ✅ | Point to Mac Studio LMX |
+| `opta config set connection.host lmx-host.local` | ✅ | Point to dedicated Apple Silicon host LMX |
 | `opta config set connection.port 1234` | ✅ | LMX port (default: 1234) |
 
 ---
@@ -86,7 +86,7 @@ This matrix documents every top-level command and key flag combination that is v
 | `opta env save <name>` | ✅ | Save current config as named profile |
 | `opta env use <name>` | ✅ | Switch to named profile |
 | `opta env list` | ✅ | List saved profiles |
-| `opta env save studio --host 192.168.188.11 --port 1234` | ✅ | Save Mac Studio profile |
+| `opta env save studio --host lmx-host.local --port 1234` | ✅ | Save dedicated Apple Silicon host profile |
 
 ---
 
@@ -231,9 +231,9 @@ opta daemon stop
 # 6. Shell completions
 opta completions zsh | head -3
 
-# 7. LMX provider (requires Mac Studio on LAN)
+# 7. LMX provider (requires dedicated Apple Silicon host on LAN)
 opta config set provider.active lmx
-opta config set connection.host 192.168.188.11
+opta config set connection.host lmx-host.local
 opta do "say hello world"
 ```
 

@@ -51,7 +51,7 @@
 Run from shared migration repo directory:
 
 ```bash
-cd /Users/matthewbyrden/Synced/Opta/1-Apps/shared/1N-Opta-Cloud-Accounts
+cd <opta-apps-root>/shared/1N-Opta-Cloud-Accounts
 
 # If Supabase CLI is linked/authenticated:
 supabase db push

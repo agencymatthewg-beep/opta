@@ -324,7 +324,7 @@ See `docs/research/competitor-analysis.md` for detailed analysis.
 2. Then: https://huggingface.co/docs/hub/security-tokens
 3. Try: https://huggingface.co/mlx-community (available models)
 
-### "I need to deploy to Mac Studio"
+### "I need to deploy to dedicated Apple Silicon host"
 1. Read: `CLAUDE.md` §5 (deployment commands)
 2. Then: `docs/GUARDRAILS.md` G-DEPLOY-01 (launchd plist)
 3. Try: `docs/WORKFLOWS.md` (deployment workflow)

@@ -1,6 +1,6 @@
 ---
 title: Opta CLI
-tagline: Local-first agentic AI coding assistant — your Mac Studio, your control
+tagline: Local-first agentic AI coding assistant — your dedicated Apple Silicon host, your control
 audience: Matthew Byrden + AI agents (Claude Code, bots)
 type: CLI tool (Node.js, TypeScript)
 status: Active development (v0.5.0-alpha.1)
@@ -12,7 +12,7 @@ updated: 2026-02-26
 
 ## 🎯 TL;DR
 
-Opta CLI is a Node.js command-line tool that connects your MacBook to Opta-LMX running on your Mac Studio. It gives you Claude Code-like agentic AI (read files, edit code, run commands) powered by your own local LLMs instead of cloud APIs. Think of it as a command center for your Mac Studio's inference engine.
+Opta CLI is a Node.js command-line tool that connects your MacBook to Opta-LMX running on your dedicated Apple Silicon host. It gives you Claude Code-like agentic AI (read files, edit code, run commands) powered by your own local LLMs instead of cloud APIs. Think of it as a command center for your dedicated Apple Silicon host's inference engine.
 
 ---
 
@@ -25,7 +25,7 @@ No mainstream AI CLI offers **first-class remote local LLM management**.
 - **Cursor/Continue** are editor plugins — not standalone CLI
 - **Opta-LMX** handles inference but needs a CLI interface from other devices
 
-**Gap:** You have Qwen2.5-72B running on your Mac Studio. You want to use it from your MacBook CLI for coding tasks, with tool-use (read/edit/bash). Today, no off-the-shelf tool does this well.
+**Gap:** You have Qwen2.5-72B running on your dedicated Apple Silicon host. You want to use it from your MacBook CLI for coding tasks, with tool-use (read/edit/bash). Today, no off-the-shelf tool does this well.
 
 ---
 
@@ -36,7 +36,7 @@ No mainstream AI CLI offers **first-class remote local LLM management**.
 ```
 MacBook (you running opta chat)
     ↓ (OpenAI-compatible API calls)
-Opta-LMX on Mac Studio (Mono512)
+Opta-LMX on dedicated Apple Silicon host (Primary LMX Host)
     ↓ (tool calls)
 MacBook local filesystem / bash (read, edit, run_command, etc.)
     ↓ (results back to model)
@@ -80,15 +80,15 @@ Done
 | Component | Role | Who Controls It |
 |-----------|------|-----------------|
 | **Opta CLI** | The driver/client | MacBook CLI, issues requests to Opta-LMX |
-| **Opta-LMX (Brother App)** | The inference engine | Mac Studio service, runs local LLMs, returns completions |
-| **OptaPlus** | Chat web UI | Mac Studio web interface, talks to LMX |
+| **Opta-LMX (Brother App)** | The inference engine | dedicated Apple Silicon host service, runs local LLMs, returns completions |
+| **OptaPlus** | Chat web UI | dedicated Apple Silicon host web interface, talks to LMX |
 | **OpenClaw** | Orchestration layer | Gateway, nodes, skills, message routing |
 | **Opta Life** | Task management | Separate service, syncs with CLI for context |
 
 **Data Flow:**
 
 ```
-CLI (chat command) → Opta-LMX API (192.168.188.11:1234) → Qwen2.5-72B
+CLI (chat command) → Opta-LMX API (lmx-host.local:1234) → Qwen2.5-72B
     ↓ model sees 8 tool schemas
     ↓ model calls run_command("npm test")
 CLI executes → result → back to model → loop until done

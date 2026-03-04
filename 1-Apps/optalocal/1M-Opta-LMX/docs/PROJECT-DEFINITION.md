@@ -110,10 +110,10 @@ These MUST be present before v1.0 release:
 
 | Machine | RAM | Role |
 |---------|-----|------|
-| **Mono512** (Mac Studio M3 Ultra) | 512GB unified | Primary inference server |
+| **Primary LMX Host** (dedicated Apple Silicon host M3 Ultra) | 512GB unified | Primary inference server |
 | **MacBook M4 Max** | 48GB unified | Secondary (small models only) |
 
-Primary deployment: Mono512. All design decisions optimized for 512GB unified memory on M3 Ultra.
+Primary deployment: Primary LMX Host. All design decisions optimized for 512GB unified memory on M3 Ultra.
 
 ---
 
@@ -176,7 +176,7 @@ Primary deployment: Mono512. All design decisions optimized for 512GB unified me
 │  │              OPTA-LMX                       │ │
 │  │     (Inference Engine + Model Manager)      │ │
 │  │                                            │ │
-│  │  Runs on: Mac Studio (Mono512, 512GB)      │ │
+│  │  Runs on: dedicated Apple Silicon host (Primary LMX Host, 512GB)      │ │
 │  │  Serves: OpenAI-compatible API             │ │
 │  │  Engine: MLX (primary) + GGUF (fallback)   │ │
 │  └────────────────────────────────────────────┘ │

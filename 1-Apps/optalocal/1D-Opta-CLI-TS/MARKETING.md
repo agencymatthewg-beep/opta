@@ -1,6 +1,6 @@
 # Opta CLI — Marketing & Capabilities
 
-**Tagline:** Local-first agentic AI coding assistant — your Mac Studio, your control.
+**Tagline:** Local-first agentic AI coding assistant — your dedicated Apple Silicon host, your control.
 
 ## 🎯 The Purpose
 Opta CLI is a Node.js-based command-line interface that brings Claude Code-level autonomy to your own private hardware. It acts as the intelligent driver connecting your terminal to Opta-LMX, allowing AI to read files, edit code, and run bash commands autonomously—without ever needing to send your codebase to a cloud API.
@@ -18,5 +18,5 @@ Opta CLI is a Node.js-based command-line interface that brings Claude Code-level
 *   **Agentic Execution:** Chat (`opta chat`) or Task-based (`opta do "fix this bug"`) operations.
 *   **Git Checkpoints:** Automatically snapshots your code before the AI makes dangerous edits, allowing instant rollbacks.
 *   **Per-Turn Overrides:** Instantly switch models or elevate autonomy to "Level 4 (Dangerous Mode)" for a single prompt without breaking global configs.
-*   **Cloud Fallback:** If your local Mac Studio goes offline, it gracefully falls back to Anthropic/OpenAI APIs.
+*   **Cloud Fallback:** If your local dedicated Apple Silicon host goes offline, it gracefully falls back to Anthropic/OpenAI APIs.
 *   **Extensive Tooling:** Includes `read_file`, `write_file`, `edit_file`, `run_command`, `web_search`, and `ask_user`.

@@ -69,14 +69,14 @@ Model management features currently in Opta CLI's plans migrate to Opta-LMX. CLI
 
 | Machine | RAM | Role |
 |---------|-----|------|
-| Mono512 (Mac Studio M3 Ultra) | 512GB | Primary: Runs Opta-LMX, hosts all large models |
+| Primary LMX Host (dedicated Apple Silicon host M3 Ultra) | 512GB | Primary: Runs Opta-LMX, hosts all large models |
 | MacBook M4 Max | 48GB | Secondary: Runs Opta CLI, connects to LMX remotely |
 
-**Network:** LAN (192.168.188.11) + Cloudflare Tunnel (*.optamize.biz) for remote access.
+**Network:** LAN (lmx-host.local) + Cloudflare Tunnel (*.optamize.biz) for remote access.
 
 ---
 
-## Models Currently Available on Mono512
+## Models Currently Available on Primary LMX Host
 
 | Model | Size | Format | Status |
 |-------|------|--------|--------|

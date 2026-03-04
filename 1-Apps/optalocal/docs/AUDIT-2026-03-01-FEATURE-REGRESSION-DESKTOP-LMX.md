@@ -184,4 +184,4 @@
 ## Optimization scan (beyond asked)
 ⚠️ Also noticed: setup UX and backend persistence contract are misaligned (`configDir`, `shell`). This is a **product-level trust bug**, not just a code smell. Recommendation: either persist these fields properly in canonical config immediately, or visibly mark them non-persistent to prevent “configured-but-ignored” behavior.
 
-⚠️ Also noticed: Desktop wizard defaults to `192.168.188.11:1234` while app connection defaults use `127.0.0.1:9999` in session hook. Recommendation: unify defaults behind one source-of-truth config contract to avoid first-run confusion and split-brain connection behavior.
+⚠️ Also noticed: Desktop wizard defaults to `lmx-host.local:1234` while app connection defaults use `127.0.0.1:9999` in session hook. Recommendation: unify defaults behind one source-of-truth config contract to avoid first-run confusion and split-brain connection behavior.
