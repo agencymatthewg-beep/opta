@@ -226,6 +226,39 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     const output = formatDoResult(doResult, outputFormat);
     if (output) console.log(output);
 
+    // Auto-Commit Integration
+    if (config.git.autoCommit && doResult.toolCallCount > 0 && outputFormat === 'text') {
+      try {
+        const { getModifiedFiles } = await import('../git/utils.js');
+        const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');
+        const { getOrCreateClient } = await import('../core/agent-setup.js');
+
+        const modifiedFiles = await getModifiedFiles(process.cwd());
+        if (modifiedFiles.length > 0) {
+          console.log(chalk.dim(`\nCreating auto-commit for ${modifiedFiles.length} modified file(s)...`));
+          const commitClient = await getOrCreateClient(config);
+          
+          // Provide a simulated message history summarizing the task for the LLM generator
+          const simulatedHistory: AgentMessage[] = [
+            { role: 'user', content: activeTaskStr },
+            { role: 'assistant', content: doResult.response || 'Completed the requested task.' }
+          ];
+
+          const commitMsg = await generateCommitMessage(simulatedHistory, commitClient, config.model.default);
+          const success = await commitSessionChanges(process.cwd(), modifiedFiles, commitMsg);
+          
+          if (success) {
+            console.log(chalk.green('✓') + chalk.dim(` Auto-committed: "${commitMsg}"`));
+          } else {
+            console.log(chalk.yellow('⚠') + chalk.dim(' Auto-commit failed or was skipped.'));
+          }
+        }
+      } catch (err) {
+        // Soft fail
+        console.log(chalk.yellow('⚠') + chalk.dim(' Failed to generate auto-commit: ') + (err instanceof Error ? err.message : String(err)));
+      }
+    }
+
     // Elapsed time footer in text mode
     if (outputFormat === 'text') {
       const elapsed = ((Date.now() - taskStart) / 1000).toFixed(1);
