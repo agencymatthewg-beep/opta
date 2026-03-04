@@ -180,3 +180,6 @@ __pycache__/
 1-Apps/*.png
 1-Apps/*.html
 _archived/
+
+.gemini/
+gha-creds-*.json
