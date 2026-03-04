@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useOperations } from "../../hooks/useOperations";
 import type { DaemonConnectionOptions } from "../../types";
 import { Activity, Server, HardDrive } from "lucide-react";
@@ -6,9 +6,9 @@ import { Activity, Server, HardDrive } from "lucide-react";
 export function SettingsTabFleet({ connection }: { connection: DaemonConnectionOptions }) {
   const { runOperation, lastResult, running } = useOperations(connection);
   
-  const fetchHealth = async () => {
+  const fetchHealth = useCallback(async () => {
     await runOperation("doctor", {});
-  };
+  }, [runOperation]);
 
   const fetchModels = async () => {
     await runOperation("models.dashboard", {});
@@ -20,7 +20,7 @@ export function SettingsTabFleet({ connection }: { connection: DaemonConnectionO
 
   useEffect(() => { 
     void fetchHealth();
-  }, [connection]);
+  }, [connection, fetchHealth]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,9 +62,15 @@ export function SettingsTabFleet({ connection }: { connection: DaemonConnectionO
         </h4>
         
         {lastResult ? (
-          <pre className="font-mono text-xs text-purple-200 m-0 whitespace-pre-wrap break-words">
-            {JSON.stringify(lastResult.result, null, 2)}
-          </pre>
+          lastResult.error ? (
+            <pre className="font-mono text-xs text-red-400 m-0 whitespace-pre-wrap break-words">
+              {typeof lastResult.error === 'string' ? lastResult.error : JSON.stringify(lastResult.error, null, 2)}
+            </pre>
+          ) : (
+            <pre className="font-mono text-xs text-purple-200 m-0 whitespace-pre-wrap break-words">
+              {JSON.stringify(lastResult.result, null, 2)}
+            </pre>
+          )
         ) : (
           <p className="text-sm text-zinc-400 m-0">
             No recent operations.
