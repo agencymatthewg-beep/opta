@@ -5792,13 +5792,15 @@ button.active,
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--opta-text-primary);
 }
 
 .v1-app-btn:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .v1-app-btn svg {
@@ -5849,12 +5851,14 @@ button.active,
   border: 1px solid rgba(34, 197, 94, 0.15);
   color: var(--opta-text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .v1-agent-pill:hover {
   background: rgba(34, 197, 94, 0.12);
   border-color: rgba(34, 197, 94, 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
 }
 
 .v1-agent-dot {
@@ -6205,12 +6209,14 @@ button.active,
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 4px;
-  transition: color 0.2s;
+  border-radius: 6px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pp-icon-btn:hover {
   color: var(--opta-text-primary);
+  background: rgba(255, 255, 255, 0.08);
+  transform: scale(1.1);
 }
 
 .pp-tree {
@@ -6272,13 +6278,14 @@ button.active,
   border-bottom: none;
   width: 100%;
   text-align: left;
-  transition: background 0.15s, color 0.15s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   font-family: inherit;
 }
 
 .pp-session-item:hover {
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--opta-text-secondary);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--opta-text-primary);
+  transform: translateX(4px);
 }
 
 .pp-session-item.active {
@@ -6382,11 +6389,12 @@ button.active,
   padding: 0.75rem 1rem;
   text-decoration: none;
   border-top: 1px solid rgba(255, 255, 255, 0.06);
-  transition: background 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .pp-user-profile:hover {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(255, 255, 255, 0.04);
+  padding-left: 1.25rem;
 }
 
 .pp-avatar {
@@ -6465,7 +6473,7 @@ button.active,
   padding: 0.3rem 0.6rem;
   border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   text-transform: uppercase;
   letter-spacing: 1px;
   font-family: "Sora", sans-serif;
@@ -6474,8 +6482,9 @@ button.active,
 .btn-edit:hover,
 .wp-edit-btn:hover {
   border-color: var(--opta-primary-glow);
-  color: var(--opta-primary-glow);
-  background: rgba(168, 85, 247, 0.12);
+  color: var(--opta-text-primary);
+  background: rgba(168, 85, 247, 0.15);
+  transform: scale(1.02);
 }
 
 .wp-grid {
@@ -6695,12 +6704,13 @@ button.active,
   border-radius: 5px;
   cursor: pointer;
   font-family: "Sora", sans-serif;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .session-export-btn:hover {
-  color: var(--opta-text-secondary);
-  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--opta-text-primary);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: scale(1.02);
 }
 
 /* ── Workspace Rail ─────────────────────────────────────────────────────── */
@@ -6725,7 +6735,7 @@ button.active,
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   color: var(--opta-text-muted);
   background: transparent;
   border: 1px solid transparent;
@@ -6737,9 +6747,10 @@ button.active,
 }
 
 .wr-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-  border-color: rgba(255, 255, 255, 0.08);
-  color: var(--opta-text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--opta-text-primary);
+  transform: scale(1.05);
 }
 
 .wr-item.active {
@@ -6786,13 +6797,15 @@ button.active,
   display: flex;
   flex-direction: column;
   gap: 0;
-  transition: border-color 0.25s, box-shadow 0.25s;
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   overflow: hidden;
 }
 
 .r9-composer-box:focus-within {
-  border-color: rgba(168, 85, 247, 0.4);
-  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.15), 0 8px 32px rgba(168, 85, 247, 0.1);
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(168, 85, 247, 0.02);
+  box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.25), 0 8px 32px rgba(168, 85, 247, 0.15);
+  transform: translateY(-1px);
 }
 
 .r9-composer-disabled {
@@ -6826,13 +6839,15 @@ button.active,
   font-size: 0.68rem;
   color: var(--opta-text-secondary);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .r9-mode-badge:hover {
-  background: rgba(168, 85, 247, 0.15);
-  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.18);
+  border-color: rgba(168, 85, 247, 0.5);
   color: var(--opta-text-primary);
+  transform: scale(1.02);
+  box-shadow: 0 4px 12px rgba(168, 85, 247, 0.15);
 }
 
 .r9-mode-badge strong {
@@ -7080,15 +7095,17 @@ button.active,
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   background: transparent;
   border: 1px solid rgba(161, 161, 170, 0.2);
   color: var(--opta-text-secondary);
 }
 
 .r9-mic-btn:hover:not(:disabled) {
-  background: rgba(161, 161, 170, 0.1);
+  background: rgba(161, 161, 170, 0.15);
+  border-color: rgba(161, 161, 170, 0.4);
   color: var(--opta-text-primary);
+  transform: scale(1.05);
 }
 
 .r9-mic-btn.r9-mic-recording {
@@ -7122,17 +7139,36 @@ button.active,
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   background: var(--opta-primary);
   border: none;
   color: #fff;
-  box-shadow: 0 2px 12px rgba(168, 85, 247, 0.35);
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.r9-send-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.4s;
+  pointer-events: none;
 }
 
 .r9-send-btn:hover:not(:disabled) {
   background: #9333ea;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(168, 85, 247, 0.5);
+  transform: scale(1.05) translateY(-1px);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.5);
+}
+
+.r9-send-btn:hover:not(:disabled)::after {
+  opacity: 1;
 }
 
 .r9-send-btn:disabled {
