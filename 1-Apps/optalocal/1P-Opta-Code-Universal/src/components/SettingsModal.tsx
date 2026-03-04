@@ -21,6 +21,7 @@ import {
   FileCheck,
   Activity,
   Server,
+  Key,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -40,6 +41,7 @@ import { SettingsTabLearning } from "./settings/SettingsTabLearning";
 import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
 import { SettingsTabMcp } from "./settings/SettingsTabMcp";
 import { SettingsTabFleet } from "./settings/SettingsTabFleet";
+import { SettingsTabSecrets } from "./settings/SettingsTabSecrets";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -50,7 +52,7 @@ interface SettingsModalProps {
 }
 
 export type SettingsTabId = "connection" | "lmx" | "autonomy" | "genui" | "daemon"
-  | "model-provider" | "fleet" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp";
+  | "model-provider" | "fleet" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp" | "secrets";
 
 const DEFAULT_CONNECTION_FORM = {
   host: "127.0.0.1",
@@ -1041,6 +1043,17 @@ export function SettingsModal({
         return <SettingsTabPolicy connection={connection} />;
       case "mcp":
         return <SettingsTabMcp connection={connection} />;
+      case "secrets":
+        return (
+          <motion.div
+            key="secrets"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <SettingsTabSecrets connection={connection} />
+          </motion.div>
+        );
       default:
         return null;
     }
@@ -1113,6 +1126,12 @@ export function SettingsModal({
               onClick={() => setActiveTab("fleet")}
             >
               <Server size={16} /> Fleet Health
+            </button>
+            <button
+              className={`opta-studio-tab ${activeTab === "secrets" ? "active" : ""}`}
+              onClick={() => setActiveTab("secrets")}
+            >
+              <Key size={16} /> Secrets
             </button>
             <button
               className={`opta-studio-tab ${activeTab === "permissions" ? "active" : ""}`}
