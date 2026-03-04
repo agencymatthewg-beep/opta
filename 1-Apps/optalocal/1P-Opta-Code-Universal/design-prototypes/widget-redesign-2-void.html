@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Widget Redesign 2 - Void Minimal</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #09090b;
+            --primary: #8b5cf6;
+            --text-main: #fafafa;
+            --text-dim: #a1a1aa;
+            --text-muted: #52525b;
+            --neon-green: #22c55e;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text-main);
+            font-family: 'Sora', sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Fake Sidebar & Center for context */
+        .sidebar {
+            width: 260px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+        }
+
+        .sidebar-top {
+            font-size: 0.8rem;
+            letter-spacing: 2px;
+            font-weight: 700;
+            color: var(--text-dim);
+        }
+
+        .sidebar-footer {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .avatar {
+            width: 32px;
+            height: 32px;
+            background: transparent;
+            border: 1px solid var(--text-muted);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono';
+            color: var(--text-dim);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        .user-device {
+            font-family: 'JetBrains Mono';
+            font-size: 0.65rem;
+            color: var(--text-muted);
+        }
+
+        .center {
+            flex: 1;
+            border-left: 1px dashed rgba(255, 255, 255, 0.05);
+            border-right: 1px dashed rgba(255, 255, 255, 0.05);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .watermark {
+            font-family: 'JetBrains Mono';
+            font-size: 4rem;
+            font-weight: 700;
+            color: rgba(255, 255, 255, 0.02);
+            text-align: center;
+        }
+
+        /* CONCEPT 2: VOID MINIMAL (Right Pane) */
+        .right-pane {
+            width: 340px;
+            background: var(--bg);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 3rem;
+        }
+
+        /* Invisible Action Island */
+        .top-action-island {
+            display: flex;
+            gap: 1rem;
+            align-self: flex-end;
+            padding-right: 0.5rem;
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .action-btn:hover {
+            color: var(--text-main);
+            transform: translateY(-2px);
+        }
+
+        .action-btn::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 2px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .action-btn:hover::after {
+            width: 100%;
+        }
+
+        .action-btn svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        /* Widget Box 1: ATPO Plan */
+        .widget-box {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .widget-header {
+            font-family: 'Sora', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .widget-header svg {
+            width: 16px;
+            height: 16px;
+            color: var(--primary);
+            opacity: 0.8;
+        }
+
+        /* Minimal Timeline */
+        .atpo-timeline {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .atpo-timeline::before {
+            content: '';
+            position: absolute;
+            top: 8px;
+            bottom: 8px;
+            left: 5px;
+            width: 1px;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .atpo-item {
+            position: relative;
+            padding-bottom: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .atpo-item:last-child {
+            padding-bottom: 0;
+        }
+
+        .atpo-item::before {
+            content: '';
+            position: absolute;
+            left: -1.5rem;
+            top: 4px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            border: 2px solid var(--bg);
+        }
+
+        .atpo-item.active {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .atpo-item.active::before {
+            background: var(--primary);
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        .atpo-item.done {
+            color: var(--text-dim);
+        }
+
+        .atpo-item.done::before {
+            background: var(--neon-green);
+        }
+
+        /* Widget Box 2: CLI Logs */
+        .cli-box .widget-header svg {
+            color: var(--text-muted);
+        }
+
+        .cli-log-container {
+            font-family: 'JetBrains Mono';
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .cli-log-line {
+            opacity: 0.8;
+        }
+
+        .cli-log-line.active {
+            opacity: 1;
+            color: var(--text-main);
+        }
+
+        .cli-input-wrapper {
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .cli-input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+            font-family: 'JetBrains Mono';
+            font-size: 0.75rem;
+            width: 100%;
+            outline: none;
+            padding-bottom: 0.25rem;
+            transition: border-color 0.3s;
+        }
+
+        .cli-input:focus {
+            border-color: var(--primary);
+        }
+    </style>
+</head>
+
+<body>
+    <div class="sidebar">
+        <div>
+            <div class="sidebar-top">PROJECTS</div>
+            <div style="margin-top:2rem; font-size:0.8rem; color:var(--text-dim);">No sessions yet</div>
+        </div>
+        <div class="sidebar-footer">
+            <div class="avatar">M</div>
+            <div class="user-info">
+                <div class="user-name">Matthew Byrden</div>
+                <div class="user-device">Workstation - Opta48</div>
+            </div>
+        </div>
+    </div>
+    <div class="center">
+        <div class="watermark">
+            <div style="font-size:0.8rem; letter-spacing:4px; margin-bottom:1rem; color:var(--text-dim);">DESIGN
+                PROTOTYPE</div>
+            CONCEPT 2<br>VOID MINIMAL
+        </div>
+    </div>
+
+    <!-- CONCEPT 2 RIGHT PANE -->
+    <div class="right-pane">
+        <!-- Action Island -->
+        <div class="top-action-island">
+            <button class="action-btn" title="Tiles">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 20h9" />
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                </svg>
+            </button>
+            <button class="action-btn" title="Accounts">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                </svg>
+            </button>
+        </div>
+
+        <!-- ATPO Widget -->
+        <div class="widget-box">
+            <div class="widget-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 6v6l4 2" />
+                </svg>
+                ATPO Lifecycle
+            </div>
+            <div class="atpo-timeline">
+                <div class="atpo-item done">Read existing config</div>
+                <div class="atpo-item active">Refactor client</div>
+                <div class="atpo-item">Verification</div>
+            </div>
+        </div>
+
+        <!-- CLI Widget -->
+        <div class="widget-box cli-box">
+            <div class="widget-header">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 17l6-6-6-6" />
+                    <path d="M12 19h8" />
+                </svg>
+                Terminal Output
+            </div>
+            <div class="cli-log-container">
+                <div class="cli-log-line">⚑ Loading Opta daemon environment...</div>
+                <div class="cli-log-line active">⚑ Awaiting task generation</div>
+            </div>
+            <div class="cli-input-wrapper">
+                <span>$</span>
+                <input type="text" class="cli-input" placeholder="execute direct..." disabled>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -806,20 +806,32 @@ function App() {
             )}
           </header>
 
-          {/* Design Concept 3: Floating Action Island */}
-          {designMode === "3" && (
-            <div style={{ position: 'absolute', top: '1rem', right: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '99px', padding: '0.25rem 0.5rem', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 100 }}>
-              <button type="button" style={{ background: 'transparent', border: 'none', color: 'var(--opta-text-secondary)', fontSize: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                <span>TILES</span>
-              </button>
-              <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
-              <button type="button" onClick={() => openSettings("connection")} style={{ background: 'transparent', border: 'none', color: 'var(--opta-text-secondary)', fontSize: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
-                <span>ACCOUNTS</span>
-              </button>
-            </div>
-          )}
+          {/* Floating Action Island — always shown, styled via CSS */}
+          <div className="v1-action-island">
+            <button
+              type="button"
+              className="v1-island-btn"
+              onClick={() => widgetLayout.toggleEditMode()}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+              </svg>
+              Tiles
+            </button>
+            <div className="v1-island-divider" />
+            <button
+              type="button"
+              className="v1-island-btn"
+              onClick={() => openSettings("connection")}
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
+              Accounts
+            </button>
+          </div>
 
 
           {/* V1 Agent Bar — horizontal strip above body */}

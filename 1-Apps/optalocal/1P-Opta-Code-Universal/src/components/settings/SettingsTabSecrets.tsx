@@ -5,9 +5,15 @@ import { RefreshCw, Key, Shield, CheckCircle, AlertTriangle } from "lucide-react
 
 const PROVIDERS = [
   { id: "anthropic", label: "Anthropic API Key", placeholder: "sk-ant-..." },
+  { id: "claude", label: "Claude API Key (Alias)", placeholder: "sk-ant-..." },
   { id: "openai", label: "OpenAI API Key", placeholder: "sk-..." },
+  { id: "codex", label: "Codex API Key (Alias)", placeholder: "sk-..." },
+  { id: "minimax", label: "Minimax API Key", placeholder: "xxxx..." },
   { id: "lmx", label: "LMX API Key", placeholder: "lmx-..." },
   { id: "gemini", label: "Gemini API Key", placeholder: "AIzaSy..." },
+  { id: "google", label: "Google API Key (Alias)", placeholder: "AIzaSy..." },
+  { id: "opencode-zen", label: "OpenCode Zen API Key", placeholder: "zen-..." },
+  { id: "opencode", label: "OpenCode API Key (Alias)", placeholder: "zen-..." },
 ];
 
 export function SettingsTabSecrets({

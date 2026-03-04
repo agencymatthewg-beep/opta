@@ -342,6 +342,8 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
         { slug: "gemini", label: "Gemini" },
         { slug: "groq", label: "Groq" },
         { slug: "codex", label: "Codex" },
+        { slug: "minimax", label: "Minimax" },
+        { slug: "opencode", label: "OpenCode" },
         { slug: "lmx", label: "LMX" },
       ],
     },
@@ -1115,4 +1117,3 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
     </div>
   );
 }
-

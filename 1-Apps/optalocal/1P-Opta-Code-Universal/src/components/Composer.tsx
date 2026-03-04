@@ -250,11 +250,10 @@ export function Composer({
               >
                 <option value="">Default Provider</option>
                 <option value="lmx">LMX (Local)</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="gemini">Gemini</option>
-                <option value="openai">OpenAI</option>
-                <option value="deepseek">DeepSeek</option>
-                <option value="litellm">LiteLLM Proxy</option>
+                <option value="anthropic">Anthropic (Claude)</option>
+                <option value="gemini">Gemini (Google)</option>
+                <option value="openai">OpenAI / Codex / Minimax</option>
+                <option value="opencode_zen">OpenCode Zen</option>
               </select>
               <select
                 className="r9-adv-select"

@@ -8,7 +8,13 @@ interface Props {
     connection: DaemonConnectionOptions;
 }
 
-const PROVIDERS = ["lmx", "anthropic", "gemini", "openai", "opencode_zen"] as const;
+const PROVIDERS = [
+    { id: "lmx", label: "LMX (Local)" },
+    { id: "anthropic", label: "Anthropic (Claude)" },
+    { id: "gemini", label: "Gemini (Google)" },
+    { id: "openai", label: "OpenAI / Codex / Minimax" },
+    { id: "opencode_zen", label: "OpenCode Zen" },
+] as const;
 const MODES = ["safe", "auto", "plan", "review", "research", "dangerous", "ci"] as const;
 
 export function SettingsTabModelProvider({ connection }: Props) {
@@ -137,7 +143,11 @@ export function SettingsTabModelProvider({ connection }: Props) {
                 <div className="st-row">
                     <label className="st-label">Active Provider
                         <select className="st-select" value={activeProvider} onChange={e => setActiveProvider(e.target.value)}>
-                            {PROVIDERS.map(p => <option key={p} value={p}>{p}</option>)}
+                            {PROVIDERS.map((provider) => (
+                                <option key={provider.id} value={provider.id}>
+                                    {provider.label}
+                                </option>
+                            ))}
                         </select>
                     </label>
                     <label className="st-label st-checkbox-label">

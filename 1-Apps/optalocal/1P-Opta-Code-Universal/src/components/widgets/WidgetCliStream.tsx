@@ -4,7 +4,6 @@ interface CliEvent {
     timestamp: string;
     source: string;
     message: string;
-    color?: string;
 }
 
 interface WidgetCliStreamProps {
@@ -35,7 +34,7 @@ function parseEvent(raw: unknown): CliEvent {
     return { timestamp: "", source: "system", message: JSON.stringify(raw) };
 }
 
-export function WidgetCliStream({ rawEvents, designMode = "0" }: WidgetCliStreamProps) {
+export function WidgetCliStream({ rawEvents, designMode = "3" }: WidgetCliStreamProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -47,11 +46,12 @@ export function WidgetCliStream({ rawEvents, designMode = "0" }: WidgetCliStream
     const events = rawEvents.slice(-50).map(parseEvent);
 
     return (
-        <div className={`widget-cli-stream dm-cli-${designMode}`}>
-            <div className="widget-header">
-                <span className="widget-title">
+        <div className={`widget-bento-card widget-bento-card--cli dm-cli-${designMode}`}>
+            {/* Bento Header */}
+            <div className="bento-card-header">
+                <div className="bento-card-title">
                     <svg
-                        className="widget-icon"
+                        className="bento-card-icon"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -60,35 +60,44 @@ export function WidgetCliStream({ rawEvents, designMode = "0" }: WidgetCliStream
                         <polyline points="4 17 10 11 4 5" />
                         <line x1="12" y1="19" x2="20" y2="19" />
                     </svg>
-                    OPTA CLI LOGS
-                </span>
+                    Opta CLI Logs
+                </div>
             </div>
-            <div className="cli-terminal" ref={scrollRef}>
-                {events.length === 0 ? (
-                    <div className="cli-empty">Waiting for events...</div>
-                ) : (
-                    events.map((evt, i) => (
-                        <div key={i} className="cli-line">
-                            {evt.timestamp && (
-                                <span className="cli-time">
-                                    {evt.timestamp.slice(11, 19) || evt.timestamp}
+
+            {/* Mac-style console */}
+            <div className="cli-bento-console" ref={scrollRef}>
+                <div className="cli-bento-dots">
+                    <span className="cli-dot cli-dot--red" />
+                    <span className="cli-dot cli-dot--yellow" />
+                    <span className="cli-dot cli-dot--green" />
+                </div>
+                <div className="cli-bento-body">
+                    {events.length === 0 ? (
+                        <div className="cli-bento-empty">Waiting for events...</div>
+                    ) : (
+                        events.map((evt, i) => (
+                            <div key={i} className="cli-bento-line">
+                                {evt.timestamp && (
+                                    <span className="cli-bento-time">
+                                        {evt.timestamp.slice(11, 19) || evt.timestamp}
+                                    </span>
+                                )}
+                                <span
+                                    className="cli-bento-source"
+                                    style={{ color: SOURCE_COLORS[evt.source] ?? "var(--opta-text-muted)" }}
+                                >
+                                    [{evt.source}]
                                 </span>
-                            )}
-                            <span
-                                className="cli-source"
-                                style={{ color: SOURCE_COLORS[evt.source] ?? "var(--opta-text-muted)" }}
-                            >
-                                [{evt.source}]
-                            </span>
-                            <span className="cli-msg">{evt.message}</span>
-                        </div>
-                    ))
-                )}
-                <div className="cli-prompt">
-                    <span className="cli-prompt-char">❯</span>
+                                <span className="cli-bento-msg">{evt.message}</span>
+                            </div>
+                        ))
+                    )}
+                </div>
+                <div className="cli-bento-input-row">
+                    <span className="cli-bento-prompt">❯</span>
                     <input
                         type="text"
-                        className="cli-prompt-input"
+                        className="cli-bento-input"
                         placeholder="Type a CLI command..."
                         readOnly
                     />

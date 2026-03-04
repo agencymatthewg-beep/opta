@@ -7557,3 +7557,325 @@ button.active,
   background: rgba(255, 255, 255, 0.02);
   margin-bottom: 0.25rem;
 }
+
+/* ════════════════════════════════════════════════════════════════
+   BENTO REDESIGN — Widget Cards, Floating Island, Profile Label
+   ════════════════════════════════════════════════════════════════ */
+
+/* ── Floating Action Island (top-right of topbar) ───────────────── */
+.v1-action-island {
+  position: absolute;
+  top: 50%;
+  right: 1.5rem;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 99px;
+  padding: 0.3rem;
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 50;
+}
+
+.v1-island-btn {
+  background: transparent;
+  border: none;
+  color: var(--opta-text-secondary);
+  padding: 0.4rem 0.9rem;
+  border-radius: 99px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.v1-island-btn svg {
+  color: var(--opta-primary-glow);
+  flex-shrink: 0;
+}
+
+.v1-island-btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--opta-text-primary);
+}
+
+.v1-island-divider {
+  width: 1px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+
+/* ── Bento Widget Card (base) ───────────────────────────────────── */
+.widget-bento-card {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  transition: border-color 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.widget-bento-card:hover {
+  border-color: rgba(255, 255, 255, 0.13);
+  transform: translateY(-2px);
+}
+
+/* ── Bento Card Header ──────────────────────────────────────────── */
+.bento-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.bento-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.bento-card-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--opta-text-secondary);
+  flex-shrink: 0;
+}
+
+.bento-badge {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  color: var(--opta-primary-glow);
+  background: rgba(139, 92, 246, 0.12);
+  border: 1px solid rgba(139, 92, 246, 0.25);
+  border-radius: 99px;
+  padding: 2px 8px;
+  letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
+
+/* ── ATPO Horizontal Stepper ────────────────────────────────────── */
+.atpo-bento-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  padding: 0 0.4rem;
+}
+
+.atpo-bento-line {
+  position: absolute;
+  top: 50%;
+  left: 0.4rem;
+  right: 0.4rem;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.05);
+  z-index: 1;
+  transform: translateY(-50%);
+}
+
+.atpo-bento-line-fill {
+  position: absolute;
+  top: 50%;
+  left: 0.4rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--opta-primary), var(--opta-primary-glow));
+  z-index: 2;
+  transform: translateY(-50%);
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+  transition: width 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.atpo-bento-step {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--opta-bg);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--opta-text-muted);
+  flex-shrink: 0;
+  transition: border-color 0.3s ease, background 0.3s ease, box-shadow 0.3s ease;
+}
+
+.atpo-bento-step.done {
+  border-color: var(--opta-primary);
+  color: var(--opta-primary-glow);
+  background: rgba(139, 92, 246, 0.12);
+}
+
+.atpo-bento-step.active {
+  border-color: var(--opta-primary-glow);
+  background: var(--opta-primary);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.6);
+}
+
+.atpo-bento-labels {
+  display: flex;
+  justify-content: space-between;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  color: var(--opta-text-muted);
+  padding: 0 0.1rem;
+}
+
+.atpo-label-active {
+  color: var(--opta-text-primary);
+  font-weight: 600;
+}
+
+/* ── CLI Logs Bento ─────────────────────────────────────────────── */
+.widget-bento-card--cli {
+  flex: 1;
+  min-height: 0;
+}
+
+.cli-bento-console {
+  background: #000;
+  border-radius: 12px;
+  padding: 0.875rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.74rem;
+}
+
+.cli-bento-dots {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 0.35rem;
+  flex-shrink: 0;
+}
+
+.cli-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  display: block;
+}
+
+.cli-dot--red {
+  background: rgba(255, 95, 86, 0.55);
+}
+
+.cli-dot--yellow {
+  background: rgba(255, 189, 46, 0.55);
+}
+
+.cli-dot--green {
+  background: rgba(39, 201, 63, 0.55);
+}
+
+.cli-bento-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  scrollbar-width: none;
+}
+
+.cli-bento-body::-webkit-scrollbar {
+  display: none;
+}
+
+.cli-bento-line {
+  color: var(--opta-text-secondary);
+  line-height: 1.5;
+  word-break: break-all;
+}
+
+.cli-bento-time {
+  color: var(--opta-text-muted);
+  margin-right: 0.4rem;
+  opacity: 0.7;
+}
+
+.cli-bento-source {
+  margin-right: 0.4rem;
+  font-weight: 600;
+}
+
+.cli-bento-msg {
+  color: var(--opta-text-secondary);
+}
+
+.cli-bento-empty {
+  color: var(--opta-text-muted);
+  font-style: italic;
+  padding: 0.25rem 0;
+}
+
+.cli-bento-input-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+}
+
+.cli-bento-prompt {
+  color: var(--opta-primary-glow);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+.cli-bento-input {
+  background: transparent;
+  border: none;
+  color: var(--opta-text-primary);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.74rem;
+  width: 100%;
+  outline: none;
+  caret-color: var(--opta-primary-glow);
+}
+
+.cli-bento-input::placeholder {
+  color: var(--opta-text-muted);
+}
+
+/* ── Editable Device Label (bottom-left) ────────────────────────── */
+.v1-user-plan[contenteditable="true"] {
+  cursor: text;
+  outline: none;
+  border-bottom: 1px dashed transparent;
+  transition: border-color 0.2s ease;
+  padding-bottom: 1px;
+}
+
+.v1-user-plan[contenteditable="true"]:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.v1-user-plan[contenteditable="true"]:focus {
+  border-color: var(--opta-primary-glow);
+}
