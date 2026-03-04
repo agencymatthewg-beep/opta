@@ -1,0 +1,44 @@
+name: Opta Init — Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1O-Opta-Init/**"
+  workflow_dispatch:
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1O-Opta-Init
+
+jobs:
+  deploy:
+    name: Deploy to init.optalocal.com
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: 1-Apps/optalocal/1O-Opta-Init/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build (next export → out/)
+        run: npm run build
+
+      - name: Deploy to Vercel production
+        run: |
+          npx vercel --prod \
+            --token="${{ secrets.VERCEL_TOKEN }}" \
+            --yes \
+            2>&1
+        env:
+          VERCEL_ORG_ID: team_gU9yOVESJwOUWdYC0SLGGoGv
+          VERCEL_PROJECT_ID: prj_YoQatHAZY2qGmICvWvmamtVrSltF
