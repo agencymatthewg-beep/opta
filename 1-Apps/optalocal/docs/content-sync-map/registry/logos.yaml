@@ -9,6 +9,8 @@ logos:
     description: "Opta Code — Attention head + binary field disc (210×210 viewBox)"
     design_notes: "Final March 2026 design. Binary field rings + 8 weighted attention rays + { } braces + focal node."
     canonical_source: 1O-Opta-Init/public/logos/opta-code-mark.svg
+    last_verified: 2026-03-04
+    sync_status: canonical  # All 4 reference surfaces now serve identical file
     design_copy: design/logos/Opta-Code-Desktop/opta-code-mark.svg
     referenced_in:
       - path: 1T-Opta-Home/components/Hero.tsx
