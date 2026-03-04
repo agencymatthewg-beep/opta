@@ -1,12 +1,20 @@
 # Opta-LMX Project State
 
-**Last Updated:** 2026-02-19 14:00 AEDT
-**Current Phase:** Complete (Phases 0-10 done + deferred items resolved)
-**Overall Progress:** 100% (all 10 phases + 4 deferred items)
+**Last Updated:** 2026-03-04
+**Current Phase:** Complete (Phases 0-10 done + optimization gaps remediated)
+**Overall Progress:** 100% (all 10 phases + deferred items + P0/P1 gaps resolved)
 
 ---
 
 ## Current Status
+- ✅ **Service Core:** Running stable on port 1234.
+- ✅ **Never-Crash Load Flow:** Child loader isolation, compatibility probe, and fallback routing merged.
+- ✅ **Quantize Hard-Cancel:** Subprocess isolation implemented.
+- ✅ **Dual-Lane Routing:** Interactive and throughput queues functional via header logic.
+- ✅ **Admin UI Visibility:** Next.js dashboard active; speculative and serving lane metrics surfaced.
+- ✅ **KV Optimization:** `quantized_kv_start` config deployed and wired through engine.
+- ✅ **Tech Debt:** Engine facade successfully broken down into sub-modules (Autotune, Predictor, Status delegators).
+- ✅ **Tests:** 1165 passed. 100% reliability maintained on Opta48.
 
 ### Phase 8: Model Stack & Distributed Inference — COMPLETE
 - Circuit breaker for helper nodes (hand-rolled, ~40 lines)
