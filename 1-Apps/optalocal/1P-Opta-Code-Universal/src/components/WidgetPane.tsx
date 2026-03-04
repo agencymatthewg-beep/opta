@@ -94,7 +94,7 @@ export function WidgetPane({
                 {slots.map((slot) => (
                     <div
                         key={slot.id}
-                        className={`wp-tile wp-tile-${slot.size.toLowerCase()}`}
+                        className={`wp-tile wp-tile-${slot.size.toLowerCase()} ${designMode === "3" ? "wp-tile-bento" : ""}`}
                     >
                         {isEditing && (
                             <button

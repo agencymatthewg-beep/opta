@@ -6443,7 +6443,7 @@ button.active,
 /* ── Right Pane (Widget Grid) ───────────────────────────────────────────── */
 
 .widget-pane {
-  width: 340px;
+  width: 380px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -6515,6 +6515,12 @@ button.active,
   flex-direction: column;
   position: relative;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.wp-tile-bento {
+  background: transparent;
+  border: none;
+  padding: 0;
 }
 
 /* Editing mode — wiggle + dashed violet border */
@@ -7837,9 +7843,18 @@ button.active,
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding-top: 0.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 0.6rem 0.8rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 0.25rem;
   flex-shrink: 0;
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.cli-bento-input-row:focus-within {
+  border-color: rgba(168, 85, 247, 0.5);
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .cli-bento-prompt {
