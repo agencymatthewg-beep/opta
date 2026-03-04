@@ -9,6 +9,7 @@ interface CliEvent {
 
 interface WidgetCliStreamProps {
     rawEvents: unknown[];
+    designMode?: string;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
@@ -34,7 +35,7 @@ function parseEvent(raw: unknown): CliEvent {
     return { timestamp: "", source: "system", message: JSON.stringify(raw) };
 }
 
-export function WidgetCliStream({ rawEvents }: WidgetCliStreamProps) {
+export function WidgetCliStream({ rawEvents, designMode = "0" }: WidgetCliStreamProps) {
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -46,7 +47,7 @@ export function WidgetCliStream({ rawEvents }: WidgetCliStreamProps) {
     const events = rawEvents.slice(-50).map(parseEvent);
 
     return (
-        <div className="widget-cli-stream">
+        <div className={`widget-cli-stream dm-cli-${designMode}`}>
             <div className="widget-header">
                 <span className="widget-title">
                     <svg

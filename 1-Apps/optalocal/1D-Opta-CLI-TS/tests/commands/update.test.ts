@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   CLI_UPDATE_BUILD_SCRIPT,
+  extractReachableRemoteHosts,
   missingOptaCommands,
   parseComponentList,
   parseRemoteLanGuardMarker,
@@ -36,9 +37,9 @@ describe('update command helpers', () => {
 
   describe('resolveTargets', () => {
     it('resolves explicit target modes', () => {
-      expect(resolveTargets('local', 'mono512')).toEqual(['local']);
-      expect(resolveTargets('remote', 'mono512')).toEqual(['remote']);
-      expect(resolveTargets('both', 'mono512')).toEqual(['local', 'remote']);
+      expect(resolveTargets('local', 'remote-lab')).toEqual(['local']);
+      expect(resolveTargets('remote', 'remote-lab')).toEqual(['remote']);
+      expect(resolveTargets('both', 'remote-lab')).toEqual(['local', 'remote']);
     });
 
     it('uses local-only in auto mode for localhost', () => {
@@ -47,12 +48,12 @@ describe('update command helpers', () => {
     });
 
     it('uses local + remote in auto mode for non-local host', () => {
-      expect(resolveTargets('auto', 'Mono512')).toEqual(['local', 'remote']);
+      expect(resolveTargets('auto', 'remote-lab')).toEqual(['local', 'remote']);
     });
   });
 
   describe('remoteConnectFailureStatus', () => {
-    it('uses skip in auto mode to preserve local updates when studio SSH is down', () => {
+    it('uses skip in auto mode to preserve local updates when remote SSH is down', () => {
       expect(remoteConnectFailureStatus('auto')).toBe('skip');
     });
 
@@ -65,8 +66,24 @@ describe('update command helpers', () => {
 
   describe('resolveRemoteHostCandidates', () => {
     it('returns primary first, then fallback hosts in order with case-insensitive dedupe', () => {
-      expect(resolveRemoteHostCandidates(' Mono512 ', ['mono512', ' mono513 ', '', 'MONO513', 'mono514']))
-        .toEqual(['Mono512', 'mono513', 'mono514']);
+      expect(resolveRemoteHostCandidates(' remote-lab ', ['remote-lab', ' backup-a ', '', 'BACKUP-A', 'backup-b']))
+        .toEqual(['remote-lab', 'backup-a', 'backup-b']);
+    });
+
+    it('appends discovered LAN hosts after configured hosts with case-insensitive dedupe', () => {
+      expect(resolveRemoteHostCandidates('remote-lab', ['backup-a'], ['10.0.0.11', 'backup-a', '10.0.0.11']))
+        .toEqual(['remote-lab', 'backup-a', '10.0.0.11']);
+    });
+  });
+
+  describe('extractReachableRemoteHosts', () => {
+    it('returns unique hosts that passed SSH probe in probe order', () => {
+      expect(extractReachableRemoteHosts([
+        { host: 'remote-lab', exitCode: 255, detail: 'timed out' },
+        { host: 'backup-a', exitCode: 0, detail: 'connected' },
+        { host: 'backup-b', exitCode: 0, detail: 'connected' },
+        { host: 'BACKUP-A', exitCode: 0, detail: 'connected' },
+      ])).toEqual(['backup-a', 'backup-b']);
     });
   });
 
@@ -155,13 +172,13 @@ describe('update command helpers', () => {
     it('parses marker from multiline output', () => {
       const output = [
         'some log line',
-        '__LAN_GUARD__:ok:192.168.188.11::Off',
+        '__LAN_GUARD__:ok:10.0.0.11::Off',
         'done',
       ].join('\n');
 
       expect(parseRemoteLanGuardMarker(output)).toEqual({
         state: 'ok',
-        ethernetIp: '192.168.188.11',
+        ethernetIp: '10.0.0.11',
         wifiIp: '',
         wifiPower: 'Off',
       });

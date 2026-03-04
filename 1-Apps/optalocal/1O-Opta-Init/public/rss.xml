@@ -4,21 +4,21 @@
     <title>Opta Init Releases</title>
     <link>https://init.optalocal.com/changelog</link>
     <description>Release announcements for Opta Init manager channels.</description>
-    <lastBuildDate>Tue, 03 Mar 2026 22:37:30 GMT</lastBuildDate>
+    <lastBuildDate>Wed, 04 Mar 2026 07:57:20 GMT</lastBuildDate>
     <language>en-us</language>
+    <item>
+      <title>Opta Init stable — 2026.03.04-stable.1</title>
+      <link>https://init.optalocal.com/releases/2026-03-04-stable-1</link>
+      <guid>https://init.optalocal.com/releases/2026-03-04-stable-1</guid>
+      <pubDate>Wed, 04 Mar 2026 08:00:00 GMT</pubDate>
+      <description>Opta Init stable release 2026.03.04-stable.1</description>
+    </item>
     <item>
       <title>Opta Init beta — 2026.03.02-beta.2</title>
       <link>https://init.optalocal.com/releases/2026-03-02-beta-2</link>
       <guid>https://init.optalocal.com/releases/2026-03-02-beta-2</guid>
       <pubDate>Mon, 02 Mar 2026 02:20:00 GMT</pubDate>
       <description>Opta Init beta release 2026.03.02-beta.2</description>
-    </item>
-    <item>
-      <title>Opta Init stable — 2026.03.02-stable.1</title>
-      <link>https://init.optalocal.com/releases/2026-03-02-stable-1</link>
-      <guid>https://init.optalocal.com/releases/2026-03-02-stable-1</guid>
-      <pubDate>Mon, 02 Mar 2026 02:10:00 GMT</pubDate>
-      <description>Opta Init stable release 2026.03.02-stable.1</description>
     </item>
   </channel>
 </rss>

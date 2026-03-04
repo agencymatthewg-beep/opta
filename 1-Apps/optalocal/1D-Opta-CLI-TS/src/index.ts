@@ -684,7 +684,7 @@ program
   .option('--admin-key <key>', 'override connection admin key when saving (empty string clears)')
   .option(
     '--admin-keys-by-host <json>',
-    'override host-specific admin keys map when saving, e.g. {"192.168.188.11":"keyA"}'
+    'override host-specific admin keys map when saving, e.g. {"lmx-a.local":"keyA"}'
   )
   .option('--model <id>', 'override default model when saving')
   .option('--provider <name>', 'provider for profile (lmx|anthropic|gemini|openai|opencode_zen)')
@@ -696,8 +696,8 @@ program
 Examples:
   $ opta env                         List all environment profiles
   $ opta env save laptop             Save current settings as "laptop"
-  $ opta env save mono --host 192.168.188.11 --port 1234
-  $ opta env save mono --admin-keys-by-host '{"192.168.188.11":"keyA","192.168.188.8":"keyB"}'
+  $ opta env save remote --host lmx-a.local --port 1234
+  $ opta env save remote --admin-keys-by-host '{"lmx-a.local":"keyA","lmx-b.local":"keyB"}'
   $ opta env use laptop              Apply a saved profile
   $ opta env show laptop             Show profile details
   $ opta env delete old-server       Remove a profile
@@ -774,9 +774,9 @@ const keyCmd = program
 
 keyCmd
   .command('create')
-  .description('Create or rotate inference API key and sync to Studio LMX')
+  .description('Create or rotate inference API key and sync to configured remote LMX')
   .option('--value <key>', 'use explicit key value instead of generating one')
-  .option('--no-remote', 'skip syncing key to Studio LMX config')
+  .option('--no-remote', 'skip syncing key to remote LMX config')
   .option('--no-copy', 'skip copying key to clipboard')
   .option('--json', 'machine-readable output')
   .addHelpText(
@@ -1041,7 +1041,10 @@ program
     'comma-separated components: cli,lmx,plus,web (default: cli,lmx,plus)'
   )
   .option('-t, --target <mode>', 'target mode: auto|local|remote|both (default: auto)', 'auto')
-  .option('--remote-host <host>', 'override remote host (default: connection.host)')
+  .option(
+    '--remote-host <host>',
+    'override remote host (default: connection.host; otherwise uses configured + discovered LAN hosts)'
+  )
   .option('--remote-user <user>', 'override SSH user (default: connection.ssh.user)')
   .option(
     '--identity-file <path>',
@@ -1060,7 +1063,7 @@ Examples:
   $ opta update
   $ opta update --components web --target local
   $ opta update --components lmx --target both
-  $ opta update --target remote --remote-host Mono512
+  $ opta update --target remote --remote-host lmx-a.local
   $ opta update --dry-run --json
 `
   )

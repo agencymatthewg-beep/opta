@@ -4,7 +4,7 @@ interface WidgetAtpoProps {
     timelineItems: TimelineItem[];
 }
 
-export function WidgetAtpo({ timelineItems }: WidgetAtpoProps) {
+export function WidgetAtpo({ timelineItems, designMode = "0" }: WidgetAtpoProps & { designMode?: string }) {
     // Derive plan phases from timeline events
     const planEvents = timelineItems.filter(
         (item) =>
@@ -25,7 +25,7 @@ export function WidgetAtpo({ timelineItems }: WidgetAtpoProps) {
     );
 
     return (
-        <div className="widget-atpo">
+        <div className={`widget-atpo dm-atpo-${designMode}`}>
             <div className="widget-header">
                 <span className="widget-title">
                     <svg

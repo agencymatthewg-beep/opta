@@ -386,7 +386,7 @@ export async function runOnboarding(): Promise<void> {
       rl,
       '',
       [
-        'Local LMX  ' + chalk.dim('— Mac Studio inference server (recommended)'),
+        'Local LMX  ' + chalk.dim('— Remote/local inference server (recommended)'),
         'Anthropic  ' + chalk.dim('— Cloud API with your API key'),
         'Gemini    ' + chalk.dim('— Google OpenAI-compatible endpoint (Gemini)'),
         'OpenAI    ' + chalk.dim('— OpenAI/Codex-compatible endpoint'),
@@ -707,4 +707,3 @@ export async function runOnboarding(): Promise<void> {
     rl.close();
   }
 }
-

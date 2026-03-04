@@ -81,6 +81,12 @@ export interface SelectReachableRemoteHostOptions {
   parallel?: boolean;
 }
 
+interface DiscoveredRemoteHostCandidate {
+  host: string;
+  source: 'mdns' | 'sweep';
+  latencyMs: number;
+}
+
 export const CLI_UPDATE_BUILD_SCRIPT =
   'npm run -s typecheck && (npm run -s build || (npm install --no-fund --no-audit && npm run -s typecheck && npm run -s build))';
 
@@ -162,9 +168,10 @@ export function remoteConnectFailureStatus(mode: UpdateTargetMode): StepStatus {
 
 export function resolveRemoteHostCandidates(
   primaryHost: string,
-  fallbackHosts: readonly string[] = []
+  fallbackHosts: readonly string[] = [],
+  discoveredHosts: readonly string[] = []
 ): string[] {
-  const hosts = [primaryHost, ...fallbackHosts]
+  const hosts = [primaryHost, ...fallbackHosts, ...discoveredHosts]
     .map((host) => host.trim())
     .filter((host) => host.length > 0);
 
@@ -178,6 +185,21 @@ export function resolveRemoteHostCandidates(
   }
 
   return deduped;
+}
+
+export function extractReachableRemoteHosts(probes: readonly RemoteHostProbe[]): string[] {
+  const seen = new Set<string>();
+  const hosts: string[] = [];
+
+  for (const probe of probes) {
+    if (probe.exitCode !== 0) continue;
+    const key = probe.host.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    hosts.push(probe.host);
+  }
+
+  return hosts;
 }
 
 export async function selectReachableRemoteHost(
@@ -228,6 +250,41 @@ export async function selectReachableRemoteHost(
     selectedHost: null,
     probes,
   };
+}
+
+function canPromptForRemoteHostSelection(opts: Pick<UpdateOptions, 'json'>): boolean {
+  return (
+    !opts.json &&
+    Boolean(process.stdin.isTTY) &&
+    Boolean(process.stdout.isTTY) &&
+    process.env['CI'] !== 'true'
+  );
+}
+
+async function promptForRemoteHostSelection(
+  reachableHosts: readonly string[],
+  discoveredHosts: readonly DiscoveredRemoteHostCandidate[]
+): Promise<string> {
+  const discoveredByHost = new Map<string, DiscoveredRemoteHostCandidate>();
+  for (const host of discoveredHosts) {
+    discoveredByHost.set(host.host.toLowerCase(), host);
+  }
+
+  const { select } = await import('@inquirer/prompts');
+  const chosen = (await select({
+    message: 'Multiple reachable remote devices found. Select one to update',
+    choices: reachableHosts.map((host) => {
+      const discovered = discoveredByHost.get(host.toLowerCase());
+      const sourceLabel = discovered ? (discovered.source === 'mdns' ? 'LAN mDNS' : 'LAN sweep') : 'configured';
+      const latencyLabel = discovered ? `, ${discovered.latencyMs}ms` : '';
+      return {
+        name: `${host} (${sourceLabel}${latencyLabel})`,
+        value: host,
+      };
+    }),
+  })) as string;
+
+  return chosen;
 }
 
 function detectAppsRoot(startCwd: string): string | null {
@@ -530,7 +587,7 @@ async function runRemoteLanStabilityGuard(
   const verifyDetail = summarizeOutput(verify.stderr || verify.stdout);
   const modeHint =
     mode === 'auto'
-      ? 'auto mode skipped Studio updates; use --target remote once SSH is stable'
+      ? 'auto mode skipped remote updates; use --target remote once SSH is stable'
       : 'fix network path and rerun update';
 
   return {
@@ -894,7 +951,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
     [
       ...(localStepCount > 0 ? [{ key: 'local', label: 'Local', totalSteps: localStepCount }] : []),
       ...(remoteStepCount > 0
-        ? [{ key: 'remote', label: 'Studio', totalSteps: remoteStepCount }]
+        ? [{ key: 'remote', label: 'Remote', totalSteps: remoteStepCount }]
         : []),
     ],
     'Update progress',
@@ -903,7 +960,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const pushResult = (result: StepResult): void => {
     results.push(result);
     const hostSuffix = result.target === 'remote' && result.host ? `@${result.host}` : '';
-    const scope = result.target === 'remote' ? 'studio' : 'local';
+    const scope = result.target === 'remote' ? 'remote' : 'local';
     progress.tick(
       result.target,
       `[${scope}] ${result.component}:${result.step}${hostSuffix} ${result.status}`
@@ -969,9 +1026,34 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
         identityFile: expandHome(opts.identityFile ?? config.connection.ssh.identityFile),
       };
 
+      let discoveredRemoteHosts: DiscoveredRemoteHostCandidate[] = [];
+      const shouldDiscoverRemoteHosts = config.connection.autoDiscover && !opts.remoteHost;
+      if (shouldDiscoverRemoteHosts) {
+        try {
+          const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
+          const discovered = await discoverLmxHosts(2_500);
+          const byHost = new Map<string, DiscoveredRemoteHostCandidate>();
+          for (const entry of discovered) {
+            const host = entry.host.trim();
+            if (!host) continue;
+            const key = host.toLowerCase();
+            if (byHost.has(key)) continue;
+            byHost.set(key, {
+              host,
+              source: entry.source,
+              latencyMs: entry.latencyMs,
+            });
+          }
+          discoveredRemoteHosts = Array.from(byHost.values());
+        } catch {
+          // Discovery is best-effort and should never block updates.
+        }
+      }
+
       const remoteCandidates = resolveRemoteHostCandidates(
         remoteHost,
-        config.connection.fallbackHosts
+        config.connection.fallbackHosts,
+        discoveredRemoteHosts.map((entry) => entry.host)
       );
       const selection = await selectReachableRemoteHost(
         remoteCandidates,
@@ -986,8 +1068,13 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           ),
         { parallel: true }
       );
+      const reachableHosts = extractReachableRemoteHosts(selection.probes);
+      let selectedRemoteHost = selection.selectedHost;
+      if (reachableHosts.length > 1 && canPromptForRemoteHostSelection(opts)) {
+        selectedRemoteHost = await promptForRemoteHostSelection(reachableHosts, discoveredRemoteHosts);
+      }
 
-      if (!selection.selectedHost) {
+      if (!selectedRemoteHost) {
         const connectStatus = remoteConnectFailureStatus(mode);
         const attemptDetail =
           selection.probes.length > 0
@@ -1000,7 +1087,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
         const connectDetail = `ssh failed for hosts (${attemptedHosts}) — ${attemptDetail}`;
         const connectMessage =
           mode === 'auto'
-            ? `${connectDetail} (auto mode skipped Studio updates; use --target remote once SSH is reachable)`
+            ? `${connectDetail} (auto mode skipped remote updates; use --target remote once SSH is reachable)`
             : connectDetail;
         for (const component of components) {
           pushResult({
@@ -1013,10 +1100,10 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           });
         }
       } else {
-        remoteHostUsed = selection.selectedHost;
+        remoteHostUsed = selectedRemoteHost;
         const sshConfig: SshConfig = {
           ...baseSshConfig,
-          host: selection.selectedHost,
+          host: selectedRemoteHost,
         };
 
         const guardComponent = components[0] ?? 'cli';

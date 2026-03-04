@@ -21,6 +21,7 @@ last_updated: 2026-03-04
 - `docs/GUARDRAILS.md`
 - `docs/KNOWLEDGE.md`
 - `docs/WORKFLOWS.md`
+- `docs/WEBSITE-HEALTH-SLO-RUNBOOK.md`
 - `docs/DECISIONS.md`
 - `docs/ROADMAP.md`
 

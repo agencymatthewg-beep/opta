@@ -1,6 +1,6 @@
 import chalk from 'chalk';
 import { loadConfig } from '../core/config.js';
-import { agentLoop } from '../core/agent.js';
+import { agentLoop, type AgentMessage } from '../core/agent.js';
 import { formatError, OptaError, ExitError, EXIT, ensureModel } from '../core/errors.js';
 import { buildConfigOverrides } from '../utils/config-helpers.js';
 import { DaemonClient } from '../daemon/client.js';
@@ -227,7 +227,7 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
     if (output) console.log(output);
 
     // Auto-Commit Integration
-    if (config.git.autoCommit && doResult.toolCallCount > 0 && outputFormat === 'text') {
+    if (config.git?.autoCommit === true && doResult.toolCallCount > 0 && outputFormat === 'text') {
       try {
         const { getModifiedFiles } = await import('../git/utils.js');
         const { generateCommitMessage, commitSessionChanges } = await import('../git/commit.js');

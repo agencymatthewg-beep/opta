@@ -1,6 +1,7 @@
 'use client'
 
-import { Activity, Box, Cpu, HardDrive, Zap } from 'lucide-react'
+import { Activity, Box, Cpu, HardDrive, Zap, Sparkles, AlertCircle } from 'lucide-react'
+import { OptaTextLogo } from '@/components/OptaTextLogo'
 
 import { useConnection } from '@/lib/connection'
 import { useDashboard } from '@/hooks/use-dashboard'
@@ -93,11 +94,9 @@ export default function DashboardHome() {
 
                     {/* Center: New Logo */}
                     <div className="flex items-center justify-center">
-                        <img
-                            src="/opta-code-env-logo.png"
-                            alt="Opta Code Environment"
-                            className="h-10 object-contain drop-shadow-[0_0_12px_rgba(168,85,247,0.4)] mix-blend-screen"
-                        />
+                        <div style={{ '--logo-size': '1.5rem', '--logo-sub-size': '0.4rem' } as React.CSSProperties}>
+                            <OptaTextLogo />
+                        </div>
                     </div>
 
                     {/* Right: Status */}

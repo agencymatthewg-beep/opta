@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from "react";
-import { Mic, Square } from "lucide-react";
+import { Mic, Square, Activity } from "lucide-react";
 import { useAudioRecorder } from "../hooks/useAudioRecorder";
 import type {
   SessionAutonomyMode,
   SessionOutputFormat,
   SessionSubmitMode,
   SessionTurnOverrides,
+  TimelineItem,
 } from "../types";
 
 interface ComposerProps {
@@ -18,6 +19,8 @@ interface ComposerProps {
   isStreaming?: boolean;
   mode: SessionSubmitMode;
   onModeChange: (mode: SessionSubmitMode) => void;
+  timelineItems?: TimelineItem[];
+  onTts?: (text: string) => Promise<string | undefined>;
 }
 
 const MODES: SessionSubmitMode[] = ["chat", "do", "plan", "review", "research"];
@@ -48,14 +51,44 @@ export function Composer({
   isStreaming = false,
   mode,
   onModeChange,
+  timelineItems,
+  onTts,
 }: ComposerProps) {
-  const { isRecording, startRecording, stopRecording, audioBase64, setAudioBase64, error } = useAudioRecorder();
+  const {
+    isRecording,
+    startRecording,
+    stopRecording,
+    audioBase64,
+    setAudioBase64,
+    error,
+    playAudioBase64,
+    continuousMode,
+    setContinuousMode,
+  } = useAudioRecorder();
 
   useEffect(() => {
     if (audioBase64 && onDictate) {
       onDictate(audioBase64).finally(() => setAudioBase64(null));
     }
   }, [audioBase64, onDictate, setAudioBase64]);
+
+  const prevStreamingRef = useRef(isStreaming);
+  useEffect(() => {
+    if (continuousMode && prevStreamingRef.current && !isStreaming) {
+      // Message finished streaming
+      if (timelineItems && timelineItems.length > 0) {
+        // Look for the last assistant response
+        const assistantItems = timelineItems.filter((i) => i.kind === "assistant" && i.body);
+        const lastItem = assistantItems[assistantItems.length - 1];
+        if (lastItem && lastItem.body && onTts) {
+          onTts(lastItem.body).then((base64) => {
+            if (base64) playAudioBase64(base64);
+          });
+        }
+      }
+    }
+    prevStreamingRef.current = isStreaming;
+  }, [isStreaming, continuousMode, timelineItems, onTts, playAudioBase64]);
 
   const [modelOverride, setModelOverride] = useState<string | undefined>(undefined);
   const [providerOverride, setProviderOverride] = useState<string | undefined>(undefined);
@@ -164,17 +197,29 @@ export function Composer({
             )}
           </div>
 
-          {/* Advanced overrides toggle */}
-          <button
-            type="button"
-            className={`r9-advanced-toggle ${showAdvanced ? "r9-advanced-active" : ""} ${hasActiveOverride ? "r9-override-active" : ""}`}
-            onClick={() => setShowAdvanced((p) => !p)}
-            title="Override model, provider, autonomy"
-            disabled={disabled}
-          >
-            {hasActiveOverride ? "● Overrides" : "Overrides"}
-            <span className="r9-mode-caret">▾</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className={`r9-advanced-toggle ${continuousMode ? "r9-advanced-active text-green-400" : ""}`}
+              onClick={() => setContinuousMode(!continuousMode)}
+              title="Toggle continuous voice mode (Walkie-Talkie)"
+              disabled={disabled}
+            >
+              <Activity size={14} className="mr-1 inline" />
+              Voice Mode
+            </button>
+            {/* Advanced overrides toggle */}
+            <button
+              type="button"
+              className={`r9-advanced-toggle ${showAdvanced ? "r9-advanced-active" : ""} ${hasActiveOverride ? "r9-override-active" : ""}`}
+              onClick={() => setShowAdvanced((p) => !p)}
+              title="Override model, provider, autonomy"
+              disabled={disabled}
+            >
+              {hasActiveOverride ? "● Overrides" : "Overrides"}
+              <span className="r9-mode-caret">▾</span>
+            </button>
+          </div>
         </div>
 
         {/* Collapsed advanced panel */}
@@ -280,8 +325,10 @@ export function Composer({
                 type="button"
                 className={`r9-mic-btn ${isRecording ? "r9-mic-recording" : ""}`}
                 disabled={disabled}
-                onClick={isRecording ? stopRecording : startRecording}
-                title={isRecording ? "Stop recording" : "Dictate"}
+                onMouseDown={continuousMode ? startRecording : undefined}
+                onMouseUp={continuousMode ? stopRecording : undefined}
+                onClick={!continuousMode ? (isRecording ? stopRecording : startRecording) : undefined}
+                title={continuousMode ? "Hold to speak" : (isRecording ? "Stop recording" : "Dictate")}
               >
                 {isRecording ? <Square size={16} fill="currentColor" /> : <Mic size={16} />}
               </button>

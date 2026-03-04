@@ -132,6 +132,7 @@ function App() {
   const [offlineSeconds, setOfflineSeconds] = useState(0);
   const [browserViewMode, setBrowserViewMode] =
     useState<BrowserViewMode>("default");
+  const [designMode, setDesignMode] = useLocalStorage("opta:designMode", "0");
 
   const openSettings = useCallback((tab: SettingsTabId = "connection") => {
     setSettingsInitialTab(tab);
@@ -662,6 +663,21 @@ function App() {
     }
   }, [connection]);
 
+  const onTts = useCallback(async (text: string) => {
+    if (!connection) return undefined;
+    try {
+      const res = await daemonClient.runOperation(connection, 'audio.tts', { text });
+      if (res.ok) {
+        return (res.result as any).audioBase64 as string;
+      } else {
+        console.error("TTS failed:", res.error);
+      }
+    } catch (e) {
+      console.error("TTS network error:", e);
+    }
+    return undefined;
+  }, [connection]);
+
   const reconnectEndpoint = `${connection.protocol ?? "http"}://${connection.host}:${connection.port}`;
   const copyReconnectDiagnostics = useCallback(async () => {
     const diagnostics = [
@@ -728,18 +744,46 @@ function App() {
                 <span className="v1-logo-text" data-tauri-drag-region>OPTA CODE</span>
               </div>
             </div>
-            <div className="v1-top-right">
-              <div className="v1-app-btn-group">
-                <button type="button" className="v1-app-btn" onClick={() => openSettings("connection")}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span>ACCOUNTS</span>
-                </button>
+            {/* Design Concept: Unified Topbar (0 or 1) */}
+            {(designMode === "0" || designMode === "1") && (
+              <div className="v1-top-right">
+                <div className="v1-app-btn-group">
+                  {designMode === "1" && (
+                    <button
+                      className="v1-app-btn"
+                      type="button"
+                    >
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                      <span>CUSTOMISE TILES</span>
+                    </button>
+                  )}
+                  <button type="button" className="v1-app-btn" onClick={() => openSettings("connection")}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                    <span>ACCOUNTS</span>
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </header>
+
+          {/* Design Concept 3: Floating Action Island */}
+          {designMode === "3" && (
+            <div style={{ position: 'absolute', top: '1rem', right: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '99px', padding: '0.25rem 0.5rem', backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', boxShadow: '0 10px 30px rgba(0,0,0,0.4)', zIndex: 100 }}>
+              <button type="button" style={{ background: 'transparent', border: 'none', color: 'var(--opta-text-secondary)', fontSize: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
+                <span>TILES</span>
+              </button>
+              <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.1)' }} />
+              <button type="button" onClick={() => openSettings("connection")} style={{ background: 'transparent', border: 'none', color: 'var(--opta-text-secondary)', fontSize: '0.65rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                <span>ACCOUNTS</span>
+              </button>
+            </div>
+          )}
+
 
           {/* V1 Agent Bar — horizontal strip above body */}
           {Object.values(streamingBySession).some(Boolean) && (
@@ -794,8 +838,9 @@ function App() {
             <div className="v1-center">
               {/* Settings View (Ctrl+S overlay) */}
               {isSettingsView && (
-                <div className="v1-settings-overlay">
+                <div className={`v1-settings-overlay dm-overlay-anim dm-overlay-${designMode}`}>
                   <SettingsView
+                    designMode={designMode}
                     onOpenSettingsTab={(tab) => {
                       const categoryToTab: Record<string, SettingsTabId> = {
                         general: "connection",
@@ -811,7 +856,7 @@ function App() {
               )}
 
               {/* Chat Pane (hidden when settings view active) */}
-              <div className={`v1-chat-pane ${isSettingsView ? "v1-chat-hidden" : ""}`}>
+              <div className={`v1-chat-pane ${isSettingsView ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
                 {activePage === "models" ? (
                   <ModelsPage connection={connection} onOpenSettings={() => openSettings("lmx")} />
                 ) : activePage === "tools" ? (
@@ -862,6 +907,8 @@ function App() {
                           disabled={false}
                           mode={submissionMode}
                           onModeChange={setSubmissionMode}
+                          timelineItems={timelineItems}
+                          onTts={onTts}
                         />
                       </>
                     ) : (
@@ -905,6 +952,8 @@ function App() {
                           disabled={false}
                           mode={submissionMode}
                           onModeChange={setSubmissionMode}
+                          timelineItems={timelineItems}
+                          onTts={onTts}
                         />
                       </>
                     )}
@@ -964,18 +1013,14 @@ function App() {
                   </p>
                 ) : null}
                 <div className="daemon-reconnect-overlay__actions">
-                  <button
-                    type="button"
-                    onClick={() => void copyReconnectDiagnostics()}
-                  >
-                    Copy diagnostics
-                  </button>
-                  <button type="button" onClick={() => void repairConnection()}>
-                    Repair daemon connection
-                  </button>
-                  <button type="button" onClick={() => setFirstRun(true)}>
-                    Open setup wizard
-                  </button>
+                  <button type="button" onClick={() => setDesignMode("0")} style={{ color: designMode === "0" ? "#fff" : "#888", padding: "2px 6px" }}>0: Def</button>
+                  <button type="button" onClick={() => setDesignMode("1")} style={{ color: designMode === "1" ? "#fff" : "#888", padding: "2px 6px" }}>1: Topbar</button>
+                  <button type="button" onClick={() => setDesignMode("2")} style={{ color: designMode === "2" ? "#fff" : "#888", padding: "2px 6px" }}>2: Widget</button>
+                  <button type="button" onClick={() => setDesignMode("3")} style={{ color: designMode === "3" ? "#fff" : "#888", padding: "2px 6px" }}>3: Floating</button>
+                  <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', margin: '0 4px' }} />
+                  <button type="button" onClick={() => setDesignMode("4")} style={{ color: designMode === "4" ? "#fff" : "#888", padding: "2px 6px" }}>4: Spatial</button>
+                  <button type="button" onClick={() => setDesignMode("5")} style={{ color: designMode === "5" ? "#fff" : "#888", padding: "2px 6px" }}>5: Cinematic</button>
+                  <button type="button" onClick={() => setDesignMode("6")} style={{ color: designMode === "6" ? "#fff" : "#888", padding: "2px 6px" }}>6: Fluid</button>
                 </div>
               </div>
             </div>

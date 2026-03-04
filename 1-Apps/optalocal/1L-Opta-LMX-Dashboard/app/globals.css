@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -42,11 +42,9 @@ body {
   font-family: var(--font-sora), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: radial-gradient(
-    ellipse 80% 50% at 50% -10%,
-    rgba(139, 92, 246, 0.18) 0%,
-    transparent 70%
-  );
+  background-image: radial-gradient(ellipse 80% 50% at 50% -10%,
+      rgba(139, 92, 246, 0.18) 0%,
+      transparent 70%);
   background-attachment: fixed;
   min-height: 100vh;
   position: relative;
@@ -64,7 +62,9 @@ body::after {
   background-size: 128px 128px;
 }
 
-code, pre, .font-mono {
+code,
+pre,
+.font-mono {
   font-family: var(--font-jetbrains), ui-monospace, monospace;
 }
 
@@ -93,14 +93,12 @@ code, pre, .font-mono {
 /* ── Neon Line Divider ─────────────────────────── */
 .neon-line {
   height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(139, 92, 246, 0.6) 30%,
-    rgba(168, 85, 247, 0.8) 50%,
-    rgba(139, 92, 246, 0.6) 70%,
-    transparent 100%
-  );
+  background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(139, 92, 246, 0.6) 30%,
+      rgba(168, 85, 247, 0.8) 50%,
+      rgba(139, 92, 246, 0.6) 70%,
+      transparent 100%);
 }
 
 /* ── Dashboard Card ─────────────────────────────── */

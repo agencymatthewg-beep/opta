@@ -196,7 +196,7 @@ function lmxConnectionResultFromSnapshot(
     ].join(' '),
     fix: () =>
       Promise.resolve(
-        'Ensure LMX server is running on Mono512 (192.168.188.11:1234). Cannot auto-start remote server.'
+        `Ensure LMX server is running on ${host}:${port}. Cannot auto-start remote server.`
       ),
   };
 }

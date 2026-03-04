@@ -29,8 +29,48 @@ const REQUIRED_SECURITY_HEADERS = [
 
 const REQUEST_TIMEOUT_MS = 12000;
 
-function hasFlag(flag) {
-  return process.argv.includes(flag);
+function parsePositiveNumber(rawValue, flagName) {
+  const parsed = Number(rawValue);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    throw new Error(`Invalid value for ${flagName}: ${rawValue}`);
+  }
+  return parsed;
+}
+
+function parseCliOptions(argv) {
+  const options = {
+    json: false,
+    latencySummary: false,
+    warnLatencyMs: null,
+    failLatencyMs: null,
+  };
+
+  for (let index = 0; index < argv.length; index += 1) {
+    const arg = argv[index];
+    if (arg === '--json') {
+      options.json = true;
+      continue;
+    }
+    if (arg === '--latency-summary') {
+      options.latencySummary = true;
+      continue;
+    }
+    if (arg === '--warn-latency-ms' || arg === '--fail-latency-ms') {
+      const nextValue = argv[index + 1];
+      if (nextValue == null) {
+        throw new Error(`Missing value for ${arg}`);
+      }
+      const parsedValue = parsePositiveNumber(nextValue, arg);
+      if (arg === '--warn-latency-ms') {
+        options.warnLatencyMs = parsedValue;
+      } else {
+        options.failLatencyMs = parsedValue;
+      }
+      index += 1;
+    }
+  }
+
+  return options;
 }
 
 function canonicalTagPresent(html) {
@@ -50,8 +90,9 @@ function canonicalTagPresent(html) {
 async function fetchWithTimeout(url, init = {}, timeoutMs = REQUEST_TIMEOUT_MS) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  const startedAt = Date.now();
   try {
-    return await fetch(url, {
+    const response = await fetch(url, {
       ...init,
       signal: controller.signal,
       headers: {
@@ -61,12 +102,13 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = REQUEST_TIMEOUT_MS) 
       },
       redirect: 'follow',
     });
+    return { response, latencyMs: Date.now() - startedAt };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function checkSite(site) {
+async function checkSite(site, includeLatencyMetrics = false) {
   const rootUrl = new URL('/', site.url).toString();
   const faviconUrl = new URL('/favicon.ico', site.url).toString();
 
@@ -86,11 +128,19 @@ async function checkSite(site) {
       },
     },
   };
+  if (includeLatencyMetrics) {
+    result.checks.root.latencyMs = null;
+    result.checks.favicon.latencyMs = null;
+  }
 
   try {
-    const rootResponse = await fetchWithTimeout(rootUrl);
+    const rootRequest = await fetchWithTimeout(rootUrl);
+    const rootResponse = rootRequest.response;
     result.checks.root.status = rootResponse.status;
     result.checks.root.ok = rootResponse.status === 200;
+    if (includeLatencyMetrics) {
+      result.checks.root.latencyMs = rootRequest.latencyMs;
+    }
 
     const missingHeaders = REQUIRED_SECURITY_HEADERS.filter(
       (header) => !rootResponse.headers.get(header.key)
@@ -105,9 +155,13 @@ async function checkSite(site) {
   }
 
   try {
-    const faviconResponse = await fetchWithTimeout(faviconUrl);
+    const faviconRequest = await fetchWithTimeout(faviconUrl);
+    const faviconResponse = faviconRequest.response;
     result.checks.favicon.status = faviconResponse.status;
     result.checks.favicon.ok = faviconResponse.status === 200;
+    if (includeLatencyMetrics) {
+      result.checks.favicon.latencyMs = faviconRequest.latencyMs;
+    }
   } catch (error) {
     result.checks.favicon.error = error instanceof Error ? error.message : String(error);
   }
@@ -121,7 +175,7 @@ async function checkSite(site) {
   return result;
 }
 
-async function checkHealthEndpoint(endpoint) {
+async function checkHealthEndpoint(endpoint, includeLatencyMetrics = false) {
   const result = {
     id: endpoint.id,
     name: endpoint.name,
@@ -130,11 +184,18 @@ async function checkHealthEndpoint(endpoint) {
     status: null,
     error: null,
   };
+  if (includeLatencyMetrics) {
+    result.latencyMs = null;
+  }
 
   try {
-    const response = await fetchWithTimeout(endpoint.url);
+    const request = await fetchWithTimeout(endpoint.url);
+    const response = request.response;
     result.status = response.status;
     result.pass = response.status === 200;
+    if (includeLatencyMetrics) {
+      result.latencyMs = request.latencyMs;
+    }
   } catch (error) {
     result.error = error instanceof Error ? error.message : String(error);
   }
@@ -172,7 +233,67 @@ function summarize(siteResults, healthResults) {
   };
 }
 
-function printHumanOutput(siteResults, healthResults, summary) {
+function percentile(sortedValues, targetPercentile) {
+  if (sortedValues.length === 0) {
+    return null;
+  }
+  const index = Math.ceil((targetPercentile / 100) * sortedValues.length) - 1;
+  return sortedValues[Math.max(0, Math.min(index, sortedValues.length - 1))];
+}
+
+function collectLatencySamples(siteResults, healthResults) {
+  const samples = [];
+
+  siteResults.forEach((site) => {
+    if (typeof site?.checks?.root?.latencyMs === 'number') {
+      samples.push({ target: `${site.name} (root)`, latencyMs: site.checks.root.latencyMs });
+    }
+    if (typeof site?.checks?.favicon?.latencyMs === 'number') {
+      samples.push({ target: `${site.name} (favicon)`, latencyMs: site.checks.favicon.latencyMs });
+    }
+  });
+
+  healthResults.forEach((endpoint) => {
+    if (typeof endpoint?.latencyMs === 'number') {
+      samples.push({ target: endpoint.name, latencyMs: endpoint.latencyMs });
+    }
+  });
+
+  return samples;
+}
+
+function buildLatencySummary(siteResults, healthResults, options) {
+  const samples = collectLatencySamples(siteResults, healthResults);
+  const sorted = [...samples].sort((a, b) => a.latencyMs - b.latencyMs);
+  const values = sorted.map((sample) => sample.latencyMs);
+  const count = values.length;
+  const minMs = count > 0 ? values[0] : null;
+  const maxMs = count > 0 ? values[count - 1] : null;
+  const averageMs = count > 0 ? Number((values.reduce((sum, value) => sum + value, 0) / count).toFixed(1)) : null;
+  const p95Ms = percentile(values, 95);
+
+  const warnExceededCount =
+    options.warnLatencyMs == null ? 0 : samples.filter((sample) => sample.latencyMs > options.warnLatencyMs).length;
+  const failExceededCount =
+    options.failLatencyMs == null ? 0 : samples.filter((sample) => sample.latencyMs > options.failLatencyMs).length;
+
+  return {
+    requestCount: count,
+    minMs,
+    averageMs,
+    p95Ms,
+    maxMs,
+    thresholds: {
+      warnLatencyMs: options.warnLatencyMs,
+      failLatencyMs: options.failLatencyMs,
+      warnExceededCount,
+      failExceededCount,
+    },
+    slowest: [...samples].sort((a, b) => b.latencyMs - a.latencyMs).slice(0, 5),
+  };
+}
+
+function printHumanOutput(siteResults, healthResults, summary, latencySummary) {
   const siteRows = siteResults.map((site) => {
     const rootCell = site.checks.root.error
       ? `ERR (${site.checks.root.error})`
@@ -202,23 +323,78 @@ function printHumanOutput(siteResults, healthResults, summary) {
   console.log(
     `\nSummary: sites ${summary.passedSites}/${summary.siteChecks} passed, endpoints ${summary.passedHealthEndpoints}/${summary.healthChecks} passed`
   );
+
+  if (latencySummary) {
+    console.log('\nSynthetic Web Health - Latency');
+    const latencyRows = [
+      ['Request count', String(latencySummary.requestCount)],
+      ['Min (ms)', String(latencySummary.minMs ?? 'n/a')],
+      ['Avg (ms)', String(latencySummary.averageMs ?? 'n/a')],
+      ['P95 (ms)', String(latencySummary.p95Ms ?? 'n/a')],
+      ['Max (ms)', String(latencySummary.maxMs ?? 'n/a')],
+    ];
+    if (latencySummary.thresholds.warnLatencyMs != null) {
+      latencyRows.push([
+        `Warn > ${latencySummary.thresholds.warnLatencyMs}ms`,
+        String(latencySummary.thresholds.warnExceededCount),
+      ]);
+    }
+    if (latencySummary.thresholds.failLatencyMs != null) {
+      latencyRows.push([
+        `Fail > ${latencySummary.thresholds.failLatencyMs}ms`,
+        String(latencySummary.thresholds.failExceededCount),
+      ]);
+    }
+    console.log(buildTable(['Metric', 'Value'], latencyRows));
+
+    if (latencySummary.slowest.length > 0) {
+      console.log('\nSlowest Requests');
+      const slowestRows = latencySummary.slowest.map((sample) => [sample.target, `${sample.latencyMs}ms`]);
+      console.log(buildTable(['Target', 'Latency'], slowestRows));
+    }
+  }
 }
 
 async function main() {
-  const siteResults = await Promise.all(SITE_TARGETS.map((site) => checkSite(site)));
-  const healthResults = await Promise.all(HEALTH_ENDPOINTS.map((endpoint) => checkHealthEndpoint(endpoint)));
-  const summary = summarize(siteResults, healthResults);
+  const options = parseCliOptions(process.argv.slice(2));
+  const shouldEvaluateLatency =
+    options.latencySummary || options.warnLatencyMs != null || options.failLatencyMs != null;
 
-  if (hasFlag('--json')) {
+  const siteResults = await Promise.all(
+    SITE_TARGETS.map((site) => checkSite(site, shouldEvaluateLatency))
+  );
+  const healthResults = await Promise.all(
+    HEALTH_ENDPOINTS.map((endpoint) => checkHealthEndpoint(endpoint, shouldEvaluateLatency))
+  );
+  let summary = summarize(siteResults, healthResults);
+
+  let latencySummary = null;
+  if (shouldEvaluateLatency) {
+    latencySummary = buildLatencySummary(siteResults, healthResults, options);
+    const latencyFailTriggered =
+      latencySummary.thresholds.failLatencyMs != null && latencySummary.thresholds.failExceededCount > 0;
+    summary = {
+      ...summary,
+      latencyWarnings: latencySummary.thresholds.warnExceededCount,
+      latencyFailures: latencySummary.thresholds.failExceededCount,
+      latencyFailTriggered,
+      ok: summary.ok && !latencyFailTriggered,
+    };
+  }
+
+  if (options.json) {
     const payload = {
       generatedAt: new Date().toISOString(),
       summary,
       sites: siteResults,
       healthEndpoints: healthResults,
     };
+    if (latencySummary) {
+      payload.latency = latencySummary;
+    }
     console.log(JSON.stringify(payload, null, 2));
   } else {
-    printHumanOutput(siteResults, healthResults, summary);
+    printHumanOutput(siteResults, healthResults, summary, options.latencySummary ? latencySummary : null);
   }
 
   process.exit(summary.ok ? 0 : 1);

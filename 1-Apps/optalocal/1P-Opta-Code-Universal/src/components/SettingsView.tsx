@@ -1,5 +1,6 @@
 interface SettingsViewProps {
     onOpenSettingsTab: (tab: string) => void;
+    designMode?: string;
 }
 
 const SETTINGS_CATEGORIES = [
@@ -7,7 +8,7 @@ const SETTINGS_CATEGORIES = [
         id: "general",
         title: "General",
         desc: "App preferences, file behavior, and updates",
-        colorClass: "sv-general",
+        colorClass: "c-general",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8l-6 6v12a2 2 0 0 0 2 2z" />
@@ -20,7 +21,7 @@ const SETTINGS_CATEGORIES = [
         id: "intelligence",
         title: "Intelligence",
         desc: "LMX Engine bindings, default models, and context",
-        colorClass: "sv-intel",
+        colorClass: "c-intel",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <circle cx="12" cy="12" r="10" />
@@ -33,7 +34,7 @@ const SETTINGS_CATEGORIES = [
         id: "connection",
         title: "Connection",
         desc: "Daemon remote host logic and HTTP/WS sockets",
-        colorClass: "sv-conn",
+        colorClass: "c-conn",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
@@ -46,7 +47,7 @@ const SETTINGS_CATEGORIES = [
         id: "interface",
         title: "Interface",
         desc: "Widget grids, typography, and visual bounds",
-        colorClass: "sv-ui",
+        colorClass: "c-ui",
         icon: (
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
@@ -57,9 +58,9 @@ const SETTINGS_CATEGORIES = [
     },
 ];
 
-export function SettingsView({ onOpenSettingsTab }: SettingsViewProps) {
+export function SettingsView({ onOpenSettingsTab, designMode = "0" }: SettingsViewProps) {
     return (
-        <div className="settings-view">
+        <div className={`settings-view dm-setting-layout-${designMode}`}>
             <div className="settings-view-header">
                 <div className="settings-view-title">
                     <svg
@@ -78,7 +79,7 @@ export function SettingsView({ onOpenSettingsTab }: SettingsViewProps) {
                 <span className="settings-view-hint">ESC or Ctrl+S to close</span>
             </div>
 
-            <div className="settings-view-grid">
+            <div className={`settings-view-grid dm-grid-${designMode}`}>
                 {SETTINGS_CATEGORIES.map((cat) => (
                     <button
                         key={cat.id}
@@ -88,8 +89,8 @@ export function SettingsView({ onOpenSettingsTab }: SettingsViewProps) {
                     >
                         {cat.icon}
                         <div>
-                            <div className="settings-view-card-title">{cat.title}</div>
-                            <div className="settings-view-card-desc">{cat.desc}</div>
+                            <div className="settings-card-title">{cat.title}</div>
+                            <div className="settings-card-desc">{cat.desc}</div>
                         </div>
                     </button>
                 ))}

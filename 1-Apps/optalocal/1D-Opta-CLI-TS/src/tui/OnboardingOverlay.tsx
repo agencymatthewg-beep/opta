@@ -50,7 +50,7 @@ const STEP_DESCRIPTIONS: Record<OnboardingStep, string> = {
   model:       'Set the default model to use for all chat sessions.',
   provider:    'Add an Anthropic API key if you want cloud fallback when LMX is unreachable.',
   research:    'Enable web research providers and add their API keys.',
-  ssh:         'Configure SSH access to your remote LMX server (Mac Studio).',
+  ssh:         'Configure SSH access to your remote LMX server.',
   paths:       'Customize where Opta stores session logs and update records.',
   preferences: 'Set your preferred autonomy level and default mode.',
   done:        'Your settings have been saved. You can change any setting later via the Opta Menu → Settings.',
@@ -92,7 +92,7 @@ export function OnboardingOverlay({
   const showContent = normalizedProgress >= 0.28;
 
   const [stepIndex, setStepIndex] = useState(Math.min(initialStep, STEP_ORDER.length - 1));
-  const [lmxHost, setLmxHost] = useState('192.168.188.11');
+  const [lmxHost, setLmxHost] = useState('localhost');
   const [lmxPort, setLmxPort] = useState('1234');
   const [defaultModel, setDefaultModel] = useState('');
   const [anthropicKey, setAnthropicKey] = useState('');

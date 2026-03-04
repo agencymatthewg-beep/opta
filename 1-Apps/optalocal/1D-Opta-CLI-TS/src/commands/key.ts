@@ -417,12 +417,12 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
       output.remote = {
         ok: false,
         message:
-          'remote Studio sync requires POSIX SSH shell tools; run from macOS/Linux or use --no-remote',
+          'remote key sync requires POSIX SSH shell tools; run from macOS/Linux or use --no-remote',
       };
       if (!opts?.json) {
         console.log(
           chalk.yellow('!') +
-            ' Studio sync skipped on Windows: use --no-remote or run from macOS/Linux'
+            ' Remote key sync skipped on Windows: use --no-remote or run from macOS/Linux'
         );
       }
     } else {
@@ -435,7 +435,7 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
       if (!selected.selectedHost) {
         output.remote = { ok: false, message: `ssh unavailable: ${selected.detail}` };
         if (!opts?.json) {
-          console.log(chalk.yellow('!') + ` Studio sync skipped: ${selected.detail}`);
+          console.log(chalk.yellow('!') + ` Remote key sync skipped: ${selected.detail}`);
         }
       } else {
         const ssh: SshConfig = {
@@ -447,7 +447,7 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
         if (!remoteApply.ok) {
           output.remote = { ok: false, message: remoteApply.message };
           if (!opts?.json) {
-            console.log(chalk.red('✗') + ` Studio key update failed: ${remoteApply.message}`);
+            console.log(chalk.red('✗') + ` Remote key update failed: ${remoteApply.message}`);
           }
         } else {
           const reload = await reloadLmxConfig(
@@ -465,7 +465,7 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
           };
 
           if (!opts?.json) {
-            console.log(chalk.green('✓') + ` Studio key synced on ${ssh.host}`);
+            console.log(chalk.green('✓') + ` Remote key synced on ${ssh.host}`);
             console.log(chalk.dim(`  Config: ${remoteApply.configPath}`));
             console.log(chalk.dim(`  Reload: ${reload.message}`));
             console.log(chalk.dim(`  Verify: ${verify.message}`));

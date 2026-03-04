@@ -171,7 +171,7 @@ function openInBrowser(url: string): void {
 
 const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
   connection: [
-    { label: 'LMX Host',            configKey: 'connection.host',              defaultValue: 'localhost',           description: 'Hostname or IP of LMX inference server',                  hint: 'e.g. 192.168.188.11 or localhost',
+    { label: 'LMX Host',            configKey: 'connection.host',              defaultValue: 'localhost',           description: 'Hostname or IP of LMX inference server',                  hint: 'e.g. lmx-a.local or localhost',
       validate: (v) => {
         if (!v.trim()) return 'Host cannot be empty';
         if (v.includes('://')) return 'Do not include http:// or https://';
@@ -189,7 +189,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Auto Discover',       configKey: 'connection.autoDiscover',      defaultValue: 'true',                description: 'Automatically discover local inference hosts',
       inputType: 'toggle', options: [{ label: 'Enabled', value: 'true'}, { label: 'Disabled', value: 'false'}] },
     { label: 'Fallback Hosts',      configKey: 'connection.fallbackHosts',     defaultValue: '',                    description: 'Comma-separated fallback LMX hosts',                       hint: 'e.g. 10.0.0.2:1234,10.0.0.3:1234' },
-    { label: 'Admin Keys by Host',  configKey: 'connection.adminKeysByHost',   defaultValue: '{}',                  description: 'Per-host admin keys override the default admin key',       hint: 'JSON: {"192.168.188.11":"keyA"}',
+    { label: 'Admin Keys by Host',  configKey: 'connection.adminKeysByHost',   defaultValue: '{}',                  description: 'Per-host admin keys override the default admin key',       hint: 'JSON: {"lmx-a.local":"keyA"}',
       validate: (v) => {
         try {
           const parsed = JSON.parse(v);
@@ -202,7 +202,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     },
     { label: 'Check LMX Status',    configKey: '__action_lmx_status',          defaultValue: '',                    description: 'Run an immediate LMX health check in chat',                hint: 'Runs `/lmx status`', inputType: 'action', action: () => {} },
     { label: 'Reconnect LMX',       configKey: '__action_lmx_reconnect',       defaultValue: '',                    description: 'Force reconnection against configured host(s)',            hint: 'Runs `/lmx reconnect`', inputType: 'action', action: () => {} },
-    { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the Mac Studio' },
+    { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the remote host' },
     { label: 'SSH Key Path',        configKey: 'connection.ssh.identityFile',  defaultValue: '~/.ssh/id_ed25519',   description: 'Path to SSH private key',                                  hint: 'Full path or ~ expansion' },
     { label: 'Remote LMX Path',     configKey: 'connection.ssh.lmxPath',       defaultValue: '~/opta-lmx', description: 'LMX install path on remote host (git clone or pip install dir)', hint: 'Absolute path on remote machine' },
     { label: 'Inference Timeout',   configKey: 'connection.inferenceTimeout',  defaultValue: '120000',              description: 'Max ms to wait for model response',                        hint: 'In milliseconds (120000 = 2 min)' },
@@ -215,7 +215,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Context Limit',       configKey: 'model.contextLimit',           defaultValue: '32768',               description: 'Token context window override',                            hint: 'Tokens (default: 32768)' },
     { label: 'Active Provider',     configKey: 'provider.active',              defaultValue: 'lmx',                 description: 'Primary provider for the agent',
       inputType: 'select', options: [
-        { label: 'LMX (local)',    value: 'lmx',          description: 'Local inference via Mac Studio' },
+        { label: 'LMX (local)',    value: 'lmx',          description: 'Local inference via LMX' },
         { label: 'Anthropic',      value: 'anthropic',    description: 'Anthropic Cloud API' },
         { label: 'Google Gemini',  value: 'gemini',       description: 'Gemini Cloud API' },
         { label: 'OpenAI',         value: 'openai',       description: 'OpenAI Cloud API' },

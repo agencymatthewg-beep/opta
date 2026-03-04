@@ -23,7 +23,7 @@ export async function executeAudioTranscribe(
     // For LMX: http://host:port/v1/audio/transcriptions
 
     if (providerName === 'lmx') {
-        const lmxUrl = `http://${config.connection.host || '192.168.188.11'}:${config.connection.port || 1234}/v1/audio/transcriptions`;
+        const lmxUrl = `http://${config.connection.host || 'localhost'}:${config.connection.port || 1234}/v1/audio/transcriptions`;
         const formData = new FormData();
         formData.append('file', blob, `audio.${input.audioFormat || 'webm'}`);
         formData.append('model', 'mlx-community/whisper-base');
@@ -94,7 +94,7 @@ export async function executeAudioTTS(
     // } // Removed as per instructions
 
     if (providerName === 'lmx') {
-        const lmxUrl = `http://${config.connection.host || '192.168.188.11'}:${config.connection.port || 1234}/v1/audio/speech`;
+        const lmxUrl = `http://${config.connection.host || 'localhost'}:${config.connection.port || 1234}/v1/audio/speech`;
 
         const res = await fetch(lmxUrl, {
             method: 'POST',
