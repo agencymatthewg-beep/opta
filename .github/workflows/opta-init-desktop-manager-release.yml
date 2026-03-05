@@ -605,8 +605,8 @@ jobs:
           git remote add origin "https://x-access-token:$env:GH_TOKEN@github.com/$env:GH_REPO.git"
           git config core.autocrlf false
           git config core.sparseCheckout true
-          git sparse-checkout init --cone
-          git sparse-checkout set 1-Apps/optalocal/1O-Opta-Init
+          New-Item -ItemType Directory -Force -Path ".git/info" | Out-Null
+          Set-Content -Path ".git/info/sparse-checkout" -Value "1-Apps/optalocal/1O-Opta-Init/"
           git fetch --no-tags --depth=1 origin $env:GH_SHA
           git checkout --detach FETCH_HEAD
 
