@@ -136,3 +136,229 @@ pre,
   box-shadow: 0 0 6px var(--opta-neon-amber);
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
+
+/* ── HUD Animations ──────────────────────────── */
+@keyframes holographicFade {
+  0% {
+    opacity: 0;
+    filter: blur(10px) drop-shadow(0 0 20px var(--opta-primary));
+    transform: scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0) drop-shadow(0 0 0 transparent);
+    transform: scale(1);
+  }
+}
+
+@keyframes hud-spin {
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes hud-bg-spin {
+  100% {
+    transform: translate(-50%, -50%) rotate(360deg);
+  }
+}
+
+.hud-fade-in {
+  animation: holographicFade 0.5s ease forwards;
+}
+
+/* ── HUD Data Ring ───────────────────────────── */
+.hud-ring {
+  position: relative;
+  border-radius: 50%;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hud-ring::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: rgba(139, 92, 246, 0.5);
+  border-bottom-color: rgba(139, 92, 246, 0.5);
+  animation: hud-spin 10s linear infinite;
+}
+
+.hud-ring.reverse::before {
+  animation-direction: reverse;
+  animation-duration: 15s;
+  border-color: transparent;
+  border-left-color: rgba(34, 197, 94, 0.5);
+  border-right-color: rgba(34, 197, 94, 0.5);
+}
+
+.hud-ring.cyan::before {
+  border-color: transparent;
+  border-top-color: rgba(6, 182, 212, 0.5);
+  border-bottom-color: rgba(6, 182, 212, 0.5);
+}
+
+.hud-ring.amber::before {
+  animation-duration: 12s;
+  border-color: transparent;
+  border-top-color: rgba(245, 158, 11, 0.5);
+  border-bottom-color: rgba(245, 158, 11, 0.5);
+}
+
+/* ── Config Panel (corner‑bracket framing) ──── */
+.config-panel {
+  background: rgba(168, 85, 247, 0.02);
+  border: 1px solid rgba(168, 85, 247, 0.2);
+  border-radius: 8px;
+  padding: 1.5rem;
+  position: relative;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.config-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  border-top: 2px solid var(--opta-primary);
+  border-left: 2px solid var(--opta-primary);
+  border-top-left-radius: 8px;
+  pointer-events: none;
+}
+
+.config-panel::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 30px;
+  height: 30px;
+  border-bottom: 2px solid var(--opta-primary);
+  border-right: 2px solid var(--opta-primary);
+  border-bottom-right-radius: 8px;
+  pointer-events: none;
+}
+
+/* ── Holographic Inputs ──────────────────────── */
+.holographic-input {
+  width: 100%;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #fff;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 14px;
+  padding: 0.75rem 1rem;
+  outline: none;
+  transition: all 0.3s;
+  box-sizing: border-box;
+  border-radius: 4px;
+}
+
+.holographic-input:focus {
+  border-color: var(--opta-primary);
+  box-shadow: 0 0 15px rgba(168, 85, 247, 0.3) inset, 0 0 15px rgba(168, 85, 247, 0.3);
+}
+
+.holographic-input::placeholder {
+  color: var(--opta-text-muted);
+}
+
+/* ── Holographic Slider ──────────────────────── */
+.holographic-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: rgba(168, 85, 247, 0.2);
+  outline: none;
+  border-radius: 2px;
+}
+
+.holographic-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  background: var(--opta-primary);
+  cursor: pointer;
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--opta-primary);
+  transition: transform 0.2s;
+}
+
+.holographic-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.3);
+  box-shadow: 0 0 15px var(--opta-primary);
+}
+
+/* ── Holographic Button ──────────────────────── */
+.holographic-btn {
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid var(--opta-primary);
+  color: var(--opta-primary);
+  padding: 0.75rem 1.5rem;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+  outline: none;
+  border-radius: 4px;
+}
+
+.holographic-btn:hover {
+  background: rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+  color: #fff;
+}
+
+.holographic-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Config Label ────────────────────────────── */
+.config-label {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-jetbrains), monospace;
+}
+
+/* ── Config Title ────────────────────────────── */
+.config-title {
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 14px;
+  color: var(--opta-primary);
+  text-transform: uppercase;
+  letter-spacing: 3px;
+  margin-bottom: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.config-title::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  background: var(--opta-primary);
+  box-shadow: 0 0 10px var(--opta-primary);
+}
