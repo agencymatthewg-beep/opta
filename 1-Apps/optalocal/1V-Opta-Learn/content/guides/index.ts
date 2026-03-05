@@ -44,6 +44,8 @@ import { deepDiveTemplate } from './template-deep-dive';
 import { lmxMasterclass } from './lmx-masterclass';
 import { codeDesktopMasterclass } from './code-desktop-masterclass';
 import { accountsMasterclass } from './accounts-masterclass';
+import { audioVoiceGuide } from './audio-voice';
+import { ragWorkflowGuide } from './rag-workflow';
 export const allGuides: RegisteredGuide[] = [
   { ...optaLocalIntro, status: 'draft' },
   { ...lmxOverview, status: 'draft' },
@@ -55,6 +57,8 @@ export const allGuides: RegisteredGuide[] = [
   { ...lmxMasterclass, status: 'draft' },
   { ...codeDesktopMasterclass, status: 'draft' },
   { ...accountsMasterclass, status: 'draft' },
+  { ...audioVoiceGuide, status: 'draft' },
+  { ...ragWorkflowGuide, status: 'draft' },
 ];
 
 function extractGuideLinks(content: string): string[] {
