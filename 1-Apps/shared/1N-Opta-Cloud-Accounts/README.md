@@ -18,6 +18,16 @@ export OPTA_SUPABASE_DATABASE_URL="postgresql://USER:PASSWORD@HOST:PORT/postgres
 
 If your DB URL omits credentials, set `OPTA_SUPABASE_DB_PASSWORD` so the script can export `PGPASSWORD`. The script uses `psql --single-transaction` and aborts on the first error.
 
+### Apply + Health combo
+
+```bash
+cd 1-Apps/shared/1N-Opta-Cloud-Accounts
+export OPTA_SUPABASE_DATABASE_URL="postgresql://..."
+./scripts/apply-and-health.sh
+```
+
+This wrapper runs migrations and then executes the canonical health script (defaults to `1-Apps/scripts/supabase/health-check.sh` in this repository). Override the path with `OPTA_SUPABASE_HEALTH_SCRIPT` when running in CI or external automation.
+
 ## Allowed Auth Methods (Supabase-native only)
 
 1. `signUp(email/password)` or `signUp(phone/password)`

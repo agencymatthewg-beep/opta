@@ -60,3 +60,4 @@ When architecture/path/policy changes:
 
 - `/api/health/supabase` (2026-03-05) => `ok=true`, `schemaReady=true`, tables present: `accounts_*`, `api_keys`, `credentials`.
 - Follow-up: keep `1N-Opta-Cloud-Accounts/scripts/apply-migrations.sh` wired into release cadence so schema drift is caught before deployments.
+- Automation: nightly guardrail workflow at `.github/workflows/supabase-health.yml` runs migration+health checks with Supabase secrets.

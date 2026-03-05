@@ -1,0 +1,37 @@
+name: Supabase Schema + Health
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 3 * * *'
+
+jobs:
+  migrate-and-check:
+    runs-on: ubuntu-latest
+    environment: Supabase
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply migrations and run health check
+        env:
+          OPTA_SUPABASE_DATABASE_URL: ${{ secrets.OPTA_SUPABASE_DATABASE_URL }}
+          OPTA_SUPABASE_DB_PASSWORD: ${{ secrets.OPTA_SUPABASE_DB_PASSWORD }}
+          OPTA_SUPABASE_HEALTH_SCRIPT: 1-Apps/scripts/supabase/health-check.sh
+          OPTA_SUPABASE_URL: ${{ secrets.OPTA_SUPABASE_URL }}
+          OPTA_SUPABASE_ANON_KEY: ${{ secrets.OPTA_SUPABASE_ANON_KEY }}
+          OPTA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OPTA_SUPABASE_SERVICE_ROLE_KEY }}
+          E2E_SUPABASE_TEST_EMAIL: ${{ secrets.E2E_SUPABASE_TEST_EMAIL }}
+          E2E_SUPABASE_TEST_PASSWORD: ${{ secrets.E2E_SUPABASE_TEST_PASSWORD }}
+        run: |
+          chmod +x 1-Apps/shared/1N-Opta-Cloud-Accounts/scripts/*.sh || true
+          chmod +x 1-Apps/scripts/supabase/health-check.sh || true
+          1-Apps/shared/1N-Opta-Cloud-Accounts/scripts/apply-and-health.sh
+      - name: Upload health artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supabase-health-log
+          path: /tmp/supabase-health.json
+          if-no-files-found: warn
