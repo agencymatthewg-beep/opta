@@ -12,7 +12,8 @@
     "1T-Opta-Home",
     "1U-Opta-Help",
     "1V-Opta-Learn",
-    "1X-Opta-Admin"
+    "1X-Opta-Admin",
+    "1O-Opta-Init/desktop-manager"
   ],
   "scripts": {
     "apps:list": "node scripts/opta-local-workspace.mjs list",
