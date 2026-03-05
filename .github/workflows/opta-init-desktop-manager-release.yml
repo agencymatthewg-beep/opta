@@ -74,6 +74,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            1-Apps/optalocal/1O-Opta-Init
+          sparse-checkout-cone-mode: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
