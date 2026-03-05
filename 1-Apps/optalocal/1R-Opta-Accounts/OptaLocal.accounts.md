@@ -147,6 +147,7 @@ Run and verify:
   - `services.storage.ok = true`
   - `schemaReady = true`
   - tables present: `accounts_*`, `api_keys`, `credentials`
+- Release log references `docs/operations/SUPABASE-AUTOMATION.md` before any production deploy
 
 If `schemaReady=false`:
 - Apply migration: `1N-Opta-Cloud-Accounts/supabase/migrations/20260228_accounts_capability_device_policy.sql`
