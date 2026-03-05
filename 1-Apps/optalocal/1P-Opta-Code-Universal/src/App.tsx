@@ -38,6 +38,7 @@ import {
   deriveBrowserVisualState,
   type BrowserVisualSummary,
 } from "./lib/browserVisualState";
+import { useAccountsAuthControls } from "./hooks/useAccountsAuthControls";
 import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import type {
   PaletteCommand,
@@ -189,6 +190,10 @@ function App() {
 
   // V1: Widget layout hook
   const widgetLayout = useWidgetLayout("default");
+  const { handleAccountsLogin } = useAccountsAuthControls({
+    connection,
+    onNotice: (message) => setNotice(message),
+  });
 
   const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
@@ -805,7 +810,11 @@ function App() {
                       <span>CUSTOMISE TILES</span>
                     </button>
                   )}
-                  <button type="button" className="v1-app-btn" onClick={() => openSettings("connection")}>
+                  <button
+                    type="button"
+                    className="v1-app-btn"
+                    onClick={() => { void handleAccountsLogin(); }}
+                  >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2">
                       <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                       <circle cx="12" cy="7" r="4" />
@@ -832,7 +841,7 @@ function App() {
               <button
                 type="button"
                 className="v1-island-btn"
-                onClick={() => openSettings("connection")}
+                onClick={() => { void handleAccountsLogin(); }}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
@@ -897,83 +906,74 @@ function App() {
 
             {/* Center: Chat or Page Content */}
             <div className="v1-center">
-              {/* Settings View (Ctrl+S overlay) */}
-              {isSettingsView && (
-                <div className={`v1-settings-overlay dm-overlay-anim dm-overlay-${designMode}`}>
-                  <SettingsView
-                    designMode={designMode}
-                    onOpenSettingsTab={(tab) => {
-                      const categoryToTab: Record<string, SettingsTabId> = {
-                        general: "connection",
-                        intelligence: "model-provider",
-                        connection: "lmx",
-                        interface: "browser",
-                      };
-                      setIsSettingsView(false);
-                      openSettings(categoryToTab[tab] ?? "connection");
-                    }}
-                  />
-                </div>
+              {/* Branding Header (static outside settings overlay) */}
+              {activePage === "sessions" && !activeSessionId && (
+                <>
+                  <div className="v1-chat-header">
+                    Try pressing <b>Ctrl+S</b>
+                  </div>
+                  <div className="v1-branding">
+                    <div className="v1-brand-text">OPTA</div>
+                    <div className="v1-brand-sub">Code Environment</div>
+                  </div>
+                </>
               )}
 
-              {/* Chat Pane (hidden when settings view active) */}
-              <div className={`v1-chat-pane ${isSettingsView ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
-                {activePage === "models" ? (
-                  <ModelsPage connection={connection} onOpenSettings={() => openSettings("lmx")} />
-                ) : activePage === "tools" ? (
-                  <ToolingOperationsPage connection={connection} />
-                ) : activePage === "apps" ? (
-                  <AppCatalogPage connection={connection} />
-                ) : activePage === "memory" ? (
-                  <SessionMemoryPage connection={connection} />
-                ) : activePage === "system" ? (
-                  <SystemOperationsPage connection={connection} connectionState={connectionState} onOpenCliBridge={() => setActivePage("cli")} />
-                ) : activePage === "cli" ? (
-                  <CliOperationsPage connection={connection} />
-                ) : activePage === "env" ? (
-                  <EnvProfilesPage connection={connection} />
-                ) : activePage === "mcp" ? (
-                  <McpManagementPage connection={connection} />
-                ) : activePage === "config" ? (
-                  <ConfigStudioPage connection={connection} />
-                ) : activePage === "account" ? (
-                  <AccountControlPage connection={connection} />
-                ) : activePage === "jobs" ? (
-                  <BackgroundJobsPage connection={connection} defaultSessionId={activeSessionId} />
-                ) : activePage === "logs" ? (
-                  <DaemonLogsPage />
-                ) : (
-                  /* Default: Sessions view */
-                  <>
-                    {!activeSessionId ? (
-                      <>
-                        {/* Ctrl+S hint */}
-                        <div className="v1-chat-header">
-                          Try pressing <b>Ctrl+S</b>
-                        </div>
-                        <div className="v1-branding">
-                          <div className="v1-brand-text">OPTA</div>
-                          <div className="v1-brand-sub">Code Environment</div>
-                        </div>
+              {/* Middle Layer (receives Settings Overlay) */}
+              <div className="v1-middle-layer">
+                {/* Settings View (Ctrl+S overlay) */}
+                {isSettingsView && (
+                  <div className={`v1-settings-overlay dm-overlay-anim dm-overlay-${designMode}`}>
+                    <SettingsView
+                      designMode={designMode}
+                      onOpenSettingsTab={(tab) => {
+                        const categoryToTab: Record<string, SettingsTabId> = {
+                          general: "connection",
+                          intelligence: "model-provider",
+                          connection: "lmx",
+                          interface: "browser",
+                        };
+                        setIsSettingsView(false);
+                        openSettings(categoryToTab[tab] ?? "connection");
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Chat Pane (hidden when settings view active) */}
+                <div className={`v1-chat-pane ${isSettingsView ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
+                  {activePage === "models" ? (
+                    <ModelsPage connection={connection} onOpenSettings={() => openSettings("lmx")} />
+                  ) : activePage === "tools" ? (
+                    <ToolingOperationsPage connection={connection} />
+                  ) : activePage === "apps" ? (
+                    <AppCatalogPage connection={connection} />
+                  ) : activePage === "memory" ? (
+                    <SessionMemoryPage connection={connection} />
+                  ) : activePage === "system" ? (
+                    <SystemOperationsPage connection={connection} connectionState={connectionState} onOpenCliBridge={() => setActivePage("cli")} />
+                  ) : activePage === "cli" ? (
+                    <CliOperationsPage connection={connection} />
+                  ) : activePage === "env" ? (
+                    <EnvProfilesPage connection={connection} />
+                  ) : activePage === "mcp" ? (
+                    <McpManagementPage connection={connection} />
+                  ) : activePage === "config" ? (
+                    <ConfigStudioPage connection={connection} />
+                  ) : activePage === "account" ? (
+                    <AccountControlPage connection={connection} />
+                  ) : activePage === "jobs" ? (
+                    <BackgroundJobsPage connection={connection} defaultSessionId={activeSessionId} />
+                  ) : activePage === "logs" ? (
+                    <DaemonLogsPage />
+                  ) : (
+                    /* Default: Sessions view */
+                    <>
+                      {!activeSessionId ? (
                         <div className="v1-messages">
                           <div className="v1-empty-msg">No messages yet. Select a project and start a task.</div>
                         </div>
-                        <Composer
-                          value={composerDraft}
-                          onChange={setComposerDraft}
-                          onSubmit={onSubmitComposer}
-                          onCancel={() => void cancelActiveTurn()}
-                          onDictate={onDictate}
-                          isStreaming={false}
-                          disabled={false}
-                          mode={submissionMode}
-                          onModeChange={setSubmissionMode}
-                          timelineItems={timelineItems}
-                          onTts={onTts}
-                        />
-                      </>
-                    ) : (
-                      <>
+                      ) : (
                         <div className="v1-timeline-area">
                           {timelineItems.length > 0 && (
                             <div className="session-export-bar">
@@ -1003,24 +1003,28 @@ function App() {
                             browserVisualState={activeBrowserVisual}
                           />
                         </div>
-                        <Composer
-                          value={composerDraft}
-                          onChange={setComposerDraft}
-                          onSubmit={onSubmitComposer}
-                          onCancel={() => void cancelActiveTurn()}
-                          onDictate={onDictate}
-                          isStreaming={isStreaming}
-                          disabled={false}
-                          mode={submissionMode}
-                          onModeChange={setSubmissionMode}
-                          timelineItems={timelineItems}
-                          onTts={onTts}
-                        />
-                      </>
-                    )}
-                  </>
-                )}
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
+
+              {/* Statically positioned Composer below middle layer */}
+              {activePage === "sessions" && (
+                <Composer
+                  value={composerDraft}
+                  onChange={setComposerDraft}
+                  onSubmit={onSubmitComposer}
+                  onCancel={() => void cancelActiveTurn()}
+                  onDictate={onDictate}
+                  isStreaming={isStreaming}
+                  disabled={false}
+                  mode={submissionMode}
+                  onModeChange={setSubmissionMode}
+                  timelineItems={timelineItems}
+                  onTts={onTts}
+                />
+              )}
             </div>
 
             {/* Right: Widget Pane */}
