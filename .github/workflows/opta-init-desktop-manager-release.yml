@@ -72,25 +72,8 @@ jobs:
       enable_platform_signing: ${{ steps.resolve.outputs.enable_platform_signing }}
       updater_public_key: ${{ steps.derive-updater-pubkey.outputs.public_key }}
     steps:
-      - name: Checkout (sparse, Windows-safe)
-        shell: pwsh
-        env:
-          GH_REPO: ${{ github.repository }}
-          GH_SHA: ${{ github.sha }}
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          git init .
-          git remote add origin "https://x-access-token:$env:GH_TOKEN@github.com/$env:GH_REPO.git"
-          git config core.autocrlf false
-          git config core.sparseCheckout true
-          git sparse-checkout init --cone
-          git sparse-checkout set 1-Apps/optalocal/1O-Opta-Init
-          git fetch --no-tags --depth=1 origin $env:GH_SHA
-          git checkout --detach FETCH_HEAD
-        with:
-          sparse-checkout: |
-            1-Apps/optalocal/1O-Opta-Init
-          sparse-checkout-cone-mode: true
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -611,8 +594,21 @@ jobs:
       WINDOWS_CERTIFICATE_PASSWORD: ${{ secrets.WINDOWS_CERTIFICATE_PASSWORD }}
       ENABLE_PLATFORM_SIGNING: ${{ needs.prepare-release.outputs.enable_platform_signing }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Checkout (sparse, Windows-safe)
+        shell: pwsh
+        env:
+          GH_REPO: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git init .
+          git remote add origin "https://x-access-token:$env:GH_TOKEN@github.com/$env:GH_REPO.git"
+          git config core.autocrlf false
+          git config core.sparseCheckout true
+          git sparse-checkout init --cone
+          git sparse-checkout set 1-Apps/optalocal/1O-Opta-Init
+          git fetch --no-tags --depth=1 origin $env:GH_SHA
+          git checkout --detach FETCH_HEAD
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
