@@ -3,24 +3,24 @@
   "schemaVersion": "1.0.0",
   "manifestVersion": 1,
   "channel": "stable",
-  "publishedAt": "2026-03-04T08:00:00Z",
+  "publishedAt": "2026-03-02T02:10:00Z",
   "release": {
-    "id": "2026.03.04-stable.1",
-    "notesUrl": "https://init.optalocal.com/releases/2026-03-04-stable-1",
+    "id": "2026.03.02-stable.1",
+    "notesUrl": "https://init.optalocal.com/releases/2026-03-02-stable-1",
     "minManagerVersion": "0.6.0"
   },
   "rollout": {
     "strategy": "immediate",
     "percentage": 100,
     "cohort": "all",
-    "startsAt": "2026-03-04T08:30:00Z",
+    "startsAt": "2026-03-02T02:30:00Z",
     "allowDowngrade": false
   },
   "components": [
     {
       "id": "opta-cli",
       "displayName": "Opta CLI",
-      "version": "0.5.0-alpha.15",
+      "version": "0.6.2",
       "minManagerVersion": "0.6.0",
       "track": "stable",
       "rollout": {
@@ -32,16 +32,36 @@
           {
             "platform": "macos",
             "arch": "universal",
-            "packageType": "tar.gz",
-            "url": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz"
+            "packageType": "pkg",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 89368576,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "7b9e8e0f74e4e9e344eb7ee8beec2fd9b4dfa5f8f754f665500f4f2f0f6c3f2d"
+            },
+            "signature": {
+              "type": "codesign",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "Developer ID Installer: Opta Local Pty Ltd (ABCD123456)"
+            }
           }
         ],
         "windows": [
           {
             "platform": "windows",
             "arch": "x64",
-            "packageType": "tar.gz",
-            "url": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz"
+            "packageType": "msi",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 91587072,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "9fef4477f564d7a78610dc8991d87d6b4b315f6b3da1d6432d453f324558da34"
+            },
+            "signature": {
+              "type": "authenticode",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
+            }
           }
         ]
       }
@@ -57,14 +77,48 @@
         "priority": 2
       },
       "artifacts": {
-        "macos": [],
-        "windows": []
+        "macos": [
+          {
+            "platform": "macos",
+            "arch": "arm64",
+            "packageType": "tar.gz",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 214763520,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "f7ca5d990db670f84f8334d57d13ac0a8cf0f1453a0a72f1d7327ea2e53fc7ab"
+            },
+            "signature": {
+              "type": "cosign",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "keyId": "cosign/opta-lmx-prod"
+            }
+          }
+        ],
+        "windows": [
+          {
+            "platform": "windows",
+            "arch": "x64",
+            "packageType": "zip",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 228904960,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "9e99b8144a3f8f9de86b16034780d388ce8f1c7cfb57444f237f1f7fb4fcf8ed"
+            },
+            "signature": {
+              "type": "cosign",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "keyId": "cosign/opta-lmx-prod"
+            }
+          }
+        ]
       }
     },
     {
       "id": "opta-code-universal",
       "displayName": "Opta Code Universal",
-      "version": "0.2.0",
+      "version": "0.5.4",
       "minManagerVersion": "0.6.0",
       "track": "stable",
       "rollout": {
@@ -72,8 +126,42 @@
         "priority": 3
       },
       "artifacts": {
-        "macos": [],
-        "windows": []
+        "macos": [
+          {
+            "platform": "macos",
+            "arch": "universal",
+            "packageType": "dmg",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 173015040,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "367648eb3c070f4f5384ab694569f35f6ab4dcf102f7a34df4df9e0da855f6a2"
+            },
+            "signature": {
+              "type": "codesign",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "Developer ID Application: Opta Local Pty Ltd (ABCD123456)"
+            }
+          }
+        ],
+        "windows": [
+          {
+            "platform": "windows",
+            "arch": "x64",
+            "packageType": "exe",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 181862400,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "f4c55c97ecf54f9b4f97bc5f08a9fd66ec1dcb6f83784abca16fe78053f16f5c"
+            },
+            "signature": {
+              "type": "authenticode",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
+            }
+          }
+        ]
       }
     },
     {
@@ -87,8 +175,42 @@
         "priority": 4
       },
       "artifacts": {
-        "macos": [],
-        "windows": []
+        "macos": [
+          {
+            "platform": "macos",
+            "arch": "universal",
+            "packageType": "pkg",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 42362880,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "0101dc1d95ab08ae2ee6f55eb2865c4bd0f6742ec4f4f578dbf7f8e32fcb95fa"
+            },
+            "signature": {
+              "type": "codesign",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "Developer ID Installer: Opta Local Pty Ltd (ABCD123456)"
+            }
+          }
+        ],
+        "windows": [
+          {
+            "platform": "windows",
+            "arch": "x64",
+            "packageType": "msi",
+            "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+            "sizeBytes": 39794176,
+            "checksum": {
+              "algorithm": "sha256",
+              "value": "5806618c65d97fe9b31df6cb5e8ac9f352718f45566f2f3a558e0f7ae1246fb9"
+            },
+            "signature": {
+              "type": "authenticode",
+              "url": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+              "certificate": "CN=Opta Local Pty Ltd, O=Opta Local Pty Ltd, C=AU"
+            }
+          }
+        ]
       }
     }
   ]
