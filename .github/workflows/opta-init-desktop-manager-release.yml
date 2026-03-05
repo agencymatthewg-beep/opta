@@ -941,6 +941,8 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
           METADATA_REF: ${{ needs.prepare-release.outputs.metadata_ref }}
         run: |
+          set -euo pipefail
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
@@ -954,7 +956,32 @@ jobs:
           fi
 
           git commit -m "chore(opta-init): publish manager metadata ${CHANNEL} v${VERSION} (${RELEASE_TAG})"
-          git push origin "HEAD:${METADATA_REF}"
+
+          max_attempts=5
+          attempt=1
+          while [ "$attempt" -le "$max_attempts" ]; do
+            echo "Metadata push attempt ${attempt}/${max_attempts} -> ${METADATA_REF}"
+            if git push origin "HEAD:${METADATA_REF}"; then
+              echo "Metadata push succeeded."
+              exit 0
+            fi
+
+            if [ "$attempt" -eq "$max_attempts" ]; then
+              echo "Metadata push failed after ${max_attempts} attempts."
+              exit 1
+            fi
+
+            echo "Push rejected. Fetching and rebasing onto origin/${METADATA_REF} before retry."
+            git fetch origin "${METADATA_REF}"
+            if ! git rebase "origin/${METADATA_REF}"; then
+              git rebase --abort || true
+              echo "Metadata rebase failed. Manual conflict resolution required."
+              exit 1
+            fi
+
+            sleep $((attempt * 2))
+            attempt=$((attempt + 1))
+          done
 
       - name: Upload metadata snapshot
         uses: actions/upload-artifact@v4
