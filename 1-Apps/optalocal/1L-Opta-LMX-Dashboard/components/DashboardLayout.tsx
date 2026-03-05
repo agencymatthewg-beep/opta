@@ -92,8 +92,9 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
             <aside className="w-56 flex-shrink-0 flex flex-col border-r border-[var(--opta-border)] glass-subtle">
                 {/* Logo */}
                 <div className="px-5 py-4 border-b border-[var(--opta-border)] flex items-center gap-3">
-                    <div className="flex items-center justify-center w-7 h-7 rounded-md bg-primary/15 border border-primary/30">
-                        <Zap size={13} className="text-primary" />
+                    <div className="flex items-center justify-center w-7 h-7 rounded-md bg-transparent">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src="/logos/opta-lmx-mark.svg" className="w-[20px] h-[20px] drop-shadow-[0_0_8px_rgba(139,92,246,0.5)]" alt="LMX" />
                     </div>
                     <div style={{ '--logo-size': '1.1rem', '--logo-sub-size': '0.3rem' } as React.CSSProperties}>
                         <OptaTextLogo />

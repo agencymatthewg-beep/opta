@@ -106,24 +106,37 @@ export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetu
                         }}
                     />
                 )}
-                {/* Centre dot */}
+                {/* Centre Logo */}
                 <div
                     style={{
                         position: 'absolute',
                         inset: '50%',
                         transform: 'translate(-50%, -50%)',
-                        width: '12px',
-                        height: '12px',
-                        borderRadius: '50%',
-                        background: phase === 'success'
-                            ? '#10b981'
+                        width: '32px',
+                        height: '32px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        transition: 'all 0.4s ease',
+                        filter: phase === 'success'
+                            ? 'drop-shadow(0 0 12px rgba(16,185,129,0.6)) hue-rotate(-90deg)'
                             : phase === 'failed'
-                                ? '#ef4444'
-                                : '#8b5cf6',
-                        boxShadow: `0 0 16px ${phase === 'success' ? 'rgba(16,185,129,0.5)' : phase === 'failed' ? 'rgba(239,68,68,0.4)' : 'rgba(139,92,246,0.5)'}`,
-                        transition: 'background 0.4s ease, box-shadow 0.4s ease',
+                                ? 'drop-shadow(0 0 12px rgba(239,68,68,0.6)) grayscale(100%) brightness(2)'
+                                : 'drop-shadow(0 0 12px rgba(139,92,246,0.6))',
                     }}
-                />
+                >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                        src="/logos/opta-lmx-mark.svg"
+                        style={{
+                            width: '100%',
+                            height: '100%',
+                            opacity: phase === 'failed' ? 0.7 : 1,
+                            transition: 'opacity 0.4s ease'
+                        }}
+                        alt="LMX Logo"
+                    />
+                </div>
             </div>
 
             {/* Status text */}

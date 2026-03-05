@@ -66,9 +66,11 @@ export default function DashboardHome() {
 
                 {/* Content area */}
                 {!isConnected ? (
-                    <div className="dashboard-card text-center py-16">
-                        <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 mx-auto mb-6">
-                            <Zap size={28} className="text-primary" />
+                    <div className="dashboard-card text-center py-16 flex flex-col items-center">
+                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-6 relative">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src="/logos/opta-lmx-mark.svg" className="w-12 h-12 drop-shadow-[0_0_15px_rgba(139,92,246,0.6)] relative z-10" alt="LMX" />
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
                         </div>
                         <h2 className="text-lg font-semibold mb-2">Opta LMX Dashboard</h2>
                         <p className="text-sm text-text-secondary max-w-md mx-auto mb-6">
@@ -86,10 +88,10 @@ export default function DashboardHome() {
                                     System Health
                                 </h2>
                                 <span className={`text-xs font-mono px-2 py-0.5 rounded ${dashboard.healthStatus === 'ok'
-                                        ? 'bg-[var(--opta-neon-green)]/15 text-[var(--opta-neon-green)]'
-                                        : dashboard.healthStatus === 'degraded'
-                                            ? 'bg-[var(--opta-neon-amber)]/15 text-[var(--opta-neon-amber)]'
-                                            : 'bg-[var(--opta-neon-red)]/15 text-[var(--opta-neon-red)]'
+                                    ? 'bg-[var(--opta-neon-green)]/15 text-[var(--opta-neon-green)]'
+                                    : dashboard.healthStatus === 'degraded'
+                                        ? 'bg-[var(--opta-neon-amber)]/15 text-[var(--opta-neon-amber)]'
+                                        : 'bg-[var(--opta-neon-red)]/15 text-[var(--opta-neon-red)]'
                                     }`}>
                                     {dashboard.healthStatus}
                                 </span>
