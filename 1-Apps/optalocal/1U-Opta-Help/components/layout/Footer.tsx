@@ -12,7 +12,7 @@ export function Footer() {
                 OPTA HELP
               </div>
               <div className="text-xs text-text-muted">
-                Documentation for the Opta Local stack
+                Documentation for the Opta ecosystem
               </div>
             </div>
           </div>

@@ -15,9 +15,9 @@ const coreApps = [
   },
   {
     name: "Opta LMX",
-    role: "Inference + dashboard",
+    role: "Local Inference Engine",
     description:
-      "Your private Apple Silicon inference daemon, OpenAI-compatible API, and local model management path for bots and tools.",
+      "Your private inference daemon for Apple Silicon. Provides a local, offline OpenAI-compatible API to fall back on when Cloud Models aren't needed.",
     icon: "/logos/opta-lmx-mark.svg",
     href: "https://lmx.optalocal.com",
   },
@@ -25,7 +25,7 @@ const coreApps = [
     name: "Opta CLI",
     role: "Control plane",
     description:
-      "Terminal-first control for the stack. Connects your local tools and projects to your local inference engine for agentic workflows.",
+      "Terminal-first control for the stack. Connects your local or cloud models to your projects for long-running 'CEO Mode' autonomous workflows.",
     icon: "/logos/opta-cli-mark.svg",
     href: "https://help.optalocal.com/docs/cli",
   },

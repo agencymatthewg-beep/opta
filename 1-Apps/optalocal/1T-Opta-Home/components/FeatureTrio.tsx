@@ -2,32 +2,32 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Shield, Infinity, Plug, Mic } from "lucide-react";
+import { Briefcase, Cloud, Plug, Mic } from "lucide-react";
 
 const features = [
   {
-    icon: Shield,
-    title: "Air-Gapped Privacy",
+    icon: Briefcase,
+    title: "Autonomous CEO Modes",
     description:
-      "Zero telemetry. No silent API calls. Your code, prompts, and intellectual property never leave your local network.",
+      "Explain your business idea and let the AI take over. Opta runs continuous, long-running agentic loops to build, manage, and execute money-making workflows while you sleep.",
   },
   {
-    icon: Infinity,
-    title: "Unmetered Inference",
+    icon: Cloud,
+    title: "Mass Cloud Support + Local Guardrails",
     description:
-      "No API bills. No rate limits. Run heavy agentic loops and massive context windows continuously without watching a usage meter.",
+      "Don't have a Mac Studio? No problem. Hook up your OpenAI or Anthropic API keys for cloud-backed autonomy, or run 100% private locally via Opta LMX on Apple Silicon.",
   },
   {
     icon: Plug,
     title: "Frictionless Integration",
     description:
-      "Drop-in OpenAI-compatible REST API. Point your existing LangChain, LlamaIndex, or custom scripts to localhost and they just work.",
+      "Drop-in OpenAI-compatible REST API. Point your existing LangChain, LlamaIndex, or custom scripts to localhost and our routing handles whether it hits the cloud or your local hardware.",
   },
   {
     icon: Mic,
     title: "Voice-Native AI",
     description:
-      "Built-in TTS and speech transcription via mlx-whisper — speak to your AI and hear responses, all processed locally on your hardware.",
+      "Pitch ideas using built-in TTS and speech transcription — speak to your AI and hear responses. Works seamlessly across both cloud services and local mlx-whisper processing.",
   },
 ];
 
@@ -45,10 +45,10 @@ export function FeatureTrio() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Built differently.
+            Intelligence that works for you.
           </h2>
           <p className="text-xl text-text-secondary max-w-xl mx-auto">
-            Every design decision in Opta Local starts from one premise: you own the compute.
+            From quick tasks to managing an entire digital business autonomously.
           </p>
         </motion.div>
 

@@ -48,10 +48,10 @@ export default function HomePage() {
                 Opta Help
               </h1>
               <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto mb-6 sm:mb-8">
-                Technical documentation for the Opta Local ecosystem.
-                Covers the 4 core apps, plus daemon, web, and management surfaces.
+                Technical documentation for the Opta ecosystem.
+                Covers autonomous CEO loops, cloud provider keys, daemon setup, and the 4 core apps.
               </p>
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4">
+              <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4">
                 <Link
                   href="/docs/getting-started/"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all"
@@ -71,6 +71,18 @@ export default function HomePage() {
                 >
                   User Guides ↗
                 </a>
+                <Link
+                  href="/docs/cloud-providers/"
+                  className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-secondary hover:text-text-primary rounded-lg font-medium transition-all"
+                >
+                  Cloud Providers (OpenAI/Anthropic)
+                </Link>
+                <Link
+                  href="/docs/ceo-modes/"
+                  className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-secondary hover:text-text-primary rounded-lg font-medium transition-all"
+                >
+                  Autonomous CEO Modes
+                </Link>
               </div>
             </motion.div>
           </div>

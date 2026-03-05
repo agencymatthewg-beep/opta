@@ -18,10 +18,10 @@ export function ArchDiagram() {
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Your data never leaves your machine.
+            Flexible execution paths.
           </h2>
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            Air-gap capable architecture. Every byte stays on your hardware.
+            Run privately on Apple Silicon, or connect cloud models for mass scale.
           </p>
         </motion.div>
 
@@ -49,7 +49,7 @@ export function ArchDiagram() {
                 </div>
                 <div className="text-center">
                   <div className="text-xs font-bold text-white font-mono tracking-widest uppercase">Your Compute Node</div>
-                  <div className="text-[10px] text-text-muted font-mono">Apple Silicon Only</div>
+                  <div className="text-[10px] text-text-muted font-mono">Hardware Backend</div>
                 </div>
               </div>
 
@@ -82,7 +82,7 @@ export function ArchDiagram() {
             </div>
           </motion.div>
 
-          {/* Cloud Architecture (BLOCKED) */}
+          {/* Cloud Architecture (SUPPORTED) */}
           <motion.div
             className="relative"
             initial={{ opacity: 0, x: 20 }}
@@ -90,45 +90,46 @@ export function ArchDiagram() {
             transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-text-muted mb-2">Cloud AI Services</h3>
-              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neon-red/10 border border-neon-red/30 text-neon-red text-sm font-medium">
-                <X className="w-3.5 h-3.5" />
-                Disabled
+              <h3 className="text-2xl font-bold text-white mb-2">Cloud AI Services</h3>
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-sm font-medium">
+                <Cloud className="w-3.5 h-3.5" />
+                Supported Fallback
               </span>
             </div>
 
-            <div className="relative opacity-50">
-              <div className="obsidian rounded-2xl p-8 border border-white/5">
-                {/* YOUR COMPUTE NODE (cloud side — dimmed) */}
+            <div className="relative">
+              <div className="obsidian rounded-2xl p-8 border-2 border-transparent">
+                {/* YOUR COMPUTE NODE (cloud side) */}
                 <div className="flex flex-col items-center justify-center mb-6 gap-2">
-                  <div className="w-20 h-20 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
-                    <HardDrive className="w-10 h-10 text-text-muted" />
+                  <div className="w-20 h-20 rounded-xl bg-neon-cyan/10 border border-neon-cyan/20 flex items-center justify-center">
+                    <Cloud className="w-10 h-10 text-neon-cyan" />
                   </div>
                   <div className="text-center">
-                    <div className="text-xs font-bold text-text-muted font-mono tracking-widest uppercase">Your Compute Node</div>
+                    <div className="text-xs font-bold text-white font-mono tracking-widest uppercase">Cloud Providers</div>
+                    <div className="text-[10px] text-text-muted font-mono">OpenAI / Anthropic / Gemini</div>
                   </div>
                 </div>
 
-                {/* Crossed-out arrow */}
-                <div className="relative flex justify-center mb-6">
-                  <ArrowRight className="w-6 h-6 text-text-muted rotate-90" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <X className="w-12 h-12 text-neon-red stroke-[3]" />
-                  </div>
-                </div>
-
-                {/* Cloud */}
+                {/* Arrow down */}
                 <div className="flex justify-center mb-6">
-                  <div className="w-32 h-20 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
-                    <Cloud className="w-12 h-12 text-text-muted" />
+                  <ArrowRight className="w-6 h-6 text-neon-cyan rotate-90" />
+                </div>
+
+                {/* Inference APIs */}
+                <div className="flex justify-center mb-6">
+                  <div className="glass-subtle rounded-lg p-4 border border-neon-cyan/20 w-1/2 text-center inline-flex flex-col items-center">
+                    <div className="w-8 h-8 rounded bg-neon-cyan/20 mb-2 flex items-center justify-center">
+                      <span className="text-xs font-bold text-neon-cyan">API</span>
+                    </div>
+                    <span className="text-xs text-text-secondary font-mono">Inference</span>
                   </div>
                 </div>
 
-                {/* Risk indicator */}
+                {/* Data indicator */}
                 <div className="text-center">
-                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neon-red/10 border border-neon-red/30">
-                    <X className="w-4 h-4 text-neon-red" />
-                    <span className="text-sm font-medium text-neon-red">Data exfiltration risk</span>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                    <Lock className="w-4 h-4 text-text-muted" />
+                    <span className="text-sm font-medium text-text-muted">Data leaves device</span>
                   </div>
                 </div>
               </div>

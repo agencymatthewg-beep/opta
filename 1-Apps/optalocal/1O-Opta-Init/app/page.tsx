@@ -151,11 +151,11 @@ export default function Home() {
               </div>
               <div className="overflow-hidden pb-4 ml-[8vw]">
                 <motion.div variants={textUp}>
-                  <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(168,85,247,0.6)' }}>Opta Apps</span>
+                  <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(168,85,247,0.6)' }}>Cloud + Local</span>
                 </motion.div>
               </div>
               <div className="overflow-hidden pb-4">
-                <motion.div variants={textUp} className="text-moonlight">and Daemon.</motion.div>
+                <motion.div variants={textUp} className="text-moonlight">Workflows.</motion.div>
               </div>
             </h1>
           </div>
@@ -163,7 +163,7 @@ export default function Home() {
           <div className="md:col-span-4 md:col-start-2">
             <motion.div variants={lineRevealX} className="h-px bg-white/10 w-full mb-8" />
             <motion.p variants={textUp} className="text-lg font-light leading-relaxed text-text-secondary">
-              Opta Init (Opta Initializer) is your local stack initializer, manager, updater, and launcher. Install apps, roll updates safely, and control daemon lifecycle from one native surface.
+              Opta Init (Opta Initializer) is your stack initializer and launcher. Install apps, connect OpenAI/Anthropic keys for cloud autonomy, and control your local daemon lifecycle from one native surface.
             </motion.p>
 
             <motion.a href="#install" variants={textUp} className="mt-12 group cursor-pointer inline-flex items-center gap-4 obsidian-interactive p-3 rounded-full pr-8 border border-white/10">

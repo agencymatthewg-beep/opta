@@ -6,8 +6,8 @@ import { ArrowRight } from "lucide-react";
 const coreApps = [
   { name: "Opta Init", role: "Distribution", icon: "/logos/opta-init-mark.svg" },
   { name: "Opta LMX", role: "Inference Engine", icon: "/logos/opta-lmx-mark.svg" },
-  { name: "Opta CLI", role: "Control Plane",    icon: "/logos/opta-cli-mark.svg" },
-  { name: "Opta Code", role: "Developer Desktop",   icon: "/logos/opta-code-mark.svg" },
+  { name: "Opta CLI", role: "Control Plane", icon: "/logos/opta-cli-mark.svg" },
+  { name: "Opta Code", role: "Developer Desktop", icon: "/logos/opta-code-mark.svg" },
 ];
 
 export function Hero() {
@@ -33,11 +33,11 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
         >
-          <span className="text-white">Own the stack.</span>
+          <span className="text-white">Run autonomous AI.</span>
           <br />
-          <span className="text-white">Own the data.</span>
+          <span className="text-white">Build your business.</span>
           <br />
-          <span className="text-white">Ship local AI at </span><span className="text-moonlight">your scale.</span>
+          <span className="text-white">Powered by </span><span className="text-moonlight">Cloud or Local.</span>
         </motion.h1>
 
         {/* Subhead */}
@@ -47,7 +47,7 @@ export function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
         >
-          A local-first platform to serve, manage, and code with open-weight models. One install surface, one identity layer, zero dependence on cloud copilots for private workloads.
+          The intelligent operating system for mass audiences and developers alike. Run long-running money-making sessions via OpenAI/Anthropic, or switch to Opta LMX to run entirely private on Apple Silicon.
         </motion.p>
 
         {/* CTAs */}
@@ -83,7 +83,7 @@ export function Hero() {
                 className="relative group obsidian border border-primary/30 rounded-xl px-6 py-4 flex flex-col items-center gap-2 min-w-[140px] cursor-pointer"
                 initial={{ opacity: 0, scale: 0.9, y: 0 }}
                 animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
-                transition={{ 
+                transition={{
                   opacity: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
                   scale: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
                   y: { duration: 6 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: 1 + i * 0.2 }

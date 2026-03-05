@@ -8,7 +8,7 @@ const STEPS = [
   {
     id: "prereqs",
     title: "1. Verify prerequisites",
-    body: "Use Apple Silicon for optimal local model performance, ensure network access to your LMX host, and confirm daemon port availability.",
+    body: "Ensure network access to your LMX host (Apple Silicon) or have OpenAI/Anthropic API keys ready for Cloud models. Confirm daemon port availability.",
   },
   {
     id: "install",

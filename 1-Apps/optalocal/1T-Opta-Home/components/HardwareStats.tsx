@@ -24,7 +24,7 @@ export function HardwareStats() {
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Built for Apple Silicon-scale workloads.
+            Built for autonomous scale workloads.
           </h2>
         </motion.div>
 
@@ -54,7 +54,7 @@ export function HardwareStats() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          From stack boot to inference and code workflow, everything remains local-first.
+          From stack boot to continuous agentic workflow, choose between mass-scale cloud intelligence or 100% local privacy.
         </motion.p>
       </div>
     </section>

@@ -14,7 +14,7 @@ export function Footer() {
                 OPTA LOCAL
               </div>
               <div className="text-xs text-text-muted">
-                Private AI infrastructure for Apple Silicon
+                Intelligent operating system for autonomous workflows
               </div>
             </div>
           </div>
