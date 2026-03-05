@@ -29,10 +29,10 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/package-lock.json"
+          cache-dependency-path: "1-Apps/optalocal/package-lock.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --workspaces=false --include=dev
 
       - name: Typecheck
         run: npm run typecheck
@@ -63,10 +63,10 @@ jobs:
         with:
           node-version: "22"
           cache: "npm"
-          cache-dependency-path: "1-Apps/optalocal/1O-Opta-Init/desktop-manager/package-lock.json"
+          cache-dependency-path: "1-Apps/optalocal/package-lock.json"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install --workspaces=false --include=dev
 
       - name: Typecheck
         run: npm run typecheck
