@@ -9,21 +9,42 @@ jobs:
   migrate-and-check:
     runs-on: ubuntu-latest
     environment: Supabase
+    env:
+      OPTA_SUPABASE_DATABASE_URL: ${{ secrets.OPTA_SUPABASE_DATABASE_URL }}
+      OPTA_SUPABASE_DB_PASSWORD: ${{ secrets.OPTA_SUPABASE_DB_PASSWORD }}
+      OPTA_SUPABASE_HEALTH_SCRIPT: 1-Apps/scripts/supabase/health-check.sh
+      OPTA_SUPABASE_URL: ${{ secrets.OPTA_SUPABASE_URL }}
+      OPTA_SUPABASE_ANON_KEY: ${{ secrets.OPTA_SUPABASE_ANON_KEY }}
+      OPTA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OPTA_SUPABASE_SERVICE_ROLE_KEY }}
+      E2E_SUPABASE_TEST_EMAIL: ${{ secrets.E2E_SUPABASE_TEST_EMAIL }}
+      E2E_SUPABASE_TEST_PASSWORD: ${{ secrets.E2E_SUPABASE_TEST_PASSWORD }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+      - name: Preflight secret check
+        id: preflight
+        run: |
+          missing=()
+          for key in OPTA_SUPABASE_DATABASE_URL OPTA_SUPABASE_URL OPTA_SUPABASE_ANON_KEY OPTA_SUPABASE_SERVICE_ROLE_KEY; do
+            if [[ -z "${!key:-}" ]]; then
+              missing+=("$key")
+            fi
+          done
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            printf '::error::Missing required Supabase secret(s): %s\n' "$(IFS=', '; echo "${missing[*]}")"
+            printf '%s\n' "${missing[@]}" | jq -R . | jq -s '{"overall_status":"fail","reason":"missing_required_secrets","missing":.}' > /tmp/supabase-health.json
+            exit 1
+          fi
+
+          if [[ -z "${E2E_SUPABASE_TEST_EMAIL:-}" || -z "${E2E_SUPABASE_TEST_PASSWORD:-}" ]]; then
+            echo "::warning::E2E fixture credentials are not configured."
+          fi
       - name: Set up PostgreSQL client
+        if: steps.preflight.outcome == 'success'
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Apply migrations and run health check
-        env:
-          OPTA_SUPABASE_DATABASE_URL: ${{ secrets.OPTA_SUPABASE_DATABASE_URL }}
-          OPTA_SUPABASE_DB_PASSWORD: ${{ secrets.OPTA_SUPABASE_DB_PASSWORD }}
-          OPTA_SUPABASE_HEALTH_SCRIPT: 1-Apps/scripts/supabase/health-check.sh
-          OPTA_SUPABASE_URL: ${{ secrets.OPTA_SUPABASE_URL }}
-          OPTA_SUPABASE_ANON_KEY: ${{ secrets.OPTA_SUPABASE_ANON_KEY }}
-          OPTA_SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OPTA_SUPABASE_SERVICE_ROLE_KEY }}
-          E2E_SUPABASE_TEST_EMAIL: ${{ secrets.E2E_SUPABASE_TEST_EMAIL }}
-          E2E_SUPABASE_TEST_PASSWORD: ${{ secrets.E2E_SUPABASE_TEST_PASSWORD }}
+        if: steps.preflight.outcome == 'success'
         run: |
           chmod +x 1-Apps/shared/1N-Opta-Cloud-Accounts/scripts/*.sh || true
           chmod +x 1-Apps/scripts/supabase/health-check.sh || true
