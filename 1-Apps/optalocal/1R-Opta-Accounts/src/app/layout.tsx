@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     'Sign in to your Opta account. One login for Opta Local, Life Manager, and all Opta apps.',
   icons: {
     icon: '/favicon.svg',
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
   openGraph: {

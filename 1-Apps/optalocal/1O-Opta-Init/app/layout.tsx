@@ -30,7 +30,7 @@ export const metadata: Metadata = {
   keywords: 'Opta Initializer, Opta Init, app manager, updater, daemon control, local AI, Opta Local, macOS, Apple Silicon',
   icons: {
     icon: '/favicon.svg',
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
   openGraph: {

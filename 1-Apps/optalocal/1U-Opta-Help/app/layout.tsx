@@ -40,7 +40,7 @@ export const metadata: Metadata = {
   keywords: 'Opta, documentation, help, CLI, daemon, LMX, local AI, Apple Silicon, MLX',
   icons: {
     icon: '/favicon.svg',
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
   openGraph: {
