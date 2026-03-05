@@ -3,12 +3,7 @@
 import { motion } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 
-const coreApps = [
-  { name: "Opta Init", role: "Distribution", icon: "/logos/opta-init-mark.svg" },
-  { name: "Opta LMX", role: "Inference Engine", icon: "/logos/opta-lmx-mark.svg" },
-  { name: "Opta CLI", role: "Control Plane", icon: "/logos/opta-cli-mark.svg" },
-  { name: "Opta Code", role: "Developer Desktop", icon: "/logos/opta-code-mark.svg" },
-];
+
 
 export function Hero() {
   return (
@@ -69,52 +64,70 @@ export function Hero() {
           </div>
         </motion.div>
 
-        {/* Core apps stack diagram */}
+        {/* Core apps — Stepped Arc Layout */}
         <motion.div
-          className="flex flex-col sm:flex-row items-center justify-center gap-0"
-          initial={{ opacity: 0, y: 20 }}
+          className="flex flex-col sm:flex-row items-center sm:items-start justify-between w-full max-w-5xl mx-auto px-4 relative mt-16 pb-8"
+          initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
         >
-          {coreApps.map((app, i) => (
-            <div key={app.name} className="flex items-center">
-              {/* App node */}
-              <motion.div
-                className="relative group obsidian border border-primary/30 rounded-xl px-6 py-4 flex flex-col items-center gap-2 min-w-[140px] cursor-pointer"
-                initial={{ opacity: 0, scale: 0.9, y: 0 }}
-                animate={{ opacity: 1, scale: 1, y: [0, -8, 0] }}
-                transition={{
-                  opacity: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
-                  scale: { duration: 0.5, delay: 0.5 + i * 0.1, ease: [0.16, 1, 0.3, 1] },
-                  y: { duration: 6 + i * 0.5, repeat: Infinity, ease: "easeInOut", delay: 1 + i * 0.2 }
-                }}
-                whileHover={{ borderColor: "rgba(168,85,247,0.6)" }}
-              >
-                {/* Purple Glow Background */}
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                  <div className="w-20 h-20 rounded-full bg-[radial-gradient(circle,rgba(168,85,247,0.4)_0%,rgba(168,85,247,0.1)_50%,transparent_100%)] opacity-0 group-hover:opacity-100 group-hover:scale-150 transition-all duration-500 ease-[0.16,1,0.3,1]" />
-                </div>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={app.icon} alt={app.name} className="w-9 h-9 relative z-10 group-hover:scale-110 transition-transform duration-500 ease-[0.16,1,0.3,1] drop-shadow-[0_0_0px_rgba(168,85,247,0)] group-hover:drop-shadow-[0_0_12px_rgba(168,85,247,0.6)]" />
-                <div className="text-center relative z-10">
-                  <div className="text-sm font-bold text-white transition-colors duration-300">{app.name}</div>
-                  <div className="text-[10px] text-text-muted font-mono mt-0.5">{app.role}</div>
-                </div>
-              </motion.div>
-
-              {/* Connector line between nodes */}
-              {i < coreApps.length - 1 && (
-                <motion.div
-                  className="hidden sm:flex items-center w-10"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.7 + i * 0.1 }}
-                >
-                  <div className="w-full h-px border-t-2 border-dashed border-primary/40" />
-                </motion.div>
-              )}
+          {/* 1. Opta Init (Shifted Up) */}
+          <a href="https://init.optalocal.com" className="relative z-10 flex flex-col items-center gap-5 group cursor-pointer w-48 sm:-mt-12 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:-translate-y-3 mb-10 sm:mb-0">
+            <div className="w-16 h-16 flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-primary blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-full"></div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logos/opta-init-mark.svg" className="w-12 h-12 transition-transform duration-500 group-hover:-rotate-6" alt="Init" />
             </div>
-          ))}
+            <div className="text-center">
+              <div className="text-lg font-bold bg-gradient-to-br from-[#a855f7] to-[#7c3aed] bg-clip-text text-transparent drop-shadow-[0_4px_15px_rgba(139,92,246,0.2)] mb-1.5 transition-all">Opta Init</div>
+              <div className="text-xs text-text-muted font-light leading-relaxed">Distribution + lifecycle manager.</div>
+            </div>
+          </a>
+
+          {/* Center Group: LMX & Code */}
+          <div className="flex flex-col sm:flex-row items-center sm:items-start justify-center gap-12 sm:gap-16 relative z-10 mx-auto my-4 sm:my-0 mb-10 sm:mb-0">
+
+            {/* 2. Opta LMX */}
+            <a href="https://lmx.optalocal.com" className="flex flex-col items-center gap-6 group cursor-pointer w-56 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105 hover:-translate-y-3">
+              <div className="w-24 h-24 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-primary blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-700 rounded-full"></div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logos/opta-lmx-mark.svg" className="w-20 h-20 drop-shadow-[0_10px_20px_rgba(139,92,246,0.2)] group-hover:drop-shadow-[0_15px_30px_rgba(139,92,246,0.6)] transition-all duration-500" alt="LMX" />
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold bg-gradient-to-br from-[#a855f7] to-[#7c3aed] bg-clip-text text-transparent drop-shadow-[0_4px_15px_rgba(139,92,246,0.2)] mb-2 transition-all">Opta LMX</div>
+                <div className="text-sm text-text-muted font-light leading-relaxed">Local inference engine.</div>
+              </div>
+            </a>
+
+            {/* 3. Opta Code */}
+            <a href="https://help.optalocal.com/docs/opta-code" className="flex flex-col items-center gap-6 group cursor-pointer w-56 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-105 hover:-translate-y-3">
+              <div className="w-24 h-24 flex items-center justify-center relative">
+                <div className="absolute inset-0 bg-primary blur-2xl opacity-0 group-hover:opacity-30 transition-opacity duration-700 rounded-full"></div>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/logos/opta-code-mark.svg" className="w-20 h-20 drop-shadow-[0_10px_20px_rgba(139,92,246,0.2)] group-hover:drop-shadow-[0_15px_30px_rgba(139,92,246,0.6)] transition-all duration-500" alt="Code" />
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-bold bg-gradient-to-br from-[#a855f7] to-[#7c3aed] bg-clip-text text-transparent drop-shadow-[0_4px_15px_rgba(139,92,246,0.2)] mb-2 transition-all">Opta Code</div>
+                <div className="text-sm text-text-muted font-light leading-relaxed">Developer desktop.</div>
+              </div>
+            </a>
+
+          </div>
+
+          {/* 4. Opta CLI (Shifted Up) */}
+          <a href="https://help.optalocal.com/docs/cli" className="relative z-10 flex flex-col items-center gap-5 group cursor-pointer w-48 sm:-mt-12 transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] hover:scale-110 hover:-translate-y-3">
+            <div className="w-16 h-16 flex items-center justify-center relative">
+              <div className="absolute inset-0 bg-primary blur-xl opacity-0 group-hover:opacity-20 transition-opacity duration-500 rounded-full"></div>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/logos/opta-cli-mark.svg" className="w-12 h-12 transition-transform duration-500 group-hover:rotate-6" alt="CLI" />
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold bg-gradient-to-br from-[#a855f7] to-[#7c3aed] bg-clip-text text-transparent drop-shadow-[0_4px_15px_rgba(139,92,246,0.2)] mb-1.5 transition-all">Opta CLI</div>
+              <div className="text-xs text-text-muted font-light leading-relaxed">Terminal control plane.</div>
+            </div>
+          </a>
+
         </motion.div>
 
       </div>
