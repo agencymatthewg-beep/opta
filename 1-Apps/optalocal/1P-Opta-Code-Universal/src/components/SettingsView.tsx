@@ -3,59 +3,47 @@ interface SettingsViewProps {
     designMode?: string;
 }
 
+import {
+    Network,
+    Cpu,
+    Terminal,
+    Activity,
+    Layers,
+    Globe,
+    Server,
+    Shield,
+    ShieldAlert,
+    BookOpen,
+    Wrench,
+    Brain,
+    FileCheck,
+    Webhook,
+    Key,
+    LayoutDashboard
+} from "lucide-react";
+
+interface SettingsViewProps {
+    onOpenSettingsTab: (tab: string) => void;
+    designMode?: string;
+}
+
 const SETTINGS_CATEGORIES = [
-    {
-        id: "general",
-        title: "General",
-        desc: "App preferences, file behavior, and updates",
-        colorClass: "c-general",
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M4 22h16a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8l-6 6v12a2 2 0 0 0 2 2z" />
-                <line x1="14" y1="2" x2="14" y2="22" />
-                <line x1="4" y1="12" x2="14" y2="12" />
-            </svg>
-        ),
-    },
-    {
-        id: "intelligence",
-        title: "Intelligence",
-        desc: "LMX Engine bindings, default models, and context",
-        colorClass: "c-intel",
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="12" cy="12" r="10" />
-                <path d="M12 16v-4" />
-                <path d="M12 8h.01" />
-            </svg>
-        ),
-    },
-    {
-        id: "connection",
-        title: "Connection",
-        desc: "Daemon remote host logic and HTTP/WS sockets",
-        colorClass: "c-conn",
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
-                <path d="M12 12v9" />
-                <path d="M8 17l4 4 4-4" />
-            </svg>
-        ),
-    },
-    {
-        id: "interface",
-        title: "Interface",
-        desc: "Widget grids, typography, and visual bounds",
-        colorClass: "c-ui",
-        icon: (
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-                <polyline points="3.29 7 12 12 20.71 7" />
-                <line x1="12" y1="22" x2="12" y2="12" />
-            </svg>
-        ),
-    },
+    { id: "connection", title: "Connection", desc: "Daemon remote host logic and HTTP/WS sockets", icon: Network },
+    { id: "lmx", title: "LMX Internal Service", desc: "Local model execution and host management", icon: Cpu },
+    { id: "daemon", title: "Opta Daemon", desc: "Background process and worker pool", icon: Terminal },
+    { id: "autonomy", title: "Autonomy", desc: "Execution modes and limits", icon: Activity },
+    { id: "genui", title: "Generative UI", desc: "Generative artifacts and rendering logic", icon: Layers },
+    { id: "model-provider", title: "Model Providers", desc: "Cloud fallbacks (Anthropic, OpenAI)", icon: Globe },
+    { id: "fleet", title: "Fleet Control", desc: "Remote agent coordination", icon: Server },
+    { id: "permissions", title: "Permissions", desc: "Tool approval gates and overrides", icon: Shield },
+    { id: "safety", title: "Safety", desc: "Content guardrails and validation", icon: ShieldAlert },
+    { id: "browser", title: "Browser MCP", desc: "Playwright automation and evaluation", icon: LayoutDashboard },
+    { id: "research", title: "Research", desc: "Search MCP plugins and aggregators", icon: BookOpen },
+    { id: "tools-agents", title: "Tools & Agents", desc: "Built-in tool constraints", icon: Wrench },
+    { id: "learning", title: "Learning", desc: "Context compaction and semantic memory", icon: Brain },
+    { id: "policy", title: "Global Policy", desc: "Overarching bounds and autonomy", icon: FileCheck },
+    { id: "mcp", title: "MCP Servers", desc: "Third-party resource connections", icon: Webhook },
+    { id: "secrets", title: "Secrets Vault", desc: "Credential and key management", icon: Key },
 ];
 
 export function SettingsView({ onOpenSettingsTab, designMode = "0" }: SettingsViewProps) {
@@ -83,15 +71,15 @@ export function SettingsView({ onOpenSettingsTab, designMode = "0" }: SettingsVi
                 {SETTINGS_CATEGORIES.map((cat) => (
                     <button
                         key={cat.id}
-                        className={`settings-view-card ${cat.colorClass}`}
+                        className="settings-view-card"
                         onClick={() => onOpenSettingsTab(cat.id)}
                         type="button"
                     >
-                        {cat.icon}
-                        <div>
-                            <div className="settings-card-title">{cat.title}</div>
-                            <div className="settings-card-desc">{cat.desc}</div>
+                        <div className="settings-card-icon-wrap">
+                            <cat.icon strokeWidth={1.5} />
                         </div>
+                        <div className="settings-card-title">{cat.title}</div>
+                        <div className="settings-card-desc">{cat.desc}</div>
                     </button>
                 ))}
             </div>
