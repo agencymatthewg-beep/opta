@@ -12,21 +12,14 @@ type ProductTarget = {
   platforms: Record<Platform, ReleaseTarget | null>;
 };
 
-// ── Release constants ────────────────────────────────────────────────────────
-const GITHUB_RELEASES = "https://github.com/agencymatthewg-beep/opta/releases/download";
-
 // Latest Opta Init Manager — stable v0.7.0 (2026-03-05)
-const INIT_TAG = "opta-init-manager-stable-v0.7.0";
 const INIT_VERSION = "0.7.0";
-const INIT_MACOS_DMG = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_aarch64.dmg`;
-// x64 DMG also available for Intel Macs
-const INIT_MACOS_DMG_X64 = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64.dmg`;
-const INIT_WINDOWS_NSIS = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64-setup.nsis.zip`;
+const INIT_MACOS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-mac.dmg";
+const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-windows-x64.exe";
 
 // Latest Opta CLI — v0.5.0-alpha.15 (2026-03-01)
-const CLI_TAG = "v0.5.0-alpha.15";
 const CLI_VERSION = "0.5.0-alpha.15";
-const CLI_NPM_TGZ = `${GITHUB_RELEASES}/${CLI_TAG}/opta-cli-npm.tgz`;
+const CLI_INSTALLER_ENDPOINT = "/downloads/opta-cli/latest";
 
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
   init: {
@@ -37,12 +30,12 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       macos: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: [],
-        fallbackUrl: INIT_MACOS_DMG,
+        fallbackUrl: INIT_MACOS_INSTALLER_ENDPOINT,
       },
       windows: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: [],
-        fallbackUrl: INIT_WINDOWS_NSIS,
+        fallbackUrl: INIT_WINDOWS_INSTALLER_ENDPOINT,
       },
     },
   },
@@ -55,12 +48,12 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
       macos: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: [],
-        fallbackUrl: CLI_NPM_TGZ,
+        fallbackUrl: CLI_INSTALLER_ENDPOINT,
       },
       windows: {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: [],
-        fallbackUrl: CLI_NPM_TGZ,
+        fallbackUrl: CLI_INSTALLER_ENDPOINT,
       },
     },
   },

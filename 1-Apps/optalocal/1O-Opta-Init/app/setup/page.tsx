@@ -74,7 +74,9 @@ export default function SetupWizardPage() {
               <code className="mt-2 block overflow-x-auto whitespace-nowrap text-text-primary">
                 {"curl -fsSL https://init.optalocal.com/init | bash  # macOS"}
                 <br />
-                {"powershell -NoProfile -ExecutionPolicy Bypass -Command \"iwr https://init.optalocal.com/desktop-updates/manager/beta/0.6.1/Opta-Init-Manager_x64-setup.nsis.zip -OutFile opta-init-installer.zip\""}
+                {"curl -L https://init.optalocal.com/downloads/opta-init/latest/opta-init-mac.dmg -o Opta-Init-Manager.dmg  # macOS manual installer"}
+                <br />
+                {"powershell -NoProfile -ExecutionPolicy Bypass -Command \"iwr https://init.optalocal.com/downloads/opta-init/latest/opta-init-windows-x64.exe -OutFile opta-init-installer.exe\""}
               </code>
             </div>
           )}

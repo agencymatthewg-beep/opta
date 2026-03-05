@@ -30,7 +30,12 @@
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-mac.dmg",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/Opta-Init-Manager_aarch64.app.tar.gz",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/Opta-Init-Manager_aarch64.dmg",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-init/latest/opta-init-windows-x64.exe",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/opta-init-windows-x64.exe",
       "permanent": false
     },
     {

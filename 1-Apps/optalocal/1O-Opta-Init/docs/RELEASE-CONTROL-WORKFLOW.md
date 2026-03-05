@@ -202,11 +202,16 @@ and runs contract validation gates.
      - `npm run validate:release-contract:strict`
 9. Commit + publish changes.
 
-Known live verification note (2026-03-03):
-- Manager metadata includes Windows updater URLs, but release tags
-  `opta-init-manager-stable-v0.6.1` and `opta-init-manager-beta-v0.6.1`
-  currently expose only `opta-init-mac.dmg` assets in GitHub Releases.
-- Missing `WINDOWS_CERTIFICATE` + `WINDOWS_CERTIFICATE_PASSWORD` currently blocks signed Windows installers, but unsigned Windows artifacts can ship with `enable_platform_signing=false`.
+Known live verification note (2026-03-05):
+- The release workflow now publishes both Windows artifacts:
+  - updater bundle: `Opta-Init-Manager_x64-setup.nsis.zip` (+ `.sig`)
+  - installer binary: `opta-init-windows-x64.exe`
+- Canonical public installer endpoint:
+  - `https://init.optalocal.com/downloads/opta-init/latest/opta-init-windows-x64.exe`
+  may return `404` until both are complete:
+  1. a release run uploads `opta-init-windows-x64.exe` to the manager release tag, and
+  2. init-site `vercel.json` redirects are deployed.
+- Missing `WINDOWS_CERTIFICATE` + `WINDOWS_CERTIFICATE_PASSWORD` only blocks Authenticode signing. Unsigned Windows artifacts can still ship when `enable_platform_signing=false`.
 
 ## Automated Release Workflow Inputs
 

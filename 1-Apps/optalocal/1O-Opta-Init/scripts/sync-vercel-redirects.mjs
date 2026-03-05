@@ -16,6 +16,9 @@ const stableManagerUpdatePath = path.join(repoRoot, 'channels', 'manager-updates
 
 const managedDownloadVersionPattern = /^\/downloads\/[^/]+\/v[^/]+\/[^/]+$/;
 const internalDownloadHost = 'init.optalocal.com';
+const DEFAULT_MAC_MANAGER_INSTALLER_ASSET = 'Opta-Init-Manager_aarch64.dmg';
+const DEFAULT_WINDOWS_MANAGER_UPDATER_ASSET = 'Opta-Init-Manager_x64-setup.nsis.zip';
+const CANONICAL_WINDOWS_MANAGER_INSTALLER_ASSET = 'opta-init-windows-x64.exe';
 
 function ensureHttpsUrl(value, label) {
   if (typeof value !== 'string' || !value.startsWith('https://')) {
@@ -34,28 +37,6 @@ function parseHttpsUrl(value, label) {
 
 function isObject(value) {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
-}
-
-function getNotesUrl(manifest, fallback) {
-  const notesUrl = manifest?.release?.notesUrl;
-  if (typeof notesUrl === 'string' && notesUrl.startsWith('https://')) return notesUrl;
-  if (typeof fallback === 'string') return `https://init.optalocal.com${fallback}`;
-  throw new Error('release notes url missing in manifest');
-}
-
-function toAssetTemplateUrl(value, label) {
-  const parsed = parseHttpsUrl(value, label);
-  const segments = parsed.pathname.split('/').filter(Boolean);
-  if (segments.length === 0) {
-    throw new Error(`${label} must include a pathname`);
-  }
-
-  segments[segments.length - 1] = ':asset';
-  parsed.pathname = `/${segments.join('/')}`;
-  parsed.search = '';
-  parsed.hash = '';
-
-  return parsed;
 }
 
 function findLatestCliArtifactUrl(stableManifest) {
@@ -125,6 +106,19 @@ function findLatestInitManagerAssetUrl(stableManagerUpdate, platformKey, fileHin
   };
 }
 
+function resolveStableManagerRelease(stableManagerUpdate) {
+  const channel = stableManagerUpdate?.channel;
+  const version = stableManagerUpdate?.version;
+  if (channel !== 'stable') {
+    throw new Error('stable manager update feed must declare channel "stable"');
+  }
+  if (typeof version !== 'string' || version.trim().length === 0) {
+    throw new Error('stable manager update feed must include a non-empty version');
+  }
+
+  return { channel, version };
+}
+
 function isSelfRedirect(source, destination) {
   let parsed;
   try {
@@ -141,12 +135,19 @@ function isSelfRedirect(source, destination) {
   );
 }
 
-function buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, latestInitManagerMacAsset, latestInitManagerWindowsAsset) {
+function buildStaticRedirects(latestCliArtifactUrl, latestInitManagerMacAsset, latestInitManagerWindowsAsset) {
   ensureHttpsUrl(latestCliArtifactUrl, 'stable opta-cli artifact url');
-  ensureHttpsUrl(latestInitManagerMacAsset.url, 'stable init manager mac artifact url');
-  if (latestInitManagerWindowsAsset.found && latestInitManagerWindowsAsset.url) {
-    ensureHttpsUrl(latestInitManagerWindowsAsset.url, 'stable init manager windows artifact url');
-  }
+  const managerCanonicalPrefix =
+    `https://${internalDownloadHost}/desktop-updates/manager/${latestInitManagerMacAsset.channel}/${latestInitManagerMacAsset.version}`;
+  const managerMacInstallerUrl = `${managerCanonicalPrefix}/${DEFAULT_MAC_MANAGER_INSTALLER_ASSET}`;
+  const managerWindowsUpdaterAsset =
+    latestInitManagerWindowsAsset.assetName || DEFAULT_WINDOWS_MANAGER_UPDATER_ASSET;
+  const managerWindowsInstallerUrl =
+    `${managerCanonicalPrefix}/${CANONICAL_WINDOWS_MANAGER_INSTALLER_ASSET}`;
+  const managerWindowsUpdaterUrl = `${managerCanonicalPrefix}/${managerWindowsUpdaterAsset}`;
+  ensureHttpsUrl(managerMacInstallerUrl, 'stable init manager mac installer url');
+  ensureHttpsUrl(managerWindowsInstallerUrl, 'stable init manager windows installer url');
+  ensureHttpsUrl(managerWindowsUpdaterUrl, 'stable init manager windows updater url');
   return [
     {
       source: '/desktop-updates/manager/stable/:version/:asset',
@@ -172,18 +173,19 @@ function buildStaticRedirects(stableReleaseNotesUrl, latestCliArtifactUrl, lates
     },
     {
       source: '/downloads/opta-init/latest/opta-init-mac.dmg',
-      destination: latestInitManagerMacAsset.url,
+      destination: managerMacInstallerUrl,
       permanent: false,
     },
-    ...(latestInitManagerWindowsAsset.found && latestInitManagerWindowsAsset.url
-      ? [
-          {
-            source: `/downloads/opta-init/latest/${latestInitManagerWindowsAsset.assetName}`,
-            destination: latestInitManagerWindowsAsset.url,
-            permanent: false,
-          },
-        ]
-      : []),
+    {
+      source: '/downloads/opta-init/latest/opta-init-windows-x64.exe',
+      destination: managerWindowsInstallerUrl,
+      permanent: false,
+    },
+    {
+      source: `/downloads/opta-init/latest/${managerWindowsUpdaterAsset}`,
+      destination: managerWindowsUpdaterUrl,
+      permanent: false,
+    },
     {
       source: '/downloads/opta-init/latest',
       destination: '/downloads/opta-init/latest/opta-init-mac.dmg',
@@ -281,6 +283,7 @@ function isManagedRedirectSource(source) {
     source === '/downloads/cli' ||
     source === '/downloads/opta-init/latest' ||
     source === '/downloads/opta-init/latest/opta-init-mac.dmg' ||
+    source === '/downloads/opta-init/latest/opta-init-windows-x64.exe' ||
     source.startsWith('/downloads/opta-init/latest/') ||
     managedDownloadVersionPattern.test(source)
   );
@@ -305,14 +308,12 @@ async function main() {
 
   const latestCliArtifactUrl = findLatestCliArtifactUrl(stableManifest);
 
-  const stableReleaseNotesUrl = getNotesUrl(stableManifest, '/releases/stable');
-  const latestInitManagerMacAsset = findLatestInitManagerAssetUrl(stableManagerUpdate, "darwin-aarch64");
+  const latestInitManagerMacAsset = resolveStableManagerRelease(stableManagerUpdate);
   const latestInitManagerWindowsAsset = findLatestInitManagerAssetUrl(stableManagerUpdate, "windows-x86_64");
   const generatedRedirects = dedupeRedirects([
     ...buildComponentRedirects(stableManifest),
     ...buildComponentRedirects(betaManifest),
     ...buildStaticRedirects(
-      stableReleaseNotesUrl,
       latestCliArtifactUrl,
       latestInitManagerMacAsset,
       latestInitManagerWindowsAsset

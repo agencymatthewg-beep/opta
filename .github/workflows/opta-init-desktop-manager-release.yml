@@ -733,6 +733,16 @@ jobs:
           Copy-Item $updaterFile.FullName $targetArtifact -Force
           Copy-Item $sigPath $targetSignature -Force
 
+          $installerFile = Get-ChildItem -Path $bundleDir -File -Filter *-setup.exe | Select-Object -First 1
+          if (-not $installerFile) {
+            Write-Error "No Windows installer artifact (*-setup.exe) found in $bundleDir"
+            Get-ChildItem -Path $bundleDir -File | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+
+          $canonicalInstaller = Join-Path $distDir "opta-init-windows-x64.exe"
+          Copy-Item $installerFile.FullName $canonicalInstaller -Force
+
       - name: Upload updater artifact (windows-x86_64)
         uses: actions/upload-artifact@v4
         with:
@@ -743,10 +753,20 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
+      - name: Upload installer artifact (windows-x86_64)
+        uses: actions/upload-artifact@v4
+        with:
+          name: manager-installer-windows-x86_64
+          path: |
+            ${{ runner.temp }}/dist/opta-init-windows-x64.exe
+          if-no-files-found: error
+          retention-days: 30
+
   publish-assets:
     name: Publish manager updater assets
     runs-on: ubuntu-latest
     needs: [prepare-release, build-macos, build-windows]
+    if: needs.prepare-release.outputs.dry_run != 'true'
     outputs:
       asset_base_url: ${{ steps.asset-base.outputs.url }}
     steps:
@@ -798,6 +818,12 @@ jobs:
           name: manager-updater-windows-x86_64
           path: dist
 
+      - name: Download Windows x64 installer artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: manager-installer-windows-x86_64
+          path: dist
+
       - name: Create canonical DMG alias for public download
         shell: bash
         run: |
@@ -826,6 +852,7 @@ jobs:
             dist/Opta-Init-Manager_x64.dmg
             dist/Opta-Init-Manager_x64-setup.nsis.zip
             dist/Opta-Init-Manager_x64-setup.nsis.zip.sig
+            dist/opta-init-windows-x64.exe
           fail_on_unmatched_files: true
 
       - name: Compute asset base URL
@@ -837,6 +864,7 @@ jobs:
     name: Generate and publish updater metadata
     runs-on: ubuntu-latest
     needs: [prepare-release, publish-assets]
+    if: needs.prepare-release.outputs.dry_run != 'true'
     defaults:
       run:
         working-directory: ${{ env.APP_DIR }}
@@ -951,7 +979,9 @@ jobs:
           RELEASE_TAG: ${{ needs.prepare-release.outputs.release_tag }}
           NOTES_URL: ${{ needs.prepare-release.outputs.notes_url }}
           PUBLISHED_AT: ${{ needs.prepare-release.outputs.published_at }}
+          DRY_RUN: ${{ needs.prepare-release.outputs.dry_run }}
           ASSET_BASE_URL: ${{ needs.publish-assets.outputs.asset_base_url }}
+          PUBLISH_ASSETS_RESULT: ${{ needs.publish-assets.result }}
           PUBLISH_METADATA_RESULT: ${{ needs.publish-metadata.result }}
         run: |
           {
@@ -963,11 +993,17 @@ jobs:
             echo "| Version | ${VERSION} |"
             echo "| Tag | ${RELEASE_TAG} |"
             echo "| Published at (UTC) | ${PUBLISHED_AT} |"
+            echo "| Dry run | ${DRY_RUN} |"
             echo "| Notes URL | ${NOTES_URL} |"
             echo "| Asset base URL | ${ASSET_BASE_URL} |"
+            echo "| Assets job | ${PUBLISH_ASSETS_RESULT} |"
             echo "| Metadata job | ${PUBLISH_METADATA_RESULT} |"
             echo ""
             echo "Updater feed endpoints:"
             echo "- https://init.optalocal.com/desktop-updates/stable.json"
             echo "- https://init.optalocal.com/desktop-updates/beta.json"
+            echo ""
+            echo "Installer endpoints:"
+            echo "- https://init.optalocal.com/downloads/opta-init/latest/opta-init-mac.dmg"
+            echo "- https://init.optalocal.com/downloads/opta-init/latest/opta-init-windows-x64.exe"
           } >> "$GITHUB_STEP_SUMMARY"

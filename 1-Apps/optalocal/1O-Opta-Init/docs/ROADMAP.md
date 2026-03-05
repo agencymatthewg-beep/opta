@@ -93,7 +93,7 @@ _Partially delivered: release-asset detection + state-aware CTA shipped. Remaini
 - [x] Added promotion visibility/reporting script (`scripts/promotion-status-report.mjs`) and CI artifact export (`opta-init-promotion-status`)
 - [x] Added conditional stable hard-gate in release-manifest checks (`npm run validate:stable-promotion` when stable feeds change)
 - [ ] Publish stable real installers for `opta-lmx`, `opta-code-universal`, and `opta-daemon` artifacts
-- [ ] Publish Windows manager updater bundle for stable+beta (`Opta-Init-Manager_x64-setup.nsis.zip`) to GitHub release tags
+- [ ] Publish Windows manager updater + installer for stable+beta (`Opta-Init-Manager_x64-setup.nsis.zip` and `opta-init-windows-x64.exe`) to GitHub release tags
 
 ## v2.0 — optalocal.com Platform Root
 
