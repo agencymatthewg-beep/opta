@@ -4,8 +4,43 @@
   "framework": null,
   "redirects": [
     {
-      "source": "/downloads/opta-cli/v0.5.0-alpha.15/opta-cli-npm.tgz",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
+      "source": "/downloads/opta-cli/v0.6.2/2026-03-02-stable-1",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-lmx/v0.6.2/2026-03-02-stable-1",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-code-universal/v0.5.4/2026-03-02-stable-1",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-daemon/v0.4.1/2026-03-02-stable-1",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-cli/v0.7.0-beta.2/2026-03-02-beta-2",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-lmx/v0.7.0-beta.2/2026-03-02-beta-2",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-code-universal/v0.6.0-beta.1/2026-03-02-beta-2",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-daemon/v0.5.0-beta.1/2026-03-02-beta-2",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
       "permanent": false
     },
     {
@@ -20,7 +55,7 @@
     },
     {
       "source": "/downloads/opta-cli/latest",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
+      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
       "permanent": false
     },
     {
@@ -30,17 +65,17 @@
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-mac.dmg",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/Opta-Init-Manager_aarch64.dmg",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_aarch64.dmg",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-windows-x64.exe",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/opta-init-windows-x64.exe",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/opta-init-windows-x64.exe",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.6.1/Opta-Init-Manager_x64-setup.nsis.zip",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_x64-setup.nsis.zip",
       "permanent": false
     },
     {
