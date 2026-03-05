@@ -70,7 +70,7 @@ const BASE_SERVICES: ServiceDef[] = [
   },
   {
     id: 'daemon',
-    name: 'Opta Daemon',
+    name: 'Opta CLI',
     subtitle: 'CLI orchestrator (Reference Instance)',
     icon: Terminal,
     metricFn: (d) => {
@@ -271,8 +271,8 @@ export default function StatusPage() {
   const overallColor = anyOffline
     ? 'var(--opta-neon-red)'
     : allOnline
-    ? 'var(--opta-neon-green)'
-    : 'var(--opta-neon-amber)'
+      ? 'var(--opta-neon-green)'
+      : 'var(--opta-neon-amber)'
 
   return (
     <div className="min-h-screen bg-void text-text-primary">
@@ -357,10 +357,10 @@ export default function StatusPage() {
             {anyChecking
               ? 'Checking service status…'
               : anyOffline
-              ? 'One or more services are offline'
-              : allOnline
-              ? 'All systems operational'
-              : 'Some services are degraded'}
+                ? 'One or more services are offline'
+                : allOnline
+                  ? 'All systems operational'
+                  : 'Some services are degraded'}
           </span>
           <div className="ml-auto flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-1.5 px-2 py-1 rounded bg-elevated/50 text-xs text-text-muted font-mono" title="30-day historical uptime (simulated)">
@@ -486,11 +486,10 @@ export default function StatusPage() {
                       {note.date}
                     </div>
                     <span
-                      className={`text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ${
-                        isRolling
+                      className={`text-[10px] font-mono uppercase tracking-wide px-2 py-0.5 rounded-full ${isRolling
                           ? 'bg-amber-500/10 text-neon-amber'
                           : 'bg-green-500/10 text-neon-green'
-                      }`}
+                        }`}
                     >
                       {isRolling ? 'Rolling Out' : 'Released'}
                     </span>

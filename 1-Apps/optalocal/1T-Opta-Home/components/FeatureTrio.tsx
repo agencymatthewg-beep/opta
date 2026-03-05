@@ -2,7 +2,7 @@
 
 import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
-import { Shield, Infinity, Plug } from "lucide-react";
+import { Shield, Infinity, Plug, Mic } from "lucide-react";
 
 const features = [
   {
@@ -22,6 +22,12 @@ const features = [
     title: "Frictionless Integration",
     description:
       "Drop-in OpenAI-compatible REST API. Point your existing LangChain, LlamaIndex, or custom scripts to localhost and they just work.",
+  },
+  {
+    icon: Mic,
+    title: "Voice-Native AI",
+    description:
+      "Built-in TTS and speech transcription via mlx-whisper — speak to your AI and hear responses, all processed locally on your hardware.",
   },
 ];
 
@@ -46,7 +52,7 @@ export function FeatureTrio() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, i) => (
             <motion.div
               key={feature.title}

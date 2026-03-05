@@ -81,6 +81,18 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
 
           {/* Password Form */}
           <PasswordForm mode={mode} redirectAfter={effectiveRedirect} />
+
+          {/* Forgot password */}
+          {mode === "sign-in" && (
+            <div className="mt-3 text-center">
+              <Link
+                href="/forgot-password"
+                className="text-xs text-opta-text-muted hover:text-opta-primary transition-colors"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Toggle link */}
@@ -106,6 +118,28 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
               </Link>
             </>
           )}
+        </p>
+
+        {/* Legal footer */}
+        <p className="text-center text-xs text-opta-text-muted mt-4">
+          By continuing, you agree to our{" "}
+          <Link
+            href="https://optalocal.com/terms"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-opta-text-secondary transition-colors"
+          >
+            Terms
+          </Link>
+          {" "}&amp;{" "}
+          <Link
+            href="https://optalocal.com/privacy"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-2 hover:text-opta-text-secondary transition-colors"
+          >
+            Privacy Policy
+          </Link>
         </p>
       </motion.div>
     </div>
