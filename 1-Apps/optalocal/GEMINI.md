@@ -1,37 +1,47 @@
-# CLAUDE.md
+# GEMINI.md — optalocal Workspace
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file is the workspace-level context router for Antigravity. Front-loaded critical rules. Read per-app GEMINI.md before touching any app's code.
 
-## What Is This
+## Top 5 Critical Rules
 
-The `optalocal/` directory is the Opta Local product family — a local-first AI coding assistant ecosystem. It contains 4 core apps and 7 management websites, all under the `optalocal.com` domain.
+1. **Long-term only** — no fragile fixes, no shortcuts with negative downstream implications
+2. **Read the app's GEMINI.md first** — 6 of 11 apps have their own; always read before working in one
+3. **Session start** → check `todo-optalocal/` for pending tasks, check `optalocal-updates/` for latest log number
+4. **Design changes** → always activate `frontend-design` skill + provide 3 prototypes for review
+5. **Proactive commit** → commit autonomously with a conventional commit after every verified task
+
+> See full session cheat sheet: `docs/ANTIGRAVITY-CONTEXT.md`
+
+---
 
 ## Product Taxonomy (Non-Negotiable)
 
-**4 Core Local Apps** (the product users install and run):
+**4 Core Apps:**
 
-| App | Dir | Stack | Purpose |
-|-----|-----|-------|---------|
-| Opta CLI | `1D-Opta-CLI-TS/` | TypeScript, Commander, Ink, Vitest | Terminal-first control surface + daemon |
-| Opta LMX | `1M-Opta-LMX/` | Python 3.12, FastAPI, MLX | Local inference engine (Apple Silicon) |
-| Opta Code Desktop | `1P-Opta-Code-Universal/` | Tauri v2, React 18, Vite 7 | Native desktop client (macOS + Windows) |
-| Opta Local | (web dashboard for LMX — separate repo location) | — | LMX management dashboard |
+| App | Dir | Stack |
+|-----|-----|-------|
+| Opta CLI | `1D-Opta-CLI-TS/` | TypeScript, Commander, Ink, Vitest |
+| Opta LMX | `1M-Opta-LMX/` | Python 3.12, FastAPI, MLX |
+| Opta Code Desktop | `1P-Opta-Code-Universal/` | Tauri v2, React 18, Vite 7 |
+| LMX Dashboard | `1L-Opta-LMX-Dashboard/` | Next.js 16, SWR |
 
-**7 Management Websites** (support infrastructure, NOT core apps):
+**7 Management Websites:**
 
-| App | Dir | Domain | Stack |
-|-----|-----|--------|-------|
-| Opta Home | `1T-Opta-Home/` | optalocal.com | Next.js 16 |
-| Opta Init | `1O-Opta-Init/` | init.optalocal.com | Next.js 16, SSR |
-| Opta Help | `1U-Opta-Help/` | help.optalocal.com | Next.js 16, static export |
-| Opta Learn | `1V-Opta-Learn/` | learn.optalocal.com | Next.js 16 |
-| Opta Accounts | `1R-Opta-Accounts/` | accounts.optalocal.com | Next.js 16 + Supabase |
-| Opta Status | `1S-Opta-Status/` | status.optalocal.com | Next.js 16, SWR polling |
-| Opta Admin | `1X-Opta-Admin/` | admin.optalocal.com | Next.js 16 |
+| App | Dir | Domain |
+|-----|-----|--------|
+| Opta Home | `1T-Opta-Home/` | optalocal.com |
+| Opta Init | `1O-Opta-Init/` | init.optalocal.com |
+| Opta Help | `1U-Opta-Help/` | help.optalocal.com |
+| Opta Learn | `1V-Opta-Learn/` | learn.optalocal.com |
+| Opta Accounts | `1R-Opta-Accounts/` | accounts.optalocal.com |
+| Opta Status | `1S-Opta-Status/` | status.optalocal.com |
+| Opta Admin | `1X-Opta-Admin/` | admin.optalocal.com |
 
-Do not label management websites as core apps. "Your Opta Apps" sections list only the 4 core apps.
+Do NOT label management websites as core apps.
 
-## Architecture: The Local Stack
+---
+
+## Architecture
 
 ```
 opta chat / opta tui / opta do         (1D — CLI commands)
@@ -43,159 +53,85 @@ Opta LMX  192.168.188.11:1234          (1M — OpenAI-compatible API)
 Opta Code Desktop                      (1P — connects to daemon over HTTP/WS)
 ```
 
-- **CLI Daemon** owns session orchestration, permission gating, tool dispatch, and event persistence. Proxies inference to LMX.
-- **LMX** is the OpenAI-compatible inference server. Apple Silicon only (MLX). Must never crash on OOM — unload and degrade instead.
-- **Opta Code Desktop** connects to the daemon for all AI operations. Runs as web (localhost:5173) or native (Tauri shell).
+**Host policy:** MacBook (Opta48) is client-only. Never run `opta-lmx` locally. Inference host = Mono512 (192.168.188.11).
 
-**Host policy:** MacBook (Opta48) is client-only. Never run `opta-lmx` locally. Inference host = Mono512 Mac Studio (192.168.188.11).
+---
 
-## Per-App Development
+## Dev Commands Quick Reference
 
-Each app manages its own dependencies independently. **6 of the 9 apps have their own CLAUDE.md — always read it before working in that app.**
+| App | Dev command | Port | Static export? |
+|-----|------------|------|----------------|
+| 1D-Opta-CLI-TS | `npm run dev` | — | No |
+| 1M-Opta-LMX | `uvicorn ... --port 1234` | 1234 | No |
+| 1P-Opta-Code-Universal | `npm run dev` | 5173 | No |
+| 1L-Opta-LMX-Dashboard | `npm run dev` | 3003 | No |
+| 1O-Opta-Init | `npm run dev` | 3001 | Yes |
+| 1R-Opta-Accounts | `npm run dev` | 3002 | No |
+| 1S-Opta-Status | `npm run dev` | 3005 | No |
+| 1T-Opta-Home | `npm run dev` | 3000 | No |
+| 1U-Opta-Help | `npm run dev` | 3006 | Yes |
+| 1V-Opta-Learn | `npm run dev` | 3007 | No |
+| 1X-Opta-Admin | `npm run dev` | 3008 | No |
 
-### Opta CLI (1D-Opta-CLI-TS)
+Package managers: `npm` for all JS apps, `pip/uv` for 1M (Python venv at `.venv/`).
 
-```bash
-cd 1D-Opta-CLI-TS
-npm install
-npm run dev              # Watch mode (tsx)
-npm run build            # ESM build → dist/
-npm run test             # Vitest (~2,300+ tests)
-npm run test:core        # Core + utils + UI only (fast)
-npm run typecheck
-```
+---
 
-ESM-only (`"type": "module"`). Imports use `.js` extension in `.ts` source. Permission gates on `edit_file`, `write_file`, `run_command`. Context compaction at 70% limit. Has comprehensive CLAUDE.md.
-
-### Opta LMX (1M-Opta-LMX)
-
-```bash
-cd 1M-Opta-LMX
-pip install -e ".[dev]"    # or: uv pip install -e ".[dev]"
-opta-lmx                  # Starts on localhost:1234
-pytest tests/ -v
-pytest tests/ --cov=src -v
-```
-
-Python 3.12 venv. Pydantic v2 + async/await everywhere. API: `/v1/chat/completions` (OpenAI-compatible), `/v1/audio/transcriptions` (STT via `mlx-whisper`), `/v1/audio/speech` (TTS via `mlx-audio`), `/admin/models/load`, `/admin/models/unload`, `/healthz`. Has comprehensive CLAUDE.md.
-
-### Opta Code Desktop (1P-Opta-Code-Universal)
-
-```bash
-cd 1P-Opta-Code-Universal
-npm install
-npm run dev              # Vite dev at localhost:5173
-npm run dev:native       # Tauri desktop app
-npm run build            # Vite production build
-npm run tauri build      # Full native bundle (.app/.dmg/.msi)
-npm run test
-npm run typecheck
-```
-
-Uses `@opta/daemon-client` and `@opta/protocol-shared` via tsconfig path aliases (not npm deps). Token auth: bearer header for HTTP, `?token=T` query param for WebSocket. Event routing by `envelope.event`.
-
-### Next.js Management Sites (1O, 1R, 1S, 1T, 1U, 1V, 1X)
-
-All share the same pattern:
-
-```bash
-cd 1X-<app>
-npm install
-npm run dev       # Next.js dev server
-npm run build     # Production build
-npm run lint
-```
-
-| App | Port | Static Export | Special Commands |
-|-----|------|--------------|------------------|
-| 1O-Opta-Init | 3001 | Yes (`output: 'export'`) | `npm run sync:desktop-manifests`, `npm run validate:release-contract` |
-| 1R-Opta-Accounts | 3002 | No (SSR) | `npm run test` (Node test runner) |
-| 1S-Opta-Status | 3005 | No (needs API routes) | `npm run release-notes:generate` |
-| 1T-Opta-Home | 3000 | No (native Vercel) | — |
-| 1U-Opta-Help | 3006 | Yes (`output: 'export'`) | — |
-| 1V-Opta-Learn | 3007 | No (SSR/native) | `npm run guides:validate`, `npm run guide:new` |
-| 1X-Opta-Admin | 3008 | No (SSR/native) | Website fleet operations + guide promotion |
-
-## Shared Design System (All Apps)
+## Shared Design System (Non-Negotiable)
 
 | Concern | Rule |
 |---------|------|
-| Background | `#09090b` (OLED void black, never `#000`) |
+| Background | `#09090b` (OLED void black — never `#000`) |
 | Primary | `#8b5cf6` (Electric Violet) |
 | Fonts | Sora (UI) + JetBrains Mono (code/stats) |
 | Icons | Lucide React only — no inline SVGs |
 | Glass panels | `.glass` / `.glass-subtle` / `.glass-strong` |
 | Animations | Framer Motion spring physics only (never CSS ease/linear) |
 | Colors | CSS variables only — never hex/rgb literals in components |
-| Conditional classes | `cn()` (clsx + tailwind-merge) |
 | Mode | Dark only |
 
-## Package Managers
-
-| App | Manager |
-|-----|---------|
-| 1D, 1O, 1P, 1R, 1S, 1T, 1U, 1V | npm |
-| 1M | pip / uv (Python venv at `.venv/`) |
-
-The root `optalocal/` now includes a lightweight command hub (`apps.registry.json`, `scripts/opta-local-workspace.mjs`) for cross-app orchestration. App dependency graphs remain independent.
-
-## Support Directories
-
-| Dir | Purpose |
-|-----|---------|
-| `design/` | Logos (SVG/PNG), aesthetic specs per app category, architecture diagrams |
-| `docs/` | Cross-app standards, audit reports, Gemini workflow docs |
-| `scripts/` | Python utilities for logo generation via Gemini |
-| `todo-optalocal/` | Cross-agent coordination hub — pending cross-app update tasks |
-| `optalocal-updates/` | Immutable log of all live production updates |
-
-## Opta Learn Guide Generation (1V)
-
-Guides are TypeScript objects implementing the `Guide` interface (not markdown files). Four template levels: `holistic-whole-app` (L4), `feature-deep-dive` (L3), `process-workflow` (L2), `setting-configuration` (L1). Use Gemini 3.1 with frontend design skill to generate. Always validate with `npm run guides:validate` before merge. App-link cross-references use `<a class="app-link link-cli">` pattern.
+---
 
 ## Deployment
 
-All Next.js sites deploy to Vercel at `*.optalocal.com`. CLI publishes to npm. Desktop publishes to GitHub Releases. LMX publishes to PyPI (future).
+All Next.js sites → Vercel at `*.optalocal.com`. CLI → npm. Desktop → GitHub Releases.
 
-## Accounts & Auth
+After any live deployment, log to `optalocal-updates/NNNN-slug.md` (see README in that dir for template).
 
-All apps share one Supabase project. Cookie domain `.optalocal.com` enables cross-subdomain SSO. Auth spec lives at `../shared/1N-Opta-Cloud-Accounts/`. Supported methods: Google OAuth, Apple OAuth, email/password, CLI browser auth flow. All `redirect_to` params validated against a whitelist.
+---
 
-## Design Preservation Rule
+## Design Preservation Rules
 
-**Opta Init (1O):** Matthew explicitly wants the current design preserved. Do NOT redesign or alter the aesthetic. Only targeted feature additions.
+- **Opta Init (1O):** Design preserved. NO redesigns — only targeted feature additions.
+- **Opta Home (1T):** Precision over decoration. No `output: 'export'`. No generic AI aesthetics.
 
-**Opta Home (1T):** Non-negotiable design philosophy — precision over decoration, real data as texture, terminal DNA (JetBrains Mono for stats), no generic AI aesthetics. Never add `output: 'export'` to next.config.
+---
 
-### Live Production Update Logging
+## Live Production Update Logging
 
-**CRITICAL RULE:** Any time you complete a task that involves a **live production release** or an update to a **live-facing website** (e.g. shipping a feature to `optalocal.com`, `accounts.optalocal.com`, or standard core apps), you **MUST** document it in the `/optalocal-updates/` directory.
+Any live release MUST be documented:
 
-1. Check `/optalocal-updates/` for the latest `NNNN-slug.md` file.
-2. Create the next sequential file (e.g. `0042-feature-name.md`).
-3. Follow the exact Markdown template defined in `/optalocal-updates/README.md`.
-4. Commit it alongside your changes.
+1. Check `optalocal-updates/` for latest `NNNN-slug.md`
+2. Create next sequential file
+3. Follow template in `optalocal-updates/README.md`
+4. Commit alongside your changes
 
-### Autonomous Source Control
+---
 
-- **Proactive Commits:** Always attempt to commit changes autonomously and proactively at the end of a successful task if the changes are verified, safe, and appropriate, without asking for explicit permission.
+## Cross-App Coordination (`todo-optalocal/`)
 
-## Cross-App Coordination (todo-optalocal)
-
-When you are in one app and identify changes needed in another, **do NOT switch contexts blindly**. Instead, drop a markdown document in `todo-optalocal/` using the filename format:
+When identifying changes needed in another app, drop a handoff doc:
 
 ```
 {TargetApp}-{brief-reason}-{YYYYMMDD-HHmm}.md
 ```
 
-Example: `1P-Opta-Code-Universal-add-audio-protocol-events-20260304-1814.md`
+See `todo-optalocal/README.md` for the full template.
 
-At the start of any session, check `todo-optalocal/` for documents targeting your current app and implement them. See `todo-optalocal/README.md` for the full template and agent directives.
+---
 
-## Voice & Audio Capabilities (2026-03-04)
+## Key Capabilities (as of 2026-03-05)
 
-Full voice dictation and TTS pipeline is now live across the stack:
-
-- **LMX** (`1M`): `POST /v1/audio/transcriptions` (STT, `mlx-whisper`) and `POST /v1/audio/speech` (TTS, `mlx-audio`)
-- **Daemon** (`1D`): `audio.transcribe` and `audio.tts` operations in `src/daemon/operations/audio.ts`. Provider: LMX local (default) or OpenAI cloud (keychain fallback)
-- **Desktop** (`1P`): `useAudioRecorder` hook + pulsating mic button in `Composer.tsx`. Transcription auto-appended to composer draft.
+- **Voice/Audio pipeline:** LMX `/v1/audio/transcriptions` (STT) + `/v1/audio/speech` (TTS). Daemon `audio.transcribe` + `audio.tts`. Desktop mic button in `Composer.tsx`.
+- **Auth:** Supabase SSO, cookie domain `.optalocal.com`. Google/Apple OAuth + email. Redirect whitelist enforced.
+- **Workspace orchestration:** `apps.registry.json` + `scripts/opta-local-workspace.mjs`. Run `npm run apps:list` to verify.
