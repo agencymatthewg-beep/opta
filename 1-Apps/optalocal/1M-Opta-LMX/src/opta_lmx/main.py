@@ -8,6 +8,7 @@ import contextlib
 import ipaddress
 import logging
 import os
+import signal
 import socket
 import time
 from collections.abc import AsyncIterator, Mapping
@@ -1023,21 +1024,91 @@ def cli() -> None:
             stderr=subprocess.DEVNULL,
         )
 
-    # Prevent duplicate processes on rapid launchd restarts via exclusive file lock
-    try:
-        import fcntl
+    # Prevent duplicate processes on rapid launchd restarts via exclusive file lock.
+    # If the lock is held by an orphan (not launchd-managed), SIGTERM it and retry.
+    import fcntl
 
-        # Keep a reference to the file descriptor so it isn't garbage collected.
-        # The OS releases the lock/FD automatically when the process exits.
+    _LOCK_PATH = "/tmp/opta-lmx.lock"
+
+    def _acquire_lock() -> bool:
+        """Try to acquire exclusive flock. Returns True on success."""
         global _lock_fd
-        _lock_fd = open("/tmp/opta-lmx.lock", "w")  # noqa: SIM115
-        fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
-    except OSError:
-        _stderr(
-            "Opta-LMX is already running (lock file active). "
-            "Exiting to allow graceful shutdown of previous instance."
+        _lock_fd = open(_LOCK_PATH, "w")
+        try:
+            fcntl.flock(_lock_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            # Write our PID so future processes can identify the holder.
+            _lock_fd.truncate(0)
+            _lock_fd.seek(0)
+            _lock_fd.write(str(os.getpid()))
+            _lock_fd.flush()
+            return True
+        except (IOError, BlockingIOError):
+            return False
+
+    def _kill_orphan_holder() -> bool:
+        """Read PID from lock file, SIGTERM it if orphaned (PPID==1), wait up to 15s."""
+        try:
+            with open(_LOCK_PATH) as f:
+                holder_pid = int(f.read().strip())
+        except (FileNotFoundError, ValueError):
+            return False
+        # Only kill if it is an orphan (reparented to init/launchd PID 1)
+        try:
+            import subprocess as _sp
+            result = _sp.run(
+                ["ps", "-p", str(holder_pid), "-o", "ppid="],
+                capture_output=True, text=True, timeout=5,
+            )
+            ppid = int(result.stdout.strip())
+        except Exception:
+            return False
+        if ppid != 1:
+            # Not orphaned — launchd or another supervisor owns it; do not interfere
+            return False
+        print(
+            f"Lock held by orphan PID {holder_pid} (ppid=1). Sending SIGTERM...",
+            file=sys.stderr,
         )
-        sys.exit(1)
+        try:
+            os.kill(holder_pid, signal.SIGTERM)
+        except ProcessLookupError:
+            return True  # Already gone
+        except PermissionError:
+            print(f"Cannot signal PID {holder_pid} — permission denied.", file=sys.stderr)
+            return False
+        # Wait up to 15s for the orphan to exit
+        import time as _time
+        for _ in range(30):
+            try:
+                os.kill(holder_pid, 0)  # probe
+            except ProcessLookupError:
+                return True
+            _time.sleep(0.5)
+        # Still alive — force kill
+        print(f"Orphan PID {holder_pid} did not exit; sending SIGKILL.", file=sys.stderr)
+        try:
+            os.kill(holder_pid, signal.SIGKILL)
+            _time.sleep(1)
+        except ProcessLookupError:
+            pass
+        return True
+
+    if not _acquire_lock():
+        # Lock held — try to reclaim from orphan
+        if _kill_orphan_holder():
+            # Retry acquisition
+            if not _acquire_lock():
+                print(
+                    "Opta-LMX lock still held after orphan cleanup. Exiting.",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+        else:
+            print(
+                "Opta-LMX is already running (lock file active). Exiting to allow graceful shutdown of previous instance.",
+                file=sys.stderr,
+            )
+            sys.exit(1)
 
     # Load config
     config = load_config(args.config)

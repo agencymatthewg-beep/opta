@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime
 from typing import Any
 
 from fastapi import APIRouter, Request
@@ -114,6 +115,47 @@ async def health_check(
         "helpers": helpers,
         "models_loaded": len(loaded_models),
         "in_flight_requests": engine.in_flight_count,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Backward-compatible /v3 stubs
+# ---------------------------------------------------------------------------
+# Opta CLI daemon clients (daemon-client/http-client.ts, connectionProbe.ts)
+# probe /v3/health and /v3/metrics.  When a consumer accidentally targets
+# the LMX port (1234) instead of the daemon port (9999) these 404 and spam
+# the access logs.  The thin stubs below return a minimal healthy response
+# so misconfigured probes succeed gracefully rather than generating noise.
+#
+# Added 2026-03-05 — safe to remove once all daemon clients are confirmed
+# to target the correct port, or migrated to /healthz + /readyz for LMX.
+
+
+@router.get("/v3/health")
+async def v3_health_compat(request: Request) -> dict[str, Any]:
+    """Legacy /v3/health compatibility stub for daemon clients hitting LMX."""
+    engine = request.app.state.engine
+    loaded = engine.get_loaded_models()
+    return {
+        "status": "ok" if loaded else "degraded",
+        "version": __version__,
+        "service": "opta-lmx",
+        "compat": "v3-stub",
+        "models_loaded": len(loaded),
+    }
+
+
+@router.get("/v3/metrics")
+async def v3_metrics_compat(request: Request) -> dict[str, Any]:
+    """Legacy /v3/metrics compatibility stub for daemon clients hitting LMX."""
+    engine = request.app.state.engine
+    return {
+        "service": "opta-lmx",
+        "version": __version__,
+        "compat": "v3-stub",
+        "in_flight_requests": engine.in_flight_count,
+        "models_loaded": len(engine.get_loaded_models()),
+        "ts": datetime.datetime.now(datetime.timezone.utc).isoformat(),
     }
 
 

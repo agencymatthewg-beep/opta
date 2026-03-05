@@ -74,6 +74,7 @@ filterwarnings = [
     "ignore:builtin type swigvarlink has no __module__ attribute:DeprecationWarning",
     "ignore:Support for class-based `config` is deprecated, use ConfigDict instead:DeprecationWarning:vllm_mlx\\.api\\.models",
 ]
+pythonpath = ["src"]
 
 [tool.ruff]
 line-length = 100
