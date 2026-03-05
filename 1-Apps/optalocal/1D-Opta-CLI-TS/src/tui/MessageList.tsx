@@ -243,6 +243,94 @@ function hasMarkdownSyntax(text: string): boolean {
   return /[`*_]{2}|```|^#{1,6}\s+|^\s*([-*+]\s+|\d+\.\s+)|^\|.+\||^>\s+/m.test(text);
 }
 
+const MESSAGE_LIST_ROWS_CACHE = new WeakMap<TuiMessage[], Map<string, ReactNode[]>>();
+const MESSAGE_LIST_ROWS_CACHE_VERSION = 12;
+
+function getMessageRowsCacheKey(layoutWidths: MessageLayoutWidths, safeMode: boolean): string {
+  return `${layoutWidths.messageContentWidth}:${layoutWidths.assistantBodyWidth}:${layoutWidths.safeAssistantBodyWidth}:${safeMode ? '1' : '0'}`;
+}
+
+function buildMessageRows(
+  messages: TuiMessage[],
+  layoutWidths: MessageLayoutWidths,
+  safeMode: boolean,
+  thinkingExpanded: boolean,
+): ReactNode[] {
+  let turnCount = 0;
+  const rows: ReactNode[] = [];
+
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i]!;
+
+    if (msg.role === 'user') {
+      turnCount += 1;
+      if (turnCount > 1) {
+        rows.push(
+          <TurnSeparator
+            key={`sep-${turnCount}`}
+            turnNumber={turnCount}
+            width={layoutWidths.messageContentWidth}
+          />,
+        );
+      }
+    }
+
+    if (msg.role === 'tool') {
+      rows.push(renderToolMessage(msg, i));
+    } else if (msg.role === 'error') {
+      rows.push(renderErrorMessage(msg, i));
+    } else if (msg.role === 'system') {
+      rows.push(renderSystemMessage(msg, i));
+    } else if (msg.role === 'activity-summary') {
+      rows.push(renderActivitySummary(msg, i));
+    } else {
+      rows.push(
+        <ChatMessage
+          key={i}
+          msg={msg}
+          index={i}
+          isStreaming={false}
+          assistantBodyWidth={layoutWidths.assistantBodyWidth}
+          safeAssistantBodyWidth={layoutWidths.safeAssistantBodyWidth}
+          safeMode={safeMode}
+          thinkingExpanded={thinkingExpanded}
+        />,
+      );
+    }
+  }
+
+  return rows;
+}
+
+function getCachedMessageRows(
+  messages: TuiMessage[],
+  layoutWidths: MessageLayoutWidths,
+  safeMode: boolean,
+  thinkingExpanded: boolean,
+): ReactNode[] {
+  const key = getMessageRowsCacheKey(layoutWidths, safeMode);
+  let listCache = MESSAGE_LIST_ROWS_CACHE.get(messages);
+
+  if (!listCache) {
+    listCache = new Map();
+    MESSAGE_LIST_ROWS_CACHE.set(messages, listCache);
+  }
+
+  const cached = listCache.get(key);
+  if (cached) {
+    return cached;
+  }
+
+  if (listCache.size >= MESSAGE_LIST_ROWS_CACHE_VERSION) {
+    listCache = new Map();
+    MESSAGE_LIST_ROWS_CACHE.set(messages, listCache);
+  }
+
+  const rows = buildMessageRows(messages, layoutWidths, safeMode, thinkingExpanded);
+  listCache.set(key, rows);
+  return rows;
+}
+
 function MetaTimestamp({ timestamp }: { timestamp: string }) {
   return (
     <Box justifyContent="flex-end">
@@ -436,52 +524,10 @@ export function MessageList({
 
   // Build permanent message rows with turn separators.
   // A new "turn" starts at each user message.
-  const messageRows = useMemo(() => {
-    let turnCount = 0;
-    const rows: ReactNode[] = [];
-
-    for (let i = 0; i < messages.length; i++) {
-      const msg = messages[i]!;
-
-      if (msg.role === 'user') {
-        turnCount++;
-        if (turnCount > 1) {
-          rows.push(
-            <TurnSeparator
-              key={`sep-${turnCount}`}
-              turnNumber={turnCount}
-              width={layoutWidths.messageContentWidth}
-            />,
-          );
-        }
-      }
-
-      if (msg.role === 'tool') {
-        rows.push(renderToolMessage(msg, i));
-      } else if (msg.role === 'error') {
-        rows.push(renderErrorMessage(msg, i));
-      } else if (msg.role === 'system') {
-        rows.push(renderSystemMessage(msg, i));
-      } else if (msg.role === 'activity-summary') {
-        rows.push(renderActivitySummary(msg, i));
-      } else {
-        rows.push(
-          <ChatMessage
-            key={i}
-            msg={msg}
-            index={i}
-            isStreaming={false}
-            assistantBodyWidth={layoutWidths.assistantBodyWidth}
-            safeAssistantBodyWidth={layoutWidths.safeAssistantBodyWidth}
-            safeMode={safeMode}
-            thinkingExpanded={thinkingExpanded}
-          />,
-        );
-      }
-    }
-
-    return rows;
-  }, [messages, layoutWidths.assistantBodyWidth, layoutWidths.safeAssistantBodyWidth, safeMode]);
+  const messageRows = useMemo(
+    () => getCachedMessageRows(messages, layoutWidths, safeMode, thinkingExpanded),
+    [messages, layoutWidths.messageContentWidth, layoutWidths.assistantBodyWidth, layoutWidths.safeAssistantBodyWidth, safeMode, thinkingExpanded],
+  );
 
   // Live rows: shown below permanent messages during an active turn.
   // These collapse into a permanent activity-summary + assistant message on turn:end.

@@ -54,6 +54,18 @@ vi.mock('../../src/providers/cloud.js', () => ({
   },
 }));
 
+vi.mock('../../src/keychain/api-keys.js', () => ({
+  getKeyByProvider: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../src/accounts/storage.js', () => ({
+  loadAccountState: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('../../src/accounts/cloud.js', () => ({
+  resolveCloudApiKey: vi.fn().mockResolvedValue(undefined),
+}));
+
 vi.mock('../../src/providers/fallback.js', () => ({
   FallbackProvider: class MockFallbackProvider {
     readonly name = 'lmx+fallback';
@@ -114,11 +126,29 @@ function makeConfig(overrides: Partial<OptaConfig> = {}): OptaConfig {
 
 beforeEach(() => {
   resetProviderCache();
+  delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['GEMINI_API_KEY'];
+  delete process.env['OPENAI_API_KEY'];
+  delete process.env['CODEX_API_KEY'];
+  delete process.env['MINIMAX_API_KEY'];
+  delete process.env['OPENCODE_API_KEY'];
+  delete process.env['OPENCODE_ZEN_API_KEY'];
+  delete process.env['OPENCODEZ_API_KEY'];
+  delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
 });
 
 afterEach(() => {
   resetProviderCache();
   vi.clearAllMocks();
+  delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['GEMINI_API_KEY'];
+  delete process.env['OPENAI_API_KEY'];
+  delete process.env['CODEX_API_KEY'];
+  delete process.env['MINIMAX_API_KEY'];
+  delete process.env['OPENCODE_API_KEY'];
+  delete process.env['OPENCODE_ZEN_API_KEY'];
+  delete process.env['OPENCODEZ_API_KEY'];
+  delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
 });
 
 describe('getProvider — provider selection', () => {

@@ -5,6 +5,7 @@
 import chalk from 'chalk';
 import type { SlashCommandDef, SlashContext, SlashResult } from './types.js';
 import { runMenuPrompt } from '../../ui/prompt-nav.js';
+import { createSpinner } from '../../ui/spinner.js';
 import { NO_MODELS_LOADED } from '../../utils/errors.js';
 
 const STABLE_MODEL_LOAD_TIMEOUT_MS = 300_000;
@@ -408,9 +409,9 @@ const modelHandler = async (args: string, ctx: SlashContext): Promise<SlashResul
 
     // Load if on disk
     if (onDisk.some((a) => a.repo_id === selectedModel)) {
-      const { default: ora } = await import('ora');
       const { ensureModelLoaded } = await import('../../lmx/model-lifecycle.js');
-      const spinner = ora({ text: `Loading ${selectedModel}...`, color: 'magenta' }).start();
+      const spinner = await createSpinner();
+      spinner.start(`Loading ${selectedModel}...`);
       try {
         selectedModel = await ensureModelLoaded(lmx, selectedModel, {
           timeoutMs: STABLE_MODEL_LOAD_TIMEOUT_MS,

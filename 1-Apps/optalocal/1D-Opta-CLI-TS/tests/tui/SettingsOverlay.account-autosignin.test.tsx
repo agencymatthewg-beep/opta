@@ -13,6 +13,21 @@ vi.mock('../../src/accounts/storage.js', () => ({
   loadAccountState: loadAccountStateMock,
 }));
 
+vi.mock('../../src/accounts/supabase.js', () => ({
+  resolveSupabaseAuthConfig: vi.fn(() => {
+    const rawUrl = process.env['OPTA_SUPABASE_URL'] ?? process.env['NEXT_PUBLIC_SUPABASE_URL'];
+    const anonKey = process.env['OPTA_SUPABASE_ANON_KEY'] ?? process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
+    if (!rawUrl || !anonKey) return null;
+
+    const host = rawUrl.replace(/https?:\/\//, '').split('/')[0] ?? 'proj-ref.supabase.co';
+    return {
+      url: `https://${host}`,
+      anonKey,
+      project: host.split('.')[0] ?? 'proj-ref',
+    };
+  }),
+}));
+
 vi.mock('../../src/commands/account.js', () => ({
   runOAuthLoginFlow: runOAuthLoginFlowMock,
 }));

@@ -23,6 +23,7 @@ import {
   loadStoredConnection,
   saveConnection,
 } from "./daemonSessions/connectionStorage";
+import { sanitizeDaemonConnection } from "../lib/daemonConnectionGuard";
 import {
   makeSessionId,
   nowIso,
@@ -106,33 +107,34 @@ export function useDaemonSessions() {
   const secureStoreQueueRef = useRef<Promise<void>>(Promise.resolve());
 
   const setConnection = useCallback((next: DaemonConnectionOptions) => {
+    const sanitizedNext = sanitizeDaemonConnection(next).connection;
     const previous = connectionRef.current;
     const secureStoreAvailable = isSecureConnectionStoreAvailable();
     const endpointChanged =
-      previous.host !== next.host || previous.port !== next.port;
+      previous.host !== sanitizedNext.host || previous.port !== sanitizedNext.port;
 
     // Keep plaintext token persistence only for browser/dev fallback mode.
-    saveConnection(next, !secureStoreAvailable);
-    setConnectionRaw(next);
+    saveConnection(sanitizedNext, !secureStoreAvailable);
+    setConnectionRaw(sanitizedNext);
 
     if (!secureStoreAvailable) return;
-    const token = next.token.trim();
+    const token = sanitizedNext.token.trim();
     secureStoreQueueRef.current = secureStoreQueueRef.current
       .catch(() => undefined)
       .then(async () => {
         if (token) {
-          await saveToken(next.host, next.port, token);
+          await saveToken(sanitizedNext.host, sanitizedNext.port, token);
           return;
         }
         // A blank token on endpoint switch means "try existing token for this
         // endpoint", not "delete this endpoint token".
         if (!endpointChanged) {
-          await clearToken(next.host, next.port);
+          await clearToken(sanitizedNext.host, sanitizedNext.port);
         }
       })
       .catch(() => {
         // Fallback for runtime/bridge failures: keep token persisted locally.
-        saveConnection(next, true);
+        saveConnection(sanitizedNext, true);
       });
 
     // If endpoint changed and the token is blank, try loading any existing
@@ -141,18 +143,18 @@ export function useDaemonSessions() {
       secureStoreQueueRef.current = secureStoreQueueRef.current
         .catch(() => undefined)
         .then(async () => {
-          const loadedToken = await loadToken(next.host, next.port);
+          const loadedToken = await loadToken(sanitizedNext.host, sanitizedNext.port);
           if (!loadedToken) return;
           setConnectionRaw((current) =>
-            current.host === next.host &&
-            current.port === next.port &&
+            current.host === sanitizedNext.host &&
+            current.port === sanitizedNext.port &&
             !current.token
               ? { ...current, token: loadedToken }
               : current,
           );
         })
         .catch(() => {
-          saveConnection(next, true);
+          saveConnection(sanitizedNext, true);
         });
     }
   }, []);
@@ -241,31 +243,45 @@ export function useDaemonSessions() {
           }
         }
 
-        if (!cancelled && (resolvedHost !== host || resolvedPort !== port)) {
+        const sanitizedResolved = sanitizeDaemonConnection({
+          ...connectionRef.current,
+          host: resolvedHost,
+          port: resolvedPort,
+        }).connection;
+
+        if (
+          !cancelled &&
+          (sanitizedResolved.host !== host || sanitizedResolved.port !== port)
+        ) {
           setConnectionRaw((current) =>
             current.host === host && current.port === port
-              ? { ...current, host: resolvedHost, port: resolvedPort }
+              ? {
+                  ...current,
+                  host: sanitizedResolved.host,
+                  port: sanitizedResolved.port,
+                }
               : current,
           );
         }
 
         const legacyToken = connectionRef.current.token.trim();
         if (legacyToken) {
-          await saveToken(resolvedHost, resolvedPort, legacyToken);
+          await saveToken(
+            sanitizedResolved.host,
+            sanitizedResolved.port,
+            legacyToken,
+          );
         }
-        saveConnection(
-          {
-            ...connectionRef.current,
-            host: resolvedHost,
-            port: resolvedPort,
-          },
-          false,
+        saveConnection(sanitizedResolved, false);
+        const storedToken = await loadToken(
+          sanitizedResolved.host,
+          sanitizedResolved.port,
         );
-        const storedToken = await loadToken(resolvedHost, resolvedPort);
         if (cancelled) return;
         if (!storedToken || storedToken === connectionRef.current.token) return;
         setConnectionRaw((current) =>
-          current.host === resolvedHost && current.port === resolvedPort
+          current.host === sanitizedResolved.host &&
+          current.port === sanitizedResolved.port
             ? { ...current, token: storedToken }
             : current,
         );

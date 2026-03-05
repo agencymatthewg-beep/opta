@@ -434,7 +434,7 @@ export function SettingsModal({
               <div>
                 <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Client Connection</h3>
                 <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
-                  Manage saved daemon targets and discover new ones on your local network.
+                  Manage saved daemon targets and discover new ones on your local network. Note: port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code> is reserved for LMX inference, not daemon <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>/v3</code> traffic. Opta auto-falls back to <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>127.0.0.1:9999</code> if misconfigured.
                 </p>
               </div>
             </div>

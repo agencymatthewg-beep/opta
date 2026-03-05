@@ -55,6 +55,9 @@ describe('Tool registry', () => {
 
   it('auto-registers synthetic playwright MCP server when browser MCP is enabled', async () => {
     const { connectMcpServer } = await import('../../src/mcp/client.js');
+    const base = await buildToolRegistry({
+      mcp: { servers: {} },
+    } as any);
     const registry = await buildToolRegistry({
       mcp: { servers: {} },
       browser: {
@@ -73,7 +76,7 @@ describe('Tool registry', () => {
       },
     } as any);
 
-    expect(registry.schemas.length).toBe(TOTAL_BUILTIN + 1);
+    expect(registry.schemas.length).toBe(base.schemas.length + 2);
     expect(connectMcpServer).toHaveBeenCalledWith(
       'playwright',
       expect.objectContaining({

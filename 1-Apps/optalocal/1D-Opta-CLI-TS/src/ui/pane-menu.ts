@@ -162,6 +162,16 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
   const itemIndexes = sections.map((s) => clamp(options.initialItemIndex ?? 0, 0, Math.max(0, s.items.length - 1)));
   let activePane: ActivePane = 'sections';
 
+  const normalizeCurrentItemIndex = (): number => {
+    const currentItems = sections[sectionIndex]?.items ?? [];
+    const normalized = clamp(itemIndexes[sectionIndex] ?? 0, 0, Math.max(0, currentItems.length - 1));
+    itemIndexes[sectionIndex] = normalized;
+    return normalized;
+  };
+
+  normalizeCurrentItemIndex();
+
+
   emitKeypressEvents(process.stdin);
   const previousRawMode = process.stdin.isRaw ?? false;
   if (!previousRawMode) process.stdin.setRawMode(true);
@@ -216,6 +226,7 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
       if (key.name === 'up') {
         if (activePane === 'sections') {
           sectionIndex = moveIndex(sectionIndex, -1, sections.length, loop);
+          normalizeCurrentItemIndex();
         } else {
           itemIndexes[sectionIndex] = moveIndex(itemIndexes[sectionIndex] ?? 0, -1, currentItemCount, loop);
         }
@@ -226,6 +237,7 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
       if (key.name === 'down') {
         if (activePane === 'sections') {
           sectionIndex = moveIndex(sectionIndex, 1, sections.length, loop);
+          normalizeCurrentItemIndex();
         } else {
           itemIndexes[sectionIndex] = moveIndex(itemIndexes[sectionIndex] ?? 0, 1, currentItemCount, loop);
         }
@@ -239,7 +251,7 @@ export async function runPaneMenu(options: PaneMenuOptions): Promise<PaneMenuSel
           renderFrame({ ...options, sections }, sectionIndex, itemIndexes, activePane);
           return;
         }
-        const itemIndex = itemIndexes[sectionIndex] ?? 0;
+        const itemIndex = normalizeCurrentItemIndex();
         const item = sections[sectionIndex]!.items[itemIndex];
         if (!item) return;
         finish({

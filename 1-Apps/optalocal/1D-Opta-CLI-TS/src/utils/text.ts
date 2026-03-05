@@ -193,6 +193,9 @@ function formatDenseNonCodeSegment(segment: string, streaming: boolean): string 
   return formatted;
 }
 
+const FORMAT_ASSISTANT_DISPLAY_TEXT_CACHE_MAX = 512;
+const formatAssistantDisplayTextCache = new Map<string, string>();
+
 /**
  * Premium display formatter for assistant responses.
  *
@@ -207,42 +210,66 @@ export function formatAssistantDisplayText(
   if (!base) return '';
 
   const streaming = Boolean(options?.streaming);
-  const lines = base.split('\n');
-  const out: string[] = [];
-  const proseBuffer: string[] = [];
-  let inFence = false;
-
-  const flushProseBuffer = (): void => {
-    if (proseBuffer.length === 0) return;
-    const segment = proseBuffer.join('\n');
-    proseBuffer.length = 0;
-    if (!segment.trim()) {
-      out.push(segment);
-      return;
-    }
-    out.push(formatDenseNonCodeSegment(segment, streaming));
-  };
-
-  for (const line of lines) {
-    const fenceToggle = line.trim().startsWith('```');
-    if (fenceToggle) {
-      flushProseBuffer();
-      out.push(line);
-      inFence = !inFence;
-      continue;
-    }
-
-    if (inFence) {
-      out.push(line);
-      continue;
-    }
-
-    proseBuffer.push(line);
+  const cacheKey = `${streaming ? '1' : '0'}\u0000${base}`;
+  const cached = formatAssistantDisplayTextCache.get(cacheKey);
+  if (cached !== undefined) {
+    return cached;
   }
 
-  flushProseBuffer();
+  const quickPath =
+    base.length <= 120 &&
+    !base.includes('```') &&
+    !/[,:;]/.test(base) &&
+    base.indexOf('\n') === -1;
+  let formatted = quickPath ? base.trim() : undefined;
 
-  return out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  if (formatted === undefined) {
+    const lines = base.split('\n');
+    const out: string[] = [];
+    const proseBuffer: string[] = [];
+    let inFence = false;
+
+    const flushProseBuffer = (): void => {
+      if (proseBuffer.length === 0) return;
+      const segment = proseBuffer.join('\n');
+      proseBuffer.length = 0;
+      if (!segment.trim()) {
+        out.push(segment);
+        return;
+      }
+      out.push(formatDenseNonCodeSegment(segment, streaming));
+    };
+
+    for (const line of lines) {
+      const fenceToggle = line.trim().startsWith('```');
+      if (fenceToggle) {
+        flushProseBuffer();
+        out.push(line);
+        inFence = !inFence;
+        continue;
+      }
+
+      if (inFence) {
+        out.push(line);
+        continue;
+      }
+
+      proseBuffer.push(line);
+    }
+
+    flushProseBuffer();
+    formatted = out.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+  } else if (base.indexOf('\n') === -1) {
+    formatted = base.trim();
+  } else {
+    formatted = base.trim();
+  }
+
+  if (formatAssistantDisplayTextCache.size >= FORMAT_ASSISTANT_DISPLAY_TEXT_CACHE_MAX) {
+    formatAssistantDisplayTextCache.clear();
+  }
+  formatAssistantDisplayTextCache.set(cacheKey, formatted);
+  return formatted;
 }
 
 /**

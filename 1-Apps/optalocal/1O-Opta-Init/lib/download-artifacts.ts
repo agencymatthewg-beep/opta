@@ -15,9 +15,9 @@ type ProductTarget = {
 // ── Release constants ────────────────────────────────────────────────────────
 const GITHUB_RELEASES = "https://github.com/agencymatthewg-beep/opta/releases/download";
 
-// Latest Opta Init Manager — stable v0.6.1 (2026-03-04)
-const INIT_TAG = "opta-init-manager-stable-v0.6.1";
-const INIT_VERSION = "0.6.1";
+// Latest Opta Init Manager — stable v0.7.0 (2026-03-05)
+const INIT_TAG = "opta-init-manager-stable-v0.7.0";
+const INIT_VERSION = "0.7.0";
 const INIT_MACOS_DMG = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_aarch64.dmg`;
 // x64 DMG also available for Intel Macs
 const INIT_MACOS_DMG_X64 = `${GITHUB_RELEASES}/${INIT_TAG}/Opta-Init-Manager_x64.dmg`;

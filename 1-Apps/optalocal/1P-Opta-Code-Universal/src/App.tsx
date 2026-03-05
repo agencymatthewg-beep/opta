@@ -906,12 +906,14 @@ function App() {
 
             {/* Center: Chat or Page Content */}
             <div className="v1-center">
-              {/* Branding Header (static outside settings overlay) */}
-              {activePage === "sessions" && !activeSessionId && (
+              {/* Branding Header (static, globally anchored in sessions mode) */}
+              {activePage === "sessions" && (
                 <>
-                  <div className="v1-chat-header">
-                    Try pressing <b>Ctrl+S</b>
-                  </div>
+                  {!activeSessionId && (
+                    <div className="v1-chat-header">
+                      Try pressing <b>Ctrl+S</b>
+                    </div>
+                  )}
                   <div className="v1-branding">
                     <div className="v1-brand-text">OPTA</div>
                     <div className="v1-brand-sub">Code Environment</div>
@@ -927,14 +929,8 @@ function App() {
                     <SettingsView
                       designMode={designMode}
                       onOpenSettingsTab={(tab) => {
-                        const categoryToTab: Record<string, SettingsTabId> = {
-                          general: "connection",
-                          intelligence: "model-provider",
-                          connection: "lmx",
-                          interface: "browser",
-                        };
                         setIsSettingsView(false);
-                        openSettings(categoryToTab[tab] ?? "connection");
+                        openSettings(tab as SettingsTabId);
                       }}
                     />
                   </div>

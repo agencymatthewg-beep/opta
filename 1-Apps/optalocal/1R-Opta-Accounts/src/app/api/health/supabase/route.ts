@@ -7,6 +7,8 @@ const REQUIRED_TABLES = [
   'accounts_capability_grants',
   'accounts_provider_connections',
   'accounts_audit_events',
+  'api_keys',
+  'credentials',
 ] as const;
 
 const REQUEST_TIMEOUT_MS =

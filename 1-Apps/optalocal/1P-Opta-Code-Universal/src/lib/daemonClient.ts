@@ -21,6 +21,7 @@ import type {
   SessionSubmitMode,
   SessionTurnOverrides,
 } from "../types";
+import { sanitizeDaemonConnection } from "./daemonConnectionGuard";
 
 export type V3Envelope = SharedV3Envelope;
 
@@ -103,8 +104,9 @@ function asRecord(value: unknown): Record<string, unknown> | null {
 }
 
 function baseUrl(connection: DaemonConnectionOptions): string {
-  const protocol = connection.protocol ?? "http";
-  return `${protocol}://${connection.host}:${connection.port}`;
+  const guarded = sanitizeDaemonConnection(connection).connection;
+  const protocol = guarded.protocol ?? "http";
+  return `${protocol}://${guarded.host}:${guarded.port}`;
 }
 
 async function daemonRequest<T>(
@@ -113,8 +115,9 @@ async function daemonRequest<T>(
   init: RequestInit = {},
   timeoutMs = LMX_READ_TIMEOUT_MS,
 ): Promise<T> {
+  const guarded = sanitizeDaemonConnection(connection).connection;
   const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${connection.token}`);
+  headers.set("Authorization", `Bearer ${guarded.token}`);
   if (init.body && !headers.has("Content-Type")) {
     headers.set("Content-Type", "application/json");
   }
@@ -140,7 +143,7 @@ async function daemonRequest<T>(
     }
     if (err instanceof TypeError && err.message.includes("fetch failed")) {
       throw new Error(
-        `Connection refused: Cannot reach daemon at ${connection.host}:${connection.port}. Ensure 'opta daemon run' is active.`,
+        `Connection refused: Cannot reach daemon at ${guarded.host}:${guarded.port}. Ensure 'opta daemon run' is active.`,
       );
     }
     throw err;
@@ -392,7 +395,7 @@ function parseEndpointCandidate(
 }
 
 function httpClient(connection: DaemonConnectionOptions): DaemonHttpClient {
-  return new DaemonHttpClient(connection);
+  return new DaemonHttpClient(sanitizeDaemonConnection(connection).connection);
 }
 
 export const daemonClient = {
@@ -485,13 +488,14 @@ export const daemonClient = {
       onError?: (event: Event) => void;
     },
   ): { close: () => void; send: (msg: object) => void } {
+    const guarded = sanitizeDaemonConnection(connection).connection;
     const wsProtocol =
-      (connection.protocol ?? "http") === "https" ? "wss" : "ws";
+      (guarded.protocol ?? "http") === "https" ? "wss" : "ws";
     const url =
-      `${wsProtocol}://${connection.host}:${connection.port}/v3/ws` +
+      `${wsProtocol}://${guarded.host}:${guarded.port}/v3/ws` +
       `?sessionId=${encodeURIComponent(sessionId)}` +
       `&afterSeq=${afterSeq}` +
-      `&token=${encodeURIComponent(connection.token)}`;
+      `&token=${encodeURIComponent(guarded.token)}`;
 
     const ws = new globalThis.WebSocket(url);
 

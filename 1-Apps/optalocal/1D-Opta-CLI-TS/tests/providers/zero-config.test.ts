@@ -79,6 +79,18 @@ vi.mock('../../src/lmx/api-key.js', () => ({
   resolveLmxApiKey: vi.fn().mockReturnValue('opta-lmx'),
 }));
 
+vi.mock('../../src/keychain/api-keys.js', () => ({
+  getKeyByProvider: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock('../../src/accounts/storage.js', () => ({
+  loadAccountState: vi.fn().mockResolvedValue(null),
+}));
+
+vi.mock('../../src/accounts/cloud.js', () => ({
+  resolveCloudApiKey: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Silence verbose output during tests.
 vi.mock('../../src/core/debug.js', () => ({
   verbose: vi.fn(),
@@ -126,8 +138,17 @@ async function getProbeLmxConnection() {
 beforeEach(async () => {
   const { resetProviderCache } = await getProbeProvider();
   resetProviderCache();
+
   // Clear env vars so tests start in a clean state
   delete process.env['ANTHROPIC_API_KEY'];
+  delete process.env['GEMINI_API_KEY'];
+  delete process.env['GOOGLE_API_KEY'];
+  delete process.env['OPENAI_API_KEY'];
+  delete process.env['CODEX_API_KEY'];
+  delete process.env['MINIMAX_API_KEY'];
+  delete process.env['OPENCODE_API_KEY'];
+  delete process.env['OPENCODE_ZEN_API_KEY'];
+  delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
 });
 
 afterEach(async () => {
@@ -136,7 +157,12 @@ afterEach(async () => {
   vi.clearAllMocks();
   delete process.env['ANTHROPIC_API_KEY'];
   delete process.env['GEMINI_API_KEY'];
+  delete process.env['GOOGLE_API_KEY'];
   delete process.env['OPENAI_API_KEY'];
+  delete process.env['CODEX_API_KEY'];
+  delete process.env['MINIMAX_API_KEY'];
+  delete process.env['OPENCODE_API_KEY'];
+  delete process.env['OPENCODE_ZEN_API_KEY'];
   delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
 });
 

@@ -1,0 +1,109 @@
+{
+  "timestamp": "2026-03-05T01:45:07Z",
+  "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal",
+  "results": [
+    {
+      "project": "web",
+      "domain": "optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "opta-init",
+      "domain": "init.optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "opta-lmx-dashboard",
+      "domain": "lmx.optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "accounts",
+      "domain": "accounts.optalocal.com",
+      "path": "/api/health/supabase",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "status-fix",
+      "domain": "status.optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "opta-help",
+      "domain": "help.optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "opta-learn",
+      "domain": "learn.optalocal.com",
+      "path": "/",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    },
+    {
+      "project": "opta-admin",
+      "domain": "admin.optalocal.com",
+      "path": "/api/health",
+      "rootDirectory": "null",
+      "framework": "nextjs",
+      "nodeVersion": "24.x",
+      "httpCode": "200",
+      "rootDirectoryNull": true,
+      "deploymentModelOk": true,
+      "liveHttpOk": true
+    }
+  ],
+  "summary": {
+    "total": 8,
+    "rootDirectoryNullCount": 8,
+    "deploymentModelOkCount": 8,
+    "liveHttpOkCount": 8,
+    "allPassed": true
+  }
+}

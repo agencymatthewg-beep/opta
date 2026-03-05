@@ -10,6 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useConnection } from '@/lib/connection'
+import { HudRing } from './HudRing'
 
 interface ConnectAutoSetupProps {
     host: string
@@ -42,7 +43,7 @@ export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetu
         if (status === 'connected') {
             setPhase('success')
             // Brief success flash then redirect
-            const t = setTimeout(() => router.replace('/'), 800)
+            const t = setTimeout(() => router.replace('/'), 1200)
             return () => clearTimeout(t)
         }
     }, [status, router])
@@ -62,165 +63,92 @@ export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetu
     }, [phase])
 
     return (
-        <div
-            style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: '100vh',
-                gap: '2.5rem',
-                padding: '2rem',
-                background: '#09090b',
-                fontFamily: 'Sora, sans-serif',
-            }}
-        >
-            {/* Opta Ring */}
-            <div
-                style={{
-                    position: 'relative',
-                    width: '80px',
-                    height: '80px',
-                }}
-            >
-                {/* Outer ring — always animating */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        inset: 0,
-                        borderRadius: '50%',
-                        border: `2px solid ${phase === 'success' ? '#10b981' : phase === 'failed' ? '#ef4444' : '#8b5cf6'}`,
-                        opacity: 0.25,
-                    }}
-                />
-                {/* Spinning arc */}
+        <div className="flex flex-col items-center justify-center min-h-screen bg-[var(--opta-void)] p-8 text-center font-sans hud-fade-in relative overflow-hidden">
+            {/* Ambient background glow */}
+            <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full blur-[120px] opacity-10 pointer-events-none transition-colors duration-1000 ${phase === 'connecting' ? 'bg-primary' : phase === 'success' ? 'bg-[var(--opta-neon-green)]' : 'bg-[var(--opta-neon-red)]'
+                }`}></div>
+
+            {/* Logo Container with Rings */}
+            <div className="relative w-32 h-32 mb-10">
+                {/* Outer decorative ring */}
+                <div className={`absolute -inset-4 rounded-full border border-dashed opacity-20 transition-all duration-1000 ${phase === 'connecting' ? 'border-primary animate-[spin_10s_linear_infinite]' :
+                        phase === 'success' ? 'border-[var(--opta-neon-green)]' : 'border-[var(--opta-neon-red)]'
+                    }`}></div>
+
+                {/* Inner continuous ring */}
+                <div className={`absolute inset-0 rounded-full border-2 opacity-40 transition-all duration-500 shadow-[inset_0_0_20px_rgba(0,0,0,0.5)] ${phase === 'connecting' ? 'border-primary shadow-[0_0_15px_rgba(168,85,247,0.3)]' :
+                        phase === 'success' ? 'border-[var(--opta-neon-green)] shadow-[0_0_20px_rgba(16,185,129,0.5)]' :
+                            'border-[var(--opta-neon-red)] shadow-[0_0_20px_rgba(239,68,68,0.5)]'
+                    }`}></div>
+
+                {/* The spinning connector */}
                 {phase === 'connecting' && (
-                    <div
-                        style={{
-                            position: 'absolute',
-                            inset: 0,
-                            borderRadius: '50%',
-                            border: '2px solid transparent',
-                            borderTopColor: '#8b5cf6',
-                            animation: 'spin 1s linear infinite',
-                        }}
-                    />
+                    <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-primary border-r-primary/50 animate-[spin_1.5s_cubic-bezier(0.4,0,0.2,1)_infinite]"></div>
                 )}
-                {/* Centre Logo */}
-                <div
-                    style={{
-                        position: 'absolute',
-                        inset: '50%',
-                        transform: 'translate(-50%, -50%)',
-                        width: '32px',
-                        height: '32px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        transition: 'all 0.4s ease',
-                        filter: phase === 'success'
-                            ? 'drop-shadow(0 0 12px rgba(16,185,129,0.6)) hue-rotate(-90deg)'
-                            : phase === 'failed'
-                                ? 'drop-shadow(0 0 12px rgba(239,68,68,0.6)) grayscale(100%) brightness(2)'
-                                : 'drop-shadow(0 0 12px rgba(139,92,246,0.6))',
-                    }}
-                >
+
+                {/* Center Icon */}
+                <div className={`absolute inset-0 flex items-center justify-center p-6 transition-all duration-700 ${phase === 'success'
+                        ? 'hue-rotate-[-90deg] drop-shadow-[0_0_15px_rgba(16,185,129,0.8)] scale-110'
+                        : phase === 'failed'
+                            ? 'grayscale drop-shadow-[0_0_15px_rgba(239,68,68,0.8)] opacity-60'
+                            : 'drop-shadow-[0_0_25px_rgba(168,85,247,0.7)]'
+                    }`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                         src="/logos/opta-lmx-mark.svg"
-                        style={{
-                            width: '100%',
-                            height: '100%',
-                            opacity: phase === 'failed' ? 0.7 : 1,
-                            transition: 'opacity 0.4s ease'
-                        }}
+                        className="w-full h-full"
                         alt="LMX Logo"
                     />
                 </div>
             </div>
 
-            {/* Status text */}
-            <div style={{ textAlign: 'center', maxWidth: '380px' }}>
+            {/* Status Panel */}
+            <div className="config-panel max-w-sm w-full mx-auto relative z-10 backdrop-blur-xl bg-[#020204]/80">
                 {phase === 'connecting' && (
-                    <>
-                        <p style={{ color: '#fafafa', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
-                            Connecting to LMX…
-                        </p>
-                        <p style={{ color: '#71717a', fontSize: '0.85rem', margin: 0, fontFamily: 'JetBrains Mono, monospace' }}>
-                            {targetUrl}
-                        </p>
-                        <p style={{ color: '#52525b', fontSize: '0.78rem', margin: '0.75rem 0 0' }}>
-                            {via === 'wan' ? '↑ via Cloudflare Tunnel' : '↑ via LAN'}
-                            {elapsed > 0 && ` · ${elapsed}s`}
-                        </p>
-                    </>
+                    <div className="flex flex-col items-center">
+                        <div className="text-[10px] uppercase font-mono tracking-[0.2em] text-primary/70 mb-3 animate-pulse">Establishing Uplink</div>
+                        <p className="text-xl text-text-primary font-semibold mb-2">Connecting to LMX</p>
+                        <p className="text-xs text-primary/80 font-mono bg-primary/10 px-3 py-1.5 rounded-md border border-primary/20">{targetUrl}</p>
+                        <div className="mt-4 flex items-center justify-between w-full pt-4 border-t border-[rgba(168,85,247,0.15)] text-[10px] font-mono uppercase tracking-widest text-text-muted">
+                            <span>{via === 'wan' ? 'Via Cloudflare Tunnel' : 'Via Local Network'}</span>
+                            <span className="tabular-nums">T+00:{elapsed.toString().padStart(2, '0')}</span>
+                        </div>
+                    </div>
                 )}
+
                 {phase === 'success' && (
-                    <>
-                        <p style={{ color: '#10b981', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
-                            Connected
-                        </p>
-                        <p style={{ color: '#71717a', fontSize: '0.85rem', margin: 0 }}>
-                            Opening dashboard…
-                        </p>
-                    </>
+                    <div className="flex flex-col items-center text-center">
+                        <div className="text-[10px] uppercase font-mono tracking-[0.2em] text-[var(--opta-neon-green)]/70 mb-3">Handshake Accepted</div>
+                        <p className="text-xl text-[var(--opta-neon-green)] font-semibold mb-2 drop-shadow-[0_0_8px_rgba(16,185,129,0.4)]">Connection Secure</p>
+                        <p className="text-xs text-text-muted font-mono bg-[var(--opta-elevated)]/50 px-3 py-1.5 rounded-md border border-[rgba(16,185,129,0.2)]">Initializing Dashboard</p>
+                    </div>
                 )}
+
                 {phase === 'failed' && (
-                    <>
-                        <p style={{ color: '#ef4444', fontSize: '1.1rem', fontWeight: 600, margin: '0 0 0.5rem' }}>
-                            Could not connect
-                        </p>
-                        <p style={{ color: '#71717a', fontSize: '0.85rem', margin: '0 0 1.5rem', fontFamily: 'JetBrains Mono, monospace' }}>
-                            {targetUrl}
-                        </p>
-                        <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <div className="flex flex-col items-center text-center">
+                        <div className="text-[10px] uppercase font-mono tracking-[0.2em] text-[var(--opta-neon-red)]/70 mb-3">Connection Timeout</div>
+                        <p className="text-xl text-[var(--opta-neon-red)] font-semibold mb-2 drop-shadow-[0_0_8px_rgba(239,68,68,0.4)]">Target Unreachable</p>
+                        <p className="text-xs text-[var(--opta-neon-red)]/80 font-mono mb-6 bg-[var(--opta-neon-red)]/10 px-3 py-1.5 rounded-md border border-[var(--opta-neon-red)]/20 break-all">{targetUrl}</p>
+
+                        <div className="flex flex-col gap-3 w-full">
                             {via === 'lan' && tunnelUrl && (
                                 <button
-                                    type="button"
-                                    onClick={() => {
-                                        setUrl(tunnelUrl)
-                                        setPhase('connecting')
-                                        setElapsed(0)
-                                    }}
-                                    style={{
-                                        background: 'rgba(139,92,246,0.15)',
-                                        border: '1px solid rgba(139,92,246,0.4)',
-                                        color: '#a855f7',
-                                        borderRadius: '8px',
-                                        padding: '0.5rem 1.25rem',
-                                        fontSize: '0.85rem',
-                                        cursor: 'pointer',
-                                        fontFamily: 'Sora, sans-serif',
-                                    }}
+                                    onClick={() => { setUrl(tunnelUrl); setPhase('connecting'); setElapsed(0) }}
+                                    className="holographic-btn w-full"
                                 >
-                                    Try Tunnel Instead
+                                    Reroute via Cloudflare
                                 </button>
                             )}
                             <button
-                                type="button"
                                 onClick={() => router.replace('/')}
-                                style={{
-                                    background: 'rgba(255,255,255,0.05)',
-                                    border: '1px solid rgba(63,63,70,0.6)',
-                                    color: '#a1a1aa',
-                                    borderRadius: '8px',
-                                    padding: '0.5rem 1.25rem',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer',
-                                    fontFamily: 'Sora, sans-serif',
-                                }}
+                                className="w-full text-xs font-mono uppercase tracking-widest text-text-muted hover:text-text-secondary border border-text-muted/20 hover:border-text-muted/40 rounded-lg py-3 transition-colors bg-[var(--opta-elevated)]"
                             >
-                                Open Dashboard Anyway
+                                Enter Offline Mode
                             </button>
                         </div>
-                    </>
+                    </div>
                 )}
             </div>
-
-            <style>{`
-                @keyframes spin { to { transform: rotate(360deg); } }
-                @import url('https://fonts.googleapis.com/css2?family=Sora:wght@400;600&family=JetBrains+Mono&display=swap');
-            `}</style>
         </div>
     )
 }

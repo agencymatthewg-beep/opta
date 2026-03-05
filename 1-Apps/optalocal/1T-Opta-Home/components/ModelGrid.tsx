@@ -33,6 +33,14 @@ const models = [
     formats: "MLX · GGUF",
     highlight: false,
   },
+  {
+    class: "Cloud Frontier Models",
+    vram: "0 GB (API)",
+    useCase: "Long-running autonomous agents",
+    formats: "REST API",
+    highlight: false,
+    type: "cloud",
+  },
 ];
 
 export function ModelGrid() {
@@ -109,9 +117,9 @@ export function ModelGrid() {
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
-          Opta LMX runs exclusively on Apple Silicon architecture.
+          Opta LMX runs explicitly on Apple Silicon.
           <br />
-          MLX format models are strongly recommended for optimal performance.
+          For cloud connectivity, supply your API keys to the Opta CLI or Code Desktop.
         </motion.p>
       </div>
     </section>

@@ -36,6 +36,10 @@ import {
     type LmxDiscoveryInfo,
 } from "../../lib/lanScanner";
 import type { DaemonConnectionOptions } from "../../types";
+import {
+    LMX_DEFAULT_PORT,
+    sanitizeDaemonConnection,
+} from "../../lib/daemonConnectionGuard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -273,16 +277,22 @@ export function ConnectionAddressBook({
     const testConnection = useCallback(async () => {
         const port = Number.parseInt(formPort, 10);
         if (!formHost.trim() || !Number.isFinite(port)) return;
-        setProbing(true);
-        setProbeMsg(null);
-        const result = await probeDaemonConnection({
+        const guarded = sanitizeDaemonConnection({
             host: formHost.trim(),
             port,
             token: formToken.trim(),
             protocol: "http",
         });
+        setProbing(true);
+        setProbeMsg(null);
+        const result = await probeDaemonConnection(guarded.connection);
         if (result.type !== "offline") {
-            setProbeMsg({ text: `\u2713 Connected \u2014 ${result.latencyMs}ms`, ok: true });
+            setProbeMsg({
+                text: guarded.corrected
+                    ? `✓ Connected — daemon guard redirected ${LMX_DEFAULT_PORT} → ${guarded.connection.host}:${guarded.connection.port} (${result.latencyMs}ms)`
+                    : `✓ Connected — ${result.latencyMs}ms`,
+                ok: true,
+            });
         } else {
             setProbeMsg({ text: `\u2717 Failed: ${result.diagnostic}`, ok: false });
         }
@@ -294,19 +304,19 @@ export function ConnectionAddressBook({
         const port = Number.parseInt(formPort, 10);
         if (!formHost.trim() || !Number.isFinite(port)) return;
         setSaving(true);
-        const conn: DaemonConnectionOptions = {
+        const guarded = sanitizeDaemonConnection({
             host: formHost.trim(),
             port,
             token: formToken.trim(),
             protocol: "http",
-        };
+        } as DaemonConnectionOptions);
 
         // Persist token to address book entry (or create new entry)
         if (selectedId && selectedId !== LOCAL_DAEMON_ENTRY.id) {
             const updatedEntries = updateEntry(entries, selectedId, {
-                host: formHost.trim(),
-                port,
-                label: formLabel.trim() || formHost.trim(),
+                host: guarded.connection.host,
+                port: guarded.connection.port,
+                label: formLabel.trim() || guarded.connection.host,
                 lastSeen: new Date().toISOString(),
             });
             const targetEntry = updatedEntries.find((e) => e.id === selectedId);
@@ -319,7 +329,13 @@ export function ConnectionAddressBook({
             }
         }
 
-        onConnectionChange(conn);
+        onConnectionChange(guarded.connection);
+        if (guarded.corrected) {
+            setProbeMsg({
+                text: `✗ ${LMX_DEFAULT_PORT} is reserved for LMX. Daemon endpoint reset to ${guarded.connection.host}:${guarded.connection.port}.`,
+                ok: false,
+            });
+        }
         setSaving(false);
     }, [selectedId, entries, formHost, formPort, formToken, formLabel, onConnectionChange]);
 
@@ -335,6 +351,7 @@ export function ConnectionAddressBook({
     // ─── Render ────────────────────────────────────────────────────────────────
 
     const selectedEntry = entries.find((e) => e.id === selectedId) ?? null;
+    const formPortIsReserved = Number.parseInt(formPort, 10) === LMX_DEFAULT_PORT;
 
     return (
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -641,6 +658,20 @@ export function ConnectionAddressBook({
                             />
                         </div>
                     </div>
+
+                    {formPortIsReserved && (
+                        <div style={{
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            fontSize: "0.76rem",
+                            fontFamily: "JetBrains Mono",
+                            background: "rgba(245,158,11,0.1)",
+                            border: "1px solid rgba(245,158,11,0.35)",
+                            color: "#fcd34d",
+                        }}>
+                            Port {LMX_DEFAULT_PORT} is LMX-only. Daemon API uses 9999. Save will auto-fallback to 127.0.0.1:9999.
+                        </div>
+                    )}
 
                     {!isLocalEntry(selectedEntry) && (
                         <div className="opta-studio-form-group" style={{ margin: 0 }}>

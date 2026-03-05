@@ -1,6 +1,6 @@
 # OptaLocal Documentation and Deployment Status
 
-Updated: 2026-03-04
+Updated: 2026-03-05
 Scope: `1-Apps/optalocal/*`
 
 ## Canonical app set
@@ -55,3 +55,8 @@ When architecture/path/policy changes:
 
 - Some dated historical reports in `docs/audit/` and `docs/reports/` reference legacy app names by design.
 - Canonical docs are now maintained separately and should be used for current-state decisions.
+
+## Supabase sync gate (accounts.optalocal.com)
+
+- `/api/health/supabase` (2026-03-05) => `ok=true`, `schemaReady=true`, tables present: `accounts_*`, `api_keys`, `credentials`.
+- Follow-up: keep `1N-Opta-Cloud-Accounts/scripts/apply-migrations.sh` wired into release cadence so schema drift is caught before deployments.

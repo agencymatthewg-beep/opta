@@ -28,6 +28,7 @@ export async function createSpinner(): Promise<Spinner> {
       interval: 80,
       frames: OPTA_ORBIT_FRAMES.map(frame => chalk.hex('#a855f7')(frame)),
     },
+    hideCursor: false,
   });
 
   return {

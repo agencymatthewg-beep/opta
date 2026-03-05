@@ -3,25 +3,10 @@
 import { Brain, Database, Plus, Trash2, Search, Upload, AlertCircle, ChevronRight, Loader2 } from 'lucide-react'
 import { useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { PageHeader } from '@/components/PageHeader'
 import { useConnection } from '@/lib/connection'
 import { useRagCollections } from '@/hooks/use-rag'
 import { ingestDocuments, queryRag, deleteRagCollection } from '@/lib/mutations'
-
-function PageHeader({ title, subtitle, icon: Icon }: {
-    title: string; subtitle: string; icon: React.ElementType
-}) {
-    return (
-        <div className="border-b border-[var(--opta-border)] px-8 py-6">
-            <div className="flex items-center gap-3 mb-1">
-                <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary/10 text-primary">
-                    <Icon size={18} />
-                </div>
-                <h1 className="text-lg font-semibold">{title}</h1>
-            </div>
-            <p className="text-sm text-text-secondary ml-12">{subtitle}</p>
-        </div>
-    )
-}
 
 export default function RagPage() {
     const { isConnected } = useConnection()
@@ -107,67 +92,66 @@ export default function RagPage() {
                 icon={Brain}
             />
 
-            <div className="px-8 py-6 space-y-6">
+            <div className="px-8 py-6 space-y-6 hud-fade-in">
                 {!isConnected && (
-                    <div className="dashboard-card flex items-center gap-3 text-[var(--opta-neon-amber)]">
+                    <div className="config-panel flex items-center gap-3 text-[var(--opta-neon-amber)]">
                         <AlertCircle size={16} />
-                        <span className="text-sm">Connect to LMX to manage knowledge bases.</span>
+                        <span className="text-sm font-mono tracking-wide">Connect to LMX to manage knowledge bases.</span>
                     </div>
                 )}
 
                 {/* Collections overview */}
-                <div className="dashboard-card">
+                <div className="config-panel">
                     <div className="flex items-center justify-between mb-5">
-                        <div className="flex items-center gap-2">
-                            <Database size={16} className="text-primary" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-                                Collections
-                            </h2>
+                        <div className="config-title flex items-center gap-2 m-0 p-0 border-0 bg-transparent">
+                            <Database size={14} className="text-primary" />
+                            Collections
                         </div>
-                        <div className="flex gap-4 text-xs font-mono text-text-muted">
-                            <span>{collectionCount} collections</span>
-                            <span>{totalDocuments} documents</span>
+                        <div className="flex gap-4 text-[10px] uppercase font-mono tracking-wider text-text-muted">
+                            <span className="bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20">{collectionCount} DBs</span>
+                            <span className="bg-[var(--opta-elevated)] text-text-secondary px-2 py-0.5 rounded border border-[rgba(168,85,247,0.15)]">{totalDocuments} DOCS</span>
                         </div>
                     </div>
 
                     {isLoading ? (
-                        <div className="flex items-center gap-2 text-text-muted text-sm">
-                            <Loader2 size={14} className="animate-spin" />
-                            <span>Loading collections…</span>
+                        <div className="flex items-center justify-center py-10 gap-3 text-text-muted text-sm font-mono">
+                            <div className="w-5 h-5 rounded-full border-2 border-primary/30 border-t-primary animate-spin"></div>
+                            <span className="uppercase tracking-widest text-[10px]">Loading Collections…</span>
                         </div>
                     ) : collections.length === 0 ? (
-                        <div className="text-center py-8 text-text-muted">
-                            <Database size={28} className="mx-auto mb-3 opacity-30" />
-                            <p className="text-sm">No collections yet. Ingest some documents below.</p>
+                        <div className="text-center py-12 text-text-muted">
+                            <Database size={32} className="mx-auto mb-4 opacity-20 text-primary drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]" />
+                            <p className="text-xs font-mono tracking-widest uppercase">No collections mapped. Ingest documents below.</p>
                         </div>
                     ) : (
-                        <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                             {collections.map((col) => (
                                 <div key={col.name}
-                                    className="flex items-center justify-between py-2.5 px-3 rounded-lg bg-[var(--opta-elevated)] border border-[var(--opta-border)]">
-                                    <div>
-                                        <p className="text-sm font-mono text-text-primary">{col.name}</p>
-                                        <p className="text-xs text-text-muted mt-0.5">
-                                            {col.document_count} docs · {col.embedding_dimensions}d vectors
-                                        </p>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => { setQueryCollection(col.name); setQueryText('') }}
-                                            className="p-1.5 rounded text-text-muted hover:text-primary hover:bg-primary/10 transition-colors"
-                                            title="Query this collection"
-                                        >
-                                            <Search size={13} />
-                                        </button>
+                                    className="flex flex-col py-3 px-4 rounded-xl bg-[var(--opta-elevated)]/40 border border-[rgba(168,85,247,0.2)] hover:border-primary/50 transition-colors relative overflow-hidden group">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                                    <div className="flex items-start justify-between relative z-10 mb-2">
+                                        <p className="text-sm font-mono text-primary font-semibold tracking-wide truncate pr-2">{col.name}</p>
                                         <button
                                             onClick={() => handleDelete(col.name)}
                                             disabled={deleteLoading === col.name}
-                                            className="p-1.5 rounded text-text-muted hover:text-[var(--opta-neon-red)] hover:bg-[var(--opta-neon-red)]/10 transition-colors disabled:opacity-40"
+                                            className="p-1 rounded text-text-muted hover:text-[var(--opta-neon-red)] hover:bg-[var(--opta-neon-red)]/10 transition-colors disabled:opacity-40"
                                             title="Delete collection"
                                         >
                                             {deleteLoading === col.name
-                                                ? <Loader2 size={13} className="animate-spin" />
+                                                ? <Loader2 size={13} className="animate-spin text-[var(--opta-neon-red)]" />
                                                 : <Trash2 size={13} />}
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-3 text-[10px] font-mono uppercase tracking-widest mt-auto relative z-10">
+                                        <span className="text-text-secondary">{col.document_count} docs</span>
+                                        <span className="text-text-muted">·</span>
+                                        <span className="text-text-muted">{col.embedding_dimensions}d vectors</span>
+                                        <button
+                                            onClick={() => { setQueryCollection(col.name); setQueryText(''); window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }) }}
+                                            className="ml-auto p-1.5 rounded-full text-text-muted hover:text-primary hover:bg-primary/20 transition-colors"
+                                            title="Query this collection"
+                                        >
+                                            <Search size={12} />
                                         </button>
                                     </div>
                                 </div>
@@ -178,30 +162,28 @@ export default function RagPage() {
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* Ingest */}
-                    <div className="dashboard-card">
-                        <div className="flex items-center gap-2 mb-5">
-                            <Upload size={16} className="text-primary" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-                                Ingest Documents
-                            </h2>
+                    <div className="config-panel flex flex-col">
+                        <div className="config-title flex items-center gap-2">
+                            <Upload size={14} className="text-primary" />
+                            Ingest Documents
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4 flex-1 flex flex-col">
                             <div>
-                                <label className="text-xs text-text-muted mb-1 block">Collection name</label>
+                                <label className="config-label">Collection Name</label>
                                 <input
-                                    className="w-full bg-[var(--opta-elevated)] border border-[var(--opta-border)] rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
-                                    placeholder="my-collection"
+                                    className="holographic-input w-full"
+                                    placeholder="e.g. documentation-v1"
                                     value={ingestCollection}
                                     onChange={(e) => setIngestCollection(e.target.value)}
                                     disabled={!isConnected || ingestLoading}
                                 />
                             </div>
-                            <div>
-                                <label className="text-xs text-text-muted mb-1 block">Document text</label>
+                            <div className="flex-1 flex flex-col">
+                                <label className="config-label">Document Text</label>
                                 <textarea
-                                    className="w-full bg-[var(--opta-elevated)] border border-[var(--opta-border)] rounded-lg px-3 py-2.5 text-sm font-mono resize-none focus:outline-none focus:border-primary/50 text-text-primary placeholder:text-text-muted"
-                                    rows={5}
-                                    placeholder="Paste document content to index…"
+                                    className="holographic-input w-full flex-1 resize-none"
+                                    rows={6}
+                                    placeholder="Paste document content to index chunks into the collection…"
                                     value={ingestText}
                                     onChange={(e) => setIngestText(e.target.value)}
                                     disabled={!isConnected || ingestLoading}
@@ -210,53 +192,50 @@ export default function RagPage() {
                             <button
                                 onClick={handleIngest}
                                 disabled={!isConnected || ingestLoading || !ingestCollection.trim() || !ingestText.trim()}
-                                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                className="holographic-btn w-full flex items-center justify-center gap-2 mt-2 h-10"
                             >
-                                <Plus size={14} />
-                                {ingestLoading ? 'Ingesting…' : 'Ingest'}
+                                {ingestLoading ? <><Loader2 size={14} className="animate-spin" /> Ingesting…</> : <><Plus size={14} /> Commit to Knowledge Base</>}
                             </button>
-                            {ingestResult && <p className="text-xs text-[var(--opta-neon-green)] font-mono">{ingestResult}</p>}
-                            {ingestError && <p className="text-xs text-[var(--opta-neon-red)] font-mono">{ingestError}</p>}
+                            {ingestResult && <p className="text-xs text-[var(--opta-neon-green)] font-mono text-center">{ingestResult}</p>}
+                            {ingestError && <p className="text-xs text-[var(--opta-neon-red)] font-mono text-center">{ingestError}</p>}
                         </div>
                     </div>
 
                     {/* Query */}
-                    <div className="dashboard-card">
-                        <div className="flex items-center gap-2 mb-5">
-                            <Search size={16} className="text-primary" />
-                            <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-                                Semantic Search
-                            </h2>
+                    <div className="config-panel flex flex-col">
+                        <div className="config-title flex items-center gap-2">
+                            <Search size={14} className="text-primary" />
+                            Semantic Search
                         </div>
-                        <div className="space-y-3">
+                        <div className="space-y-4 flex-1 flex flex-col">
                             <div>
-                                <label className="text-xs text-text-muted mb-1 block">Collection</label>
+                                <label className="config-label">Target Collection</label>
                                 <input
-                                    className="w-full bg-[var(--opta-elevated)] border border-[var(--opta-border)] rounded-lg px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary/50"
-                                    placeholder="my-collection"
+                                    className="holographic-input w-full"
+                                    placeholder="e.g. documentation-v1"
                                     value={queryCollection}
                                     onChange={(e) => setQueryCollection(e.target.value)}
                                     disabled={!isConnected || queryLoading}
                                 />
                             </div>
                             <div>
-                                <label className="text-xs text-text-muted mb-1 block">Query</label>
+                                <label className="config-label">Query Prompt</label>
                                 <textarea
-                                    className="w-full bg-[var(--opta-elevated)] border border-[var(--opta-border)] rounded-lg px-3 py-2.5 text-sm font-mono resize-none focus:outline-none focus:border-primary/50 text-text-primary placeholder:text-text-muted"
+                                    className="holographic-input w-full resize-none"
                                     rows={3}
-                                    placeholder="What do you want to find?"
+                                    placeholder="What do you want to find or extract from the corpus?"
                                     value={queryText}
                                     onChange={(e) => setQueryText(e.target.value)}
                                     disabled={!isConnected || queryLoading}
                                 />
                             </div>
-                            <div className="flex items-center gap-4">
-                                <div className="flex items-center gap-2">
-                                    <label className="text-xs text-text-muted whitespace-nowrap">Top K</label>
+                            <div className="flex items-end gap-4 mt-2">
+                                <div className="w-24">
+                                    <label className="config-label">Top K</label>
                                     <input
                                         type="number"
                                         min={1} max={20}
-                                        className="w-16 bg-[var(--opta-elevated)] border border-[var(--opta-border)] rounded px-2 py-1 text-sm font-mono focus:outline-none focus:border-primary/50"
+                                        className="holographic-input w-full"
                                         value={queryK}
                                         onChange={(e) => setQueryK(Number(e.target.value))}
                                     />
@@ -264,24 +243,25 @@ export default function RagPage() {
                                 <button
                                     onClick={handleQuery}
                                     disabled={!isConnected || queryLoading || !queryCollection.trim() || !queryText.trim()}
-                                    className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-white text-sm font-medium hover:bg-primary/90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                                    className="holographic-btn flex-1 flex items-center justify-center gap-2 h-10"
                                 >
-                                    <Search size={14} />
-                                    {queryLoading ? 'Searching…' : 'Search'}
+                                    {queryLoading ? <><Loader2 size={14} className="animate-spin" /> Scanning…</> : <><Search size={14} /> Run Vector Search</>}
                                 </button>
                             </div>
-                            {queryError && <p className="text-xs text-[var(--opta-neon-red)] font-mono">{queryError}</p>}
+                            {queryError && <p className="text-xs text-[var(--opta-neon-red)] font-mono mt-2">{queryError}</p>}
                         </div>
 
                         {queryResults.length > 0 && (
-                            <div className="mt-4 space-y-2 max-h-60 overflow-y-auto">
+                            <div className="mt-6 pt-4 border-t border-[rgba(168,85,247,0.15)] max-h-64 overflow-y-auto space-y-3 pr-2 scrollbar-thin scrollbar-thumb-primary/20 scrollbar-track-transparent">
+                                <div className="text-[10px] uppercase font-mono tracking-widest text-text-muted mb-2">Search Results ({queryResults.length})</div>
                                 {queryResults.map((r, i) => (
-                                    <div key={i} className="p-3 bg-[var(--opta-elevated)] rounded-lg border border-[var(--opta-border)]">
-                                        <div className="flex items-center gap-2 mb-1">
+                                    <div key={i} className="p-3 bg-[var(--opta-elevated)]/50 rounded-lg border border-[rgba(168,85,247,0.1)] relative group">
+                                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-primary/50 to-transparent rounded-l-lg opacity-50"></div>
+                                        <div className="flex items-center gap-2 mb-2">
                                             <ChevronRight size={11} className="text-primary" />
-                                            <span className="text-xs font-mono text-primary">score: {r.score.toFixed(4)}</span>
+                                            <span className="text-[10px] uppercase tracking-widest font-mono text-primary">distance: {r.score.toFixed(4)}</span>
                                         </div>
-                                        <p className="text-xs text-text-secondary leading-relaxed line-clamp-3">{r.text}</p>
+                                        <p className="text-xs font-mono text-text-primary leading-relaxed break-words">{r.text}</p>
                                     </div>
                                 ))}
                             </div>

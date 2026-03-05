@@ -1,4 +1,9 @@
 import type { DaemonConnectionOptions } from "../../types";
+import {
+  DAEMON_FALLBACK_HOST,
+  DAEMON_FALLBACK_PORT,
+  sanitizeDaemonConnection,
+} from "../../lib/daemonConnectionGuard";
 
 export const STORAGE_KEY = "opta:daemon-connection";
 
@@ -32,8 +37,8 @@ function parseDaemonUrl(
 function resolveDefaultConnection(): DaemonConnectionOptions {
   const runtime = globalThis as RuntimeConnectionHints;
   const baseline: DaemonConnectionOptions = {
-    host: "127.0.0.1",
-    port: 9999,
+    host: DAEMON_FALLBACK_HOST,
+    port: DAEMON_FALLBACK_PORT,
     token: "",
   };
 
@@ -52,9 +57,11 @@ function resolveDefaultConnection(): DaemonConnectionOptions {
     runtime.__OPTA_DAEMON_URL__ ?? env?.VITE_OPTA_DAEMON_URL ?? "";
   const parsedUrl = parseDaemonUrl(hintedUrl);
 
-  return parsedUrl
+  const resolved = parsedUrl
     ? { ...withConnectionHint, ...parsedUrl }
     : withConnectionHint;
+
+  return sanitizeDaemonConnection(resolved).connection;
 }
 
 export const DEFAULT_CONNECTION: DaemonConnectionOptions =
@@ -65,7 +72,7 @@ export function loadStoredConnection(): DaemonConnectionOptions {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_CONNECTION;
     const parsed = JSON.parse(raw) as Partial<DaemonConnectionOptions>;
-    return {
+    return sanitizeDaemonConnection({
       host:
         typeof parsed.host === "string" ? parsed.host : DEFAULT_CONNECTION.host,
       port:
@@ -75,7 +82,7 @@ export function loadStoredConnection(): DaemonConnectionOptions {
           ? parsed.token
           : DEFAULT_CONNECTION.token,
       protocol: parsed.protocol ?? DEFAULT_CONNECTION.protocol,
-    };
+    }).connection;
   } catch {
     return DEFAULT_CONNECTION;
   }
@@ -86,13 +93,14 @@ export function saveConnection(
   persistToken: boolean,
 ): void {
   try {
+    const sanitized = sanitizeDaemonConnection(conn).connection;
     const stored: Partial<DaemonConnectionOptions> = {
-      host: conn.host,
-      port: conn.port,
-      protocol: conn.protocol,
+      host: sanitized.host,
+      port: sanitized.port,
+      protocol: sanitized.protocol,
     };
     if (persistToken) {
-      stored.token = conn.token;
+      stored.token = sanitized.token;
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
   } catch {
