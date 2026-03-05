@@ -36,12 +36,12 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
     platforms: {
       macos: {
         manifestUrl: "/desktop-updates/stable.json",
-        platformKeys: ["darwin-aarch64", "darwin-x86_64"],
+        platformKeys: [],
         fallbackUrl: INIT_MACOS_DMG,
       },
       windows: {
         manifestUrl: "/desktop-updates/stable.json",
-        platformKeys: ["windows-x86_64"],
+        platformKeys: [],
         fallbackUrl: INIT_WINDOWS_NSIS,
       },
     },
