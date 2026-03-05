@@ -85,6 +85,41 @@ export interface ManagerUpdateInstallResult {
   error?: string;
 }
 
+export interface InstallFlowResult {
+  ok?: boolean;
+  success?: boolean;
+  installed?: boolean;
+  status?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface BrainEligibilityResult {
+  eligible?: boolean;
+  isEligible?: boolean;
+  supported?: boolean;
+  reason?: string;
+  message?: string;
+  error?: string;
+}
+
+export interface OptaAnywhereSupportResult {
+  supported?: boolean;
+  reason?: string;
+  message?: string;
+  error?: string;
+  platform?: string;
+}
+
+export interface InstallProgressEventPayload {
+  line?: string;
+  message?: string;
+  ok?: boolean;
+  status?: string;
+  level?: string;
+  error?: string;
+}
+
 export interface AccountProfile {
   email?: string;
   name?: string;

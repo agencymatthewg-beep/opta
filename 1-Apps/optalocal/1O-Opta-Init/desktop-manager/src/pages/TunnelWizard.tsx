@@ -1,12 +1,10 @@
 /**
- * TunnelWizard.tsx — Guided 5-step setup wizard for Cloudflare Tunnel.
+ * TunnelWizard.tsx — Single-flow setup for Opta Anywhere.
  *
- * Steps:
- *   0 — Intro / Pitch
- *   1 — Install cloudflared (silent brew install with live log)
- *   2 — Cloudflare Auth (browser opens, we poll for cert.pem)
- *   3 — Auto-Provision tunnel (create + route DNS)
- *   4 — Done — shows URL + writes to address book
+ * States:
+ *   0 — Intro / Idle
+ *   1 — Enabling (live backend progress)
+ *   2 — Connected (URL available)
  */
 
 import { useState, useEffect, useRef } from "react";
@@ -16,11 +14,25 @@ import type { UnlistenFn } from "@tauri-apps/api/event";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-type WizardStep = 0 | 1 | 2 | 3 | 4;
+type WizardStep = 0 | 1 | 2;
 
 interface LogLine {
     text: string;
     ok?: boolean;
+}
+
+interface ProgressPayload {
+    line?: string;
+    message?: string;
+    ok?: boolean;
+}
+
+interface EnableOptaAnywhereResult {
+    ok?: boolean;
+    url?: string;
+    tunnelUrl?: string;
+    message?: string;
+    error?: string;
 }
 
 interface TunnelWizardProps {
@@ -96,11 +108,12 @@ function LogTerminal({ lines }: { lines: LogLine[] }) {
 export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWizardProps) {
     const [step, setStep] = useState<WizardStep>(0);
     const [logs, setLogs] = useState<LogLine[]>([]);
-    const [tunnelName, setTunnelName] = useState("opta-lmx");
     const [tunnelUrl, setTunnelUrl] = useState("");
     const [error, setError] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const listenerRef = useRef<UnlistenFn | null>(null);
+    const tunnelName = "opta-lmx";
+    const genericEnableError = "Unable to enable Opta Anywhere. Review the setup log and try again.";
 
     const addLog = (text: string, ok?: boolean) =>
         setLogs(prev => [...prev, { text, ok }]);
@@ -110,88 +123,78 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
         return () => { listenerRef.current?.(); };
     }, []);
 
-    // ── Step 1: Install cloudflared ──────────────────────────────────────────
+    const normalizeProgress = (payload: unknown): ProgressPayload => {
+        if (typeof payload === "string") {
+            return { line: payload };
+        }
 
-    const runInstall = async () => {
+        if (!payload || typeof payload !== "object") {
+            return { line: String(payload) };
+        }
+
+        const value = payload as Record<string, unknown>;
+        return {
+            line: typeof value.line === "string"
+                ? value.line
+                : typeof value.message === "string"
+                    ? value.message
+                    : JSON.stringify(value),
+            message: typeof value.message === "string" ? value.message : undefined,
+            ok: typeof value.ok === "boolean" ? value.ok : undefined,
+        };
+    };
+
+    const runEnable = async () => {
         setBusy(true);
+        setStep(1);
         setLogs([]);
         setError(null);
 
-        // Subscribe to install progress events from Rust
+        listenerRef.current?.();
         listenerRef.current = await listen<{ line: string; ok?: boolean }>(
-            "tunnel-install-progress",
-            (e) => addLog(e.payload.line, e.payload.ok),
+            "opta-anywhere-progress",
+            (e) => {
+                const progress = normalizeProgress(e.payload);
+                addLog(progress.line ?? progress.message ?? "", progress.ok);
+            },
         );
 
         try {
-            const result = await invoke<{ ok: boolean; message?: string }>(
-                "install_cloudflared"
-            );
-            if (result.ok) {
-                addLog("cloudflared installed successfully.", true);
-                setTimeout(() => setStep(2), 800);
-            } else {
-                setError(result.message ?? "Installation failed.");
+            const payload: { lmxHost: string; lmxPort: number; tunnelName?: string } = {
+                lmxHost,
+                lmxPort,
+            };
+            if (tunnelName.trim()) {
+                payload.tunnelName = tunnelName.trim();
             }
-        } catch (e) {
-            setError(String(e));
-        } finally {
-            listenerRef.current?.();
-            listenerRef.current = null;
-            setBusy(false);
-        }
-    };
 
-    // ── Step 2: Auth ─────────────────────────────────────────────────────────
-
-    const runAuth = async () => {
-        setBusy(true);
-        setError(null);
-        try {
-            // This opens the Cloudflare browser page + polls for cert.pem
-            await invoke("start_cloudflared_login");
-            setStep(3);
-        } catch (e) {
-            setError(String(e));
-        } finally {
-            setBusy(false);
-        }
-    };
-
-    // ── Step 3: Provision tunnel ──────────────────────────────────────────────
-
-    const runProvision = async () => {
-        setBusy(true);
-        setLogs([]);
-        setError(null);
-
-        listenerRef.current = await listen<{ line: string; ok?: boolean }>(
-            "tunnel-provision-progress",
-            (e) => addLog(e.payload.line, e.payload.ok),
-        );
-
-        try {
-            const result = await invoke<{ ok: boolean; url: string; message?: string }>(
-                "provision_cloudflared_tunnel",
-                { name: tunnelName.trim() || "opta-lmx", lmxHost, lmxPort },
+            const result = await invoke<EnableOptaAnywhereResult>(
+                "enable_opta_anywhere",
+                payload,
             );
-            if (result.ok && result.url) {
-                setTunnelUrl(result.url);
-                addLog(`Tunnel URL: ${result.url}`, true);
+            const url = result.url?.trim() || result.tunnelUrl?.trim() || "";
+            const success = Boolean(url) || result.ok === true;
 
-                // Auto-write to address book shared config
-                await invoke("write_tunnel_to_address_book", {
-                    lmxHost,
-                    lmxPort,
-                    tunnelUrl: result.url,
-                }).catch(() => { /* Non-fatal if address book write fails */ });
-
-                setTimeout(() => setStep(4), 600);
-            } else {
-                setError(result.message ?? "Provisioning failed.");
+            if (success && url) {
+                setTunnelUrl(url);
+                addLog(`Opta Anywhere URL: ${url}`, true);
+                if (result.ok === false && (result.message || result.error)) {
+                    addLog(result.message ?? result.error ?? "Some setup steps reported warnings.", false);
+                }
+                setStep(2);
+                onComplete(url);
+                return;
             }
+
+            const failureMessage = result.message ?? result.error ?? "Unable to enable Opta Anywhere.";
+            addLog(failureMessage, false);
+            setError(genericEnableError);
+            setStep(0);
         } catch (e) {
-            setError(String(e));
+            const message = e instanceof Error ? e.message : String(e);
+            addLog(message, false);
+            setError(genericEnableError);
+            setStep(0);
         } finally {
             listenerRef.current?.();
             listenerRef.current = null;
@@ -222,16 +225,16 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                 boxShadow: "0 0 60px rgba(139,92,246,0.08)",
                 fontFamily: "Sora, sans-serif",
             }}>
-                <StepDots current={step} total={5} />
+                <StepDots current={step} total={3} />
 
-                {/* ─── Step 0: Intro ─── */}
-                {step === 0 && (
+                {/* ─── Intro + Enabling ─── */}
+                {(step === 0 || step === 1) && (
                     <div>
                         <h2 style={{ color: "#fafafa", fontSize: "1.2rem", fontWeight: 600, marginBottom: "0.75rem", margin: "0 0 0.75rem" }}>
-                            Remote Access Setup
+                            Opta Anywhere
                         </h2>
                         <p style={{ color: "#a1a1aa", fontSize: "0.875rem", lineHeight: 1.6, margin: "0 0 1.25rem" }}>
-                            Set up a secure Cloudflare Tunnel so you can access your Opta LMX models from anywhere — no port forwarding, no dynamic DNS, no VPN required.
+                            Enable secure remote access for your Opta LMX with one guided setup. Opta will configure everything and return a shareable URL when ready.
                         </p>
                         <div style={{
                             display: "grid", gridTemplateColumns: "1fr 1fr",
@@ -239,7 +242,7 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                         }}>
                             {[
                                 { label: "At Home (LAN)", desc: "Direct connection\n~5ms latency", color: "#10b981" },
-                                { label: "Away (WAN)", desc: "Encrypted tunnel\n~80ms latency", color: "#8b5cf6" },
+                                { label: "Away (WAN)", desc: "Encrypted connection\n~80ms latency", color: "#8b5cf6" },
                             ].map(({ label, desc, color }) => (
                                 <div key={label} style={{
                                     background: "rgba(255,255,255,0.03)",
@@ -253,9 +256,12 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                                 </div>
                             ))}
                         </div>
-                        <p style={{ color: "#52525b", fontSize: "0.78rem", margin: "0 0 1.5rem", lineHeight: 1.5 }}>
-                            This will install <code style={{ color: "#a1a1aa" }}>cloudflared</code> on your machine, create an encrypted tunnel, and wire it into Opta Code Desktop automatically.
-                        </p>
+                        {logs.length > 0 && <LogTerminal lines={logs} />}
+                        {!busy && (
+                            <p style={{ color: "#52525b", fontSize: "0.78rem", margin: "0.9rem 0 1.5rem", lineHeight: 1.5 }}>
+                                This setup keeps local and remote access aligned so Opta Code Desktop can connect reliably from anywhere.
+                            </p>
+                        )}
                         <div style={{ display: "flex", gap: "0.75rem" }}>
                             <button
                                 type="button"
@@ -265,10 +271,13 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                                     color: "#fff", fontFamily: "Sora, sans-serif",
                                     fontWeight: 600, fontSize: "0.875rem",
                                     padding: "0.6rem 1rem", cursor: "pointer",
+                                    display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center",
                                 }}
-                                onClick={() => setStep(1)}
+                                onClick={() => void runEnable()}
+                                disabled={busy}
                             >
-                                Set Up Remote Access
+                                {busy && <Spinner />}
+                                {busy ? "Enabling Opta Anywhere…" : "Enable Opta Anywhere"}
                             </button>
                             <button
                                 type="button"
@@ -282,22 +291,9 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                                 }}
                                 onClick={onClose}
                             >
-                                Skip for Now
+                                {busy ? "Cancel" : "Skip for Now"}
                             </button>
                         </div>
-                    </div>
-                )}
-
-                {/* ─── Step 1: Install ─── */}
-                {step === 1 && (
-                    <div>
-                        <h2 style={{ color: "#fafafa", fontSize: "1.1rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-                            Install cloudflared
-                        </h2>
-                        <p style={{ color: "#a1a1aa", fontSize: "0.85rem", margin: "0 0 1rem", lineHeight: 1.5 }}>
-                            The <code style={{ color: "#a1a1aa" }}>cloudflared</code> daemon creates and manages the encrypted tunnel. It only needs to be installed once.
-                        </p>
-                        {logs.length > 0 && <LogTerminal lines={logs} />}
                         {error && (
                             <div style={{
                                 background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)",
@@ -306,128 +302,11 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                                 fontFamily: "JetBrains Mono, monospace",
                             }}>{error}</div>
                         )}
-                        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
-                            <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void runInstall()}
-                                style={{
-                                    flex: 1, background: busy ? "rgba(139,92,246,0.3)" : "#8b5cf6",
-                                    border: "none", borderRadius: "8px",
-                                    color: "#fff", fontFamily: "Sora, sans-serif",
-                                    fontWeight: 600, fontSize: "0.875rem",
-                                    padding: "0.6rem 1rem", cursor: busy ? "not-allowed" : "pointer",
-                                    display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center",
-                                }}
-                            >
-                                {busy && <Spinner />}
-                                {busy ? "Installing…" : "Install via Homebrew"}
-                            </button>
-                            <button type="button" style={{ background: "transparent", border: "1px solid rgba(63,63,70,0.6)", borderRadius: "8px", color: "#71717a", fontFamily: "Sora, sans-serif", fontSize: "0.875rem", padding: "0.6rem 1rem", cursor: "pointer" }} onClick={onClose}>Cancel</button>
-                        </div>
                     </div>
                 )}
 
-                {/* ─── Step 2: Auth ─── */}
+                {/* ─── Connected ─── */}
                 {step === 2 && (
-                    <div>
-                        <h2 style={{ color: "#fafafa", fontSize: "1.1rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-                            Connect to Cloudflare
-                        </h2>
-                        <p style={{ color: "#a1a1aa", fontSize: "0.85rem", margin: "0 0 1rem", lineHeight: 1.5 }}>
-                            We'll open your browser to authorize the tunnel. Log in with your Cloudflare account — Opta Init will detect completion automatically.
-                        </p>
-                        <div style={{
-                            background: "rgba(139,92,246,0.06)",
-                            border: "1px solid rgba(139,92,246,0.25)",
-                            borderRadius: "10px", padding: "0.875rem",
-                            color: "#a1a1aa", fontSize: "0.82rem", lineHeight: 1.6,
-                            marginBottom: "1rem",
-                        }}>
-                            <strong style={{ color: "#fafafa" }}>What happens:</strong><br />
-                            1. Your browser opens to cloudflare.com/login<br />
-                            2. You approve the tunnel in Cloudflare's UI<br />
-                            3. Opta Init detects the approval and continues automatically
-                        </div>
-                        {error && (
-                            <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "0.75rem", color: "#fca5a5", fontSize: "0.8rem", margin: "0.75rem 0", fontFamily: "JetBrains Mono, monospace" }}>{error}</div>
-                        )}
-                        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
-                            <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void runAuth()}
-                                style={{
-                                    flex: 1, background: busy ? "rgba(139,92,246,0.3)" : "#8b5cf6",
-                                    border: "none", borderRadius: "8px",
-                                    color: "#fff", fontFamily: "Sora, sans-serif",
-                                    fontWeight: 600, fontSize: "0.875rem",
-                                    padding: "0.6rem 1rem", cursor: busy ? "not-allowed" : "pointer",
-                                    display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center",
-                                }}
-                            >
-                                {busy && <Spinner />}
-                                {busy ? "Waiting for browser approval…" : "Open Cloudflare Login"}
-                            </button>
-                            <button type="button" style={{ background: "transparent", border: "1px solid rgba(63,63,70,0.6)", borderRadius: "8px", color: "#71717a", fontFamily: "Sora, sans-serif", fontSize: "0.875rem", padding: "0.6rem 1rem", cursor: "pointer" }} onClick={onClose}>Cancel</button>
-                        </div>
-                    </div>
-                )}
-
-                {/* ─── Step 3: Provision ─── */}
-                {step === 3 && (
-                    <div>
-                        <h2 style={{ color: "#fafafa", fontSize: "1.1rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-                            Create Tunnel
-                        </h2>
-                        <p style={{ color: "#a1a1aa", fontSize: "0.85rem", margin: "0 0 1rem", lineHeight: 1.5 }}>
-                            Give your tunnel a name. A stable HTTPS URL will be created and wired into Opta Code Desktop automatically.
-                        </p>
-                        <div style={{ marginBottom: "1rem" }}>
-                            <label style={{ display: "block", color: "#a1a1aa", fontSize: "0.78rem", marginBottom: "0.4rem" }}>
-                                Tunnel name
-                            </label>
-                            <input
-                                type="text"
-                                value={tunnelName}
-                                onChange={(e) => setTunnelName(e.target.value)}
-                                style={{
-                                    width: "100%", background: "#0a0a0c",
-                                    border: "1px solid rgba(63,63,70,0.6)", borderRadius: "8px",
-                                    color: "#fafafa", fontFamily: "JetBrains Mono, monospace",
-                                    fontSize: "0.875rem", padding: "0.5rem 0.75rem",
-                                    boxSizing: "border-box",
-                                }}
-                            />
-                        </div>
-                        {logs.length > 0 && <LogTerminal lines={logs} />}
-                        {error && (
-                            <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: "8px", padding: "0.75rem", color: "#fca5a5", fontSize: "0.8rem", margin: "0.75rem 0", fontFamily: "JetBrains Mono, monospace" }}>{error}</div>
-                        )}
-                        <div style={{ display: "flex", gap: "0.75rem", marginTop: "1.25rem" }}>
-                            <button
-                                type="button"
-                                disabled={busy}
-                                onClick={() => void runProvision()}
-                                style={{
-                                    flex: 1, background: busy ? "rgba(139,92,246,0.3)" : "#8b5cf6",
-                                    border: "none", borderRadius: "8px",
-                                    color: "#fff", fontFamily: "Sora, sans-serif",
-                                    fontWeight: 600, fontSize: "0.875rem",
-                                    padding: "0.6rem 1rem", cursor: busy ? "not-allowed" : "pointer",
-                                    display: "flex", alignItems: "center", gap: "0.5rem", justifyContent: "center",
-                                }}
-                            >
-                                {busy && <Spinner />}
-                                {busy ? "Provisioning…" : "Create Tunnel"}
-                            </button>
-                            <button type="button" style={{ background: "transparent", border: "1px solid rgba(63,63,70,0.6)", borderRadius: "8px", color: "#71717a", fontFamily: "Sora, sans-serif", fontSize: "0.875rem", padding: "0.6rem 1rem", cursor: "pointer" }} onClick={onClose}>Cancel</button>
-                        </div>
-                    </div>
-                )}
-
-                {/* ─── Step 4: Done ─── */}
-                {step === 4 && (
                     <div style={{ textAlign: "center" }}>
                         <div style={{
                             width: "48px", height: "48px", borderRadius: "50%",
@@ -437,10 +316,10 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                             fontSize: "1.4rem",
                         }}>✓</div>
                         <h2 style={{ color: "#fafafa", fontSize: "1.1rem", fontWeight: 600, margin: "0 0 0.5rem" }}>
-                            Tunnel Active
+                            Opta Anywhere Connected
                         </h2>
                         <p style={{ color: "#a1a1aa", fontSize: "0.85rem", margin: "0 0 1rem", lineHeight: 1.5 }}>
-                            Your tunnel is live and has been wired into Opta Code Desktop. You can now access your models from anywhere.
+                            Your remote access endpoint is active and ready to use.
                         </p>
                         {tunnelUrl && (
                             <div style={{
@@ -455,24 +334,6 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                             </div>
                         )}
                         <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                            <div style={{ display: "flex", gap: "0.5rem", justifyContent: "center" }}>
-                                {[
-                                    { label: "LAN", latency: "~5ms", color: "#10b981" },
-                                    { label: "WAN", latency: "~80ms", color: "#8b5cf6" },
-                                ].map(({ label, latency, color }) => (
-                                    <div key={label} style={{
-                                        display: "flex", alignItems: "center", gap: "0.4rem",
-                                        background: "rgba(255,255,255,0.04)",
-                                        border: "1px solid rgba(63,63,70,0.5)",
-                                        borderRadius: "6px", padding: "0.35rem 0.75rem",
-                                        fontSize: "0.8rem",
-                                    }}>
-                                        <span style={{ color, fontWeight: 600 }}>{label}</span>
-                                        <span style={{ color: "#71717a", fontFamily: "JetBrains Mono, monospace" }}>{latency}</span>
-                                        <span style={{ color: "#10b981" }}>✓</span>
-                                    </div>
-                                ))}
-                            </div>
                             <button
                                 type="button"
                                 style={{
@@ -481,9 +342,9 @@ export function TunnelWizard({ lmxHost, lmxPort, onClose, onComplete }: TunnelWi
                                     fontWeight: 600, fontSize: "0.875rem",
                                     padding: "0.6rem 1rem", cursor: "pointer", marginTop: "0.75rem",
                                 }}
-                                onClick={() => { onComplete(tunnelUrl); onClose(); }}
+                                onClick={onClose}
                             >
-                                Done
+                                Close
                             </button>
                         </div>
                     </div>

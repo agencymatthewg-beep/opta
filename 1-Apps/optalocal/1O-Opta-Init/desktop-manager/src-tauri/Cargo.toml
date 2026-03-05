@@ -1,6 +1,6 @@
 [package]
 name = "opta-init-desktop-manager"
-version = "0.7.0"
+version = "0.7.2"
 description = "Opta Init Desktop Manager"
 authors = ["Opta"]
 edition = "2021"
