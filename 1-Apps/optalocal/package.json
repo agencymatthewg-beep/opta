@@ -2,6 +2,18 @@
   "name": "optalocal-workspace",
   "private": true,
   "version": "0.1.0",
+  "workspaces": [
+    "1D-Opta-CLI-TS",
+    "1L-Opta-LMX-Dashboard",
+    "1O-Opta-Init",
+    "1P-Opta-Code-Universal",
+    "1R-Opta-Accounts",
+    "1S-Opta-Status",
+    "1T-Opta-Home",
+    "1U-Opta-Help",
+    "1V-Opta-Learn",
+    "1X-Opta-Admin"
+  ],
   "scripts": {
     "apps:list": "node scripts/opta-local-workspace.mjs list",
     "apps:verify": "node scripts/opta-local-workspace.mjs verify",
