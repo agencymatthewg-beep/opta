@@ -21,7 +21,7 @@ opta daemon   127.0.0.1:9999      (1D-Opta-CLI-TS/src/daemon/)
         │   HTTP v3 REST + WebSocket streaming
 Opta LMX  lmx-host.local:1234     (1M-Opta-LMX)
         │   OpenAI-compatible /v1/chat/completions + WebSocket /v1/chat/stream
-Opta Local Web  localhost:3004    (1L-Opta-Local/web/)
+Opta Local Web  localhost:3004    (1L-Opta-LMX-Dashboard/)
 ```
 
 The daemon owns session orchestration, permission gating, and event persistence.
@@ -114,7 +114,7 @@ POST /admin/models/unload          # Unload model
 
 ---
 
-### Opta Local Web (1L-Opta-Local/web/)
+### Opta Local Web (1L-Opta-LMX-Dashboard/)
 
 **What it is:** React/Next.js dashboard for local LMX management and chat.
 

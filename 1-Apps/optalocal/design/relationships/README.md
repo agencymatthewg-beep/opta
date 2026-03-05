@@ -16,7 +16,7 @@ These are the core applications within the Opta Local sub-ecosystem. They are th
     *   **Role:** The core local inference engine.
     *   **Relationships:** The backend brain for Opta CLI, Opta Local, and Opta Code Desktop. Serves the local API and manages model resources.
 
-*   **Opta Local (1L-Opta-Local)**
+*   **Opta Local (1L-Opta-LMX-Dashboard)**
     *   **Role:** The local web-based management dashboard for Opta LMX.
     *   **Relationships:** Provides a graphical control plane directly over the Opta LMX engine, allowing users to configure and monitor models visually.
 

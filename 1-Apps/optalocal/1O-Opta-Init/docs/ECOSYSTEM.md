@@ -7,7 +7,7 @@ Opta Init is one node in the optalocal.com multi-app platform for LLM optimizati
 ```
 optalocal.com (platform root)
 ├── init.optalocal.com     <- THIS APP — onboarding + downloads
-├── lmx.optalocal.com      <- Opta Local dashboard (1L-Opta-Local/web)
+├── lmx.optalocal.com      <- Opta Local dashboard (1L-Opta-LMX-Dashboard)
 └── [future subdomains]
 ```
 

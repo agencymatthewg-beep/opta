@@ -68,7 +68,7 @@ async function probeUrl(
   }
 }
 
-// Migrated from 1L-Opta-Local/web connection probing so web runtime can choose
+// Migrated from 1L-Opta-LMX-Dashboard connection probing so web runtime can choose
 // the best reachable daemon endpoint without native IPC.
 export async function probeDaemonConnection(
   connection: DaemonConnectionOptions,

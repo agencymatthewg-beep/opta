@@ -108,7 +108,7 @@ function discoverSupabaseAuthConfig(
   for (const root of roots) {
     candidates.push(
       join(root, '1R-Opta-Accounts', '.env.local'),
-      join(root, '1L-Opta-Local', 'web', '.env.local'),
+      join(root, '1L-Opta-LMX-Dashboard', '.env.local'),
     );
   }
 

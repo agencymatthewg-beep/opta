@@ -175,7 +175,7 @@ Also connects to:
 - Model compatibility table included (Kimi K2.5, MiniMax, Qwen, Llama, DeepSeek)
 - Local vs Cloud architecture diagram (not generic privacy copy)
 
-**Vercel project settings updated:** rootDirectory changed from `1L-Opta-Local/web` → `1T-Opta-Home`
+**Vercel project settings updated:** rootDirectory changed from `1L-Opta-LMX-Dashboard` → `1T-Opta-Home`
 
 ---
 

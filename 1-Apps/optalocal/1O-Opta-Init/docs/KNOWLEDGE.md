@@ -26,7 +26,7 @@
 - Glassmorphism: 1px border at 10% white opacity + inner shadow + noise
 
 ### Existing Design Tokens (canonical)
-**globals.css** (1L-Opta-Local/web/src/app/)
+**globals.css** (1L-Opta-LMX-Dashboard/src/app/)
 - Complete --opta-* token set — copy directly into this project
 
 ## Relevant Ecosystem Files
@@ -35,7 +35,7 @@
 |------|----------|-------------|
 | APP.md | 1D-Opta-CLI-TS/ | Opta CLI purpose + install info |
 | APP.md | 1M-Opta-LMX/ | Opta LMX purpose + install info |
-| globals.css | 1L-Opta-Local/web/src/app/ | Canonical design tokens |
+| globals.css | 1L-Opta-LMX-Dashboard/src/app/ | Canonical design tokens |
 | VISUAL-IDENTITY.md | 1K-Optamize-Web/brand/ | Brand rationale |
 
 ## Key Technical References
