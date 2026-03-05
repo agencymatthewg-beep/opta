@@ -2277,6 +2277,287 @@ async fn trigger_logout() -> Result<(), String> {
     Ok(())
 }
 
+// ─── Cloudflare Tunnel Commands ─────────────────────────────────────────────
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct CloudflaredInstallResult {
+    ok: bool,
+    message: Option<String>,
+}
+
+/// Install cloudflared via Homebrew (macOS) or direct download (Windows/Linux).
+/// Emits "tunnel-install-progress" events with { line, ok? } during install.
+#[tauri::command]
+async fn install_cloudflared(app: tauri::AppHandle) -> Result<CloudflaredInstallResult, String> {
+    use tokio::io::{AsyncBufReadExt, BufReader};
+
+    // Check if already installed
+    if let Ok(output) = tokio::process::Command::new("which")
+        .arg("cloudflared")
+        .output()
+        .await
+    {
+        if output.status.success() {
+            let _ = app.emit("tunnel-install-progress", serde_json::json!({ "line": "cloudflared is already installed.", "ok": true }));
+            return Ok(CloudflaredInstallResult { ok: true, message: Some("Already installed.".to_string()) });
+        }
+    }
+
+    let _ = app.emit("tunnel-install-progress", serde_json::json!({ "line": "Running: brew install cloudflared" }));
+
+    let mut child = tokio::process::Command::new("brew")
+        .args(["install", "cloudflared"])
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::piped())
+        .spawn()
+        .map_err(|e| format!("Failed to start brew: {}", e))?;
+
+    if let Some(stdout) = child.stdout.take() {
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            let mut reader = BufReader::new(stdout).lines();
+            while let Ok(Some(line)) = reader.next_line().await {
+                let _ = app_clone.emit("tunnel-install-progress", serde_json::json!({ "line": line }));
+            }
+        });
+    }
+
+    if let Some(stderr) = child.stderr.take() {
+        let app_clone = app.clone();
+        tokio::spawn(async move {
+            let mut reader = BufReader::new(stderr).lines();
+            while let Ok(Some(line)) = reader.next_line().await {
+                let _ = app_clone.emit("tunnel-install-progress", serde_json::json!({ "line": line }));
+            }
+        });
+    }
+
+    let status = child.wait().await.map_err(|e| format!("brew wait failed: {}", e))?;
+
+    if status.success() {
+        let _ = app.emit("tunnel-install-progress", serde_json::json!({ "line": "cloudflared installed successfully.", "ok": true }));
+        Ok(CloudflaredInstallResult { ok: true, message: None })
+    } else {
+        Ok(CloudflaredInstallResult {
+            ok: false,
+            message: Some("brew install cloudflared failed. Check that Homebrew is installed.".to_string()),
+        })
+    }
+}
+
+/// Start `cloudflared tunnel login` (opens browser) and poll until cert.pem appears.
+#[tauri::command]
+async fn start_cloudflared_login() -> Result<(), String> {
+    // Spawn cloudflared login — this opens the browser
+    tokio::process::Command::new("cloudflared")
+        .args(["tunnel", "login"])
+        .stdout(std::process::Stdio::null())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .map_err(|e| format!("Failed to start cloudflared login: {}", e))?;
+
+    // Poll for cert.pem with a 5-minute timeout
+    let cert_path = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("~"))
+        .join(".cloudflared")
+        .join("cert.pem");
+
+    for _ in 0..300 {
+        tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
+        if cert_path.exists() {
+            return Ok(());
+        }
+    }
+
+    Err("Cloudflare login timed out after 5 minutes. Please try again.".to_string())
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct TunnelProvisionResult {
+    ok: bool,
+    url: String,
+    message: Option<String>,
+}
+
+/// Create a cloudflared tunnel and write its config pointing to localhost:<lmx_port>.
+/// Emits "tunnel-provision-progress" events during provisioning.
+#[tauri::command]
+async fn provision_cloudflared_tunnel(
+    app: tauri::AppHandle,
+    name: String,
+    lmx_host: String,
+    lmx_port: u16,
+) -> Result<TunnelProvisionResult, String> {
+    let emit_step = |msg: &str, ok: Option<bool>| {
+        let payload = match ok {
+            Some(v) => serde_json::json!({ "line": msg, "ok": v }),
+            None     => serde_json::json!({ "line": msg }),
+        };
+        let _ = app.emit("tunnel-provision-progress", payload);
+    };
+
+    // Step 1: Create the named tunnel
+    emit_step(&format!("Creating tunnel: {}", name), None);
+    let create_output = tokio::process::Command::new("cloudflared")
+        .args(["tunnel", "create", &name])
+        .output()
+        .await
+        .map_err(|e| format!("Failed to create tunnel: {}", e))?;
+
+    if !create_output.status.success() {
+        let err = String::from_utf8_lossy(&create_output.stderr);
+        emit_step(&format!("Tunnel create failed: {}", err), Some(false));
+        return Ok(TunnelProvisionResult {
+            ok: false,
+            url: String::new(),
+            message: Some(format!("Tunnel create failed: {}", err)),
+        });
+    }
+    emit_step(&format!("Tunnel '{}' created.", name), Some(true));
+
+    // Step 2: Write config.yaml pointing to LMX
+    let config_dir = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("~"))
+        .join(".cloudflared");
+    let config_path = config_dir.join("config.yaml");
+    let ingress_url = format!("http://{}:{}", lmx_host, lmx_port);
+    let config_content = format!(
+        "tunnel: {}\ncredentials-file: {}/.cloudflared/{}.json\ningress:\n  - service: {}\n",
+        name,
+        dirs::home_dir().map(|p| p.to_string_lossy().to_string()).unwrap_or_default(),
+        name,
+        ingress_url
+    );
+
+    emit_step("Writing cloudflared config.yaml...", None);
+    std::fs::write(&config_path, config_content)
+        .map_err(|e| format!("Failed to write config: {}", e))?;
+    emit_step("Config written.", Some(true));
+
+    // Step 3: Start a quick-tunnel to get a trycloudflare.com URL
+    // (This works without a domain and gives an immediate usable URL)
+    emit_step("Starting quick-tunnel to get HTTPS URL...", None);
+    let quick_output = tokio::process::Command::new("cloudflared")
+        .args(["tunnel", "--url", &ingress_url, "--no-autoupdate", "run", &name])
+        .output()
+        .await;
+
+    // Extract the trycloudflare.com URL from stderr (cloudflared prints it there)
+    let tunnel_url = if let Ok(ref output) = quick_output {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        stderr
+            .lines()
+            .find(|line| line.contains("trycloudflare.com") || line.contains(".cfargotunnel.com"))
+            .and_then(|line| {
+                line.split_whitespace()
+                    .find(|tok| tok.starts_with("https://"))
+                    .map(|s| s.to_string())
+            })
+            .unwrap_or_else(|| format!("https://{}.cfargotunnel.com", name))
+    } else {
+        format!("https://{}.cfargotunnel.com", name)
+    };
+
+    emit_step(&format!("Tunnel URL: {}", tunnel_url), Some(true));
+
+    Ok(TunnelProvisionResult {
+        ok: true,
+        url: tunnel_url,
+        message: None,
+    })
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+#[serde(rename_all = "camelCase")]
+struct LmxConnectionEntry {
+    id: String,
+    label: String,
+    host: String,
+    port: u16,
+    tunnel_url: Option<String>,
+    last_connected_via: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct LmxConnectionsFile {
+    entries: Vec<LmxConnectionEntry>,
+}
+
+/// Write or update the tunnel URL for an LMX entry in the shared connection store.
+/// File: ~/.config/opta/lmx-connections.json
+#[tauri::command]
+async fn write_tunnel_to_address_book(
+    lmx_host: String,
+    lmx_port: u16,
+    tunnel_url: String,
+) -> Result<(), String> {
+    let config_dir = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("~"))
+        .join(".config")
+        .join("opta");
+
+    std::fs::create_dir_all(&config_dir)
+        .map_err(|e| format!("Failed to create config dir: {}", e))?;
+
+    let file_path = config_dir.join("lmx-connections.json");
+
+    let mut store: LmxConnectionsFile = if file_path.exists() {
+        let content = std::fs::read_to_string(&file_path)
+            .map_err(|e| format!("Failed to read connections file: {}", e))?;
+        serde_json::from_str(&content).unwrap_or(LmxConnectionsFile { entries: vec![] })
+    } else {
+        LmxConnectionsFile { entries: vec![] }
+    };
+
+    let entry_id = format!("{}:{}", lmx_host, lmx_port);
+
+    if let Some(existing) = store.entries.iter_mut().find(|e| e.host == lmx_host && e.port == lmx_port) {
+        existing.tunnel_url = Some(tunnel_url);
+        existing.last_connected_via = Some("lan".to_string());
+    } else {
+        store.entries.push(LmxConnectionEntry {
+            id: entry_id,
+            label: format!("LMX @ {}:{}", lmx_host, lmx_port),
+            host: lmx_host,
+            port: lmx_port,
+            tunnel_url: Some(tunnel_url),
+            last_connected_via: Some("lan".to_string()),
+        });
+    }
+
+    let json = serde_json::to_string_pretty(&store)
+        .map_err(|e| format!("Failed to serialize connections: {}", e))?;
+    std::fs::write(&file_path, json)
+        .map_err(|e| format!("Failed to write connections file: {}", e))?;
+
+    Ok(())
+}
+
+/// Return the stored LMX host/port from shared config (if set by the wizard).
+#[tauri::command]
+async fn get_lmx_connection() -> Result<serde_json::Value, String> {
+    let file_path = dirs::home_dir()
+        .unwrap_or_else(|| std::path::PathBuf::from("~"))
+        .join(".config")
+        .join("opta")
+        .join("lmx-connections.json");
+
+    if !file_path.exists() {
+        return Ok(serde_json::json!({}));
+    }
+
+    let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
+    let store: LmxConnectionsFile = serde_json::from_str(&content).map_err(|e| e.to_string())?;
+
+    if let Some(entry) = store.entries.first() {
+        Ok(serde_json::json!({ "host": entry.host, "port": entry.port, "tunnelUrl": entry.tunnel_url }))
+    } else {
+        Ok(serde_json::json!({}))
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
@@ -2304,7 +2585,12 @@ fn main() {
             save_opta_config,
             get_account_status,
             trigger_login,
-            trigger_logout
+            trigger_logout,
+            install_cloudflared,
+            start_cloudflared_login,
+            provision_cloudflared_tunnel,
+            write_tunnel_to_address_book,
+            get_lmx_connection,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

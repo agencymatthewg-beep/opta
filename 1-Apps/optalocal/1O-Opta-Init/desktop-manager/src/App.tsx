@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { Settings } from "lucide-react";
+import { buildLmxMagicUrl, DEFAULT_LMX_HOST, DEFAULT_LMX_PORT } from "./lib/magicLink";
+import { TunnelWizard } from "./pages/TunnelWizard";
 import type {
   Channel,
   DaemonStatus,
@@ -323,6 +325,31 @@ export function App() {
   const [hoveredApp, setHoveredApp] = useState<ManifestApp | null>(null);
   const [showScanPrompt, setShowScanPrompt] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showTunnelWizard, setShowTunnelWizard] = useState(false);
+
+  // LMX connection info — used to build magic links for the dashboard
+  const [lmxHost, setLmxHost] = useState<string>(() => {
+    if (typeof window === "undefined") return DEFAULT_LMX_HOST;
+    return window.localStorage.getItem("opta-lmx-url")
+      ?.replace(/^https?:\/\//, "").split(":")[0]
+      ?? DEFAULT_LMX_HOST;
+  });
+  const [lmxPort, setLmxPort] = useState<number>(() => {
+    if (typeof window === "undefined") return DEFAULT_LMX_PORT;
+    const stored = window.localStorage.getItem("opta-lmx-url");
+    const portStr = stored?.replace(/^https?:\/\//, "").split(":")[1];
+    const parsed = portStr ? parseInt(portStr, 10) : NaN;
+    return Number.isFinite(parsed) ? parsed : DEFAULT_LMX_PORT;
+  });
+
+  // Keep lmx host/port in sync with any changes from our daemon discovery
+  useEffect(() => {
+    if (!tauriAvailable) return;
+    invoke<{ host?: string; port?: number }>("get_lmx_connection").then((cfg) => {
+      if (cfg?.host) setLmxHost(cfg.host);
+      if (cfg?.port) setLmxPort(cfg.port);
+    }).catch(() => { /* Command may not exist yet — use defaults */ });
+  }, [tauriAvailable]);
 
   const installedIndex = useMemo(() => {
     const map = new Map<string, InstalledApp>();
@@ -558,7 +585,11 @@ export function App() {
         onMouseEnter={() => setHoveredApp(app)}
         onMouseLeave={() => setHoveredApp(null)}
         onClick={() => {
-          if (app.website) {
+          if (app.id === "opta-lmx") {
+            // Open LMX Dashboard with magic-link: auto-connects to the known LMX endpoint
+            const magicUrl = buildLmxMagicUrl({ host: lmxHost, port: lmxPort, via: "lan" });
+            invoke("open_url", { url: magicUrl }).catch(console.error);
+          } else if (app.website) {
             invoke("open_url", { url: app.website }).catch(console.error);
           }
         }}
@@ -719,6 +750,19 @@ export function App() {
           <button className="settings-cog" onClick={() => setShowSettings(true)} title="Settings">
             <Settings size={20} />
           </button>
+          <button
+            className="settings-cog"
+            onClick={() => setShowTunnelWizard(true)}
+            title="Set up Remote Access (Cloudflare Tunnel)"
+            style={{ marginLeft: "0.4rem" }}
+          >
+            {/* Globe / tunnel icon */}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -815,6 +859,18 @@ export function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {showTunnelWizard && (
+        <TunnelWizard
+          lmxHost={lmxHost}
+          lmxPort={lmxPort}
+          onClose={() => setShowTunnelWizard(false)}
+          onComplete={(tunnelUrl) => {
+            console.log("Tunnel configured:", tunnelUrl);
+            setShowTunnelWizard(false);
+          }}
+        />
       )}
     </div>
   );
