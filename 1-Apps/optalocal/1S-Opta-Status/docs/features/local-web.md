@@ -60,6 +60,8 @@ Opta Local (`1T-Opta-Home`) is the public home/marketing experience for Opta Loc
 
 ## Recent Updates
 
+- 2026-03-05 — Shipped the Ecosystem Smart Setup features: LMX Dashboard magic-link `/connect` route for zero-co...
+
 - 2026-03-04 — 
 
 - 2026-03-04 — The LMX Dashboard data layer now has 100% coverage of the Opta LMX backend API surface.
@@ -74,9 +76,12 @@ Opta Local (`1T-Opta-Home`) is the public home/marketing experience for Opta Loc
 - Local-web health endpoint exists in 1T; degraded states are deployment/target issues when `https://optalocal.com/api/health` is unreachable.
 
 ## Auto-Synced Features
+- [x] New `/connect` route with `ConnectAutoSetup` client component — validates URL params, hydrates connection context, auto-redirects on success with animated connecting splash and LMX logo.
 - [x] Feature: 
 - [x] Feature: The LMX Dashboard data layer now has 100% coverage of the Opta LMX backend API s
 
 <!-- opta-sync-applied: 0005-lmx-dashboard-full-api-coverage -->
 
 <!-- opta-sync-applied: 0006-lmx-dashboard-sidebar-and-feature-pages -->
+
+<!-- opta-sync-applied: 0010-ecosystem-smart-setup -->
