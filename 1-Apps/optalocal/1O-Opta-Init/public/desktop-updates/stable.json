@@ -1,19 +1,19 @@
 {
-  "version": "0.7.0",
-  "notes": "https://github.com/agencymatthewg-beep/opta/releases/tag/opta-init-manager-stable-v0.7.0",
-  "pub_date": "2026-03-05T06:30:57Z",
+  "version": "0.7.2",
+  "notes": "https://github.com/agencymatthewg-beep/opta/releases/tag/opta-init-manager-stable-v0.7.2",
+  "pub_date": "2026-03-05T13:21:48Z",
   "platforms": {
     "darwin-aarch64": {
-      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_aarch64.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWDIzeGl1Q2ZiWlhmVDg5VjZhRlQ4Mm01ZWhMTUhJc0xTS2hVdDdNU1g0eE9aK1h2VnBWbU9ydmJINTZzWk5jYm83bWVhdk5oQmorZC90NmNveHBYcVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNjkyNTQ0CWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyLmFwcC50YXIuZ3oKV0xBdlA2cUlyR3Uyb3UrRXZKT1ZxcGlpVXVxMlBMS2hFVnlTeER5NVdYV2htQmJ3RFd5aHhwcExGR1lNVWEya0E0SE5ESGdMNHNDcCsyckN6ODRBQlE9PQo="
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_aarch64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWDZnMkVjdnRTUmZENmVVZHdUV2wwUS82VjV5dnRYWHc4aDc5ZnZ3cEovRG9KSUQ3Y0tiVjdrODFZL2cyZXNWZkZjZDdwSk1IM3YwajJBdFU4NDc3MVFBPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNzE3MTMzCWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyLmFwcC50YXIuZ3oKc0JsT3R4aDF5RDdSbkxGd2lmUWhvbkNtVkc5SGg3UkZxZjFibUlmQWNjblFhVysvcVVrTVduU0VvOUJPd2VrL2diVDVVWFZoejJtUmRXSzZlVUNwRFE9PQo="
     },
     "darwin-x86_64": {
-      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_x64.app.tar.gz",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWHp5YjVHRmZJemRQOXZ3WHd6OUpFNGlOV0hyTDF0dm9vUjRrVlpMMGk1YklZRDlDRzVCRXMxdDkzYk4zaGRCY2wzYkNiOU9SZXhlSUE4K2UxQkxoakE4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNjkyNDEzCWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyLmFwcC50YXIuZ3oKU3h2U2Q4OTByQVNmWXJFTGVzWitPN3Z3V0I2VWVIU2lMYzJmN1ROSkkza2hsaW83b3hkeHdVREJmQy9VTG1KT0hwVXVJSzE5bDhwV01RbDdEeWUzREE9PQo="
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_x64.app.tar.gz",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWDF0QVdLTndxSDBHRlpPYVpxV3BIMzRtOEhOYXg4UU1RcWpaaFFpRlVaQjFpSVdSQmthaVhiUDRIVGNEMzB3dXYvMFRyNVVpcy9HR1dQWVYranFqd1FrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNzE3MTA1CWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyLmFwcC50YXIuZ3oKcFpvRUlRV1dTRlBwVnBidVF0TkhRRWxKRlJsckRFQStjNHp6OTJLSDYvOGFUSmJNTlVGS1N1VURmRVhXaUhyY2FtWWVXWGhpUzg5djJMd1VXYStZRFE9PQo="
     },
     "windows-x86_64": {
-      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_x64-setup.nsis.zip",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWDBvaVpLdHNDWHEySW91TVpEN1B1NzA2Y1VwQVh4TG0zcENyaUJFTkFQT1BibDAzQ0VqTFBXMWlXcnF0SlJBNjlxNytvZ1BYVStLUXBhS1pjaWo1RHdnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNjkyNTUzCWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyXzAuNy4wX3g2NC1zZXR1cC5uc2lzLnppcApuOE5PYm5XeXI2SWlFZWIydmdkck9RTWh6dXRaZWxxY09QL3lzMEVYa0xxRkQ5KzFJZ25hVUZEWGtIQ0wxRTZ2T0paWnFvT2QxUDhUZnRwS1hyMUpBUT09Cg=="
+      "url": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_x64-setup.nsis.zip",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSR2NlU3JLc3BOWDh4a2h2SWliNElHQmhkWExPMWZ6N2RSUE9SdzZmSHhxeUkzdWZjUEIwT0FaaVFiSFM4L3hlQ0tORGdNWExoZVhwNnIrOXhGNVdkM2VSeFpxaForSlFNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzcyNzE3MjAxCWZpbGU6T3B0YSBJbml0IEFwcCBNYW5hZ2VyXzAuNy4yX3g2NC1zZXR1cC5uc2lzLnppcApJTllPNmY2UWtaTE5aQ2Vudk5IWTlJNzZ6WVVZS09zSlVWMnFBMXFSdmxwSW8vWnFJMXRBajVBVzgxVXFZemlUeW1qUDl3d3ZFWm9tWDVNZFJMN3NEZz09Cg=="
     }
   }
 }
