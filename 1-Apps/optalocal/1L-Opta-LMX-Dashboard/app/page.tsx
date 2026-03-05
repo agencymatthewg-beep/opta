@@ -1,40 +1,11 @@
 'use client'
 
-import { Activity, Box, Cpu, HardDrive, Zap, AlertCircle } from 'lucide-react'
+import { Sparkles, AlertCircle } from 'lucide-react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { HudRing } from '@/components/HudRing'
+import { PageHeader } from '@/components/PageHeader'
 import { useConnection } from '@/lib/connection'
 import { useDashboard } from '@/hooks/use-dashboard'
-
-function StatCard({
-    icon: Icon,
-    label,
-    value,
-    unit,
-}: {
-    icon: React.ElementType
-    label: string
-    value: string
-    unit?: string
-}) {
-    return (
-        <div className="dashboard-card flex items-center gap-4">
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary">
-                <Icon size={20} />
-            </div>
-            <div>
-                <p className="text-xs text-text-muted uppercase tracking-wider font-medium">
-                    {label}
-                </p>
-                <p className="text-xl font-semibold font-mono">
-                    {value}
-                    {unit && (
-                        <span className="text-sm text-text-muted ml-1">{unit}</span>
-                    )}
-                </p>
-            </div>
-        </div>
-    )
-}
 
 function formatUptime(seconds: number): string {
     if (seconds < 60) return `${Math.floor(seconds)}s`
@@ -50,27 +21,19 @@ export default function DashboardHome() {
 
     return (
         <DashboardLayout>
-            <div className="px-6 py-6">
-                {/* Stat row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <StatCard icon={Box} label="Loaded Models"
-                        value={isConnected ? String(dashboard.loadedModelCount) : '—'} />
-                    <StatCard icon={Cpu} label="Tokens/sec"
-                        value={isConnected ? (dashboard.tokensPerSec > 0 ? dashboard.tokensPerSec.toFixed(1) : '0') : '—'} />
-                    <StatCard icon={HardDrive} label="Memory"
-                        value={isConnected ? `${dashboard.memoryUsedGb.toFixed(1)} / ${dashboard.memoryTotalGb.toFixed(1)}` : '—'}
-                        unit={isConnected ? 'GB' : undefined} />
-                    <StatCard icon={Activity} label="Requests"
-                        value={isConnected ? String(dashboard.totalRequests) : '—'} />
-                </div>
+            <PageHeader
+                title="Overview"
+                subtitle="Real-time engine telemetry"
+                icon={Sparkles}
+            />
 
-                {/* Content area */}
+            <div className="px-6 py-6 hud-fade-in">
                 {!isConnected ? (
-                    <div className="dashboard-card text-center py-16 flex flex-col items-center">
-                        <div className="flex items-center justify-center w-16 h-16 mx-auto mb-6 relative">
+                    <div className="flex flex-col items-center justify-center py-24 text-center">
+                        <div className="relative w-20 h-20 mb-8">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src="/logos/opta-lmx-mark.svg" className="w-12 h-12 drop-shadow-[0_0_15px_rgba(139,92,246,0.6)] relative z-10" alt="LMX" />
-                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse"></div>
+                            <img src="/logos/opta-lmx-mark.svg" className="w-16 h-16 mx-auto drop-shadow-[0_0_15px_rgba(139,92,246,0.6)] relative z-10" alt="LMX" />
+                            <div className="absolute inset-0 bg-primary/20 blur-xl rounded-full animate-pulse" />
                         </div>
                         <h2 className="text-lg font-semibold mb-2">Opta LMX Dashboard</h2>
                         <p className="text-sm text-text-secondary max-w-md mx-auto mb-6">
@@ -80,80 +43,105 @@ export default function DashboardHome() {
                         <p className="text-xs text-text-muted font-mono">Default endpoint: 127.0.0.1:1234</p>
                     </div>
                 ) : (
-                    <div className="space-y-4">
-                        {/* Health Status */}
-                        <div className="dashboard-card">
-                            <div className="flex items-center justify-between mb-4">
-                                <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary">
-                                    System Health
-                                </h2>
-                                <span className={`text-xs font-mono px-2 py-0.5 rounded ${dashboard.healthStatus === 'ok'
-                                    ? 'bg-[var(--opta-neon-green)]/15 text-[var(--opta-neon-green)]'
-                                    : dashboard.healthStatus === 'degraded'
-                                        ? 'bg-[var(--opta-neon-amber)]/15 text-[var(--opta-neon-amber)]'
-                                        : 'bg-[var(--opta-neon-red)]/15 text-[var(--opta-neon-red)]'
-                                    }`}>
-                                    {dashboard.healthStatus}
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                                <div>
-                                    <p className="text-text-muted text-xs">Uptime</p>
-                                    <p className="font-mono">{formatUptime(dashboard.uptimeSeconds)}</p>
-                                </div>
-                                <div>
-                                    <p className="text-text-muted text-xs">Memory</p>
-                                    <p className="font-mono">{dashboard.memoryUsedPercent.toFixed(1)}%</p>
-                                </div>
-                                <div>
-                                    <p className="text-text-muted text-xs">In-Flight</p>
-                                    <p className="font-mono">{dashboard.inFlightRequests}</p>
-                                </div>
-                                <div>
-                                    <p className="text-text-muted text-xs">Version</p>
-                                    <p className="font-mono">{dashboard.version ?? '—'}</p>
-                                </div>
-                            </div>
-                            {dashboard.healthReason && (
-                                <p className="text-xs text-[var(--opta-neon-amber)] mt-3 font-mono">
-                                    ⚠ {dashboard.healthReason}
-                                </p>
-                            )}
+                    <>
+                        {/* HUD Data Rings */}
+                        <div className="flex flex-wrap justify-center gap-12 xl:gap-20 py-10 mb-8">
+                            <HudRing
+                                value={dashboard.memoryUsedPercent.toFixed(0)}
+                                unit="%"
+                                label="VRAM Load"
+                            />
+                            <HudRing
+                                value={dashboard.tokensPerSec > 0 ? dashboard.tokensPerSec.toFixed(1) : '0'}
+                                label="Tokens / Sec"
+                                reverse
+                            />
+                            <HudRing
+                                value={String(dashboard.loadedModelCount).padStart(2, '0')}
+                                label="Active Models"
+                                variant="cyan"
+                            />
+                            <HudRing
+                                value={String(dashboard.totalRequests)}
+                                label="Total Requests"
+                                variant="amber"
+                            />
                         </div>
 
-                        {/* Loaded Models */}
-                        {dashboard.models.length > 0 && (
-                            <div className="dashboard-card">
-                                <h2 className="text-sm font-semibold uppercase tracking-wider text-text-secondary mb-4">
-                                    Loaded Models
-                                </h2>
-                                <div className="space-y-3">
-                                    {dashboard.models.map((model) => (
-                                        <div
-                                            key={model.model_id}
-                                            className="flex items-center justify-between py-2 border-b border-[var(--opta-border)] last:border-0"
-                                        >
-                                            <div>
-                                                <p className="text-sm font-mono">{model.model_id}</p>
-                                                <p className="text-xs text-text-muted">
-                                                    {model.backend} · {model.memory_used_gb.toFixed(1)} GB
-                                                </p>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-sm font-mono">
-                                                    {model.stats.avg_tokens_per_second.toFixed(1)}{' '}
-                                                    <span className="text-xs text-text-muted">tok/s</span>
-                                                </p>
-                                                <p className="text-xs text-text-muted">
-                                                    {model.stats.total_requests} reqs
-                                                </p>
-                                            </div>
-                                        </div>
-                                    ))}
+                        {/* Health + System */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Health Status */}
+                            <div className="config-panel">
+                                <div className="config-title">System Health</div>
+                                <div className="grid grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <p className="config-label">Status</p>
+                                        <p className={`font-mono text-sm ${dashboard.healthStatus === 'ok'
+                                                ? 'text-[var(--opta-neon-green)]'
+                                                : dashboard.healthStatus === 'degraded'
+                                                    ? 'text-[var(--opta-neon-amber)]'
+                                                    : 'text-[var(--opta-neon-red)]'
+                                            }`}>{dashboard.healthStatus}</p>
+                                    </div>
+                                    <div>
+                                        <p className="config-label">Uptime</p>
+                                        <p className="font-mono">{formatUptime(dashboard.uptimeSeconds)}</p>
+                                    </div>
+                                    <div>
+                                        <p className="config-label">Memory</p>
+                                        <p className="font-mono">{dashboard.memoryUsedGb.toFixed(1)} / {dashboard.memoryTotalGb.toFixed(1)} GB</p>
+                                    </div>
+                                    <div>
+                                        <p className="config-label">In-Flight</p>
+                                        <p className="font-mono">{dashboard.inFlightRequests}</p>
+                                    </div>
                                 </div>
+                                {dashboard.healthReason && (
+                                    <div className="flex items-center gap-2 mt-4 text-xs text-[var(--opta-neon-amber)] font-mono">
+                                        <AlertCircle size={12} />
+                                        <span>{dashboard.healthReason}</span>
+                                    </div>
+                                )}
                             </div>
-                        )}
-                    </div>
+
+                            {/* Loaded Models */}
+                            <div className="config-panel">
+                                <div className="config-title">Loaded Models</div>
+                                {dashboard.models.length === 0 ? (
+                                    <p className="text-sm text-text-muted font-mono">No models loaded.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {dashboard.models.map((model) => (
+                                            <div
+                                                key={model.model_id}
+                                                className="flex items-center justify-between py-2 border-b border-[rgba(168,85,247,0.15)] last:border-0"
+                                            >
+                                                <div>
+                                                    <p className="text-sm font-mono">{model.model_id}</p>
+                                                    <p className="text-xs text-text-muted font-mono">
+                                                        {model.backend} · {model.memory_used_gb.toFixed(1)} GB
+                                                    </p>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className="text-sm font-mono">
+                                                        {model.stats.avg_tokens_per_second.toFixed(1)}{' '}
+                                                        <span className="text-xs text-text-muted">tok/s</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Version */}
+                        <div className="text-center mt-8">
+                            <span className="text-xs font-mono text-text-muted">
+                                LMX {dashboard.version ? `v${dashboard.version}` : '—'}
+                            </span>
+                        </div>
+                    </>
                 )}
             </div>
         </DashboardLayout>

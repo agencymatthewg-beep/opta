@@ -29,6 +29,8 @@ import { OptaTextLogo } from '@/components/OptaTextLogo'
 import { useConnection } from '@/lib/connection'
 import { useEventBusLifecycle, useEventBasedRefresh } from '@/hooks/use-events'
 
+import { HudBackground } from '@/components/HudBackground'
+
 const NAV_GROUPS = [
     {
         label: 'Core',
@@ -88,6 +90,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
 
     return (
         <div className="flex h-screen overflow-hidden">
+            <HudBackground />
             {/* Sidebar */}
             <aside className="w-56 flex-shrink-0 flex flex-col border-r border-[var(--opta-border)] glass-subtle">
                 {/* Logo */}
