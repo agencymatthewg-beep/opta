@@ -10,7 +10,6 @@ Generated from canonical frontmatter statuses for `1-Apps/optalocal/1D-Opta-CLI-
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-design.md` (ACTIVE) — open checkboxes: 14
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-browser-full-autonomy-upgrade-plan.md` (ACTIVE) — open checkboxes: 11
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-02-28-opta-code-capability-stability-windows-master-plan.md` (ACTIVE) — open checkboxes: 5
-- [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-03-production-grade-optimization-plan.md` (ACTIVE) — open checkboxes: 3
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/ROADMAP.md` (ACTIVE) — open checkboxes: 5
 - [ ] `1-Apps/optalocal/1D-Opta-CLI-TS/OPTIMIZATION-PLAN.md` (ACTIVE) — open checkboxes: 22
 
@@ -28,8 +27,6 @@ Generated from canonical frontmatter statuses for `1-Apps/optalocal/1D-Opta-CLI-
 
 ## ARCHIVED
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/.planning/phases/02-tui-input/02-01-PLAN.md` (ARCHIVED) — no open checklist items
-- [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-04-cli-desktop-accounts-resilience.md` (ARCHIVED) — no open checklist items
-- [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/2026-03-04-lsp-and-universal-models-plan.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-12-opta-cli-v1-design.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-16-v2-features-implementation.md` (ARCHIVED) — no open checklist items
 - [x] `1-Apps/optalocal/1D-Opta-CLI-TS/docs/plans/archive/2026-02-16-v2-phase1-opis-exports.md` (ARCHIVED) — no open checklist items
