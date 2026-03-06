@@ -1,5 +1,5 @@
 import { errorMessage } from '../utils/errors.js';
-import { deriveOpenClawAgentId, normalizeOpenClawScope } from '../utils/openclaw-scope.js';
+import { deriveBridgeAgentId, normalizeBridgeScope } from '../utils/bridge-scope.js';
 import { loadConfig } from '../core/config.js';
 import {
   getBridgeState,
@@ -37,7 +37,7 @@ interface LmxProxyMutationPayload {
   headers?: Record<string, string>;
 }
 
-const OPENCLAW_IDENTITY_PATHS = new Set([
+const BRIDGE_IDENTITY_PATHS = new Set([
   '/v1/chat/completions',
   '/v1/completions',
   '/v1/responses',
@@ -72,35 +72,35 @@ function hasHeader(headers: Record<string, string> | undefined, targetName: stri
   return Object.keys(headers).some((key) => key.toLowerCase() === lowered);
 }
 
-export function resolveOpenClawScopeSeed(input: {
+export function resolveBridgeScopeSeed(input: {
   scope?: string | null;
   actor?: string | null;
   bridgeSessionId?: string | null;
 }): string | null {
   return (
-    normalizeOpenClawScope(input.scope) ??
-    normalizeOpenClawScope(input.actor) ??
-    normalizeOpenClawScope(input.bridgeSessionId) ??
+    normalizeBridgeScope(input.scope) ??
+    normalizeBridgeScope(input.actor) ??
+    normalizeBridgeScope(input.bridgeSessionId) ??
     null
   );
 }
 
 function supportsScopedIdentity(path: string): boolean {
-  return OPENCLAW_IDENTITY_PATHS.has(path);
+  return BRIDGE_IDENTITY_PATHS.has(path);
 }
 
-export function applyOpenClawIdentityToMutation(
+export function applyBridgeIdentityToMutation(
   payload: LmxProxyMutationPayload,
   scopeSeed: string | null
 ): LmxProxyMutationPayload {
   if (!scopeSeed || !supportsScopedIdentity(payload.path)) return payload;
 
-  const openclawAgentId = deriveOpenClawAgentId(scopeSeed);
+  const bridgeAgentId = deriveBridgeAgentId(scopeSeed);
   const headers = { ...(payload.headers ?? {}) };
 
-  if (!hasHeader(headers, 'x-client-id') && !hasHeader(headers, 'x-openclaw-agent-id')) {
-    headers['X-Client-ID'] = openclawAgentId;
-    headers['X-OpenClaw-Agent-ID'] = openclawAgentId;
+  if (!hasHeader(headers, 'x-client-id') && !hasHeader(headers, 'x-opta-bridge-id')) {
+    headers['X-Client-ID'] = bridgeAgentId;
+    headers['X-Opta-Bridge-ID'] = bridgeAgentId;
   }
 
   const shouldInjectUser = payload.method === 'POST' && isRecord(payload.body);
@@ -124,7 +124,7 @@ export function applyOpenClawIdentityToMutation(
     headers,
     body: {
       ...(payload.body as Record<string, unknown>),
-      user: openclawAgentId,
+      user: bridgeAgentId,
     },
   };
 }
@@ -184,8 +184,8 @@ function parseLmxProxyMutationPayload(payload: unknown): LmxProxyMutationPayload
 export function applyOperationScope(command: BridgeStreamCommand, scopeSeed: string | null): unknown {
   if (command.command !== 'models.skills') return command.payload ?? {};
   if (!isRecord(command.payload)) return command.payload ?? {};
-  if (normalizeOpenClawScope(command.payload.scope) !== null) return command.payload;
-  const scope = normalizeOpenClawScope(scopeSeed);
+  if (normalizeBridgeScope(command.payload.scope) !== null) return command.payload;
+  const scope = normalizeBridgeScope(scopeSeed);
   if (!scope) return command.payload;
   return {
     ...command.payload,
@@ -414,14 +414,14 @@ export class BridgeOutboundWorker {
       throw new Error('Bridge token unavailable while processing command');
     }
 
-    const scopeSeed = resolveOpenClawScopeSeed({
+    const scopeSeed = resolveBridgeScopeSeed({
       scope: command.scope,
       actor: command.actor,
       bridgeSessionId,
     });
     const lmxProxyPayload = parseLmxProxyMutationPayload(command.payload);
     const scopedLmxProxyPayload = lmxProxyPayload
-      ? applyOpenClawIdentityToMutation(lmxProxyPayload, scopeSeed)
+      ? applyBridgeIdentityToMutation(lmxProxyPayload, scopeSeed)
       : null;
     const result = lmxProxyPayload
       ? await this.executeLmxProxyMutation(scopedLmxProxyPayload ?? lmxProxyPayload, signal)

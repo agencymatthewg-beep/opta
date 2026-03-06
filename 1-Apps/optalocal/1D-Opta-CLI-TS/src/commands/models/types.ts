@@ -25,10 +25,10 @@ export interface ModelsOptions {
   full?: boolean;
   backend?: string;
   /**
-   * Internal bridge context used to deterministically scope OpenClaw callers.
-   * Not exposed as a user-facing CLI flag.
+   * Internal bridge scope seed — used to derive a deterministic agent ID for
+   * LMX request attribution. Not exposed as a user-facing CLI flag.
    */
-  openclawScope?: string;
+  bridgeScope?: string;
 }
 
 export interface ModelPickerOption {

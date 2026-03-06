@@ -6,7 +6,7 @@ import chalk from 'chalk';
 import { readFile } from 'node:fs/promises';
 import { ExitError, EXIT } from '../../core/errors.js';
 import type { LmxClient } from '../../lmx/client.js';
-import { deriveOpenClawAgentId, normalizeOpenClawScope } from '../../utils/openclaw-scope.js';
+import { deriveBridgeAgentId, normalizeBridgeScope } from '../../utils/bridge-scope.js';
 import {
   FAST_DISCOVERY_REQUEST_OPTS,
   FAST_DISCOVERY_TIMEOUT_MS,
@@ -710,8 +710,8 @@ export async function runSkillsCommand(
   client: LmxClient,
   opts?: ModelsOptions
 ): Promise<void> {
-  const bridgeScope = normalizeOpenClawScope(opts?.openclawScope);
-  const openclawAgentId = bridgeScope ? deriveOpenClawAgentId(bridgeScope) : undefined;
+  const bridgeScope = normalizeBridgeScope(opts?.bridgeScope);
+  const bridgeAgentId = bridgeScope ? deriveBridgeAgentId(bridgeScope) : undefined;
   const tokens = parseShellLikeArgs(args ?? '');
   const action = (tokens[0] ?? 'list').toLowerCase();
 
@@ -983,7 +983,7 @@ export async function runSkillsCommand(
         arguments: argumentsPayload,
         approved,
         timeoutSec,
-        openclawAgentId,
+        openclawAgentId: bridgeAgentId,
       },
       {
         timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000),

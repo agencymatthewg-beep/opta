@@ -1143,7 +1143,7 @@ export class LmxClient {
         method: 'POST',
         headers: openclawAgentId
           ? {
-              'X-OpenClaw-Agent-ID': openclawAgentId,
+              'X-Opta-Bridge-ID': openclawAgentId,
               'X-Client-ID': openclawAgentId,
             }
           : undefined,

@@ -1,14 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-  applyOpenClawIdentityToMutation,
+  applyBridgeIdentityToMutation,
   applyOperationScope,
-  resolveOpenClawScopeSeed,
+  resolveBridgeScopeSeed,
 } from '../../src/daemon/bridge-worker.js';
-import { deriveOpenClawAgentId } from '../../src/utils/openclaw-scope.js';
+import { deriveBridgeAgentId } from '../../src/utils/bridge-scope.js';
 
-describe('bridge worker openclaw scope identity', () => {
-  it('injects deterministic identity headers and body.user for OpenClaw routes', () => {
-    const mutation = applyOpenClawIdentityToMutation(
+describe('bridge worker scope identity', () => {
+  it('injects deterministic identity headers and body.user for inference routes', () => {
+    const mutation = applyBridgeIdentityToMutation(
       {
         method: 'POST',
         path: '/v1/chat/completions',
@@ -17,14 +17,14 @@ describe('bridge worker openclaw scope identity', () => {
       'telegram:dm:peer-123'
     );
 
-    const expected = deriveOpenClawAgentId('telegram:dm:peer-123');
+    const expected = deriveBridgeAgentId('telegram:dm:peer-123');
     expect(mutation.headers?.['X-Client-ID']).toBe(expected);
-    expect(mutation.headers?.['X-OpenClaw-Agent-ID']).toBe(expected);
+    expect(mutation.headers?.['X-Opta-Bridge-ID']).toBe(expected);
     expect((mutation.body as Record<string, unknown>)['user']).toBe(expected);
   });
 
   it('does not override explicit caller identity or user', () => {
-    const mutation = applyOpenClawIdentityToMutation(
+    const mutation = applyBridgeIdentityToMutation(
       {
         method: 'POST',
         path: '/v1/responses',
@@ -37,12 +37,12 @@ describe('bridge worker openclaw scope identity', () => {
     );
 
     expect(mutation.headers?.['X-Client-ID']).toBe('caller-provided');
-    expect(mutation.headers?.['X-OpenClaw-Agent-ID']).toBeUndefined();
+    expect(mutation.headers?.['X-Opta-Bridge-ID']).toBeUndefined();
     expect((mutation.body as Record<string, unknown>)['user']).toBe('explicit-user');
   });
 
   it('leaves unrelated endpoints untouched', () => {
-    const mutation = applyOpenClawIdentityToMutation(
+    const mutation = applyBridgeIdentityToMutation(
       {
         method: 'POST',
         path: '/admin/models/load',
@@ -84,7 +84,7 @@ describe('bridge worker openclaw scope identity', () => {
 
   it('uses scope -> actor -> bridgeSessionId fallback order', () => {
     expect(
-      resolveOpenClawScopeSeed({
+      resolveBridgeScopeSeed({
         scope: 'telegram:dm:peer-scope',
         actor: 'telegram:dm:peer-actor',
         bridgeSessionId: 'bridge-session',
@@ -92,7 +92,7 @@ describe('bridge worker openclaw scope identity', () => {
     ).toBe('telegram:dm:peer-scope');
 
     expect(
-      resolveOpenClawScopeSeed({
+      resolveBridgeScopeSeed({
         scope: '   ',
         actor: 'telegram:dm:peer-actor',
         bridgeSessionId: 'bridge-session',
@@ -100,7 +100,7 @@ describe('bridge worker openclaw scope identity', () => {
     ).toBe('telegram:dm:peer-actor');
 
     expect(
-      resolveOpenClawScopeSeed({
+      resolveBridgeScopeSeed({
         scope: null,
         actor: null,
         bridgeSessionId: 'bridge-session',

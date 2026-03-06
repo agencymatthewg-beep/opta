@@ -1,13 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { runSkillsCommand } from '../../src/commands/models/extensions.js';
-import { deriveOpenClawAgentId } from '../../src/utils/openclaw-scope.js';
+import { deriveBridgeAgentId } from '../../src/utils/bridge-scope.js';
 
 describe('models skills openclaw scope forwarding', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it('forwards deterministic OpenClaw agent identity when bridge scope is provided', async () => {
+  it('forwards deterministic bridge agent identity when bridge scope is provided', async () => {
     const invoke = vi.fn().mockResolvedValue({
       ok: true,
       result: { status: 'ok' },
@@ -21,7 +21,7 @@ describe('models skills openclaw scope forwarding', () => {
     await runSkillsCommand(
       'openclaw planner --args {"goal":"ship"}',
       client,
-      { json: true, openclawScope: 'telegram:dm:peer-42' }
+      { json: true, bridgeScope: 'telegram:dm:peer-42' }
     );
 
     expect(invoke).toHaveBeenCalledTimes(1);
@@ -29,7 +29,7 @@ describe('models skills openclaw scope forwarding', () => {
       expect.objectContaining({
         name: 'planner',
         arguments: { goal: 'ship' },
-        openclawAgentId: deriveOpenClawAgentId('telegram:dm:peer-42'),
+        openclawAgentId: deriveBridgeAgentId('telegram:dm:peer-42'),
       }),
       expect.any(Object)
     );

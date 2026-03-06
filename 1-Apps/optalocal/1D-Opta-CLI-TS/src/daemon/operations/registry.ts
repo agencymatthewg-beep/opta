@@ -839,7 +839,7 @@ export const operationRegistry = {
   ),
   'models.skills': defineOperation('models.skills', async (input) =>
     runCommandForJson('models.skills', async () => {
-      await models('skills', input.args, undefined, { json: true, openclawScope: input.scope });
+      await models('skills', input.args, undefined, { json: true, bridgeScope: input.scope });
     })
   ),
   'models.rag': defineOperation('models.rag', async (input) =>
