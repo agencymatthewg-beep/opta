@@ -6320,16 +6320,16 @@ button.active,
 }
 
 .v1-brand-word--live .v1-brand-letter {
-  color: #06b6d4;
+  color: #ef4444;
   text-shadow:
     2px 2px 0 #09090b,
     3px 3px 0 #09090b,
-    4px 4px 0 #06b6d4,
-    5px 5px 0 #06b6d4,
+    4px 4px 0 #ef4444,
+    5px 5px 0 #ef4444,
     7px 7px 0 #09090b,
     8px 8px 0 #09090b,
-    9px 9px 0 #06b6d4;
-  filter: drop-shadow(0 0 26px rgba(6, 182, 212, 0.38));
+    9px 9px 0 #ef4444;
+  filter: drop-shadow(0 0 26px rgba(239, 68, 68, 0.38));
 }
 
 /* ── Live Browser View — Compact (Ctrl+L) ─────────────────────────────── */

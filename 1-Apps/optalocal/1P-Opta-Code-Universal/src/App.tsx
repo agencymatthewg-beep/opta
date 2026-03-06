@@ -39,6 +39,7 @@ import {
   LazyAtpoStudio,
   LazyBrowserStudio,
   LazyLiveBrowserView,
+  LazyLiveStudio,
   LazyModelsStudio,
   LazyProjectsStudio,
   LazyPermissionModal,
@@ -359,7 +360,7 @@ function App() {
   }, []);
 
   const [showTerminal, setShowTerminal] = useState(false); // Changed initial state from true to false
-  const [isLiveViewOpen, setIsLiveViewOpen] = useState(false);
+
   const [composerDraft, setComposerDraft] = useState("");
   const [submissionMode, setSubmissionMode] =
     useState<SessionSubmitMode>("chat");
@@ -1632,43 +1633,21 @@ function App() {
       }
 
       // --- FEATURE STUDIO TOGGLES ---
-      // Ctrl+B (Browser), Ctrl+M (Models), Ctrl+A (ATPO), Ctrl+P (Projects)
-      if (isCtrlOrMeta && (key === "b" || key === "m" || key === "a" || key === "p") && !e.shiftKey) {
+      // Ctrl+B (Browser), Ctrl+M (Models), Ctrl+A (ATPO), Ctrl+P (Projects), Ctrl+L (Live)
+      if (isCtrlOrMeta && (key === "b" || key === "m" || key === "a" || key === "p" || key === "l") && !e.shiftKey) {
         e.preventDefault();
-        const studioId: FeatureStudioId =
-          key === "b" ? "browser" : key === "m" ? "models" : key === "p" ? "projects" : "atpo";
+        const targetStudio =
+          key === "b" ? "browser" : key === "m" ? "models" : key === "p" ? "projects" : key === "l" ? "live" : "atpo";
         // Close settings if open
         if (settingsLayer > 1) {
           goToSettingsLayer(1);
         }
         setActiveStudio((current) => {
           // Detect switch: going from one studio directly to another
-          studioSwitchingRef.current = current !== null && current !== studioId;
-          return current === studioId ? null : studioId;
+          studioSwitchingRef.current = current !== null && current !== targetStudio;
+          return current === targetStudio ? null : targetStudio;
         });
         setStudioFullscreen(false);
-        return;
-      }
-
-      // Ctrl+L: toggle Live Browser View (compact — occupies chat column)
-      if (isCtrlOrMeta && key === "l" && !e.shiftKey) {
-        e.preventDefault();
-        setIsLiveViewOpen((v) => {
-          if (v) {
-            // Closing compact view also closes the expanded studio overlay
-            setActiveStudio((current) => current === "live" ? null : current);
-            setStudioFullscreen(false);
-          }
-          return !v;
-        });
-        return;
-      }
-
-      // Ctrl+Space: while live view is open, expand to full studio overlay
-      if (isCtrlOrMeta && e.code === "Space" && isLiveViewOpen) {
-        e.preventDefault();
-        setActiveStudio((current) => current === "live" ? null : "live");
-        setStudioFullscreen((current) => current ? false : true);
         return;
       }
 
@@ -1676,14 +1655,8 @@ function App() {
       if (activeStudio !== null) {
         if (e.key === "Escape") {
           e.preventDefault();
-          if (activeStudio === "live") {
-            // Escape on live expanded view: collapse to compact (don't fully close)
-            setActiveStudio(null);
-            setStudioFullscreen(false);
-          } else {
-            setActiveStudio(null);
-            setStudioFullscreen(false);
-          }
+          setActiveStudio(null);
+          setStudioFullscreen(false);
           return;
         }
         if (e.shiftKey && e.code === "Space") {
@@ -1691,13 +1664,6 @@ function App() {
           setStudioFullscreen((f) => !f);
           return;
         }
-      }
-
-      // Escape closes compact live view when no studio overlay is open
-      if (e.key === "Escape" && isLiveViewOpen && activeStudio === null) {
-        e.preventDefault();
-        setIsLiveViewOpen(false);
-        return;
       }
 
       const moveLeftKey = key === "a" || e.key === "ArrowLeft";
@@ -1946,7 +1912,7 @@ function App() {
     settingsLayer,
     settingsLayer3EditMode,
     settingsLayer3FocusIndex,
-    isLiveViewOpen,
+
     activeStudio,
   ]);
 
@@ -2060,9 +2026,13 @@ function App() {
       {
         id: "live-browser",
         title: "Toggle Live Browser View",
-        description: "Show browser live feed in the chat column (Ctrl+L)",
+        description: "Open Live Browser Studio (Ctrl+L)",
         keywords: ["browser", "live", "view", "feed", "stream", "ctrl+l"],
-        run: () => setIsLiveViewOpen((v) => !v),
+        run: () => {
+          goToSettingsLayer(1);
+          setActiveStudio((current) => current === "live" ? null : "live");
+          setStudioFullscreen(false);
+        },
       },
       {
         id: "clear-composer",
@@ -2305,7 +2275,6 @@ function App() {
       setActiveStudio,
       setNotice,
       setStudioFullscreen,
-      setIsLiveViewOpen,
       timelineBySession,
       trackSession,
     ],
@@ -2634,19 +2603,78 @@ function App() {
                             activeStudio === "models" ? "MODELS" :
                               activeStudio === "projects" ? "PROJECTS" :
                                 activeStudio === "atpo" ? "ATPO" :
-                                  activeStudio === "live" ? "LIVE" :
-                                    isLiveViewOpen ? "LIVE" : "OPTA";
+                                  activeStudio === "live" ? "LIVE" : "OPTA";
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
-                          <div className={`v1-brand-word${wordClass}`} aria-label={word}>
-                            {word.split("").map((letter, index) => (
-                              <span
-                                key={`${word}-${index}`}
-                                className={`v1-brand-letter v1-brand-letter-${index + 1}`}
-                              >
-                                {letter}
-                              </span>
-                            ))}
+                          <div className={`v1-brand-word${wordClass}`} aria-label={word} style={{ perspective: "1000px" }}>
+                            <AnimatePresence mode="popLayout">
+                              {word.split("").map((letter, index) => (
+                                <motion.span
+                                  key={`${word}-${index}`}
+                                  className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                                  custom={index}
+                                  variants={{
+                                    initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                                    animate: (i: number) => ({
+                                      opacity: 1,
+                                      rotateX: 0,
+                                      filter: "blur(0px)",
+                                      transition: {
+                                        type: "spring",
+                                        stiffness: 150,
+                                        damping: 15,
+                                        delay: i * 0.05
+                                      }
+                                    }),
+                                    exit: (i: number) => ({
+                                      opacity: 0,
+                                      rotateX: -90,
+                                      filter: "blur(4px)",
+                                      transition: {
+                                        duration: 0.2,
+                                        delay: i * 0.03
+                                      }
+                                    })
+                                  }}
+                                  initial="initial"
+                                  animate="animate"
+                                  exit="exit"
+                                  style={{ display: "inline-block", transformOrigin: "center center" }}
+                                >
+                                  {letter}
+                                </motion.span>
+                              ))}
+
+                              {/* Recording Circle for LIVE Studio */}
+                              {word === "LIVE" && (
+                                <motion.span
+                                  key="live-recording-circle"
+                                  className="v1-brand-letter ml-4"
+                                  custom={word.length}
+                                  variants={{
+                                    initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                                    animate: (i: number) => ({
+                                      opacity: 1,
+                                      rotateX: 0,
+                                      filter: "blur(0px)",
+                                      transition: { type: "spring", stiffness: 150, damping: 15, delay: i * 0.05 }
+                                    }),
+                                    exit: (i: number) => ({
+                                      opacity: 0,
+                                      rotateX: -90,
+                                      filter: "blur(4px)",
+                                      transition: { duration: 0.2, delay: i * 0.03 }
+                                    })
+                                  }}
+                                  initial="initial"
+                                  animate="animate"
+                                  exit="exit"
+                                  style={{ display: "inline-flex", alignItems: "center", transformOrigin: "center center" }}
+                                >
+                                  <span className="pulse-dot bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)] !w-5 !h-5 !m-0" style={{ animationDuration: '1s' }} />
+                                </motion.span>
+                              )}
+                            </AnimatePresence>
                           </div>
                         );
                       })()}
@@ -2823,7 +2851,7 @@ function App() {
                     </motion.div>
                   )}
 
-                  {/* Live Browser Studio — Ctrl+Space expand from compact live view */}
+                  {/* Live Studio Layout */}
                   {settingsLayer === 1 && activeStudio === "live" && (
                     <motion.div
                       key="studio-live"
@@ -2839,25 +2867,14 @@ function App() {
                         className={`v1-settings-overlay v1-settings-layer v1-settings-overlay--live${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
-                        <div className="v1-live-studio-header">
-                          <span className="v1-live-studio-header__title">LIVE BROWSER</span>
-                          <span className="v1-live-studio-header__hint">Shift+Space to toggle fullscreen · Esc to collapse</span>
-                          <button
-                            type="button"
-                            className="v1-live-studio-header__close"
-                            onClick={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            aria-label="Collapse live browser to compact view"
-                          >
-                            ×
-                          </button>
-                        </div>
-                        <Suspense fallback={null}>
-                          <LazyLiveBrowserView
+                        <Suspense fallback={<div className="feature-studio-loading-placeholder" />}>
+                          <LazyLiveStudio
                             connection={connection}
                             slot={activeBrowserSlot}
                             viewerAuthToken={activeBrowserViewerAuthToken}
-                            className="v1-live-studio-frame"
-                            showNativeControls={true}
+                            isFullscreen={studioFullscreen}
+                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            onToggleFullscreen={() => setStudioFullscreen(!studioFullscreen)}
                           />
                         </Suspense>
                       </div>
@@ -2921,26 +2938,8 @@ function App() {
 
                 {/* Chat Pane (hidden when settings navigation is active) */}
                 <div className={`v1-chat-pane ${isAnyOverlayActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
-                  {/* Compact Live Browser View — Ctrl+L (takes up chat column) */}
-                  {isLiveViewOpen && activeStudio !== "live" && (
-                    <div className="v1-live-view-compact">
-                      <div className="v1-live-view-compact__header">
-                        <span className="v1-live-view-compact__title">LIVE</span>
-                        <span className="v1-live-view-compact__hint">Ctrl+Space to expand · Ctrl+L or Esc to close</span>
-                      </div>
-                      <Suspense fallback={<div className="flex-1" aria-hidden="true" />}>
-                        <LazyLiveBrowserView
-                          connection={connection}
-                          slot={activeBrowserSlot}
-                          viewerAuthToken={activeBrowserViewerAuthToken}
-                          className="v1-live-view-compact__frame"
-                          showNativeControls={true}
-                        />
-                      </Suspense>
-                    </div>
-                  )}
-                  {/* Session chat (hidden when compact live view is taking the column) */}
-                  {!(isLiveViewOpen && activeStudio !== "live") && activePage === "sessions" ? (
+                  {/* Session chat */}
+                  {activePage === "sessions" ? (
                     <>
                       {!activeSessionId ? (
                         <div className="v1-messages">

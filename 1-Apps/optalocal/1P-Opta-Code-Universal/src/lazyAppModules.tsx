@@ -60,6 +60,10 @@ const loadLiveBrowserView = async () => ({
   default: (await import("./components/LiveBrowserView")).LiveBrowserView,
 });
 
+const loadLiveStudio = async () => ({
+  default: (await import("./components/LiveStudio")).LiveStudio,
+});
+
 const loadBrowserStudio = async () => ({
   default: (await import("./components/BrowserStudio")).BrowserStudio,
 });
@@ -89,6 +93,7 @@ export const LazySettingsView = lazy(loadSettingsView);
 export const LazySetupWizard = lazy(loadSetupWizard);
 export const LazyPermissionModal = lazy(loadPermissionModal);
 export const LazyLiveBrowserView = lazy(loadLiveBrowserView);
+export const LazyLiveStudio = lazy(loadLiveStudio);
 export const LazyBrowserStudio = lazy(loadBrowserStudio);
 export const LazyModelsStudio = lazy(loadModelsStudio);
 export const LazyAtpoStudio = lazy(loadAtpoStudio);
