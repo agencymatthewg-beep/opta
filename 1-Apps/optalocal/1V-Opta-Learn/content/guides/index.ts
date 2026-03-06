@@ -41,12 +41,13 @@ import { cliMasterclass } from './cli-masterclass';
 import { accountsSync } from './accounts-sync';
 import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
-import { lmxMasterclass } from './lmx-masterclass';
 import { codeDesktopMasterclass } from './code-desktop-masterclass';
 import { accountsMasterclass } from './accounts-masterclass';
 import { audioVoiceGuide } from './audio-voice';
 import { ragWorkflowGuide } from './rag-workflow';
 import { codeDesktopGUMasterclass } from './opta-code-masterclass';
+import { lmxMasterclassGU } from './lmx-masterclass-gu';
+import { cliMasterclassGU } from './cli-masterclass-gu';
 // All guides set to draft while rebuilding with /gu interactive format.
 // Re-verify guides individually once upgraded to gu-masterclass template.
 export const allGuides: RegisteredGuide[] = [
@@ -56,12 +57,13 @@ export const allGuides: RegisteredGuide[] = [
   { ...browserAutomationGuide, status: 'draft' },
   { ...codeDesktopOverview, status: 'draft' },
   { ...accountsSync, status: 'draft' },
-  { ...lmxMasterclass, status: 'draft' },
   { ...codeDesktopMasterclass, status: 'draft' },
   { ...accountsMasterclass, status: 'draft' },
   { ...audioVoiceGuide, status: 'draft' },
   { ...ragWorkflowGuide, status: 'draft' },
   { ...codeDesktopGUMasterclass, status: 'verified' },
+  { ...lmxMasterclassGU, status: 'verified' },
+  { ...cliMasterclassGU, status: 'verified' },
 ];
 
 function extractGuideLinks(content: string): string[] {

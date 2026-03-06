@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta LMX Masterclass</title>
+<style>
+:root{
+  --void:#09090b;--surface:#0c0c12;--elevated:#1a1a24;--border:rgba(255,255,255,0.06);
+  --text-primary:#fafafa;--text-secondary:#a1a1aa;--text-muted:#52525b;
+  --primary:#a855f7;--primary-dim:#7c3aed;--primary-glow:rgba(168,85,247,0.25);
+  --neon-green:#22c55e;--neon-blue:#3b82f6;--neon-amber:#f59e0b;--neon-cyan:#06b6d4;
+  --neon-red:#ef4444;--glass-bg:rgba(12,12,18,0.7);--glass-border:rgba(255,255,255,0.12);
+  --radius:14px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{background:var(--void);color:var(--text-primary);font-family:'Sora',system-ui,sans-serif;
+  min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+code,pre,kbd{font-family:'JetBrains Mono',ui-monospace,monospace}
+
+/* Noise overlay */
+body::before{content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:0;opacity:0.4}
+
+.container{max-width:1080px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+/* Glass card */
+.glass{background:var(--glass-bg);border:1px solid var(--glass-border);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border-radius:var(--radius);box-shadow:0 4px 32px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.05)}
+
+/* Header */
+.site-header{padding:64px 0 0;text-align:center}
+.breadcrumb{font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);
+  letter-spacing:0.15em;text-transform:uppercase;margin-bottom:24px;
+  display:flex;align-items:center;justify-content:center;gap:8px}
+.breadcrumb a{color:var(--text-muted);text-decoration:none;transition:color 0.2s}
+.breadcrumb a:hover{color:var(--text-primary)}
+.breadcrumb-sep{opacity:0.4}
+.app-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;
+  border-radius:20px;border:1px solid var(--primary-dim);color:var(--primary);
+  font-size:11px;font-family:'JetBrains Mono',monospace;letter-spacing:0.1em;
+  text-transform:uppercase;margin-bottom:20px}
+.app-chip-dot{width:6px;height:6px;border-radius:50%;background:var(--primary);
+  box-shadow:0 0 6px var(--primary);animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:700;line-height:1.1;
+  margin-bottom:16px;letter-spacing:-0.02em;
+  background:linear-gradient(135deg,#fff 0%,#fff 55%,rgba(168,85,247,0.7) 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.subtitle{color:var(--text-secondary);font-size:1.05rem;max-width:600px;margin:0 auto 40px;
+  line-height:1.65}
+
+/* Quick stats strip */
+.stats-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:12px;margin-bottom:48px}
+.stat-pill{padding:8px 16px;background:rgba(168,85,247,0.08);
+  border:1px solid rgba(168,85,247,0.2);border-radius:20px;
+  font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text-secondary)}
+.stat-pill strong{color:var(--primary)}
+
+/* Architecture diagram */
+.arch-section{margin-bottom:56px}
+.arch-section h2{font-size:0.75rem;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:16px;
+  display:flex;align-items:center;gap:8px}
+.arch-section h2::after{content:'';flex:1;height:1px;background:var(--border)}
+.arch-box{padding:28px;border-radius:var(--radius);overflow-x:auto}
+pre.arch{font-size:12px;line-height:1.7;color:var(--text-secondary);white-space:pre}
+.arch .hi{color:var(--primary)}
+.arch .grn{color:var(--neon-green)}
+.arch .blu{color:var(--neon-blue)}
+.arch .amb{color:var(--neon-amber)}
+.arch .cyn{color:var(--neon-cyan)}
+.arch .mut{color:var(--text-muted)}
+
+/* Section divider */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--primary-dim),transparent);
+  margin:48px 0;opacity:0.4}
+
+/* Feature explorer */
+.explorer-chrome{display:grid;grid-template-columns:260px 1fr;gap:0;
+  border:1px solid var(--glass-border);border-radius:var(--radius);
+  overflow:hidden;min-height:600px;background:var(--surface)}
+.explorer-titlebar{grid-column:1/-1;display:flex;align-items:center;gap:10px;
+  padding:12px 18px;background:var(--elevated);border-bottom:1px solid var(--border)}
+.titlebar-dots span{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px}
+.titlebar-dots span:nth-child(1){background:#ef4444}
+.titlebar-dots span:nth-child(2){background:#f59e0b}
+.titlebar-dots span:nth-child(3){background:#22c55e}
+.titlebar-label{font-size:11px;font-family:'JetBrains Mono',monospace;
+  color:var(--text-muted);letter-spacing:0.1em}
+
+/* Sidebar */
+.feat-sidebar{border-right:1px solid var(--border);overflow-y:auto;max-height:calc(100vh - 200px)}
+.search-box{padding:12px;border-bottom:1px solid var(--border)}
+.search-input{width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+  border-radius:6px;padding:7px 10px;color:var(--text-primary);font-size:12px;
+  font-family:'JetBrains Mono',monospace;outline:none;transition:border-color 0.2s}
+.search-input:focus{border-color:var(--primary-dim)}
+.search-input::placeholder{color:var(--text-muted)}
+.feat-category{padding:14px 16px 6px;font-size:10px;font-family:'JetBrains Mono',monospace;
+  text-transform:uppercase;letter-spacing:0.15em;color:var(--text-muted);
+  border-bottom:1px solid rgba(255,255,255,0.03)}
+.feat-item{display:flex;align-items:center;gap:10px;padding:9px 16px;
+  cursor:pointer;border-bottom:1px solid rgba(255,255,255,0.03);
+  transition:background 0.15s;position:relative}
+.feat-item:hover{background:rgba(168,85,247,0.06)}
+.feat-item.active{background:rgba(168,85,247,0.12)}
+.feat-item.active::before{content:'';position:absolute;left:0;top:0;bottom:0;
+  width:2px;background:var(--primary)}
+.feat-item.hidden{display:none}
+.feat-icon{font-size:14px;flex-shrink:0;width:22px;text-align:center}
+.feat-name{font-size:12px;color:var(--text-secondary);line-height:1.3}
+.feat-item.active .feat-name{color:var(--text-primary)}
+
+/* Detail pane */
+.feat-detail{overflow-y:auto;max-height:calc(100vh - 200px);padding:0}
+.detail-panel{display:none;padding:28px 32px;animation:fadeIn 0.2s ease}
+.detail-panel.dp-active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+
+/* Detail panel internals */
+.dp-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px}
+.dp-icon{font-size:28px;flex-shrink:0;margin-top:2px}
+.dp-title{font-size:1.3rem;font-weight:600;letter-spacing:-0.01em;margin-bottom:4px}
+.dp-cat{font-size:11px;font-family:'JetBrains Mono',monospace;text-transform:uppercase;
+  letter-spacing:0.1em;color:var(--primary);opacity:0.8}
+.dp-summary{color:var(--text-secondary);font-size:0.88rem;line-height:1.7;
+  margin-bottom:20px;padding-bottom:20px;border-bottom:1px solid var(--border)}
+.dp-code{background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:14px 16px;margin-bottom:20px;overflow-x:auto}
+.dp-code pre{font-size:12px;line-height:1.6;color:var(--neon-green)}
+.dp-code .cmd{color:var(--neon-amber)}
+.dp-code .cmt{color:var(--text-muted)}
+.dp-tips{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.dp-tip{padding:10px 12px;background:rgba(168,85,247,0.06);
+  border:1px solid rgba(168,85,247,0.15);border-radius:var(--radius-sm);
+  font-size:11.5px;color:var(--text-secondary);line-height:1.5}
+.dp-tip strong{color:var(--text-primary);display:block;margin-bottom:2px;font-size:11px}
+.dp-related{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.dp-chip{padding:4px 10px;border-radius:12px;border:1px solid var(--border);
+  font-size:11px;font-family:'JetBrains Mono',monospace;color:var(--text-muted);
+  cursor:pointer;transition:all 0.15s;background:rgba(255,255,255,0.02)}
+.dp-chip:hover{border-color:var(--primary-dim);color:var(--primary)}
+.dp-label{font-size:10px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--text-muted);font-family:'JetBrains Mono',monospace;margin-bottom:8px}
+
+/* Config table */
+.config-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:20px}
+.config-table th{padding:8px 12px;text-align:left;font-size:10px;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--text-muted);border-bottom:1px solid var(--border);
+  font-weight:600}
+.config-table td{padding:8px 12px;border-bottom:1px solid rgba(255,255,255,0.03);
+  vertical-align:top;color:var(--text-secondary)}
+.config-table td:first-child{font-family:'JetBrains Mono',monospace;color:var(--neon-amber);font-size:11px}
+.config-table tr:last-child td{border-bottom:none}
+
+/* Quick ref card */
+.quick-ref{margin-bottom:48px}
+.quick-ref-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+.qr-card{padding:16px 20px;background:rgba(168,85,247,0.05);
+  border:1px solid rgba(168,85,247,0.15);border-radius:var(--radius-sm)}
+.qr-card h4{font-size:11px;letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--primary);margin-bottom:10px;font-family:'JetBrains Mono',monospace}
+.qr-item{display:flex;justify-content:space-between;align-items:baseline;
+  padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px}
+.qr-item:last-child{border-bottom:none}
+.qr-key{font-family:'JetBrains Mono',monospace;color:var(--neon-amber)}
+.qr-val{color:var(--text-secondary);font-size:11px;text-align:right;max-width:180px}
+
+/* Footer */
+.site-footer{padding:48px 0 64px;text-align:center;margin-top:64px;
+  border-top:1px solid var(--border)}
+.footer-links{display:flex;justify-content:center;gap:24px;flex-wrap:wrap;margin-bottom:16px}
+.footer-links a{font-size:12px;color:var(--text-muted);text-decoration:none;
+  font-family:'JetBrains Mono',monospace;transition:color 0.2s}
+.footer-links a:hover{color:var(--text-primary)}
+.footer-copy{font-size:11px;color:var(--text-muted)}
+
+/* Glow line */
+.glow-line{height:1px;background:linear-gradient(90deg,transparent 0%,var(--primary) 50%,transparent 100%);
+  margin:0 auto;max-width:300px;opacity:0.5;margin-bottom:48px}
+
+/* API endpoint badge */
+.ep-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;
+  border-radius:4px;font-size:11px;font-family:'JetBrains Mono',monospace;margin-bottom:2px}
+.ep-get{background:rgba(34,197,94,0.12);color:var(--neon-green);border:1px solid rgba(34,197,94,0.2)}
+.ep-post{background:rgba(59,130,246,0.12);color:var(--neon-blue);border:1px solid rgba(59,130,246,0.2)}
+.ep-del{background:rgba(239,68,68,0.12);color:var(--neon-red);border:1px solid rgba(239,68,68,0.2)}
+.ep-route{color:var(--text-secondary)}
+
+/* Responsive */
+@media(max-width:700px){
+  .explorer-chrome{grid-template-columns:1fr}
+  .feat-sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:200px}
+  .feat-detail{max-height:none}
+  .dp-tips{grid-template-columns:1fr}
+  .dp-header{flex-direction:column;gap:8px}
+  .stats-strip{gap:8px}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header class="site-header">
+    <div class="breadcrumb">
+      <a href="https://learn.optalocal.com">learn</a>
+      <span class="breadcrumb-sep">/</span>
+      <span>lmx masterclass</span>
+    </div>
+
+    <div class="app-chip">
+      <span class="app-chip-dot"></span>
+      Opta LMX
+    </div>
+
+    <h1>LMX Masterclass</h1>
+    <p class="subtitle">
+      Complete guide to Opta LMX — the Apple Silicon inference engine at the heart of the Opta Local stack.
+      Model management, quantization, RAG, skills, agents, and the full API surface.
+    </p>
+
+    <div class="stats-strip">
+      <div class="stat-pill"><strong>Port 1234</strong> — LM Studio drop-in</div>
+      <div class="stat-pill"><strong>MLX + GGUF</strong> — dual backend</div>
+      <div class="stat-pill"><strong>90%</strong> memory ceiling enforced</div>
+      <div class="stat-pill"><strong>OpenAI + Anthropic</strong> API compat</div>
+      <div class="stat-pill"><strong>mDNS</strong> zero-config discovery</div>
+      <div class="stat-pill"><strong>18</strong> features across 5 categories</div>
+    </div>
+  </header>
+
+  <!-- Architecture -->
+  <section class="arch-section">
+    <h2>Architecture</h2>
+    <div class="glass arch-box">
+<pre class="arch">
+  <span class="mut">┌────────────────────────────────────────────────────────────────┐</span>
+  <span class="mut">│</span>  <span class="hi">Opta LMX</span>  ·  FastAPI + Uvicorn  ·  <span class="grn">192.168.188.11:1234</span>          <span class="mut">│</span>
+  <span class="mut">│                                                                │</span>
+  <span class="mut">│</span>  <span class="blu">API Layer</span>                                                       <span class="mut">│</span>
+  <span class="mut">│</span>  <span class="grn">/v1/chat/completions</span>  <span class="grn">/v1/embeddings</span>  <span class="grn">/v1/audio/*</span>           <span class="mut">│</span>
+  <span class="mut">│</span>  <span class="amb">/admin/models/*</span>  <span class="amb">/admin/events</span>  <span class="cyn">/admin/rag/*</span>  <span class="cyn">/admin/skills</span>   <span class="mut">│</span>
+  <span class="mut">│</span>  <span class="mut">/v1/messages</span>  <span class="mut">/healthz</span>  <span class="mut">/ws/stream</span>                            <span class="mut">│</span>
+  <span class="mut">│                                                                │</span>
+  <span class="mut">│</span>  <span class="hi">Inference Engine</span>                                               <span class="mut">│</span>
+  <span class="mut">│</span>  <span class="grn">MLX Backend</span> ──── Apple Neural Engine + GPU  (primary)         <span class="mut">│</span>
+  <span class="mut">│</span>  <span class="mut">GGUF Backend</span> ─── llama-cpp-python  (fallback)                  <span class="mut">│</span>
+  <span class="mut">│                                                                │</span>
+  <span class="mut">│</span>  <span class="blu">Model Manager</span>        <span class="cyn">RAG Pipeline</span>       <span class="amb">Skills Registry</span>       <span class="mut">│</span>
+  <span class="mut">│</span>  load · unload        chunker · BM25     builtin · MCP bridge   <span class="mut">│</span>
+  <span class="mut">│</span>  quantize · presets   embedding · rerank dispatch · policy      <span class="mut">│</span>
+  <span class="mut">│                                                                │</span>
+  <span class="mut">│</span>  <span class="hi">Agent Graph</span>          <span class="blu">Session Store</span>      <span class="grn">Monitoring</span>            <span class="mut">│</span>
+  <span class="mut">│</span>  multi-step · state   history · context  OTel · metrics · SSE   <span class="mut">│</span>
+  <span class="mut">│                                                                │</span>
+  <span class="mut">│</span>  <span class="amb">Security</span>: Supabase JWT · mTLS · rate-limit · memory guard     <span class="mut">│</span>
+  <span class="mut">└────────────────────────────────────────────────────────────────┘</span>
+       <span class="mut">↑ mDNS autodiscovery</span>         <span class="mut">↑ OpenTelemetry traces</span>
+</pre>
+    </div>
+  </section>
+
+  <!-- Quick ref -->
+  <section class="quick-ref">
+    <div class="arch-section"><h2>Quick Reference</h2></div>
+    <div class="quick-ref-grid">
+      <div class="qr-card">
+        <h4>Install &amp; Run</h4>
+        <div class="qr-item"><span class="qr-key">pip install -e ".[dev]"</span><span class="qr-val">editable install</span></div>
+        <div class="qr-item"><span class="qr-key">opta-lmx</span><span class="qr-val">start on :1234</span></div>
+        <div class="qr-item"><span class="qr-key">LMX_SERVER__PORT=8080</span><span class="qr-val">env override</span></div>
+        <div class="qr-item"><span class="qr-key">~/.opta-lmx/config.yaml</span><span class="qr-val">user config</span></div>
+      </div>
+      <div class="qr-card">
+        <h4>Key Endpoints</h4>
+        <div class="qr-item"><span class="qr-key">/v1/chat/completions</span><span class="qr-val">inference (OpenAI compat)</span></div>
+        <div class="qr-item"><span class="qr-key">/v1/messages</span><span class="qr-val">Anthropic bridge</span></div>
+        <div class="qr-item"><span class="qr-key">/admin/models/load</span><span class="qr-val">load a model</span></div>
+        <div class="qr-item"><span class="qr-key">/healthz</span><span class="qr-val">health probe</span></div>
+      </div>
+      <div class="qr-card">
+        <h4>Config Keys (YAML)</h4>
+        <div class="qr-item"><span class="qr-key">server.port</span><span class="qr-val">default 1234</span></div>
+        <div class="qr-item"><span class="qr-key">models.default_model</span><span class="qr-val">auto-load target</span></div>
+        <div class="qr-item"><span class="qr-key">models.max_concurrent_requests</span><span class="qr-val">semaphore limit (4)</span></div>
+        <div class="qr-item"><span class="qr-key">discovery.mdns_enabled</span><span class="qr-val">LAN broadcast</span></div>
+      </div>
+      <div class="qr-card">
+        <h4>Safety Limits</h4>
+        <div class="qr-item"><span class="qr-key">90% unified memory</span><span class="qr-val">hard ceiling</span></div>
+        <div class="qr-item"><span class="qr-key">OOMError → unload LRU</span><span class="qr-val">graceful degrade</span></div>
+        <div class="qr-item"><span class="qr-key">circuit breaker</span><span class="qr-val">per-endpoint</span></div>
+        <div class="qr-item"><span class="qr-key">never crash on OOM</span><span class="qr-val">fundamental rule</span></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="glow-line"></div>
+
+  <!-- Feature Explorer -->
+  <section>
+    <div class="arch-section"><h2>Feature Explorer — 18 capabilities</h2></div>
+    <div class="explorer-chrome glass">
+      <div class="explorer-titlebar">
+        <div class="titlebar-dots"><span></span><span></span><span></span></div>
+        <div class="titlebar-label">opta-lmx — feature explorer</div>
+      </div>
+
+      <!-- Sidebar -->
+      <div class="feat-sidebar" id="lmxSidebar">
+        <div class="search-box">
+          <input class="search-input" type="text" id="lmxSearch" placeholder="Search features…" autocomplete="off">
+        </div>
+
+        <div class="feat-category">Inference</div>
+        <div class="feat-item active" data-id="mlx" onclick="selectFeature('mlx')">
+          <span class="feat-icon">⚡</span><span class="feat-name">MLX Native</span>
+        </div>
+        <div class="feat-item" data-id="gguf" onclick="selectFeature('gguf')">
+          <span class="feat-icon">🔄</span><span class="feat-name">GGUF Fallback</span>
+        </div>
+        <div class="feat-item" data-id="sse" onclick="selectFeature('sse')">
+          <span class="feat-icon">📡</span><span class="feat-name">SSE Streaming</span>
+        </div>
+        <div class="feat-item" data-id="tools" onclick="selectFeature('tools')">
+          <span class="feat-icon">🔧</span><span class="feat-name">Tool Calling</span>
+        </div>
+        <div class="feat-item" data-id="structured" onclick="selectFeature('structured')">
+          <span class="feat-icon">📐</span><span class="feat-name">Structured Output</span>
+        </div>
+
+        <div class="feat-category">API Surface</div>
+        <div class="feat-item" data-id="openai" onclick="selectFeature('openai')">
+          <span class="feat-icon">🤝</span><span class="feat-name">OpenAI Compat</span>
+        </div>
+        <div class="feat-item" data-id="anthropic" onclick="selectFeature('anthropic')">
+          <span class="feat-icon">🔵</span><span class="feat-name">Anthropic Bridge</span>
+        </div>
+        <div class="feat-item" data-id="embeddings" onclick="selectFeature('embeddings')">
+          <span class="feat-icon">🧮</span><span class="feat-name">Embeddings</span>
+        </div>
+        <div class="feat-item" data-id="audio" onclick="selectFeature('audio')">
+          <span class="feat-icon">🎙️</span><span class="feat-name">Audio API</span>
+        </div>
+
+        <div class="feat-category">Model Management</div>
+        <div class="feat-item" data-id="loadunload" onclick="selectFeature('loadunload')">
+          <span class="feat-icon">📦</span><span class="feat-name">Load / Unload</span>
+        </div>
+        <div class="feat-item" data-id="quantize" onclick="selectFeature('quantize')">
+          <span class="feat-icon">🗜️</span><span class="feat-name">Quantization</span>
+        </div>
+        <div class="feat-item" data-id="memory" onclick="selectFeature('memory')">
+          <span class="feat-icon">🛡️</span><span class="feat-name">Memory Safety</span>
+        </div>
+        <div class="feat-item" data-id="presets" onclick="selectFeature('presets')">
+          <span class="feat-icon">🎛️</span><span class="feat-name">Presets</span>
+        </div>
+
+        <div class="feat-category">Advanced</div>
+        <div class="feat-item" data-id="rag" onclick="selectFeature('rag')">
+          <span class="feat-icon">🗂️</span><span class="feat-name">RAG Pipeline</span>
+        </div>
+        <div class="feat-item" data-id="skills" onclick="selectFeature('skills')">
+          <span class="feat-icon">🧩</span><span class="feat-name">Skills &amp; MCP</span>
+        </div>
+        <div class="feat-item" data-id="agents" onclick="selectFeature('agents')">
+          <span class="feat-icon">🤖</span><span class="feat-name">Agent Graph</span>
+        </div>
+
+        <div class="feat-category">Operations</div>
+        <div class="feat-item" data-id="mdns" onclick="selectFeature('mdns')">
+          <span class="feat-icon">📶</span><span class="feat-name">mDNS Discovery</span>
+        </div>
+        <div class="feat-item" data-id="monitoring" onclick="selectFeature('monitoring')">
+          <span class="feat-icon">📊</span><span class="feat-name">Health &amp; Metrics</span>
+        </div>
+      </div>
+
+      <!-- Detail panels (all pre-rendered) -->
+      <div class="feat-detail">
+
+        <!-- MLX Native -->
+        <div class="detail-panel dp-active" id="dp-mlx">
+          <div class="dp-header">
+            <div class="dp-icon">⚡</div>
+            <div>
+              <div class="dp-title">MLX Native Inference</div>
+              <div class="dp-cat">Inference</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX uses Apple's MLX framework to run quantized models directly on the unified memory of M-series chips.
+            The Mac Studio M3 Ultra's 192GB of unified memory (shared by CPU, GPU, and ANE) lets LMX load models
+            that would require a data-center GPU elsewhere. Primary backend — used unless the model is GGUF-only.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /v1/chat/completions</span>
+<span class="cmt"># Works identically to OpenAI — any openai SDK points here</span>
+{
+  "model": "mlx-community/Mistral-7B-Instruct-v0.3-4bit",
+  "messages": [{"role":"user","content":"Hello"}],
+  "stream": true
+}</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Backend module</strong>inference/mlx_lm_backend.py wraps mlx-lm for all generation calls</div>
+            <div class="dp-tip"><strong>Batching</strong>models.use_batching=true enables concurrent request batching</div>
+            <div class="dp-tip"><strong>Context window</strong>controlled by model config; engine tracks prompt token counts</div>
+            <div class="dp-tip"><strong>Autotune</strong>autotune_scoring.py selects optimal generation params per model</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('gguf')">GGUF Fallback</span>
+            <span class="dp-chip" onclick="selectFeature('quantize')">Quantization</span>
+            <span class="dp-chip" onclick="selectFeature('memory')">Memory Safety</span>
+          </div>
+        </div>
+
+        <!-- GGUF Fallback -->
+        <div class="detail-panel" id="dp-gguf">
+          <div class="dp-header">
+            <div class="dp-icon">🔄</div>
+            <div>
+              <div class="dp-title">GGUF Fallback Backend</div>
+              <div class="dp-cat">Inference</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            For models distributed only as GGUF (llama.cpp format), LMX routes inference through
+            llama-cpp-python. The gguf_resolver.py detects format automatically — callers use
+            the same API regardless of backend. Useful for community quantized models not yet
+            in MLX format.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># gguf_resolver.py detects format from model path</span>
+<span class="cmd">POST /admin/models/load</span>
+{
+  "model_id": "TheBloke/Mistral-7B-GGUF",
+  "backend_hint": "gguf"   <span class="cmt"># optional — auto-detected otherwise</span>
+}</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Auto-detection</strong>File extension .gguf triggers the llama-cpp-python backend path</div>
+            <div class="dp-tip"><strong>Same API</strong>Inference routes are identical — callers don't know which backend runs</div>
+            <div class="dp-tip"><strong>GPU layers</strong>llama-cpp-python uses Metal GPU layers on Apple Silicon automatically</div>
+            <div class="dp-tip"><strong>Fallback chain</strong>MLX fails → GGUF tried → HTTP 503 if both fail (never crash)</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('mlx')">MLX Native</span>
+            <span class="dp-chip" onclick="selectFeature('loadunload')">Load / Unload</span>
+          </div>
+        </div>
+
+        <!-- SSE Streaming -->
+        <div class="detail-panel" id="dp-sse">
+          <div class="dp-header">
+            <div class="dp-icon">📡</div>
+            <div>
+              <div class="dp-title">SSE Streaming</div>
+              <div class="dp-cat">Inference</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            Real-time token delivery over Server-Sent Events. When stream=true, LMX yields each
+            token chunk as a data: SSE event in exactly the OpenAI streaming format. The WebSocket
+            endpoint (/ws/stream) offers an alternative for clients that prefer bidirectional framing.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># SSE response format (identical to OpenAI)</span>
+data: {"choices":[{"delta":{"role":"assistant","content":"Hello"}}]}
+data: {"choices":[{"delta":{"content":" there"}}]}
+data: [DONE]
+
+<span class="cmt"># WebSocket alternative</span>
+ws://192.168.188.11:1234/ws/stream</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>FastAPI async gen</strong>streaming.py uses AsyncIterator — FastAPI converts to SSE automatically</div>
+            <div class="dp-tip"><strong>Heartbeat</strong>SSE heartbeat every 30s (configurable) to keep connections alive through proxies</div>
+            <div class="dp-tip"><strong>Admin events</strong>/admin/events is a separate SSE stream for server-side telemetry</div>
+            <div class="dp-tip"><strong>WebSocket</strong>Enabled by default; disable via server.websocket_enabled=false</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('openai')">OpenAI Compat</span>
+            <span class="dp-chip" onclick="selectFeature('monitoring')">Health &amp; Metrics</span>
+          </div>
+        </div>
+
+        <!-- Tool Calling -->
+        <div class="detail-panel" id="dp-tools">
+          <div class="dp-header">
+            <div class="dp-icon">🔧</div>
+            <div>
+              <div class="dp-title">Tool / Function Calling</div>
+              <div class="dp-cat">Inference</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX passes tool definitions and tool_calls through the inference pipeline without
+            parsing or validating the schema — that is the client's job. The tool_parser.py
+            module handles the model's raw output and reconstructs OpenAI-compatible tool_calls
+            blocks for the response.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /v1/chat/completions</span>
+{
+  "model": "mlx-community/Mistral-7B",
+  "messages": [...],
+  "tools": [{"type":"function","function":{"name":"read_file",...}}],
+  "tool_choice": "auto"
+}
+<span class="cmt"># LMX passes tools through unchanged; parses response tool_calls</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Pass-through</strong>Tool definitions forwarded unchanged to model; LMX does not validate schemas</div>
+            <div class="dp-tip"><strong>tool_parser.py</strong>Parses model's JSON output into structured tool_calls response blocks</div>
+            <div class="dp-tip"><strong>Parallel calls</strong>Multiple tool_calls in one response supported (OpenAI parallel calling spec)</div>
+            <div class="dp-tip"><strong>Model support</strong>Requires a model trained for function calling (Mistral, Llama, Qwen, etc.)</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('structured')">Structured Output</span>
+            <span class="dp-chip" onclick="selectFeature('skills')">Skills &amp; MCP</span>
+          </div>
+        </div>
+
+        <!-- Structured Output -->
+        <div class="detail-panel" id="dp-structured">
+          <div class="dp-header">
+            <div class="dp-icon">📐</div>
+            <div>
+              <div class="dp-title">Structured Output</div>
+              <div class="dp-cat">Inference</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            structured.py enforces Pydantic schema constraints on model outputs. When response_format
+            is set to json_schema, LMX grammar-samples the model to produce valid JSON matching the
+            provided schema. Useful for agents that need reliable structured data from local models.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /v1/chat/completions</span>
+{
+  "model": "mlx-community/Qwen2.5-7B",
+  "messages": [...],
+  "response_format": {
+    "type": "json_schema",
+    "json_schema": {"name":"TaskResult","schema":{...}}
+  }
+}</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Grammar sampling</strong>MLX constrained decoding produces schema-valid JSON tokens only</div>
+            <div class="dp-tip"><strong>Pydantic v2</strong>Schemas are validated server-side before sampling begins</div>
+            <div class="dp-tip"><strong>No retries</strong>Grammar sampling eliminates parse errors — output is always valid</div>
+            <div class="dp-tip"><strong>Use case</strong>Agent pipelines that feed structured LMX output into downstream tools</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('tools')">Tool Calling</span>
+            <span class="dp-chip" onclick="selectFeature('agents')">Agent Graph</span>
+          </div>
+        </div>
+
+        <!-- OpenAI Compat -->
+        <div class="detail-panel" id="dp-openai">
+          <div class="dp-header">
+            <div class="dp-icon">🤝</div>
+            <div>
+              <div class="dp-title">OpenAI API Compatibility</div>
+              <div class="dp-cat">API Surface</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX is a drop-in replacement for LM Studio at port 1234. Any Python openai SDK client,
+            LangChain integration, or tool that supports a custom base_url works with zero changes.
+            The response shape, error codes, streaming format, and model listing format all match
+            the OpenAI specification exactly.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># Python openai SDK — works unchanged</span>
+import openai
+client = openai.OpenAI(
+    base_url="http://192.168.188.11:1234/v1",
+    api_key="not-required-locally"
+)
+response = client.chat.completions.create(
+    model="mlx-community/Mistral-7B-4bit",
+    messages=[{"role":"user","content":"Hello"}]
+)</pre></div>
+          <div class="dp-label">Endpoint Map</div>
+          <div style="margin-bottom:16px">
+            <div><span class="ep-badge ep-post">POST</span><span class="ep-route"> /v1/chat/completions</span></div>
+            <div><span class="ep-badge ep-get">GET</span><span class="ep-route"> /v1/models</span></div>
+            <div><span class="ep-badge ep-post">POST</span><span class="ep-route"> /v1/embeddings</span></div>
+            <div><span class="ep-badge ep-post">POST</span><span class="ep-route"> /v1/audio/transcriptions</span></div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('anthropic')">Anthropic Bridge</span>
+            <span class="dp-chip" onclick="selectFeature('sse')">SSE Streaming</span>
+          </div>
+        </div>
+
+        <!-- Anthropic Bridge -->
+        <div class="detail-panel" id="dp-anthropic">
+          <div class="dp-header">
+            <div class="dp-icon">🔵</div>
+            <div>
+              <div class="dp-title">Anthropic API Bridge</div>
+              <div class="dp-cat">API Surface</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            The /v1/messages endpoint accepts Anthropic's Messages API format, allowing the
+            Anthropic Python SDK and Claude-compatible tools to route requests through LMX to
+            local models. LMX translates request/response shapes between Anthropic and OpenAI
+            formats internally.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># Anthropic SDK pointing at LMX</span>
+import anthropic
+client = anthropic.Anthropic(
+    base_url="http://192.168.188.11:1234",
+    api_key="not-required"
+)
+message = client.messages.create(
+    model="local/mistral-7b",
+    max_tokens=1024,
+    messages=[{"role":"user","content":"Hello"}]
+)</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Translation layer</strong>api/anthropic.py converts Anthropic format to internal inference request</div>
+            <div class="dp-tip"><strong>Streaming parity</strong>stream=true produces Anthropic SSE event types (message_delta, etc.)</div>
+            <div class="dp-tip"><strong>System prompt</strong>Anthropic system field mapped to system role message</div>
+            <div class="dp-tip"><strong>Tool use</strong>Anthropic tool_use blocks mapped to OpenAI tool_calls internally</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('openai')">OpenAI Compat</span>
+            <span class="dp-chip" onclick="selectFeature('tools')">Tool Calling</span>
+          </div>
+        </div>
+
+        <!-- Embeddings -->
+        <div class="detail-panel" id="dp-embeddings">
+          <div class="dp-header">
+            <div class="dp-icon">🧮</div>
+            <div>
+              <div class="dp-title">Embeddings</div>
+              <div class="dp-cat">API Surface</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            Local vector generation via /v1/embeddings. The embedding_engine.py module runs
+            a dedicated embedding model (separate from the chat model) to produce dense
+            vector representations for RAG pipelines, semantic search, and clustering workflows.
+            Fully OpenAI-compatible response format.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /v1/embeddings</span>
+{
+  "model": "mlx-community/all-MiniLM-L6-v2",
+  "input": ["document text here", "another chunk"]
+}
+<span class="cmt"># Returns: {"data":[{"embedding":[0.021,...],"index":0}]}</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Separate model</strong>Embedding model loaded independently from chat model — both can run concurrently</div>
+            <div class="dp-tip"><strong>Batch input</strong>Input array processed in a single forward pass for efficiency</div>
+            <div class="dp-tip"><strong>RAG integration</strong>Embeddings feed directly into the RAG store for document retrieval</div>
+            <div class="dp-tip"><strong>Dimensions</strong>Embedding size matches the model (MiniLM=384, nomic-embed=768, etc.)</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('rag')">RAG Pipeline</span>
+            <span class="dp-chip" onclick="selectFeature('openai')">OpenAI Compat</span>
+          </div>
+        </div>
+
+        <!-- Audio -->
+        <div class="detail-panel" id="dp-audio">
+          <div class="dp-header">
+            <div class="dp-icon">🎙️</div>
+            <div>
+              <div class="dp-title">Audio API</div>
+              <div class="dp-cat">API Surface</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX exposes /v1/audio/transcriptions (speech-to-text) and /v1/audio/speech
+            (text-to-speech), matching the OpenAI audio API. Transcription uses a local Whisper
+            model via MLX; speech synthesis uses a local TTS model. Both run fully offline on
+            the Mac Studio without any cloud calls.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /v1/audio/transcriptions</span>
+<span class="cmt">Content-Type: multipart/form-data</span>
+file=@recording.wav
+model=mlx-community/whisper-large-v3
+
+<span class="cmd">POST /v1/audio/speech</span>
+{"model":"local-tts","input":"Hello world","voice":"alloy"}</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Whisper-MLX</strong>api/audio_transcription.py — runs whisper via MLX for Apple Silicon acceleration</div>
+            <div class="dp-tip"><strong>TTS</strong>api/audio_speech.py — local text-to-speech synthesis</div>
+            <div class="dp-tip"><strong>Fully offline</strong>No cloud dependency — audio never leaves the Mac Studio</div>
+            <div class="dp-tip"><strong>OpenAI format</strong>Same multipart request/response format as OpenAI Whisper API</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('openai')">OpenAI Compat</span>
+            <span class="dp-chip" onclick="selectFeature('mlx')">MLX Native</span>
+          </div>
+        </div>
+
+        <!-- Load / Unload -->
+        <div class="detail-panel" id="dp-loadunload">
+          <div class="dp-header">
+            <div class="dp-icon">📦</div>
+            <div>
+              <div class="dp-title">Model Load / Unload</div>
+              <div class="dp-cat">Model Management</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            The Admin API exposes hot-swap model management. Load any Hugging Face model ID or
+            local path into unified memory, and unload it when done to free space for another.
+            Multiple models can be resident simultaneously (up to the 90% memory ceiling).
+            The model manager tracks inventory and enforces LRU eviction under pressure.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /admin/models/load</span>
+{"model_id": "mlx-community/Qwen2.5-Coder-7B-4bit"}
+
+<span class="cmd">POST /admin/models/unload</span>
+{"model_id": "mlx-community/Qwen2.5-Coder-7B-4bit"}
+
+<span class="cmd">GET /admin/models</span>   <span class="cmt"># list all loaded models + memory usage</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Auto-download</strong>Model not on disk? huggingface_hub downloads it to ~/.opta-lmx/models/</div>
+            <div class="dp-tip"><strong>Auto-load</strong>models.auto_load list loads models on LMX startup</div>
+            <div class="dp-tip"><strong>LRU eviction</strong>Under OOM pressure, least-recently-used model unloaded automatically</div>
+            <div class="dp-tip"><strong>Concurrent</strong>Multiple models resident; inference semaphore serializes generation</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('memory')">Memory Safety</span>
+            <span class="dp-chip" onclick="selectFeature('quantize')">Quantization</span>
+            <span class="dp-chip" onclick="selectFeature('presets')">Presets</span>
+          </div>
+        </div>
+
+        <!-- Quantization -->
+        <div class="detail-panel" id="dp-quantize">
+          <div class="dp-header">
+            <div class="dp-icon">🗜️</div>
+            <div>
+              <div class="dp-title">Quantization</div>
+              <div class="dp-cat">Model Management</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX can quantize models to lower bit-widths (3-bit, 4-bit, 8-bit) using the MLX
+            quantization pipeline. The child_quantize_worker.py runs quantization in a supervised
+            subprocess to isolate memory usage. The quantized model is saved locally and registered
+            in the inventory for future use.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /admin/models/quantize</span>
+{
+  "model_id": "meta-llama/Llama-3.1-8B",
+  "bits": 4,
+  "group_size": 64,
+  "output_id": "local/llama3.1-8b-4bit"
+}
+<span class="cmt"># Runs in isolated subprocess; SSE progress events streamed</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>3/4/8-bit</strong>Lower bits = smaller VRAM, higher speed, slight quality trade-off</div>
+            <div class="dp-tip"><strong>Supervised subprocess</strong>child_quantize_supervisor.py monitors and kills runaway quantize jobs</div>
+            <div class="dp-tip"><strong>group_size</strong>Smaller group_size = better quality at same bit depth (tradeoff: size)</div>
+            <div class="dp-tip"><strong>Progress events</strong>Quantization progress streamed via /admin/events SSE for dashboard</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('loadunload')">Load / Unload</span>
+            <span class="dp-chip" onclick="selectFeature('memory')">Memory Safety</span>
+          </div>
+        </div>
+
+        <!-- Memory Safety -->
+        <div class="detail-panel" id="dp-memory">
+          <div class="dp-header">
+            <div class="dp-icon">🛡️</div>
+            <div>
+              <div class="dp-title">Memory Safety</div>
+              <div class="dp-cat">Model Management</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            The memory monitor enforces a hard ceiling at 90% of available unified memory. Before
+            loading any model, psutil.virtual_memory() is checked. If loading would exceed the
+            ceiling, the least-recently-used model is evicted first. LMX never crashes on OOM —
+            it degrades gracefully with a 503 response and a structured log event.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># memory.py: checked before every model load</span>
+if used_pct > 0.90:
+    await evict_least_recently_used()
+    if still_over_limit:
+        raise HTTPException(503, "Insufficient memory")
+<span class="cmt"># Never: raise SystemExit / let process crash</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>90% ceiling</strong>Hard limit; configurable in config.yaml as models.memory_ceiling_pct</div>
+            <div class="dp-tip"><strong>psutil</strong>Unified memory (CPU+GPU+ANE all shared) measured via psutil.virtual_memory()</div>
+            <div class="dp-tip"><strong>LRU eviction</strong>Evicts model with oldest last-used timestamp, not the largest model</div>
+            <div class="dp-tip"><strong>Never crash</strong>OOM is caught at the load gate — inference itself is never interrupted</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('loadunload')">Load / Unload</span>
+            <span class="dp-chip" onclick="selectFeature('monitoring')">Health &amp; Metrics</span>
+          </div>
+        </div>
+
+        <!-- Presets -->
+        <div class="detail-panel" id="dp-presets">
+          <div class="dp-header">
+            <div class="dp-icon">🎛️</div>
+            <div>
+              <div class="dp-title">Model Presets</div>
+              <div class="dp-cat">Model Management</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            Presets are named configurations that bundle a model ID, generation parameters
+            (temperature, top_p, max_tokens), and routing hints. The preset manager loads them
+            from config at startup, and callers reference a preset name instead of spelling out
+            all parameters per request.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># ~/.opta-lmx/config.yaml</span>
+presets:
+  code:
+    model_id: mlx-community/Qwen2.5-Coder-7B-4bit
+    temperature: 0.1
+    max_tokens: 4096
+  chat:
+    model_id: mlx-community/Mistral-7B-4bit
+    temperature: 0.7
+    max_tokens: 2048</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Named profiles</strong>Preset name used in model field: "model":"preset:code"</div>
+            <div class="dp-tip"><strong>Routing aliases</strong>config.routing_aliases maps task categories to model IDs</div>
+            <div class="dp-tip"><strong>Auto-load</strong>Presets with auto_load:true are loaded into memory on LMX start</div>
+            <div class="dp-tip"><strong>API override</strong>Per-request params (temperature, max_tokens) override preset defaults</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('loadunload')">Load / Unload</span>
+            <span class="dp-chip" onclick="selectFeature('agents')">Agent Graph</span>
+          </div>
+        </div>
+
+        <!-- RAG Pipeline -->
+        <div class="detail-panel" id="dp-rag">
+          <div class="dp-header">
+            <div class="dp-icon">🗂️</div>
+            <div>
+              <div class="dp-title">RAG Pipeline</div>
+              <div class="dp-cat">Advanced</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            Built-in Retrieval-Augmented Generation pipeline. Documents are chunked by chunker.py,
+            embedded into a local vector store, and retrieved via a hybrid BM25 + dense embedding
+            search. The reranker.py module scores retrieved chunks by relevance before injecting
+            them into the prompt context.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /admin/rag/ingest</span>
+{"path": "/Users/Shared/docs/project.md"}
+
+<span class="cmd">POST /v1/chat/completions</span>
+{
+  "model": "mlx/mistral",
+  "messages": [...],
+  "rag": {"enabled": true, "top_k": 5}
+}</pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>Hybrid search</strong>BM25 keyword + dense vector similarity, combined score for ranking</div>
+            <div class="dp-tip"><strong>Reranker</strong>rag/reranker.py applies a cross-encoder to re-score top BM25+embedding candidates</div>
+            <div class="dp-tip"><strong>Chunking</strong>rag/chunker.py splits by sentence boundaries respecting token limits</div>
+            <div class="dp-tip"><strong>Local storage</strong>rag/store.py persists embeddings in a local SQLite-backed vector store</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('embeddings')">Embeddings</span>
+            <span class="dp-chip" onclick="selectFeature('agents')">Agent Graph</span>
+          </div>
+        </div>
+
+        <!-- Skills & MCP -->
+        <div class="detail-panel" id="dp-skills">
+          <div class="dp-header">
+            <div class="dp-icon">🧩</div>
+            <div>
+              <div class="dp-title">Skills &amp; MCP Bridge</div>
+              <div class="dp-cat">Advanced</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX has a skill execution system independent of the CLI. Skills are named callable units
+            (builtin or remote) registered in a manifest. The MCP bridge connects LMX to external
+            MCP servers over stdio or HTTP, exposing their tools as LMX skills. A policy engine
+            controls which skills are available per request.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">GET /admin/skills</span>   <span class="cmt"># list registered skills</span>
+<span class="cmd">POST /admin/skills/invoke</span>
+{"skill": "read_file", "params": {"path": "/tmp/data.json"}}
+
+<span class="cmt"># MCP bridge connects to external MCP servers</span>
+<span class="cmt"># skills/mcp_bridge.py handles stdio/HTTP MCP protocol</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>skills/builtins.py</strong>Selected builtin skills auto-registered at startup (file ops, search, etc.)</div>
+            <div class="dp-tip"><strong>MCP bridge</strong>skills/mcp_bridge.py proxies to any MCP server, exposing tools as LMX skills</div>
+            <div class="dp-tip"><strong>Policy gate</strong>skills/policy.py controls skill access based on auth and request context</div>
+            <div class="dp-tip"><strong>Queued dispatch</strong>QueuedSkillDispatcher serializes concurrent skill invocations safely</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('tools')">Tool Calling</span>
+            <span class="dp-chip" onclick="selectFeature('agents')">Agent Graph</span>
+          </div>
+        </div>
+
+        <!-- Agent Graph -->
+        <div class="detail-panel" id="dp-agents">
+          <div class="dp-header">
+            <div class="dp-icon">🤖</div>
+            <div>
+              <div class="dp-title">Agent Graph</div>
+              <div class="dp-cat">Advanced</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX includes a server-side multi-step agent execution engine. The AgentGraph defines
+            a DAG of steps; the scheduler dispatches them asynchronously; the state store persists
+            intermediate results. OpenTelemetry tracing hooks into each step for observability.
+            Agents run fully on-server without a client keeping a connection alive.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">POST /agents/run</span>
+{
+  "graph": {
+    "steps": [
+      {"id":"search","skill":"web_search","params":{...}},
+      {"id":"summarize","model":"preset:chat","depends_on":["search"]}
+    ]
+  }
+}
+<span class="cmd">GET /agents/{run_id}/status</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>DAG execution</strong>agents/graph.py builds dependency graph; scheduler runs independent steps in parallel</div>
+            <div class="dp-tip"><strong>State persistence</strong>agents/state_store.py checkpoints step outputs for resume after restart</div>
+            <div class="dp-tip"><strong>OTel tracing</strong>agents/tracing.py instruments each step with span attributes and timing</div>
+            <div class="dp-tip"><strong>Fire-and-forget</strong>Client submits a graph and polls status — no long-lived connection required</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('skills')">Skills &amp; MCP</span>
+            <span class="dp-chip" onclick="selectFeature('rag')">RAG Pipeline</span>
+            <span class="dp-chip" onclick="selectFeature('monitoring')">Health &amp; Metrics</span>
+          </div>
+        </div>
+
+        <!-- mDNS -->
+        <div class="detail-panel" id="dp-mdns">
+          <div class="dp-header">
+            <div class="dp-icon">📶</div>
+            <div>
+              <div class="dp-title">mDNS Discovery</div>
+              <div class="dp-cat">Operations</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX advertises itself on the local network via mDNS (_opta-lmx._tcp.local.) so that
+            the CLI, Opta Code Desktop, and the LMX Dashboard can find it automatically without
+            any manual IP configuration. The CLI's opta doctor and the dashboard's ConnectAutoSetup
+            use mDNS browsing to discover the server.
+          </div>
+          <div class="dp-code"><pre><span class="cmt"># config.yaml</span>
+discovery:
+  mdns_enabled: true
+  mdns_service_name: "_opta-lmx._tcp.local"
+
+<span class="cmt"># CLI uses mDNS to resolve Mono512 automatically</span>
+<span class="cmd">opta doctor</span>   <span class="cmt"># shows discovered LMX hosts on LAN</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>discovery.py</strong>Uses zeroconf library to register and broadcast _opta-lmx._tcp.local service</div>
+            <div class="dp-tip"><strong>Zero config</strong>Clients on the same LAN find LMX without knowing its IP address</div>
+            <div class="dp-tip"><strong>Mono512 only</strong>LMX runs on Mac Studio — MacBook never runs opta-lmx locally</div>
+            <div class="dp-tip"><strong>Disable flag</strong>discovery.mdns_enabled=false for network environments that block multicast</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('monitoring')">Health &amp; Metrics</span>
+            <span class="dp-chip" onclick="selectFeature('openai')">OpenAI Compat</span>
+          </div>
+        </div>
+
+        <!-- Health & Metrics -->
+        <div class="detail-panel" id="dp-monitoring">
+          <div class="dp-header">
+            <div class="dp-icon">📊</div>
+            <div>
+              <div class="dp-title">Health &amp; Metrics</div>
+              <div class="dp-cat">Operations</div>
+            </div>
+          </div>
+          <div class="dp-summary">
+            LMX provides structured observability through multiple channels: /healthz for liveness
+            probes, /admin/events for a real-time SSE event stream, a MetricsCollector with
+            Prometheus-compatible counters, and OpenTelemetry spans on agent and inference operations.
+            The runtime journal persists events to disk for post-hoc analysis.
+          </div>
+          <div class="dp-code"><pre><span class="cmd">GET /healthz</span>   <span class="cmt"># 200 with model + memory stats</span>
+<span class="cmd">GET /admin/events</span>   <span class="cmt"># SSE stream of server events</span>
+<span class="cmd">GET /admin/metrics</span>  <span class="cmt"># Prometheus-style counters</span>
+<span class="cmd">GET /admin/diagnostics</span>  <span class="cmt"># hardware probe + config dump</span></pre></div>
+          <div class="dp-label">Key Details</div>
+          <div class="dp-tips">
+            <div class="dp-tip"><strong>/healthz</strong>Returns loaded models, memory used%, uptime, version — used by opta doctor</div>
+            <div class="dp-tip"><strong>EventBus</strong>monitoring/events.py publishes ServerEvent objects; SSE endpoint subscribes</div>
+            <div class="dp-tip"><strong>Journal</strong>monitoring/journal.py writes structured JSONL events for long-term audit</div>
+            <div class="dp-tip"><strong>OTel</strong>OpenTelemetryMiddleware + OpenTelemetryTracer instrument every request</div>
+          </div>
+          <div class="dp-label">Related</div>
+          <div class="dp-related">
+            <span class="dp-chip" onclick="selectFeature('memory')">Memory Safety</span>
+            <span class="dp-chip" onclick="selectFeature('mdns')">mDNS Discovery</span>
+          </div>
+        </div>
+
+      </div><!-- /feat-detail -->
+    </div><!-- /explorer-chrome -->
+  </section>
+
+  <div class="section-divider"></div>
+
+  <footer class="site-footer">
+    <div class="footer-links">
+      <a href="https://help.optalocal.com">Help</a>
+      <a href="https://learn.optalocal.com">Learn</a>
+      <a href="https://init.optalocal.com">Init</a>
+      <a href="https://status.optalocal.com">Status</a>
+      <a href="https://lmx.optalocal.com">LMX Dashboard</a>
+    </div>
+    <div class="footer-copy">Opta LMX Masterclass · learn.optalocal.com · 2026-03-06</div>
+  </footer>
+</div>
+
+<script>
+function selectFeature(id) {
+  var items = document.querySelectorAll('.feat-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('active', items[i].dataset.id === id);
+  }
+  var panels = document.querySelectorAll('.detail-panel');
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.toggle('dp-active', panels[i].id === 'dp-' + id);
+  }
+  var target = document.getElementById('dp-' + id);
+  if (target) { target.scrollTop = 0; }
+}
+
+document.getElementById('lmxSearch').addEventListener('input', function() {
+  var q = this.value.toLowerCase().trim();
+  var items = document.querySelectorAll('.feat-item');
+  for (var i = 0; i < items.length; i++) {
+    var name = items[i].querySelector('.feat-name');
+    if (!name) continue;
+    items[i].classList.toggle('hidden', q.length > 0 && name.textContent.toLowerCase().indexOf(q) === -1);
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  var items = Array.from(document.querySelectorAll('.feat-item:not(.hidden)'));
+  var activeIdx = items.findIndex(function(el) { return el.classList.contains('active'); });
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    var next = items[(activeIdx + 1) % items.length];
+    if (next) selectFeature(next.dataset.id);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    var prev = items[(activeIdx - 1 + items.length) % items.length];
+    if (prev) selectFeature(prev.dataset.id);
+  }
+});
+</script>
+</body>
+</html>

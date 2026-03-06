@@ -1,0 +1,1371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta CLI Masterclass</title>
+<style>
+:root {
+  --void: #09090b;
+  --surface: #18181b;
+  --elevated: #27272a;
+  --border: #3f3f46;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --primary: #8b5cf6;
+  --primary-glow: #a855f7;
+  --neon-blue: #3b82f6;
+  --neon-green: #22c55e;
+  --neon-amber: #f59e0b;
+  --neon-red: #ef4444;
+  --neon-cyan: #06b6d4;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Noise overlay */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Glass */
+.glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+.glass-subtle { background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+.glass-strong { background: rgba(255,255,255,0.07); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.12); }
+
+/* Hero */
+.hero {
+  position: relative;
+  z-index: 1;
+  padding: 64px 32px 48px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(139,92,246,0.12) 0%, transparent 70%);
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'SF Mono', 'JetBrains Mono', 'Fira Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 20px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid rgba(139,92,246,0.3);
+  background: rgba(139,92,246,0.08);
+}
+
+.hero h1 {
+  font-size: clamp(28px, 5vw, 52px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #818cf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 16px;
+}
+
+.hero-sub {
+  font-size: 16px;
+  color: var(--text-secondary);
+  max-width: 560px;
+  margin: 0 auto 36px;
+}
+
+.hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.stat-value {
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+  text-shadow: 0 0 20px rgba(139,92,246,0.5);
+}
+
+.stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Architecture */
+.arch-section {
+  position: relative;
+  z-index: 1;
+  padding: 40px 32px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.section-title {
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.section-title::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(139,92,246,0.4) 0%, transparent 100%);
+}
+
+.arch-diagram {
+  font-family: 'SF Mono', 'JetBrains Mono', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  padding: 24px;
+  border-radius: 12px;
+  overflow-x: auto;
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.arch-diagram .layer-1 { color: var(--neon-green); }
+.arch-diagram .layer-2 { color: var(--primary); }
+.arch-diagram .layer-3 { color: var(--neon-blue); }
+.arch-diagram .layer-4 { color: var(--neon-amber); }
+.arch-diagram .layer-5 { color: var(--neon-cyan); }
+.arch-diagram .dim { color: var(--text-muted); }
+
+/* Quick reference */
+.quickref-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.qr-card {
+  border-radius: 12px;
+  padding: 20px;
+}
+
+.qr-card h4 {
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.qr-card code {
+  display: block;
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--neon-green);
+  padding: 3px 0;
+}
+
+.qr-card code .dim { color: var(--text-muted); }
+.qr-card code .accent { color: var(--primary); }
+.qr-card code .amber { color: var(--neon-amber); }
+
+/* Explorer */
+.explorer {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  min-height: 600px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar {
+  border-right: 1px solid rgba(255,255,255,0.05);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-search {
+  padding: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.search-input {
+  width: 100%;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.search-input::placeholder { color: var(--text-muted); }
+.search-input:focus { border-color: rgba(139,92,246,0.4); }
+
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px; }
+
+.category-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 12px 8px 4px;
+}
+
+.feature-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 10px;
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s;
+  margin-bottom: 1px;
+}
+
+.feature-btn:hover {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-primary);
+}
+
+.feature-btn.active {
+  background: rgba(139,92,246,0.12);
+  color: var(--text-primary);
+  border: 1px solid rgba(139,92,246,0.2);
+}
+
+.feature-icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.cat-commands .feature-icon { background: rgba(139,92,246,0.15); }
+.cat-agent .feature-icon { background: rgba(59,130,246,0.15); }
+.cat-tools .feature-icon { background: rgba(34,197,94,0.15); }
+.cat-daemon .feature-icon { background: rgba(245,158,11,0.15); }
+.cat-power .feature-icon { background: rgba(6,182,212,0.15); }
+
+/* Detail pane */
+.detail-pane {
+  padding: 32px;
+  overflow-y: auto;
+  max-height: 700px;
+}
+
+.detail-panel { display: none; }
+.detail-panel.active { display: block; }
+
+.detail-header {
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.detail-chip {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  font-family: monospace;
+}
+
+.chip-commands { background: rgba(139,92,246,0.15); color: var(--primary); border: 1px solid rgba(139,92,246,0.25); }
+.chip-agent { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+.chip-tools { background: rgba(34,197,94,0.15); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+.chip-daemon { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+.chip-power { background: rgba(6,182,212,0.15); color: var(--neon-cyan); border: 1px solid rgba(6,182,212,0.25); }
+
+.detail-title {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.detail-summary {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.detail-body { margin-bottom: 20px; }
+
+.detail-body p {
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+
+.code-block {
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  padding: 16px;
+  margin: 16px 0;
+  overflow-x: auto;
+}
+
+.code-block pre {
+  font-family: 'SF Mono', 'JetBrains Mono', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--neon-green);
+  white-space: pre;
+}
+
+.code-block pre .comment { color: var(--text-muted); }
+.code-block pre .flag { color: var(--neon-amber); }
+.code-block pre .string { color: var(--neon-cyan); }
+.code-block pre .output { color: var(--text-secondary); }
+.code-block pre .accent { color: var(--primary); }
+
+.tip-card {
+  background: rgba(139,92,246,0.06);
+  border: 1px solid rgba(139,92,246,0.18);
+  border-radius: 10px;
+  padding: 14px 16px;
+  margin: 14px 0;
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.tip-card strong { color: var(--primary); }
+
+.related-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.related-btn {
+  background: none;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 6px;
+  padding: 5px 12px;
+  color: var(--text-muted);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+
+.related-btn:hover {
+  border-color: rgba(139,92,246,0.4);
+  color: var(--primary);
+}
+
+/* Footer */
+.footer {
+  position: relative;
+  z-index: 1;
+  padding: 32px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  text-align: center;
+  font-family: monospace;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Keyboard hint */
+.kbd {
+  display: inline-block;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--text-muted);
+}
+
+/* Responsive */
+@media (max-width: 700px) {
+  .explorer { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); max-height: 300px; }
+  .detail-pane { max-height: none; }
+  .hero-stats { gap: 20px; }
+  .arch-section { padding: 24px 16px; }
+  .hero { padding: 40px 16px 32px; }
+}
+</style>
+</head>
+<body>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span>◆</span>
+    <span>opta cli · masterclass</span>
+  </div>
+  <h1>Opta CLI</h1>
+  <p class="hero-sub">
+    Terminal-first AI coding assistant. Commands, daemon, agentic loop, 8 tool types, and full LMX routing — in one binary.
+  </p>
+  <div class="hero-stats">
+    <div class="stat">
+      <span class="stat-value">18</span>
+      <span class="stat-label">Features</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">8</span>
+      <span class="stat-label">Tool Types</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">2300+</span>
+      <span class="stat-label">Tests</span>
+    </div>
+    <div class="stat">
+      <span class="stat-value">v3</span>
+      <span class="stat-label">Protocol</span>
+    </div>
+  </div>
+</section>
+
+<!-- ARCHITECTURE -->
+<section class="arch-section">
+  <div class="section-title">Architecture Stack</div>
+  <div class="glass arch-diagram" style="border-radius:12px">
+<pre>
+<span class="layer-1">  ┌─────────────────────────────────────────────────────┐
+  │  CLI Entry Point  ·  src/index.ts  ·  Commander.js  │
+  │  opta chat │ opta tui │ opta do │ opta account …   │
+  └───────────────────────┬─────────────────────────────┘</span>
+                          <span class="dim">│ command dispatch</span>
+<span class="layer-2">  ┌───────────────────────▼─────────────────────────────┐
+  │  Agent Loop  ·  src/core/agent.ts                   │
+  │  Streaming parser │ Permission gate │ Tool scheduler │
+  │  Context compactor │ Thinking blocks │ Turn stats    │
+  └───────────────────────┬─────────────────────────────┘</span>
+                          <span class="dim">│ tool dispatch</span>
+<span class="layer-3">  ┌───────────────────────▼─────────────────────────────┐
+  │  Tool Executors  ·  src/core/tools/                 │
+  │  bash │ read_file │ write_file │ browser_open       │
+  │  web_search │ vision │ mcp_call │ think             │
+  └───────────────────────┬─────────────────────────────┘</span>
+                          <span class="dim">│ HTTP v3 / WebSocket</span>
+<span class="layer-4">  ┌───────────────────────▼─────────────────────────────┐
+  │  Daemon  ·  127.0.0.1:9999  ·  src/daemon/          │
+  │  Session store │ Event bus │ Vault sync │ LMX proxy │
+  │  Installer (launchd / systemd / schtasks)           │
+  └───────────────────────┬─────────────────────────────┘</span>
+                          <span class="dim">│ OpenAI-compatible API</span>
+<span class="layer-5">  ┌───────────────────────▼─────────────────────────────┐
+  │  Opta LMX  ·  192.168.188.11:1234                   │
+  │  MLX (Apple Silicon) │ GGUF fallback │ mDNS peer    │
+  └─────────────────────────────────────────────────────┘</span>
+</pre>
+  </div>
+</section>
+
+<!-- QUICK REFERENCE -->
+<section class="arch-section">
+  <div class="section-title">Quick Reference</div>
+  <div class="quickref-grid">
+    <div class="qr-card glass">
+      <h4>Core Commands</h4>
+      <code>opta chat <span class="dim">"ask a question"</span></code>
+      <code>opta tui <span class="dim"># full TUI session</span></code>
+      <code>opta do <span class="dim">"run a task autonomously"</span></code>
+      <code>opta account login</code>
+      <code>opta daemon start <span class="dim">| stop | status</span></code>
+    </div>
+    <div class="qr-card glass">
+      <h4>TUI Shortcuts</h4>
+      <code><span class="accent">Ctrl+M</span>  <span class="dim">open menu overlay</span></code>
+      <code><span class="accent">Ctrl+L</span>  <span class="dim">clear screen</span></code>
+      <code><span class="accent">Ctrl+T</span>  <span class="dim">thinking toggle</span></code>
+      <code><span class="accent">Tab</span>     <span class="dim">autocomplete slash cmd</span></code>
+      <code><span class="accent">↑/↓</span>    <span class="dim">history navigation</span></code>
+    </div>
+    <div class="qr-card glass">
+      <h4>Config &amp; Models</h4>
+      <code>opta config set lmx.url <span class="amber">http://…:1234</span></code>
+      <code>opta models list</code>
+      <code>opta models use <span class="amber">mlx-community/…</span></code>
+      <code>opta config set provider <span class="amber">anthropic</span></code>
+      <code>opta doctor <span class="dim">--fix</span></code>
+    </div>
+    <div class="qr-card glass">
+      <h4>Slash Commands</h4>
+      <code><span class="accent">/help</span>    <span class="dim">command palette</span></code>
+      <code><span class="accent">/clear</span>   <span class="dim">reset conversation</span></code>
+      <code><span class="accent">/mode do</span> <span class="dim">agentic mode</span></code>
+      <code><span class="accent">/lmx</span>     <span class="dim">LMX model picker</span></code>
+      <code><span class="accent">/export</span>  <span class="dim">save session JSON</span></code>
+    </div>
+  </div>
+</section>
+
+<!-- EXPLORER -->
+<section class="explorer">
+  <!-- Sidebar -->
+  <aside class="sidebar glass-subtle">
+    <div class="sidebar-search">
+      <input class="search-input" type="text" id="searchInput" placeholder="Search features…" autocomplete="off" />
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+
+      <div class="category-label cat-commands" data-cat="commands">Commands</div>
+
+      <button class="feature-btn cat-commands active" data-feature="chat" onclick="showFeature('chat', this)">
+        <span class="feature-icon">💬</span>
+        <span>opta chat</span>
+      </button>
+      <button class="feature-btn cat-commands" data-feature="tui" onclick="showFeature('tui', this)">
+        <span class="feature-icon">🖥</span>
+        <span>opta tui</span>
+      </button>
+      <button class="feature-btn cat-commands" data-feature="do" onclick="showFeature('do', this)">
+        <span class="feature-icon">⚡</span>
+        <span>opta do</span>
+      </button>
+      <button class="feature-btn cat-commands" data-feature="account" onclick="showFeature('account', this)">
+        <span class="feature-icon">🔑</span>
+        <span>opta account</span>
+      </button>
+
+      <div class="category-label cat-agent" data-cat="agent">Agent Loop</div>
+
+      <button class="feature-btn cat-agent" data-feature="streaming" onclick="showFeature('streaming', this)">
+        <span class="feature-icon">⟳</span>
+        <span>Streaming Events</span>
+      </button>
+      <button class="feature-btn cat-agent" data-feature="permissions" onclick="showFeature('permissions', this)">
+        <span class="feature-icon">🛡</span>
+        <span>Permission Gate</span>
+      </button>
+      <button class="feature-btn cat-agent" data-feature="context" onclick="showFeature('context', this)">
+        <span class="feature-icon">🗜</span>
+        <span>Context Compaction</span>
+      </button>
+      <button class="feature-btn cat-agent" data-feature="thinking" onclick="showFeature('thinking', this)">
+        <span class="feature-icon">🧠</span>
+        <span>Thinking Blocks</span>
+      </button>
+
+      <div class="category-label cat-tools" data-cat="tools">Tools</div>
+
+      <button class="feature-btn cat-tools" data-feature="bash-fs" onclick="showFeature('bash-fs', this)">
+        <span class="feature-icon">🔧</span>
+        <span>Bash &amp; File System</span>
+      </button>
+      <button class="feature-btn cat-tools" data-feature="browser" onclick="showFeature('browser', this)">
+        <span class="feature-icon">🌐</span>
+        <span>Browser Automation</span>
+      </button>
+      <button class="feature-btn cat-tools" data-feature="web-vision" onclick="showFeature('web-vision', this)">
+        <span class="feature-icon">🔍</span>
+        <span>Web Search &amp; Vision</span>
+      </button>
+      <button class="feature-btn cat-tools" data-feature="mcp" onclick="showFeature('mcp', this)">
+        <span class="feature-icon">🔌</span>
+        <span>MCP Bridge</span>
+      </button>
+
+      <div class="category-label cat-daemon" data-cat="daemon">Daemon &amp; Protocol</div>
+
+      <button class="feature-btn cat-daemon" data-feature="http-v3" onclick="showFeature('http-v3', this)">
+        <span class="feature-icon">📡</span>
+        <span>HTTP v3 REST</span>
+      </button>
+      <button class="feature-btn cat-daemon" data-feature="websocket" onclick="showFeature('websocket', this)">
+        <span class="feature-icon">⚡</span>
+        <span>WebSocket Streaming</span>
+      </button>
+      <button class="feature-btn cat-daemon" data-feature="session-store" onclick="showFeature('session-store', this)">
+        <span class="feature-icon">💾</span>
+        <span>Session Store</span>
+      </button>
+
+      <div class="category-label cat-power" data-cat="power">Power Features</div>
+
+      <button class="feature-btn cat-power" data-feature="slash" onclick="showFeature('slash', this)">
+        <span class="feature-icon">⌨</span>
+        <span>Slash Commands</span>
+      </button>
+      <button class="feature-btn cat-power" data-feature="lmx-routing" onclick="showFeature('lmx-routing', this)">
+        <span class="feature-icon">🔀</span>
+        <span>LMX Routing</span>
+      </button>
+      <button class="feature-btn cat-power" data-feature="vault" onclick="showFeature('vault', this)">
+        <span class="feature-icon">🔐</span>
+        <span>Vault Sync</span>
+      </button>
+
+    </nav>
+    <div style="padding:12px 16px;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--text-muted)">
+      <span class="kbd">↑↓</span> navigate &nbsp; <span class="kbd">Enter</span> select
+    </div>
+  </aside>
+
+  <!-- Detail pane -->
+  <div class="detail-pane">
+
+    <!-- CHAT -->
+    <div class="detail-panel active" id="panel-chat">
+      <div class="detail-header">
+        <div class="detail-chip chip-commands">Commands</div>
+        <div class="detail-title">opta chat</div>
+        <div class="detail-summary">One-shot and interactive inline chat without launching the full TUI. Fast, piped, or interactive — all in your current terminal.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--primary)">opta chat</code> is the quickest way to talk to an LLM from the terminal. Pass a prompt inline for one-shot answers, pipe stdin for document context, or run it without arguments to open a readline-style interactive chat in-place.</p>
+        <div class="code-block">
+<pre><span class="comment"># Inline one-shot</span>
+opta chat <span class="string">"explain this error: segfault at 0x00"</span>
+
+<span class="comment"># Pipe context from a file</span>
+cat package.json | opta chat <span class="string">"list all dev dependencies"</span>
+
+<span class="comment"># Specific model</span>
+opta chat <span class="flag">--model</span> mlx-community/Mistral-7B-v0.3-4bit \
+          <span class="string">"summarize the release notes"</span>
+
+<span class="comment"># Output format</span>
+opta chat <span class="flag">--json</span> <span class="string">"list 5 npm scripts from package.json"</span>
+<span class="output">{"scripts":["build","test","lint","dev","typecheck"]}</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Provider fallback:</strong> <code>opta chat</code> uses the configured provider chain — LMX → Anthropic → OpenAI. Set <code>OPTA_PROVIDER</code> env var or <code>opta config set provider</code> to fix a target.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('tui', document.querySelector('[data-feature=tui]'))">opta tui →</button>
+        <button class="related-btn" onclick="showFeature('lmx-routing', document.querySelector('[data-feature=lmx-routing]'))">LMX Routing →</button>
+      </div>
+    </div>
+
+    <!-- TUI -->
+    <div class="detail-panel" id="panel-tui">
+      <div class="detail-header">
+        <div class="detail-chip chip-commands">Commands</div>
+        <div class="detail-title">opta tui</div>
+        <div class="detail-summary">Full Ink-powered terminal UI with persistent session, live streaming, overlays, model picker, and slash command palette.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--primary)">opta tui</code> launches the interactive TUI powered by React + Ink. It connects to the running daemon, loads the latest session, and begins streaming. The UI adapts to terminal width with a collapsible sidebar for session history.</p>
+        <div class="code-block">
+<pre><span class="comment"># Start with latest session</span>
+opta tui
+
+<span class="comment"># Start fresh session</span>
+opta tui <span class="flag">--new</span>
+
+<span class="comment"># Restore specific session</span>
+opta tui <span class="flag">--session</span> sess_01J5X3…
+
+<span class="comment"># With thinking enabled (extended reasoning)</span>
+opta tui <span class="flag">--thinking</span>
+
+<span class="output">┌─ Opta ─────────────────── Ctrl+M menu ─┐
+│  > What can I help with today?          │
+│                                         │
+│  [type here]                            │
+└─────────────────────────────────────────┘</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Ctrl+M</strong> opens the overlay stack: model picker, settings, manage slash commands. Press <strong>Esc</strong> to dismiss layers one at a time.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('streaming', document.querySelector('[data-feature=streaming]'))">Streaming Events →</button>
+        <button class="related-btn" onclick="showFeature('slash', document.querySelector('[data-feature=slash]'))">Slash Commands →</button>
+      </div>
+    </div>
+
+    <!-- DO -->
+    <div class="detail-panel" id="panel-do">
+      <div class="detail-header">
+        <div class="detail-chip chip-commands">Commands</div>
+        <div class="detail-title">opta do</div>
+        <div class="detail-summary">Autonomous agentic mode. Runs multi-turn tool loops with auto-approval for safe operations until the task is complete or a dangerous tool requires confirmation.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--primary)">opta do</code> sets <code>mode: "do"</code> on the daemon session, which auto-approves read-only tools (bash reads, file reads, web fetches) and requires explicit confirmation for destructive writes. Ideal for hands-off batch tasks.</p>
+        <div class="code-block">
+<pre><span class="comment"># Run a task autonomously</span>
+opta do <span class="string">"audit all TypeScript files for missing return types"</span>
+
+<span class="comment"># With specific working directory</span>
+opta do <span class="flag">--cwd</span> ./src <span class="string">"add JSDoc to every exported function"</span>
+
+<span class="comment"># Dry run — show what would happen</span>
+opta do <span class="flag">--dry-run</span> <span class="string">"update all package versions to latest"</span>
+
+<span class="output">◆ Planning...
+  → read_file src/index.ts
+  → bash: tsc --noEmit
+  ✓ 12 files checked, 3 issues found
+  → write_file src/types.ts [confirm?]</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Permission gate:</strong> <code>edit_file</code>, <code>write_file</code>, and <code>run_command</code> with destructive patterns always pause for user confirmation, even in do-mode. Safe tools (reads, status checks) run immediately.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('permissions', document.querySelector('[data-feature=permissions]'))">Permission Gate →</button>
+        <button class="related-btn" onclick="showFeature('bash-fs', document.querySelector('[data-feature=bash-fs]'))">Bash &amp; FS Tools →</button>
+      </div>
+    </div>
+
+    <!-- ACCOUNT -->
+    <div class="detail-panel" id="panel-account">
+      <div class="detail-header">
+        <div class="detail-chip chip-commands">Commands</div>
+        <div class="detail-title">opta account</div>
+        <div class="detail-summary">Supabase-backed authentication with browser OAuth flow, CLI token exchange, and vault key pull for cross-device secret sync.</div>
+      </div>
+      <div class="detail-body">
+        <p>Authentication uses a browser-redirect PKCE flow. The CLI starts a local HTTP listener, opens the accounts portal in the browser, and captures the auth token when the portal redirects back. Tokens are stored in the OS keychain via the vault.</p>
+        <div class="code-block">
+<pre><span class="comment"># Login (opens browser)</span>
+opta account login
+
+<span class="output">◆ Opening accounts.optalocal.com...
+  Waiting for callback on :9998...
+  ✓ Authenticated as matt@opta.com</span>
+
+<span class="comment"># View current account</span>
+opta account status
+
+<span class="comment"># Logout and clear tokens</span>
+opta account logout
+
+<span class="comment"># Pull API keys from vault</span>
+opta account sync</pre>
+        </div>
+        <div class="tip-card">
+          <strong>Vault pull:</strong> After login, <code>opta account sync</code> calls the daemon's <code>vault.pull</code> operation which fetches encrypted secrets from Supabase and writes them to the local keychain. API keys survive machine wipes.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('vault', document.querySelector('[data-feature=vault]'))">Vault Sync →</button>
+      </div>
+    </div>
+
+    <!-- STREAMING -->
+    <div class="detail-panel" id="panel-streaming">
+      <div class="detail-header">
+        <div class="detail-chip chip-agent">Agent Loop</div>
+        <div class="detail-title">Streaming Events</div>
+        <div class="detail-summary">SSE-based event bus from daemon to CLI. Every token, tool call, tool result, and turn boundary arrives as a typed envelope. No polling — pure push.</div>
+      </div>
+      <div class="detail-body">
+        <p>The daemon streams events over <code>GET /v3/sessions/:id/stream</code> using Server-Sent Events. The CLI agent loop in <code>src/core/agent-streaming.ts</code> consumes these events, reconstructing the model's response turn in real time.</p>
+        <div class="code-block">
+<pre><span class="comment"># Event envelope shape (TypeScript)</span>
+<span class="accent">interface</span> StreamEnvelope {
+  seq: number;       <span class="comment">// monotonic sequence</span>
+  event: <span class="string">'turn.token'</span> | <span class="string">'turn.thinking'</span>
+       | <span class="string">'tool.call'</span>  | <span class="string">'tool.result'</span>
+       | <span class="string">'turn.done'</span>  | <span class="string">'turn.error'</span>
+       | <span class="string">'session.cancelled'</span>;
+  payload: unknown;
+}
+
+<span class="comment"># Reconnect with cursor</span>
+GET /v3/sessions/:id/stream?afterSeq=142</pre>
+        </div>
+        <div class="tip-card">
+          <strong>Cursor resume:</strong> The CLI tracks <code>lastReceivedSeq</code>. On reconnect it passes <code>?afterSeq=N</code> to skip already-processed events. This prevents duplicate tool executions after network drops.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('websocket', document.querySelector('[data-feature=websocket]'))">WebSocket Streaming →</button>
+        <button class="related-btn" onclick="showFeature('http-v3', document.querySelector('[data-feature=http-v3]'))">HTTP v3 REST →</button>
+      </div>
+    </div>
+
+    <!-- PERMISSIONS -->
+    <div class="detail-panel" id="panel-permissions">
+      <div class="detail-header">
+        <div class="detail-chip chip-agent">Agent Loop</div>
+        <div class="detail-title">Permission Gate</div>
+        <div class="detail-summary">Fine-grained tool authorization with per-tool policies, session mode flags, and interactive confirmation prompts for destructive operations.</div>
+      </div>
+      <div class="detail-body">
+        <p>Every tool call passes through <code>src/core/agent-permissions.ts</code> before execution. The gate evaluates the tool name and parameters against a layered policy: global defaults → session mode → user-approved list → per-call confirmation.</p>
+        <div class="code-block">
+<pre><span class="comment"># Always auto-approved (read-only)</span>
+<span class="output">read_file, list_dir, bash (safe patterns)</span>
+<span class="output">web_search, vision, think</span>
+
+<span class="comment"># Requires confirmation in any mode</span>
+<span class="output">write_file, edit_file</span>
+<span class="output">run_command (destructive patterns: rm, drop, truncate)</span>
+<span class="output">browser_exec (JS injection)</span>
+
+<span class="comment"># Session policy flags</span>
+opta tui <span class="flag">--approve-writes</span>    <span class="comment"># auto-approve file writes</span>
+opta tui <span class="flag">--approve-all</span>       <span class="comment"># fully autonomous</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Browser session isolation:</strong> Browser tools operate in a sandboxed Playwright context. The permission gate additionally validates URL patterns against a domain allowlist before granting <code>browser_open</code>.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('do', document.querySelector('[data-feature=do]'))">opta do →</button>
+        <button class="related-btn" onclick="showFeature('browser', document.querySelector('[data-feature=browser]'))">Browser Tools →</button>
+      </div>
+    </div>
+
+    <!-- CONTEXT COMPACTION -->
+    <div class="detail-panel" id="panel-context">
+      <div class="detail-header">
+        <div class="detail-chip chip-agent">Agent Loop</div>
+        <div class="detail-title">Context Compaction</div>
+        <div class="detail-summary">Automatic rolling summary when the conversation approaches 70% of the model's context window. Preserves key facts while shedding verbatim history.</div>
+      </div>
+      <div class="detail-body">
+        <p>The agent loop tracks token usage reported by the daemon's <code>turn.done</code> event. When accumulated context crosses 70% of the configured limit, it triggers a compaction pass: a summarization call is made to the LLM, the summary replaces prior turns, and the conversation continues seamlessly.</p>
+        <div class="code-block">
+<pre><span class="comment"># Compaction threshold (config)</span>
+opta config set agent.compactionThreshold 0.70
+
+<span class="comment"># turn.done payload shows token usage</span>
+<span class="accent">{</span>
+  event: <span class="string">'turn.done'</span>,
+  payload: <span class="accent">{</span>
+    inputTokens: 45231,
+    outputTokens: 1204,
+    contextUsed: 0.68,   <span class="comment">// 68% — near threshold</span>
+    elapsed: 4820
+  <span class="accent">}</span>
+<span class="accent">}</span>
+
+<span class="output">◆ Context at 71% — compacting…
+  ✓ Summary: 45k tokens → 3.2k tokens</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Lossless facts:</strong> The compactor prompt instructs the LLM to preserve all file paths, function signatures, error messages, and explicit user decisions before summarizing conversational flow.
+        </div>
+      </div>
+    </div>
+
+    <!-- THINKING -->
+    <div class="detail-panel" id="panel-thinking">
+      <div class="detail-header">
+        <div class="detail-chip chip-agent">Agent Loop</div>
+        <div class="detail-title">Thinking Blocks</div>
+        <div class="detail-summary">Extended reasoning via Claude's thinking feature. Thinking tokens stream separately and are displayed in collapsible TUI panels — never sent back as context.</div>
+      </div>
+      <div class="detail-body">
+        <p>When <code>--thinking</code> is active (or <code>Ctrl+T</code> in TUI), the agent loop enables extended thinking. The model emits interleaved <code>turn.thinking</code> and <code>turn.token</code> events. Thinking content is displayed in a dimmed panel but is NOT re-injected as assistant context in subsequent turns.</p>
+        <div class="code-block">
+<pre><span class="comment"># Enable thinking</span>
+opta chat <span class="flag">--thinking</span> <span class="string">"design the optimal DB schema"</span>
+
+<span class="comment"># Set thinking budget (tokens)</span>
+opta config set thinking.budget 8000
+
+<span class="comment"># Event shape</span>
+<span class="accent">{</span> event: <span class="string">'turn.thinking'</span>, payload: <span class="accent">{</span> text: <span class="string">"Let me analyze…"</span> <span class="accent">}</span> <span class="accent">}</span>
+<span class="accent">{</span> event: <span class="string">'turn.token'</span>,    payload: <span class="accent">{</span> text: <span class="string">"The optimal schema…"</span> <span class="accent">}</span> <span class="accent">}</span>
+
+<span class="output">┌─ thinking ─────────────────────────────┐
+│  [considering constraints...]   dim    │
+└────────────────────────────────────────┘
+The optimal schema uses a polymorphic…</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Streaming efficiency:</strong> Thinking events are NOT persisted to the session event log (the daemon skips them) to avoid polluting history. Only the final assistant text is stored.
+        </div>
+      </div>
+    </div>
+
+    <!-- BASH FS -->
+    <div class="detail-panel" id="panel-bash-fs">
+      <div class="detail-header">
+        <div class="detail-chip chip-tools">Tools</div>
+        <div class="detail-title">Bash &amp; File System Tools</div>
+        <div class="detail-summary">Safe shell execution with pattern-based danger detection, plus direct file read/write/edit/glob/grep tools that bypass shell entirely for precision edits.</div>
+      </div>
+      <div class="detail-body">
+        <p>Six dedicated file system tools avoid shell injection risks: <code>read_file</code>, <code>write_file</code>, <code>edit_file</code>, <code>list_dir</code>, <code>glob</code>, <code>grep</code>. The <code>bash</code> tool runs arbitrary shell commands but passes output through a danger pattern scanner first.</p>
+        <div class="code-block">
+<pre><span class="comment"># Tool schema (simplified)</span>
+<span class="accent">read_file</span>   { path: string, startLine?: number, endLine?: number }
+<span class="accent">write_file</span>  { path: string, content: string }
+<span class="accent">edit_file</span>   { path: string, old: string, new: string }
+<span class="accent">glob</span>        { pattern: string, cwd?: string }
+<span class="accent">grep</span>        { pattern: string, path?: string, flags?: string }
+<span class="accent">bash</span>        { command: string, timeout?: number }
+
+<span class="comment"># Danger patterns → require confirmation</span>
+<span class="output">rm -rf, DROP TABLE, git push --force,
+truncate, dd if=, format, mkfs</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Parallel dispatch:</strong> The agent loop runs up to <strong>8 tool calls in parallel</strong> by default (configurable to 16). File reads and greps are batched automatically when the model returns multiple tool calls in one response.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('permissions', document.querySelector('[data-feature=permissions]'))">Permission Gate →</button>
+      </div>
+    </div>
+
+    <!-- BROWSER -->
+    <div class="detail-panel" id="panel-browser">
+      <div class="detail-header">
+        <div class="detail-chip chip-tools">Tools</div>
+        <div class="detail-title">Browser Automation</div>
+        <div class="detail-summary">Playwright-backed browser tools for clicking, form-filling, screenshot capture, JS evaluation, and network inspection — all from within the agent loop.</div>
+      </div>
+      <div class="detail-body">
+        <p>Browser tools use a long-lived Playwright Chromium session managed by <code>src/browser/live-host.ts</code>. The session persists across tool calls within a turn, preserving cookies and navigation state. An MCP interceptor in <code>src/browser/mcp-interceptor.ts</code> bridges browser events to the tool result channel.</p>
+        <div class="code-block">
+<pre><span class="accent">browser_open</span>       { url: string }
+<span class="accent">browser_click</span>      { selector: string }
+<span class="accent">browser_type</span>       { selector: string, text: string }
+<span class="accent">browser_screenshot</span> { fullPage?: boolean } → base64 PNG
+<span class="accent">browser_eval</span>       { js: string }         <span class="comment"># ← requires confirm</span>
+<span class="accent">browser_network</span>    {}                      → request log
+
+<span class="comment"># Example: scrape and summarize</span>
+opta do <span class="string">"go to docs.python.org and summarize the asyncio page"</span>
+<span class="output">  → browser_open https://docs.python.org/asyncio
+  → browser_screenshot
+  → [model reads screenshot + DOM text]
+  → "asyncio provides…"</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Peekaboo:</strong> The <code>src/browser/peekaboo.ts</code> module surfaces a lightweight "peek" UI that shows browser state in the TUI sidebar so you can watch what the agent is doing in real time.
+        </div>
+      </div>
+    </div>
+
+    <!-- WEB VISION -->
+    <div class="detail-panel" id="panel-web-vision">
+      <div class="detail-header">
+        <div class="detail-chip chip-tools">Tools</div>
+        <div class="detail-title">Web Search &amp; Vision</div>
+        <div class="detail-summary">Web search via configurable backends (SearXNG, DuckDuckGo, Brave), plus vision analysis of screenshots, images, and PDF pages using the Claude Vision API.</div>
+      </div>
+      <div class="detail-body">
+        <p><code>web_search</code> fetches results from the configured search backend and returns structured snippets with URLs. <code>vision</code> accepts a base64 image or file path and queries the multimodal model — useful for reading screenshots, analyzing diagrams, or extracting data from PDFs.</p>
+        <div class="code-block">
+<pre><span class="accent">web_search</span> { query: string, maxResults?: number }
+<span class="output">→ [{ title, url, snippet }, …]</span>
+
+<span class="accent">vision</span>     { image: string, prompt: string }
+<span class="comment">           # image: base64 | file path | URL</span>
+<span class="output">→ { description: string }</span>
+
+<span class="comment"># Config</span>
+opta config set search.backend searxng
+opta config set search.url <span class="flag">http://192.168.188.11:8080</span>
+
+<span class="comment"># Use case: analyze a UI screenshot</span>
+opta chat <span class="flag">--attach</span> screenshot.png \
+          <span class="string">"what UX issues do you see?"</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Local-first search:</strong> The default backend is SearXNG on Mono512, keeping searches private. Configure <code>search.backend=brave</code> for cloud fallback when LAN is unavailable.
+        </div>
+      </div>
+    </div>
+
+    <!-- MCP -->
+    <div class="detail-panel" id="panel-mcp">
+      <div class="detail-header">
+        <div class="detail-chip chip-tools">Tools</div>
+        <div class="detail-title">MCP Bridge</div>
+        <div class="detail-summary">Model Context Protocol integration. Registers external MCP servers as first-class tools in the agent loop — GitHub, Slack, Linear, Figma, and any custom MCP server.</div>
+      </div>
+      <div class="detail-body">
+        <p>The CLI's MCP registry at <code>src/mcp/registry.ts</code> discovers configured MCP servers from <code>~/.config/opta/mcp.json</code>, starts them as child processes, and exposes their tools through the same tool dispatch pipeline as built-in tools. The model sees all tools in one unified list.</p>
+        <div class="code-block">
+<pre><span class="comment"># ~/.config/opta/mcp.json</span>
+<span class="accent">{</span>
+  <span class="string">"servers"</span>: <span class="accent">{</span>
+    <span class="string">"github"</span>: <span class="accent">{</span>
+      <span class="string">"command"</span>: <span class="string">"npx"</span>,
+      <span class="string">"args"</span>: [<span class="string">"@modelcontextprotocol/server-github"</span>],
+      <span class="string">"env"</span>: <span class="accent">{</span> <span class="string">"GITHUB_TOKEN"</span>: <span class="string">"ghp_…"</span> <span class="accent">}</span>
+    <span class="accent">}</span>
+  <span class="accent">}</span>
+<span class="accent">}</span>
+
+<span class="comment"># Agent can now use GitHub tools</span>
+opta do <span class="string">"create a PR for my current branch"</span>
+<span class="output">  → mcp__github__create_pull_request {…}
+  ✓ PR #42 created</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Sandboxed start:</strong> MCP servers start as child processes owned by the CLI process. When the CLI exits, all MCP server children are reaped automatically. No dangling processes.
+        </div>
+      </div>
+    </div>
+
+    <!-- HTTP v3 -->
+    <div class="detail-panel" id="panel-http-v3">
+      <div class="detail-header">
+        <div class="detail-chip chip-daemon">Daemon &amp; Protocol</div>
+        <div class="detail-title">HTTP v3 REST</div>
+        <div class="detail-summary">Typed REST API at 127.0.0.1:9999 (default). Zod-validated request/response schemas, Bearer token auth, and a full operation registry for daemon-managed resources.</div>
+      </div>
+      <div class="detail-body">
+        <p>The daemon HTTP server exposes the v3 protocol contract defined in <code>src/protocol/v3/</code>. All request bodies and responses are validated against Zod schemas at runtime. The operation registry at <code>src/daemon/operations/registry.ts</code> maps operation names to handlers.</p>
+        <div class="code-block">
+<pre><span class="comment"># Core endpoints</span>
+POST /v3/sessions                 <span class="comment"># create session</span>
+GET  /v3/sessions                 <span class="comment"># list sessions</span>
+GET  /v3/sessions/:id             <span class="comment"># session detail</span>
+POST /v3/sessions/:id/turns       <span class="comment"># submit user turn</span>
+GET  /v3/sessions/:id/stream      <span class="comment"># SSE event stream</span>
+POST /v3/sessions/:id/cancel      <span class="comment"># cancel active turn</span>
+POST /v3/operations               <span class="comment"># daemon operations</span>
+
+<span class="comment"># Auth: all requests need Bearer token</span>
+Authorization: Bearer <span class="accent">opta_tok_…</span>
+
+<span class="comment"># Operation examples</span>
+POST /v3/operations { op: "vault.pull" }
+POST /v3/operations { op: "models.list" }</pre>
+        </div>
+        <div class="tip-card">
+          <strong>Timing-safe auth:</strong> Token comparison uses <code>crypto.timingSafeEqual</code> to prevent timing-based token enumeration attacks on the local socket.
+        </div>
+      </div>
+    </div>
+
+    <!-- WEBSOCKET -->
+    <div class="detail-panel" id="panel-websocket">
+      <div class="detail-header">
+        <div class="detail-chip chip-daemon">Daemon &amp; Protocol</div>
+        <div class="detail-title">WebSocket Streaming</div>
+        <div class="detail-summary">Bidirectional WebSocket channel for real-time event delivery to desktop clients. Token auth via query param, exponential backoff reconnect, cursor-based dedup.</div>
+      </div>
+      <div class="detail-body">
+        <p>The daemon upgrades <code>GET /v3/sessions/:id/ws</code> to a WebSocket. Desktop clients (Opta Code Desktop) use this instead of SSE for lower latency and bidirectional communication. The auth token is passed as <code>?token=T</code> since browser WebSocket doesn't support custom headers.</p>
+        <div class="code-block">
+<pre><span class="comment"># WebSocket connection (desktop client)</span>
+ws://127.0.0.1:9999/v3/sessions/sess_01/ws?token=opta_tok_…
+
+<span class="comment"># Same envelope format as SSE</span>
+<span class="accent">{</span> seq: 45, event: <span class="string">'turn.token'</span>, payload: <span class="accent">{</span> text: <span class="string">"Hello"</span> <span class="accent">}</span> <span class="accent">}</span>
+
+<span class="comment"># Reconnect pattern (client pseudocode)</span>
+let delay = 500;
+<span class="flag">while</span> (shouldRun) <span class="accent">{</span>
+  ws = connect(<span class="string">`?afterSeq=${lastSeq}`</span>);
+  ws.onClose = () => <span class="accent">{</span> await sleep(delay); delay = min(delay*2, 30000); <span class="accent">}</span>
+<span class="accent">}</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>SSE vs WS:</strong> CLI uses SSE (simpler, no upgrade handshake). Desktop uses WS for bidirectional cancellation signals. Both share the same event envelope schema.
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSION STORE -->
+    <div class="detail-panel" id="panel-session-store">
+      <div class="detail-header">
+        <div class="detail-chip chip-daemon">Daemon &amp; Protocol</div>
+        <div class="detail-title">Session Store</div>
+        <div class="detail-summary">NDJSON-based persistent session storage on disk. Events append in order, replay on reconnect, and support cursor-based reads for efficient catch-up after disconnects.</div>
+      </div>
+      <div class="detail-body">
+        <p>Sessions are stored as append-only NDJSON log files at <code>~/.config/opta/daemon/sessions/</code>. Each session directory contains <code>meta.json</code> (session metadata) and <code>events.ndjson</code> (the event stream). The session store in <code>src/daemon/session-store.ts</code> handles concurrent writes with race-safe mkdir.</p>
+        <div class="code-block">
+<pre><span class="comment"># Session directory layout</span>
+~/.config/opta/daemon/sessions/
+  sess_01J5X3.../
+    meta.json        <span class="comment"># id, title, createdAt, model</span>
+    events.ndjson    <span class="comment"># one JSON envelope per line</span>
+
+<span class="comment"># meta.json</span>
+<span class="accent">{</span> <span class="string">"id"</span>:<span class="string">"sess_01J5…"</span>, <span class="string">"title"</span>:<span class="string">"Refactor types"</span>,
+  <span class="string">"createdAt"</span>:<span class="string">"2026-03-06T…"</span>, <span class="string">"model"</span>:<span class="string">"claude-sonnet-4-6"</span> <span class="accent">}</span>
+
+<span class="comment"># events.ndjson (append-only)</span>
+<span class="output">{"seq":0,"event":"turn.token","payload":{"text":"Sure…"}}
+{"seq":1,"event":"turn.token","payload":{"text":", let"}}
+{"seq":2,"event":"turn.done","payload":{…}}</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Path safety:</strong> Session IDs are validated against a strict <code>SESSION_ID_RE</code> pattern before being used as directory names, preventing path traversal attacks.
+        </div>
+      </div>
+    </div>
+
+    <!-- SLASH -->
+    <div class="detail-panel" id="panel-slash">
+      <div class="detail-header">
+        <div class="detail-chip chip-power">Power Features</div>
+        <div class="detail-title">Slash Commands</div>
+        <div class="detail-summary">In-TUI command palette with Tab completion. Built-in commands for session control, model switching, LMX management, and extensible user-defined skill shortcuts.</div>
+      </div>
+      <div class="detail-body">
+        <p>Slash commands are registered in <code>src/commands/slash/</code> and surfaced by the TUI input handler. Typing <code>/</code> triggers the autocomplete overlay. Commands execute in the same turn context — they can reference conversation history and trigger daemon operations.</p>
+        <div class="code-block">
+<pre><span class="comment"># Session control</span>
+<span class="accent">/clear</span>           clear conversation history
+<span class="accent">/new</span>             start new session
+<span class="accent">/export</span>          save session as JSON
+<span class="accent">/title</span> <span class="flag">My task</span>   rename current session
+
+<span class="comment"># Model &amp; routing</span>
+<span class="accent">/model</span>           open model picker overlay
+<span class="accent">/lmx</span>             switch to LMX local inference
+<span class="accent">/cloud</span>           switch to Anthropic API
+
+<span class="comment"># LMX operations</span>
+<span class="accent">/lmx status</span>      show LMX health + loaded model
+<span class="accent">/lmx load</span> <span class="flag">…</span>     load a model on LMX
+<span class="accent">/lmx unload</span>      unload current model
+
+<span class="comment"># Utility</span>
+<span class="accent">/help</span>            list all slash commands
+<span class="accent">/mode do</span>         switch to agentic mode</pre>
+        </div>
+        <div class="tip-card">
+          <strong>Skill shortcuts:</strong> Custom slash commands can be added by registering skill entries in <code>~/.config/opta/skills.json</code>. Each skill maps a slash prefix to a prompt template injected at the start of the turn.
+        </div>
+      </div>
+    </div>
+
+    <!-- LMX ROUTING -->
+    <div class="detail-panel" id="panel-lmx-routing">
+      <div class="detail-header">
+        <div class="detail-chip chip-power">Power Features</div>
+        <div class="detail-title">LMX Routing</div>
+        <div class="detail-summary">Intelligent provider routing: LMX local inference (MLX / GGUF) → Anthropic cloud → OpenAI. Automatic mDNS discovery of LMX nodes on LAN, no manual IP config needed.</div>
+      </div>
+      <div class="detail-body">
+        <p>The provider manager at <code>src/providers/manager.ts</code> implements a prioritized chain: first checks LMX reachability (cached 10s), falls back to Anthropic, then OpenAI. All providers normalize to the same OpenAI-compatible streaming interface via adapters in <code>src/providers/</code>.</p>
+        <div class="code-block">
+<pre><span class="comment"># Provider chain priority</span>
+<span class="output">1.  LMX (local inference, 192.168.188.11:1234)</span>
+<span class="output">2.  Anthropic claude-sonnet-4-6</span>
+<span class="output">3.  OpenAI gpt-4o</span>
+
+<span class="comment"># LMX preflight: cached 10s</span>
+GET http://192.168.188.11:1234/healthz
+<span class="output">→ { "status": "ok", "model": "mlx-community/…" }</span>
+
+<span class="comment"># mDNS auto-discovery (no IP needed)</span>
+opta config set lmx.discovery mdns
+<span class="output">◆ Discovered LMX at 192.168.188.11:1234 (_opta-lmx._tcp)</span>
+
+<span class="comment"># Override provider for session</span>
+OPTA_PROVIDER=anthropic opta chat "hello"</pre>
+        </div>
+        <div class="tip-card">
+          <strong>Zero-config LAN:</strong> mDNS discovery uses <code>src/daemon/mdns-discovery.ts</code> which listens for <code>_opta-lmx._tcp.local</code> advertisements from Mono512. No manual IP configuration needed on the same network.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('streaming', document.querySelector('[data-feature=streaming]'))">Streaming Events →</button>
+      </div>
+    </div>
+
+    <!-- VAULT -->
+    <div class="detail-panel" id="panel-vault">
+      <div class="detail-header">
+        <div class="detail-chip chip-power">Power Features</div>
+        <div class="detail-title">Vault Sync</div>
+        <div class="detail-summary">Encrypted API key sync between devices via Supabase. Pull secrets after login — Anthropic keys, LMX tokens, and provider credentials survive machine wipes.</div>
+      </div>
+      <div class="detail-body">
+        <p>The vault system at <code>src/accounts/vault.ts</code> encrypts secrets client-side before storing in Supabase. The daemon operation <code>vault.pull</code> fetches the encrypted blob, decrypts with the device key derived from the Supabase session, and writes individual secrets to the OS keychain.</p>
+        <div class="code-block">
+<pre><span class="comment"># Pull vault (after login)</span>
+opta account sync
+
+<span class="output">◆ Pulling vault from accounts.optalocal.com…
+  ✓ ANTHROPIC_API_KEY synced
+  ✓ OPENAI_API_KEY synced
+  ✓ LMX_TOKEN synced
+  → 3 keys written to keychain</span>
+
+<span class="comment"># Daemon operation (v3)</span>
+POST /v3/operations
+{ <span class="string">"op"</span>: <span class="string">"vault.pull"</span> }
+
+<span class="comment"># Response</span>
+<span class="accent">{</span>
+  <span class="string">"ok"</span>: true,
+  <span class="string">"syncedKeys"</span>: [<span class="string">"ANTHROPIC_API_KEY"</span>, <span class="string">"OPENAI_API_KEY"</span>],
+  <span class="string">"failedKeys"</span>: []
+<span class="accent">}</span></pre>
+        </div>
+        <div class="tip-card">
+          <strong>Client-side encryption:</strong> Secrets are encrypted with AES-256-GCM using a key derived from your Supabase user ID + device fingerprint before leaving the device. The Supabase database never sees plaintext keys.
+        </div>
+      </div>
+      <div class="related-links">
+        <button class="related-btn" onclick="showFeature('account', document.querySelector('[data-feature=account]'))">opta account →</button>
+        <button class="related-btn" onclick="showFeature('http-v3', document.querySelector('[data-feature=http-v3]'))">HTTP v3 REST →</button>
+      </div>
+    </div>
+
+  </div><!-- /detail-pane -->
+</section>
+
+<!-- FOOTER -->
+<footer class="footer">
+  <span style="color:var(--primary)">opta cli</span> &nbsp;·&nbsp; optalocal.com &nbsp;·&nbsp; 2026-03-06
+  &nbsp;·&nbsp; <span class="kbd">↑↓</span> navigate &nbsp; <span class="kbd">Enter</span> select
+</footer>
+
+<script>
+var allFeatures = [
+  { id: 'chat',        cat: 'commands', terms: 'chat inline pipe one-shot' },
+  { id: 'tui',         cat: 'commands', terms: 'tui terminal ui ink session interactive' },
+  { id: 'do',          cat: 'commands', terms: 'do autonomous agentic mode task' },
+  { id: 'account',     cat: 'commands', terms: 'account login logout auth oauth' },
+  { id: 'streaming',   cat: 'agent',    terms: 'streaming events sse turn token cursor reconnect' },
+  { id: 'permissions', cat: 'agent',    terms: 'permission gate policy approve confirm destructive' },
+  { id: 'context',     cat: 'agent',    terms: 'context compaction summary window tokens' },
+  { id: 'thinking',    cat: 'agent',    terms: 'thinking reasoning extended claude budget' },
+  { id: 'bash-fs',     cat: 'tools',    terms: 'bash shell file system read write edit glob grep' },
+  { id: 'browser',     cat: 'tools',    terms: 'browser playwright automation click screenshot' },
+  { id: 'web-vision',  cat: 'tools',    terms: 'web search vision image pdf searxng' },
+  { id: 'mcp',         cat: 'tools',    terms: 'mcp protocol github slack linear figma external' },
+  { id: 'http-v3',     cat: 'daemon',   terms: 'http rest v3 api zod bearer token operation' },
+  { id: 'websocket',   cat: 'daemon',   terms: 'websocket ws streaming desktop reconnect' },
+  { id: 'session-store', cat: 'daemon', terms: 'session store ndjson disk persistent events' },
+  { id: 'slash',       cat: 'power',    terms: 'slash commands palette autocomplete skill' },
+  { id: 'lmx-routing', cat: 'power',    terms: 'lmx routing provider mdns discovery local' },
+  { id: 'vault',       cat: 'power',    terms: 'vault sync encrypt keys anthropic openai' },
+];
+
+var currentFeature = 'chat';
+
+function showFeature(id, btn) {
+  var panels = document.querySelectorAll('.detail-panel');
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.remove('active');
+  }
+  var panel = document.getElementById('panel-' + id);
+  if (panel) {
+    panel.classList.add('active');
+    panel.scrollTop = 0;
+  }
+
+  var btns = document.querySelectorAll('.feature-btn');
+  for (var j = 0; j < btns.length; j++) {
+    btns[j].classList.remove('active');
+  }
+  if (btn) {
+    btn.classList.add('active');
+    btn.scrollIntoView({ block: 'nearest' });
+  } else {
+    var target = document.querySelector('[data-feature="' + id + '"]');
+    if (target) {
+      target.classList.add('active');
+      target.scrollIntoView({ block: 'nearest' });
+    }
+  }
+  currentFeature = id;
+}
+
+var searchInput = document.getElementById('searchInput');
+searchInput.addEventListener('input', function() {
+  var q = this.value.toLowerCase().trim();
+  var btns = document.querySelectorAll('.feature-btn');
+  var cats = document.querySelectorAll('.category-label');
+
+  if (!q) {
+    for (var i = 0; i < btns.length; i++) { btns[i].style.display = ''; }
+    for (var j = 0; j < cats.length; j++) { cats[j].style.display = ''; }
+    return;
+  }
+
+  var catHasVisible = {};
+  for (var k = 0; k < allFeatures.length; k++) {
+    var f = allFeatures[k];
+    var matches = (f.id + ' ' + f.terms).indexOf(q) !== -1;
+    var btn = document.querySelector('[data-feature="' + f.id + '"]');
+    if (btn) btn.style.display = matches ? '' : 'none';
+    if (matches) catHasVisible[f.cat] = true;
+  }
+  for (var m = 0; m < cats.length; m++) {
+    var cat = cats[m];
+    var catKey = cat.getAttribute('data-cat');
+    cat.style.display = catHasVisible[catKey] ? '' : 'none';
+  }
+});
+
+document.addEventListener('keydown', function(e) {
+  if (document.activeElement === searchInput) return;
+  var visible = [];
+  var btns = document.querySelectorAll('.feature-btn');
+  for (var i = 0; i < btns.length; i++) {
+    if (btns[i].style.display !== 'none') visible.push(btns[i]);
+  }
+  var cur = -1;
+  for (var j = 0; j < visible.length; j++) {
+    if (visible[j].getAttribute('data-feature') === currentFeature) { cur = j; break; }
+  }
+
+  if (e.key === 'ArrowDown' && cur < visible.length - 1) {
+    e.preventDefault();
+    var next = visible[cur + 1];
+    showFeature(next.getAttribute('data-feature'), next);
+  } else if (e.key === 'ArrowUp' && cur > 0) {
+    e.preventDefault();
+    var prev = visible[cur - 1];
+    showFeature(prev.getAttribute('data-feature'), prev);
+  } else if (e.key === '/') {
+    e.preventDefault();
+    searchInput.focus();
+  }
+});
+</script>
+</body>
+</html>
