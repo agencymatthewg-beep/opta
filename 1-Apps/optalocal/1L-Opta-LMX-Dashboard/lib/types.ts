@@ -1,14 +1,29 @@
-import type {
-    ActivationState,
-    PairingBridgePayloadMetadata,
-} from '@opta/protocol-shared'
-
 /**
  * Opta LMX API — TypeScript type definitions.
  *
  * Covers every response shape consumed by the dashboard.
  * Grouped by API domain (health, admin, models, inference, etc.).
  */
+
+// ── Activation & Pairing (mirrored from protocol/v3/types) ──────────────────
+
+export type ActivationState =
+    | 'runtime_unavailable'
+    | 'runtime_ready'
+    | 'accounts_authenticated'
+    | 'pairing_pending'
+    | 'pairing_claimed'
+    | 'bridge_connected'
+    | 'code_ready'
+
+export type ActivationScopeStatus = 'pending' | 'satisfied' | 'insufficient'
+
+export interface PairingBridgePayloadMetadata {
+    state: ActivationState
+    expiresAt: string | null
+    recoveryAction: string | null
+    scopeStatus: ActivationScopeStatus
+}
 
 // ── Health & Readiness ──────────────────────────────────────────────────────
 

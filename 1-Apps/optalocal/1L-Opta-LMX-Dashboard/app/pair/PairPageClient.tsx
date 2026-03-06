@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { KeyRound, Link2, ShieldCheck } from 'lucide-react'
-import type { ActivationState } from '@opta/protocol-shared'
+import type { ActivationState } from '@/lib/types'
 import {
     AccountsControlPlaneError,
     claimPairingSession,
