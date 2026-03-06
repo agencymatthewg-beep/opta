@@ -27,27 +27,31 @@ export default function SetupPage() {
             },
             {
                 id: 'bridge-status',
-                title: 'Bridge Link',
+                title: 'Bot Connection',
                 status:
                     pairedDevice.bridgeStatus.status === 'connected'
                         ? 'passed'
                         : pairedDevice.bridgeStatus.status === 'pairing'
                             ? 'pending'
                             : 'failed',
-                detail: `Bridge state: ${pairedDevice.bridgeStatus.status}`,
+                detail: pairedDevice.bridgeStatus.status === 'connected'
+                    ? 'Bots can reach your AI engine.'
+                    : pairedDevice.bridgeStatus.status === 'pairing'
+                        ? 'Connecting…'
+                        : 'Offline — bots cannot reach your AI.',
                 actionId: pairedDevice.bridgeStatus.status === 'connected' ? null : 'retry-pair',
             },
             {
                 id: 'endpoint',
-                title: 'Runtime Endpoint',
+                title: 'Server Address',
                 status:
                     !usingPairedMode || pairedDevice.endpointUrl
                         ? 'passed'
                         : 'failed',
                 detail:
                     usingPairedMode && !pairedDevice.endpointUrl
-                        ? 'Missing paired endpoint URL.'
-                        : `Endpoint: ${connection.url}`,
+                        ? 'No server address set. Enter one in Settings.'
+                        : `Connecting to: ${connection.url}`,
                 actionId:
                     usingPairedMode && !pairedDevice.endpointUrl
                         ? 'direct-fallback'
@@ -55,11 +59,11 @@ export default function SetupPage() {
             },
             {
                 id: 'lmx-connectivity',
-                title: 'LMX Connectivity',
+                title: 'AI Engine Online',
                 status: connection.isConnected ? 'passed' : 'pending',
                 detail: connection.isConnected
-                    ? 'LMX health check is online.'
-                    : connection.error ?? 'Waiting for LMX health check.',
+                    ? 'AI engine is running and reachable.'
+                    : connection.error ?? 'Waiting to connect to the AI engine…',
                 actionId: connection.isConnected ? null : 'open-settings',
             },
         ]
@@ -71,9 +75,9 @@ export default function SetupPage() {
         <main className="min-h-screen px-6 py-10 md:px-10 md:py-14">
             <div className="max-w-3xl mx-auto space-y-6">
                 <header className="config-panel">
-                    <h1 className="text-xl font-mono text-text-primary">Device Setup</h1>
+                    <h1 className="text-xl font-mono text-text-primary">Health Check</h1>
                     <p className="text-sm text-text-secondary mt-1">
-                        Verify pairing, bridge connectivity, and LMX runtime readiness before using the full dashboard.
+                        Confirm your pairing and AI engine are ready before using the dashboard.
                     </p>
                 </header>
 
@@ -119,12 +123,12 @@ export default function SetupPage() {
                                 router.push('/settings')
                             }}
                         >
-                            <span>Use Direct Connect Fallback</span>
+                            <span>Enter Address Manually</span>
                         </button>
                     </div>
                     {!allPassed && (
                         <p className="text-xs text-text-muted font-mono mt-4">
-                            Complete the pending checks or use direct-connect fallback in Settings.
+                            Complete the checks above, or enter your server address manually in Settings.
                         </p>
                     )}
                 </section>

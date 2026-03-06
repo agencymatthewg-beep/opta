@@ -43,7 +43,7 @@ const NAV_GROUPS = [
         items: [
             { href: '/', label: 'Overview', icon: Sparkles },
             { href: '/models', label: 'Models', icon: HardDrive },
-            { href: '/quantize', label: 'Quantize', icon: Binary },
+            { href: '/quantize', label: 'Compress', icon: Binary },
         ],
     },
     {
@@ -52,17 +52,17 @@ const NAV_GROUPS = [
             { href: '/agents', label: 'Agents', icon: Bot },
             { href: '/skills', label: 'Skills', icon: Layers },
             { href: '/presets', label: 'Presets', icon: BookOpen },
-            { href: '/console', label: 'API Console', icon: Braces },
+            { href: '/console', label: 'Playground', icon: Braces },
             { href: '/rag', label: 'Knowledge', icon: Brain },
             { href: '/audio', label: 'Audio', icon: Mic },
         ],
     },
     {
-        label: 'Observability',
+        label: 'Monitor',
         items: [
             { href: '/metrics', label: 'Metrics', icon: Activity },
-            { href: '/predictor', label: 'Predictor', icon: BrainCircuit },
-            { href: '/arena', label: 'Arena', icon: MessageSquare },
+            { href: '/predictor', label: 'Forecasts', icon: BrainCircuit },
+            { href: '/arena', label: 'Compare', icon: MessageSquare },
             { href: '/benchmark', label: 'Benchmark', icon: Terminal },
             { href: '/sessions', label: 'Sessions', icon: BookOpen },
             { href: '/logs', label: 'Logs', icon: FileText },
@@ -72,8 +72,8 @@ const NAV_GROUPS = [
     {
         label: 'System',
         items: [
-            { href: '/bridge', label: 'Bridge', icon: Radio },
-            { href: '/setup', label: 'Setup', icon: Stethoscope },
+            { href: '/bridge', label: 'Bot Connection', icon: Radio },
+            { href: '/setup', label: 'Health Check', icon: Stethoscope },
             { href: '/pair', label: 'Pair Device', icon: Link2 },
             { href: '/settings', label: 'Settings', icon: Settings },
         ],

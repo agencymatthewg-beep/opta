@@ -41,7 +41,7 @@ export default function DashboardHome() {
         <DashboardLayout>
             <PageHeader
                 title="Overview"
-                subtitle="Real-time engine telemetry"
+                subtitle="Live view of your AI engine"
                 icon={Sparkles}
             />
 
@@ -104,21 +104,21 @@ export default function DashboardHome() {
                             <HudRing
                                 value={dashboard.memoryUsedPercent.toFixed(0)}
                                 unit="%"
-                                label="VRAM Load"
+                                label="Memory Used"
                             />
                             <HudRing
                                 value={dashboard.tokensPerSec > 0 ? dashboard.tokensPerSec.toFixed(1) : '0'}
-                                label="Tokens / Sec"
+                                label="Speed (tok/s)"
                                 reverse
                             />
                             <HudRing
                                 value={String(dashboard.loadedModelCount).padStart(2, '0')}
-                                label="Active Models"
+                                label="Models Loaded"
                                 variant="cyan"
                             />
                             <HudRing
                                 value={String(dashboard.totalRequests)}
-                                label="Total Requests"
+                                label="Requests"
                                 variant="amber"
                             />
                         </div>
@@ -147,7 +147,7 @@ export default function DashboardHome() {
                                         <p className="font-mono">{dashboard.memoryUsedGb.toFixed(1)} / {dashboard.memoryTotalGb.toFixed(1)} GB</p>
                                     </div>
                                     <div>
-                                        <p className="config-label">In-Flight</p>
+                                        <p className="config-label">Processing Now</p>
                                         <p className="font-mono">{dashboard.inFlightRequests}</p>
                                     </div>
                                 </div>
