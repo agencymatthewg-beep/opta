@@ -1,0 +1,75 @@
+/**
+ * Opta Studio System — Design Tokens
+ * Extracted from: 1P-Opta-Code-Universal/src/settings.css
+ *
+ * Usage: @import this file in any HTML/CSS that needs the Studio visual system.
+ * These tokens define the glass shell, surface gradients, borders, blur levels,
+ * shadow depths, radius scale, and ease curve for every Studio overlay.
+ *
+ * DO NOT modify these values — they are the canonical reference.
+ * To create an accent colour override for a specific Studio, see studio-template/studio-accent.css
+ */
+
+:root {
+
+  /* ── Atmosphere palette (deep space blue) ── */
+  /* Used for backgrounds and surface gradients */
+  --studio-atmo-0: #040b18;   /* deepest void — backdrop base */
+  --studio-atmo-1: #091327;   /* shell background deep */
+  --studio-atmo-2: #10203b;   /* mid surface */
+  --studio-atmo-3: #1a2d4f;   /* lifted surface */
+
+  /* ── Overlay tint colours ── */
+  /* Layered over surfaces for colour atmosphere */
+  --studio-ice:  rgba(197, 223, 255, 0.38);  /* cool blue overlay */
+  --studio-lilac: rgba(171, 126, 255, 0.42); /* violet overlay */
+  --studio-cyan:  rgba(102, 226, 255, 0.46); /* cyan overlay */
+
+  /* ── Surface gradients ── */
+  --studio-surface: linear-gradient(140deg,
+    rgba(18, 34, 60, 0.72) 0%,
+    rgba(12, 24, 43, 0.56) 45%,
+    rgba(8, 16, 30, 0.64) 100%);
+
+  --studio-surface-soft: linear-gradient(150deg,
+    rgba(16, 31, 54, 0.62) 0%,
+    rgba(11, 21, 38, 0.48) 100%);
+
+  /* ── Borders ── */
+  --studio-border:        rgba(167, 204, 255, 0.24);  /* default border */
+  --studio-border-strong: rgba(203, 226, 255, 0.34);  /* emphasized border */
+  --studio-border-accent: rgba(167, 124, 255, 0.45);  /* accent/active border */
+
+  /* ── Text ── */
+  --studio-text:       #eef4ff;  /* primary — almost white, cool tint */
+  --studio-text-soft:  #b5c6e7;  /* secondary */
+  --studio-text-muted: #8b9bbc;  /* muted / placeholder */
+
+  /* ── Border radius scale ── */
+  --studio-radius-xs: 8px;
+  --studio-radius-sm: 12px;
+  --studio-radius-md: 18px;
+  --studio-radius-lg: 24px;  /* used on the main shell */
+
+  /* ── Backdrop blur levels ── */
+  --studio-blur-sm: blur(10px) saturate(140%);   /* backdrop overlay */
+  --studio-blur-md: blur(18px) saturate(155%);   /* shell itself */
+  --studio-blur-lg: blur(28px) saturate(165%);   /* elevated panels */
+
+  /* ── Shadow depths ── */
+  --studio-shadow-sm: 0 8px 22px rgba(3, 7, 19, 0.45);
+  --studio-shadow-md: 0 18px 48px rgba(3, 8, 22, 0.52);
+  --studio-shadow-lg: 0 26px 80px rgba(2, 6, 18, 0.58);  /* main shell shadow */
+
+  /* ── Spring ease curve (used everywhere) ── */
+  --studio-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Shell dimensions ── */
+  --studio-shell-width:  min(940px, 95vw);
+  --studio-shell-height: min(730px, 92vh);
+
+  /* ── Dot-grid noise texture ── */
+  /* Used in ::after pseudo-element on .opta-studio-shell */
+  /* background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0) */
+  /* background-size: 32px 32px; mix-blend-mode: soft-light; opacity: 0.18 */
+}

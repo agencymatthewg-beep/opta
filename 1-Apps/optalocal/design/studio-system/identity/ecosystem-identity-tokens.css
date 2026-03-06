@@ -1,0 +1,100 @@
+/**
+ * Opta Ecosystem Feature Identity Tokens
+ *
+ * The canonical colour system for the three cross-cutting Opta feature areas.
+ * Import this in any optalocal web app that references Browser, Models, or Atpo.
+ *
+ * These tokens sit ABOVE the global --opta-* brand tokens and the --studio-*
+ * atmosphere tokens. They identify FEATURES, not UI states or brand.
+ *
+ * Source of truth: design/studio-system/identity/ECOSYSTEM-IDENTITY.md
+ */
+
+:root {
+
+  /* ═══════════════════════════════════════
+     BROWSER — Cyan #22d3ee
+     Everything: browser automation, localhost,
+     live previews, web session management
+  ══════════════════════════════════════════ */
+  --opta-feature-browser:        #22d3ee;
+  --opta-feature-browser-glow:   rgba(34, 211, 238, 0.35);
+  --opta-feature-browser-soft:   rgba(34, 211, 238, 0.12);
+  --opta-feature-browser-border: rgba(34, 211, 238, 0.28);
+  --opta-feature-browser-text:   #67e8f9;  /* text on dark bg */
+  --opta-feature-browser-chip:   rgba(34, 211, 238, 0.15);
+
+
+  /* ═══════════════════════════════════════
+     MODELS — Soft Violet #a78bfa
+     Everything: LMX model lifecycle,
+     inference routing, quantization, benchmarks
+  ══════════════════════════════════════════ */
+  --opta-feature-models:         #a78bfa;
+  --opta-feature-models-glow:    rgba(167, 139, 250, 0.35);
+  --opta-feature-models-soft:    rgba(167, 139, 250, 0.12);
+  --opta-feature-models-border:  rgba(167, 139, 250, 0.28);
+  --opta-feature-models-text:    #c4b5fd;  /* text on dark bg */
+  --opta-feature-models-chip:    rgba(167, 139, 250, 0.15);
+
+
+  /* ═══════════════════════════════════════
+     ATPO — Pink #f472b6
+     Everything: app/module management,
+     fleet, install/update/uninstall, permissions
+  ══════════════════════════════════════════ */
+  --opta-feature-atpo:           #f472b6;
+  --opta-feature-atpo-glow:      rgba(244, 114, 182, 0.35);
+  --opta-feature-atpo-soft:      rgba(244, 114, 182, 0.12);
+  --opta-feature-atpo-border:    rgba(244, 114, 182, 0.28);
+  --opta-feature-atpo-text:      #f9a8d4;  /* text on dark bg */
+  --opta-feature-atpo-chip:      rgba(244, 114, 182, 0.15);
+
+}
+
+/* ── Utility classes for feature-coded elements ── */
+
+/* Feature badge chips */
+.feature-chip-browser {
+  background: var(--opta-feature-browser-chip);
+  border: 1px solid var(--opta-feature-browser-border);
+  color: var(--opta-feature-browser-text);
+}
+
+.feature-chip-models {
+  background: var(--opta-feature-models-chip);
+  border: 1px solid var(--opta-feature-models-border);
+  color: var(--opta-feature-models-text);
+}
+
+.feature-chip-atpo {
+  background: var(--opta-feature-atpo-chip);
+  border: 1px solid var(--opta-feature-atpo-border);
+  color: var(--opta-feature-atpo-text);
+}
+
+/* Feature card accents (left border stripe) */
+.feature-card-browser { border-left: 3px solid var(--opta-feature-browser); }
+.feature-card-models  { border-left: 3px solid var(--opta-feature-models); }
+.feature-card-atpo    { border-left: 3px solid var(--opta-feature-atpo); }
+
+/* Guide/callout backgrounds */
+.feature-callout-browser {
+  background: var(--opta-feature-browser-soft);
+  border: 1px solid var(--opta-feature-browser-border);
+}
+
+.feature-callout-models {
+  background: var(--opta-feature-models-soft);
+  border: 1px solid var(--opta-feature-models-border);
+}
+
+.feature-callout-atpo {
+  background: var(--opta-feature-atpo-soft);
+  border: 1px solid var(--opta-feature-atpo-border);
+}
+
+/* data-feature attribute routing (for Opta Learn guide cards) */
+[data-feature="browser"] { --feature-color: var(--opta-feature-browser); }
+[data-feature="models"]  { --feature-color: var(--opta-feature-models); }
+[data-feature="atpo"]    { --feature-color: var(--opta-feature-atpo); }

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<!--
+  Opta Studio System — Opta Text Logo Component Demo
+  Part of: design/studio-system/components/
+
+  Self-contained demo. Open in browser to see the live animated logo.
+  Shows all four Studio variants side by side with interactive controls.
+
+  SHARE WITH GEMINI: This file contains everything Gemini needs to understand
+  and replicate or adapt the Opta Text Logo system.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta Text Logo — Studio System Demo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Sora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --opta-primary-glow: #a855f7;
+      --opta-transition-logo-duration: 340ms;
+      --opta-transition-logo-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: #040b18;
+      min-height: 100vh;
+      color: #eef4ff;
+      padding: 3rem 2rem;
+    }
+
+    /* ── Page layout ── */
+    .page-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: #52525b;
+      margin-bottom: 3rem;
+    }
+
+    .variants {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 2rem;
+      max-width: 1000px;
+      margin: 0 auto 4rem;
+    }
+
+    .variant-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 2rem 1.5rem;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      cursor: pointer;
+      transition: background 200ms, border-color 200ms;
+    }
+
+    .variant-cell:hover { background: rgba(255,255,255,0.05); }
+
+    .variant-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      color: #3f3f46;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+
+    /* ── LOGO SYSTEM ── */
+    .opta-logo-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+    }
+
+    .opta-logo-letters {
+      display: flex;
+      gap: 0.12rem;
+      align-items: baseline;
+    }
+
+    /* Each letter — base state (slightly minimized) */
+    .opta-letter {
+      font-family: 'Press Start 2P', monospace;
+      font-weight: 400;
+      font-size: 2.2rem;
+      line-height: 1;
+      color: var(--accent, #a855f7);
+      text-transform: uppercase;
+      -webkit-font-smoothing: none;
+      -moz-osx-font-smoothing: auto;
+      font-smooth: never;
+
+      text-shadow:
+        2px 2px 0 #09090b,
+        3px 3px 0 #09090b,
+        4px 4px 0 var(--accent, #a855f7),
+        5px 5px 0 var(--accent, #a855f7),
+        7px 7px 0 #09090b,
+        8px 8px 0 #09090b,
+        9px 9px 0 var(--accent, #a855f7);
+
+      filter: drop-shadow(0 0 18px color-mix(in srgb, var(--accent, #a855f7) 40%, transparent));
+      transform-origin: center bottom;
+
+      transition:
+        transform var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+        filter    var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+        font-size var(--opta-transition-logo-duration) var(--opta-transition-logo-ease);
+
+      animation: letter-breathe 3s ease-in-out infinite;
+    }
+
+    .opta-letter:nth-child(1) { animation-delay: 0ms; }
+    .opta-letter:nth-child(2) { animation-delay: 80ms; }
+    .opta-letter:nth-child(3) { animation-delay: 160ms; }
+    .opta-letter:nth-child(4) { animation-delay: 240ms; }
+
+    @keyframes letter-breathe {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50%       { transform: translateY(-2px) scale(1.03); }
+    }
+
+    /* Sub-label reserve */
+    .opta-logo-reserve {
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition:
+        max-height var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+        opacity    var(--opta-transition-logo-duration) var(--opta-transition-logo-ease);
+    }
+
+    .opta-logo-reserve.visible {
+      max-height: 2.5rem;
+      opacity: 1;
+    }
+
+    /* Sub-label text */
+    .opta-logo-sub {
+      font-family: 'Press Start 2P', monospace;
+      font-weight: 400;
+      font-size: 0.72rem;
+      line-height: 1;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      display: block;
+      padding-top: 0.35rem;
+      -webkit-font-smoothing: none;
+      color: var(--accent, #a855f7);
+      text-shadow:
+        1px 1px 0 #09090b,
+        2px 2px 0 #09090b,
+        3px 3px 0 var(--accent, #a855f7);
+      filter: drop-shadow(0 0 10px color-mix(in srgb, var(--accent, #a855f7) 35%, transparent));
+    }
+
+    /* ── Studio accent variants ── */
+    .logo--settings { --accent: #a855f7; }
+    .logo--browser  { --accent: #22d3ee; }
+    .logo--models   { --accent: #a78bfa; }
+    .logo--atpo     { --accent: #f472b6; }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      margin: 2rem 0 3rem;
+      flex-wrap: wrap;
+    }
+
+    .ctrl-btn {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      padding: 0.5rem 1.2rem;
+      border-radius: 8px;
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.35);
+      color: #c4b5fd;
+      cursor: pointer;
+      transition: background 150ms;
+    }
+
+    .ctrl-btn:hover { background: rgba(139,92,246,0.25); }
+
+    /* ── Spec table ── */
+    .spec {
+      max-width: 700px;
+      margin: 0 auto;
+      font-size: 0.82rem;
+    }
+
+    .spec h3 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: #52525b;
+      margin: 2rem 0 0.75rem;
+    }
+
+    .spec-row {
+      display: flex;
+      gap: 1rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .spec-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.74rem;
+      color: #67e8f9;
+      min-width: 180px;
+      flex-shrink: 0;
+    }
+
+    .spec-val { color: #8b9bbc; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+  <p class="page-title">/ opta studio system · opta text logo · component demo</p>
+
+  <div class="controls">
+    <button class="ctrl-btn" onclick="toggleSubLabels()">Toggle Sub-labels</button>
+  </div>
+
+  <div class="variants" id="logoGrid">
+
+    <!-- Settings -->
+    <div class="variant-cell">
+      <p class="variant-label">Ctrl + , · Settings</p>
+      <div class="opta-logo-wrap logo--settings">
+        <div class="opta-logo-letters">
+          <span class="opta-letter">O</span>
+          <span class="opta-letter">P</span>
+          <span class="opta-letter">T</span>
+          <span class="opta-letter">A</span>
+        </div>
+        <div class="opta-logo-reserve visible">
+          <span class="opta-logo-sub">SETTINGS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Browser -->
+    <div class="variant-cell">
+      <p class="variant-label">Ctrl + B · Browser</p>
+      <div class="opta-logo-wrap logo--browser">
+        <div class="opta-logo-letters">
+          <span class="opta-letter">O</span>
+          <span class="opta-letter">P</span>
+          <span class="opta-letter">T</span>
+          <span class="opta-letter">A</span>
+        </div>
+        <div class="opta-logo-reserve visible">
+          <span class="opta-logo-sub">BROWSER</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Models -->
+    <div class="variant-cell">
+      <p class="variant-label">Ctrl + M · Models</p>
+      <div class="opta-logo-wrap logo--models">
+        <div class="opta-logo-letters">
+          <span class="opta-letter">O</span>
+          <span class="opta-letter">P</span>
+          <span class="opta-letter">T</span>
+          <span class="opta-letter">A</span>
+        </div>
+        <div class="opta-logo-reserve visible">
+          <span class="opta-logo-sub">MODELS</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Atpo -->
+    <div class="variant-cell">
+      <p class="variant-label">Ctrl + A · Atpo</p>
+      <div class="opta-logo-wrap logo--atpo">
+        <div class="opta-logo-letters">
+          <span class="opta-letter">O</span>
+          <span class="opta-letter">P</span>
+          <span class="opta-letter">T</span>
+          <span class="opta-letter">A</span>
+        </div>
+        <div class="opta-logo-reserve visible">
+          <span class="opta-logo-sub">ATPO</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Spec reference -->
+  <div class="spec">
+    <h3>/ Opta Text Logo Spec</h3>
+    <div class="spec-row"><span class="spec-key">Font</span><span class="spec-val">Press Start 2P — Google Fonts</span></div>
+    <div class="spec-row"><span class="spec-key">Letter size (large)</span><span class="spec-val">2.2rem</span></div>
+    <div class="spec-row"><span class="spec-key">Sub-label size</span><span class="spec-val">0.72rem (in this demo) / 1.1rem (in full Studio shell)</span></div>
+    <div class="spec-row"><span class="spec-key">Sub-label letter-spacing</span><span class="spec-val">0.18em</span></div>
+    <div class="spec-row"><span class="spec-key">Font smoothing</span><span class="spec-val">none / never (intentional — crisp pixel look)</span></div>
+    <div class="spec-row"><span class="spec-key">Stagger per letter</span><span class="spec-val">80ms (animation) / 26ms (CSS transition in full shell)</span></div>
+    <div class="spec-row"><span class="spec-key">Sub-label animation</span><span class="spec-val">max-height 0 → 2.5rem + opacity 0 → 1, same ease/duration</span></div>
+    <div class="spec-row"><span class="spec-key">Animation duration</span><span class="spec-val">340ms (logo) / 220ms (layers) / 320ms (overlay)</span></div>
+    <div class="spec-row"><span class="spec-key">Ease curve</span><span class="spec-val">cubic-bezier(0.22, 1, 0.36, 1) — spring, same everywhere</span></div>
+
+    <h3>/ Shadow Recipe (7 layers)</h3>
+    <div class="spec-row"><span class="spec-key">Layers 1–2</span><span class="spec-val">2px 2px 0 #09090b, 3px 3px 0 #09090b (void depth edge)</span></div>
+    <div class="spec-row"><span class="spec-key">Layers 3–4</span><span class="spec-val">4px 4px 0 [accent], 5px 5px 0 [accent] (colour fill)</span></div>
+    <div class="spec-row"><span class="spec-key">Layers 5–6</span><span class="spec-val">7px 7px 0 #09090b, 8px 8px 0 #09090b (void cap)</span></div>
+    <div class="spec-row"><span class="spec-key">Layer 7</span><span class="spec-val">9px 9px 0 [accent] (accent continuation)</span></div>
+    <div class="spec-row"><span class="spec-key">Glow filter</span><span class="spec-val">drop-shadow(0 0 20px [accent at 32% opacity])</span></div>
+
+    <h3>/ Accent Colours per Studio</h3>
+    <div class="spec-row"><span class="spec-key">Settings</span><span class="spec-val">#a855f7 (violet — matches --opta-primary-glow)</span></div>
+    <div class="spec-row"><span class="spec-key">Browser</span><span class="spec-val">#22d3ee (cyan)</span></div>
+    <div class="spec-row"><span class="spec-key">Models</span><span class="spec-val">#a78bfa (soft violet)</span></div>
+    <div class="spec-row"><span class="spec-key">Atpo</span><span class="spec-val">#f472b6 (pink)</span></div>
+  </div>
+
+  <script>
+    let subLabelsVisible = true;
+    function toggleSubLabels() {
+      subLabelsVisible = !subLabelsVisible;
+      document.querySelectorAll('.opta-logo-reserve').forEach(el => {
+        el.classList.toggle('visible', subLabelsVisible);
+      });
+    }
+  </script>
+</body>
+</html>

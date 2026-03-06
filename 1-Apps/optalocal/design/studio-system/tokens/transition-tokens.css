@@ -1,0 +1,52 @@
+/**
+ * Opta Studio System — Transition Tokens
+ * Extracted from: 1P-Opta-Code-Universal/src/settings.css :root block
+ *
+ * These 6 variables control ALL timing in the Studio system.
+ * Using the same ease curve everywhere is intentional — it gives Opta
+ * a consistent "spring physics" feel across every motion.
+ *
+ * The ease cubic-bezier(0.22, 1, 0.36, 1) is a fast-start, gentle-overshoot
+ * spring — not a standard ease-out. This is the Opta signature feel.
+ */
+
+:root {
+
+  /* ── Logo animation (OPTA letters expand/contract) ── */
+  /* Controls: transform, font-size, filter, text-shadow on each letter */
+  --opta-transition-logo-duration: 340ms;
+  --opta-transition-logo-ease:     cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Overlay open/close (Studio enters/exits the screen) ── */
+  /* Controls: the AnimatePresence fade on .opta-studio-backdrop */
+  --opta-transition-overlay-duration: 320ms;
+  --opta-transition-overlay-ease:     cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ── Layer navigation (L1 → L2 → L3 depth transitions) ── */
+  /* Controls: the Framer Motion settingsLayerVariants scale+translate+blur */
+  --opta-transition-layer-duration: 220ms;
+  --opta-transition-layer-ease:     cubic-bezier(0.22, 1, 0.36, 1);
+
+}
+
+/*
+ * Stagger timing for Opta Text Logo letters:
+ *   Letter 1 (O): delay 0ms
+ *   Letter 2 (P): delay 26ms
+ *   Letter 3 (T): delay 52ms
+ *   Letter 4 (A): delay 78ms
+ *
+ * Each letter = +26ms from the previous.
+ * This is hardcoded in the CSS, not a variable, because it is derived from
+ * the logo letter count (4) and the desired stagger feel (quarter of logo duration).
+ */
+
+/*
+ * Sub-label max-height animation:
+ *   Collapsed: max-height 0, opacity 0, overflow hidden
+ *   Expanded:  max-height 2.5rem, opacity 1
+ *   Transition: max-height + opacity at --opta-transition-logo-duration + ease
+ *
+ * This is how "SETTINGS" (or "BROWSER", "MODELS", etc.) slides in/out
+ * below the OPTA lettermark when entering/exiting a Studio.
+ */

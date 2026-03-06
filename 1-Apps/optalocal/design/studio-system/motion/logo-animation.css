@@ -1,0 +1,181 @@
+/**
+ * Opta Studio System — Opta Text Logo Animation
+ * Extracted from: 1P-Opta-Code-Universal/src/settings.css (lines 160–280 approx)
+ *
+ * The complete CSS for the animated OPTA lettermark + sub-label system.
+ * Requires: transition-tokens.css (or the --opta-transition-* vars to be defined)
+ * Requires: studio-tokens.css (for --studio-atmo-0 / void background)
+ *
+ * Usage:
+ *   <div class="opta-studio-logo-wrap">
+ *     <div class="opta-studio-logo-letters">
+ *       <span class="opta-studio-logo-letter opta-studio-logo-letter-1">O</span>
+ *       <span class="opta-studio-logo-letter opta-studio-logo-letter-2">P</span>
+ *       <span class="opta-studio-logo-letter opta-studio-logo-letter-3">T</span>
+ *       <span class="opta-studio-logo-letter opta-studio-logo-letter-4">A</span>
+ *     </div>
+ *     <div class="opta-studio-logo-reserve">
+ *       <span class="opta-studio-logo-settings">SETTINGS</span>  <!-- or BROWSER, MODELS, ATPO -->
+ *     </div>
+ *   </div>
+ *
+ * To show the sub-label: add class "opta-studio-logo-reserve--visible" to .opta-studio-logo-reserve
+ * To show large OPTA: add class "opta-studio-logo--expanded" to .opta-studio-logo-wrap
+ */
+
+/* ── Letter container ── */
+.opta-studio-logo-letters {
+  display: flex;
+  gap: 0.15rem;
+  align-items: baseline;
+}
+
+/* ── Individual letter base ── */
+.opta-studio-logo-letter {
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 400;
+  font-size: 2.2rem;               /* expanded state */
+  line-height: 1;
+  color: var(--opta-primary-glow, #a855f7);
+  text-transform: uppercase;
+
+  /* Disable font smoothing for crisp pixel aesthetic */
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-smooth: never;
+
+  /*
+   * Shadow recipe — layered pixel effect:
+   *   Layer 1-2: void black offset (creates depth edge)
+   *   Layer 3-4: accent colour offset (creates colour fill)
+   *   Layer 5-6: void black cap (creates depth termination)
+   *   Layer 7:   accent glow continuation
+   *
+   * The pattern: void → accent → void → accent
+   * Results in the "raised pixel art" 3D look.
+   */
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 var(--opta-primary-glow, #a855f7),
+    5px 5px 0 var(--opta-primary-glow, #a855f7),
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 var(--opta-primary-glow, #a855f7);
+
+  /* Ambient glow around each letter */
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.32));
+
+  transform-origin: center bottom;
+  will-change: transform, font-size, filter;
+
+  /* Transition all animatable properties */
+  transition:
+    transform  var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    filter     var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    text-shadow var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    font-size  var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+/* ── Per-letter stagger (26ms increments) ── */
+.opta-studio-logo-letter-1 { transform: translateY(-2px) scale(0.9);   transition-delay: 0ms; }
+.opta-studio-logo-letter-2 { transform: translateY(-1px) scale(0.88);  transition-delay: 26ms; }
+.opta-studio-logo-letter-3 { transform: translateY(-1px) scale(0.865); transition-delay: 52ms; }
+.opta-studio-logo-letter-4 { transform: translateY(-1px) scale(0.875); transition-delay: 78ms; }
+
+/* ── Expanded state (Studio is open, L1 idle) ── */
+.opta-studio-logo--expanded .opta-studio-logo-letter-1 { transform: none; }
+.opta-studio-logo--expanded .opta-studio-logo-letter-2 { transform: none; }
+.opta-studio-logo--expanded .opta-studio-logo-letter-3 { transform: none; }
+.opta-studio-logo--expanded .opta-studio-logo-letter-4 { transform: none; }
+
+/* ── Minimized state (Studio is at L2/L3, logo shrinks) ── */
+/* Add .opta-studio-logo--minimized to shrink the letters */
+.opta-studio-logo--minimized .opta-studio-logo-letter {
+  font-size: 1.2rem;              /* smaller in deep layer */
+  text-shadow:
+    1px 1px 0 #09090b,
+    2px 2px 0 #09090b,
+    3px 3px 0 var(--opta-primary-glow, #a855f7);
+  filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.2));
+}
+
+/* ── Sub-label reserve (max-height animation container) ── */
+.opta-studio-logo-reserve {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition:
+    max-height var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1)),
+    opacity    var(--opta-transition-logo-duration, 340ms) var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1));
+}
+
+.opta-studio-logo-reserve--visible {
+  max-height: 2.5rem;
+  opacity: 1;
+}
+
+/* ── Sub-label base style ── */
+/* Each Studio overrides only the color + text-shadow + filter with its accent */
+.opta-studio-logo-sub {
+  font-family: 'Press Start 2P', monospace;
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: block;
+  padding-top: 0.3rem;
+
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-smooth: never;
+
+  /* Reduced shadow — 3 layers instead of 7 */
+  text-shadow:
+    1px 1px 0 #09090b,
+    2px 2px 0 #09090b,
+    3px 3px 0 var(--opta-primary-glow, #a855f7);
+  filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.24));
+}
+
+/* ── Per-Studio sub-label accent overrides ── */
+/* Settings (existing) */
+.opta-studio-logo-settings {
+  color: var(--opta-primary-glow, #a855f7);
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 var(--opta-primary-glow, #a855f7);
+  filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.24));
+}
+
+/* Browser Studio — cyan */
+.opta-studio-logo-browser {
+  color: #22d3ee;
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(34, 211, 238, 0.7);
+  filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.28));
+}
+
+/* Models Studio — soft violet */
+.opta-studio-logo-models {
+  color: #a78bfa;
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(139, 92, 246, 0.7);
+  filter: drop-shadow(0 0 14px rgba(139, 92, 246, 0.28));
+}
+
+/* Atpo Studio — pink */
+.opta-studio-logo-atpo {
+  color: #f472b6;
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(244, 114, 182, 0.7);
+  filter: drop-shadow(0 0 14px rgba(244, 114, 182, 0.28));
+}
+
+/*
+ * To add a new Studio sub-label:
+ *
+ * .opta-studio-logo-[name] {
+ *   color: [accent hex];
+ *   text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 [accent rgba 0.7];
+ *   filter: drop-shadow(0 0 14px [accent rgba 0.28]);
+ * }
+ *
+ * Then in the HTML: <span class="opta-studio-logo-sub opta-studio-logo-[name]">NAME</span>
+ */
