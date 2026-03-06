@@ -131,31 +131,6 @@ export function AtpoStudio({ isFullscreen, onClose, connection }: AtpoStudioProp
       style={{ "--studio-feature-accent": ACCENT } as CSSProperties}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Opta Text Logo */}
-      <div
-        className={`opta-studio-logo-reserve is-docked ${isFullscreen ? "is-active" : ""}`}
-        aria-hidden="true"
-      >
-        <div className="opta-studio-logo-stack">
-          <div className="opta-studio-logo-word" aria-label="OPTA">
-            {OPTA_LOGO_LETTERS.map((letter, index) => (
-              <span
-                key={`atpo-logo-${letter}`}
-                className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1} opta-studio-logo-letter--atpo`}
-              >
-                {letter}
-              </span>
-            ))}
-          </div>
-          <div
-            className="opta-studio-logo-settings"
-            style={{ color: ACCENT, textShadow: `0 0 18px ${ACCENT}88` }}
-          >
-            ATPO
-          </div>
-          <div className="opta-studio-logo-sub">App &amp; Module Management</div>
-        </div>
-      </div>
 
       {/* Top Chrome */}
       <div className="opta-studio-top-chrome">

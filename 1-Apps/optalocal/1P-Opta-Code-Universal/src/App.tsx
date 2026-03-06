@@ -2511,6 +2511,9 @@ function App() {
                         ))}
                       </div>
                       <div className="v1-brand-settings">OPTA SETTINGS</div>
+                      <div className="v1-brand-studio v1-brand-studio--browser">BROWSER</div>
+                      <div className="v1-brand-studio v1-brand-studio--models">MODELS</div>
+                      <div className="v1-brand-studio v1-brand-studio--atpo">ATPO</div>
                     </div>
                     <div className="v1-brand-sub">Code Environment</div>
                   </div>
@@ -2552,6 +2555,12 @@ function App() {
                             isFullscreen={settingsFullscreen}
                             onHighlightTab={focusSettingsTab}
                             onOpenSettingsTab={openSettings}
+                            navigationInputMode={settingsNavigationInputMode}
+                            onPointerActivity={() => {
+                              if (settingsNavigationInputModeRef.current !== "pointer") {
+                                setSettingsNavigationInputMode("pointer");
+                              }
+                            }}
                           />
                         </Suspense>
                       </div>

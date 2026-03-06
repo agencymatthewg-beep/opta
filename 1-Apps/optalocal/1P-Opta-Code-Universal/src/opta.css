@@ -6242,6 +6242,40 @@ button.active,
   font-weight: 600;
 }
 
+/* ── Studio brand labels (BROWSER / MODELS / ATPO) — same position as OPTA SETTINGS ─── */
+.v1-brand-studio {
+  font-size: 0.62rem;
+  font-family: "JetBrains Mono", monospace;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(10px) scale(0.92);
+  pointer-events: none;
+  transition:
+    opacity 260ms var(--opta-transition-overlay-ease),
+    transform 260ms var(--opta-transition-overlay-ease);
+  position: absolute;
+  left: 50%;
+  translate: -50% 0;
+  white-space: nowrap;
+}
+
+/* Each studio label appears only when its class is on app-shell */
+.app-shell.studio-browser-open .v1-brand-studio--browser,
+.app-shell.studio-models-open .v1-brand-studio--models,
+.app-shell.studio-atpo-open .v1-brand-studio--atpo {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* Per-studio accent colors */
+.v1-brand-studio--browser { color: #22d3ee; text-shadow: 0 0 18px #22d3ee66; }
+.v1-brand-studio--models  { color: #a78bfa; text-shadow: 0 0 18px #a78bfa66; }
+.v1-brand-studio--atpo    { color: #f472b6; text-shadow: 0 0 18px #f472b666; }
+
 /* ── Settings Overlay — in-place Ctrl+S transition ─────────────────────── */
 
 .v1-settings-overlay {

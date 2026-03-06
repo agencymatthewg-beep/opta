@@ -8,6 +8,8 @@ import {
 interface SettingsViewProps {
   onOpenSettingsTab: (tab: SettingsTabId) => void;
   onHighlightTab?: (tab: SettingsTabId) => void;
+  onPointerActivity?: () => void;
+  navigationInputMode?: "keyboard" | "pointer";
   designMode?: string;
   selectedTab?: SettingsTabId;
   isFullscreen?: boolean;
@@ -17,6 +19,8 @@ interface SettingsViewProps {
 export function SettingsView({
   onOpenSettingsTab,
   onHighlightTab,
+  onPointerActivity,
+  navigationInputMode,
   designMode = "0",
   selectedTab,
   isFullscreen = false,
@@ -77,7 +81,12 @@ export function SettingsView({
             key={category.id}
             className={`settings-view-card ${selectedTab === category.id ? "is-active" : ""}`}
             onClick={() => onOpenSettingsTab(category.id)}
-            onMouseEnter={() => onHighlightTab?.(category.id)}
+            onMouseEnter={() => {
+              if (navigationInputMode !== "keyboard") {
+                onHighlightTab?.(category.id);
+              }
+            }}
+            onMouseMove={() => onPointerActivity?.()}
             type="button"
             data-settings-tab-id={category.id}
             ref={(element) => {
