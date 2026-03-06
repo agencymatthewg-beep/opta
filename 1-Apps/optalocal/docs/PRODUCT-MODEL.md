@@ -54,11 +54,30 @@ Legal/copy review checklist before publish:
 4. If a page needs both views, split into:
    - **Product taxonomy** (what users buy/use)
    - **Architecture** (how it works internally)
+5. **User-facing copy must describe the user benefit, not the technical implementation.** Technical architecture terms are not product copy. If a concept requires a technical explanation, pair it with a plain-English summary and lead with the summary. This applies to all surfaces: marketing, dashboard UI, CLI help text, documentation.
+
+## UX Language Standard (Canonical)
+
+Plain-English first across all surfaces. Technical terms belong behind progressive disclosure, not at the surface.
+
+| Technology term | Plain-English equivalent |
+|-----------------|-------------------------|
+| Bridge relay | Bot Connection / bots can reach your AI |
+| LMX Node Endpoint | Server Address |
+| Unified Memory Soft Limit | Memory Limit |
+| Inference API Key (Bearer) | API Key |
+| SSE polling channel | Connection (internal, never user-visible) |
+| Quantize | Compress |
+| API Console | Playground |
+| Daemon | AI Engine (in user-facing contexts) |
+| In-flight requests | Requests being processed |
+
+The **progressive disclosure pattern** is canonical for all dashboards: show plain-English summary by default, collapse technical details (raw ports, hex IDs, protocol names) into expandable "Technical details" sections.
 
 ## Approved One-Line Copy
 
 - **Opta CLI** — "Terminal-first control for the Opta Local stack."
-- **Opta LMX + Dashboard** — "Local inference engine with a real-time dashboard."
+- **Opta LMX + Dashboard** — "Your local AI engine, simply managed."
 - **Opta Code Desktop** — "Desktop app for Opta workflows on macOS and Windows."
 
 

@@ -160,6 +160,38 @@ All Next.js sites deploy to Vercel at `*.optalocal.com`. CLI publishes to npm. D
 
 All apps share one Supabase project. Cookie domain `.optalocal.com` enables cross-subdomain SSO. Auth spec lives at `../shared/1N-Opta-Cloud-Accounts/`. Supported methods: Google OAuth, Apple OAuth, email/password, CLI browser auth flow. All `redirect_to` params validated against a whitelist.
 
+## UX Language Rules (Non-Negotiable, All Apps)
+
+**Core principle: show the outcome, not the mechanism.** All user-facing copy — labels, nav items, page titles, status messages, button text, error descriptions — must be written for a non-technical user unless it is explicitly a developer tool (e.g. API Console, CLI reference).
+
+### What this means in practice
+
+| Instead of… | Write… |
+|-------------|--------|
+| "Cloud-mediated command relay" | "Lets your bots send commands to your AI" |
+| "LMX Node Endpoint" | "Server Address" |
+| "Unified Memory Soft Limit" | "Memory Limit" |
+| "SSE polling channel active" | "Your bots can reach your AI" |
+| "Inference API Key (Bearer)" | "API Key" |
+| "Bridge relay: degraded" | "Connection problem — bots may be slow" |
+| "Quantize" (nav item) | "Compress" |
+| "API Console" (nav item) | "Playground" |
+
+### The progressive disclosure pattern
+
+Technical details (ports, hex IDs, protocol names, raw endpoints) belong inside a collapsible "Technical details" disclosure — not removed, but not foregrounded. Users who want them can find them. Example: the `<TechDisclosure>` component in the LMX Dashboard.
+
+### Status messages always describe user impact
+
+- Not: "SSE stream disconnected" → "Your bots are currently offline"
+- Not: "Bridge lifecycle: pairing" → "Connecting your bots…"
+- Not: "VRAM Load: 84%" → "Memory Used: 84%"
+- Not: "In-flight requests: 2" → "Processing 2 requests"
+
+### When technical language IS acceptable
+
+In pages/areas explicitly targeting developers: API reference docs (Help site), CLI flag descriptions, Opta Code Desktop's "Playground" page, benchmark/metrics views. Even here, lead with the user purpose before the technical detail.
+
 ## Design Preservation Rule
 
 **Opta Init (1O):** Matthew explicitly wants the current design preserved. Do NOT redesign or alter the aesthetic. Only targeted feature additions.

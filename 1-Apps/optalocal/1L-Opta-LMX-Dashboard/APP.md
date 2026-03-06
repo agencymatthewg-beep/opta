@@ -10,7 +10,7 @@
 |-------|-------|
 | **Name** | Opta LMX Dashboard |
 | **Short Name** | LMX Dashboard |
-| **Tagline** | Your inference engine, visualized |
+| **Tagline** | Manage your local AI — simply |
 | **Type** | Web dashboard (Next.js) |
 | **Platform** | Browser (served from Vercel, connects to LMX over LAN/localhost) |
 | **Language** | TypeScript (strict) |
@@ -47,30 +47,37 @@ Opta LMX Dashboard (1L) — web UI for management and monitoring
 
 ---
 
-## 3. Target Pages
+## 3. Navigation & Pages
 
-Based on the LMX API surface, the dashboard targets these page groups:
+Nav groups use plain-English labels (non-technical users first). Technical synonyms in parentheses for dev reference.
 
-**Inference:**
-
-- Dashboard (home) — stats overview, loaded models, memory, throughput
-- Chat — stream AI responses via `/v1/chat/completions`
-- Arena — side-by-side model comparison
-- RAG Studio — document ingestion & vector search
-
-**Management:**
-
+**Core:**
+- Overview — live stats: memory used, speed, models loaded, requests
 - Models — load, unload, download, browse available models
-- Presets — model behavior profiles
-- Skills — tool integrations and MCP bridge
+- Compress *(Quantize)* — reduce model size for faster loading
+
+**Intelligence:**
 - Agents — multi-step workflow management
+- Skills — tool integrations and MCP bridge
+- Presets — saved model behavior profiles
+- Playground *(API Console)* — interactive API testing
+- Knowledge *(RAG)* — document ingestion & vector search
+- Audio — voice/speech features
+
+**Monitor:**
+- Metrics — live telemetry and health
+- Forecasts *(Predictor)* — performance prediction
+- Compare *(Arena)* — side-by-side model comparison
+- Benchmark — throughput and latency tests
 - Sessions — search and resume chats
+- Logs — raw event log
+- Diagnostics — system checks
 
 **System:**
-
-- Metrics — live telemetry and health
-- Benchmark — throughput and latency tests
-- Settings — connection and config
+- Bot Connection *(Bridge)* — relay status for external bots and apps
+- Health Check *(Setup)* — verify pairing, endpoint, AI engine readiness
+- Pair Device — link this dashboard to a device
+- Settings — server address, keys, performance
 
 ---
 
@@ -116,7 +123,7 @@ All data flows through `lib/api.ts` which wraps `fetch()` with:
 
 ## 5. Design Directives (NON-NEGOTIABLE)
 
-Inherits all Opta design rules:
+### Visual design — inherits Opta design system:
 
 - **Background:** `#09090b` (void black — NEVER pure #000)
 - **Primary:** `#8b5cf6` (Electric Violet)
@@ -126,6 +133,15 @@ Inherits all Opta design rules:
 - **Icons:** Lucide React only
 - **Animation:** Framer Motion spring physics only — no CSS ease/linear
 - **Dark mode only** — OLED-optimized
+
+### UX language — simplicity first:
+
+All user-facing labels describe **what the user gets**, not how the system works.
+
+- Status messages: user impact ("Your bots can reach your AI") not system state ("SSE relay active")
+- Labels: plain English ("Memory Limit", "Server Address", "API Key") not tech jargon
+- Technical details (raw endpoints, hex IDs, protocol names, ports): accessible via `<TechDisclosure>` collapsible sections, never foregrounded
+- Nav items: outcome-first nouns/verbs ("Compress", "Playground", "Bot Connection")
 
 ---
 
@@ -148,4 +164,4 @@ Inherits all Opta design rules:
 
 ---
 
-*Last updated: 2026-03-04*
+*Last updated: 2026-03-06*
