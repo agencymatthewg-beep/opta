@@ -977,8 +977,8 @@ function App() {
 
       const liveEditTarget =
         Boolean(editMode) &&
-        editTarget &&
-        elements.includes(editTarget)
+          editTarget &&
+          elements.includes(editTarget)
           ? editTarget
           : Boolean(editMode)
             ? (elements[clampedIndex] ?? null)
@@ -2229,7 +2229,7 @@ function App() {
         : null;
     const supportsBackdrop = Boolean(
       cssSupports?.("backdrop-filter: blur(1px)") ||
-        cssSupports?.("-webkit-backdrop-filter: blur(1px)"),
+      cssSupports?.("-webkit-backdrop-filter: blur(1px)"),
     );
     root.classList.toggle("opta-backdrop-supported", supportsBackdrop);
     root.classList.toggle("opta-backdrop-fallback", !supportsBackdrop);
@@ -2395,7 +2395,7 @@ function App() {
         data-settings-editing={settingsNavigationState.editMode ? "true" : "false"}
         data-settings-scroll-container={settingsNavigationState.activeScrollContainerKey}
         data-platform={platform ?? undefined}
-        >
+      >
         <div
           ref={shellBodyRef}
           className="app-shell-body"
@@ -2500,20 +2500,26 @@ function App() {
                     <div
                       className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
                     >
-                      <div className="v1-brand-word" aria-label="OPTA">
-                        {["O", "P", "T", "A"].map((letter, index) => (
-                          <span
-                            key={letter}
-                            className={`v1-brand-letter v1-brand-letter-${index + 1}`}
-                          >
-                            {letter}
-                          </span>
-                        ))}
-                      </div>
+                      {(() => {
+                        const word =
+                          activeStudio === "browser" ? "BROWSER" :
+                            activeStudio === "models" ? "MODELS" :
+                              activeStudio === "atpo" ? "ATPO" : "OPTA";
+                        const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
+                        return (
+                          <div className={`v1-brand-word${wordClass}`} aria-label={word}>
+                            {word.split("").map((letter, index) => (
+                              <span
+                                key={`${word}-${index}`}
+                                className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                              >
+                                {letter}
+                              </span>
+                            ))}
+                          </div>
+                        );
+                      })()}
                       <div className="v1-brand-settings">OPTA SETTINGS</div>
-                      <div className="v1-brand-studio v1-brand-studio--browser">BROWSER</div>
-                      <div className="v1-brand-studio v1-brand-studio--models">MODELS</div>
-                      <div className="v1-brand-studio v1-brand-studio--atpo">ATPO</div>
                     </div>
                     <div className="v1-brand-sub">Code Environment</div>
                   </div>

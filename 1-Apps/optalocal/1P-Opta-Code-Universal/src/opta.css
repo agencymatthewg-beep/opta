@@ -5891,8 +5891,7 @@ button.active,
   object-fit: contain;
   border-radius: 999px;
   filter:
-    drop-shadow(0 0 8px rgba(168, 85, 247, 0.38))
-    drop-shadow(0 0 16px rgba(168, 85, 247, 0.16));
+    drop-shadow(0 0 8px rgba(168, 85, 247, 0.38)) drop-shadow(0 0 16px rgba(168, 85, 247, 0.16));
 }
 
 .v1-logo-text {
@@ -6210,6 +6209,21 @@ button.active,
   transition-delay: 78ms;
 }
 
+.app-shell.settings-nav-open .v1-brand-letter-5 {
+  transform: translateY(-1px) scale(0.70);
+  transition-delay: 104ms;
+}
+
+.app-shell.settings-nav-open .v1-brand-letter-6 {
+  transform: translateY(0px) scale(0.71);
+  transition-delay: 130ms;
+}
+
+.app-shell.settings-nav-open .v1-brand-letter-7 {
+  transform: translateY(-1px) scale(0.72);
+  transition-delay: 156ms;
+}
+
 /* Settings overlay open: reveal "OPTA SETTINGS" label */
 .app-shell.settings-nav-open .v1-brand-settings {
   opacity: 1;
@@ -6228,10 +6242,34 @@ button.active,
 .app-shell.studio-nav-open .v1-brand-letter {
   transform: scale(0.88);
 }
-.app-shell.studio-nav-open .v1-brand-letter-1 { transition-delay: 0ms; }
-.app-shell.studio-nav-open .v1-brand-letter-2 { transition-delay: 18ms; }
-.app-shell.studio-nav-open .v1-brand-letter-3 { transition-delay: 36ms; }
-.app-shell.studio-nav-open .v1-brand-letter-4 { transition-delay: 54ms; }
+
+.app-shell.studio-nav-open .v1-brand-letter-1 {
+  transition-delay: 0ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-2 {
+  transition-delay: 18ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-3 {
+  transition-delay: 36ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-4 {
+  transition-delay: 54ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-5 {
+  transition-delay: 72ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-6 {
+  transition-delay: 90ms;
+}
+
+.app-shell.studio-nav-open .v1-brand-letter-7 {
+  transition-delay: 108ms;
+}
 
 .v1-brand-sub {
   font-family: "JetBrains Mono", monospace;
@@ -6242,49 +6280,52 @@ button.active,
   font-weight: 600;
 }
 
-/* ── Studio brand labels (BROWSER / MODELS / ATPO) — same position as OPTA SETTINGS ─── */
-.v1-brand-studio {
-  font-size: 0.62rem;
-  font-family: "JetBrains Mono", monospace;
-  font-weight: 800;
-  letter-spacing: 0.28em;
-  text-transform: uppercase;
-  text-align: center;
-  opacity: 0;
-  transform: translateY(10px) scale(0.92);
-  pointer-events: none;
-  transition:
-    opacity 260ms var(--opta-transition-overlay-ease),
-    transform 260ms var(--opta-transition-overlay-ease);
-  position: absolute;
-  left: 50%;
-  translate: -50% 0;
-  white-space: nowrap;
+/* Dynamic Logo Variants */
+.v1-brand-word--browser .v1-brand-letter {
+  color: #22d3ee;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 #22d3ee,
+    5px 5px 0 #22d3ee,
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 #22d3ee;
+  filter: drop-shadow(0 0 26px rgba(34, 211, 238, 0.34));
 }
 
-/* Each studio label appears only when its class is on app-shell */
-.app-shell.studio-browser-open .v1-brand-studio--browser,
-.app-shell.studio-models-open .v1-brand-studio--models,
-.app-shell.studio-atpo-open .v1-brand-studio--atpo {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+.v1-brand-word--models .v1-brand-letter {
+  color: #a78bfa;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 #a78bfa,
+    5px 5px 0 #a78bfa,
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 #a78bfa;
+  filter: drop-shadow(0 0 26px rgba(167, 139, 250, 0.34));
 }
 
-/* Per-studio accent colors */
-.v1-brand-studio--browser { color: #22d3ee; text-shadow: 0 0 18px #22d3ee66; }
-.v1-brand-studio--models  { color: #a78bfa; text-shadow: 0 0 18px #a78bfa66; }
-.v1-brand-studio--atpo    { color: #f472b6; text-shadow: 0 0 18px #f472b666; }
+.v1-brand-word--atpo .v1-brand-letter {
+  color: #f472b6;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 #f472b6,
+    5px 5px 0 #f472b6,
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 #f472b6;
+  filter: drop-shadow(0 0 26px rgba(244, 114, 182, 0.34));
+}
 
 /* ── Settings Overlay — in-place Ctrl+S transition ─────────────────────── */
 
 .v1-settings-overlay {
   position: fixed;
   inset:
-    var(--settings-overlay-top, var(--settings-dock-top, 0px))
-    var(--settings-overlay-right, var(--settings-dock-right, 0px))
-    var(--settings-overlay-bottom, var(--settings-dock-bottom, 0px))
-    var(--settings-overlay-left, var(--settings-dock-left, 0px));
+    var(--settings-overlay-top, var(--settings-dock-top, 0px)) var(--settings-overlay-right, var(--settings-dock-right, 0px)) var(--settings-overlay-bottom, var(--settings-dock-bottom, 0px)) var(--settings-overlay-left, var(--settings-dock-left, 0px));
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -6503,11 +6544,9 @@ button.active,
 
 .settings-view-card:hover .settings-card-icon-wrap {
   color: #edf7ff;
-  background: linear-gradient(
-    145deg,
-    rgba(144, 111, 244, 0.74),
-    rgba(88, 153, 236, 0.54)
-  );
+  background: linear-gradient(145deg,
+      rgba(144, 111, 244, 0.74),
+      rgba(88, 153, 236, 0.54));
   border-color: rgba(201, 228, 255, 0.42);
   transform: translateY(-1px) scale(1.05);
 }
@@ -6537,11 +6576,9 @@ button.active,
   }
 
   .settings-view-card:hover .settings-card-icon-wrap {
-    background: linear-gradient(
-      145deg,
-      color-mix(in srgb, var(--settings-accent) 48%, rgba(121, 88, 236, 0.58)),
-      color-mix(in srgb, var(--settings-accent) 26%, rgba(58, 132, 228, 0.38))
-    );
+    background: linear-gradient(145deg,
+        color-mix(in srgb, var(--settings-accent) 48%, rgba(121, 88, 236, 0.58)),
+        color-mix(in srgb, var(--settings-accent) 26%, rgba(58, 132, 228, 0.38)));
     border-color: color-mix(in srgb, var(--settings-accent) 48%, rgba(198, 228, 255, 0.36));
   }
 }
@@ -6941,13 +6978,10 @@ button.active,
 }
 
 /* Size variants - full width in flex layout now */
-.wp-tile.size-m {}
 
 .wp-tile.size-t {
   min-height: 220px;
 }
-
-.wp-tile.size-s {}
 
 /* Remove button — only visible in edit mode */
 .wp-remove-btn {
@@ -8082,11 +8116,9 @@ button.active,
 }
 
 .v1-island-btn.is-active {
-  background: linear-gradient(
-    145deg,
-    rgba(98, 86, 181, 0.58),
-    rgba(56, 96, 168, 0.46)
-  );
+  background: linear-gradient(145deg,
+      rgba(98, 86, 181, 0.58),
+      rgba(56, 96, 168, 0.46));
   color: var(--opta-text-primary);
   border: 1px solid rgba(189, 211, 255, 0.34);
   box-shadow:
@@ -8591,9 +8623,17 @@ button.active,
   color: rgba(255, 255, 255, 0.4);
 }
 
-.feature-studio-port-status--up { color: #22d3ee; }
-.feature-studio-port-status--down { color: #ef4444; }
-.feature-studio-port-status--checking { color: #f59e0b; }
+.feature-studio-port-status--up {
+  color: #22d3ee;
+}
+
+.feature-studio-port-status--down {
+  color: #ef4444;
+}
+
+.feature-studio-port-status--checking {
+  color: #f59e0b;
+}
 
 .feature-studio-status-dot {
   display: inline-block;
@@ -8610,7 +8650,9 @@ button.active,
   animation: feature-studio-pulse 2s ease-in-out infinite;
 }
 
-.feature-studio-status-dot--down { background: #ef4444; }
+.feature-studio-status-dot--down {
+  background: #ef4444;
+}
 
 .feature-studio-status-dot--checking {
   background: #f59e0b;
@@ -8618,8 +8660,15 @@ button.active,
 }
 
 @keyframes feature-studio-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.45;
+  }
 }
 
 .feature-studio-port-actions {
@@ -8649,10 +8698,19 @@ button.active,
   color: rgba(255, 255, 255, 0.85);
 }
 
-.feature-studio-action-mini:disabled { opacity: 0.4; cursor: default; }
+.feature-studio-action-mini:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
 
-.feature-studio-action-mini--update { color: #10b981; }
-.feature-studio-action-mini--danger:hover { color: #ef4444; border-color: #ef444444; }
+.feature-studio-action-mini--update {
+  color: #10b981;
+}
+
+.feature-studio-action-mini--danger:hover {
+  color: #ef4444;
+  border-color: #ef444444;
+}
 
 /* Spinner animation */
 .feature-studio-spin {
@@ -8660,8 +8718,13 @@ button.active,
 }
 
 @keyframes feature-studio-rotate {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Info strip — bottom bar */
@@ -8699,8 +8762,13 @@ button.active,
   transition: all 0.18s;
 }
 
-.feature-studio-routing-pill:hover { background: rgba(255, 255, 255, 0.07); }
-.feature-studio-routing-pill.is-active { background: rgba(255, 255, 255, 0.06); }
+.feature-studio-routing-pill:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.feature-studio-routing-pill.is-active {
+  background: rgba(255, 255, 255, 0.06);
+}
 
 .feature-studio-routing-dot {
   width: 6px;
@@ -8715,7 +8783,9 @@ button.active,
   box-shadow: 0 0 5px #10b98188;
 }
 
-.feature-studio-routing-dot--down { background: #ef4444; }
+.feature-studio-routing-dot--down {
+  background: #ef4444;
+}
 
 .feature-studio-status-bar {
   display: flex;
@@ -8729,8 +8799,13 @@ button.active,
   margin-bottom: 0.5rem;
 }
 
-.feature-studio-status-bar--online { color: rgba(255, 255, 255, 0.75); }
-.feature-studio-status-bar--offline { color: rgba(255, 255, 255, 0.4); }
+.feature-studio-status-bar--online {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.feature-studio-status-bar--offline {
+  color: rgba(255, 255, 255, 0.4);
+}
 
 .feature-studio-status-host {
   font-family: "JetBrains Mono", monospace;
@@ -8762,7 +8837,9 @@ button.active,
   transition: background 0.15s;
 }
 
-.feature-studio-model-row:hover { background: rgba(255, 255, 255, 0.05); }
+.feature-studio-model-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
 
 .feature-studio-model-info {
   flex: 1;
@@ -8861,10 +8938,18 @@ button.active,
   transition: all 0.15s;
 }
 
-.feature-studio-tab:hover { background: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.7); }
-.feature-studio-tab.is-active { background: rgba(255, 255, 255, 0.06); }
+.feature-studio-tab:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+}
 
-.feature-studio-tab-spacer { flex: 1; }
+.feature-studio-tab.is-active {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.feature-studio-tab-spacer {
+  flex: 1;
+}
 
 .feature-studio-app-list {
   display: flex;
@@ -8884,8 +8969,13 @@ button.active,
   transition: background 0.15s, opacity 0.25s;
 }
 
-.feature-studio-app-row:hover { background: rgba(255, 255, 255, 0.05); }
-.feature-studio-app-row--removing { opacity: 0.45; }
+.feature-studio-app-row:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.feature-studio-app-row--removing {
+  opacity: 0.45;
+}
 
 .feature-studio-app-icon {
   width: 36px;
@@ -8897,7 +8987,10 @@ button.active,
   flex-shrink: 0;
 }
 
-.feature-studio-app-info { flex: 1; min-width: 0; }
+.feature-studio-app-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .feature-studio-app-name {
   display: flex;
@@ -8972,4 +9065,3 @@ button.active,
     6px 6px 0 #040b18,
     7px 7px 0 #f472b611;
 }
-
