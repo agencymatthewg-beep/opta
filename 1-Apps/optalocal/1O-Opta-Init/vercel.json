@@ -39,8 +39,13 @@
       "permanent": false
     },
     {
-      "source": "/downloads/opta-daemon/v0.5.0-beta.1/2026-03-02-beta-2",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+      "source": "/downloads/opta-daemon/v0.0.0-beta.test.5/opta-daemon-macos-universal.tar.gz",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-daemon-v0.0.0-beta.test.5/opta-daemon-macos-universal.tar.gz",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-daemon/v0.0.0-beta.test.5/opta-daemon-windows-x64.zip",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-daemon-v0.0.0-beta.test.5/opta-daemon-windows-x64.zip",
       "permanent": false
     },
     {
@@ -65,17 +70,17 @@
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-mac.dmg",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_aarch64.dmg",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_aarch64.dmg",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-windows-x64.exe",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/opta-init-windows-x64.exe",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/opta-init-windows-x64.exe",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.0/Opta-Init-Manager_x64-setup.nsis.zip",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_x64-setup.nsis.zip",
       "permanent": false
     },
     {
