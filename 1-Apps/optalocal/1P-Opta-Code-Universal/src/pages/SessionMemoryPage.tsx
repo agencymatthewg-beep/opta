@@ -1,5 +1,3 @@
-// TODO: UI design — Gemini will implement the visual design for this page.
-// Backend is fully wired: search, export, delete, session detail.
 import { useState } from "react";
 import { useSessionsManager } from "../hooks/useSessionsManager";
 import { daemonClient } from "../lib/daemonClient";

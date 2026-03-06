@@ -1,5 +1,3 @@
-// TODO: UI design — Gemini will implement the visual design for this page.
-// Backend is fully wired: status, logs, start, stop, install, uninstall, poll.
 import { useEffect } from "react";
 import { useDaemonControl } from "../hooks/useDaemonControl";
 import type { DaemonConnectionOptions } from "../types";
@@ -55,7 +53,13 @@ export function DaemonControlPage({ connection, showLogs = false }: DaemonContro
             {/* Status indicator — design placeholder */}
             <span
               data-state={status?.state ?? "unknown"}
-              className="w-2.5 h-2.5 rounded-full bg-zinc-600"
+              className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                status?.state === "running"
+                  ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.6)]"
+                  : status?.state === "stopped"
+                    ? "bg-red-400"
+                    : "bg-zinc-600"
+              }`}
               aria-label={`Daemon state: ${status?.state ?? "unknown"}`}
             />
             <span className="text-sm font-semibold text-gray-50 capitalize">

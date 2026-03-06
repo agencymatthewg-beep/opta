@@ -780,6 +780,25 @@
   margin: 0.52rem 0.5rem;
 }
 
+.opta-studio-tab-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.6rem;
+}
+
+.opta-studio-tab-group-label {
+  font-family: "Sora", sans-serif;
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: rgba(161, 161, 170, 0.45);
+  padding: 0.3rem 0.78rem 0.15rem;
+  pointer-events: none;
+  user-select: none;
+}
+
 .opta-studio-tab {
   --settings-accent: #a78bfa;
   display: flex;

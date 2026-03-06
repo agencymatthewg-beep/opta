@@ -1,5 +1,3 @@
-// TODO: UI design — Gemini will implement the visual design for this page.
-// Backend is fully wired: list/set/delete aliases, browse HuggingFace library, health checks.
 import { useState } from "react";
 import { useModelAliases } from "../hooks/useModelAliases";
 import type { DaemonConnectionOptions, ModelAlias } from "../types";

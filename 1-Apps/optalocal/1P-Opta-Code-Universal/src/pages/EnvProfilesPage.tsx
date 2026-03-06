@@ -1,5 +1,3 @@
-// TODO: UI design — Gemini will implement the visual design for this page.
-// Backend is fully wired: list, show, save, activate, delete.
 import { useState } from "react";
 import { useEnvProfiles } from "../hooks/useEnvProfiles";
 import type { DaemonConnectionOptions, EnvProfile } from "../types";

@@ -52,7 +52,10 @@ import {
 } from "./settingsModalLazyPages";
 import {
   SETTINGS_CATEGORIES,
+  SETTINGS_CATEGORIES_BY_GROUP,
+  SETTINGS_GROUP_LABELS,
   normalizeSettingsTabId,
+  type SettingsCategoryGroup,
   type SettingsTabId,
 } from "./settingsStudioConfig";
 
@@ -2230,31 +2233,35 @@ export function SettingsModal({
       <div className={`opta-studio-layout ${isDeepLayer ? "opta-studio-layout--deep" : ""} ${isFullscreen ? "opta-studio-layout--fullscreen" : ""}`}>
         {!isDeepLayer ? (
           <aside className="opta-studio-sidebar">
-            {SETTINGS_CATEGORIES.map((category, index) => {
-              const Icon = category.icon;
-              const showDivider = index === 5;
-              return (
-                <div key={category.id}>
-                  {showDivider ? <div className="opta-studio-tab-divider" /> : null}
-                  <button
-                    className={`opta-studio-tab ${activeTab === category.id ? "active" : ""}`}
-                    onClick={() => setActiveTab(category.id)}
-                    onMouseEnter={() => preloadSettingsModalLazyTab(category.id)}
-                    onFocus={() => preloadSettingsModalLazyTab(category.id)}
-                    ref={(element) => {
-                      sidebarTabRefs.current[category.id] = element;
-                    }}
-                    style={
-                      {
-                        "--settings-accent": category.accentColor,
-                      } as CSSProperties
-                    }
-                  >
-                    <Icon size={16} /> {category.title}
-                  </button>
+            {(["infrastructure", "control", "security", "workspace"] as const).map((group) => (
+              <div key={group} className="opta-studio-tab-group">
+                <div className="opta-studio-tab-group-label">
+                  {SETTINGS_GROUP_LABELS[group as SettingsCategoryGroup]}
                 </div>
-              );
-            })}
+                {SETTINGS_CATEGORIES_BY_GROUP[group as SettingsCategoryGroup].map((category) => {
+                  const Icon = category.icon;
+                  return (
+                    <button
+                      key={category.id}
+                      className={`opta-studio-tab ${activeTab === category.id ? "active" : ""}`}
+                      onClick={() => setActiveTab(category.id)}
+                      onMouseEnter={() => preloadSettingsModalLazyTab(category.id)}
+                      onFocus={() => preloadSettingsModalLazyTab(category.id)}
+                      ref={(element) => {
+                        sidebarTabRefs.current[category.id] = element;
+                      }}
+                      style={
+                        {
+                          "--settings-accent": category.accentColor,
+                        } as CSSProperties
+                      }
+                    >
+                      <Icon size={16} /> {category.title}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </aside>
         ) : null}
 

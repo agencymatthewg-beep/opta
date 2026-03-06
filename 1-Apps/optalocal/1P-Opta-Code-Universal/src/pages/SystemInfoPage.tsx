@@ -1,5 +1,3 @@
-// TODO: UI design — Gemini will implement the visual design for this page.
-// Backend is fully wired: version check, doctor, fix, update.
 import { useSystemInfo } from "../hooks/useSystemInfo";
 import type { DaemonConnectionOptions } from "../types";
 
