@@ -59,6 +59,7 @@ describe('v3 operations contract', () => {
       'apps.install',
       'apps.uninstall',
       'sessions.list',
+      'sessions.get',
       'sessions.search',
       'sessions.export',
       'sessions.delete',

@@ -48,6 +48,7 @@ export const OPERATION_IDS = [
   'apps.install',
   'apps.uninstall',
   'sessions.list',
+  'sessions.get',
   'sessions.search',
   'sessions.export',
   'sessions.delete',
@@ -319,6 +320,11 @@ export const OperationInputSchemaById = {
       since: z.string().min(1).optional(),
       tag: z.string().min(1).optional(),
       limit: z.union([z.string().min(1), z.number().int().min(1)]).optional(),
+    })
+    .strict(),
+  'sessions.get': z
+    .object({
+      id: z.string().min(1),
     })
     .strict(),
   'sessions.search': z
@@ -728,6 +734,7 @@ export const OperationOutputSchemaById = {
   'apps.install': TextCommandOutputSchema,
   'apps.uninstall': TextCommandOutputSchema,
   'sessions.list': z.array(SessionSummarySchema),
+  'sessions.get': SessionSummarySchema.nullable(),
   'sessions.search': z.array(SessionSummarySchema),
   'sessions.export': z.unknown(),
   'sessions.delete': TextCommandOutputSchema,
@@ -1226,6 +1233,12 @@ export const OPERATION_TAXONOMY = [
     id: 'sessions.list',
     title: 'Sessions List',
     description: 'List local chat sessions with optional filters.',
+    safety: 'read',
+  },
+  {
+    id: 'sessions.get',
+    title: 'Sessions Get',
+    description: 'Retrieve a single local chat session by ID.',
     safety: 'read',
   },
   {

@@ -45,6 +45,7 @@ import { benchmark } from '../../commands/benchmark.js';
 import { runCeoBenchmark } from '../../benchmark/ceo/runner.js';
 import { appsInstall, appsList, appsUninstall } from '../../commands/apps.js';
 import { embed } from '../../commands/embed.js';
+import { loadSession, listSessions } from '../../memory/store.js';
 import { executeAudioTranscribe, executeAudioTTS } from './audio.js';
 import { mcpAdd, mcpAddPlaywright, mcpList, mcpRemove, mcpTest } from '../../commands/mcp.js';
 import { models } from '../../commands/models/index.js';
@@ -697,6 +698,28 @@ export const operationRegistry = {
       });
     })
   ),
+  'sessions.get': defineOperation('sessions.get', async (input) => {
+    try {
+      const session = await loadSession(input.id);
+      const all = await listSessions();
+      const summary = all.find((s) => s.id === input.id);
+      return {
+        ok: true,
+        result: {
+          id: session.id,
+          sessionId: session.id,
+          title: session.title || `Session ${session.id.slice(0, 7)}`,
+          workspace: session.cwd,
+          updatedAt: session.updated,
+          model: session.model,
+          tags: session.tags,
+          messageCount: summary?.messageCount ?? session.messages.length,
+        },
+      };
+    } catch {
+      return { ok: false, error: { code: 'NOT_FOUND', message: `Session not found: ${input.id}` } };
+    }
+  }),
   'sessions.search': defineOperation('sessions.search', async (input) =>
     runCommandForJson('sessions.search', async () => {
       await sessions('search', input.query, { json: true });
