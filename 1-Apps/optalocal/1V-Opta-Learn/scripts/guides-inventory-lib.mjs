@@ -32,6 +32,8 @@ function extractModuleData(filePath) {
     source.matchAll(/href=["']\/guides\/([a-z0-9-]+)["']/gi),
     (match) => match[1].toLowerCase(),
   );
+  const format = source.match(/\bformat:\s*['"`]([^'"`]+)['"`]/)?.[1] ?? null;
+  const guFile = source.match(/\bguFile:\s*['"`]([^'"`]+)['"`]/)?.[1] ?? null;
 
   const textCorpus = source
     .replace(/<[^>]*>/g, ' ')
@@ -53,6 +55,8 @@ function extractModuleData(filePath) {
     links,
     wordCount,
     source,
+    format,
+    guFile,
   };
 }
 
@@ -235,6 +239,8 @@ export function collectGuidesInventory(projectRoot = process.cwd()) {
       visualCount: module.visualCount,
       links: module.links,
       wordCount: module.wordCount,
+      format: module.format,
+      guFile: module.guFile,
     })),
   };
 }

@@ -102,6 +102,17 @@ const TEMPLATE_RULES = {
     requiredFlowStages: FLOW_STAGES,
     requireSettingsCoverageForAppGuides: true,
   },
+  'gu-masterclass': {
+    minSections: 0,
+    minWords: 0,
+    minVisuals: 0,
+    minCodeBlocks: 0,
+    minNoteBlocks: 0,
+    minRichBlocks: 0,
+    requiresCode: false,
+    requiredFlowStages: [],
+    requireSettingsCoverageForAppGuides: false,
+  },
 };
 
 for (const templateId of Object.keys(TEMPLATE_RULES)) {
@@ -276,6 +287,19 @@ for (const guide of guides) {
   const templateRule = TEMPLATE_RULES[guide.template];
   if (!templateRule) {
     errors.push(`[${fileName}] unknown template '${guide.template}'.`);
+    continue;
+  }
+
+  // /gu guides carry all content in the HTML file — only verify guFile exists on disk
+  if (guide.format === 'gu') {
+    if (!guide.guFile) {
+      errors.push(`[${fileName}] gu-masterclass guide missing guFile field.`);
+    } else {
+      const guFilePath = path.join(projectRoot, 'public', guide.guFile);
+      if (!fs.existsSync(guFilePath)) {
+        errors.push(`[${fileName}] guFile '${guide.guFile}' not found at public/${guide.guFile}.`);
+      }
+    }
     continue;
   }
 

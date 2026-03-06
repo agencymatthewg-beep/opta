@@ -27,6 +27,8 @@ export interface Guide {
   tags: string[];
   sections: GuideSection[];
   updatedAt: string;
+  format?: 'ts' | 'gu';
+  guFile?: string;
 }
 
 export type RegisteredGuide = Guide & {
@@ -44,18 +46,22 @@ import { codeDesktopMasterclass } from './code-desktop-masterclass';
 import { accountsMasterclass } from './accounts-masterclass';
 import { audioVoiceGuide } from './audio-voice';
 import { ragWorkflowGuide } from './rag-workflow';
+import { codeDesktopGUMasterclass } from './opta-code-masterclass';
+// All guides set to draft while rebuilding with /gu interactive format.
+// Re-verify guides individually once upgraded to gu-masterclass template.
 export const allGuides: RegisteredGuide[] = [
-  { ...optaLocalIntro, status: 'verified' },
-  { ...lmxOverview, status: 'verified' },
-  { ...cliMasterclass, status: 'verified' },
+  { ...optaLocalIntro, status: 'draft' },
+  { ...lmxOverview, status: 'draft' },
+  { ...cliMasterclass, status: 'draft' },
   { ...browserAutomationGuide, status: 'draft' },
-  { ...codeDesktopOverview, status: 'verified' },
-  { ...accountsSync, status: 'verified' },
-  { ...lmxMasterclass, status: 'verified' },
-  { ...codeDesktopMasterclass, status: 'verified' },
-  { ...accountsMasterclass, status: 'verified' },
+  { ...codeDesktopOverview, status: 'draft' },
+  { ...accountsSync, status: 'draft' },
+  { ...lmxMasterclass, status: 'draft' },
+  { ...codeDesktopMasterclass, status: 'draft' },
+  { ...accountsMasterclass, status: 'draft' },
   { ...audioVoiceGuide, status: 'draft' },
   { ...ragWorkflowGuide, status: 'draft' },
+  { ...codeDesktopGUMasterclass, status: 'verified' },
 ];
 
 function extractGuideLinks(content: string): string[] {
