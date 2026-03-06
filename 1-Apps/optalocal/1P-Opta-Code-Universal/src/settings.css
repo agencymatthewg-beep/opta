@@ -211,7 +211,7 @@
     7px 7px 0 #09090b,
     8px 8px 0 #09090b,
     9px 9px 0 var(--opta-primary-glow, #a855f7);
-  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.32));
+  filter: drop-shadow(0 0 20px var(--opta-dynamic-filter, rgba(168, 85, 247, 0.32)));
   transform-origin: center bottom;
   will-change: transform, font-size, filter;
   transition:
@@ -239,6 +239,46 @@
 .opta-studio-logo-letter-4 {
   transform: translateY(-1px) scale(0.875);
   transition-delay: 78ms;
+}
+
+.opta-studio-logo-letter-5 {
+  transform: translateY(-1px) scale(0.86);
+  transition-delay: 104ms;
+}
+
+.opta-studio-logo-letter-6 {
+  transform: translateY(-2px) scale(0.88);
+  transition-delay: 130ms;
+}
+
+.opta-studio-logo-letter-7 {
+  transform: translateY(-1px) scale(0.89);
+  transition-delay: 156ms;
+}
+
+.opta-studio-logo-letter-8 {
+  transform: translateY(-2px) scale(0.865);
+  transition-delay: 182ms;
+}
+
+.opta-studio-logo-letter-9 {
+  transform: translateY(-1px) scale(0.85);
+  transition-delay: 208ms;
+}
+
+.opta-studio-logo-letter-10 {
+  transform: translateY(-1px) scale(0.875);
+  transition-delay: 234ms;
+}
+
+.opta-studio-logo-letter-11 {
+  transform: translateY(-2px) scale(0.88);
+  transition-delay: 260ms;
+}
+
+.opta-studio-logo-letter-12 {
+  transform: translateY(-1px) scale(0.9);
+  transition-delay: 286ms;
 }
 
 .opta-studio-logo-settings {
@@ -280,7 +320,7 @@
 
 .opta-studio-logo-reserve.is-active .opta-studio-logo-letter {
   font-size: 3.7rem;
-  filter: drop-shadow(0 0 28px rgba(168, 85, 247, 0.34));
+  filter: drop-shadow(0 0 28px var(--opta-dynamic-filter, rgba(168, 85, 247, 0.34)));
 }
 
 .opta-studio-logo-reserve.is-active .opta-studio-logo-letter-1 {
@@ -297,6 +337,38 @@
 
 .opta-studio-logo-reserve.is-active .opta-studio-logo-letter-4 {
   transform: translateY(0) scale(0.97);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-5 {
+  transform: translateY(0) scale(0.95);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-6 {
+  transform: translateY(0) scale(0.98);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-7 {
+  transform: translateY(0) scale(0.99);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-8 {
+  transform: translateY(0) scale(0.965);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-9 {
+  transform: translateY(0) scale(0.95);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-10 {
+  transform: translateY(0) scale(0.97);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-11 {
+  transform: translateY(0) scale(0.98);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-12 {
+  transform: translateY(0) scale(1.0);
 }
 
 .opta-studio-logo-reserve.is-active .opta-studio-logo-settings {
@@ -468,7 +540,7 @@
   flex-wrap: wrap;
 }
 
-.opta-studio-layout--deep .st-row > * {
+.opta-studio-layout--deep .st-row>* {
   max-width: min(560px, 100%);
 }
 
@@ -559,11 +631,9 @@
   gap: 0.72rem;
   border-radius: 12px;
   border: 1px solid rgba(177, 211, 255, 0.38);
-  background: linear-gradient(
-    120deg,
-    rgba(74, 72, 133, 0.54),
-    rgba(17, 33, 56, 0.5)
-  );
+  background: linear-gradient(120deg,
+      rgba(74, 72, 133, 0.54),
+      rgba(17, 33, 56, 0.5));
   box-shadow:
     0 12px 24px rgba(5, 10, 24, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
@@ -640,14 +710,14 @@
   margin-inline: auto;
 }
 
-.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 {
+.opta-studio-layout--deep .opta-studio-content>.flex.flex-col.gap-6 {
   width: 100%;
   max-width: min(1100px, 100%);
   margin-inline: auto;
   align-items: center;
 }
 
-.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 > * {
+.opta-studio-layout--deep .opta-studio-content>.flex.flex-col.gap-6>* {
   width: 100%;
 }
 
@@ -735,11 +805,9 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    120deg,
-    rgba(151, 137, 235, 0.28),
-    transparent 55%
-  );
+  background: linear-gradient(120deg,
+      rgba(151, 137, 235, 0.28),
+      transparent 55%);
   opacity: 0;
   transition: opacity 160ms var(--studio-ease);
 }
@@ -757,11 +825,9 @@
 .opta-studio-tab.active {
   color: var(--studio-text);
   border-color: rgba(189, 169, 255, 0.58);
-  background: linear-gradient(
-    120deg,
-    rgba(92, 86, 156, 0.58),
-    rgba(29, 50, 84, 0.42)
-  );
+  background: linear-gradient(120deg,
+      rgba(92, 86, 156, 0.58),
+      rgba(29, 50, 84, 0.42));
   box-shadow:
     0 8px 22px rgba(16, 8, 37, 0.45),
     inset 0 1px 0 rgba(194, 188, 246, 0.32);
@@ -775,11 +841,9 @@
   bottom: 20%;
   width: 3px;
   border-radius: 999px;
-  background: linear-gradient(
-    180deg,
-    #d2e8ff,
-    var(--settings-accent)
-  );
+  background: linear-gradient(180deg,
+      #d2e8ff,
+      var(--settings-accent));
   box-shadow: 0 0 12px rgba(168, 137, 255, 0.5);
 }
 
@@ -800,40 +864,34 @@
 .opta-studio-module-card {
   border: 1px solid rgba(166, 205, 255, 0.18);
   border-radius: 14px;
-  background: linear-gradient(
-    145deg,
-    rgba(17, 31, 55, 0.48),
-    rgba(10, 20, 36, 0.36)
-  );
+  background: linear-gradient(145deg,
+      rgba(17, 31, 55, 0.48),
+      rgba(10, 20, 36, 0.36));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 10px 24px rgba(4, 9, 22, 0.25);
   padding: 0.95rem 1rem;
 }
 
-.opta-studio-layout--deep .opta-studio-module-card > :is(
-    .operations-page,
-    .config-studio-page,
-    .daemon-logs-page,
-    .background-jobs-page,
-    .account-control-page,
-    .system-operations-page,
-    .cli-bridge-page
-  ) {
+.opta-studio-layout--deep .opta-studio-module-card> :is(.operations-page,
+  .config-studio-page,
+  .daemon-logs-page,
+  .background-jobs-page,
+  .account-control-page,
+  .system-operations-page,
+  .cli-bridge-page) {
   width: 100%;
   max-width: 100%;
   min-width: 0;
   gap: 0.95rem;
 }
 
-.opta-studio-layout--deep :is(
-    .operations-page-header,
-    .config-studio-header,
-    .logs-page-header,
-    .jobs-page-header,
-    .account-control-header,
-    .system-operations-header
-  ) {
+.opta-studio-layout--deep :is(.operations-page-header,
+  .config-studio-header,
+  .logs-page-header,
+  .jobs-page-header,
+  .account-control-header,
+  .system-operations-header) {
   border: 1px solid rgba(166, 205, 255, 0.22);
   border-radius: 12px;
   background: linear-gradient(148deg, rgba(18, 34, 58, 0.56), rgba(10, 20, 36, 0.42));
@@ -843,27 +901,23 @@
   backdrop-filter: blur(10px);
 }
 
-.opta-studio-layout--deep :is(
-    .operations-page-header h2,
-    .config-studio-header h2,
-    .logs-page-header h2,
-    .jobs-page-header h2,
-    .account-control-header h2,
-    .system-operations-header h2
-  ) {
+.opta-studio-layout--deep :is(.operations-page-header h2,
+  .config-studio-header h2,
+  .logs-page-header h2,
+  .jobs-page-header h2,
+  .account-control-header h2,
+  .system-operations-header h2) {
   margin: 0 0 0.22rem;
   font-size: clamp(1.18rem, 1.28vw, 1.52rem);
   color: var(--studio-text);
 }
 
-.opta-studio-layout--deep :is(
-    .operations-page-header p,
-    .config-studio-header p,
-    .logs-page-header p,
-    .jobs-page-header p,
-    .account-control-header p,
-    .system-operations-header p
-  ) {
+.opta-studio-layout--deep :is(.operations-page-header p,
+  .config-studio-header p,
+  .logs-page-header p,
+  .jobs-page-header p,
+  .account-control-header p,
+  .system-operations-header p) {
   margin: 0;
   color: var(--studio-text-soft);
 }
@@ -895,94 +949,77 @@
   color: #eed8ff;
 }
 
-.opta-studio-layout--deep :is(
-    .operations-page,
-    .config-studio-page,
-    .background-jobs-page,
-    .daemon-logs-page,
-    .account-control-page,
-    .system-operations-page,
-    .cli-bridge-page
-  ) {
+.opta-studio-layout--deep :is(.operations-page,
+  .config-studio-page,
+  .background-jobs-page,
+  .daemon-logs-page,
+  .account-control-page,
+  .system-operations-page,
+  .cli-bridge-page) {
   gap: 0.95rem;
 }
 
-.opta-studio-layout--deep :is(
-    .operations-layout,
-    .config-studio-layout,
-    .jobs-layout
-  ) {
+.opta-studio-layout--deep :is(.operations-layout,
+  .config-studio-layout,
+  .jobs-layout) {
   width: 100%;
   gap: 0.95rem;
   min-height: 340px;
 }
 
-.opta-studio-layout--deep :is(
-    .operations-catalog,
-    .config-key-catalog,
-    .jobs-list
-  ) {
+.opta-studio-layout--deep :is(.operations-catalog,
+  .config-key-catalog,
+  .jobs-list) {
   border: 1px solid rgba(166, 205, 255, 0.2);
   border-radius: 11px;
   background: linear-gradient(148deg, rgba(16, 31, 53, 0.52), rgba(10, 19, 35, 0.42));
   padding: 0.72rem;
 }
 
-.opta-studio-layout--deep :is(
-    .operations-detail,
-    .config-editor-panel,
-    .job-output-panel,
-    .logs-table-container
-  ) {
+.opta-studio-layout--deep :is(.operations-detail,
+  .config-editor-panel,
+  .job-output-panel,
+  .logs-table-container) {
   border: 1px solid rgba(166, 205, 255, 0.2);
   border-radius: 11px;
   background: linear-gradient(150deg, rgba(13, 27, 47, 0.52), rgba(8, 17, 31, 0.44));
 }
 
-.opta-studio-layout--deep :is(
-    .operation-input-label input,
-    .start-shell-input,
-    .logs-filter-input,
-    .config-editor-label textarea
-  ) {
+.opta-studio-layout--deep :is(.operation-input-label input,
+  .start-shell-input,
+  .logs-filter-input,
+  .config-editor-label textarea) {
   border-color: rgba(166, 205, 255, 0.24);
   color: var(--studio-text);
 }
 
-.opta-studio-layout--deep :is(
-    .operation-input-label input,
-    .start-shell-input,
-    .logs-filter-input,
-    .config-editor-label textarea
-  ):focus {
+.opta-studio-layout--deep :is(.operation-input-label input,
+  .start-shell-input,
+  .logs-filter-input,
+  .config-editor-label textarea):focus {
   border-color: rgba(191, 223, 255, 0.48);
   box-shadow: 0 0 0 3px rgba(124, 87, 235, 0.2);
 }
 
-.opta-studio-layout--deep :is(
-    .op-entry,
-    .config-key-row,
-    .job-row
-  ) {
+.opta-studio-layout--deep :is(.op-entry,
+  .config-key-row,
+  .job-row) {
   border-color: rgba(166, 205, 255, 0.2);
   border-radius: 9px;
 }
 
 @media (max-width: 1160px) {
-  .opta-studio-layout--deep :is(
-      .operations-layout,
-      .config-studio-layout,
-      .jobs-layout
-    ) {
+
+  .opta-studio-layout--deep :is(.operations-layout,
+    .config-studio-layout,
+    .jobs-layout) {
     flex-direction: column;
     min-height: 0;
   }
 
-  .opta-studio-layout--deep :is(
-      .operations-catalog,
-      .config-key-catalog,
-      .jobs-list
-    ) {
+  .opta-studio-layout--deep :is(.operations-catalog,
+    .config-key-catalog,
+    .jobs-list) {
     max-height: 270px;
     padding: 0.64rem;
   }
@@ -992,7 +1029,7 @@
   justify-content: flex-start;
 }
 
-.opta-studio-layout--fullscreen .opta-studio-content > * {
+.opta-studio-layout--fullscreen .opta-studio-content>* {
   width: 100%;
   max-width: min(1240px, 100%);
   margin-inline: auto;
@@ -1002,12 +1039,12 @@
   min-height: 100%;
 }
 
-.opta-studio-layout--fullscreen .opta-studio-content .flex.flex-col.gap-6 > .st-fieldset:last-child {
+.opta-studio-layout--fullscreen .opta-studio-content .flex.flex-col.gap-6>.st-fieldset:last-child {
   flex: 1 1 auto;
   min-height: clamp(240px, 34vh, 420px);
 }
 
-.opta-studio-layout--fullscreen.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 {
+.opta-studio-layout--fullscreen.opta-studio-layout--deep .opta-studio-content>.flex.flex-col.gap-6 {
   max-width: min(1260px, 100%);
 }
 
@@ -1203,11 +1240,9 @@
   padding: 0.78rem 0.96rem;
   border: 1px solid rgba(188, 166, 255, 0.58);
   border-radius: 12px;
-  background: linear-gradient(
-    140deg,
-    rgba(121, 100, 208, 0.52) 0%,
-    rgba(27, 49, 82, 0.36) 100%
-  );
+  background: linear-gradient(140deg,
+      rgba(121, 100, 208, 0.52) 0%,
+      rgba(27, 49, 82, 0.36) 100%);
   color: #c8dbff;
 }
 
@@ -1466,13 +1501,11 @@
     0 0 24px rgba(144, 130, 255, 0.48) !important;
 }
 
-.v1-settings-layer-3[data-opta-nav-input-mode="keyboard"][data-opta-nav-edit-mode="false"] .opta-studio-content :is(
-    input,
-    select,
-    textarea,
-    button,
-    [role="button"]
-  ):focus {
+.v1-settings-layer-3[data-opta-nav-input-mode="keyboard"][data-opta-nav-edit-mode="false"] .opta-studio-content :is(input,
+  select,
+  textarea,
+  button,
+  [role="button"]):focus {
   outline: none !important;
   box-shadow: none !important;
 }
@@ -1489,11 +1522,9 @@
 
   .opta-studio-category-banner {
     border: 1px solid color-mix(in srgb, var(--settings-accent) 56%, rgba(171, 208, 255, 0.2));
-    background: linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--settings-accent) 24%, rgba(22, 40, 68, 0.7)),
-      rgba(17, 33, 56, 0.5)
-    );
+    background: linear-gradient(120deg,
+        color-mix(in srgb, var(--settings-accent) 24%, rgba(22, 40, 68, 0.7)),
+        rgba(17, 33, 56, 0.5));
   }
 
   .opta-studio-category-logo {
@@ -1503,11 +1534,9 @@
   }
 
   .opta-studio-tab::after {
-    background: linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--settings-accent) 28%, transparent),
-      transparent 55%
-    );
+    background: linear-gradient(120deg,
+        color-mix(in srgb, var(--settings-accent) 28%, transparent),
+        transparent 55%);
   }
 
   .opta-studio-tab:hover {
@@ -1516,22 +1545,18 @@
 
   .opta-studio-tab.active {
     border-color: color-mix(in srgb, var(--settings-accent) 58%, rgba(177, 143, 255, 0.42));
-    background: linear-gradient(
-      120deg,
-      color-mix(in srgb, var(--settings-accent) 34%, rgba(29, 50, 84, 0.42)),
-      rgba(29, 50, 84, 0.42)
-    );
+    background: linear-gradient(120deg,
+        color-mix(in srgb, var(--settings-accent) 34%, rgba(29, 50, 84, 0.42)),
+        rgba(29, 50, 84, 0.42));
     box-shadow:
       0 8px 22px rgba(16, 8, 37, 0.45),
       inset 0 1px 0 color-mix(in srgb, var(--settings-accent) 18%, rgba(245, 251, 255, 0.22));
   }
 
   .opta-studio-tab.active::before {
-    background: linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--settings-accent) 70%, #d2e8ff),
-      var(--settings-accent)
-    );
+    background: linear-gradient(180deg,
+        color-mix(in srgb, var(--settings-accent) 70%, #d2e8ff),
+        var(--settings-accent));
     box-shadow: 0 0 12px color-mix(in srgb, var(--settings-accent) 70%, transparent);
   }
 
@@ -1542,11 +1567,9 @@
 
   .opta-studio-deep-header {
     border: 1px solid color-mix(in srgb, var(--settings-accent) 56%, rgba(172, 137, 255, 0.36));
-    background: linear-gradient(
-      140deg,
-      color-mix(in srgb, var(--settings-accent) 30%, rgba(106, 72, 214, 0.28)) 0%,
-      rgba(27, 49, 82, 0.36) 100%
-    );
+    background: linear-gradient(140deg,
+        color-mix(in srgb, var(--settings-accent) 30%, rgba(106, 72, 214, 0.28)) 0%,
+        rgba(27, 49, 82, 0.36) 100%);
   }
 
   .opta-setting-editing,
@@ -1719,12 +1742,12 @@
   box-shadow: 0 0 0 3px rgba(124, 87, 235, 0.16);
 }
 
-.st-checkbox-label > span {
+.st-checkbox-label>span {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.st-checkbox-label + .st-checkbox-label {
+.st-checkbox-label+.st-checkbox-label {
   margin-top: 0.58rem;
 }
 

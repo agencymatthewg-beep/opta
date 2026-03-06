@@ -40,10 +40,13 @@ import {
   LazyBackgroundJobsPage,
   LazyCliOperationsPage,
   LazyConfigStudioPage,
+  LazyDaemonControlPage,
   LazyDaemonLogsPage,
   LazyEnvProfilesPage,
   LazyMcpManagementPage,
+  LazyModelAliasesPage,
   LazySessionMemoryPage,
+  LazySystemInfoPage,
   LazySystemOperationsPage,
   preloadSettingsModalLazyTab,
 } from "./settingsModalLazyPages";
@@ -1788,6 +1791,12 @@ export function SettingsModal({
             <section className="opta-studio-module-card">
               <SettingsTabModelProvider connection={connection} />
             </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Model Aliases",
+                <LazyModelAliasesPage connection={connection} />,
+              )}
+            </section>
           </div>,
         );
       case "daemon-runtime":
@@ -1800,6 +1809,12 @@ export function SettingsModal({
             </section>
             <section className="opta-studio-module-card">
               <SettingsTabFleet connection={connection} />
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Daemon Control",
+                <LazyDaemonControlPage connection={connection} />,
+              )}
             </section>
           </div>,
         );
@@ -1972,6 +1987,12 @@ export function SettingsModal({
           <div className="opta-studio-module-stack">
             <section className="opta-studio-module-card">
               {renderCliAdvancedStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "System Info",
+                <LazySystemInfoPage connection={connection} />,
+              )}
             </section>
             <section className="opta-studio-module-card">
               {renderLazyModule(

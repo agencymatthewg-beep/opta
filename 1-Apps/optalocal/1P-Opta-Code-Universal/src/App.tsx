@@ -2152,6 +2152,70 @@ function App() {
         run: () => openSettings("daemon-logs"),
       },
       {
+        id: "daemon-start",
+        title: "Start daemon",
+        description: "Start the Opta daemon process",
+        keywords: ["daemon", "start", "run", "launch", "server"],
+        run: async () => {
+          await daemonClient.daemonControlStart(connection);
+          setNotice("Daemon start requested");
+        },
+      },
+      {
+        id: "daemon-stop",
+        title: "Stop daemon",
+        description: "Stop the Opta daemon process",
+        keywords: ["daemon", "stop", "kill", "shutdown", "server"],
+        run: async () => {
+          await daemonClient.daemonControlStop(connection);
+          setNotice("Daemon stop requested");
+        },
+      },
+      {
+        id: "daemon-doctor",
+        title: "Run system doctor",
+        description: "Run diagnostics and show health check summary",
+        keywords: ["doctor", "health", "diagnostics", "check", "fix"],
+        run: async () => {
+          const info = await daemonClient.doctorRun(connection);
+          const { passed, warnings, failures } = info.doctorSummary;
+          setNotice(`Doctor: ${passed} passed · ${warnings} warnings · ${failures} failures`);
+        },
+      },
+      {
+        id: "studio-browser",
+        title: "Open Browser Studio",
+        description: "Live browser sessions and localhost registry (Ctrl+B)",
+        keywords: ["browser", "localhost", "playwright", "sessions", "ports", "ping"],
+        run: () => {
+          goToSettingsLayer(1);
+          setActiveStudio((current) => current === "browser" ? null : "browser");
+          setStudioFullscreen(false);
+        },
+      },
+      {
+        id: "studio-models",
+        title: "Open Models Studio",
+        description: "LMX model management, memory usage and inference (Ctrl+M)",
+        keywords: ["models", "lmx", "memory", "inference", "load", "unload", "mlx"],
+        run: () => {
+          goToSettingsLayer(1);
+          setActiveStudio((current) => current === "models" ? null : "models");
+          setStudioFullscreen(false);
+        },
+      },
+      {
+        id: "studio-atpo",
+        title: "Open Atpo Studio",
+        description: "Opta apps and MCP server management (Ctrl+A)",
+        keywords: ["atpo", "apps", "mcp", "modules", "catalog", "packages"],
+        run: () => {
+          goToSettingsLayer(1);
+          setActiveStudio((current) => current === "atpo" ? null : "atpo");
+          setStudioFullscreen(false);
+        },
+      },
+      {
         id: "export-session",
         title: "Export active session as Markdown",
         description: "Download the active session timeline as a .md file",
@@ -2174,10 +2238,15 @@ function App() {
     ],
     [
       activeSessionId,
+      connection,
       createSession,
+      goToSettingsLayer,
       openSettings,
       refreshNow,
       selectedWorkspace,
+      setActiveStudio,
+      setNotice,
+      setStudioFullscreen,
       timelineBySession,
       trackSession,
     ],

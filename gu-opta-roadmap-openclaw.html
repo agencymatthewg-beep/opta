@@ -1,0 +1,1435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Roadmap & OpenClaw — Visual Guide</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --primary-dim: rgba(139,92,246,0.15);
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+    --neon-pink: #ec4899;
+    --glass-bg: rgba(24,24,27,0.7);
+    --glass-border: rgba(255,255,255,0.08);
+    --glass-border-top: rgba(255,255,255,0.15);
+    --blur: blur(20px);
+    --blur-sm: blur(12px);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Ambient background particles */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 800px 600px at 20% 10%, rgba(139,92,246,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 80% 80%, rgba(59,130,246,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(168,85,247,0.03) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .noise {
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.025'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 48px 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 72px;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary-glow);
+    margin-bottom: 24px;
+  }
+
+  .header-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-glow);
+    box-shadow: 0 0 8px var(--primary-glow);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+  }
+
+  .header-title {
+    font-size: clamp(36px, 5vw, 60px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #ffffff 0%, #e4d4ff 40%, #a855f7 70%, #6366f1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .header-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Section headers */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    margin-top: 64px;
+  }
+
+  .section-header:first-of-type { margin-top: 0; }
+
+  .section-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.5) 0%, rgba(139,92,246,0.1) 50%, transparent 100%);
+  }
+
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  /* Glass cards */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-top-color: var(--glass-border-top);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .glass-subtle {
+    background: rgba(24,24,27,0.4);
+    backdrop-filter: var(--blur-sm);
+    -webkit-backdrop-filter: var(--blur-sm);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 12px;
+    position: relative;
+  }
+
+  /* OpenClaw hero */
+  .openclaw-hero {
+    padding: 40px;
+    margin-bottom: 48px;
+    border: 1px solid rgba(139,92,246,0.25);
+    background: linear-gradient(135deg, rgba(139,92,246,0.08) 0%, rgba(99,102,241,0.05) 50%, rgba(24,24,27,0.7) 100%);
+  }
+
+  .openclaw-hero-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    align-items: start;
+  }
+
+  @media (max-width: 768px) {
+    .openclaw-hero-inner { grid-template-columns: 1fr; }
+  }
+
+  .openclaw-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 12px;
+  }
+
+  .openclaw-title {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 60%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+    line-height: 1.1;
+  }
+
+  .openclaw-desc {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 24px;
+  }
+
+  .capability-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .pill-violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; }
+  .pill-blue { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); color: #93c5fd; }
+  .pill-green { background: rgba(34,197,94,0.12); border: 1px solid rgba(34,197,94,0.25); color: #86efac; }
+  .pill-amber { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+  .pill-red { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+  .pill-cyan { background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.25); color: #67e8f9; }
+  .pill-pink { background: rgba(236,72,153,0.12); border: 1px solid rgba(236,72,153,0.25); color: #f9a8d4; }
+
+  .pill-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.7;
+  }
+
+  /* Data flow diagram */
+  .flow-diagram {
+    padding: 32px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 2;
+    color: var(--text-secondary);
+    overflow-x: auto;
+  }
+
+  .flow-diagram pre {
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    white-space: pre;
+  }
+
+  .flow-hl { color: var(--primary-glow); font-weight: 700; }
+  .flow-green { color: var(--neon-green); }
+  .flow-blue { color: var(--neon-blue); }
+  .flow-amber { color: var(--neon-amber); }
+  .flow-cyan { color: var(--neon-cyan); }
+  .flow-pink { color: var(--neon-pink); }
+  .flow-muted { color: var(--text-muted); }
+
+  /* Architecture layers */
+  .layers-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .layers-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .layer-card {
+    padding: 20px;
+    text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    cursor: default;
+  }
+
+  .layer-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(139,92,246,0.4);
+  }
+
+  .layer-icon {
+    font-size: 24px;
+    margin-bottom: 10px;
+    display: block;
+  }
+
+  .layer-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--primary);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .layer-name {
+    font-size: 12px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text-primary);
+  }
+
+  .layer-file {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-muted);
+    word-break: break-all;
+  }
+
+  /* Recommendation tiers */
+  .tier-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 16px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+  }
+
+  .tier-1 { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
+  .tier-2 { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #fcd34d; }
+  .tier-3 { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); color: #86efac; }
+
+  .tier-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .tier-1 .tier-badge { background: rgba(239,68,68,0.2); }
+  .tier-2 .tier-badge { background: rgba(245,158,11,0.2); }
+  .tier-3 .tier-badge { background: rgba(34,197,94,0.2); }
+
+  .recs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  .rec-card {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+  }
+
+  .rec-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(139,92,246,0.25);
+  }
+
+  .rec-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .rec-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .rec-icon-red { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.2); }
+  .rec-icon-amber { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.2); }
+  .rec-icon-green { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.2); }
+  .rec-icon-violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.2); }
+  .rec-icon-blue { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.2); }
+  .rec-icon-cyan { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.2); }
+
+  .rec-meta { flex: 1; }
+
+  .rec-app {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+  }
+
+  .rec-name {
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
+  }
+
+  .rec-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .rec-what, .rec-openclaw {
+    padding: 12px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  .rec-what {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    color: var(--text-secondary);
+  }
+
+  .rec-openclaw {
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.15);
+    color: #c4b5fd;
+  }
+
+  .rec-openclaw-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .rec-files {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .file-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+
+  /* Identity injection section */
+  .identity-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 700px) {
+    .identity-grid { grid-template-columns: 1fr; }
+  }
+
+  .identity-box {
+    padding: 20px;
+  }
+
+  .identity-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .identity-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(139,92,246,0.2);
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #c4b5fd;
+  }
+
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    overflow-x: auto;
+    margin-bottom: 16px;
+  }
+
+  .code-comment { color: var(--text-muted); }
+  .code-key { color: #93c5fd; }
+  .code-val { color: #86efac; }
+  .code-op { color: #c4b5fd; }
+  .code-str { color: #fcd34d; }
+  .code-type { color: #f9a8d4; }
+
+  /* States diagram */
+  .states-flow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 24px;
+    justify-content: center;
+  }
+
+  .state-node {
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    min-width: 100px;
+    position: relative;
+  }
+
+  .state-offline { background: rgba(82,82,91,0.3); border: 1px solid rgba(82,82,91,0.5); color: var(--text-muted); }
+  .state-pairing { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.4); color: #fcd34d; }
+  .state-connected { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.4); color: #86efac; }
+  .state-degraded { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: #fbbf24; }
+  .state-unauthorized { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+
+  .state-arrow {
+    color: var(--text-muted);
+    font-size: 16px;
+    font-weight: 300;
+  }
+
+  .state-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .state-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    text-align: center;
+  }
+
+  /* Footer */
+  .guide-footer {
+    margin-top: 80px;
+    text-align: center;
+    padding: 24px;
+    border-top: 1px solid var(--glass-border);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Neon glow section dividers */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.6) 30%, rgba(99,102,241,0.6) 50%, rgba(139,92,246,0.6) 70%, transparent 100%);
+    box-shadow: 0 0 10px rgba(139,92,246,0.3);
+    margin: 48px 0;
+  }
+
+  /* Summary table */
+  .summary-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+  }
+
+  .summary-table th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    padding: 8px 16px;
+    text-align: left;
+  }
+
+  .summary-table td {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    background: rgba(24,24,27,0.5);
+    vertical-align: top;
+  }
+
+  .summary-table td:first-child {
+    border-left: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+    border-radius: 8px 0 0 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  .summary-table td:last-child {
+    border-right: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+    border-radius: 0 8px 8px 0;
+  }
+
+  .summary-table td:not(:first-child):not(:last-child) {
+    border-top: 1px solid var(--glass-border);
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .t1-row td:first-child { border-left-color: rgba(239,68,68,0.4); }
+  .t2-row td:first-child { border-left-color: rgba(245,158,11,0.4); }
+  .t3-row td:first-child { border-left-color: rgba(34,197,94,0.4); }
+
+  .oc-yes { color: var(--primary-glow); font-weight: 600; }
+  .oc-indirect { color: var(--neon-amber); }
+  .oc-server { color: var(--neon-blue); font-weight: 600; }
+
+  /* Animating glow on hero */
+  @keyframes glow-breathe {
+    0%, 100% { box-shadow: 0 0 30px rgba(139,92,246,0.08), 0 0 60px rgba(139,92,246,0.04); }
+    50% { box-shadow: 0 0 40px rgba(139,92,246,0.14), 0 0 80px rgba(139,92,246,0.07); }
+  }
+
+  .openclaw-hero { animation: glow-breathe 4s ease-in-out infinite; }
+
+  /* Status dots */
+  .status-dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+  }
+
+  .dot-red { background: var(--neon-red); box-shadow: 0 0 6px var(--neon-red); }
+  .dot-amber { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+  .dot-green { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+  .dot-blue { background: var(--neon-blue); box-shadow: 0 0 6px var(--neon-blue); }
+  .dot-violet { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+</style>
+</head>
+<body>
+<div class="noise"></div>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">Opta Roadmap & OpenClaw</div>
+    <h1 class="header-title">What Every Recommendation<br>Actually Does</h1>
+    <p class="header-sub">A deep-dive into all pending work, what each piece builds, and exactly how it connects to the OpenClaw remote device control architecture.</p>
+  </div>
+
+  <!-- OpenClaw Overview -->
+  <div class="section-header">
+    <span class="section-number">00</span>
+    <h2 class="section-title">What is OpenClaw?</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="glass openclaw-hero">
+    <div class="openclaw-hero-inner">
+      <div>
+        <div class="openclaw-tagline">Core Concept</div>
+        <h2 class="openclaw-title">Remote Device<br>Command Relay</h2>
+        <p class="openclaw-desc">
+          OpenClaw is the system that lets any authorized client (mobile app, web dashboard, external service) reach inside your <strong>local Opta daemon</strong> and execute operations — model loads, vault syncs, chat sessions, LMX mutations — via a cloud relay at <code>accounts.optalocal.com</code>, with no port forwarding required.
+        </p>
+        <p class="openclaw-desc">
+          Your daemon polls the cloud for pending commands, executes them locally against LMX at <code>192.168.188.11:1234</code>, and posts results back. The cloud relay never touches your inference data — it only carries the command envelope and result.
+        </p>
+        <div class="capability-pills">
+          <span class="pill pill-violet"><span class="pill-dot"></span>Remote Model Load</span>
+          <span class="pill pill-blue"><span class="pill-dot"></span>Vault Sync</span>
+          <span class="pill pill-green"><span class="pill-dot"></span>LMX Mutation Proxy</span>
+          <span class="pill pill-amber"><span class="pill-dot"></span>Mobile Pairing</span>
+          <span class="pill pill-cyan"><span class="pill-dot"></span>Agent ID Injection</span>
+          <span class="pill pill-pink"><span class="pill-dot"></span>Scope Identity</span>
+        </div>
+      </div>
+      <div>
+        <div class="glass-subtle flow-diagram">
+          <pre><span class="flow-pink">Mobile App / Web Dashboard</span>
+           │
+           │  POST /api/device-commands
+           ▼
+<span class="flow-blue">accounts.optalocal.com</span>  <span class="flow-muted">← 1R Accounts (server)</span>
+  stores command in DB
+           │
+           │  (your daemon polls)
+           │  GET /api/device-commands/stream
+           ▼
+<span class="flow-hl">opta daemon @ 127.0.0.1:9999</span>  <span class="flow-muted">← bridge-worker.ts</span>
+  ┌─ if lmx.http.request:
+  │   inject X-Client-ID, X-OpenClaw-Agent-ID
+  │   POST ──► <span class="flow-green">LMX @ 192.168.188.11:1234</span>
+  └─ if daemon op:
+      execute locally (vault.pull, models.load…)
+           │
+           │  POST /api/device-commands/{id}/result
+           ▼
+<span class="flow-blue">accounts.optalocal.com</span>
+           │
+           ▼
+<span class="flow-pink">Caller receives result</span></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- The 5 Layers -->
+  <div class="section-header">
+    <span class="section-number">01</span>
+    <h2 class="section-title">The 5 OpenClaw Architectural Layers</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="layers-grid" style="margin-bottom: 16px;">
+    <div class="glass glass-subtle layer-card">
+      <span class="layer-icon">🧬</span>
+      <div class="layer-num">Layer 1</div>
+      <div class="layer-name">Scope Identity</div>
+      <div class="layer-file">openclaw-scope.ts</div>
+    </div>
+    <div class="glass glass-subtle layer-card">
+      <span class="layer-icon">🔄</span>
+      <div class="layer-num">Layer 2</div>
+      <div class="layer-name">Bridge State FSM</div>
+      <div class="layer-file">bridge-state.ts</div>
+    </div>
+    <div class="glass glass-subtle layer-card">
+      <span class="layer-icon">⚙️</span>
+      <div class="layer-num">Layer 3</div>
+      <div class="layer-name">Bridge Worker</div>
+      <div class="layer-file">bridge-worker.ts</div>
+    </div>
+    <div class="glass glass-subtle layer-card">
+      <span class="layer-icon">☁️</span>
+      <div class="layer-num">Layer 4</div>
+      <div class="layer-name">Server Control Plane</div>
+      <div class="layer-file">1R-Opta-Accounts API</div>
+    </div>
+    <div class="glass glass-subtle layer-card">
+      <span class="layer-icon">🖥️</span>
+      <div class="layer-num">Layer 5</div>
+      <div class="layer-name">Web UI Client</div>
+      <div class="layer-file">1L LMX Dashboard</div>
+    </div>
+  </div>
+
+  <!-- Layer deep-dive -->
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+
+    <div class="glass" style="padding: 24px;">
+      <div class="identity-label">Layer 1 — Scope Identity</div>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px;">
+        Every OpenClaw command carries a <strong>scope seed</strong> — a user-provided string or session ID. The daemon derives a deterministic 24-hex agent ID from it using SHA-256, which gets injected into every LMX inference call as the <code>X-Client-ID</code> and <code>X-OpenClaw-Agent-ID</code> headers.
+      </p>
+      <div class="code-block"><span class="code-comment">// Priority: scope → actor → bridgeSessionId</span>
+<span class="code-type">resolveOpenClawScopeSeed</span>({ scope, actor, bridgeSessionId })
+  <span class="code-op">→</span> <span class="code-str">"my-user-session-42"</span>
+
+<span class="code-type">deriveOpenClawAgentId</span>(<span class="code-str">"my-user-session-42"</span>)
+  <span class="code-op">→</span> <span class="code-str">"opta-bridge-a3f9c2e8d1b04..."</span>
+<span class="code-comment">          SHA-256[:24] prefix</span></div>
+      <p style="font-size: 12px; color: var(--text-muted);">This means: LMX can attribute inference usage to specific external callers. Quota tracking, audit logs, per-user rate limits — all possible without storing tokens.</p>
+    </div>
+
+    <div class="glass" style="padding: 24px;">
+      <div class="identity-label">Layer 2 — Bridge State FSM</div>
+      <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px;">
+        The bridge lifecycle is a finite state machine with 5 states. Only transitions, never out-of-band mutations. The public <code>activationState</code> maps bridge status to the broader daemon activation model.
+      </p>
+      <div class="states-flow">
+        <div style="text-align: center;">
+          <div class="state-node state-offline">offline</div>
+          <div class="state-label">initial</div>
+        </div>
+        <div class="state-arrow">→</div>
+        <div style="text-align: center;">
+          <div class="state-node state-pairing">pairing</div>
+          <div class="state-label">connectBridge()</div>
+        </div>
+        <div class="state-arrow">→</div>
+        <div style="text-align: center;">
+          <div class="state-node state-connected">connected</div>
+          <div class="state-label">token confirmed</div>
+        </div>
+        <div class="state-arrow">→</div>
+        <div class="state-branch">
+          <div style="text-align: center;">
+            <div class="state-node state-degraded">degraded</div>
+            <div class="state-label">3+ failures</div>
+          </div>
+          <div style="text-align: center; margin-top: 8px;">
+            <div class="state-node state-unauthorized">unauthorized</div>
+            <div class="state-label">401/403</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">Backoff: 1s → 2s → 4s → 8s (max). 3 consecutive failures → degraded. Any 401/403 → unauthorized immediately.</p>
+    </div>
+
+  </div>
+
+  <div class="glass" style="padding: 24px; margin-bottom: 16px;">
+    <div class="identity-label">Layer 3 — BridgeOutboundWorker (bridge-worker.ts)</div>
+    <div class="identity-grid">
+      <div>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px;">
+          The worker runs inside the daemon. It polls <code>GET /api/device-commands/stream?deviceId=&lt;uuid&gt;</code> every 300ms when idle, processes each command in sequence, and POSTs results. Two execution paths:
+        </p>
+        <div class="code-block"><span class="code-comment">// Path A — LMX proxy mutation</span>
+<span class="code-comment">// command.payload = { method, path, body }</span>
+<span class="code-op">if</span> parseLmxProxyMutationPayload(command.payload):
+  <span class="code-type">applyOpenClawIdentityToMutation</span>(payload, scopeSeed)
+  <span class="code-op">→</span> adds X-Client-ID, X-OpenClaw-Agent-ID, body.user
+  <span class="code-op">→</span> POST to LMX directly
+
+<span class="code-comment">// Path B — Daemon operation</span>
+<span class="code-comment">// command.command = "vault.pull", "models.load", etc</span>
+<span class="code-op">else</span>:
+  <span class="code-type">executeDaemonOperation</span>({ id, input, confirmDangerous })
+  <span class="code-op">→</span> runs local structured operation</div>
+      </div>
+      <div>
+        <p style="font-size: 13px; color: var(--text-secondary); line-height: 1.7; margin-bottom: 14px;">
+          Identity injection only fires on these inference paths (not admin/health/metrics):
+        </p>
+        <div class="capability-pills" style="margin-bottom: 16px;">
+          <span class="pill pill-violet"><span class="pill-dot"></span>/v1/chat/completions</span>
+          <span class="pill pill-violet"><span class="pill-dot"></span>/v1/completions</span>
+          <span class="pill pill-violet"><span class="pill-dot"></span>/v1/responses</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.7;">
+          The <code>models.skills</code> operation gets special scope forwarding via <code>applyOperationScope()</code> — if the command includes no scope but a bridge scope is known, it's injected into the payload automatically.
+        </p>
+        <p style="font-size: 12px; color: var(--text-muted); line-height: 1.7; margin-top: 8px;">
+          <strong>Critical:</strong> If caller already set <code>X-Client-ID</code>, the worker does NOT override it. Only gap-fills.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- TIER 1 -->
+  <div class="section-header">
+    <span class="section-number">02</span>
+    <h2 class="section-title">Tier 1 — Critical: Server Control Plane</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="tier-header tier-1">
+    <span class="tier-badge">T1</span>
+    <span class="dot-red status-dot"></span>
+    These are the server-side routes the bridge worker calls. Without them, OpenClaw is client-only with no cloud relay. The bridge worker polls these endpoints every 300ms.
+  </div>
+
+  <div class="recs-grid">
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-red">☁️</div>
+        <div class="rec-meta">
+          <div class="rec-app">1R-Opta-Accounts</div>
+          <div class="rec-name">Server Control Plane API</div>
+        </div>
+      </div>
+      <p class="rec-desc">The cloud relay backend. Auth-gated Next.js API routes that accept commands from web/mobile clients, store them in Supabase, stream them to the device daemon, and receive results back.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>POST /api/device-commands</strong> — Authenticated web/mobile client enqueues a command. Verifies device trust_state (not revoked/quarantined), checks user owns the device, writes to Supabase, returns command ID. Rate limited: 120 req/min.<br><br>
+        <strong>GET /api/device-commands/stream</strong> — The daemon polls this. Returns pending commands for a deviceId. 204 = nothing pending, command array = execute these.<br><br>
+        <strong>POST /api/device-commands/{id}/result</strong> — Daemon posts execution result: { status: 'completed'|'failed'|'denied', result, error }
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        This IS the OpenClaw relay. Layer 4 in the architecture. The bridge-worker.ts in the daemon talks exclusively to these endpoints. Every remote model load, vault sync, or LMX mutation flows through these routes.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/app/api/device-commands/route.ts</span>
+        <span class="file-chip">src/app/api/device-commands/stream/</span>
+        <span class="file-chip">src/app/api/device-commands/[id]/result/</span>
+        <span class="file-chip">lib/control-plane/store.ts</span>
+        <span class="file-chip">+10 test files</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-red">🔗</div>
+        <div class="rec-meta">
+          <div class="rec-app">1R-Opta-Accounts</div>
+          <div class="rec-name">Device Pairing System</div>
+        </div>
+      </div>
+      <p class="rec-desc">The mobile-to-desktop pairing ceremony. A web/mobile client creates a pairing session QR code, the desktop app scans it, claims the session, and a bridge token is minted for that device pair.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>POST /api/pairing/sessions</strong> — Create a pairing session (deviceId, deviceLabel, capabilityScopes, ttlSeconds). Returns a session with a scannable token/QR code.<br><br>
+        <strong>GET /api/pairing/sessions/{id}</strong> — Poll status (pending → claimed → expired).<br><br>
+        <strong>POST /api/pairing/sessions/{id}/claim</strong> — Desktop daemon claims the session, receives bridge token credentials.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        This is how a device gets its bridgeToken — the credential the BridgeOutboundWorker uses to authenticate every poll to /stream and every result POST. Without pairing, the bridge worker has no token → stuck in degraded state immediately.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/app/api/pairing/sessions/</span>
+        <span class="file-chip">src/app/api/pairing/sessions/[id]/claim/</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-red">🪙</div>
+        <div class="rec-meta">
+          <div class="rec-app">1R-Opta-Accounts</div>
+          <div class="rec-name">Bridge Token Mint</div>
+        </div>
+      </div>
+      <p class="rec-desc">Mints short-lived bridge tokens scoped to specific capability grants (e.g. device.commands.issue, device.mutation.execute). Separate from Supabase session tokens — these are device-specific credentials.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>POST /api/bridge/tokens</strong> — Input: deviceId, scopes[], ttlSeconds. Validates device ownership, generates a signed token, stores token metadata in Supabase. Returns the token and its expiry. The token goes into bridge-state.ts as <code>bridgeToken</code>.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        The bridge token is the Bearer credential in every request the BridgeOutboundWorker makes: the Authorization header on stream polls, the result POSTs, and the X-Bridge-Token header sent from the LMX Dashboard to the control plane when enqueueing commands.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/app/api/bridge/tokens/route.ts</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-red">🔑</div>
+        <div class="rec-meta">
+          <div class="rec-app">1R-Opta-Accounts</div>
+          <div class="rec-name">CLI Token Exchange</div>
+        </div>
+      </div>
+      <p class="rec-desc">The CLI auth handoff routes. After a browser-based OAuth login, the CLI needs to exchange its temporary code for a real session token — these routes implement that exchange securely.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>POST /api/cli/exchange</strong> — Accepts a one-time code from the CLI's localhost callback listener. Validates the code against a pending session, exchanges it for a Supabase session, returns access_token + refresh_token to the CLI process. Codes are single-use with 5min TTL.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        Indirectly: the CLI's access_token is what vault.pull uses to call /api/sync/keys. When the user runs <code>opta vault pull</code> after signing in, the CLI has a valid token from this exchange to authenticate the sync. The token also seeds the bridge pairing flow.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/app/api/cli/exchange/route.ts</span>
+        <span class="file-chip">src/lib/cli/handoff.ts</span>
+        <span class="file-chip">src/lib/cli/token-relay.ts</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TIER 2 -->
+  <div class="neon-divider"></div>
+  <div class="section-header">
+    <span class="section-number">03</span>
+    <h2 class="section-title">Tier 2 — Important: UI & Coverage</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="tier-header tier-2">
+    <span class="tier-badge">T2</span>
+    <span class="dot-amber status-dot"></span>
+    New UI pages that expose OpenClaw functionality to users, plus test coverage for already-shipped code. These make OpenClaw usable and provably correct.
+  </div>
+
+  <div class="recs-grid">
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-amber">🎛️</div>
+        <div class="rec-meta">
+          <div class="rec-app">1L-LMX-Dashboard</div>
+          <div class="rec-name">Pairing & Console Pages</div>
+        </div>
+      </div>
+      <p class="rec-desc">7 new dashboard pages (arena, quantize, setup, pair, console, predictor, presets) that expose LMX capabilities through the web UI — including the pairing flow to register desktop devices.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What each does:</strong>
+        <strong>pair/</strong> — QR-code pairing UI using createPairingSession() + claimPairingSession(). The user flow: web shows QR → daemon CLI scans → token minted → bridge connected.<br><br>
+        <strong>console/</strong> — Sends device commands via enqueueDeviceCommand() and polls getDeviceCommandStatus(). This is the OpenClaw remote control UI.<br><br>
+        <strong>arena/</strong> — Model comparison UI. Sends competing chat.completions commands to different loaded models via the bridge.<br><br>
+        <strong>quantize/</strong> — Triggers MLX quantization jobs on Mono512 remotely.<br><br>
+        <strong>predictor/</strong> — Performance prediction for models vs hardware specs.<br><br>
+        <strong>presets/</strong> — Named parameter bundles (model + generation config) for one-click loads.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        The <code>pair/</code> and <code>console/</code> pages ARE the OpenClaw web UI (Layer 5). They use <code>accounts-control-plane.ts</code> — which calls the Tier 1 server routes — to remotely control the desktop daemon from the browser. The rest use it indirectly via device commands.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">app/pair/page.tsx</span>
+        <span class="file-chip">app/console/page.tsx</span>
+        <span class="file-chip">app/arena/page.tsx</span>
+        <span class="file-chip">app/quantize/page.tsx</span>
+        <span class="file-chip">lib/paired-device.tsx</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-amber">🧪</div>
+        <div class="rec-meta">
+          <div class="rec-app">1D-Opta-CLI-TS</div>
+          <div class="rec-name">Remaining CLI Tests</div>
+        </div>
+      </div>
+      <p class="rec-desc">Test files for code that's already shipped and live. These cover the browser peekaboo system, CEO benchmark runner, Windows installer, browser delegation routing, and the vault sync itself.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What each covers:</strong>
+        <strong>ceo-runner.test.ts</strong> — The benchmark evaluation loop that scores models on structured tasks.<br><br>
+        <strong>peekaboo.test.ts</strong> — Screenshot diffing + visual regression for browser sessions.<br><br>
+        <strong>installer.windows.test.ts</strong> — schtasks-based daemon auto-start on Windows.<br><br>
+        <strong>browser-delegation-routing.test.ts</strong> — The sub-agent delegation logic that routes complex browser goals to a specialist agent.<br><br>
+        <strong>apps.test.ts</strong> — The opta apps command surface.<br><br>
+        <strong>models-skills-scope.test.ts</strong> — Scope injection through models.skills — directly tests OpenClaw scope forwarding in applyOperationScope().
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        <code>models-skills-scope.test.ts</code> directly tests OpenClaw behavior: that applyOperationScope() correctly injects scope into models.skills commands when the bridge provides a scope seed. This is the acceptance test for the bridge-worker scope forwarding path.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">tests/benchmark/ceo-runner.test.ts</span>
+        <span class="file-chip">tests/browser/peekaboo.test.ts</span>
+        <span class="file-chip">tests/daemon/installer.windows.test.ts</span>
+        <span class="file-chip">tests/commands/models-skills-scope.test.ts</span>
+        <span class="file-chip">tests/integration/browser-delegation-routing.test.ts</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-blue">⚙️</div>
+        <div class="rec-meta">
+          <div class="rec-app">1P-Opta-Code-Desktop</div>
+          <div class="rec-name">Settings Studio</div>
+        </div>
+      </div>
+      <p class="rec-desc">Lazy-loaded settings navigation system for the Tauri desktop app. A configuration meta-system that drives all settings pages from a single declarative config, with keyboard navigation and E2E validation.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>settingsStudioConfig.ts</strong> — Declarative registry of all settings sections (general, fleet, secrets, daemon, accounts). Each section has a lazy-loaded component, keyboard binding, and icon.<br><br>
+        <strong>settingsModalLazyPages.ts</strong> — Dynamic import map for settings pages. Code-split so only the visible page loads.<br><br>
+        <strong>E2E specs</strong> — Playwright tests validating keyboard navigation (L3 controls), visual regression snapshots, and settings studio visual consistency.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        The Fleet settings tab (SettingsTabFleet.tsx) shows connected/paired devices and bridge status. This tab is driven by bridge-state.ts via the daemon's status endpoint — letting users see their OpenClaw connection state, paired device list, and last error from inside the desktop app.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/components/settingsStudioConfig.ts</span>
+        <span class="file-chip">src/components/settingsModalLazyPages.ts</span>
+        <span class="file-chip">tests/e2e/settings-studio-keyboard.spec.ts</span>
+        <span class="file-chip">tests/e2e/settings-studio-visual.spec.ts</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-violet">🔐</div>
+        <div class="rec-meta">
+          <div class="rec-app">1R-Opta-Accounts</div>
+          <div class="rec-name">Auth Header + Control Plane Tests</div>
+        </div>
+      </div>
+      <p class="rec-desc">Test coverage and utility helpers for the accounts control plane: auth header extraction, token relay validation, control plane lifecycle, metadata contracts, and health route verification.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>auth-header.ts</strong> — Extracts + validates auth headers from incoming requests (Bearer token, bridge token, device ID). Central validation point for all control plane routes.<br><br>
+        <strong>control-plane-lifecycle.test.ts</strong> — Tests device registration, pairing session creation/claim, token mint, and disconnection sequences end-to-end.<br><br>
+        <strong>control-plane-metadata.test.ts</strong> — Validates command envelope shape, idempotency key handling, and scope propagation.<br><br>
+        <strong>health-supabase-route.test.ts</strong> — Verifies the Supabase health check correctly detects schema migration status (the 503 path that vault.pull handles).
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        Direct: these tests verify the server half of the OpenClaw relay. control-plane-lifecycle tests the exact pairing → token mint → command issue → result flow the bridge worker depends on. Confidence that the cloud relay behaves correctly.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">src/lib/supabase/auth-header.ts</span>
+        <span class="file-chip">src/tests/auth-header.test.ts</span>
+        <span class="file-chip">src/tests/control-plane-lifecycle.test.ts</span>
+        <span class="file-chip">src/tests/control-plane-metadata.test.ts</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- TIER 3 -->
+  <div class="neon-divider"></div>
+  <div class="section-header">
+    <span class="section-number">04</span>
+    <h2 class="section-title">Tier 3 — Polish: Discovery & Docs</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="tier-header tier-3">
+    <span class="tier-badge">T3</span>
+    <span class="dot-green status-dot"></span>
+    User-facing discovery and documentation improvements. These don't change runtime behavior but make OpenClaw discoverable and help users understand what's happening.
+  </div>
+
+  <div class="recs-grid">
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-green">🏠</div>
+        <div class="rec-meta">
+          <div class="rec-app">1T-Opta-Home</div>
+          <div class="rec-name">Activation Flow & Explainer</div>
+        </div>
+      </div>
+      <p class="rec-desc">Two new marketing/onboarding components for the optalocal.com landing page: an animated activation flow showing setup steps, and an OpenClaw/architecture explainer panel.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What it does:</strong>
+        <strong>ActivationFlow.tsx</strong> — Animated step-by-step setup diagram: install CLI → start daemon → sign in → bridge connects → remote control. Each step has a Framer Motion entrance with spring physics.<br><br>
+        <strong>OptaExplainer.tsx</strong> — Architecture diagram showing the full stack: Mac Studio (Mono512) ↔ accounts.optalocal.com ↔ mobile/web. Explains what runs where and why.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        ActivationFlow visualizes the bridge pairing ceremony — the OpenClaw onboarding steps. OptaExplainer explains the cloud relay architecture to new users. These are the marketing surface of OpenClaw.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">components/ActivationFlow.tsx</span>
+        <span class="file-chip">components/OptaExplainer.tsx</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-cyan">📖</div>
+        <div class="rec-meta">
+          <div class="rec-app">1U-Opta-Help</div>
+          <div class="rec-name">Platform Context & Diagnostics</div>
+        </div>
+      </div>
+      <p class="rec-desc">Context-aware help docs that adapt to the user's detected platform (macOS, Windows, Linux), plus a diagnostics bundle panel that collects system state for support tickets.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What each does:</strong>
+        <strong>PlatformContext.tsx</strong> — Detects OS via user-agent and provides a React context. All docs that have platform-specific instructions use this.<br><br>
+        <strong>PlatformToggle.tsx</strong> — macOS / Windows / Linux pill switcher for code blocks in docs.<br><br>
+        <strong>DiagnosticsBundlePanel.tsx</strong> — Generates a diagnostics JSON bundle: daemon status, bridge state, LMX health, vault sync state, config path, platform info. Copy-to-clipboard for support.<br><br>
+        <strong>LearnAboutPanel.tsx</strong> — Inline "Learn more" card linking to relevant Opta Learn guides from within help docs.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        DiagnosticsBundlePanel includes bridge state in the diagnostics output — users can see <code>bridgeStatus: "degraded"</code>, <code>lastError: "bridge_worker_missing_token"</code> when troubleshooting OpenClaw connectivity. This is the primary support tool for bridge issues.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">components/docs/PlatformContext.tsx</span>
+        <span class="file-chip">components/docs/PlatformToggle.tsx</span>
+        <span class="file-chip">components/docs/DiagnosticsBundlePanel.tsx</span>
+        <span class="file-chip">components/docs/LearnAboutPanel.tsx</span>
+      </div>
+    </div>
+
+    <div class="glass rec-card">
+      <div class="rec-header">
+        <div class="rec-icon rec-icon-green">🚀</div>
+        <div class="rec-meta">
+          <div class="rec-app">GitHub Actions</div>
+          <div class="rec-name">CI Workflows</div>
+        </div>
+      </div>
+      <p class="rec-desc">Two new GitHub Actions workflows: one that gates PRs against the control plane contract, and one that monitors web performance budgets across all Vercel-deployed sites.</p>
+      <div class="rec-what">
+        <strong style="color: var(--text-primary); font-size: 12px; display: block; margin-bottom: 6px;">What each does:</strong>
+        <strong>opta-accounts-control-plane-pr.yml</strong> — On every PR touching 1R routes: runs control plane lifecycle tests, validates schema migrations are present, checks bridge token mint/revocation flows. Blocks merge if control plane breaks.<br><br>
+        <strong>opta-web-performance-budget.yml</strong> — Lighthouse CI on every PR: Core Web Vitals budgets per site. Blocks if TTI or LCP regresses beyond thresholds. Runs on Vercel preview URLs.
+      </div>
+      <div class="rec-openclaw">
+        <span class="rec-openclaw-label">OpenClaw role</span>
+        <code>opta-accounts-control-plane-pr.yml</code> directly protects OpenClaw — it gates every change to the server relay (Tier 1) behind the lifecycle test suite. Prevents silent breakage of the bridge.
+      </div>
+      <div class="rec-files">
+        <span class="file-chip">.github/workflows/opta-accounts-control-plane-pr.yml</span>
+        <span class="file-chip">.github/workflows/opta-web-performance-budget.yml</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Summary table -->
+  <div class="neon-divider"></div>
+  <div class="section-header">
+    <span class="section-number">05</span>
+    <h2 class="section-title">Full Summary — OpenClaw Connection Matrix</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div class="glass" style="padding: 24px; overflow-x: auto;">
+    <table class="summary-table">
+      <thead>
+        <tr>
+          <th>Recommendation</th>
+          <th>App</th>
+          <th>OpenClaw Connection</th>
+          <th>Blocking?</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="t1-row">
+          <td>Server Control Plane API</td>
+          <td>1R Accounts</td>
+          <td><span class="oc-server">IS the relay</span> — device-commands CRUD, stream endpoint</td>
+          <td><span class="pill pill-red">YES</span></td>
+        </tr>
+        <tr class="t1-row">
+          <td>Device Pairing System</td>
+          <td>1R Accounts</td>
+          <td><span class="oc-server">Issues bridgeToken</span> — bridge worker's auth credential</td>
+          <td><span class="pill pill-red">YES</span></td>
+        </tr>
+        <tr class="t1-row">
+          <td>Bridge Token Mint</td>
+          <td>1R Accounts</td>
+          <td><span class="oc-server">Token lifecycle</span> — Bearer credential for all bridge requests</td>
+          <td><span class="pill pill-red">YES</span></td>
+        </tr>
+        <tr class="t1-row">
+          <td>CLI Token Exchange</td>
+          <td>1R Accounts</td>
+          <td><span class="oc-yes">Indirect</span> — CLI auth seed → vault pull → bridge identity</td>
+          <td><span class="pill pill-amber">Partial</span></td>
+        </tr>
+        <tr class="t2-row">
+          <td>Pair & Console Dashboard Pages</td>
+          <td>1L LMX Dashboard</td>
+          <td><span class="oc-yes">Web UI for OpenClaw</span> — pairing ceremony + remote command console</td>
+          <td><span class="pill pill-amber">UX only</span></td>
+        </tr>
+        <tr class="t2-row">
+          <td>Remaining CLI Tests</td>
+          <td>1D CLI</td>
+          <td><span class="oc-yes">models-skills-scope</span> tests applyOperationScope() directly</td>
+          <td><span class="pill pill-amber">Coverage</span></td>
+        </tr>
+        <tr class="t2-row">
+          <td>Settings Studio</td>
+          <td>1P Desktop</td>
+          <td><span class="oc-yes">Fleet tab</span> shows bridge state + connected devices</td>
+          <td><span class="pill pill-violet">Display</span></td>
+        </tr>
+        <tr class="t2-row">
+          <td>Control Plane Test Suite</td>
+          <td>1R Accounts</td>
+          <td><span class="oc-server">Tests relay server</span> — lifecycle, metadata, scope propagation</td>
+          <td><span class="pill pill-amber">Coverage</span></td>
+        </tr>
+        <tr class="t3-row">
+          <td>Activation Flow + Explainer</td>
+          <td>1T Home</td>
+          <td><span class="oc-yes">Marketing</span> — visualizes bridge pairing, explains relay</td>
+          <td><span class="pill pill-green">Discovery</span></td>
+        </tr>
+        <tr class="t3-row">
+          <td>Platform Context + Diagnostics</td>
+          <td>1U Help</td>
+          <td><span class="oc-yes">Diagnostics</span> — includes bridge state in support bundle</td>
+          <td><span class="pill pill-green">Support</span></td>
+        </tr>
+        <tr class="t3-row">
+          <td>CI Workflows</td>
+          <td>GitHub Actions</td>
+          <td><span class="oc-server">Guards relay</span> — control-plane-pr.yml gates every bridge change</td>
+          <td><span class="pill pill-amber">Gate</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- What's done -->
+  <div class="neon-divider"></div>
+  <div class="section-header">
+    <span class="section-number">06</span>
+    <h2 class="section-title">Already Done This Session</h2>
+    <div class="section-line"></div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px;">
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">vault.pull structured response</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Direct <code>syncVault()</code> call in daemon registry. Returns typed JSON with keys[], rulesConfigured, cached. Zod schema validation.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">syncedKeys in pullVaultKeys</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Zero-cost tracking of synced key provider+label pairs during the keychain write loop. All error paths return <code>syncedKeys: []</code>.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">VaultPullResultSchema (Zod)</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Protocol v3 operations schema. vault.pull → VaultPullResultSchema, vault.pull-keys → VaultPullKeysResultSchema.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">bridge-state.ts + bridge-worker.ts</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Full OpenClaw bridge FSM and outbound worker committed. Scope injection, identity headers, 8s backoff, stream polling, result posting.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">openclaw-scope.ts + tests</div>
+        <div style="font-size: 12px; color: var(--text-muted);">normalizeOpenClawScope(), deriveOpenClawAgentId() — SHA-256 deterministic agent ID. 2 unit tests. 6 bridge-worker scope tests.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">vault-pull-keys.test.ts (8 tests)</div>
+        <div style="font-size: 12px; color: var(--text-muted);">null state, empty token, 200 syncedKeys, 304 cached, 503, network error, empty key_value, syncVault integration.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">1P Native Auth (PKCE)</div>
+        <div style="font-size: 12px; color: var(--text-primary); margin-bottom: 4px;">auth.ts + supabaseClient.ts committed. startNativeOAuthFlow, exchangeNativeAuthCode, onNativeAuthStateChange.</div>
+      </div>
+    </div>
+
+    <div class="glass-subtle" style="padding: 16px; border-radius: 10px; display: flex; gap: 12px; align-items: flex-start;">
+      <span style="color: var(--neon-green); font-size: 18px; flex-shrink: 0;">✓</span>
+      <div>
+        <div style="font-size: 13px; font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">useAccountsAuthControls fixed</div>
+        <div style="font-size: 12px; color: var(--text-muted);">3 failing tests fixed. Missing isNativeDesktop mock added. onNativeAuthStateChange vi.mock() block added. AccountControlPage wired.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="guide-footer">
+    Opta Roadmap & OpenClaw Visual Guide · Generated 2026-03-06 · opta-bridge architecture v1
+  </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta Init Windows — Functionality Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-cyan: #22d3ee;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-pink: #f472b6;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grain overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+    opacity: 0.025;
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* Ambient orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    animation: breathe 8s ease-in-out infinite;
+  }
+  .orb-1 { width: 600px; height: 600px; background: rgba(139,92,246,0.07); top: -200px; right: -100px; animation-delay: 0s; }
+  .orb-2 { width: 400px; height: 400px; background: rgba(59,130,246,0.05); bottom: 100px; left: -150px; animation-delay: 3s; }
+  .orb-3 { width: 300px; height: 300px; background: rgba(34,211,238,0.04); top: 50%; right: 10%; animation-delay: 5s; }
+
+  @keyframes breathe {
+    0%, 100% { opacity: 0.6; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.08); }
+  }
+
+  /* Layout */
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 2rem 6rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .hero {
+    padding: 5rem 0 3rem;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--primary);
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.25);
+    padding: 0.35rem 0.85rem;
+    border-radius: 100px;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero-eyebrow::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(139,92,246,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(139,92,246,0); }
+  }
+
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.4rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #ffffff 0%, #e2d9f3 40%, #8b5cf6 80%, #6d28d9 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 680px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+  }
+
+  /* Version strip */
+  .version-strip {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 0;
+  }
+
+  .version-pill {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    padding: 0.4rem 0.9rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .version-pill .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Neon divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent);
+    margin: 3rem 0;
+    box-shadow: 0 0 12px rgba(139,92,246,0.3);
+  }
+
+  /* Section */
+  section { margin-bottom: 3.5rem; }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 1.25rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  h2 {
+    font-size: 1.45rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-bottom: 1.25rem;
+    background: linear-gradient(135deg, #fff 60%, #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.6rem;
+  }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass-elevated {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+  }
+
+  /* Status grid */
+  .status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+  }
+
+  .status-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 1.25rem 1.4rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+
+  .status-card:hover {
+    border-color: rgba(255,255,255,0.14);
+    transform: translateY(-2px);
+  }
+
+  .status-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    border-radius: 3px 0 0 3px;
+  }
+
+  .status-card.ok::before { background: var(--neon-green); }
+  .status-card.warn::before { background: var(--neon-amber); }
+  .status-card.bad::before { background: var(--neon-red); }
+  .status-card.na::before { background: var(--text-muted); }
+  .status-card.fixed::before { background: var(--primary); }
+
+  .status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.6rem;
+    border-radius: 6px;
+    margin-bottom: 0.6rem;
+  }
+
+  .badge-ok { color: var(--neon-green); background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.2); }
+  .badge-warn { color: var(--neon-amber); background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); }
+  .badge-bad { color: var(--neon-red); background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.2); }
+  .badge-na { color: var(--text-muted); background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); }
+  .badge-fixed { color: var(--primary); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); }
+  .badge-future { color: var(--neon-cyan); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
+
+  .status-card p {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-top: 0.4rem;
+  }
+
+  /* Roadmap list */
+  .roadmap {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    position: relative;
+  }
+
+  .roadmap::before {
+    content: '';
+    position: absolute;
+    left: 1.1rem;
+    top: 1.5rem;
+    bottom: 1.5rem;
+    width: 1px;
+    background: rgba(255,255,255,0.07);
+  }
+
+  .roadmap-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    padding: 1.25rem 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    position: relative;
+  }
+
+  .roadmap-item:last-child { border-bottom: none; }
+
+  .roadmap-node {
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    position: relative;
+    z-index: 1;
+  }
+
+  .node-done { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); color: var(--neon-green); }
+  .node-active { background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.5); color: var(--primary); box-shadow: 0 0 16px rgba(139,92,246,0.25); }
+  .node-next { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); color: var(--neon-amber); }
+  .node-future { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); }
+  .node-release { background: rgba(34,211,238,0.1); border: 1px solid rgba(34,211,238,0.25); color: var(--neon-cyan); }
+
+  .roadmap-body { flex: 1; padding-top: 0.1rem; }
+
+  .roadmap-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.3rem;
+  }
+
+  .roadmap-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+  }
+
+  .roadmap-tag {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    margin-bottom: 0.4rem;
+  }
+
+  .tag-done { color: var(--neon-green); background: rgba(34,197,94,0.08); }
+  .tag-now { color: var(--primary); background: rgba(139,92,246,0.1); }
+  .tag-next { color: var(--neon-amber); background: rgba(245,158,11,0.08); }
+  .tag-future { color: var(--text-muted); background: rgba(255,255,255,0.04); }
+  .tag-release { color: var(--neon-cyan); background: rgba(34,211,238,0.06); }
+
+  /* Code block */
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    overflow-x: auto;
+    margin-top: 0.75rem;
+  }
+
+  .code-block .comment { color: var(--text-muted); }
+  .code-block .key { color: #a78bfa; }
+  .code-block .val-green { color: var(--neon-green); }
+  .code-block .val-red { color: var(--neon-red); }
+  .code-block .val-amber { color: var(--neon-amber); }
+  .code-block .val-blue { color: var(--neon-blue); }
+
+  /* Two col */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+  }
+
+  @media (max-width: 700px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.83rem;
+  }
+
+  th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    text-align: left;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  td:first-child {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--text-primary);
+    font-weight: 500;
+  }
+
+  /* Callout */
+  .callout {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    padding: 1.1rem 1.25rem;
+    border-radius: 10px;
+    margin-top: 1rem;
+    font-size: 0.83rem;
+    line-height: 1.55;
+  }
+
+  .callout-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 0.05rem;
+  }
+
+  .callout-info { background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+  .callout-warn { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+  .callout-success { background: rgba(34,197,94,0.07); border: 1px solid rgba(34,197,94,0.2); color: #86efac; }
+  .callout-purple { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); color: #c4b5fd; }
+
+  /* Inline code */
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78em;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 0.1em 0.4em;
+    border-radius: 4px;
+    color: #c4b5fd;
+  }
+
+  /* Progress bar */
+  .progress-wrap {
+    background: rgba(255,255,255,0.05);
+    border-radius: 100px;
+    height: 6px;
+    overflow: hidden;
+    margin-top: 0.5rem;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 100px;
+    animation: fillIn 1.2s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  @keyframes fillIn {
+    from { width: 0; }
+  }
+
+  .progress-green { background: linear-gradient(90deg, #16a34a, #22c55e); }
+  .progress-amber { background: linear-gradient(90deg, #d97706, #f59e0b); }
+  .progress-purple { background: linear-gradient(90deg, #6d28d9, #8b5cf6); }
+  .progress-muted { background: var(--border); }
+
+  /* Chips row */
+  .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.68rem;
+    padding: 0.25rem 0.65rem;
+    border-radius: 6px;
+    border: 1px solid;
+    font-weight: 500;
+  }
+
+  .chip-green { color: var(--neon-green); border-color: rgba(34,197,94,0.25); background: rgba(34,197,94,0.06); }
+  .chip-red { color: var(--neon-red); border-color: rgba(239,68,68,0.25); background: rgba(239,68,68,0.06); }
+  .chip-amber { color: var(--neon-amber); border-color: rgba(245,158,11,0.25); background: rgba(245,158,11,0.06); }
+  .chip-purple { color: #c4b5fd; border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08); }
+  .chip-muted { color: var(--text-muted); border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); }
+  .chip-cyan { color: var(--neon-cyan); border-color: rgba(34,211,238,0.25); background: rgba(34,211,238,0.06); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding: 3rem 0 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+  }
+
+  p { margin-bottom: 0.75rem; }
+  p:last-child { margin-bottom: 0; }
+
+  ul { padding-left: 1.25rem; }
+  li { margin-bottom: 0.4rem; color: var(--text-secondary); font-size: 0.85rem; }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="version-strip" style="justify-content:center; margin-bottom:1.25rem;">
+      <div class="hero-eyebrow">Opta Init Desktop Manager · Windows Track</div>
+    </div>
+    <h1>Windows Functionality Roadmap</h1>
+    <p class="hero-sub">
+      A complete picture of what works today, what's broken, what needs building,
+      and what gets deferred until public release — so you can get Windows to 100% functional
+      without paying for anything you don't need yet.
+    </p>
+    <div class="version-strip">
+      <div class="version-pill">
+        <span class="dot" style="background: var(--neon-green);"></span>
+        Manager Stable v0.7.2
+      </div>
+      <div class="version-pill">
+        <span class="dot" style="background: var(--neon-amber);"></span>
+        Windows Build: Unsigned
+      </div>
+      <div class="version-pill">
+        <span class="dot" style="background: var(--primary);"></span>
+        Target: Tauri v2 · x86_64
+      </div>
+      <div class="version-pill">
+        <span class="dot" style="background: var(--text-muted);"></span>
+        2026-03-06
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- OVERALL HEALTH -->
+  <section>
+    <div class="section-label">Overall health</div>
+    <div class="glass">
+      <div style="display:grid; grid-template-columns: repeat(4,1fr); gap:1.5rem; text-align:center; padding: 0.5rem 0;">
+
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:2.2rem; font-weight:700; color:var(--neon-green);">✓</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.25rem;">App Builds</div>
+          <div style="font-size:0.65rem; color:var(--text-muted); font-family:monospace;">CI passes</div>
+        </div>
+
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:2.2rem; font-weight:700; color:var(--primary);">✓</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.25rem;">Download Fixed</div>
+          <div style="font-size:0.65rem; color:var(--text-muted); font-family:monospace;">.exe served (today)</div>
+        </div>
+
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:2.2rem; font-weight:700; color:var(--neon-amber);">~</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.25rem;">Manager UI</div>
+          <div style="font-size:0.65rem; color:var(--text-muted); font-family:monospace;">Needs testing</div>
+        </div>
+
+        <div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:2.2rem; font-weight:700; color:var(--neon-red);">0%</div>
+          <div style="font-size:0.78rem; color:var(--text-secondary); margin-top:0.25rem;">Stack Rollout</div>
+          <div style="font-size:0.65rem; color:var(--text-muted); font-family:monospace;">Code/Daemon/LMX</div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:1.5rem; padding-top:1.25rem; border-top:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+          <span style="font-size:0.8rem; color:var(--text-secondary);">Windows readiness to 100% functional</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; color:var(--neon-amber);">~30%</span>
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-fill progress-amber" style="width: 30%;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT WORKS -->
+  <section>
+    <div class="section-label">What works today on Windows</div>
+    <div class="status-grid">
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>Tauri App Shell</h3>
+        <p>The desktop manager builds and runs on Windows x86_64 via NSIS installer. Tauri v2 Rust backend, React 18 frontend — all platform-agnostic.</p>
+      </div>
+
+      <div class="status-card fixed">
+        <span class="status-badge badge-fixed">Fixed Today</span>
+        <h3>Download from init.optalocal.com</h3>
+        <p>Was serving <code>.nsis.zip</code> (updater bundle). Now correctly serves <code>opta-init-windows-x64.exe</code> — the standalone NSIS installer.</p>
+      </div>
+
+      <div class="status-card fixed">
+        <span class="status-badge badge-fixed">Fixed Today</span>
+        <h3>Vercel Redirect Chain</h3>
+        <p>Three self-referential two-hop redirects (init.optalocal.com → init.optalocal.com → GitHub) replaced with single direct GitHub hops.</p>
+      </div>
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>Deep Link Protocol</h3>
+        <p><code>opta-init://</code> registered via <code>tauri-plugin-deep-link</code>. Windows handles URL scheme registration on install.</p>
+      </div>
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>Manifest Fetching</h3>
+        <p>Manager fetches <code>/desktop-updates/stable.json</code> and the component release manifest correctly on Windows. JSON parsing, version comparison all work.</p>
+      </div>
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>Opta CLI Install (100% rollout)</h3>
+        <p>CLI is at 100% rollout in both stable and beta manifests. Install flow resolves the npm <code>.tgz</code> URL. Requires Node.js — no Windows-specific blockers in the manifest.</p>
+      </div>
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>Tauri Updater Plugin</h3>
+        <p>In-app auto-update uses <code>tauri-plugin-updater</code>. The <code>windows-x86_64</code> platform key in the update feed is populated with a valid signed <code>.nsis.zip</code> for v0.7.2.</p>
+      </div>
+
+      <div class="status-card ok">
+        <span class="status-badge badge-ok">✓ Working</span>
+        <h3>mDNS Discovery (Likely)</h3>
+        <p><code>mdns-sd</code> crate is cross-platform. Should discover Opta LMX on LAN from Windows. Untested but no known blockers — Windows Firewall may need a rule for UDP port 5353.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- WHAT'S BROKEN -->
+  <section>
+    <div class="section-label">What's broken / missing</div>
+    <div class="status-grid">
+
+      <div class="status-card bad">
+        <span class="status-badge badge-bad">0% Rollout</span>
+        <h3>Opta Code Desktop</h3>
+        <p>The <code>opta-code-universal</code> component has <code>"percentage": 0</code> and empty <code>"artifacts": { "windows": [] }</code> in the stable manifest. Manager can't install it.</p>
+      </div>
+
+      <div class="status-card bad">
+        <span class="status-badge badge-bad">0% Rollout</span>
+        <h3>Opta Daemon</h3>
+        <p>The <code>opta-daemon</code> stable manifest has <code>"percentage": 0</code>. The Windows binary exists at GitHub (<code>opta-daemon-windows-x64.zip</code> in the beta channel) but isn't published to stable.</p>
+      </div>
+
+      <div class="status-card na">
+        <span class="status-badge badge-na">Arch Limit</span>
+        <h3>Opta LMX (Inference)</h3>
+        <p>LMX uses Apple MLX — Apple Silicon only, architecturally unavailable on Windows. The manager correctly shows 0% rollout. Windows users connect to a remote Mac Studio (Mono512) over LAN or future cloud inference.</p>
+      </div>
+
+      <div class="status-card warn">
+        <span class="status-badge badge-warn">Untested</span>
+        <h3>SetupWizard on Windows</h3>
+        <p>The multi-step onboarding wizard (<code>SetupWizard.tsx</code>) invokes Rust commands for path detection, Node.js checks, and daemon discovery. Windows paths (<code>AppData</code> vs <code>~/.config</code>) need validation.</p>
+      </div>
+
+      <div class="status-card warn">
+        <span class="status-badge badge-warn">Untested</span>
+        <h3>DaemonDrawer Process Management</h3>
+        <p>The daemon status/kill/restart flow uses Rust <code>tokio::process</code>. Process management on Windows (signals, PID tracking, service-style restart) behaves differently than macOS.</p>
+      </div>
+
+      <div class="status-card warn">
+        <span class="status-badge badge-warn">Untested</span>
+        <h3>TunnelWizard</h3>
+        <p><code>TunnelWizard.tsx</code> — unclear if this flow has been exercised on Windows. Needs a Windows test run to surface any path or networking edge cases.</p>
+      </div>
+
+      <div class="status-card warn">
+        <span class="status-badge badge-warn">UX Warning</span>
+        <h3>Windows SmartScreen</h3>
+        <p>Unsigned binary triggers "Windows protected your PC" on every fresh install. Users can bypass via <em>More info → Run anyway</em>. Not a functional blocker — just friction. Deferred to public release.</p>
+      </div>
+
+      <div class="status-card bad">
+        <span class="status-badge badge-bad">Missing</span>
+        <h3>LMX Connection Flow (Windows)</h3>
+        <p>Windows users can't run LMX locally. The manager's LMX connection UI needs to surface "connect to remote host" as the primary path on Windows, not "install LMX". Currently unclear from the UI.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- COMPONENT ROLLOUT STATE -->
+  <section>
+    <div class="section-label">Component manifest state (stable channel)</div>
+    <div class="glass">
+      <table>
+        <thead>
+          <tr>
+            <th>Component</th>
+            <th>Version</th>
+            <th>Windows Rollout</th>
+            <th>Windows Artifact</th>
+            <th>Blocker</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>opta-cli</td>
+            <td>0.5.0-alpha.15</td>
+            <td><span class="chip chip-green">100%</span></td>
+            <td>npm .tgz (shared)</td>
+            <td style="color:var(--neon-green); font-size:0.8rem;">None — needs Node.js</td>
+          </tr>
+          <tr>
+            <td>opta-code-universal</td>
+            <td>0.5.4</td>
+            <td><span class="chip chip-red">0%</span></td>
+            <td style="color:var(--neon-red);">Empty []</td>
+            <td style="color:var(--text-secondary); font-size:0.8rem;">Need to build + publish Windows artifact, then bump rollout %</td>
+          </tr>
+          <tr>
+            <td>opta-daemon</td>
+            <td>0.4.1</td>
+            <td><span class="chip chip-red">0%</span></td>
+            <td style="color:var(--neon-red);">Empty []</td>
+            <td style="color:var(--text-secondary); font-size:0.8rem;">Beta has the artifact URL — needs promoting to stable + rollout bump</td>
+          </tr>
+          <tr>
+            <td>opta-lmx</td>
+            <td>0.6.2</td>
+            <td><span class="chip chip-muted">N/A</span></td>
+            <td style="color:var(--text-muted);">Arch limited</td>
+            <td style="color:var(--text-muted); font-size:0.8rem;">MLX = Apple Silicon only. Windows path = remote LMX (Mono512 or cloud)</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- THE TWO ARTIFACT TYPES EXPLAINED -->
+  <section>
+    <div class="section-label">Architecture clarification — why two Windows artifacts exist</div>
+    <div class="two-col">
+      <div class="glass">
+        <span class="status-badge badge-fixed" style="margin-bottom:0.75rem; display:inline-flex;">User Installer</span>
+        <h3>opta-init-windows-x64.exe</h3>
+        <p style="color:var(--text-secondary); font-size:0.83rem; margin-top:0.5rem;">
+          The standalone NSIS installer. A user downloads this once from <code>init.optalocal.com</code> to install the manager for the first time. Self-contained, runs without anything else installed.
+        </p>
+        <div class="chips">
+          <span class="chip chip-green">First Install</span>
+          <span class="chip chip-green">User Downloads This</span>
+          <span class="chip chip-purple">Download Button</span>
+        </div>
+      </div>
+      <div class="glass">
+        <span class="status-badge badge-na" style="margin-bottom:0.75rem; display:inline-flex;">Updater Bundle</span>
+        <h3>Opta-Init-Manager_x64-setup.nsis.zip</h3>
+        <p style="color:var(--text-secondary); font-size:0.83rem; margin-top:0.5rem;">
+          The Tauri auto-updater payload. The manager's built-in updater fetches this silently when a new version is available. Contains a signed NSIS installer inside the zip + a <code>.sig</code> minisign signature.
+        </p>
+        <div class="chips">
+          <span class="chip chip-amber">In-App Update Only</span>
+          <span class="chip chip-muted">Never for users</span>
+          <span class="chip chip-purple">Tauri Updater Feed</span>
+        </div>
+      </div>
+    </div>
+    <div class="callout callout-info" style="margin-top:1rem;">
+      <span class="callout-icon">ℹ</span>
+      <span>The bug fixed today was <code>download-artifacts.ts</code> treating the updater feed URL (<code>windows-x86_64</code> platform key → <code>.nsis.zip</code>) as a user-facing download, and <code>isInstallerAsset()</code> accepting <code>.zip</code> instead of specifically excluding <code>.nsis.zip</code>. The resolution now falls through to the <code>.exe</code> fallback correctly.</span>
+    </div>
+  </section>
+
+  <!-- FUNCTIONALITY ROADMAP -->
+  <section>
+    <div class="section-label">Roadmap to 100% functional on Windows</div>
+    <div class="glass">
+      <div class="roadmap">
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-done">✓</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-done">Done</span>
+            <div class="roadmap-title">Fix Windows download artifact</div>
+            <div class="roadmap-desc">
+              <code>download-artifacts.ts</code> now links to <code>opta-init-windows-x64.exe</code>. <code>isInstallerAsset()</code> excludes <code>.nsis.zip</code>. Vercel redirects go direct to GitHub in one hop. Committed <code>83441cd9</code>.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-active">1</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-now">Do Now</span>
+            <div class="roadmap-title">Test the manager on an actual Windows machine</div>
+            <div class="roadmap-desc">
+              Install <code>opta-init-windows-x64.exe</code> on your PC. Walk through SetupWizard, open DaemonDrawer, attempt CLI install. Surface any Windows-specific crashes or path errors. This is the fastest way to find the next real blockers.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-active">2</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-now">Do Now</span>
+            <div class="roadmap-title">Publish opta-daemon Windows artifact to stable manifest</div>
+            <div class="roadmap-desc">
+              The beta channel already has <code>opta-daemon-windows-x64.zip</code> at a valid GitHub URL. Add it to <code>channels/stable.json</code> and bump <code>opta-daemon.rollout.percentage</code> from 0 → 100. Run <code>npm run sync:desktop-manifests</code>, commit, push.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-next">3</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-next">Next</span>
+            <div class="roadmap-title">Build and publish Opta Code Desktop Windows artifact</div>
+            <div class="roadmap-desc">
+              The <code>opta-code-universal</code> component needs a Windows <code>.exe</code> or <code>.msi</code> published to GitHub releases and referenced in <code>channels/stable.json</code> under <code>artifacts.windows</code>. The CI workflow exists — it just needs to be run and its output wired into the manifest.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-next">4</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-next">Next</span>
+            <div class="roadmap-title">Fix LMX UI path on Windows — surface remote-host mode</div>
+            <div class="roadmap-desc">
+              Windows users can't run LMX locally (Apple Silicon / MLX dependency). The manager UI currently shows LMX as a component to install. On Windows it should instead show "Connect to Opta LMX" with a host:port input — pointing to Mono512 on LAN or a future cloud endpoint.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-next">5</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-next">Next</span>
+            <div class="roadmap-title">Validate SetupWizard Windows paths</div>
+            <div class="roadmap-desc">
+              Walk through the Rust side of SetupWizard. Config paths on Windows are <code>%APPDATA%\opta</code> not <code>~/.config/opta</code>. The <code>dirs</code> crate handles this correctly in theory — verify that the wizard detects Node.js, the CLI, and daemon using Windows-correct paths.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-next">6</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-next">Next</span>
+            <div class="roadmap-title">Validate DaemonDrawer process management on Windows</div>
+            <div class="roadmap-desc">
+              The daemon start/stop/restart flow sends OS signals on macOS (<code>SIGTERM</code>, <code>SIGKILL</code>). On Windows, process termination uses <code>TerminateProcess</code> via Tokio. Test that kill, restart, and status polling all work correctly on your PC.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-future">7</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-future">Later</span>
+            <div class="roadmap-title">Windows Firewall rule for mDNS</div>
+            <div class="roadmap-desc">
+              mDNS uses UDP port 5353. Windows Firewall may block this by default, preventing the manager from discovering Opta LMX on LAN. The NSIS installer can add a firewall rule during install — or the manager can prompt the user when discovery fails.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-future">8</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-future">Later</span>
+            <div class="roadmap-title">Node.js detection and install guidance</div>
+            <div class="roadmap-desc">
+              The CLI is an npm package — Windows users need Node.js. The SetupWizard should detect Node, show its version, and guide users to install it via winget (<code>winget install OpenJS.NodeJS</code>) if missing. macOS uses Homebrew — the wizard likely assumes <code>brew</code>.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-release">R</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-release">Public Release Only</span>
+            <div class="roadmap-title">Windows Authenticode code signing</div>
+            <div class="roadmap-desc">
+              Eliminates the SmartScreen "Windows protected your PC" warning. Requires purchasing an EV or OV code signing certificate (~$300–500 AUD/year). Until then, SmartScreen users can bypass via <em>More info → Run anyway</em>. This is a UX issue, not a functional blocker — deferred until you decide to go public.
+            </div>
+          </div>
+        </div>
+
+        <div class="roadmap-item">
+          <div class="roadmap-node node-release">R</div>
+          <div class="roadmap-body">
+            <span class="roadmap-tag tag-release">Public Release Only</span>
+            <div class="roadmap-title">Microsoft Store / MSIX packaging</div>
+            <div class="roadmap-desc">
+              MSIX is the modern Windows packaging format — cleaner installs, automatic updates via the Store, no SmartScreen on Store downloads. Tauri supports MSIX bundling. Optional, but worth considering as an alternative to Authenticode for store distribution.
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- WHAT'S DEFERRED -->
+  <section>
+    <div class="section-label">Deferred to public release — you don't need these to be functional</div>
+    <div class="glass">
+      <div class="callout callout-purple" style="margin-top:0;">
+        <span class="callout-icon">💡</span>
+        <span>The rule: signing and paid platform features only get raised when you say public release is the target, OR when a missing signature actually blocks the app from launching or installing (not just a UX warning).</span>
+      </div>
+
+      <div style="margin-top:1.25rem; display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+        <div style="padding:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+          <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.35rem;">Authenticode Signing</div>
+          <div style="font-size:0.78rem; color:var(--text-muted);">SmartScreen warning on install. Users can bypass. Not a hard block.</div>
+        </div>
+        <div style="padding:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+          <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.35rem;">Microsoft Store</div>
+          <div style="font-size:0.78rem; color:var(--text-muted);">$19 USD developer account. Optional distribution channel.</div>
+        </div>
+        <div style="padding:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+          <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.35rem;">Defender Exclusions</div>
+          <div style="font-size:0.78rem; color:var(--text-muted);">Unsigned apps may trigger Defender alerts. Known dev workaround — not blocking dev.</div>
+        </div>
+        <div style="padding:1rem; background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.06); border-radius:10px;">
+          <div style="font-size:0.85rem; font-weight:600; margin-bottom:0.35rem;">MSIX / AppX Packaging</div>
+          <div style="font-size:0.78rem; color:var(--text-muted);">Cleaner Windows packaging format. Optional, NSIS works fine for now.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- IMMEDIATE NEXT STEPS -->
+  <section>
+    <div class="section-label">Immediate next actions</div>
+    <div class="glass glass-elevated">
+
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+        <div style="display:flex; gap:1rem; align-items:flex-start; padding:0.85rem 1rem; background:rgba(139,92,246,0.08); border:1px solid rgba(139,92,246,0.2); border-radius:10px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--primary); min-width:1.5rem; padding-top:0.05rem;">01</div>
+          <div>
+            <div style="font-size:0.88rem; font-weight:600; margin-bottom:0.2rem;">Install the fixed .exe on your Windows PC</div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">Download from <code>init.optalocal.com</code> (now fixed). Accept the SmartScreen bypass. Open the manager and screenshot what you see — this surfaces the real next issues.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; align-items:flex-start; padding:0.85rem 1rem; background:rgba(34,197,94,0.05); border:1px solid rgba(34,197,94,0.15); border-radius:10px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--neon-green); min-width:1.5rem; padding-top:0.05rem;">02</div>
+          <div>
+            <div style="font-size:0.88rem; font-weight:600; margin-bottom:0.2rem;">Promote daemon to stable manifest</div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">The beta channel already has the Windows daemon binary. Edit <code>channels/stable.json</code>: add the artifact URL and set <code>"percentage": 100</code> for <code>opta-daemon</code>. Run <code>npm run sync:desktop-manifests &amp;&amp; npm run sync:manager-updates</code>.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; align-items:flex-start; padding:0.85rem 1rem; background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.15); border-radius:10px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--neon-amber); min-width:1.5rem; padding-top:0.05rem;">03</div>
+          <div>
+            <div style="font-size:0.88rem; font-weight:600; margin-bottom:0.2rem;">Trigger Opta Code Desktop Windows build</div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">The CI cross-platform gate workflow exists. Run it, get the Windows <code>.exe</code> artifact, add it to the manifest. This is the biggest functional gap for the manager experience.</div>
+          </div>
+        </div>
+
+        <div style="display:flex; gap:1rem; align-items:flex-start; padding:0.85rem 1rem; background:rgba(59,130,246,0.05); border:1px solid rgba(59,130,246,0.12); border-radius:10px;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.72rem; font-weight:700; color:var(--neon-blue); min-width:1.5rem; padding-top:0.05rem;">04</div>
+          <div>
+            <div style="font-size:0.88rem; font-weight:600; margin-bottom:0.2rem;">Design the Windows LMX connection flow</div>
+            <div style="font-size:0.78rem; color:var(--text-secondary);">Windows users need to connect to a remote LMX host. The manager UI should detect Windows and surface a host/port config panel instead of an "Install LMX" button. This is a UI change in <code>desktop-manager/src/App.tsx</code>.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <div class="footer">
+    OPTA INIT · WINDOWS FUNCTIONALITY ROADMAP · GENERATED 2026-03-06
+    <br>
+    <span style="color: rgba(255,255,255,0.15);">manager v0.7.2 · tauri v2 · x86_64</span>
+  </div>
+
+</div>
+</body>
+</html>

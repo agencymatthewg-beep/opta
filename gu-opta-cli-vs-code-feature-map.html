@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Feature Map — CLI vs Code Desktop</title>
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --border-subtle: rgba(255,255,255,0.07);
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #22d3ee;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-pink: #f472b6;
+    --neon-violet: #a78bfa;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background particles */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(139,92,246,0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(34,211,238,0.06) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 50% 50%, rgba(244,114,182,0.04) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* ─── HEADER ─── */
+  .header {
+    text-align: center;
+    margin-bottom: 60px;
+  }
+
+  .header-eyebrow {
+    font-family: 'JetBrains Mono', 'Courier New', monospace;
+    font-size: 11px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .header-eyebrow::before,
+  .header-eyebrow::after {
+    content: '';
+    height: 1px;
+    width: 60px;
+    background: linear-gradient(90deg, transparent, var(--primary));
+  }
+  .header-eyebrow::after {
+    background: linear-gradient(90deg, var(--primary), transparent);
+  }
+
+  h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 800;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .header-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 560px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ─── SECTION DIVIDER ─── */
+  .section-divider {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 48px 0 32px;
+  }
+
+  .section-divider-line {
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.3), transparent);
+  }
+
+  .section-divider-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    white-space: nowrap;
+    padding: 4px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+
+  /* ─── GLASS PANEL ─── */
+  .glass {
+    background: rgba(24,24,27,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass-strong {
+    background: rgba(39,39,42,0.85);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+  }
+
+  /* ─── TWO-COLUMN COMPARISON ─── */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 24px;
+  }
+
+  @media (max-width: 900px) {
+    .comparison-grid { grid-template-columns: 1fr; }
+  }
+
+  .app-panel {
+    padding: 0;
+  }
+
+  .app-panel-header {
+    padding: 24px 28px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .app-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+
+  .app-icon--cli {
+    background: rgba(34,211,238,0.12);
+    border: 1px solid rgba(34,211,238,0.25);
+    color: var(--neon-blue);
+  }
+
+  .app-icon--code {
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    color: var(--primary);
+  }
+
+  .app-panel-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .app-panel-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .app-panel-body {
+    padding: 20px 28px 28px;
+  }
+
+  /* ─── FEATURE GROUPS ─── */
+  .feature-group {
+    margin-bottom: 24px;
+  }
+
+  .feature-group-title {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .feature-group-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .feature-pill-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .feature-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid;
+    transition: all 0.15s ease;
+    cursor: default;
+  }
+
+  .feature-pill:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+
+  .pill-cyan {
+    background: rgba(34,211,238,0.08);
+    border-color: rgba(34,211,238,0.2);
+    color: var(--neon-blue);
+  }
+  .pill-violet {
+    background: rgba(167,139,250,0.08);
+    border-color: rgba(167,139,250,0.2);
+    color: var(--neon-violet);
+  }
+  .pill-green {
+    background: rgba(34,197,94,0.08);
+    border-color: rgba(34,197,94,0.2);
+    color: var(--neon-green);
+  }
+  .pill-amber {
+    background: rgba(245,158,11,0.08);
+    border-color: rgba(245,158,11,0.2);
+    color: var(--neon-amber);
+  }
+  .pill-pink {
+    background: rgba(244,114,182,0.08);
+    border-color: rgba(244,114,182,0.2);
+    color: var(--neon-pink);
+  }
+  .pill-muted {
+    background: rgba(82,82,91,0.2);
+    border-color: rgba(82,82,91,0.3);
+    color: var(--text-secondary);
+  }
+
+  /* ─── COMMAND TABLE ─── */
+  .command-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 6px;
+  }
+
+  .cmd-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: rgba(24,24,27,0.8);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-blue);
+    transition: all 0.1s;
+  }
+
+  .cmd-chip:hover {
+    border-color: rgba(34,211,238,0.25);
+    background: rgba(34,211,238,0.06);
+  }
+
+  .cmd-chip .cmd-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+    opacity: 0.6;
+  }
+
+  /* ─── SETTINGS GRID ─── */
+  .settings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .settings-card {
+    padding: 12px 14px;
+    background: rgba(24,24,27,0.6);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    transition: all 0.15s;
+  }
+
+  .settings-card:hover {
+    border-color: rgba(139,92,246,0.3);
+    background: rgba(139,92,246,0.06);
+  }
+
+  .settings-card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 3px;
+  }
+
+  .settings-card-desc {
+    font-size: 10px;
+    color: var(--text-muted);
+    line-height: 1.4;
+  }
+
+  /* ─── STUDIOS GRID ─── */
+  .studios-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .studio-card {
+    padding: 20px;
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .studio-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .studio-card--browser::before { background: var(--neon-blue); }
+  .studio-card--models::before { background: var(--neon-violet); }
+  .studio-card--atpo::before { background: var(--neon-pink); }
+
+  .studio-kbd {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+
+  .studio-kbd--browser { background: rgba(34,211,238,0.15); color: var(--neon-blue); border: 1px solid rgba(34,211,238,0.3); }
+  .studio-kbd--models { background: rgba(167,139,250,0.15); color: var(--neon-violet); border: 1px solid rgba(167,139,250,0.3); }
+  .studio-kbd--atpo { background: rgba(244,114,182,0.15); color: var(--neon-pink); border: 1px solid rgba(244,114,182,0.3); }
+
+  .studio-name {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+
+  .studio-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+
+  .studio-features {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .studio-feature {
+    font-size: 11px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+
+  .studio-feature::before {
+    content: '·';
+    flex-shrink: 0;
+    opacity: 0.4;
+  }
+
+  /* ─── PARITY TABLE ─── */
+  .parity-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+  }
+
+  .parity-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    border-bottom: 1px solid var(--border);
+    font-weight: 600;
+  }
+
+  .parity-table td {
+    padding: 10px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: middle;
+  }
+
+  .parity-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .parity-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .parity-feature-name {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .parity-feature-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .parity-check {
+    text-align: center;
+    font-size: 14px;
+  }
+
+  .check-full { color: var(--neon-green); }
+  .check-partial { color: var(--neon-amber); }
+  .check-none { color: var(--text-muted); opacity: 0.4; }
+  .check-exclusive { color: var(--primary); }
+
+  .legend-row {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  /* ─── SLASH COMMANDS ─── */
+  .slash-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 6px;
+  }
+
+  .slash-chip {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    background: rgba(139,92,246,0.06);
+    border: 1px solid rgba(139,92,246,0.15);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10.5px;
+    color: var(--neon-violet);
+    transition: all 0.1s;
+  }
+
+  .slash-chip:hover {
+    border-color: rgba(139,92,246,0.35);
+    background: rgba(139,92,246,0.12);
+  }
+
+  .slash-prefix {
+    opacity: 0.5;
+  }
+
+  /* ─── ARCHITECTURE CALLOUT ─── */
+  .arch-callout {
+    padding: 24px 28px;
+    border-left: 3px solid var(--primary);
+    background: rgba(139,92,246,0.05);
+    border-radius: 0 12px 12px 0;
+    margin-bottom: 24px;
+  }
+
+  .arch-callout-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .arch-callout-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .arch-callout-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    background: rgba(255,255,255,0.07);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--neon-blue);
+  }
+
+  /* ─── PROVIDER CHIPS ─── */
+  .provider-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .provider-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid;
+  }
+
+  .provider-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* ─── STAT STRIP ─── */
+  .stat-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 40px;
+  }
+
+  .stat-cell {
+    background: var(--surface);
+    padding: 20px 24px;
+    text-align: center;
+  }
+
+  .stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, var(--text-primary), var(--primary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ─── ARCH DIAGRAM ─── */
+  .arch-diagram {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-secondary);
+    padding: 24px 28px;
+    background: rgba(0,0,0,0.3);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .arch-diagram .layer-cli { color: var(--neon-blue); font-weight: 600; }
+  .arch-diagram .layer-daemon { color: var(--neon-green); font-weight: 600; }
+  .arch-diagram .layer-lmx { color: var(--neon-violet); font-weight: 600; }
+  .arch-diagram .layer-code { color: var(--neon-pink); font-weight: 600; }
+  .arch-diagram .layer-dim { color: var(--text-muted); }
+  .arch-diagram .layer-arrow { color: var(--primary); }
+
+  /* ─── TOOL LIST ─── */
+  .tool-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 6px;
+  }
+
+  .tool-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 11px;
+    background: rgba(24,24,27,0.6);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+  .tool-item-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* ─── SECTION TITLE ─── */
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .section-title-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .section-subtitle {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 24px;
+  }
+
+  /* ─── FOOTER ─── */
+  .footer {
+    margin-top: 80px;
+    text-align: center;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .footer-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .footer-opta {
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .studios-row { grid-template-columns: 1fr; }
+    .stat-strip { grid-template-columns: 1fr 1fr; }
+    .comparison-grid { grid-template-columns: 1fr; }
+  }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+</head>
+<body>
+<div class="container">
+
+  <!-- ─── HEADER ─── -->
+  <div class="header">
+    <div class="header-eyebrow">Opta Local Stack · Feature Intelligence</div>
+    <h1>CLI vs Code Desktop<br>Feature Map</h1>
+    <p class="header-sub">A comprehensive capability comparison across Opta CLI (1D) and Opta Code Desktop (1P) — understanding what each surface owns, shares, and delegates.</p>
+  </div>
+
+  <!-- ─── STAT STRIP ─── -->
+  <div class="stat-strip">
+    <div class="stat-cell">
+      <span class="stat-value">45+</span>
+      <span class="stat-label">CLI Commands</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-value">17</span>
+      <span class="stat-label">Settings Tabs</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-value">3</span>
+      <span class="stat-label">Live Studios</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-value">2,400+</span>
+      <span class="stat-label">CLI Tests</span>
+    </div>
+  </div>
+
+  <!-- ─── ARCHITECTURE CALLOUT ─── -->
+  <div class="arch-callout">
+    <div class="arch-callout-title">Architectural Principle</div>
+    <div class="arch-callout-body">
+      The CLI daemon owns <strong style="color:var(--text-primary)">all intelligence</strong> — session orchestration, agent loops, tool execution, browser automation, permission gating, and LMX routing. Code Desktop is an intentionally thin UI layer that connects to the daemon over <code>HTTP REST + WebSocket</code> and delegates every AI operation back through it. This means Desktop features are only as capable as the daemon version they're connected to.
+    </div>
+  </div>
+
+  <!-- ─── ARCHITECTURE DIAGRAM ─── -->
+  <div class="glass" style="padding: 28px; margin-bottom: 40px;">
+    <div class="section-title">Stack Architecture</div>
+    <div class="section-subtitle">How the four layers relate — data flows top-down, control flows bidirectionally</div>
+    <div class="arch-diagram">
+      <span class="layer-cli">opta chat / opta tui / opta do</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="layer-dim">(1D — CLI commands)</span><br>
+      <span class="layer-arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+      <span class="layer-daemon">opta daemon  127.0.0.1:9999</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="layer-dim">(1D — HTTP v3 REST + WS streaming)</span><br>
+      <span class="layer-arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+      <span class="layer-lmx">Opta LMX  192.168.188.11:1234</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="layer-dim">(1M — OpenAI-compatible API, Mono512)</span><br>
+      <span class="layer-arrow">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;│</span><br>
+      <span class="layer-code">Opta Code Desktop</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="layer-dim">(1P — connects to daemon over HTTP/WS)</span>
+    </div>
+  </div>
+
+  <!-- ─── CLI FEATURE PANEL ─── -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Opta CLI · 1D-Opta-CLI-TS</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="app-panel-header">
+      <div class="app-icon app-icon--cli">CLI</div>
+      <div>
+        <div class="app-panel-title">Opta CLI</div>
+        <div class="app-panel-subtitle">TypeScript · Commander · Ink/React TUI · Vitest · ESM-only</div>
+      </div>
+    </div>
+    <div class="app-panel-body">
+
+      <div class="feature-group">
+        <div class="feature-group-title">Core Commands (opta &lt;command&gt;)</div>
+        <div class="command-grid">
+          <div class="cmd-chip"><span class="cmd-dot"></span>chat</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>tui</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>do</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>embed</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>rerank</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>benchmark</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>ceo-bench</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>status</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>browser</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>host</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>models</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>env</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>config</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>account</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>sessions</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>mcp</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>onboard</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>memory</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>diff</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>serve</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>update</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>doctor</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>settings</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>version</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>completions</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>keychain</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>vault</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>apps</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>daemon</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>health</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>server</div>
+          <div class="cmd-chip"><span class="cmd-dot"></span>init</div>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">In-REPL Slash Commands (/command)</div>
+        <div class="slash-grid">
+          <div class="slash-chip"><span class="slash-prefix">/</span>account</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>browser</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>context</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>debug</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>display</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>genui</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>graph</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>index</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>lmx</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>manage</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>model</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>report</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>research</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>review</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>session</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>types</div>
+          <div class="slash-chip"><span class="slash-prefix">/</span>workflow</div>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">AI Providers & Routing</div>
+        <div class="provider-row">
+          <div class="provider-chip" style="background:rgba(34,211,238,0.08);border-color:rgba(34,211,238,0.25);color:var(--neon-blue)">
+            <div class="provider-dot" style="background:var(--neon-blue)"></div>Opta LMX (primary)
+          </div>
+          <div class="provider-chip" style="background:rgba(245,158,11,0.08);border-color:rgba(245,158,11,0.25);color:var(--neon-amber)">
+            <div class="provider-dot" style="background:var(--neon-amber)"></div>Anthropic (fallback)
+          </div>
+          <div class="provider-chip" style="background:rgba(34,197,94,0.08);border-color:rgba(34,197,94,0.25);color:var(--neon-green)">
+            <div class="provider-dot" style="background:var(--neon-green)"></div>Gemini
+          </div>
+          <div class="provider-chip" style="background:rgba(167,139,250,0.08);border-color:rgba(167,139,250,0.25);color:var(--neon-violet)">
+            <div class="provider-dot" style="background:var(--neon-violet)"></div>Groq
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">Capabilities by Domain</div>
+        <div class="feature-pill-grid">
+          <!-- Agent -->
+          <span class="feature-pill pill-cyan">Agent loop (streaming)</span>
+          <span class="feature-pill pill-cyan">Context compaction 70%</span>
+          <span class="feature-pill pill-cyan">Circuit breaker 30-tool</span>
+          <span class="feature-pill pill-cyan">Multi-turn sessions</span>
+          <!-- Browser -->
+          <span class="feature-pill pill-violet">Playwright browser (30+ tools)</span>
+          <span class="feature-pill pill-violet">Browser policy engine</span>
+          <span class="feature-pill pill-violet">Visual diff pipeline</span>
+          <span class="feature-pill pill-violet">Session replay</span>
+          <span class="feature-pill pill-violet">Browser sub-agent</span>
+          <!-- Memory -->
+          <span class="feature-pill pill-green">Session memory CRUD</span>
+          <span class="feature-pill pill-green">Learning ledger</span>
+          <span class="feature-pill pill-green">Journal semantic events</span>
+          <span class="feature-pill pill-green">OPIS context loading</span>
+          <!-- Research -->
+          <span class="feature-pill pill-amber">Multi-provider web search</span>
+          <span class="feature-pill pill-amber">Brave · Exa · Tavily</span>
+          <span class="feature-pill pill-amber">Embedding + reranking</span>
+          <!-- System -->
+          <span class="feature-pill pill-muted">Git auto-commit</span>
+          <span class="feature-pill pill-muted">Git checkpoints (stash)</span>
+          <span class="feature-pill pill-muted">MCP server management</span>
+          <span class="feature-pill pill-muted">LSP client</span>
+          <span class="feature-pill pill-muted">Vault (cloud key sync)</span>
+          <span class="feature-pill pill-muted">Supabase auth</span>
+          <span class="feature-pill pill-muted">Audio TTS + transcription</span>
+          <span class="feature-pill pill-muted">HuggingFace model catalog</span>
+          <span class="feature-pill pill-muted">Shell completions</span>
+          <span class="feature-pill pill-muted">Background tasks</span>
+          <span class="feature-pill pill-muted">CEO benchmark mode</span>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">8 Agent Tools (permission-gated)</div>
+        <div class="tool-list">
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-green)"></div>read_file <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(allow)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-green)"></div>list_dir <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(allow)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-green)"></div>search_files <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(allow)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-green)"></div>find_files <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(allow)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-amber)"></div>write_file <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(ask)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-amber)"></div>edit_file <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(ask)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-amber)"></div>run_command <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(ask)</span></div>
+          <div class="tool-item"><div class="tool-item-dot" style="background:var(--neon-blue)"></div>ask_user <span style="font-size:10px;color:var(--text-muted);margin-left:4px">(allow)</span></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── CODE DESKTOP FEATURE PANEL ─── -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Opta Code Desktop · 1P-Opta-Code-Universal</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="glass" style="margin-bottom: 24px;">
+    <div class="app-panel-header">
+      <div class="app-icon app-icon--code">CODE</div>
+      <div>
+        <div class="app-panel-title">Opta Code Desktop</div>
+        <div class="app-panel-subtitle">Tauri v2 + React 18 + Vite 7 · TypeScript · macOS + Windows</div>
+      </div>
+    </div>
+    <div class="app-panel-body">
+
+      <div class="feature-group">
+        <div class="feature-group-title">Three Live Studios (keyboard-activated)</div>
+        <div class="studios-row">
+          <div class="studio-card glass-strong studio-card--browser">
+            <div class="studio-kbd studio-kbd--browser">Ctrl+B</div>
+            <div class="studio-name" style="color:var(--neon-blue)">Browser Studio</div>
+            <div class="studio-desc">Localhost registry + live browser host monitoring</div>
+            <div class="studio-features">
+              <div class="studio-feature">8 Opta services tracked (ports 1234–5173)</div>
+              <div class="studio-feature">Real-time port health ping (1.2s timeout)</div>
+              <div class="studio-feature">Live host slots (Playwright sessions)</div>
+              <div class="studio-feature">External browser launch links</div>
+              <div class="studio-feature">Refresh host control</div>
+            </div>
+          </div>
+          <div class="studio-card glass-strong studio-card--models">
+            <div class="studio-kbd studio-kbd--models">Ctrl+M</div>
+            <div class="studio-name" style="color:var(--neon-violet)">Models Studio</div>
+            <div class="studio-desc">LMX inference management + VRAM monitoring</div>
+            <div class="studio-features">
+              <div class="studio-feature">Loaded models tab (unload controls)</div>
+              <div class="studio-feature">Available models tab (load / delete)</div>
+              <div class="studio-feature">Unified memory bar (colour-coded)</div>
+              <div class="studio-feature">LMX online/offline status + host</div>
+              <div class="studio-feature">Model metadata (size, ctx, req count)</div>
+            </div>
+          </div>
+          <div class="studio-card glass-strong studio-card--atpo">
+            <div class="studio-kbd studio-kbd--atpo">Ctrl+A</div>
+            <div class="studio-name" style="color:var(--neon-pink)">Atpo Studio</div>
+            <div class="studio-desc">App lifecycle + MCP server management</div>
+            <div class="studio-features">
+              <div class="studio-feature">Opta Apps tab (versioned, path-aware)</div>
+              <div class="studio-feature">MCP Servers tab (transport, command)</div>
+              <div class="studio-feature">Per-server remove control</div>
+              <div class="studio-feature">Live refresh via daemon ops</div>
+              <div class="studio-feature">App colour coding by ID</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">Settings Studio (17 Categories · Ctrl+,)</div>
+        <div class="settings-grid">
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#10b981">Connection & Network</div>
+            <div class="settings-card-desc">Daemon host, sockets, connectivity flow</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#a78bfa">LMX & Models</div>
+            <div class="settings-card-desc">Inference routing, local models, providers</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#22c55e">Daemon Runtime</div>
+            <div class="settings-card-desc">Worker pool, lifecycle, persistence</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#f59e0b">Autonomy Policies</div>
+            <div class="settings-card-desc">Agentic level, auto-approve scope</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#ef4444">Permissions & Safety</div>
+            <div class="settings-card-desc">Per-tool gates, CI mode, circuit breaker</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#22d3ee">Browser & Research</div>
+            <div class="settings-card-desc">Playwright config, search providers</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#60a5fa">Tools, Agents & Learning</div>
+            <div class="settings-card-desc">Sub-agents, ledger, MCP bootstrap</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#f472b6">MCP Integrations</div>
+            <div class="settings-card-desc">Registered MCP servers and transports</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#34d399">Environment Profiles</div>
+            <div class="settings-card-desc">Named env profiles, variable sets</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#fb923c">Config Studio</div>
+            <div class="settings-card-desc">Raw config editor, import/export</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#e879f9">Accounts & Vault</div>
+            <div class="settings-card-desc">Supabase auth, key sync, vault status</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#94a3b8">Tiles & Workspace</div>
+            <div class="settings-card-desc">Panel layout, rail config, theme</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#a78bfa">Apps Catalog</div>
+            <div class="settings-card-desc">Installed Opta apps registry</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#22d3ee">Session Memory</div>
+            <div class="settings-card-desc">Session history, export, analytics</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#f59e0b">Background Jobs</div>
+            <div class="settings-card-desc">Active tasks, queue status</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#71717a">Daemon Logs</div>
+            <div class="settings-card-desc">Live daemon log stream viewer</div>
+          </div>
+          <div class="settings-card">
+            <div class="settings-card-title" style="color:#ef4444">CLI System & Advanced</div>
+            <div class="settings-card-desc">Raw CLI config, advanced overrides</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">UI Components</div>
+        <div class="feature-pill-grid">
+          <span class="feature-pill pill-violet">CommandPalette</span>
+          <span class="feature-pill pill-violet">Composer (Chat + Do)</span>
+          <span class="feature-pill pill-violet">DaemonPanel</span>
+          <span class="feature-pill pill-violet">LiveBrowserView</span>
+          <span class="feature-pill pill-violet">MarkdownMessage</span>
+          <span class="feature-pill pill-violet">OperationRunner</span>
+          <span class="feature-pill pill-violet">ProjectPane</span>
+          <span class="feature-pill pill-violet">TimelineCards</span>
+          <span class="feature-pill pill-violet">WidgetPane</span>
+          <span class="feature-pill pill-violet">WorkspaceRail</span>
+          <span class="feature-pill pill-violet">WidgetAtpo</span>
+          <span class="feature-pill pill-violet">WidgetCliStream</span>
+          <span class="feature-pill pill-violet">WidgetGitDiff</span>
+          <span class="feature-pill pill-violet">SetupWizard</span>
+          <span class="feature-pill pill-violet">3-Layer Settings Nav</span>
+          <span class="feature-pill pill-violet">OverlayStack</span>
+        </div>
+      </div>
+
+      <div class="feature-group">
+        <div class="feature-group-title">Desktop-Exclusive Capabilities</div>
+        <div class="feature-pill-grid">
+          <span class="feature-pill pill-pink">Native Tauri shell (macOS + Windows)</span>
+          <span class="feature-pill pill-pink">System tray integration</span>
+          <span class="feature-pill pill-pink">OS-native file dialogs</span>
+          <span class="feature-pill pill-pink">Full-screen studio transitions</span>
+          <span class="feature-pill pill-pink">Keyboard chord navigation</span>
+          <span class="feature-pill pill-pink">OPTA text logo system</span>
+          <span class="feature-pill pill-pink">Framer Motion spring physics</span>
+          <span class="feature-pill pill-pink">Glass-depth panel hierarchy</span>
+          <span class="feature-pill pill-pink">Port health dashboard</span>
+          <span class="feature-pill pill-pink">VRAM memory bar</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ─── PARITY TABLE ─── -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Feature Parity Matrix</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="glass" style="margin-bottom: 24px; overflow: hidden;">
+    <table class="parity-table">
+      <thead>
+        <tr>
+          <th style="width:35%">Feature Area</th>
+          <th style="text-align:center;width:15%">CLI (1D)</th>
+          <th style="text-align:center;width:15%">Code Desktop (1P)</th>
+          <th style="width:35%">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>
+            <div class="parity-feature-name">LLM Chat (streaming)</div>
+            <div class="parity-feature-desc">Token-streaming multi-turn conversation</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI owns the agent loop; Desktop streams via WS</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Agentic "Do" Mode</div>
+            <div class="parity-feature-desc">Auto-approve tool execution pipeline</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">Desktop Composer has Chat/Do pill toggle</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Browser Automation</div>
+            <div class="parity-feature-desc">Playwright 30+ tools, policy engine, visual diff</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-partial">◐</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI owns all Playwright logic; Desktop shows live host status only</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Model Management</div>
+            <div class="parity-feature-desc">Load, unload, delete LMX models</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI via <code style="font-family:JetBrains Mono,monospace;font-size:10px">opta models</code>; Desktop via Models Studio (Ctrl+M)</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">MCP Server Management</div>
+            <div class="parity-feature-desc">Add, remove, list MCP servers</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI owns mutation; Desktop shows via Atpo Studio</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Session Memory</div>
+            <div class="parity-feature-desc">Browse, search, export past sessions</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI via <code style="font-family:JetBrains Mono,monospace;font-size:10px">opta sessions</code>; Desktop WorkspaceRail has search</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Multi-Provider Web Search</div>
+            <div class="parity-feature-desc">Brave, Exa, Tavily, Gemini, Groq</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-partial">◐</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI-exclusive feature; Desktop inherits via agent delegation</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Embedding + Reranking</div>
+            <div class="parity-feature-desc">Vector embedding, semantic reranking</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI-only. Not exposed in Desktop UI</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Git Checkpoints & Auto-commit</div>
+            <div class="parity-feature-desc">Stash-based checkpoints, semantic git commits</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-partial">◐</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI owns git operations; Desktop has GitDiff widget display</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Audio TTS + Transcription</div>
+            <div class="parity-feature-desc">Voice synthesis and audio-to-text</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI daemon operation only</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Learning Ledger</div>
+            <div class="parity-feature-desc">Adaptive session summarisation, retrieval</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI-exclusive; no Desktop UI surface</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">CEO Benchmark Mode</div>
+            <div class="parity-feature-desc">Structured model evaluation suite</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td style="font-size:11px;color:var(--text-muted)"><code style="font-family:JetBrains Mono,monospace;font-size:10px">opta ceo-bench</code> — no Desktop equivalent</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">OPIS Context Loading</div>
+            <div class="parity-feature-desc">APP.md, AGENTS.md, TASKS.md project intelligence</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-partial">◐</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI parses OPIS; Desktop shows via ProjectPane</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Vault (Cloud Key Sync)</div>
+            <div class="parity-feature-desc">Supabase-backed key + rules synchronisation</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI pull/push ops; Desktop Accounts & Vault settings tab</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">LSP Integration</div>
+            <div class="parity-feature-desc">Language server protocol client</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI <code style="font-family:JetBrains Mono,monospace;font-size:10px">src/lsp/</code> module; no Desktop surface</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Daemon Install / Service</div>
+            <div class="parity-feature-desc">launchd / systemd / Windows service registration</div>
+          </td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td class="parity-check"><span class="check-partial">◐</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI owns install; Desktop reads daemon status</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Permission Policy Config</div>
+            <div class="parity-feature-desc">Per-tool allow/ask/deny + autonomy level</div>
+          </td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td class="parity-check"><span class="check-full">●</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">CLI config chain; Desktop Permissions & Autonomy tabs</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Full-screen Overlay UI</div>
+            <div class="parity-feature-desc">Fullscreen studios with spring animations</div>
+          </td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">Desktop-exclusive — Browser/Models/Atpo/Settings studios</td>
+        </tr>
+        <tr>
+          <td>
+            <div class="parity-feature-name">Real-time Port Dashboard</div>
+            <div class="parity-feature-desc">All 8 Opta services health at a glance</div>
+          </td>
+          <td class="parity-check"><span class="check-none">○</span></td>
+          <td class="parity-check"><span class="check-exclusive">★</span></td>
+          <td style="font-size:11px;color:var(--text-muted)">Browser Studio (Ctrl+B) — Desktop-exclusive</td>
+        </tr>
+      </tbody>
+    </table>
+    <div style="padding: 16px 20px;">
+      <div class="legend-row">
+        <div class="legend-item"><span style="color:var(--neon-green);font-size:16px">●</span> Full support in both</div>
+        <div class="legend-item"><span style="color:var(--primary);font-size:16px">★</span> Exclusive to this surface</div>
+        <div class="legend-item"><span style="color:var(--neon-amber);font-size:16px">◐</span> Partial / view-only</div>
+        <div class="legend-item"><span style="color:var(--text-muted);font-size:16px">○</span> Not available</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── LOCALHOST REGISTRY ─── -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Browser Studio · Localhost Registry</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div class="glass" style="padding: 28px; margin-bottom: 40px;">
+    <div class="section-title">Tracked Opta Services</div>
+    <div class="section-subtitle">All ports surfaced in Browser Studio — ping timeout 1.2s</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;">
+      <div style="padding:14px 18px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--neon-blue)">5173</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Code Desktop</div><div style="font-size:10px;color:var(--text-muted)">tag: Desktop</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--neon-blue)">9999</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Daemon</div><div style="font-size:10px;color:var(--text-muted)">tag: Daemon</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(167,139,250,0.06);border:1px solid rgba(167,139,250,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--neon-violet)">1234</span>
+        <div><div style="font-size:12px;font-weight:600">Opta LMX</div><div style="font-size:10px;color:var(--text-muted)">tag: LMX (Mono512)</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(82,82,91,0.12);border:1px solid rgba(82,82,91,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--text-secondary)">3000</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Home</div><div style="font-size:10px;color:var(--text-muted)">tag: Web</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(82,82,91,0.12);border:1px solid rgba(82,82,91,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--text-secondary)">3001</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Init</div><div style="font-size:10px;color:var(--text-muted)">tag: Web</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(82,82,91,0.12);border:1px solid rgba(82,82,91,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--text-secondary)">3003</span>
+        <div><div style="font-size:12px;font-weight:600">Opta LMX Dashboard</div><div style="font-size:10px;color:var(--text-muted)">tag: Web</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(82,82,91,0.12);border:1px solid rgba(82,82,91,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--text-secondary)">3006</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Help</div><div style="font-size:10px;color:var(--text-muted)">tag: Web</div></div>
+      </div>
+      <div style="padding:14px 18px;background:rgba(82,82,91,0.12);border:1px solid rgba(82,82,91,0.2);border-radius:10px;display:flex;align-items:center;gap:12px">
+        <span style="font-family:JetBrains Mono,monospace;font-size:18px;font-weight:700;color:var(--text-secondary)">3007</span>
+        <div><div style="font-size:12px;font-weight:600">Opta Learn</div><div style="font-size:10px;color:var(--text-muted)">tag: Web</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── KEY INSIGHTS ─── -->
+  <div class="section-divider">
+    <div class="section-divider-line"></div>
+    <div class="section-divider-label">Key Insights</div>
+    <div class="section-divider-line"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:40px;">
+    <div class="arch-callout">
+      <div class="arch-callout-title" style="color:var(--neon-blue)">CLI is the Intelligence Layer</div>
+      <div class="arch-callout-body">
+        All agentic capabilities — browser automation, web search, embeddings, git operations, LSP, learning — live exclusively in the CLI daemon. Code Desktop is a presentation surface. To unlock any capability in Desktop, it must first exist in the daemon operation registry.
+      </div>
+    </div>
+    <div class="arch-callout" style="border-left-color:var(--neon-pink)">
+      <div class="arch-callout-title" style="color:var(--neon-pink)">Desktop is the Experience Layer</div>
+      <div class="arch-callout-body">
+        Desktop owns the visual OS: spring-animated studios, glass panel hierarchy, the OPTA text logo system, fullscreen transitions, keyboard chord navigation, and real-time dashboards. None of these exist in CLI — they're native Tauri + Framer Motion capabilities.
+      </div>
+    </div>
+    <div class="arch-callout" style="border-left-color:var(--neon-green)">
+      <div class="arch-callout-title" style="color:var(--neon-green)">Shared via Daemon Protocol</div>
+      <div class="arch-callout-body">
+        Features that appear in both surfaces (model management, MCP, sessions, vault, permissions) go through the daemon's <code>v3 HTTP REST + WebSocket</code> protocol. Desktop calls <code>daemonClient.runOperation()</code> for mutations and subscribes to WS for streaming events.
+      </div>
+    </div>
+    <div class="arch-callout" style="border-left-color:var(--neon-amber)">
+      <div class="arch-callout-title" style="color:var(--neon-amber)">Mono512 as the Inference Node</div>
+      <div class="arch-callout-body">
+        Both CLI and Desktop route inference to Opta LMX at <code>192.168.188.11:1234</code> (Mono512 Mac Studio, 512GB RAM). MacBook (Opta48) is client-only — never run models locally. The Desktop Models Studio VRAM bar reflects Mono512 unified memory, not the MacBook.
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── FOOTER ─── -->
+  <div class="footer">
+    <div class="footer-text">
+      Generated for <span class="footer-opta">Opta Local Stack</span> · 1D-Opta-CLI-TS + 1P-Opta-Code-Universal · 2026-03-06
+    </div>
+    <div style="margin-top:8px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)">
+      CLI: TypeScript · Commander · Ink/React · Vitest · ESM-only &nbsp;|&nbsp; Desktop: Tauri v2 · React 18 · Vite 7 · Framer Motion
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

@@ -38,6 +38,19 @@ export type SettingsTabId =
   | "daemon-logs"
   | "cli-system-advanced";
 
+export type SettingsCategoryGroup =
+  | "infrastructure"
+  | "control"
+  | "security"
+  | "workspace";
+
+export const SETTINGS_GROUP_LABELS: Record<SettingsCategoryGroup, string> = {
+  infrastructure: "Infrastructure",
+  control: "Control & Ops",
+  security: "Security & Identity",
+  workspace: "Workspace",
+};
+
 export interface SettingsCategory {
   id: SettingsTabId;
   title: string;
@@ -45,6 +58,7 @@ export interface SettingsCategory {
   icon: LucideIcon;
   supportsDeepLayer: boolean;
   accentColor: string;
+  group: SettingsCategoryGroup;
 }
 
 export interface SettingsStudioKeyboardAdapter {
@@ -70,6 +84,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Network,
     supportsDeepLayer: true,
     accentColor: "#10b981",
+    group: "infrastructure",
   },
   {
     id: "lmx-models",
@@ -78,6 +93,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Cpu,
     supportsDeepLayer: true,
     accentColor: "#a78bfa",
+    group: "infrastructure",
   },
   {
     id: "daemon-runtime",
@@ -86,6 +102,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Terminal,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
+    group: "infrastructure",
   },
   {
     id: "autonomy-policies",
@@ -94,6 +111,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Activity,
     supportsDeepLayer: true,
     accentColor: "#c084fc",
+    group: "control",
   },
   {
     id: "permissions-safety",
@@ -102,6 +120,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Shield,
     supportsDeepLayer: true,
     accentColor: "#f59e0b",
+    group: "security",
   },
   {
     id: "browser-research",
@@ -110,6 +129,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Globe,
     supportsDeepLayer: true,
     accentColor: "#22d3ee",
+    group: "control",
   },
   {
     id: "tools-agents-learning",
@@ -118,6 +138,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Brain,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
+    group: "control",
   },
   {
     id: "mcp-integrations",
@@ -126,6 +147,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Cable,
     supportsDeepLayer: true,
     accentColor: "#22d3ee",
+    group: "control",
   },
   {
     id: "environment-profiles",
@@ -134,6 +156,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Layers,
     supportsDeepLayer: true,
     accentColor: "#8b5cf6",
+    group: "workspace",
   },
   {
     id: "config-studio",
@@ -142,6 +165,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: SlidersHorizontal,
     supportsDeepLayer: true,
     accentColor: "#60a5fa",
+    group: "workspace",
   },
   {
     id: "accounts-vault",
@@ -150,6 +174,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: KeyRound,
     supportsDeepLayer: true,
     accentColor: "#f472b6",
+    group: "security",
   },
   {
     id: "tiles-workspace-layout",
@@ -158,6 +183,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Grid3X3,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
+    group: "workspace",
   },
   {
     id: "apps-catalog",
@@ -166,6 +192,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: AppWindow,
     supportsDeepLayer: true,
     accentColor: "#a78bfa",
+    group: "workspace",
   },
   {
     id: "session-memory",
@@ -174,6 +201,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: HardDrive,
     supportsDeepLayer: true,
     accentColor: "#c084fc",
+    group: "workspace",
   },
   {
     id: "background-jobs",
@@ -182,6 +210,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Timer,
     supportsDeepLayer: true,
     accentColor: "#60a5fa",
+    group: "control",
   },
   {
     id: "daemon-logs",
@@ -190,6 +219,7 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: Logs,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
+    group: "infrastructure",
   },
   {
     id: "cli-system-advanced",
@@ -198,12 +228,23 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
     icon: SquareTerminal,
     supportsDeepLayer: true,
     accentColor: "#94a3b8",
+    group: "control",
   },
 ];
 
 export const SETTINGS_TAB_SEQUENCE: SettingsTabId[] = SETTINGS_CATEGORIES.map(
   (category) => category.id,
 );
+
+export const SETTINGS_CATEGORIES_BY_GROUP: Record<
+  SettingsCategoryGroup,
+  SettingsCategory[]
+> = {
+  infrastructure: SETTINGS_CATEGORIES.filter((c) => c.group === "infrastructure"),
+  control: SETTINGS_CATEGORIES.filter((c) => c.group === "control"),
+  security: SETTINGS_CATEGORIES.filter((c) => c.group === "security"),
+  workspace: SETTINGS_CATEGORIES.filter((c) => c.group === "workspace"),
+};
 
 const LEGACY_SETTINGS_TAB_MAP: Record<string, SettingsTabId> = {
   connection: "connection-network",

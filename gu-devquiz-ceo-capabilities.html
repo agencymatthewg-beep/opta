@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>DevQuiz: Opta CEO Capabilities — Investigation Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --void: #09090b; --surface: #18181b; --elevated: #27272a; --border: #3f3f46;
+    --text-primary: #fafafa; --text-secondary: #a1a1aa; --text-muted: #52525b;
+    --primary: #8b5cf6; --primary-glow: #a855f7;
+    --neon-blue: #3b82f6; --neon-cyan: #22d3ee; --neon-green: #22c55e;
+    --neon-amber: #f59e0b; --neon-red: #ef4444; --neon-pink: #f472b6;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--void); color: var(--text-primary); font-family: 'Sora', system-ui, sans-serif; font-size: 15px; line-height: 1.65; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); opacity: 0.025; pointer-events: none; z-index: 999; }
+
+  .orb { position: fixed; border-radius: 50%; filter: blur(130px); pointer-events: none; z-index: 0; }
+  .orb-1 { width: 700px; height: 700px; background: rgba(139,92,246,0.06); top: -250px; right: -150px; }
+  .orb-2 { width: 400px; height: 400px; background: rgba(34,211,238,0.04); bottom: 0; left: -100px; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 2rem 6rem; position: relative; z-index: 1; }
+
+  /* HERO */
+  .hero { padding: 4.5rem 0 2.5rem; }
+  .hero-chip { display: inline-flex; align-items: center; gap: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--primary); background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.3); padding: 0.3rem 0.8rem; border-radius: 100px; margin-bottom: 1.25rem; }
+  .hero-chip::before { content: ''; width: 6px; height: 6px; background: var(--primary); border-radius: 50%; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1; box-shadow: 0 0 0 0 rgba(139,92,246,0.4); } 50% { opacity:.7; box-shadow: 0 0 0 6px rgba(139,92,246,0); } }
+  h1 { font-size: clamp(2rem, 4.5vw, 3.2rem); font-weight: 700; letter-spacing: -0.03em; line-height: 1.1; background: linear-gradient(135deg, #fff 0%, #e2d9f3 45%, #8b5cf6 85%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 1rem; }
+  .hero-sub { font-size: 1rem; color: var(--text-secondary); max-width: 640px; margin-bottom: 2rem; }
+
+  /* Score banner */
+  .score-banner { display: flex; align-items: center; gap: 2rem; padding: 1.5rem 2rem; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .big-score { text-align: center; }
+  .big-score-num { font-family: 'JetBrains Mono', monospace; font-size: 4rem; font-weight: 700; line-height: 1; background: linear-gradient(135deg, var(--neon-amber), #f97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .big-score-label { font-size: 0.65rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin-top: 0.2rem; font-family: 'JetBrains Mono', monospace; }
+  .score-divider { width: 1px; height: 80px; background: rgba(255,255,255,0.08); }
+  .score-verdict { flex: 1; min-width: 250px; }
+  .verdict-title { font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+  .verdict-body { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.55; }
+
+  /* Divider */
+  .neon-div { height: 1px; background: linear-gradient(90deg, transparent, rgba(139,92,246,0.5), transparent); margin: 3rem 0; box-shadow: 0 0 12px rgba(139,92,246,0.3); }
+
+  /* Section */
+  section { margin-bottom: 3rem; }
+  .section-label { display: flex; align-items: center; gap: 0.75rem; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1.25rem; }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.06); }
+  h2 { font-size: 1.35rem; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 1rem; background: linear-gradient(135deg, #fff 60%, #a78bfa); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  h3 { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; }
+  p { margin-bottom: 0.75rem; color: var(--text-secondary); font-size: 0.87rem; line-height: 1.6; }
+  p:last-child { margin-bottom: 0; }
+
+  /* Glass */
+  .glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; backdrop-filter: blur(12px); box-shadow: 0 20px 40px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06); padding: 1.75rem; position: relative; overflow: hidden; }
+  .glass::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent); }
+
+  /* Inline code */
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.78em; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.08); padding: 0.1em 0.4em; border-radius: 4px; color: #c4b5fd; }
+
+  /* Dimension scores */
+  .dims { display: flex; flex-direction: column; gap: 1rem; }
+  .dim-row { display: grid; grid-template-columns: 180px 1fr 60px; align-items: center; gap: 1rem; }
+  .dim-label { font-size: 0.82rem; color: var(--text-secondary); }
+  .dim-bar-wrap { height: 6px; background: rgba(255,255,255,0.06); border-radius: 100px; overflow: hidden; }
+  .dim-bar { height: 100%; border-radius: 100px; animation: fillIn 1.2s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+  @keyframes fillIn { from { width: 0; } }
+  .dim-score { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; font-weight: 700; text-align: right; }
+  .bar-great { background: linear-gradient(90deg, #16a34a, var(--neon-green)); }
+  .bar-good { background: linear-gradient(90deg, #2563eb, var(--neon-blue)); }
+  .bar-mid { background: linear-gradient(90deg, #6d28d9, var(--primary)); }
+  .bar-low { background: linear-gradient(90deg, #d97706, var(--neon-amber)); }
+  .bar-bad { background: linear-gradient(90deg, #dc2626, var(--neon-red)); }
+
+  /* Two col */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width:700px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* Chip */
+  .chip { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.06em; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid; }
+  .chip-green { color: var(--neon-green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.07); }
+  .chip-red { color: var(--neon-red); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.07); }
+  .chip-amber { color: var(--neon-amber); border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.07); }
+  .chip-purple { color: #c4b5fd; border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08); }
+  .chip-muted { color: var(--text-muted); border-color: rgba(255,255,255,0.1); background: rgba(255,255,255,0.04); }
+  .chip-cyan { color: var(--neon-cyan); border-color: rgba(34,211,238,0.3); background: rgba(34,211,238,0.07); }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.2rem 0.55rem; border-radius: 6px; margin-bottom: 0.5rem; }
+  .badge-crit { color: var(--neon-red); background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.25); }
+  .badge-mod { color: var(--neon-amber); background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+  .badge-nice { color: var(--neon-cyan); background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); }
+  .badge-win { color: var(--neon-green); background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); }
+
+  /* Card grid */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px,1fr)); gap: 1rem; }
+  .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.07); border-radius: 12px; padding: 1.25rem 1.4rem; position: relative; overflow: hidden; }
+  .card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; border-radius: 3px 0 0 3px; }
+  .card-green::before { background: var(--neon-green); }
+  .card-red::before { background: var(--neon-red); }
+  .card-amber::before { background: var(--neon-amber); }
+  .card-purple::before { background: var(--primary); }
+  .card-blue::before { background: var(--neon-blue); }
+  .card h3 { font-size: 0.88rem; }
+  .card p { font-size: 0.8rem; margin-top: 0.35rem; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  th { font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); text-align: left; padding: 0.6rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.07); }
+  td { padding: 0.7rem 1rem; border-bottom: 1px solid rgba(255,255,255,0.04); color: var(--text-secondary); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--text-primary); font-weight: 500; }
+
+  /* Roadmap */
+  .roadmap { display: flex; flex-direction: column; gap: 0; position: relative; }
+  .roadmap::before { content: ''; position: absolute; left: 1.05rem; top: 1.4rem; bottom: 1.4rem; width: 1px; background: rgba(255,255,255,0.06); }
+  .rm-item { display: flex; gap: 1.2rem; padding: 1.1rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .rm-item:last-child { border-bottom: none; }
+  .rm-node { width: 2.1rem; height: 2.1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; font-weight: 700; flex-shrink: 0; position: relative; z-index: 1; }
+  .node-crit { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); color: var(--neon-red); }
+  .node-mod { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.3); color: var(--neon-amber); }
+  .node-nice { background: rgba(34,211,238,0.08); border: 1px solid rgba(34,211,238,0.2); color: var(--neon-cyan); }
+  .node-arch { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: var(--primary); }
+  .rm-body { flex: 1; padding-top: 0.05rem; }
+  .rm-title { font-size: 0.92rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .rm-desc { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.55; }
+
+  /* Callout */
+  .callout { display: flex; gap: 0.9rem; padding: 1rem 1.25rem; border-radius: 10px; margin: 1rem 0; font-size: 0.82rem; line-height: 1.55; }
+  .callout-info { background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.2); color: #93c5fd; }
+  .callout-warn { background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); color: #fcd34d; }
+  .callout-purple { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.25); color: #c4b5fd; }
+
+  /* Code block */
+  .code { background: rgba(0,0,0,0.45); border: 1px solid rgba(255,255,255,0.07); border-radius: 10px; padding: 1rem 1.25rem; font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--text-secondary); line-height: 1.7; overflow-x: auto; margin: 0.75rem 0; }
+  .kw { color: #a78bfa; } .str { color: var(--neon-green); } .cm { color: var(--text-muted); } .num { color: var(--neon-amber); }
+
+  /* Progress */
+  .prog-wrap { height: 5px; background: rgba(255,255,255,0.05); border-radius: 100px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 100px; animation: fillIn 1.2s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+  ul { padding-left: 1.2rem; } li { margin-bottom: 0.35rem; color: var(--text-secondary); font-size: 0.83rem; }
+
+  .footer { text-align: center; padding: 3rem 0 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; color: var(--text-muted); letter-spacing: 0.08em; }
+</style>
+</head>
+<body>
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="container">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-chip">/devquiz · Opta CLI · CEO Capabilities</div>
+    <h1>CEO Benchmark Suite</h1>
+    <p class="hero-sub">Investigation of <code>opta ceo-bench</code> — the autonomous AI coding evaluation system. Does it match the intended design? How does it compare to industry? What needs to be built?</p>
+
+    <div class="score-banner">
+      <div class="big-score">
+        <div class="big-score-num">54</div>
+        <div class="big-score-label">/ 100 overall</div>
+      </div>
+      <div class="score-divider"></div>
+      <div class="score-verdict">
+        <div class="verdict-title">Excellent skeleton, critical gaps in the test suite itself</div>
+        <div class="verdict-body">The infrastructure — loop detection, trace artifacts, workspace isolation, CEO autonomy mode — is genuinely sophisticated. But the benchmark currently has only 2 trivially simple tasks, making it unable to meaningfully evaluate a model against CEO-grade autonomous work. The plumbing is great; the pipeline is empty.</div>
+      </div>
+      <div style="display:flex; flex-wrap:wrap; gap:0.5rem; align-items:center; margin-left:auto;">
+        <span class="chip chip-green">Loop Detection ✓</span>
+        <span class="chip chip-red">2 Tasks Only ✗</span>
+        <span class="chip chip-amber">No Timeout ⚠</span>
+        <span class="chip chip-green">Trace Artifacts ✓</span>
+        <span class="chip chip-red">bash-only ✗</span>
+        <span class="chip chip-purple">CEO Mode ✓</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-div"></div>
+
+  <!-- WHAT IT IS -->
+  <section>
+    <div class="section-label">What it is</div>
+    <div class="glass">
+      <div class="two-col">
+        <div>
+          <h3>The feature</h3>
+          <p><code>opta ceo-bench</code> is an autonomous AI evaluation system built directly into the Opta CLI. It runs the active language model (via <code>agentLoop</code>) against a set of coding tasks in isolated temporary directories, then verifies the output with bash scripts.</p>
+          <p>The name "CEO" refers to a specific Opta autonomy mode — not the operator title. CEO mode sets: autonomy level 5 (maximum), headless continue, dangerous mode (auto-approve edits), executive report style, live data requirement, and policy audit enabled. It's designed to evaluate "full autonomy" model behaviour.</p>
+        </div>
+        <div>
+          <h3>The stack</h3>
+          <div class="code">
+<span class="cm">// Entry point</span>
+<span class="kw">opta</span> ceo-bench [--model &lt;id&gt;] [--filter &lt;str&gt;] [--json]
+
+<span class="cm">// Execution chain</span>
+registerCeoBenchCommand (ceo-bench.ts)
+  → runCeoBenchmark (benchmark/ceo/runner.ts)
+    → agentLoop() with CEO mode config
+    → CeoBenchTraceCollector (loop detection)
+    → bash verifyScript (execa)
+    → persistCeoBenchTraceArtifact()
+      → docs/evidence/ceo-bench/[ts]-[id].json
+          </div>
+          <div style="margin-top:0.75rem; display:flex; flex-wrap:wrap; gap:0.4rem;">
+            <span class="chip chip-purple">autonomyLevel: 5</span>
+            <span class="chip chip-purple">headlessContinue</span>
+            <span class="chip chip-purple">dangerous mode</span>
+            <span class="chip chip-purple">executive reports</span>
+            <span class="chip chip-purple">policy audit</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- INTENT VS REALITY -->
+  <section>
+    <div class="section-label">Intent vs reality</div>
+    <div class="two-col">
+      <div class="glass">
+        <h3 style="color: var(--neon-green);">✓ What's working as intended</h3>
+        <ul style="margin-top:0.75rem;">
+          <li>CEO autonomy mode correctly wires L5 config — <code>requireLiveData</code>, <code>reportStyle: 'executive'</code>, <code>policy.audit.enabled</code>, <code>headlessContinue</code></li>
+          <li>Ephemeral workspace per task with proper cleanup — <code>mkdtemp</code> + <code>rm -rf</code> in <code>finally</code></li>
+          <li>OPIS context seeded into each workspace (APP.md, INDEX.md)</li>
+          <li>Loop control: <code>CeoBenchTraceCollector</code> detects identical tool-call sequences repeating ≥3 turns and aborts via <code>AbortController</code></li>
+          <li>Trace artifacts persisted at <code>docs/evidence/ceo-bench/</code> — full observability into model behaviour per task</li>
+          <li>JSON output mode for CI pipeline integration</li>
+          <li><code>--model</code> override for cross-model comparison</li>
+          <li>Infrastructure unit tests: prompt generation, workspace seeding, loop detection, trace persistence, turn accounting</li>
+        </ul>
+      </div>
+      <div class="glass">
+        <h3 style="color: var(--neon-red);">✗ What's missing or misaligned</h3>
+        <ul style="margin-top:0.75rem;">
+          <li><strong>Only 2 tasks</strong> — <code>math-function</code> (create a file with add()) and <code>failing-test</code> (fix a wrong operator). Both trivially simple, not CEO-grade</li>
+          <li>Tasks are hardcoded in <code>DEFAULT_TASKS</code> — no external task file support (JSON/YAML)</li>
+          <li><code>setupScript</code> and <code>verifyScript</code> use <code>execa('bash', …)</code> — fails on Windows</li>
+          <li>No per-task timeout — a hung task blocks indefinitely (loop detection only catches repetitive tool calls, not slow-running processes)</li>
+          <li>No efficiency scoring — turns and duration logged but not weighted into a composite score</li>
+          <li>Tasks run sequentially — no parallelism, slow for large suites</li>
+          <li>No baseline tracking — can't compare a run against a previous run or a baseline model</li>
+          <li>Integration test for <code>runCeoBenchmark()</code> is in a separate runtime test file — unclear if it mocks the agent or runs live</li>
+          <li><code>benchmark/pages.ts</code> (news/landing/chess benchmark) is a completely separate system with no connection to ceo-bench — confusing dual benchmark identity</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SCORE DIMENSIONS -->
+  <section>
+    <div class="section-label">Optimisation score — 6 dimensions</div>
+    <div class="glass">
+      <div class="dims">
+
+        <div class="dim-row">
+          <div class="dim-label">Code Quality</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-great" style="width:85%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">Clean TypeScript interfaces, immutable collector pattern, proper AbortController usage, explicit error boundaries in finally block</div>
+          </div>
+          <div class="dim-score" style="color:var(--neon-green);">8.5</div>
+        </div>
+
+        <div class="dim-row">
+          <div class="dim-label">Design Alignment</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-good" style="width:72%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">CEO autonomy mode integration is spot-on. Task isolation matches intent. But the task set doesn't represent CEO-level work — two trivial tasks won't validate autonomous model capability.</div>
+          </div>
+          <div class="dim-score" style="color:var(--neon-blue);">7.2</div>
+        </div>
+
+        <div class="dim-row">
+          <div class="dim-label">Test Coverage</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-good" style="width:68%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">Infrastructure well-tested (prompt generation, workspace seeding, loop detection, trace persistence). Integration test for full run exists but unclear mock depth. No test for task coverage parity.</div>
+          </div>
+          <div class="dim-score" style="color:var(--neon-blue);">6.8</div>
+        </div>
+
+        <div class="dim-row">
+          <div class="dim-label">Completeness</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-low" style="width:38%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">Core runner is complete. But the benchmark payload — 2 tasks covering 2 out of ~10 needed categories — is severely incomplete. No timeout, no parallelism, no baseline, no efficiency scoring.</div>
+          </div>
+          <div class="dim-score" style="color:var(--neon-amber);">3.8</div>
+        </div>
+
+        <div class="dim-row">
+          <div class="dim-label">Scalability</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-mid" style="width:62%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;"><code>CeoBenchTask[]</code> array pattern supports growth. <code>--filter</code> flag for selective runs exists. But external task files, parallelism, and baseline comparison need architecture before the suite can scale to 50+ tasks.</div>
+          </div>
+          <div class="dim-score" style="color:var(--primary);">6.2</div>
+        </div>
+
+        <div class="dim-row">
+          <div class="dim-label">Industry Parity</div>
+          <div>
+            <div class="dim-bar-wrap">
+              <div class="dim-bar bar-bad" style="width:22%;"></div>
+            </div>
+            <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.3rem;">SWE-bench has 300+ real GitHub issues. HumanEval has 164 Python problems. SWE-bench Verified: 500. Opta ceo-bench: 2 tasks. The loop detection and trace system are genuinely better than most — but the task corpus is 150× smaller than comparable benchmarks.</div>
+          </div>
+          <div class="dim-score" style="color:var(--neon-red);">2.2</div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:1.75rem; padding-top:1.25rem; border-top:1px solid rgba(255,255,255,0.06);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+          <span style="font-size:0.8rem; color:var(--text-secondary);">Weighted overall (Industry ×1.5, Completeness ×1.2)</span>
+          <span style="font-family:'JetBrains Mono',monospace; font-size:0.9rem; font-weight:700; color:var(--neon-amber);">54 / 100</span>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-fill" style="width:54%; background: linear-gradient(90deg, #d97706, #f59e0b);"></div>
+        </div>
+        <div style="font-size:0.72rem; color:var(--text-muted); margin-top:0.5rem;">Calculation: (8.5 + 7.2 + 6.8 + 3.8×1.2 + 6.2 + 2.2×1.5) / 6.7 × 10 = 54</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STRENGTHS -->
+  <section>
+    <div class="section-label">Genuine strengths</div>
+    <div class="card-grid">
+
+      <div class="card card-green">
+        <span class="badge badge-win">Best-In-Class</span>
+        <h3>Loop Detection System</h3>
+        <p>The <code>CeoBenchTraceCollector</code> normalises tool call args (stable JSON key sort), builds turn signatures, and fires an <code>AbortController</code> when the same pattern repeats ≥3 times. Most benchmarks (SWE-bench, HumanEval) don't have this — they just let models spin.</p>
+      </div>
+
+      <div class="card card-green">
+        <span class="badge badge-win">Excellent</span>
+        <h3>Ephemeral Workspace Isolation</h3>
+        <p>Each task gets a fresh <code>mkdtemp</code> directory, seeded with OPIS docs, and cleaned in a <code>finally</code> block. CWD is restored to <code>originalCwd</code>. This prevents test pollution and matches how real CI evaluations work.</p>
+      </div>
+
+      <div class="card card-green">
+        <span class="badge badge-win">Excellent</span>
+        <h3>Full Observability via Trace Artifacts</h3>
+        <p>Every run produces a versioned JSON trace at <code>docs/evidence/ceo-bench/</code> with per-turn tool calls, durations, errors, loop signals, and timestamps. This is better than most AI eval frameworks that only log pass/fail.</p>
+      </div>
+
+      <div class="card card-green">
+        <span class="badge badge-win">Excellent</span>
+        <h3>CEO Autonomy Mode Integration</h3>
+        <p>Uses the real <code>computeAutonomyConfigUpdates</code> system with <code>mode: 'ceo'</code> — executive reports, live data requirement, policy audit enabled, L5 autonomy. Benchmark actually runs in the same mode as real CEO-level tasks.</p>
+      </div>
+
+      <div class="card card-purple">
+        <span class="badge badge-win">Good</span>
+        <h3>Infrastructure Unit Tests</h3>
+        <p>Prompt generation, workspace seeding, loop detection (including partial turn flush), trace persistence, and turn accounting are all unit-tested. The test file tests real behaviour — not just types.</p>
+      </div>
+
+      <div class="card card-purple">
+        <span class="badge badge-win">Good</span>
+        <h3>CI-Friendly Design</h3>
+        <p><code>--json</code> flag produces machine-readable output. <code>--filter</code> allows targeted runs. <code>--model</code> enables cross-model comparison. All designed for pipeline integration — though the pipeline isn't wired yet.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- GAPS -->
+  <section>
+    <div class="section-label">Gaps — by severity</div>
+    <div style="display:flex; flex-direction:column; gap:0.75rem;">
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:12px;">
+        <span class="badge badge-crit">Critical</span>
+        <h3>Only 2 benchmark tasks</h3>
+        <p>The benchmark has <code>math-function</code> (create a file) and <code>failing-test</code> (fix a wrong operator). These are sub-LeetCode-easy. A CEO benchmark should validate autonomous work across at minimum: multi-file refactoring, test writing, API integration, bug triage in unfamiliar code, documentation generation, security review, and performance analysis. Currently none of these are covered.</p>
+        <div style="display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.6rem;">
+          <span class="chip chip-muted">Missing: multi-file edit</span>
+          <span class="chip chip-muted">Missing: test writing</span>
+          <span class="chip chip-muted">Missing: bug triage</span>
+          <span class="chip chip-muted">Missing: refactoring</span>
+          <span class="chip chip-muted">Missing: API integration</span>
+          <span class="chip chip-muted">Missing: docs generation</span>
+          <span class="chip chip-muted">Missing: security review</span>
+        </div>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(239,68,68,0.06); border:1px solid rgba(239,68,68,0.2); border-radius:12px;">
+        <span class="badge badge-crit">Critical</span>
+        <h3>bash-only scripts break Windows</h3>
+        <p>Both <code>setupScript</code> and <code>verifyScript</code> run via <code>execa('bash', ['-c', script])</code>. Windows doesn't have bash by default. Every task in the benchmark is currently Windows-incompatible. Given the active Windows development track, this is a blocker.</p>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:12px;">
+        <span class="badge badge-mod">Moderate</span>
+        <h3>No per-task timeout</h3>
+        <p>Loop detection catches <em>repetitive</em> tool calls but not a model that's making slow or different calls on each turn. A task that takes 40 slow turns blocks the entire benchmark. SWE-bench uses a 5-minute wall-clock timeout per task. A reasonable default here would be ~3–5 minutes.</p>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:12px;">
+        <span class="badge badge-mod">Moderate</span>
+        <h3>No baseline tracking or model comparison</h3>
+        <p>Each run produces trace artifacts but they're not aggregated or compared. There's no way to answer "did upgrading from Kimi K2.5 to Claude Opus improve the pass rate?" without manually reading JSON files. A simple <code>channels/ceo-bench/baseline.json</code> pattern would solve this.</p>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(245,158,11,0.06); border:1px solid rgba(245,158,11,0.2); border-radius:12px;">
+        <span class="badge badge-mod">Moderate</span>
+        <h3>Hardcoded task definitions — no external task files</h3>
+        <p><code>DEFAULT_TASKS</code> is a TypeScript array. Adding new tasks requires editing the runner source. Should support loading tasks from <code>benchmark/ceo/tasks/*.json</code> or similar, so the benchmark suite can grow without touching runner code.</p>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.15); border-radius:12px;">
+        <span class="badge badge-nice">Nice to Have</span>
+        <h3>No efficiency scoring</h3>
+        <p>Pass/fail is tracked but not turn efficiency or token usage. A model that passes in 2 turns is better than one that passes in 18. A composite score (pass × efficiency weight) would make ceo-bench a better model selection tool.</p>
+      </div>
+
+      <div style="padding:1.1rem 1.4rem; background:rgba(34,211,238,0.05); border:1px solid rgba(34,211,238,0.15); border-radius:12px;">
+        <span class="badge badge-nice">Nice to Have</span>
+        <h3>Dual benchmark identity confusion</h3>
+        <p><code>benchmark/pages.ts</code> is a completely separate benchmark (news briefing, landing page, chess arena) that has nothing to do with ceo-bench. It uses a different runner, different output format, and different evaluation criteria. These should be clearly separated in the directory structure and documentation.</p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- INDUSTRY COMPARISON -->
+  <section>
+    <div class="section-label">Industry comparison</div>
+    <div class="glass">
+      <table>
+        <thead>
+          <tr>
+            <th>Benchmark</th>
+            <th>Tasks</th>
+            <th>Verification</th>
+            <th>Loop Safety</th>
+            <th>Trace/Observability</th>
+            <th>Baseline Tracking</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>SWE-bench (Princeton, 2023)</td>
+            <td>300 → 2,294 (Verified)</td>
+            <td>pytest on real repos</td>
+            <td>Wall-clock timeout</td>
+            <td>Patch diff + logs</td>
+            <td>Public leaderboard</td>
+          </tr>
+          <tr>
+            <td>HumanEval (OpenAI)</td>
+            <td>164</td>
+            <td>Python doctest</td>
+            <td>None (short tasks)</td>
+            <td>Pass/fail JSON</td>
+            <td>Published in papers</td>
+          </tr>
+          <tr>
+            <td>MBPP (Google)</td>
+            <td>374 crowd-sourced</td>
+            <td>assert-based</td>
+            <td>None</td>
+            <td>Minimal</td>
+            <td>Paper baselines</td>
+          </tr>
+          <tr>
+            <td>LiveCodeBench (2024)</td>
+            <td>400+ (monthly refresh)</td>
+            <td>unit tests</td>
+            <td>None</td>
+            <td>Execution logs</td>
+            <td>Public leaderboard</td>
+          </tr>
+          <tr style="background: rgba(139,92,246,0.06);">
+            <td><strong>Opta ceo-bench (today)</strong></td>
+            <td style="color:var(--neon-red); font-weight:600;">2</td>
+            <td>bash script (macOS only)</td>
+            <td style="color:var(--neon-green);">Loop detection ✓</td>
+            <td style="color:var(--neon-green);">Full turn traces ✓</td>
+            <td style="color:var(--neon-red);">None ✗</td>
+          </tr>
+          <tr style="background: rgba(139,92,246,0.04);">
+            <td><strong>Opta ceo-bench (target)</strong></td>
+            <td style="color:var(--neon-amber);">20–50</td>
+            <td>cross-platform scripts</td>
+            <td style="color:var(--neon-green);">Loop + timeout ✓</td>
+            <td style="color:var(--neon-green);">Full turn traces ✓</td>
+            <td style="color:var(--neon-amber);">Local baseline JSON</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="callout callout-purple" style="margin-top:1.25rem;">
+        <span>💡</span>
+        <span>Opta's loop detection and trace artifact system are <strong>genuinely ahead</strong> of SWE-bench and HumanEval. Those benchmarks don't track tool call sequences — they just observe final output. The Opta architecture here is better; it just needs the task corpus to match the infrastructure quality.</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- OPTIMISATION ROADMAP -->
+  <section>
+    <div class="section-label">Optimisation roadmap — raise to 80+</div>
+    <div class="glass">
+      <div class="roadmap">
+
+        <div class="rm-item">
+          <div class="rm-node node-crit">1</div>
+          <div class="rm-body">
+            <div class="rm-title">Add 10–15 real benchmark tasks across diverse categories</div>
+            <div class="rm-desc">Expand <code>DEFAULT_TASKS</code> (or external task files) to cover: multi-file refactor, test writing from scratch, fix a TypeScript type error, add a REST endpoint, debug an async race condition, write API docs from code, extract a reusable module. Each task should have a meaningful verify script. This alone would raise the Industry Parity score from 2.2 → 6+.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-crit">2</div>
+          <div class="rm-body">
+            <div class="rm-title">Cross-platform verification — replace bash with node or cross-env</div>
+            <div class="rm-desc">Change the runner to detect OS and use <code>node -e</code> or <code>execa('node', ...)</code> for verification instead of <code>execa('bash', ...)</code>. For tasks that must use shell, use <code>cross-env</code> or a shebang-aware runner. This unblocks Windows benchmarking immediately without changing the task interface.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-mod">3</div>
+          <div class="rm-body">
+            <div class="rm-title">Add per-task wall-clock timeout</div>
+            <div class="rm-desc">Wrap the <code>agentLoop</code> call in a <code>Promise.race</code> against a configurable timeout (default 5 min). Pass the same <code>AbortController</code> signal to both. Log timeout as a distinct failure mode in the trace artifact — not just a generic error. This prevents benchmark hangs and adds a new efficiency signal.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-mod">4</div>
+          <div class="rm-body">
+            <div class="rm-title">External task file support</div>
+            <div class="rm-desc">Load tasks from <code>benchmark/ceo/tasks/</code> — one JSON file per task category. The runner should merge file-loaded tasks with any built-in defaults. This decouples task authoring from runner development and lets the task corpus grow without code changes or tests.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-mod">5</div>
+          <div class="rm-body">
+            <div class="rm-title">Local baseline tracking</div>
+            <div class="rm-desc">After each run, write or update <code>docs/evidence/ceo-bench/baseline.json</code> with: run timestamp, model, pass rate, avg turns, avg duration. The report output should show delta vs previous baseline. This makes ceo-bench useful as a model upgrade/regression signal — its core purpose as a CEO evaluation tool.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-arch">6</div>
+          <div class="rm-body">
+            <div class="rm-title">Clarify dual benchmark identity in the codebase</div>
+            <div class="rm-desc"><code>benchmark/ceo/</code> (autonomous coding eval) and <code>benchmark/pages.ts</code> (news/landing/chess HTML generation) are completely separate systems with different purposes. Rename <code>pages.ts</code> to <code>html-bench/</code> or similar and add a clear README in <code>benchmark/</code> explaining the two tracks. Reduces confusion for anyone reading the code.</div>
+          </div>
+        </div>
+
+        <div class="rm-item">
+          <div class="rm-node node-arch">7</div>
+          <div class="rm-body">
+            <div class="rm-title">Efficiency score in results</div>
+            <div class="rm-desc">Add a composite score to each <code>CeoBenchResult</code>: <code>score = passed ? Math.max(0, 100 - (turns - 1) * 5) : 0</code>. A 1-turn pass = 100, a 10-turn pass = 55, a 20-turn pass = 5. Report per-task scores and a suite average. This turns the benchmark from binary pass/fail into a model selection tool.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- VERDICT -->
+  <section>
+    <div class="section-label">Final verdict</div>
+    <div class="glass" style="background: rgba(139,92,246,0.05); border-color: rgba(139,92,246,0.2);">
+      <div style="display:grid; grid-template-columns: auto 1fr; gap:2rem; align-items:center; flex-wrap:wrap;">
+        <div style="text-align:center; padding:0 1rem;">
+          <div style="font-family:'JetBrains Mono',monospace; font-size:5rem; font-weight:700; line-height:1; background:linear-gradient(135deg,var(--neon-amber),#f97316); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text;">54</div>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.62rem; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); margin-top:0.25rem;">/ 100</div>
+        </div>
+        <div>
+          <h2 style="margin-bottom:0.75rem;">The infrastructure is production-ready. The benchmark payload is not.</h2>
+          <p><code>opta ceo-bench</code> has the best loop-detection, workspace isolation, and trace observability of any custom benchmark I've seen — genuinely ahead of SWE-bench in those areas. The CEO autonomy mode integration is exactly right.</p>
+          <p>But a benchmark with 2 tasks cannot validate model capability. It's like having a Formula 1 car on a 20-metre track — the vehicle is exceptional but there's nowhere to go. The immediate priority is expanding the task corpus to 15–20 tasks across different categories, followed by cross-platform verification and a timeout mechanism.</p>
+          <p>With those changes, the score would realistically reach 75–80. With baseline tracking and efficiency scoring, 85+. The architecture is already there — it just needs content.</p>
+          <div style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:1rem;">
+            <span class="chip chip-green">Do: expand task corpus →15 tasks</span>
+            <span class="chip chip-red">Fix: bash → cross-platform verify</span>
+            <span class="chip chip-amber">Add: per-task timeout</span>
+            <span class="chip chip-cyan">Add: baseline tracking</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="neon-div"></div>
+
+  <div class="footer">
+    DEVQUIZ · OPTA CEO CAPABILITIES · GENERATED 2026-03-06 · /devquiz opta-ceo-benchmark
+    <br><span style="color:rgba(255,255,255,0.12);">src/commands/ceo-bench.ts · src/benchmark/ceo/runner.ts · 2 tasks · loop detection · trace artifacts</span>
+  </div>
+
+</div>
+</body>
+</html>
