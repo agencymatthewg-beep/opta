@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Sparkles, AlertCircle } from 'lucide-react'
 import { DashboardLayout } from '@/components/DashboardLayout'
+import { ConnectionSetupOverlay } from '@/components/ConnectionSetupOverlay'
 import { HudRing } from '@/components/HudRing'
 import { PageHeader } from '@/components/PageHeader'
 import { useConnection } from '@/lib/connection'
@@ -24,10 +25,14 @@ export default function DashboardHome() {
     const pairedDevice = usePairedDevice()
     const dashboard = useDashboard()
     const [connectErrorCode, setConnectErrorCode] = useState<string | null>(null)
+    const [isFirstRun, setIsFirstRun] = useState(false)
 
     useEffect(() => {
         const query = new URLSearchParams(window.location.search)
         setConnectErrorCode(query.get('connect_error'))
+        // Detect first-run: no saved endpoint in localStorage
+        const savedUrl = localStorage.getItem('opta-lmx-url')
+        setIsFirstRun(!savedUrl)
     }, [])
 
     const connectErrorMessage = getConnectErrorMessage(connectErrorCode)
@@ -41,7 +46,9 @@ export default function DashboardHome() {
             />
 
             <div className="px-6 py-6 hud-fade-in">
-                {!isConnected ? (
+                {!isConnected && isFirstRun ? (
+                    <ConnectionSetupOverlay />
+                ) : !isConnected ? (
                     <div className="flex flex-col items-center justify-center py-24 text-center">
                         <div className="relative w-20 h-20 mb-8">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
