@@ -16,10 +16,28 @@ import type {
 } from "@opta/daemon-client/types";
 import type { V3Envelope as SharedV3Envelope } from "@opta/protocol-shared";
 import type {
+  AccountStatus,
+  AudioTranscribeResult,
+  AudioTtsResult,
+  BrowserRuntimeStatus,
   DaemonConnectionOptions,
+  DaemonControlStatus,
+  DaemonLogEntry,
+  DaemonProcessState,
   DaemonSessionSummary,
+  EnvProfile,
+  KeychainStatus,
+  LanDiscoveryTarget,
+  ModelAlias,
+  ModelHealthCheck,
+  ModelLibraryEntry,
+  SessionDetail,
+  SessionExportResult,
+  SessionSearchResult,
   SessionSubmitMode,
   SessionTurnOverrides,
+  SystemInfo,
+  VaultStatus,
 } from "../types";
 import { sanitizeDaemonConnection } from "./daemonConnectionGuard";
 import {
@@ -893,5 +911,448 @@ export const daemonClient = {
       LMX_READ_TIMEOUT_MS,
     );
     return normalizeLmxDownloadsList(raw);
+  },
+
+  // ─── Environment Profiles ────────────────────────────────────────────────
+
+  async envList(connection: DaemonConnectionOptions): Promise<EnvProfile[]> {
+    const response = await daemonClient.runOperation(connection, "env.list", { input: {} });
+    if (!response.ok) throw operationError("env.list", response);
+    const result = asRecord(response.result);
+    const list = Array.isArray(result?.profiles) ? result.profiles : Array.isArray(response.result) ? response.result : [];
+    return list as EnvProfile[];
+  },
+
+  async envShow(connection: DaemonConnectionOptions, name: string): Promise<EnvProfile | null> {
+    const response = await daemonClient.runOperation(connection, "env.show", { input: { name } });
+    if (!response.ok) throw operationError("env.show", response);
+    const record = asRecord(response.result);
+    if (!record) return null;
+    return {
+      name: typeof record.name === "string" ? record.name : name,
+      vars: typeof record.vars === "object" && record.vars !== null ? (record.vars as Record<string, string>) : {},
+      description: typeof record.description === "string" ? record.description : undefined,
+      isActive: typeof record.isActive === "boolean" ? record.isActive : false,
+      createdAt: typeof record.createdAt === "string" ? record.createdAt : undefined,
+      updatedAt: typeof record.updatedAt === "string" ? record.updatedAt : undefined,
+    };
+  },
+
+  async envSave(connection: DaemonConnectionOptions, profile: Pick<EnvProfile, "name" | "vars" | "description">): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "env.save", { input: profile });
+    if (!response.ok) throw operationError("env.save", response);
+  },
+
+  async envUse(connection: DaemonConnectionOptions, name: string): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "env.use", { input: { name } });
+    if (!response.ok) throw operationError("env.use", response);
+  },
+
+  async envDelete(connection: DaemonConnectionOptions, name: string): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "env.delete", { input: { name } });
+    if (!response.ok) throw operationError("env.delete", response);
+  },
+
+  // ─── Session Manager (search / export / delete) ───────────────────────────
+
+  async sessionSearch(
+    connection: DaemonConnectionOptions,
+    query: string,
+    limit = 50,
+  ): Promise<SessionSearchResult> {
+    const response = await daemonClient.runOperation(connection, "sessions.search", { input: { query, limit } });
+    if (!response.ok) throw operationError("sessions.search", response);
+    const result = asRecord(response.result);
+    const rawSessions = Array.isArray(result?.sessions) ? result.sessions : [];
+    const sessions = rawSessions
+      .map((s) => normalizeSessionSummary(s))
+      .filter((s): s is DaemonSessionSummary => Boolean(s)) as SessionDetail[];
+    return {
+      sessions,
+      total: typeof result?.total === "number" ? result.total : sessions.length,
+      query,
+    };
+  },
+
+  async sessionExport(
+    connection: DaemonConnectionOptions,
+    sessionId: string,
+    format: "json" | "markdown" | "text" = "json",
+    outputPath?: string,
+  ): Promise<SessionExportResult> {
+    const response = await daemonClient.runOperation(connection, "sessions.export", { input: { sessionId, format, outputPath } });
+    if (!response.ok) throw operationError("sessions.export", response);
+    const result = asRecord(response.result);
+    return {
+      sessionId,
+      path: typeof result?.path === "string" ? result.path : "",
+      format,
+      sizeBytes: typeof result?.sizeBytes === "number" ? result.sizeBytes : undefined,
+    };
+  },
+
+  async sessionDelete(connection: DaemonConnectionOptions, sessionId: string): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "sessions.delete", { input: { sessionId } });
+    if (!response.ok) throw operationError("sessions.delete", response);
+  },
+
+  async sessionGet(connection: DaemonConnectionOptions, sessionId: string): Promise<SessionDetail | null> {
+    // sessions.get is not a registered operation — find via sessions.search
+    const results = await daemonClient.sessionSearch(connection, sessionId, 10);
+    const match = results.sessions.find((s) => s.sessionId === sessionId);
+    return match ?? null;
+  },
+
+  // ─── Daemon Process Control ───────────────────────────────────────────────
+
+  async daemonControlStatus(connection: DaemonConnectionOptions): Promise<DaemonControlStatus> {
+    const response = await daemonClient.runOperation(connection, "daemon.status", { input: {} });
+    if (!response.ok) throw operationError("daemon.status", response);
+    const result = asRecord(response.result);
+    const stateRaw = result?.state;
+    const validStates: DaemonProcessState[] = ["running", "stopped", "starting", "stopping", "unknown"];
+    const state: DaemonProcessState = validStates.includes(stateRaw as DaemonProcessState) ? (stateRaw as DaemonProcessState) : "unknown";
+    return {
+      state,
+      pid: typeof result?.pid === "number" ? result.pid : undefined,
+      uptime: typeof result?.uptime === "number" ? result.uptime : undefined,
+      version: typeof result?.version === "string" ? result.version : undefined,
+      port: typeof result?.port === "number" ? result.port : undefined,
+      logPath: typeof result?.logPath === "string" ? result.logPath : undefined,
+      installedAs: ["launchd", "systemd", "schtasks", "manual"].includes(result?.installedAs as string)
+        ? (result?.installedAs as "launchd" | "systemd" | "schtasks" | "manual")
+        : null,
+    };
+  },
+
+  async daemonControlLogs(
+    connection: DaemonConnectionOptions,
+    lines = 100,
+  ): Promise<DaemonLogEntry[]> {
+    const response = await daemonClient.runOperation(connection, "daemon.logs", { input: { lines } });
+    if (!response.ok) throw operationError("daemon.logs", response);
+    const result = asRecord(response.result);
+    const rawLogs = Array.isArray(result?.logs) ? result.logs : Array.isArray(response.result) ? response.result : [];
+    return rawLogs.map((entry) => {
+      const r = asRecord(entry);
+      return {
+        timestamp: typeof r?.timestamp === "string" ? r.timestamp : undefined,
+        level: (["info", "warn", "error", "debug"] as const).includes(r?.level as "info") ? (r?.level as "info" | "warn" | "error" | "debug") : undefined,
+        message: typeof r?.message === "string" ? r.message : String(entry ?? ""),
+        raw: typeof r?.raw === "string" ? r.raw : JSON.stringify(entry),
+      };
+    });
+  },
+
+  async daemonControlStart(connection: DaemonConnectionOptions): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "daemon.start", { input: {} });
+    if (!response.ok) throw operationError("daemon.start", response);
+  },
+
+  async daemonControlStop(connection: DaemonConnectionOptions): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "daemon.stop", { input: {} });
+    if (!response.ok) throw operationError("daemon.stop", response);
+  },
+
+  async daemonControlInstall(
+    connection: DaemonConnectionOptions,
+    serviceManager?: "launchd" | "systemd" | "schtasks",
+  ): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "daemon.install", { input: { serviceManager } });
+    if (!response.ok) throw operationError("daemon.install", response);
+  },
+
+  async daemonControlUninstall(connection: DaemonConnectionOptions): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "daemon.uninstall", { input: {} });
+    if (!response.ok) throw operationError("daemon.uninstall", response);
+  },
+
+  // ─── System Info (version, doctor, updates) ───────────────────────────────
+
+  async versionCheck(connection: DaemonConnectionOptions): Promise<{ current: string; latest: string | null; upToDate: boolean }> {
+    const response = await daemonClient.runOperation(connection, "version.check", { input: {} });
+    if (!response.ok) throw operationError("version.check", response);
+    const result = asRecord(response.result);
+    const current = typeof result?.current === "string" ? result.current : typeof result?.version === "string" ? result.version : "unknown";
+    const latest = typeof result?.latest === "string" ? result.latest : null;
+    return {
+      current,
+      latest,
+      upToDate: latest ? current === latest : true,
+    };
+  },
+
+  async doctorRun(connection: DaemonConnectionOptions, fix = false): Promise<SystemInfo> {
+    const response = await daemonClient.runOperation(connection, "doctor", { input: { fix } });
+    if (!response.ok) throw operationError("doctor", response);
+    const result = asRecord(response.result);
+    const rawChecks = Array.isArray(result?.checks) ? result.checks : [];
+    const checks = rawChecks.map((c) => {
+      const r = asRecord(c);
+      const validStatus = ["pass", "warn", "fail", "skip"] as const;
+      return {
+        name: typeof r?.name === "string" ? r.name : "unknown",
+        status: validStatus.includes(r?.status as "pass") ? (r?.status as "pass" | "warn" | "fail" | "skip") : "skip" as const,
+        message: typeof r?.message === "string" ? r.message : undefined,
+        fix: typeof r?.fix === "string" ? r.fix : undefined,
+      };
+    });
+    const passed = checks.filter((c) => c.status === "pass").length;
+    const warnings = checks.filter((c) => c.status === "warn").length;
+    const failures = checks.filter((c) => c.status === "fail").length;
+    const currentVersion = typeof result?.version === "string" ? result.version : "unknown";
+    const latestVersion = typeof result?.latestVersion === "string" ? result.latestVersion : null;
+    return {
+      currentVersion,
+      latestVersion,
+      upToDate: latestVersion ? currentVersion === latestVersion : null,
+      updateAvailable: latestVersion ? currentVersion !== latestVersion : null,
+      checks,
+      doctorSummary: { passed, warnings, failures },
+    };
+  },
+
+  async updateRun(connection: DaemonConnectionOptions): Promise<{ started: boolean; message?: string }> {
+    const response = await daemonClient.runOperation(connection, "update.run", { input: {} });
+    if (!response.ok) throw operationError("update.run", response);
+    const result = asRecord(response.result);
+    return {
+      started: true,
+      message: typeof result?.message === "string" ? result.message : undefined,
+    };
+  },
+
+  // ─── Model Aliases ────────────────────────────────────────────────────────
+
+  async modelAliasesList(connection: DaemonConnectionOptions): Promise<ModelAlias[]> {
+    const response = await daemonClient.runOperation(connection, "models.aliases.list", { input: {} });
+    if (!response.ok) throw operationError("models.aliases.list", response);
+    const result = asRecord(response.result);
+    const rawList = Array.isArray(result?.aliases) ? result.aliases : Array.isArray(response.result) ? response.result : [];
+    return rawList.map((a) => {
+      const r = asRecord(a);
+      return {
+        alias: typeof r?.alias === "string" ? r.alias : String(a),
+        target: typeof r?.target === "string" ? r.target : "",
+        provider: typeof r?.provider === "string" ? r.provider : undefined,
+        description: typeof r?.description === "string" ? r.description : undefined,
+      };
+    });
+  },
+
+  async modelAliasSet(
+    connection: DaemonConnectionOptions,
+    alias: string,
+    target: string,
+    provider?: string,
+  ): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "models.aliases.set", { input: { alias, target, provider } });
+    if (!response.ok) throw operationError("models.aliases.set", response);
+  },
+
+  async modelAliasDelete(connection: DaemonConnectionOptions, alias: string): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "models.aliases.delete", { input: { alias } });
+    if (!response.ok) throw operationError("models.aliases.delete", response);
+  },
+
+  async modelsBrowseLibrary(
+    connection: DaemonConnectionOptions,
+    query?: string,
+    limit = 20,
+  ): Promise<ModelLibraryEntry[]> {
+    const response = await daemonClient.runOperation(connection, "models.browse.library", { input: { query, limit } });
+    if (!response.ok) throw operationError("models.browse.library", response);
+    const result = asRecord(response.result);
+    const rawList = Array.isArray(result?.models) ? result.models : Array.isArray(response.result) ? response.result : [];
+    return rawList.map((m) => {
+      const r = asRecord(m);
+      return {
+        repoId: typeof r?.repoId === "string" ? r.repoId : typeof r?.repo_id === "string" ? r.repo_id : String(m),
+        name: typeof r?.name === "string" ? r.name : "",
+        description: typeof r?.description === "string" ? r.description : undefined,
+        tags: Array.isArray(r?.tags) ? r.tags.filter((t): t is string => typeof t === "string") : undefined,
+        sizeBytes: typeof r?.sizeBytes === "number" ? r.sizeBytes : undefined,
+        sizeHuman: typeof r?.sizeHuman === "string" ? r.sizeHuman : undefined,
+        quantization: typeof r?.quantization === "string" ? r.quantization : undefined,
+        downloads: typeof r?.downloads === "number" ? r.downloads : undefined,
+        isLocal: typeof r?.isLocal === "boolean" ? r.isLocal : false,
+        isLoaded: typeof r?.isLoaded === "boolean" ? r.isLoaded : false,
+      };
+    });
+  },
+
+  async modelsHealth(connection: DaemonConnectionOptions): Promise<ModelHealthCheck[]> {
+    const response = await daemonClient.runOperation(connection, "models.health", { input: {} });
+    if (!response.ok) throw operationError("models.health", response);
+    const result = asRecord(response.result);
+    const rawList = Array.isArray(result?.models) ? result.models : Array.isArray(response.result) ? response.result : [];
+    return rawList.map((m) => {
+      const r = asRecord(m);
+      const validStatus = ["healthy", "degraded", "unavailable"] as const;
+      return {
+        modelId: typeof r?.modelId === "string" ? r.modelId : typeof r?.model_id === "string" ? r.model_id : "",
+        status: validStatus.includes(r?.status as "healthy") ? (r?.status as "healthy" | "degraded" | "unavailable") : "unavailable",
+        latencyMs: typeof r?.latencyMs === "number" ? r.latencyMs : undefined,
+        error: typeof r?.error === "string" ? r.error : undefined,
+      };
+    });
+  },
+
+  // ─── Audio ────────────────────────────────────────────────────────────────
+
+  async audioTranscribe(
+    connection: DaemonConnectionOptions,
+    audioPath: string,
+    options?: { language?: string; model?: string },
+  ): Promise<AudioTranscribeResult> {
+    const response = await daemonClient.runOperation(connection, "audio.transcribe", { input: { audioPath, ...options } });
+    if (!response.ok) throw operationError("audio.transcribe", response);
+    const result = asRecord(response.result);
+    return {
+      text: typeof result?.text === "string" ? result.text : "",
+      language: typeof result?.language === "string" ? result.language : undefined,
+      durationMs: typeof result?.durationMs === "number" ? result.durationMs : undefined,
+      confidence: typeof result?.confidence === "number" ? result.confidence : undefined,
+    };
+  },
+
+  async audioTts(
+    connection: DaemonConnectionOptions,
+    text: string,
+    options?: { voice?: string; format?: string; model?: string },
+  ): Promise<AudioTtsResult> {
+    const response = await daemonClient.runOperation(connection, "audio.tts", { input: { text, ...options } });
+    if (!response.ok) throw operationError("audio.tts", response);
+    const result = asRecord(response.result);
+    return {
+      audioPath: typeof result?.audioPath === "string" ? result.audioPath : undefined,
+      audioUrl: typeof result?.audioUrl === "string" ? result.audioUrl : undefined,
+      durationMs: typeof result?.durationMs === "number" ? result.durationMs : undefined,
+      format: typeof result?.format === "string" ? result.format : undefined,
+    };
+  },
+
+  // ─── Account & Vault ─────────────────────────────────────────────────────
+
+  async accountStatus(connection: DaemonConnectionOptions): Promise<AccountStatus> {
+    const response = await daemonClient.runOperation(connection, "account.status", { input: {} });
+    if (!response.ok) throw operationError("account.status", response);
+    const result = asRecord(response.result);
+    return {
+      loggedIn: typeof result?.loggedIn === "boolean" ? result.loggedIn : false,
+      email: typeof result?.email === "string" ? result.email : undefined,
+      userId: typeof result?.userId === "string" ? result.userId : undefined,
+      tier: typeof result?.tier === "string" ? result.tier : undefined,
+      plan: typeof result?.plan === "string" ? result.plan : undefined,
+    };
+  },
+
+  async accountLogin(
+    connection: DaemonConnectionOptions,
+    options?: { provider?: string; token?: string },
+  ): Promise<{ url?: string; success: boolean }> {
+    const response = await daemonClient.runOperation(connection, "account.login", { input: options ?? {} });
+    if (!response.ok) throw operationError("account.login", response);
+    const result = asRecord(response.result);
+    return {
+      url: typeof result?.url === "string" ? result.url : undefined,
+      success: typeof result?.success === "boolean" ? result.success : true,
+    };
+  },
+
+  async accountLogout(connection: DaemonConnectionOptions): Promise<void> {
+    const response = await daemonClient.runOperation(connection, "account.logout", { input: {} });
+    if (!response.ok) throw operationError("account.logout", response);
+  },
+
+  async vaultStatus(connection: DaemonConnectionOptions): Promise<VaultStatus> {
+    const response = await daemonClient.runOperation(connection, "vault.status", { input: {} });
+    if (!response.ok) throw operationError("vault.status", response);
+    const result = asRecord(response.result);
+    const validSyncStatus = ["synced", "behind", "ahead", "conflict", "offline", "unknown"] as const;
+    const rawSync = result?.syncStatus;
+    return {
+      syncStatus: validSyncStatus.includes(rawSync as "synced") ? (rawSync as typeof validSyncStatus[number]) : "unknown",
+      keyCount: typeof result?.keyCount === "number" ? result.keyCount : 0,
+      ruleCount: typeof result?.ruleCount === "number" ? result.ruleCount : 0,
+      lastSync: typeof result?.lastSync === "string" ? result.lastSync : undefined,
+      remoteVersion: typeof result?.remoteVersion === "number" ? result.remoteVersion : undefined,
+      localVersion: typeof result?.localVersion === "number" ? result.localVersion : undefined,
+    };
+  },
+
+  async vaultPull(connection: DaemonConnectionOptions): Promise<{ applied: number }> {
+    const response = await daemonClient.runOperation(connection, "vault.pull", { input: {} });
+    if (!response.ok) throw operationError("vault.pull", response);
+    const result = asRecord(response.result);
+    return { applied: typeof result?.applied === "number" ? result.applied : 0 };
+  },
+
+  async vaultPushRules(connection: DaemonConnectionOptions): Promise<{ pushed: number }> {
+    const response = await daemonClient.runOperation(connection, "vault.push-rules", { input: {} });
+    if (!response.ok) throw operationError("vault.push", response);
+    const result = asRecord(response.result);
+    return { pushed: typeof result?.pushed === "number" ? result.pushed : 0 };
+  },
+
+  async keychainStatus(connection: DaemonConnectionOptions): Promise<KeychainStatus> {
+    const response = await daemonClient.runOperation(connection, "keychain.status", { input: {} });
+    if (!response.ok) throw operationError("keychain.status", response);
+    const result = asRecord(response.result);
+    const rawProviders = asRecord(result?.providers) ?? {};
+    const validProviders = ["anthropic", "lmx", "gemini", "openai", "opencode-zen"] as const;
+    const providers = Object.fromEntries(
+      validProviders.map((p) => {
+        const entry = asRecord(rawProviders[p]);
+        return [p, { stored: typeof entry?.stored === "boolean" ? entry.stored : false, lastSet: typeof entry?.lastSet === "string" ? entry.lastSet : undefined }];
+      }),
+    ) as KeychainStatus["providers"];
+    return { providers };
+  },
+
+  // ─── Browser Runtime ─────────────────────────────────────────────────────
+
+  async browserRuntimeStatus(connection: DaemonConnectionOptions): Promise<BrowserRuntimeStatus> {
+    const response = await daemonClient.runOperation(connection, "browser.runtime", { input: {} });
+    if (!response.ok) throw operationError("browser.status", response);
+    const result = asRecord(response.result);
+    const rawSlots = Array.isArray(result?.slots) ? result.slots : [];
+    const slots = rawSlots.map((s) => {
+      const r = asRecord(s);
+      const validState = ["idle", "active", "closing"] as const;
+      return {
+        slotId: typeof r?.slotId === "string" ? r.slotId : "",
+        state: validState.includes(r?.state as "idle") ? (r?.state as "idle" | "active" | "closing") : "idle" as const,
+        url: typeof r?.url === "string" ? r.url : undefined,
+        title: typeof r?.title === "string" ? r.title : undefined,
+        createdAt: typeof r?.createdAt === "string" ? r.createdAt : undefined,
+      };
+    });
+    return {
+      enabled: typeof result?.enabled === "boolean" ? result.enabled : false,
+      slots,
+      activeSessions: typeof result?.activeSessions === "number" ? result.activeSessions : slots.filter((s) => s.state === "active").length,
+      maxSessions: typeof result?.maxSessions === "number" ? result.maxSessions : 5,
+    };
+  },
+
+  // ─── LAN Discovery ───────────────────────────────────────────────────────
+  // LAN discovery is surfaced via lmxDiscovery endpoint candidates rather than
+  // a dedicated daemon operation (no 'discovery.list' in the registry).
+
+  async discoveryList(connection: DaemonConnectionOptions): Promise<LanDiscoveryTarget[]> {
+    try {
+      const discovery = await daemonClient.lmxDiscovery(connection);
+      const candidates = daemonClient.extractLmxEndpointCandidates(discovery);
+      return candidates.map((c) => ({
+        host: c.host,
+        port: c.port,
+        name: `LMX (${c.source})`,
+        source: "mdns" as const,
+        reachable: true,
+      }));
+    } catch {
+      return [];
+    }
   },
 };

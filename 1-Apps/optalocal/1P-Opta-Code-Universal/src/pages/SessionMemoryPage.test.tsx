@@ -2,30 +2,32 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { SessionMemoryPage } from "./SessionMemoryPage";
 
-const operationsPageSpy = vi.fn();
-
-vi.mock("./OperationsPage", () => ({
-  OperationsPage: (props: unknown) => {
-    operationsPageSpy(props);
-    return <div>mock-operations-page</div>;
-  },
+vi.mock("../hooks/useSessionsManager", () => ({
+  useSessionsManager: () => ({
+    results: [],
+    totalCount: 0,
+    searching: false,
+    exporting: false,
+    deleting: false,
+    error: null,
+    search: vi.fn(),
+    exportSession: vi.fn(),
+    deleteSession: vi.fn(),
+    clearResults: vi.fn(),
+  }),
 }));
 
 describe("SessionMemoryPage", () => {
-  it("scopes operations to sessions family", () => {
+  it("renders search bar and empty state", () => {
     render(
       <SessionMemoryPage
         connection={{ host: "127.0.0.1", port: 9999, token: "test-token" }}
       />,
     );
 
-    expect(screen.getByText("mock-operations-page")).toBeInTheDocument();
-    expect(operationsPageSpy).toHaveBeenCalledTimes(1);
-
-    const props = operationsPageSpy.mock.calls[0]?.[0] as {
-      scopedOperationIds?: string[];
-    };
-    expect(props.scopedOperationIds).toEqual(["sessions.*"]);
+    expect(
+      screen.getByPlaceholderText(/search sessions/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /search/i })).toBeInTheDocument();
   });
 });
-

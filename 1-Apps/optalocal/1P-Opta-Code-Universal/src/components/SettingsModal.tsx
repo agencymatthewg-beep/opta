@@ -1963,7 +1963,7 @@ export function SettingsModal({
         return wrap(
           "daemon-logs",
           <section className="opta-studio-module-card">
-            {renderLazyModule("Daemon Logs", <LazyDaemonLogsPage />)}
+            {renderLazyModule("Daemon Logs", <LazyDaemonLogsPage connection={connection} />)}
           </section>,
         );
       case "cli-system-advanced":
