@@ -2571,10 +2571,9 @@ function App() {
                     >
                       {(() => {
                         const word =
-                          isSettingsNavigationActive && settingsLayer === 2 ? "SETTINGS" :
-                            activeStudio === "browser" ? "BROWSER" :
-                              activeStudio === "models" ? "MODELS" :
-                                activeStudio === "atpo" ? "ATPO" : "OPTA";
+                          activeStudio === "browser" ? "BROWSER" :
+                            activeStudio === "models" ? "MODELS" :
+                              activeStudio === "atpo" ? "ATPO" : "OPTA";
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
                           <div className={`v1-brand-word${wordClass}`} aria-label={word}>

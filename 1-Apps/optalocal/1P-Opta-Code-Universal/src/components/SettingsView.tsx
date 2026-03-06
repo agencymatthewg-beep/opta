@@ -49,6 +49,33 @@ export function SettingsView({
     <div
       className={`settings-view dm-setting-layout-${designMode}${isFullscreen ? " settings-view--fullscreen" : ""}`}
     >
+      <div
+        className={`opta-studio-logo-reserve ${!isFullscreen ? "is-docked" : "is-active"}`}
+        aria-hidden="true"
+      >
+        <div className="opta-studio-logo-stack">
+          <div
+            className="opta-studio-logo-word"
+            aria-label="SETTINGS"
+            style={
+              {
+                "--opta-primary-glow": "#a855f7",
+                "--opta-dynamic-filter": "rgba(168, 85, 247, 0.34)",
+              } as CSSProperties
+            }
+          >
+            {"SETTINGS".split("").map((letter, index) => (
+              <span
+                key={`settings-logo-${index}`}
+                className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
+              >
+                {letter}
+              </span>
+            ))}
+          </div>
+          <div className="opta-studio-logo-sub">Code Environment</div>
+        </div>
+      </div>
       <div className="settings-view-header">
         <div className="settings-view-title-wrap">
 
