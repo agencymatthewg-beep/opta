@@ -311,8 +311,10 @@
 
 .opta-studio-logo-reserve.is-docked .opta-studio-logo-settings,
 .opta-studio-logo-reserve.is-docked .opta-studio-logo-sub {
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  /* Hidden in docked mode — top chrome already provides context */
+  opacity: 0;
+  transform: translateY(4px) scale(0.9);
+  pointer-events: none;
 }
 
 .opta-studio-top-chrome {

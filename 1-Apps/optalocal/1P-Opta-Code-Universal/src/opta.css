@@ -6217,6 +6217,22 @@ button.active,
   pointer-events: auto;
 }
 
+/* Studio overlays: hide 'CODE ENVIRONMENT' sub-label (studio panel provides its own context) */
+.app-shell.studio-nav-open .v1-brand-sub {
+  opacity: 0;
+  transform: translateY(6px) scale(0.95);
+  pointer-events: none;
+}
+
+/* Studio letter scale — subtle inward shift matching settings behavior */
+.app-shell.studio-nav-open .v1-brand-letter {
+  transform: scale(0.88);
+}
+.app-shell.studio-nav-open .v1-brand-letter-1 { transition-delay: 0ms; }
+.app-shell.studio-nav-open .v1-brand-letter-2 { transition-delay: 18ms; }
+.app-shell.studio-nav-open .v1-brand-letter-3 { transition-delay: 36ms; }
+.app-shell.studio-nav-open .v1-brand-letter-4 { transition-delay: 54ms; }
+
 .v1-brand-sub {
   font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;

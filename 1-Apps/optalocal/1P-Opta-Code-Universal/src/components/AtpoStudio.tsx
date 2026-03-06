@@ -151,7 +151,7 @@ export function AtpoStudio({ isFullscreen, onClose, connection }: AtpoStudioProp
             className="opta-studio-logo-settings"
             style={{ color: ACCENT, textShadow: `0 0 18px ${ACCENT}88` }}
           >
-            OPTA ATPO
+            ATPO
           </div>
           <div className="opta-studio-logo-sub">App &amp; Module Management</div>
         </div>

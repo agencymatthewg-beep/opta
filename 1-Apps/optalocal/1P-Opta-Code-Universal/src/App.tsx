@@ -2389,7 +2389,7 @@ function App() {
         <div className="v1-blob v1-blob-2" />
       </div>
       <div
-        className={`app-shell${platformClass} ${palette.isOpen ? "palette-open" : ""}${isSettingsNavigationActive ? " settings-nav-open" : ""}${settingsLayer === 3 ? " settings-deep-open" : ""}${isSettingsFocusMode ? " settings-focus-mode" : ""}`}
+        className={`app-shell${platformClass} ${palette.isOpen ? "palette-open" : ""}${isSettingsNavigationActive ? " settings-nav-open" : ""}${settingsLayer === 3 ? " settings-deep-open" : ""}${isSettingsFocusMode ? " settings-focus-mode" : ""}${activeStudio ? ` studio-${activeStudio}-open studio-nav-open` : ""}`}
         data-settings-layer={settingsNavigationState.activeLayer}
         data-settings-highlight={settingsNavigationState.highlightedNodeKey ?? ""}
         data-settings-editing={settingsNavigationState.editMode ? "true" : "false"}
