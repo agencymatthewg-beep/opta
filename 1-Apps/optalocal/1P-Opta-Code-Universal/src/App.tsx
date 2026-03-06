@@ -48,7 +48,7 @@ import {
   preloadSettingsView,
 } from "./lazyAppModules";
 
-type FeatureStudioId = "browser" | "models" | "atpo";
+type FeatureStudioId = "browser" | "models" | "atpo" | "live";
 import type {
   PaletteCommand,
   SessionSubmitMode,
@@ -358,6 +358,7 @@ function App() {
   }, []);
 
   const [showTerminal, setShowTerminal] = useState(false); // Changed initial state from true to false
+  const [isLiveViewOpen, setIsLiveViewOpen] = useState(false);
   const [composerDraft, setComposerDraft] = useState("");
   const [submissionMode, setSubmissionMode] =
     useState<SessionSubmitMode>("chat");
@@ -1647,12 +1648,40 @@ function App() {
         return;
       }
 
+      // Ctrl+L: toggle Live Browser View (compact — occupies chat column)
+      if (isCtrlOrMeta && key === "l" && !e.shiftKey) {
+        e.preventDefault();
+        setIsLiveViewOpen((v) => {
+          if (v) {
+            // Closing compact view also closes the expanded studio overlay
+            setActiveStudio((current) => current === "live" ? null : current);
+            setStudioFullscreen(false);
+          }
+          return !v;
+        });
+        return;
+      }
+
+      // Ctrl+Space: while live view is open, expand to full studio overlay
+      if (isCtrlOrMeta && e.code === "Space" && isLiveViewOpen) {
+        e.preventDefault();
+        setActiveStudio((current) => current === "live" ? null : "live");
+        setStudioFullscreen((current) => current ? false : true);
+        return;
+      }
+
       // Studio overlay keyboard navigation
       if (activeStudio !== null) {
         if (e.key === "Escape") {
           e.preventDefault();
-          setActiveStudio(null);
-          setStudioFullscreen(false);
+          if (activeStudio === "live") {
+            // Escape on live expanded view: collapse to compact (don't fully close)
+            setActiveStudio(null);
+            setStudioFullscreen(false);
+          } else {
+            setActiveStudio(null);
+            setStudioFullscreen(false);
+          }
           return;
         }
         if (e.shiftKey && e.code === "Space") {
@@ -1660,6 +1689,13 @@ function App() {
           setStudioFullscreen((f) => !f);
           return;
         }
+      }
+
+      // Escape closes compact live view when no studio overlay is open
+      if (e.key === "Escape" && isLiveViewOpen && activeStudio === null) {
+        e.preventDefault();
+        setIsLiveViewOpen(false);
+        return;
       }
 
       const moveLeftKey = key === "a" || e.key === "ArrowLeft";
@@ -1908,6 +1944,8 @@ function App() {
     settingsLayer,
     settingsLayer3EditMode,
     settingsLayer3FocusIndex,
+    isLiveViewOpen,
+    activeStudio,
   ]);
 
   useEffect(() => {
@@ -2016,6 +2054,13 @@ function App() {
         description: "Show or hide the right-side runtime panel",
         keywords: ["terminal", "panel", "layout"],
         run: () => setShowTerminal((current) => !current),
+      },
+      {
+        id: "live-browser",
+        title: "Toggle Live Browser View",
+        description: "Show browser live feed in the chat column (Ctrl+L)",
+        keywords: ["browser", "live", "view", "feed", "stream", "ctrl+l"],
+        run: () => setIsLiveViewOpen((v) => !v),
       },
       {
         id: "clear-composer",
@@ -2247,6 +2292,7 @@ function App() {
       setActiveStudio,
       setNotice,
       setStudioFullscreen,
+      setIsLiveViewOpen,
       timelineBySession,
       trackSession,
     ],
@@ -2562,7 +2608,7 @@ function App() {
                 <>
                   {!activeSessionId && (
                     <div className="v1-chat-header">
-                      <b>Ctrl+S</b> Settings · <b>Ctrl+B</b> Browser · <b>Ctrl+M</b> Models · <b>Ctrl+A</b> Atpo
+                      <b>Ctrl+S</b> Settings · <b>Ctrl+B</b> Browser · <b>Ctrl+L</b> Live · <b>Ctrl+M</b> Models · <b>Ctrl+A</b> Atpo
                     </div>
                   )}
                   <div className="v1-branding">
@@ -2573,7 +2619,9 @@ function App() {
                         const word =
                           activeStudio === "browser" ? "BROWSER" :
                             activeStudio === "models" ? "MODELS" :
-                              activeStudio === "atpo" ? "ATPO" : "OPTA";
+                              activeStudio === "atpo" ? "ATPO" :
+                                activeStudio === "live" ? "LIVE" :
+                                  isLiveViewOpen ? "LIVE" : "OPTA";
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
                           <div className={`v1-brand-word${wordClass}`} aria-label={word}>
@@ -2721,6 +2769,47 @@ function App() {
                     </motion.div>
                   )}
 
+                  {/* Live Browser Studio — Ctrl+Space expand from compact live view */}
+                  {settingsLayer === 1 && activeStudio === "live" && (
+                    <motion.div
+                      key="studio-live"
+                      className="v1-settings-motion-layer"
+                      custom={{ direction: "deeper", motion: studioSwitchingRef.current ? "switch" : "root" }}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer v1-settings-overlay--live${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        style={settingsOverlayDockStyle}
+                      >
+                        <div className="v1-live-studio-header">
+                          <span className="v1-live-studio-header__title">LIVE BROWSER</span>
+                          <span className="v1-live-studio-header__hint">Shift+Space to toggle fullscreen · Esc to collapse</span>
+                          <button
+                            type="button"
+                            className="v1-live-studio-header__close"
+                            onClick={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            aria-label="Collapse live browser to compact view"
+                          >
+                            ×
+                          </button>
+                        </div>
+                        <Suspense fallback={null}>
+                          <LazyLiveBrowserView
+                            connection={connection}
+                            slot={activeBrowserSlot}
+                            viewerAuthToken={activeBrowserViewerAuthToken}
+                            className="v1-live-studio-frame"
+                            showNativeControls={true}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {settingsLayer === 3 && (
                     <motion.div
                       key="settings-layer-3"
@@ -2778,7 +2867,26 @@ function App() {
 
                 {/* Chat Pane (hidden when settings navigation is active) */}
                 <div className={`v1-chat-pane ${isAnyOverlayActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
-                  {activePage === "sessions" ? (
+                  {/* Compact Live Browser View — Ctrl+L (takes up chat column) */}
+                  {isLiveViewOpen && activeStudio !== "live" && (
+                    <div className="v1-live-view-compact">
+                      <div className="v1-live-view-compact__header">
+                        <span className="v1-live-view-compact__title">LIVE</span>
+                        <span className="v1-live-view-compact__hint">Ctrl+Space to expand · Ctrl+L or Esc to close</span>
+                      </div>
+                      <Suspense fallback={<div className="flex-1" aria-hidden="true" />}>
+                        <LazyLiveBrowserView
+                          connection={connection}
+                          slot={activeBrowserSlot}
+                          viewerAuthToken={activeBrowserViewerAuthToken}
+                          className="v1-live-view-compact__frame"
+                          showNativeControls={true}
+                        />
+                      </Suspense>
+                    </div>
+                  )}
+                  {/* Session chat (hidden when compact live view is taking the column) */}
+                  {!(isLiveViewOpen && activeStudio !== "live") && activePage === "sessions" ? (
                     <>
                       {!activeSessionId ? (
                         <div className="v1-messages">
