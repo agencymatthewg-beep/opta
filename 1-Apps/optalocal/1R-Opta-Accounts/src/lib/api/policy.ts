@@ -1,7 +1,10 @@
 export const TRUST_STATES = ['trusted', 'restricted', 'quarantined', 'revoked'] as const;
 export type TrustState = (typeof TRUST_STATES)[number];
 
-export const PROVIDERS = ['google', 'apple', 'openai', 'anthropic', 'gemini'] as const;
+export const PROVIDERS = [
+  'google', 'apple', 'openai', 'anthropic', 'gemini',
+  'github-copilot', 'gemini-cli',
+] as const;
 export type Provider = (typeof PROVIDERS)[number];
 
 export const HIGH_RISK_SCOPES = new Set(['automation.high_risk', 'lmx.admin', 'cli.run.elevated', 'daemon.manage']);

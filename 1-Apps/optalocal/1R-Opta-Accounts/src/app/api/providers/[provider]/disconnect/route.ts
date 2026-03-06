@@ -4,6 +4,18 @@ import { parseProvider } from '@/lib/api/policy';
 
 type RouteContext = { params: Promise<{ provider: string }> };
 
+// Providers that support OAuth token revocation
+const REVOCABLE: Record<string, string> = {
+  'github-copilot': 'https://api.github.com/applications/{client_id}/token',
+};
+
+/**
+ * POST /api/providers/[provider]/disconnect
+ *
+ * Marks the provider connection as revoked and zeroes out the encrypted token.
+ * For providers that support OAuth revocation, calls the revocation endpoint
+ * before clearing local state.
+ */
 export async function POST(_request: Request, context: RouteContext) {
   const { provider: rawProvider } = await context.params;
   const provider = parseProvider(rawProvider);
@@ -14,17 +26,53 @@ export async function POST(_request: Request, context: RouteContext) {
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ error: 'supabase_unconfigured' }, { status: 500 });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+
+  // GitHub Copilot: revoke via GitHub API before clearing
+  if (provider === 'github-copilot') {
+    const clientId = process.env.GITHUB_COPILOT_CLIENT_ID;
+    const clientSecret = process.env.GITHUB_COPILOT_CLIENT_SECRET;
+    if (clientId && clientSecret) {
+      // Fetch the current record to get the encrypted token
+      const { data: row } = await supabase
+        .from('accounts_provider_connections')
+        .select('token_encrypted')
+        .eq('user_id', user.id)
+        .eq('provider', provider)
+        .maybeSingle();
+
+      // Best-effort revocation — don't fail disconnect if revocation fails
+      if (row?.token_encrypted) {
+        try {
+          const { decryptOAuthToken } = await import('@/lib/oauth/token-crypto');
+          const payload = JSON.parse(decryptOAuthToken(row.token_encrypted)) as { access_token?: string };
+          if (payload.access_token) {
+            await fetch(REVOCABLE['github-copilot']!.replace('{client_id}', clientId), {
+              method: 'DELETE',
+              headers: {
+                Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString('base64')}`,
+                'Content-Type': 'application/json',
+                Accept: 'application/vnd.github+json',
+              },
+              body: JSON.stringify({ access_token: payload.access_token }),
+            });
+          }
+        } catch {
+          // Revocation failed — proceed to clear local record anyway
+        }
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from('accounts_provider_connections')
     .update({
       status: 'revoked',
-      meta: { disconnectedVia: 'stub', disconnectedAt: new Date().toISOString() },
+      token_encrypted: null,
+      token_expires_at: null,
+      connected_via: null,
+      meta: { disconnectedAt: new Date().toISOString() },
       updated_at: new Date().toISOString(),
     })
     .eq('user_id', user.id)
@@ -33,10 +81,10 @@ export async function POST(_request: Request, context: RouteContext) {
     .maybeSingle();
 
   if (error?.code === 'PGRST205') {
-    return NextResponse.json({ error: 'schema_missing_accounts_provider_connections' }, { status: 503 });
+    return NextResponse.json({ error: 'schema_not_migrated' }, { status: 503 });
   }
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   if (!data) return NextResponse.json({ error: 'provider_connection_not_found' }, { status: 404 });
 
-  return NextResponse.json({ ok: true, provider: data, mode: 'stub' });
+  return NextResponse.json({ ok: true, provider: data });
 }
