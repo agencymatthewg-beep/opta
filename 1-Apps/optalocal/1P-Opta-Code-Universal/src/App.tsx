@@ -1201,7 +1201,7 @@ function App() {
   const widgetLayout = useWidgetLayout("default");
   const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
-  const { status: browserLiveHostStatus, getSlotForSession } =
+  const { status: browserLiveHostStatus, getSlotForSession, refreshNow: refreshLiveHost } =
     useBrowserLiveHost(connection);
 
   const activeSession = useMemo(
@@ -2559,6 +2559,8 @@ function App() {
                           <LazyBrowserStudio
                             isFullscreen={studioFullscreen}
                             onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            liveHostStatus={browserLiveHostStatus}
+                            onRefreshLiveHost={refreshLiveHost}
                           />
                         </Suspense>
                       </div>
@@ -2583,6 +2585,7 @@ function App() {
                           <LazyModelsStudio
                             isFullscreen={studioFullscreen}
                             onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            connection={connection}
                           />
                         </Suspense>
                       </div>
@@ -2607,6 +2610,7 @@ function App() {
                           <LazyAtpoStudio
                             isFullscreen={studioFullscreen}
                             onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            connection={connection}
                           />
                         </Suspense>
                       </div>

@@ -1,81 +1,90 @@
-import { useState, useEffect, type CSSProperties } from "react";
-import { Activity, Cpu, RefreshCw, X, Zap } from "lucide-react";
+import { useState, type CSSProperties } from "react";
+import {
+  Activity,
+  Cpu,
+  Download,
+  Loader2,
+  RefreshCw,
+  Trash2,
+  X,
+  Zap,
+} from "lucide-react";
+import { useModels } from "../hooks/useModels";
+import type { DaemonConnectionOptions } from "../types";
 
 const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
 
 const ACCENT = "#a78bfa";
 
-interface ModelEntry {
-  id: string;
-  name: string;
-  params: string;
-  status: "loaded" | "available" | "unknown";
-  tokensPerSec?: number;
-}
-
-interface LmxStatus {
-  online: boolean;
-  host: string;
-  models: ModelEntry[];
-  vramUsedGb?: number;
-  vramTotalGb?: number;
-}
-
-const DEFAULT_STATUS: LmxStatus = {
-  online: false,
-  host: "192.168.188.11:1234",
-  models: [],
-};
-
 interface ModelsStudioProps {
   isFullscreen: boolean;
   onClose: () => void;
+  connection: DaemonConnectionOptions | null;
 }
 
-export function ModelsStudio({ isFullscreen, onClose }: ModelsStudioProps) {
-  const [lmxStatus, setLmxStatus] = useState<LmxStatus>(DEFAULT_STATUS);
-  const [loading, setLoading] = useState(false);
-  const [routing, setRouting] = useState<"lmx" | "cloud">("lmx");
+export function ModelsStudio({
+  isFullscreen,
+  onClose,
+  connection,
+}: ModelsStudioProps) {
+  const {
+    loadedModels,
+    availableModels,
+    memory,
+    lmxReachable,
+    lmxTarget,
+    loading,
+    error,
+    loadModel,
+    unloadModel,
+    deleteModel,
+    refreshLmx,
+  } = useModels(connection);
 
-  const fetchLmxStatus = async () => {
-    setLoading(true);
-    try {
-      // Try the LMX healthz endpoint via daemon proxy or direct
-      const res = await fetch("http://localhost:9999/lmx/health", {
-        signal: AbortSignal.timeout(2500),
-      });
-      if (res.ok) {
-        const data = (await res.json()) as Record<string, unknown>;
-        const models = Array.isArray(data.models)
-          ? (data.models as Array<Record<string, unknown>>).map((m) => ({
-              id: String(m.id ?? m.name ?? "unknown"),
-              name: String(m.name ?? m.id ?? "Unknown Model"),
-              params: String(m.params ?? ""),
-              status: m.loaded ? ("loaded" as const) : ("available" as const),
-              tokensPerSec: typeof m.tokens_per_sec === "number" ? m.tokens_per_sec : undefined,
-            }))
-          : [];
-        setLmxStatus({
-          online: true,
-          host: "192.168.188.11:1234",
-          models,
-          vramUsedGb: typeof data.vram_used_gb === "number" ? data.vram_used_gb : undefined,
-          vramTotalGb: typeof data.vram_total_gb === "number" ? data.vram_total_gb : undefined,
-        });
-      } else {
-        setLmxStatus({ ...DEFAULT_STATUS });
-      }
-    } catch {
-      setLmxStatus({ ...DEFAULT_STATUS });
-    } finally {
-      setLoading(false);
-    }
+  const [actionId, setActionId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"loaded" | "available">("loaded");
+
+  const doLoad = async (modelId: string) => {
+    setActionId(`load:${modelId}`);
+    await loadModel(modelId);
+    setActionId(null);
   };
 
-  useEffect(() => {
-    void fetchLmxStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const doUnload = async (modelId: string) => {
+    setActionId(`unload:${modelId}`);
+    await unloadModel(modelId);
+    setActionId(null);
+  };
+
+  const doDelete = async (modelId: string) => {
+    setActionId(`delete:${modelId}`);
+    await deleteModel(modelId);
+    setActionId(null);
+  };
+
+  const lmxHost = lmxTarget
+    ? `${lmxTarget.host}:${lmxTarget.port}`
+    : "192.168.188.11:1234";
+
+  const vramUsed = memory?.used_gb ?? 0;
+  const vramTotal = memory?.total_unified_memory_gb ?? 0;
+  const vramPercent =
+    vramTotal > 0 ? Math.round((vramUsed / vramTotal) * 100) : 0;
+
+  const formatModelId = (id: string) => {
+    const parts = id.split("/");
+    return parts[parts.length - 1] ?? id;
+  };
+
+  const formatBytes = (bytes?: number) => {
+    if (!bytes) return "";
+    if (bytes >= 1e9) return `${(bytes / 1e9).toFixed(1)}GB`;
+    if (bytes >= 1e6) return `${(bytes / 1e6).toFixed(0)}MB`;
+    return `${bytes}B`;
+  };
+
+  const vramColor =
+    vramPercent > 80 ? "#ef4444" : vramPercent > 60 ? "#f59e0b" : ACCENT;
 
   const shellClass = [
     "opta-studio-shell",
@@ -134,7 +143,10 @@ export function ModelsStudio({ isFullscreen, onClose }: ModelsStudioProps) {
                 className="opta-studio-layer-badge"
                 style={{ "--settings-accent": ACCENT } as CSSProperties}
               >
-                <Cpu size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 5 }} />
+                <Cpu
+                  size={13}
+                  style={{ display: "inline", verticalAlign: "middle", marginRight: 5 }}
+                />
                 LMX &amp; Model Management
               </span>
             </div>
@@ -154,15 +166,15 @@ export function ModelsStudio({ isFullscreen, onClose }: ModelsStudioProps) {
 
       {/* Content */}
       <div className="feature-studio-content">
-        {/* Routing row */}
+        {/* Inference status header */}
         <div className="feature-studio-section-header">
           <h3 className="feature-studio-section-title" style={{ color: ACCENT }}>
-            Inference Routing
+            Inference Status
           </h3>
           <button
             type="button"
             className="feature-studio-action-secondary"
-            onClick={() => void fetchLmxStatus()}
+            onClick={() => void refreshLmx()}
             disabled={loading}
             style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
           >
@@ -171,100 +183,261 @@ export function ModelsStudio({ isFullscreen, onClose }: ModelsStudioProps) {
           </button>
         </div>
 
-        <div className="feature-studio-routing-bar">
-          <button
-            type="button"
-            className={`feature-studio-routing-pill ${routing === "lmx" ? "is-active" : ""}`}
-            style={routing === "lmx" ? { "--pill-accent": ACCENT, borderColor: `${ACCENT}66`, color: ACCENT } as CSSProperties : {}}
-            onClick={() => setRouting("lmx")}
-          >
-            <Zap size={12} />
-            LMX Primary
-            <span
-              className={`feature-studio-routing-dot ${lmxStatus.online ? "feature-studio-routing-dot--up" : "feature-studio-routing-dot--down"}`}
-            />
-          </button>
-          <button
-            type="button"
-            className={`feature-studio-routing-pill ${routing === "cloud" ? "is-active" : ""}`}
-            style={routing === "cloud" ? { "--pill-accent": "#60a5fa", borderColor: "#60a5fa66", color: "#60a5fa" } as CSSProperties : {}}
-            onClick={() => setRouting("cloud")}
-          >
-            <Activity size={12} />
-            Cloud Fallback
-            <span className="feature-studio-routing-dot feature-studio-routing-dot--up" />
-          </button>
-        </div>
-
         {/* LMX status bar */}
         <div
-          className={`feature-studio-status-bar ${lmxStatus.online ? "feature-studio-status-bar--online" : "feature-studio-status-bar--offline"}`}
-          style={{ borderColor: lmxStatus.online ? `${ACCENT}44` : "#ef444444" }}
+          className={`feature-studio-status-bar ${lmxReachable ? "feature-studio-status-bar--online" : "feature-studio-status-bar--offline"}`}
+          style={{ borderColor: lmxReachable ? `${ACCENT}44` : "#ef444444" }}
         >
           <span
-            className={`feature-studio-status-dot ${lmxStatus.online ? "feature-studio-status-dot--up" : "feature-studio-status-dot--down"}`}
+            className={`feature-studio-status-dot ${lmxReachable ? "feature-studio-status-dot--up" : "feature-studio-status-dot--down"}`}
           />
-          <span>{lmxStatus.online ? "LMX Online" : "LMX Offline"}</span>
-          <span className="feature-studio-status-host">{lmxStatus.host}</span>
-          {lmxStatus.vramUsedGb !== undefined && lmxStatus.vramTotalGb !== undefined && (
+          <span>{lmxReachable ? "LMX Online" : "LMX Offline"}</span>
+          <span className="feature-studio-status-host">{lmxHost}</span>
+          {memory && (
             <span className="feature-studio-status-vram">
-              VRAM {lmxStatus.vramUsedGb.toFixed(1)}GB / {lmxStatus.vramTotalGb}GB
+              {vramUsed.toFixed(1)}GB / {vramTotal}GB RAM
             </span>
           )}
         </div>
 
-        {/* Model list */}
-        <div className="feature-studio-section-header" style={{ marginTop: "1rem" }}>
-          <h3 className="feature-studio-section-title" style={{ color: ACCENT }}>
-            Models
-          </h3>
+        {/* Memory usage bar */}
+        {memory && vramTotal > 0 && (
+          <div
+            style={{
+              margin: "0.5rem 0 0.75rem",
+              display: "flex",
+              flexDirection: "column",
+              gap: 4,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                fontSize: 10,
+                color: "#71717a",
+              }}
+            >
+              <span>Unified Memory</span>
+              <span style={{ color: vramColor }}>{vramPercent}% used</span>
+            </div>
+            <div
+              style={{
+                height: 4,
+                background: "#27272a",
+                borderRadius: 2,
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  height: "100%",
+                  width: `${vramPercent}%`,
+                  background: vramColor,
+                  borderRadius: 2,
+                  transition: "width 0.4s ease",
+                  boxShadow: `0 0 6px ${vramColor}66`,
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {error && !lmxReachable && (
+          <div
+            style={{ fontSize: 11, color: "#ef4444aa", padding: "0.25rem 0 0.5rem" }}
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Tab bar: Loaded vs Available */}
+        <div className="feature-studio-tab-bar" style={{ marginTop: "0.75rem" }}>
+          <button
+            type="button"
+            className={`feature-studio-tab ${activeTab === "loaded" ? "is-active" : ""}`}
+            style={
+              activeTab === "loaded"
+                ? ({
+                    "--tab-accent": ACCENT,
+                    color: ACCENT,
+                    borderColor: `${ACCENT}55`,
+                  } as CSSProperties)
+                : {}
+            }
+            onClick={() => setActiveTab("loaded")}
+          >
+            <Zap size={13} />
+            Loaded ({loadedModels.length})
+          </button>
+          <button
+            type="button"
+            className={`feature-studio-tab ${activeTab === "available" ? "is-active" : ""}`}
+            style={
+              activeTab === "available"
+                ? ({
+                    "--tab-accent": ACCENT,
+                    color: ACCENT,
+                    borderColor: `${ACCENT}55`,
+                  } as CSSProperties)
+                : {}
+            }
+            onClick={() => setActiveTab("available")}
+          >
+            <Download size={13} />
+            Available ({availableModels.length})
+          </button>
         </div>
 
-        {lmxStatus.online && lmxStatus.models.length > 0 ? (
-          <div className="feature-studio-model-list">
-            {lmxStatus.models.map((model) => (
-              <div
-                key={model.id}
-                className={`feature-studio-model-row feature-studio-model-row--${model.status}`}
-                style={
-                  model.status === "loaded"
-                    ? { borderLeft: `3px solid ${ACCENT}` }
-                    : {}
-                }
-              >
-                <div className="feature-studio-model-info">
-                  <span className="feature-studio-model-name">{model.name}</span>
-                  {model.params && (
-                    <span className="feature-studio-model-params">{model.params}</span>
-                  )}
-                </div>
-                <div className="feature-studio-model-right">
-                  {model.tokensPerSec !== undefined && (
-                    <span className="feature-studio-model-speed">
-                      {model.tokensPerSec.toFixed(1)} tok/s
-                    </span>
-                  )}
-                  <span
-                    className={`feature-studio-model-badge feature-studio-model-badge--${model.status}`}
-                  >
-                    {model.status === "loaded" ? "Loaded" : "Available"}
-                  </span>
-                </div>
+        {/* Loaded models */}
+        {activeTab === "loaded" && (
+          <>
+            {loadedModels.length > 0 ? (
+              <div className="feature-studio-model-list">
+                {loadedModels.map((model) => {
+                  const isUnloading =
+                    actionId === `unload:${model.model_id}`;
+                  return (
+                    <div
+                      key={model.model_id}
+                      className="feature-studio-model-row feature-studio-model-row--loaded"
+                      style={{ borderLeft: `3px solid ${ACCENT}` }}
+                    >
+                      <div className="feature-studio-model-info">
+                        <span className="feature-studio-model-name">
+                          {formatModelId(model.model_id)}
+                        </span>
+                        {model.memory_bytes != null && (
+                          <span className="feature-studio-model-params">
+                            {formatBytes(model.memory_bytes)}
+                          </span>
+                        )}
+                        {model.context_length != null && (
+                          <span className="feature-studio-model-params">
+                            {(model.context_length / 1000).toFixed(0)}k ctx
+                          </span>
+                        )}
+                        {model.request_count != null && model.request_count > 0 && (
+                          <span className="feature-studio-model-params">
+                            {model.request_count} req
+                          </span>
+                        )}
+                      </div>
+                      <div className="feature-studio-model-right">
+                        <span className="feature-studio-model-badge feature-studio-model-badge--loaded">
+                          Loaded
+                        </span>
+                        <button
+                          type="button"
+                          className="feature-studio-action-mini"
+                          onClick={() => void doUnload(model.model_id)}
+                          disabled={!!actionId}
+                          style={{ color: "#f59e0b", borderColor: "#f59e0b44" }}
+                          title="Unload from memory"
+                        >
+                          {isUnloading ? (
+                            <Loader2 size={11} className="feature-studio-spin" />
+                          ) : (
+                            "Unload"
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div className="feature-studio-empty-state">
-            <Cpu size={32} style={{ opacity: 0.3, color: ACCENT }} />
-            <p>
-              {lmxStatus.online
-                ? "No models reported"
-                : "LMX unreachable — ensure Opta LMX is running on Mono512"}
-            </p>
-            <p className="feature-studio-empty-hint">
-              Configure in Settings Studio → LMX &amp; Models
-            </p>
-          </div>
+            ) : (
+              <div className="feature-studio-empty-state">
+                <Cpu size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                <p>{lmxReachable ? "No models loaded" : "LMX offline"}</p>
+                {lmxReachable && (
+                  <p className="feature-studio-empty-hint">
+                    Switch to Available to load a model
+                  </p>
+                )}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Available models */}
+        {activeTab === "available" && (
+          <>
+            {availableModels.length > 0 ? (
+              <div className="feature-studio-model-list">
+                {availableModels.map((model) => {
+                  const isLoading = actionId === `load:${model.model_id}`;
+                  const isDeleting = actionId === `delete:${model.model_id}`;
+                  return (
+                    <div
+                      key={model.model_id}
+                      className="feature-studio-model-row feature-studio-model-row--available"
+                    >
+                      <div className="feature-studio-model-info">
+                        <span className="feature-studio-model-name">
+                          {formatModelId(model.model_id)}
+                        </span>
+                        {model.size_bytes != null && (
+                          <span className="feature-studio-model-params">
+                            {formatBytes(model.size_bytes)}
+                          </span>
+                        )}
+                        {model.quantization && (
+                          <span className="feature-studio-model-params">
+                            {model.quantization}
+                          </span>
+                        )}
+                      </div>
+                      <div className="feature-studio-model-right">
+                        <span className="feature-studio-model-badge feature-studio-model-badge--available">
+                          Available
+                        </span>
+                        <button
+                          type="button"
+                          className="feature-studio-action-mini"
+                          onClick={() => void doLoad(model.model_id)}
+                          disabled={!!actionId}
+                          style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
+                          title="Load into memory"
+                        >
+                          {isLoading ? (
+                            <Loader2 size={11} className="feature-studio-spin" />
+                          ) : (
+                            "Load"
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          className="feature-studio-action-mini feature-studio-action-mini--danger"
+                          onClick={() => void doDelete(model.model_id)}
+                          disabled={!!actionId}
+                          title="Delete from disk"
+                        >
+                          {isDeleting ? (
+                            <Loader2 size={11} className="feature-studio-spin" />
+                          ) : (
+                            <Trash2 size={11} />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="feature-studio-empty-state">
+                <Activity size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                <p>
+                  {lmxReachable
+                    ? "No local models found"
+                    : "LMX offline — cannot list models"}
+                </p>
+                <p className="feature-studio-empty-hint">
+                  Models are stored on Mono512
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         <div
@@ -272,7 +445,8 @@ export function ModelsStudio({ isFullscreen, onClose }: ModelsStudioProps) {
           style={{ borderColor: `${ACCENT}22`, color: `${ACCENT}99` }}
         >
           <Cpu size={12} />
-          Opta LMX on Mono512 (192.168.188.11) · MLX Apple Silicon inference · OpenAI-compatible
+          Opta LMX on Mono512 (192.168.188.11) · MLX Apple Silicon inference ·
+          OpenAI-compatible
         </div>
       </div>
     </div>

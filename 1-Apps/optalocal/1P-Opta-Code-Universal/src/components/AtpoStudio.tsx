@@ -1,96 +1,121 @@
-import { useState, type CSSProperties } from "react";
-import { AppWindow, Package, RefreshCw, Trash2, X } from "lucide-react";
+import { useState, useEffect, type CSSProperties } from "react";
+import { AppWindow, Package, RefreshCw, Server, Trash2, X } from "lucide-react";
+import { daemonClient } from "../lib/daemonClient";
+import type { DaemonConnectionOptions } from "../types";
 
 const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
 
 const ACCENT = "#f472b6";
 
-interface AppEntry {
+type ActiveTab = "apps" | "mcp";
+
+interface InstalledApp {
   id: string;
   name: string;
-  version: string;
-  category: "core" | "tool" | "integration";
-  updateAvailable: boolean;
-  description: string;
+  version?: string;
+  path?: string;
 }
 
-// Seeded app catalog reflecting the actual optalocal ecosystem
-const INSTALLED_APPS: AppEntry[] = [
-  {
-    id: "opta-browser",
-    name: "Opta Browser",
-    version: "1.0.0",
-    category: "core",
-    updateAvailable: false,
-    description: "Playwright-backed browser automation and localhost management",
-  },
-  {
-    id: "opta-lmx",
-    name: "Opta LMX",
-    version: "0.8.1",
-    category: "core",
-    updateAvailable: false,
-    description: "MLX local inference engine for Apple Silicon",
-  },
-  {
-    id: "opta-daemon",
-    name: "Opta Daemon",
-    version: "1.2.4",
-    category: "core",
-    updateAvailable: false,
-    description: "Background orchestration daemon with HTTP/WS API",
-  },
-  {
-    id: "opta-mcp",
-    name: "MCP Integrations",
-    version: "0.5.0",
-    category: "integration",
-    updateAvailable: true,
-    description: "Model Context Protocol server registry and client",
-  },
-];
-
-const CATALOG_APPS: AppEntry[] = [
-  {
-    id: "opta-research",
-    name: "Opta Research",
-    version: "0.3.0",
-    category: "tool",
-    updateAvailable: false,
-    description: "Multi-provider web search (Brave, Exa, Tavily)",
-  },
-  {
-    id: "opta-lsp",
-    name: "Opta LSP",
-    version: "0.2.0",
-    category: "tool",
-    updateAvailable: false,
-    description: "Language server protocol client and lifecycle manager",
-  },
-];
+interface McpServer {
+  name: string;
+  transport: string;
+  command?: string;
+  args?: string[];
+  url?: string;
+}
 
 interface AtpoStudioProps {
   isFullscreen: boolean;
   onClose: () => void;
+  connection: DaemonConnectionOptions | null;
 }
 
-type ActiveTab = "installed" | "catalog";
-
-const CATEGORY_COLORS: Record<AppEntry["category"], string> = {
-  core: "#22d3ee",
-  tool: "#a78bfa",
-  integration: "#f472b6",
+const APP_COLORS: Record<string, string> = {
+  "opta-cli": "#22d3ee",
+  "opta-daemon": "#22d3ee",
+  "opta-lmx": "#a78bfa",
+  "opta-code-universal": "#f472b6",
 };
 
-export function AtpoStudio({ isFullscreen, onClose }: AtpoStudioProps) {
-  const [activeTab, setActiveTab] = useState<ActiveTab>("installed");
+function getAppColor(appId: string): string {
+  return APP_COLORS[appId] ?? "#71717a";
+}
+
+export function AtpoStudio({ isFullscreen, onClose, connection }: AtpoStudioProps) {
+  const [activeTab, setActiveTab] = useState<ActiveTab>("apps");
+  const [apps, setApps] = useState<InstalledApp[]>([]);
+  const [mcpServers, setMcpServers] = useState<McpServer[]>([]);
+  const [loading, setLoading] = useState(false);
   const [removing, setRemoving] = useState<string | null>(null);
 
-  const handleRemove = (appId: string) => {
-    // In a real implementation this would call the daemon API
-    setRemoving(appId);
-    setTimeout(() => setRemoving(null), 1200);
+  const fetchApps = async () => {
+    if (!connection) return;
+    try {
+      const res = await daemonClient.runOperation(connection, "apps.list", {
+        input: {},
+      });
+      if (res.ok && Array.isArray(res.result)) {
+        setApps(res.result as InstalledApp[]);
+      }
+    } catch {
+      // daemon may not expose apps.list — stay empty
+    }
   };
+
+  const fetchMcp = async () => {
+    if (!connection) return;
+    try {
+      const res = await daemonClient.runOperation(connection, "mcp.list", {
+        input: {},
+      });
+      if (
+        res.ok &&
+        res.result &&
+        typeof res.result === "object" &&
+        !Array.isArray(res.result)
+      ) {
+        const servers: McpServer[] = Object.entries(
+          res.result as Record<string, unknown>,
+        ).map(([name, cfg]) => {
+          const c = cfg as Record<string, unknown>;
+          return {
+            name,
+            transport: String(c.transport ?? "stdio"),
+            command: typeof c.command === "string" ? c.command : undefined,
+            args: Array.isArray(c.args) ? c.args.map(String) : undefined,
+            url: typeof c.url === "string" ? c.url : undefined,
+          };
+        });
+        setMcpServers(servers);
+      }
+    } catch {
+      // daemon may not expose mcp.list — stay empty
+    }
+  };
+
+  const refresh = async () => {
+    setLoading(true);
+    await Promise.all([fetchApps(), fetchMcp()]);
+    setLoading(false);
+  };
+
+  const handleRemoveMcp = async (name: string) => {
+    if (!connection) return;
+    setRemoving(name);
+    try {
+      await daemonClient.runOperation(connection, "mcp.remove", {
+        input: { name },
+      });
+      await fetchMcp();
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  useEffect(() => {
+    void refresh();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connection]);
 
   const shellClass = [
     "opta-studio-shell",
@@ -99,8 +124,6 @@ export function AtpoStudio({ isFullscreen, onClose }: AtpoStudioProps) {
   ]
     .filter(Boolean)
     .join(" ");
-
-  const displayedApps = activeTab === "installed" ? INSTALLED_APPS : CATALOG_APPS;
 
   return (
     <div
@@ -151,7 +174,10 @@ export function AtpoStudio({ isFullscreen, onClose }: AtpoStudioProps) {
                 className="opta-studio-layer-badge"
                 style={{ "--settings-accent": ACCENT } as CSSProperties}
               >
-                <AppWindow size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 5 }} />
+                <AppWindow
+                  size={13}
+                  style={{ display: "inline", verticalAlign: "middle", marginRight: 5 }}
+                />
                 App &amp; Module Management
               </span>
             </div>
@@ -175,29 +201,37 @@ export function AtpoStudio({ isFullscreen, onClose }: AtpoStudioProps) {
         <div className="feature-studio-tab-bar">
           <button
             type="button"
-            className={`feature-studio-tab ${activeTab === "installed" ? "is-active" : ""}`}
+            className={`feature-studio-tab ${activeTab === "apps" ? "is-active" : ""}`}
             style={
-              activeTab === "installed"
-                ? ({ "--tab-accent": ACCENT, color: ACCENT, borderColor: `${ACCENT}55` } as CSSProperties)
+              activeTab === "apps"
+                ? ({
+                    "--tab-accent": ACCENT,
+                    color: ACCENT,
+                    borderColor: `${ACCENT}55`,
+                  } as CSSProperties)
                 : {}
             }
-            onClick={() => setActiveTab("installed")}
+            onClick={() => setActiveTab("apps")}
           >
             <Package size={13} />
-            Installed ({INSTALLED_APPS.length})
+            Opta Apps ({apps.length})
           </button>
           <button
             type="button"
-            className={`feature-studio-tab ${activeTab === "catalog" ? "is-active" : ""}`}
+            className={`feature-studio-tab ${activeTab === "mcp" ? "is-active" : ""}`}
             style={
-              activeTab === "catalog"
-                ? ({ "--tab-accent": ACCENT, color: ACCENT, borderColor: `${ACCENT}55` } as CSSProperties)
+              activeTab === "mcp"
+                ? ({
+                    "--tab-accent": ACCENT,
+                    color: ACCENT,
+                    borderColor: `${ACCENT}55`,
+                  } as CSSProperties)
                 : {}
             }
-            onClick={() => setActiveTab("catalog")}
+            onClick={() => setActiveTab("mcp")}
           >
-            <AppWindow size={13} />
-            Catalog ({CATALOG_APPS.length})
+            <Server size={13} />
+            MCP Servers ({mcpServers.length})
           </button>
 
           <div className="feature-studio-tab-spacer" />
@@ -206,80 +240,155 @@ export function AtpoStudio({ isFullscreen, onClose }: AtpoStudioProps) {
             type="button"
             className="feature-studio-action-secondary"
             style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
-            onClick={() => {/* check updates */}}
+            onClick={() => void refresh()}
+            disabled={loading}
           >
-            <RefreshCw size={13} />
-            Check Updates
+            <RefreshCw size={13} className={loading ? "feature-studio-spin" : ""} />
+            Refresh
           </button>
         </div>
 
-        {/* App list */}
-        <div className="feature-studio-app-list">
-          {displayedApps.map((app) => {
-            const catColor = CATEGORY_COLORS[app.category];
-            const isRemoving = removing === app.id;
-            return (
-              <div
-                key={app.id}
-                className={`feature-studio-app-row ${isRemoving ? "feature-studio-app-row--removing" : ""}`}
-                style={{ borderLeft: `3px solid ${catColor}55` }}
-              >
-                <div className="feature-studio-app-icon" style={{ background: `${catColor}18`, color: catColor }}>
-                  <Package size={16} />
-                </div>
-                <div className="feature-studio-app-info">
-                  <div className="feature-studio-app-name">
-                    {app.name}
-                    <span className="feature-studio-app-version">v{app.version}</span>
-                    <span
-                      className="feature-studio-app-category"
-                      style={{ color: catColor, borderColor: `${catColor}44` }}
+        {/* Apps tab */}
+        {activeTab === "apps" && (
+          <div className="feature-studio-app-list">
+            {apps.length > 0 ? (
+              apps.map((app) => {
+                const color = getAppColor(app.id);
+                return (
+                  <div
+                    key={app.id}
+                    className="feature-studio-app-row"
+                    style={{ borderLeft: `3px solid ${color}55` }}
+                  >
+                    <div
+                      className="feature-studio-app-icon"
+                      style={{ background: `${color}18`, color }}
                     >
-                      {app.category}
-                    </span>
+                      <Package size={16} />
+                    </div>
+                    <div className="feature-studio-app-info">
+                      <div className="feature-studio-app-name">
+                        {app.name}
+                        {app.version && (
+                          <span className="feature-studio-app-version">
+                            v{app.version}
+                          </span>
+                        )}
+                        <span
+                          className="feature-studio-app-category"
+                          style={{ color, borderColor: `${color}44` }}
+                        >
+                          {app.id}
+                        </span>
+                      </div>
+                      {app.path && (
+                        <div
+                          className="feature-studio-app-desc"
+                          style={{
+                            fontFamily: "JetBrains Mono, monospace",
+                            fontSize: 10,
+                          }}
+                        >
+                          {app.path}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="feature-studio-app-desc">{app.description}</div>
-                </div>
-                <div className="feature-studio-app-actions">
-                  {app.updateAvailable && (
-                    <button
-                      type="button"
-                      className="feature-studio-action-mini feature-studio-action-mini--update"
-                      style={{ color: "#10b981", borderColor: "#10b98144" }}
-                    >
-                      Update
-                    </button>
-                  )}
-                  {activeTab === "installed" ? (
-                    <button
-                      type="button"
-                      className="feature-studio-action-mini feature-studio-action-mini--danger"
-                      onClick={() => handleRemove(app.id)}
-                      disabled={isRemoving}
-                    >
-                      <Trash2 size={11} />
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="feature-studio-action-mini"
-                      style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
-                    >
-                      Install
-                    </button>
-                  )}
-                </div>
+                );
+              })
+            ) : (
+              <div className="feature-studio-empty-state">
+                <Package size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                <p>
+                  {connection
+                    ? "No installed apps detected"
+                    : "Connect daemon to view apps"}
+                </p>
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        )}
+
+        {/* MCP tab */}
+        {activeTab === "mcp" && (
+          <div className="feature-studio-app-list">
+            {mcpServers.length > 0 ? (
+              mcpServers.map((server) => {
+                const transport =
+                  server.transport === "stdio"
+                    ? [server.command, ...(server.args ?? [])]
+                        .filter(Boolean)
+                        .join(" ")
+                    : server.url ?? "unknown";
+                return (
+                  <div
+                    key={server.name}
+                    className="feature-studio-app-row"
+                    style={{ borderLeft: `3px solid ${ACCENT}55` }}
+                  >
+                    <div
+                      className="feature-studio-app-icon"
+                      style={{ background: `${ACCENT}18`, color: ACCENT }}
+                    >
+                      <Server size={16} />
+                    </div>
+                    <div className="feature-studio-app-info">
+                      <div className="feature-studio-app-name">
+                        {server.name}
+                        <span
+                          className="feature-studio-app-category"
+                          style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
+                        >
+                          {server.transport}
+                        </span>
+                      </div>
+                      <div
+                        className="feature-studio-app-desc"
+                        style={{
+                          fontFamily: "JetBrains Mono, monospace",
+                          fontSize: 10,
+                        }}
+                      >
+                        {transport}
+                      </div>
+                    </div>
+                    <div className="feature-studio-app-actions">
+                      <button
+                        type="button"
+                        className="feature-studio-action-mini feature-studio-action-mini--danger"
+                        onClick={() => void handleRemoveMcp(server.name)}
+                        disabled={removing === server.name}
+                        title="Remove MCP server"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="feature-studio-empty-state">
+                <Server size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                <p>
+                  {connection
+                    ? "No MCP servers configured"
+                    : "Connect daemon to view MCP servers"}
+                </p>
+                <p className="feature-studio-empty-hint">
+                  Add via: opta mcp add &lt;name&gt; &lt;command&gt;
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <div
           className="feature-studio-info-strip"
           style={{ borderColor: `${ACCENT}22`, color: `${ACCENT}99` }}
         >
           <AppWindow size={12} />
-          Atpo manages Opta module lifecycle · install, update, and remove capability modules
+          Atpo manages Opta module lifecycle · apps, MCP servers, and capability
+          extensions
         </div>
       </div>
     </div>
