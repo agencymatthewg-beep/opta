@@ -84,6 +84,7 @@ export async function getDeviceCommand(id: string): Promise<DeviceCommandRecord 
 export async function listDeviceCommandsForDelivery(input: {
   deviceId: string;
   limit?: number;
+  since?: string;
 }): Promise<DeviceCommandRecord[]> {
   return listDeviceCommandsForDeliveryInMemory(input, { supabase: null });
 }

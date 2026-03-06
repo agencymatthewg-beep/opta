@@ -8,10 +8,23 @@ import {
   listDeviceCommandsForDelivery,
   resolveBridgeTokenClaimsFromSecret,
 } from '@/lib/control-plane/store';
+import { createCommandSSEStream } from '@/lib/control-plane/sse-hold';
 
 export const dynamic = 'force-dynamic';
 
+// Rate limiter for this endpoint.
+//
+// The original 240 req/min (≈ 4/sec) was sized for HTTP polling where the
+// daemon would call every 250–300 ms.  With the new SSE hold approach the
+// daemon opens one persistent connection every 25 s, which is ~2.4 req/min —
+// far below this ceiling.  We keep the limiter as-is; it prevents abuse from
+// clients that do not use the SSE path or that fail to hold the connection.
 const streamLimiter = new RateLimiter(240, 60_000);
+
+// SSE hold parameters (Node.js runtime — setInterval / setTimeout available).
+const SSE_HOLD_DURATION_MS = 25_000;
+const SSE_POLL_INTERVAL_MS = 3_000;
+const SSE_KEEPALIVE_INTERVAL_MS = 10_000;
 
 function getBearerToken(request: Request): string | null {
   const auth = request.headers.get('authorization');
@@ -40,6 +53,11 @@ export async function GET(request: Request) {
   const bearer = getBearerToken(request);
   const bridgeClaims = bearer ? await resolveBridgeTokenClaimsFromSecret(bearer) : null;
 
+  // Bridge token was supplied but could not be resolved (expired / revoked / unknown).
+  if (bearer && !bridgeClaims) {
+    return NextResponse.json({ error: 'unauthenticated' }, { status: 401 });
+  }
+
   const supabase = await createClient();
   if (!supabase) return NextResponse.json({ error: 'supabase_unconfigured' }, { status: 500 });
 
@@ -64,7 +82,45 @@ export async function GET(request: Request) {
     actorUserId = user.id;
   }
 
-  const commands = await listDeviceCommandsForDelivery(
+  // Determine transport: JSON polling (legacy) vs. SSE hold (new).
+  const acceptHeader = request.headers.get('accept')?.toLowerCase() ?? '';
+  const wantsSse = acceptHeader.includes('text/event-stream');
+
+  // -------------------------------------------------------------------------
+  // JSON path — unchanged behaviour for non-SSE clients.
+  // -------------------------------------------------------------------------
+  if (!wantsSse) {
+    const commands = await listDeviceCommandsForDelivery(
+      { deviceId, limit },
+      bridgeClaims ? undefined : { supabase },
+    );
+
+    if (actorUserId) {
+      await writeAuditEvent(supabase, {
+        userId: actorUserId,
+        eventType: 'device.command.stream',
+        riskLevel: 'medium',
+        decision: 'allow',
+        deviceId,
+        context: { count: commands.length },
+      });
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        commands,
+        delivered: commands.length,
+      },
+      { status: 200 },
+    );
+  }
+
+  // -------------------------------------------------------------------------
+  // SSE hold path — fetch initial batch, then hold connection for up to 25 s
+  // polling for new commands every 3 s and pushing them as they arrive.
+  // -------------------------------------------------------------------------
+  const initialCommands = await listDeviceCommandsForDelivery(
     { deviceId, limit },
     bridgeClaims ? undefined : { supabase },
   );
@@ -76,37 +132,20 @@ export async function GET(request: Request) {
       riskLevel: 'medium',
       decision: 'allow',
       deviceId,
-      context: { count: commands.length },
+      context: { count: initialCommands.length, transport: 'sse' },
     });
   }
 
-  const acceptHeader = request.headers.get('accept')?.toLowerCase() ?? '';
-  const wantsSse = acceptHeader.includes('text/event-stream');
-  if (!wantsSse) {
-    return NextResponse.json(
-      {
-        ok: true,
-        commands,
-        delivered: commands.length,
-      },
-      { status: 200 },
-    );
-  }
+  // Capture auth context for use inside the polling closure.
+  const storeOptions = bridgeClaims ? undefined : { supabase };
 
-  const encoder = new TextEncoder();
-  const stream = new ReadableStream({
-    start(controller) {
-      controller.enqueue(encoder.encode('event: connected\ndata: {"ok":true}\n\n'));
-      for (const command of commands) {
-        controller.enqueue(encoder.encode(`event: command\ndata: ${JSON.stringify(command)}\n\n`));
-      }
-      controller.enqueue(
-        encoder.encode(
-          `event: end\ndata: ${JSON.stringify({ ok: true, delivered: commands.length })}\n\n`,
-        ),
-      );
-      controller.close();
-    },
+  const stream = createCommandSSEStream({
+    initialCommands,
+    pollIntervalMs: SSE_POLL_INTERVAL_MS,
+    holdDurationMs: SSE_HOLD_DURATION_MS,
+    keepaliveIntervalMs: SSE_KEEPALIVE_INTERVAL_MS,
+    fetchNewCommands: (since) =>
+      listDeviceCommandsForDelivery({ deviceId, limit, since }, storeOptions),
   });
 
   return new Response(stream, {

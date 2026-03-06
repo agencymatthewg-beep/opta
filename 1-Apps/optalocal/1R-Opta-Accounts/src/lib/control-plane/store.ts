@@ -356,11 +356,17 @@ function createDeviceCommandInMemory(input: {
 function listDeviceCommandsForDeliveryInMemory(input: {
   deviceId: string;
   limit?: number;
+  since?: string;
 }): DeviceCommandRecord[] {
   const store = getStore();
   const limit = clampNumber(input.limit ?? 20, 1, 100);
   const queued = [...store.commands.values()]
-    .filter((command) => command.deviceId === input.deviceId && command.status === 'queued')
+    .filter(
+      (command) =>
+        command.deviceId === input.deviceId &&
+        command.status === 'queued' &&
+        (input.since == null || command.createdAt > input.since),
+    )
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt))
     .slice(0, limit);
 
@@ -749,6 +755,8 @@ export async function listDeviceCommandsForDelivery(
   input: {
     deviceId: string;
     limit?: number;
+    /** ISO timestamp — only return commands created strictly after this time */
+    since?: string;
   },
   options?: StoreOptions,
 ): Promise<DeviceCommandRecord[]> {
@@ -757,13 +765,19 @@ export async function listDeviceCommandsForDelivery(
 
   if (supabase) {
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('accounts_device_commands')
         .select('*')
         .eq('device_id', input.deviceId)
         .eq('status', 'queued')
         .order('created_at', { ascending: true })
         .limit(limit);
+
+      if (input.since != null) {
+        query = query.gt('created_at', input.since);
+      }
+
+      const { data, error } = await query;
 
       if (!error) {
         const queued = (data ?? []).map((row) => mapDeviceCommandRow(row as DeviceCommandRow));
@@ -792,7 +806,7 @@ export async function listDeviceCommandsForDelivery(
     }
   }
 
-  return listDeviceCommandsForDeliveryInMemory({ deviceId: input.deviceId, limit });
+  return listDeviceCommandsForDeliveryInMemory({ deviceId: input.deviceId, limit, since: input.since });
 }
 
 export async function getDeviceCommand(
