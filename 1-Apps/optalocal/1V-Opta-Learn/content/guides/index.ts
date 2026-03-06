@@ -39,7 +39,6 @@ import { lmxOverview } from './lmx-overview';
 import { optaLocalIntro } from './opta-local-intro';
 import { cliMasterclass } from './cli-masterclass';
 import { accountsSync } from './accounts-sync';
-import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
 import { codeDesktopMasterclass } from './code-desktop-masterclass';
 import { accountsMasterclass } from './accounts-masterclass';
@@ -48,13 +47,15 @@ import { ragWorkflowGuide } from './rag-workflow';
 import { codeDesktopGUMasterclass } from './opta-code-masterclass';
 import { lmxMasterclassGU } from './lmx-masterclass-gu';
 import { cliMasterclassGU } from './cli-masterclass-gu';
+import { optaArchitectureGU } from './opta-architecture-gu';
+import { optaAccountsGU } from './opta-accounts-gu';
+import { browserAutomationGU } from './browser-automation-gu';
 // All guides set to draft while rebuilding with /gu interactive format.
 // Re-verify guides individually once upgraded to gu-masterclass template.
 export const allGuides: RegisteredGuide[] = [
   { ...optaLocalIntro, status: 'draft' },
   { ...lmxOverview, status: 'draft' },
   { ...cliMasterclass, status: 'draft' },
-  { ...browserAutomationGuide, status: 'draft' },
   { ...codeDesktopOverview, status: 'draft' },
   { ...accountsSync, status: 'draft' },
   { ...codeDesktopMasterclass, status: 'draft' },
@@ -64,6 +65,9 @@ export const allGuides: RegisteredGuide[] = [
   { ...codeDesktopGUMasterclass, status: 'verified' },
   { ...lmxMasterclassGU, status: 'verified' },
   { ...cliMasterclassGU, status: 'verified' },
+  { ...optaArchitectureGU, status: 'verified' },
+  { ...optaAccountsGU, status: 'verified' },
+  { ...browserAutomationGU, status: 'verified' },
 ];
 
 function extractGuideLinks(content: string): string[] {

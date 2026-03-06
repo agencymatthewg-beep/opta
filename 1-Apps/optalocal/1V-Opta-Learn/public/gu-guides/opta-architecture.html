@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta Local — Full Architecture</title>
+<style>
+:root {
+  --void: #09090b;
+  --surface: #18181b;
+  --elevated: #27272a;
+  --border: #3f3f46;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --primary: #8b5cf6;
+  --primary-glow: #a855f7;
+  --neon-blue: #3b82f6;
+  --neon-green: #22c55e;
+  --neon-amber: #f59e0b;
+  --neon-red: #ef4444;
+  --neon-cyan: #06b6d4;
+  --neon-pink: #ec4899;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+}
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+}
+.glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+.glass-subtle { background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+
+/* HERO */
+.hero {
+  position: relative; z-index: 1;
+  padding: 60px 32px 48px;
+  text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: radial-gradient(ellipse 90% 60% at 50% 0%, rgba(139,92,246,0.10) 0%, transparent 70%);
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--primary); margin-bottom: 20px; padding: 6px 14px;
+  border-radius: 100px; border: 1px solid rgba(139,92,246,0.3); background: rgba(139,92,246,0.08);
+}
+.hero h1 {
+  font-size: clamp(26px, 5vw, 50px); font-weight: 700; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff 0%, #c4b5fd 50%, #818cf8 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 14px;
+}
+.hero-sub { font-size: 15px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 32px; }
+.pill-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+.pill {
+  padding: 4px 12px; border-radius: 100px; font-size: 11px; font-family: monospace;
+  border: 1px solid; letter-spacing: 0.06em;
+}
+.pill-core { color: var(--neon-green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+.pill-web  { color: var(--neon-blue);  border-color: rgba(59,130,246,0.3);  background: rgba(59,130,246,0.08); }
+.pill-inf  { color: var(--primary);    border-color: rgba(139,92,246,0.3);  background: rgba(139,92,246,0.08); }
+
+/* SECTION */
+.section { position: relative; z-index: 1; padding: 40px 32px; border-bottom: 1px solid rgba(255,255,255,0.05); max-width: 1200px; margin: 0 auto; }
+.section-full { position: relative; z-index: 1; padding: 40px 32px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.section-title {
+  font-family: monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--primary); margin-bottom: 24px; display: flex; align-items: center; gap: 12px;
+}
+.section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, rgba(139,92,246,0.4) 0%, transparent 100%); }
+
+/* LAYER MAP */
+.layer-map { font-family: monospace; font-size: 12px; line-height: 1.8; padding: 28px; border-radius: 14px; overflow-x: auto; }
+.lc { color: var(--neon-green); }
+.ll { color: var(--primary); }
+.ld { color: var(--neon-amber); }
+.li { color: var(--neon-cyan); }
+.lm { color: var(--text-muted); }
+.la { color: var(--neon-pink); }
+
+/* APP GRID */
+.app-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+.app-card {
+  border-radius: 14px; padding: 20px; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.app-card:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(0,0,0,0.3); }
+.app-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.app-id {
+  font-family: monospace; font-size: 10px; padding: 3px 7px; border-radius: 5px;
+  border: 1px solid; letter-spacing: 0.08em;
+}
+.app-id-core  { color: var(--neon-green); border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); }
+.app-id-web   { color: var(--neon-blue);  border-color: rgba(59,130,246,0.3);  background: rgba(59,130,246,0.08); }
+.app-id-inf   { color: var(--primary);    border-color: rgba(139,92,246,0.3);  background: rgba(139,92,246,0.08); }
+.app-name { font-weight: 600; font-size: 14px; }
+.app-domain { font-family: monospace; font-size: 10px; color: var(--text-muted); }
+.app-stack { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+.app-desc { font-size: 12px; color: var(--text-muted); line-height: 1.55; }
+
+/* TABS */
+.tab-bar { display: flex; gap: 4px; border-bottom: 1px solid rgba(255,255,255,0.07); margin-bottom: 28px; }
+.tab-btn {
+  background: none; border: none; padding: 10px 18px; font-size: 13px; cursor: pointer;
+  color: var(--text-muted); border-bottom: 2px solid transparent; margin-bottom: -1px;
+  transition: all 0.12s; border-radius: 6px 6px 0 0;
+}
+.tab-btn:hover { color: var(--text-secondary); }
+.tab-btn.active { color: var(--text-primary); border-bottom-color: var(--primary); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+
+/* FLOW */
+.flow-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.flow-card { border-radius: 12px; padding: 18px; }
+.flow-card h4 { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; }
+.flow-step { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 8px; }
+.step-num {
+  width: 20px; height: 20px; border-radius: 50%; background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.35);
+  font-size: 10px; font-family: monospace; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  color: var(--primary);
+}
+.step-text { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+.step-text code { color: var(--neon-green); font-family: monospace; font-size: 11px; }
+
+/* INFRA */
+.infra-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.infra-card { border-radius: 12px; padding: 18px; }
+.infra-icon { font-size: 24px; margin-bottom: 10px; }
+.infra-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+.infra-sub { font-size: 12px; color: var(--text-secondary); margin-bottom: 8px; }
+.infra-detail { font-size: 11px; color: var(--text-muted); font-family: monospace; line-height: 1.7; }
+
+/* CODE */
+.code-box {
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
+  padding: 16px; font-family: monospace; font-size: 11px; line-height: 1.7; color: var(--neon-green);
+  overflow-x: auto; margin: 14px 0;
+}
+.code-box .cm { color: var(--text-muted); }
+.code-box .ca { color: var(--primary); }
+.code-box .cs { color: var(--neon-cyan); }
+
+/* FOOTER */
+.footer { position: relative; z-index: 1; padding: 28px; text-align: center; font-family: monospace; font-size: 11px; color: var(--text-muted); }
+
+@media (max-width: 600px) {
+  .section, .section-full { padding: 24px 16px; }
+  .hero { padding: 40px 16px 28px; }
+}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-eyebrow">◆ optalocal · ecosystem</div>
+  <h1>Opta Local Architecture</h1>
+  <p class="hero-sub">The complete optalocal.com platform — 3 core apps, 8 management sites, one Supabase project, one Mac Studio inference host.</p>
+  <div class="pill-row">
+    <span class="pill pill-core">3 Core Apps</span>
+    <span class="pill pill-web">8 Management Sites</span>
+    <span class="pill pill-inf">1 Inference Host</span>
+  </div>
+</div>
+
+<!-- LAYER MAP -->
+<div class="section-full">
+  <div style="max-width:900px;margin:0 auto">
+    <div class="section-title" style="max-width:900px">Full Stack Diagram</div>
+    <div class="glass layer-map">
+<pre>
+<span class="la">  ┌──────────────────── User Devices ──────────────────────────────┐
+  │  MacBook / Windows PC / Linux                                  │</span>
+  │                                                                │
+  │  <span class="lc">opta chat │ opta tui │ opta do</span>      <span class="ll">Opta Code Desktop</span>         │
+  │  <span class="lc">opta daemon (127.0.0.1:9999)</span>         <span class="ll">(Tauri + React, :5173)</span>   │
+  │         │  HTTP v3 + WebSocket  │                              │
+<span class="la">  └─────────┼───────────────────────┼──────────────────────────────┘</span>
+           │ LAN: 192.168.188.x    │
+<span class="ld">  ┌─────────▼───────────────────────▼──────────────────────────────┐
+  │  Mono512 Mac Studio M3 Ultra · 192.168.188.11 · 512GB RAM      │
+  │                                                                │
+  │  Opta LMX (port 1234)                                         │
+  │  MLX primary │ GGUF fallback │ mDNS _opta-lmx._tcp.local      │
+  └─────────────────────────────────────────────────────────────────┘</span>
+
+           │ HTTPS
+<span class="li">  ┌─────────▼───────────────────────────────────────────────────────┐
+  │  Vercel Edge Network — *.optalocal.com                         │
+  │                                                                │
+  │  optalocal.com (1T)    lmx.optalocal.com (1L)                 │
+  │  init.optalocal.com (1O)    status.optalocal.com (1S)          │
+  │  accounts.optalocal.com (1R)    help.optalocal.com (1U)        │
+  │  learn.optalocal.com (1V)    admin.optalocal.com (1X)          │
+  └─────────────────────────────────────────────────────────────────┘</span>
+
+           │ Supabase client
+<span class="lm">  ┌─────────▼───────────────────────────────────────────────────────┐
+  │  Supabase (shared project) — SSO for all *.optalocal.com       │
+  │  Auth │ Postgres DB │ Vault blob store │ Edge Functions         │
+  └─────────────────────────────────────────────────────────────────┘</span>
+</pre>
+    </div>
+  </div>
+</div>
+
+<!-- TABS SECTION -->
+<div class="section-full">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('core', this)">Core Apps</button>
+      <button class="tab-btn" onclick="switchTab('sites', this)">Management Sites</button>
+      <button class="tab-btn" onclick="switchTab('flows', this)">Data Flows</button>
+      <button class="tab-btn" onclick="switchTab('auth', this)">Auth Architecture</button>
+      <button class="tab-btn" onclick="switchTab('infra', this)">Infrastructure</button>
+    </div>
+
+    <!-- CORE APPS -->
+    <div class="tab-panel active" id="tab-core">
+      <div class="app-grid">
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-core">1D</span>
+            <div>
+              <div class="app-name">Opta CLI</div>
+              <div class="app-domain">npm install -g opta-cli</div>
+            </div>
+          </div>
+          <div class="app-stack">TypeScript · Commander · Ink · Vitest · ESM</div>
+          <div class="app-desc">Terminal-first control surface. Hosts the daemon (HTTP v3 + WebSocket), runs the 4-layer agent loop, dispatches 30+ tools, and manages sessions. Primary user-facing binary. 2,300+ tests.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-inf">1M</span>
+            <div>
+              <div class="app-name">Opta LMX</div>
+              <div class="app-domain">192.168.188.11:1234</div>
+            </div>
+          </div>
+          <div class="app-stack">Python 3.12 · FastAPI · MLX · Uvicorn</div>
+          <div class="app-desc">Apple Silicon inference server. OpenAI-compatible API, MLX primary backend, GGUF fallback via llama.cpp. 90% memory ceiling, hot-swap load/unload, built-in quantization pipeline, Skills/MCP bridge, Agent Graph. Runs exclusively on Mono512.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-core">1P</span>
+            <div>
+              <div class="app-name">Opta Code Desktop</div>
+              <div class="app-domain">localhost:5173 / native app</div>
+            </div>
+          </div>
+          <div class="app-stack">Tauri v2 · React 18 · Vite 7 · Rust</div>
+          <div class="app-desc">Native desktop client for macOS and Windows. Connects to the CLI daemon via HTTP/WebSocket. Renders the full agent UI, session history, settings studio, model picker, and browser peekaboo. Web mode: Vite dev server. Native mode: Tauri shell.</div>
+        </div>
+
+      </div>
+
+      <div style="margin-top:24px;padding:20px;border-radius:12px" class="glass-subtle">
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.7">
+          <strong style="color:var(--primary)">Layered pipeline:</strong> CLI daemon is the hub — it owns all session state, permission gating, and event persistence. LMX is the inference leaf (stateless per-request). Code Desktop is a display client that adds native OS integration (system tray, Tauri IPC, native dialogs). The three apps can run independently or together.
+        </p>
+        <div class="code-box" style="margin-top:14px">
+<span class="cm"># Start the full local stack</span>
+<span class="ca">opta daemon start</span>           <span class="cm"># daemon on 127.0.0.1:9999</span>
+<span class="cm"># LMX already running on Mono512</span>
+<span class="ca">cd 1P-Opta-Code-Universal</span>
+<span class="ca">npm run dev</span>                 <span class="cm"># desktop UI on localhost:5173</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MANAGEMENT SITES -->
+    <div class="tab-panel" id="tab-sites">
+      <div class="app-grid">
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1T</span>
+            <div><div class="app-name">Opta Home</div><div class="app-domain">optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · SSR (Vercel native)</div>
+          <div class="app-desc">Marketing landing page. Architecture diagram, benchmark strip, feature overview, download CTAs. Non-negotiable design: precision over decoration, terminal DNA.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1O</span>
+            <div><div class="app-name">Opta Init</div><div class="app-domain">init.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · Static export</div>
+          <div class="app-desc">Download and setup landing. Hosts channel manifests (stable/beta), download artifact links, and the Tauri desktop manager for auto-update flow. mDNS discovery docs.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1R</span>
+            <div><div class="app-name">Opta Accounts</div><div class="app-domain">accounts.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · SSR · Supabase SSR</div>
+          <div class="app-desc">Centralized SSO portal. Handles Google/Apple OAuth, email/password, and CLI browser auth flow. Sets cookies on .optalocal.com for cross-subdomain SSO. Control plane for device pairing.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1L</span>
+            <div><div class="app-name">LMX Dashboard</div><div class="app-domain">lmx.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · SWR polling</div>
+          <div class="app-desc">Real-time LMX monitoring. Sessions, models, agents, diagnostics, quantize pipeline UI, arena (model comparison), console, presets manager, paired device view.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1S</span>
+            <div><div class="app-name">Opta Status</div><div class="app-domain">status.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · API proxy</div>
+          <div class="app-desc">Live health monitoring for LMX, daemon, init, and all Vercel deployments. Polls health endpoints every 30s. Feature parity tracker via markdown files.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1U</span>
+            <div><div class="app-name">Opta Help</div><div class="app-domain">help.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · Static export</div>
+          <div class="app-desc">Documentation site. CLI reference, daemon lifecycle, daemon controls, LAN setup guide, security/privacy, developer SDK docs. Static export for fast global CDN delivery.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1V</span>
+            <div><div class="app-name">Opta Learn</div><div class="app-domain">learn.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · SSR · /gu HTML guides</div>
+          <div class="app-desc">Interactive masterclass guides. Two-track system: TS guide objects (L1–L3) and /gu HTML interactive guides (L4). Searchable, filterable, with live validation pipeline.</div>
+        </div>
+
+        <div class="app-card glass">
+          <div class="app-card-header">
+            <span class="app-id app-id-web">1X</span>
+            <div><div class="app-name">Opta Admin</div><div class="app-domain">admin.optalocal.com</div></div>
+          </div>
+          <div class="app-stack">Next.js 16 · SSR · Supabase admin</div>
+          <div class="app-desc">Internal ops dashboard. Fleet health, release promotion across channels, guide promotion, website registry, CSP management.</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- DATA FLOWS -->
+    <div class="tab-panel" id="tab-flows">
+      <div class="flow-grid">
+
+        <div class="flow-card glass">
+          <h4>Chat Request Flow</h4>
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">User types in <code>opta tui</code> or Code Desktop</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">CLI sends <code>POST /v3/sessions/:id/turns</code> to daemon</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">Daemon agent loop calls <code>POST /v1/chat/completions</code> on LMX</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">LMX streams tokens via SSE back to daemon</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">Daemon re-streams events to CLI via <code>GET /v3/sessions/:id/stream</code></div></div>
+          <div class="flow-step"><div class="step-num">6</div><div class="step-text">CLI renders tokens in TUI; Desktop receives via WebSocket</div></div>
+        </div>
+
+        <div class="flow-card glass">
+          <h4>Tool Execution Flow</h4>
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">LMX returns a <code>tool_call</code> in the completion response</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">Daemon agent loop dispatches to tool executor</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">Permission gate evaluates — auto-allow, ask, or deny</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">Up to 8 tools execute in parallel via worker pool</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">Results appended as <code>tool_result</code> messages</div></div>
+          <div class="flow-step"><div class="step-num">6</div><div class="step-text">Agent loop continues until no tool calls remain</div></div>
+        </div>
+
+        <div class="flow-card glass">
+          <h4>Auth / Vault Sync Flow</h4>
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text"><code>opta account login</code> opens accounts.optalocal.com in browser</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">User authenticates with Google/Apple/email via Supabase</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">CLI receives callback token on local listener :9998</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">Token stored; daemon <code>vault.pull</code> operation triggered</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">Encrypted secrets fetched from Supabase, decrypted locally</div></div>
+          <div class="flow-step"><div class="step-num">6</div><div class="step-text">API keys written to OS keychain; providers auto-configured</div></div>
+        </div>
+
+        <div class="flow-card glass">
+          <h4>Desktop Installer Flow</h4>
+          <div class="flow-step"><div class="step-num">1</div><div class="step-text">User visits init.optalocal.com, clicks Download</div></div>
+          <div class="flow-step"><div class="step-num">2</div><div class="step-text">Channel manifest (stable/beta) fetched from CDN</div></div>
+          <div class="flow-step"><div class="step-num">3</div><div class="step-text">Desktop manager (Tauri) checks manifest for new version</div></div>
+          <div class="flow-step"><div class="step-num">4</div><div class="step-text">DMG/MSI artifact downloaded from GitHub Releases</div></div>
+          <div class="flow-step"><div class="step-num">5</div><div class="step-text">App installed; setup wizard runs on first launch</div></div>
+          <div class="flow-step"><div class="step-num">6</div><div class="step-text">mDNS discovers Mono512 LMX on LAN automatically</div></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AUTH -->
+    <div class="tab-panel" id="tab-auth">
+      <div style="max-width:800px">
+        <div class="glass" style="border-radius:12px;padding:24px;margin-bottom:20px">
+          <div style="font-family:monospace;font-size:12px;line-height:1.8;color:var(--text-secondary)">
+<pre style="color:inherit">
+<span style="color:var(--neon-green)">Browser / CLI</span>                 <span style="color:var(--primary)">accounts.optalocal.com</span>           <span style="color:var(--neon-amber)">Supabase</span>
+     │                               │                                │
+     │  GET /auth/callback?code=…    │                                │
+     │──────────────────────────────►│                                │
+     │                               │  exchangeCodeForSession(code)  │
+     │                               │───────────────────────────────►│
+     │                               │◄─── { session, user } ─────────│
+     │                               │                                │
+     │                               │  Set-Cookie: sb-* on           │
+     │                               │  domain=.optalocal.com         │
+     │◄──────────────────────────────│                                │
+     │  Redirect to destination      │                                │
+     │                               │                                │
+<span style="color:var(--neon-cyan)">Other sites (1L, 1S, 1T…)</span>                                        │
+     │  GET /api/route               │                                │
+     │  Cookie: sb-* auto-sent ──────┼──────────────────────────────►│
+     │                               │                                │  SSO!
+</pre>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+          <div class="glass" style="border-radius:10px;padding:16px">
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Auth Methods</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+              ◆ Google OAuth (PKCE)<br>
+              ◆ Apple OAuth (PKCE)<br>
+              ◆ Email + Password<br>
+              ◆ CLI browser callback flow<br>
+              ◆ Magic link (email)
+            </div>
+          </div>
+          <div class="glass" style="border-radius:10px;padding:16px">
+            <div style="font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px">Security Rules</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.8">
+              ◆ redirect_to validated vs allowlist<br>
+              ◆ Cookies: secure + sameSite=lax<br>
+              ◆ domain: .optalocal.com prod only<br>
+              ◆ Vault: AES-256-GCM client-side<br>
+              ◆ Timing-safe daemon token compare
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INFRA -->
+    <div class="tab-panel" id="tab-infra">
+      <div class="infra-grid">
+        <div class="infra-card glass">
+          <div class="infra-icon">🖥</div>
+          <div class="infra-title">Mono512</div>
+          <div class="infra-sub">Mac Studio M3 Ultra · LAN only</div>
+          <div class="infra-detail">IP: 192.168.188.11<br>RAM: 512 GB unified<br>LMX port: 1234<br>mDNS: _opta-lmx._tcp.local<br>Never use Tailscale</div>
+        </div>
+        <div class="infra-card glass">
+          <div class="infra-icon">▲</div>
+          <div class="infra-title">Vercel</div>
+          <div class="infra-sub">All 8 Next.js management sites</div>
+          <div class="infra-detail">Domains: *.optalocal.com<br>DNS: Cloudflare CNAME<br>Edge network: global<br>Static: 1O, 1U (output export)<br>SSR: 1R, 1T, 1V, 1X, 1L, 1S</div>
+        </div>
+        <div class="infra-card glass">
+          <div class="infra-icon">🐙</div>
+          <div class="infra-title">GitHub Releases</div>
+          <div class="infra-sub">Desktop app distribution</div>
+          <div class="infra-detail">macOS: .dmg + .app.tar.gz<br>Windows: .msi + .exe<br>Channels: stable / beta<br>Manifests: hosted on init.optalocal.com<br>CI: GitHub Actions (33 workflows)</div>
+        </div>
+        <div class="infra-card glass">
+          <div class="infra-icon">🗄</div>
+          <div class="infra-title">Supabase</div>
+          <div class="infra-sub">Shared project — all apps</div>
+          <div class="infra-detail">Auth: 5 methods<br>DB: Postgres<br>Vault: encrypted blob store<br>SSO domain: .optalocal.com<br>Edge functions: key relay</div>
+        </div>
+        <div class="infra-card glass">
+          <div class="infra-icon">📦</div>
+          <div class="infra-title">npm Registry</div>
+          <div class="infra-sub">CLI distribution</div>
+          <div class="infra-detail">Package: opta-cli<br>Build: tsup → ESM dist/<br>Entry: bin/opta<br>CI: opta-cli-release.yml<br>Shared pkgs: @opta/*</div>
+        </div>
+        <div class="infra-card glass">
+          <div class="infra-icon">🔄</div>
+          <div class="infra-title">Syncthing</div>
+          <div class="infra-sub">Dev file sync</div>
+          <div class="infra-detail">MacBook → Mono512<br>Path: ~/Synced/Opta/<br>Excludes: node_modules, .next, dist<br>MacBook is MASTER (conflicts)<br>Never use /Volumes/312/ for writes</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer">
+  <span style="color:var(--primary)">optalocal.com</span> &nbsp;·&nbsp; architecture overview &nbsp;·&nbsp; 2026-03-06
+</footer>
+
+<script>
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

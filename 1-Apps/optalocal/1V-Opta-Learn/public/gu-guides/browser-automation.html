@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Browser Automation — Opta CLI</title>
+<style>
+:root {
+  --void: #09090b;
+  --surface: #18181b;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --primary: #8b5cf6;
+  --neon-blue: #3b82f6;
+  --neon-green: #22c55e;
+  --neon-amber: #f59e0b;
+  --neon-red: #ef4444;
+  --neon-cyan: #06b6d4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--void); color: var(--text-primary); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; font-size: 14px; line-height: 1.6; }
+body::before { content:''; position:fixed; inset:0; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events:none; z-index:0; }
+.glass { background:rgba(255,255,255,0.04); backdrop-filter:blur(12px); border:1px solid rgba(255,255,255,0.08); }
+.glass-subtle { background:rgba(255,255,255,0.02); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.05); }
+
+.hero { position:relative; z-index:1; padding:60px 32px 48px; text-align:center; border-bottom:1px solid rgba(255,255,255,0.05); background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(34,197,94,0.09) 0%, transparent 70%); }
+.hero-eyebrow { display:inline-flex; align-items:center; gap:8px; font-family:monospace; font-size:11px; letter-spacing:0.12em; text-transform:uppercase; color:var(--neon-green); margin-bottom:20px; padding:6px 14px; border-radius:100px; border:1px solid rgba(34,197,94,0.3); background:rgba(34,197,94,0.08); }
+.hero h1 { font-size:clamp(26px,5vw,50px); font-weight:700; letter-spacing:-0.03em; background:linear-gradient(135deg,#fff 0%,#86efac 50%,#34d399 100%); -webkit-background-clip:text; -webkit-text-fill-color:transparent; background-clip:text; margin-bottom:14px; }
+.hero-sub { font-size:15px; color:var(--text-secondary); max-width:560px; margin:0 auto 32px; }
+.stat-row { display:flex; justify-content:center; gap:36px; flex-wrap:wrap; }
+.stat { display:flex; flex-direction:column; align-items:center; gap:4px; }
+.stat-value { font-family:monospace; font-size:22px; font-weight:700; color:var(--neon-green); text-shadow:0 0 20px rgba(34,197,94,0.35); }
+.stat-label { font-size:11px; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.08em; }
+
+/* Risk tiers */
+.tiers-section { position:relative; z-index:1; padding:36px 32px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.section-title { font-family:monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--neon-green); margin-bottom:20px; display:flex; align-items:center; gap:12px; }
+.section-title::after { content:''; flex:1; height:1px; background:linear-gradient(90deg,rgba(34,197,94,0.4) 0%,transparent 100%); }
+.tier-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; max-width:1100px; margin:0 auto; }
+.tier-card { border-radius:12px; padding:18px; }
+.tier-label { font-size:10px; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:8px; font-family:monospace; }
+.tier-allow { color:var(--neon-green); }
+.tier-ask { color:var(--neon-amber); }
+.tier-deny { color:var(--neon-red); }
+.tier-tools { font-family:monospace; font-size:11px; color:var(--text-secondary); line-height:2; }
+.tier-tools code { display:inline-block; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.07); border-radius:4px; padding:1px 6px; margin:1px; }
+
+/* Explorer */
+.explorer { position:relative; z-index:1; display:grid; grid-template-columns:268px 1fr; min-height:640px; border-top:1px solid rgba(255,255,255,0.05); }
+.sidebar { border-right:1px solid rgba(255,255,255,0.05); display:flex; flex-direction:column; }
+.sidebar-search { padding:14px; border-bottom:1px solid rgba(255,255,255,0.05); }
+.search-input { width:100%; background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:8px; padding:8px 12px; color:var(--text-primary); font-size:13px; outline:none; }
+.search-input:focus { border-color:rgba(34,197,94,0.4); }
+.search-input::placeholder { color:var(--text-muted); }
+.sidebar-nav { flex:1; overflow-y:auto; padding:8px; }
+.cat-lbl { font-size:10px; letter-spacing:0.12em; text-transform:uppercase; color:var(--text-muted); padding:12px 8px 4px; }
+.feat-btn { display:flex; align-items:center; gap:10px; width:100%; text-align:left; background:none; border:none; border-radius:8px; padding:9px 10px; color:var(--text-secondary); font-size:13px; cursor:pointer; transition:all 0.12s; margin-bottom:1px; }
+.feat-btn:hover { background:rgba(255,255,255,0.04); color:var(--text-primary); }
+.feat-btn.active { background:rgba(34,197,94,0.08); color:var(--text-primary); border:1px solid rgba(34,197,94,0.2); }
+.feat-icon { width:24px; height:24px; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:12px; flex-shrink:0; }
+
+.detail-pane { padding:32px; overflow-y:auto; max-height:700px; }
+.detail-panel { display:none; }
+.detail-panel.active { display:block; }
+.detail-header { margin-bottom:24px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,0.06); }
+.detail-chip { display:inline-block; font-size:10px; letter-spacing:0.1em; text-transform:uppercase; padding:3px 8px; border-radius:4px; margin-bottom:10px; font-family:monospace; background:rgba(34,197,94,0.10); color:var(--neon-green); border:1px solid rgba(34,197,94,0.2); }
+.detail-chip-warn { background:rgba(245,158,11,0.10); color:var(--neon-amber); border:1px solid rgba(245,158,11,0.2); }
+.detail-chip-deny { background:rgba(239,68,68,0.10); color:var(--neon-red); border:1px solid rgba(239,68,68,0.2); }
+.detail-title { font-size:22px; font-weight:700; letter-spacing:-0.02em; margin-bottom:8px; }
+.detail-summary { font-size:14px; color:var(--text-secondary); line-height:1.65; }
+.detail-body p { color:var(--text-secondary); line-height:1.7; margin-bottom:12px; }
+.code-block { background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:16px; margin:14px 0; overflow-x:auto; }
+.code-block pre { font-family:monospace; font-size:12px; line-height:1.7; color:var(--neon-green); white-space:pre; }
+.code-block pre .cm { color:var(--text-muted); }
+.code-block pre .ca { color:var(--primary); }
+.code-block pre .cs { color:var(--neon-cyan); }
+.code-block pre .co { color:var(--text-secondary); }
+.tip { background:rgba(34,197,94,0.05); border:1px solid rgba(34,197,94,0.16); border-radius:10px; padding:14px 16px; margin:14px 0; font-size:13px; color:var(--text-secondary); line-height:1.6; }
+.tip strong { color:var(--neon-green); }
+.warn { background:rgba(245,158,11,0.05); border:1px solid rgba(245,158,11,0.16); border-radius:10px; padding:14px 16px; margin:14px 0; font-size:13px; color:var(--text-secondary); line-height:1.6; }
+.warn strong { color:var(--neon-amber); }
+.related { display:flex; flex-wrap:wrap; gap:8px; margin-top:20px; }
+.rel-btn { background:none; border:1px solid rgba(255,255,255,0.1); border-radius:6px; padding:5px 12px; color:var(--text-muted); font-size:11px; cursor:pointer; transition:all 0.12s; }
+.rel-btn:hover { border-color:rgba(34,197,94,0.4); color:var(--neon-green); }
+
+.footer { position:relative; z-index:1; padding:28px; border-top:1px solid rgba(255,255,255,0.05); text-align:center; font-family:monospace; font-size:11px; color:var(--text-muted); }
+.kbd { display:inline-block; background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); border-radius:4px; padding:1px 6px; font-size:10px; font-family:monospace; }
+
+@media (max-width:700px) {
+  .explorer { grid-template-columns:1fr; }
+  .sidebar { border-right:none; border-bottom:1px solid rgba(255,255,255,0.05); max-height:280px; }
+  .detail-pane { max-height:none; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-eyebrow">◆ browser automation · deep dive</div>
+  <h1>Browser Automation</h1>
+  <p class="hero-sub">30+ Playwright tools wired into the Opta agent loop. Policy-gated, artifact-capturing, peekaboo-visible, and sub-agent-delegatable.</p>
+  <div class="stat-row">
+    <div class="stat"><span class="stat-value">30+</span><span class="stat-label">Playwright Tools</span></div>
+    <div class="stat"><span class="stat-value">5</span><span class="stat-label">Session Slots</span></div>
+    <div class="stat"><span class="stat-value">3</span><span class="stat-label">Risk Tiers</span></div>
+    <div class="stat"><span class="stat-value">500ms</span><span class="stat-label">Peekaboo Cache</span></div>
+  </div>
+</section>
+
+<!-- RISK TIERS -->
+<div class="tiers-section">
+  <div class="section-title">Tool Risk Tiers</div>
+  <div class="tier-grid">
+    <div class="tier-card glass">
+      <div class="tier-label tier-allow">● Auto-Allowed</div>
+      <div class="tier-tools">
+        <code>browser_navigate</code> <code>browser_go_back</code><br>
+        <code>browser_go_forward</code> <code>browser_snapshot</code><br>
+        <code>browser_screenshot</code> <code>browser_network_requests</code><br>
+        <code>browser_console_messages</code> <code>browser_wait_for</code><br>
+        <code>browser_tabs</code> <code>browser_tab_new</code>
+      </div>
+    </div>
+    <div class="tier-card glass">
+      <div class="tier-label tier-ask">● Requires Confirmation</div>
+      <div class="tier-tools">
+        <code>browser_click</code> <code>browser_type</code><br>
+        <code>browser_fill_form</code> <code>browser_select_option</code><br>
+        <code>browser_press_key</code> <code>browser_drag</code><br>
+        <code>browser_hover</code> <code>browser_scroll</code><br>
+        <code>browser_handle_dialog</code> <code>browser_resize</code>
+      </div>
+    </div>
+    <div class="tier-card glass">
+      <div class="tier-label tier-deny">● High-Risk (Policy Gated)</div>
+      <div class="tier-tools">
+        <code>browser_evaluate</code> <code>browser_run_code</code><br>
+        <code>browser_file_upload</code><br>
+        <span style="font-size:11px;color:var(--text-muted)">JS injection &amp; file system access require explicit allow in config</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPLORER -->
+<section class="explorer">
+  <aside class="sidebar glass-subtle">
+    <div class="sidebar-search">
+      <input class="search-input" type="text" id="searchInput" placeholder="Search features…" autocomplete="off" />
+    </div>
+    <nav class="sidebar-nav">
+
+      <div class="cat-lbl" data-cat="arch">Architecture</div>
+      <button class="feat-btn active" data-feature="live-host" onclick="showFeature('live-host', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">🏠</span><span>Live Host</span>
+      </button>
+      <button class="feat-btn" data-feature="mcp-interceptor" onclick="showFeature('mcp-interceptor', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">🔍</span><span>MCP Interceptor</span>
+      </button>
+      <button class="feat-btn" data-feature="policy" onclick="showFeature('policy', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">⚖</span><span>Policy Engine</span>
+      </button>
+
+      <div class="cat-lbl" data-cat="nav">Navigation</div>
+      <button class="feat-btn" data-feature="navigate" onclick="showFeature('navigate', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">🌐</span><span>Navigate &amp; Tabs</span>
+      </button>
+      <button class="feat-btn" data-feature="wait" onclick="showFeature('wait', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">⏳</span><span>Wait &amp; Timing</span>
+      </button>
+
+      <div class="cat-lbl" data-cat="interact">Interaction</div>
+      <button class="feat-btn" data-feature="click-type" onclick="showFeature('click-type', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">🖱</span><span>Click &amp; Type</span>
+      </button>
+      <button class="feat-btn" data-feature="form" onclick="showFeature('form', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">📝</span><span>Form Filling</span>
+      </button>
+      <button class="feat-btn" data-feature="keyboard" onclick="showFeature('keyboard', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">⌨</span><span>Keyboard &amp; Drag</span>
+      </button>
+      <button class="feat-btn" data-feature="dialog" onclick="showFeature('dialog', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">💬</span><span>Dialog Handling</span>
+      </button>
+
+      <div class="cat-lbl" data-cat="capture">Capture</div>
+      <button class="feat-btn" data-feature="screenshot" onclick="showFeature('screenshot', this)">
+        <span class="feat-icon" style="background:rgba(245,158,11,0.15)">📸</span><span>Screenshot</span>
+      </button>
+      <button class="feat-btn" data-feature="snapshot" onclick="showFeature('snapshot', this)">
+        <span class="feat-icon" style="background:rgba(245,158,11,0.15)">🗂</span><span>DOM Snapshot</span>
+      </button>
+      <button class="feat-btn" data-feature="network" onclick="showFeature('network', this)">
+        <span class="feat-icon" style="background:rgba(245,158,11,0.15)">📡</span><span>Network Requests</span>
+      </button>
+
+      <div class="cat-lbl" data-cat="advanced">Advanced</div>
+      <button class="feat-btn" data-feature="evaluate" onclick="showFeature('evaluate', this)">
+        <span class="feat-icon" style="background:rgba(239,68,68,0.15)">⚡</span><span>JS Evaluate</span>
+      </button>
+      <button class="feat-btn" data-feature="peekaboo" onclick="showFeature('peekaboo', this)">
+        <span class="feat-icon" style="background:rgba(239,68,68,0.15)">👁</span><span>Peekaboo TUI</span>
+      </button>
+      <button class="feat-btn" data-feature="visual-diff" onclick="showFeature('visual-diff', this)">
+        <span class="feat-icon" style="background:rgba(239,68,68,0.15)">🔬</span><span>Visual Diff</span>
+      </button>
+      <button class="feat-btn" data-feature="subagent" onclick="showFeature('subagent', this)">
+        <span class="feat-icon" style="background:rgba(239,68,68,0.15)">🤖</span><span>Sub-Agent Delegation</span>
+      </button>
+      <button class="feat-btn" data-feature="replay" onclick="showFeature('replay', this)">
+        <span class="feat-icon" style="background:rgba(239,68,68,0.15)">▶</span><span>Session Replay</span>
+      </button>
+
+    </nav>
+    <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--text-muted)">
+      <span class="kbd">↑↓</span> navigate &nbsp; <span class="kbd">/</span> search
+    </div>
+  </aside>
+
+  <div class="detail-pane">
+
+    <!-- LIVE HOST -->
+    <div class="detail-panel active" id="panel-live-host">
+      <div class="detail-header">
+        <div class="detail-chip">Architecture</div>
+        <div class="detail-title">Live Host</div>
+        <div class="detail-summary">The browser session manager. Maintains up to 5 Chromium session slots, each bound to a random port in the 46000–47000 range. Sessions persist across tool calls within a turn.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--neon-green)">src/browser/live-host.ts</code> manages a pool of Playwright Chromium sessions. Each slot has its own port, session ID, and current URL. When a tool call needs a browser, it claims a slot from the pool. The shared browser runtime daemon in <code>runtime-daemon.ts</code> keeps the Playwright process alive between tool invocations.</p>
+        <div class="code-block">
+<pre><span class="cm"># Live host configuration</span>
+portRange: 46000–47000     <span class="cm"># random port selection</span>
+maxSessionSlots: 5         <span class="cm"># concurrent browser sessions</span>
+requiredPortCount: 6       <span class="cm"># ports per slot (main + util)</span>
+bindHost: 127.0.0.1        <span class="cm"># loopback only — never exposed</span>
+
+<span class="cm"># Session slot status</span>
+<span class="ca">{</span>
+  slotIndex: 0,
+  port: 46031,
+  sessionId: <span class="cs">"sess_01J5…"</span>,
+  currentUrl: <span class="cs">"https://docs.python.org/asyncio"</span>,
+  updatedAt: <span class="cs">"2026-03-06T…"</span>
+<span class="ca">}</span>
+
+<span class="cm"># Enable browser tools in config</span>
+opta config set browser.mcp.enabled true</pre>
+        </div>
+        <div class="tip">
+          <strong>Loopback-only binding:</strong> All browser sessions bind to <code>127.0.0.1</code>. The LOOPBACK_HOSTS set validates that no session is ever exposed to external network interfaces — important when the user is on a shared network.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('mcp-interceptor', document.querySelector('[data-feature=mcp-interceptor]'))">MCP Interceptor →</button>
+        <button class="rel-btn" onclick="showFeature('peekaboo', document.querySelector('[data-feature=peekaboo]'))">Peekaboo →</button>
+      </div>
+    </div>
+
+    <!-- MCP INTERCEPTOR -->
+    <div class="detail-panel" id="panel-mcp-interceptor">
+      <div class="detail-header">
+        <div class="detail-chip">Architecture</div>
+        <div class="detail-title">MCP Interceptor</div>
+        <div class="detail-summary">Middleware layer between the agent loop and Playwright. Every browser tool call passes through the interceptor for policy evaluation, artifact recording, and risk scoring before execution.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--neon-green)">src/browser/mcp-interceptor.ts</code> wraps the <code>@playwright/mcp</code> server. It intercepts every tool call, evaluates it with the policy engine, records the action to the artifact log, and then either executes or denies. This design means policy can be changed without touching Playwright internals.</p>
+        <div class="code-block">
+<pre><span class="cm"># Interceptor pipeline per tool call</span>
+tool_call = { name: "browser_click", params: { selector: "#submit" } }
+
+<span class="co">1. evaluateBrowserPolicyAction(tool_call)</span>
+   <span class="co">→ { decision: "allow" | "ask" | "deny", reason }</span>
+
+<span class="co">2. if "ask": pause for user confirmation</span>
+   <span class="co">   if "deny": return error immediately</span>
+
+<span class="co">3. artifacts.record(tool_call, timestamp)</span>
+
+<span class="co">4. playwright.executeTool(tool_call)</span>
+   <span class="co">→ { result, screenshot? }</span>
+
+<span class="co">5. artifacts.record(result)</span>
+<span class="co">6. return result to agent loop</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Artifact log:</strong> Every browser action and its result is recorded to the session artifact log. This enables the visual diff pipeline to compare before/after states, and enables session replay.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('policy', document.querySelector('[data-feature=policy]'))">Policy Engine →</button>
+        <button class="rel-btn" onclick="showFeature('replay', document.querySelector('[data-feature=replay]'))">Session Replay →</button>
+      </div>
+    </div>
+
+    <!-- POLICY -->
+    <div class="detail-panel" id="panel-policy">
+      <div class="detail-header">
+        <div class="detail-chip">Architecture</div>
+        <div class="detail-title">Policy Engine</div>
+        <div class="detail-summary">Risk-based policy evaluation for browser tools. Each tool is classified into allow / ask / deny tiers, with domain allowlists for navigation and pattern-based classification for dynamic URLs.</div>
+      </div>
+      <div class="detail-body">
+        <p>The policy engine in <code style="color:var(--neon-green)">src/browser/policy-engine.ts</code> evaluates each browser tool call. Navigation tools check the target URL against a domain allowlist. Interaction tools (click, type) check the session's current domain. High-risk tools (evaluate, file_upload) require explicit config opt-in.</p>
+        <div class="code-block">
+<pre><span class="cm"># Policy config</span>
+opta config set browser.policy.allowedDomains <span class="cs">"github.com,docs.python.org"</span>
+opta config set browser.policy.allowEvaluate false  <span class="cm"># default</span>
+
+<span class="cm"># Policy evaluation logic</span>
+<span class="ca">function</span> evaluateBrowserPolicyAction(call) {
+  <span class="ca">if</span> (call.name === <span class="cs">"browser_evaluate"</span>) {
+    <span class="ca">return</span> config.browser.policy.allowEvaluate
+      ? <span class="cs">"ask"</span> : <span class="cs">"deny"</span>
+  }
+  <span class="ca">if</span> (isNavigationTool(call.name)) {
+    <span class="ca">return</span> isAllowedDomain(call.params.url) ? <span class="cs">"allow"</span> : <span class="cs">"ask"</span>
+  }
+  <span class="ca">return</span> TIER_MAP[call.name] <span class="cm">// allow | ask | deny</span>
+}</pre>
+        </div>
+        <div class="warn">
+          <strong>Autonomy floor:</strong> The global autonomy level uses <code>Math.floor</code> (not round), so fractional levels always resolve to the stricter tier. This prevents accidental permission escalation from floating-point autonomy scores.
+        </div>
+      </div>
+    </div>
+
+    <!-- NAVIGATE -->
+    <div class="detail-panel" id="panel-navigate">
+      <div class="detail-header">
+        <div class="detail-chip">Navigation</div>
+        <div class="detail-title">Navigate &amp; Tabs</div>
+        <div class="detail-summary">Full browser navigation control — URL loading, forward/back history, multi-tab management. Navigation is always auto-allowed when the target domain is in the allowlist.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Navigation tools</span>
+browser_navigate     { url: string }
+browser_go_back      {}
+browser_go_forward   {}
+
+<span class="cm"># Tab management</span>
+browser_tabs         {}                 <span class="co">→ [{ id, url, title }, …]</span>
+browser_tab_new      { url?: string }
+browser_tab_close    { tabId: string }
+
+<span class="cm"># Example: multi-tab comparison</span>
+<span class="co">→ browser_navigate    https://github.com/repo/v1</span>
+<span class="co">→ browser_tab_new     https://github.com/repo/v2</span>
+<span class="co">→ browser_screenshot  (tab 1)</span>
+<span class="co">→ browser_screenshot  (tab 2)</span>
+<span class="co">→ [model compares screenshots]</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Session persistence:</strong> Navigation state (cookies, localStorage) persists within a session slot for the duration of a conversation. The agent can log in once and navigate multiple pages without re-authenticating.
+        </div>
+      </div>
+    </div>
+
+    <!-- WAIT -->
+    <div class="detail-panel" id="panel-wait">
+      <div class="detail-header">
+        <div class="detail-chip">Navigation</div>
+        <div class="detail-title">Wait &amp; Timing</div>
+        <div class="detail-summary">Smart waiting for elements, navigation events, and network idle. Prevents race conditions where the agent acts before dynamic content has loaded.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Wait tools</span>
+browser_wait_for {
+  selector?: string,      <span class="cm"># CSS selector to appear</span>
+  text?: string,          <span class="cm"># text content to appear</span>
+  event?: <span class="cs">"load"</span> | <span class="cs">"networkidle"</span> | <span class="cs">"domcontentloaded"</span>,
+  timeout?: number        <span class="cm"># ms, default 30000</span>
+}
+
+<span class="cm"># Pattern: navigate then wait for content</span>
+<span class="co">→ browser_navigate https://app.example.com/dashboard</span>
+<span class="co">→ browser_wait_for { event: "networkidle" }</span>
+<span class="co">→ browser_wait_for { selector: ".data-table" }</span>
+<span class="co">→ browser_snapshot  ← now safe to read DOM</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLICK TYPE -->
+    <div class="detail-panel" id="panel-click-type">
+      <div class="detail-header">
+        <div class="detail-chip detail-chip-warn">Ask — Interaction</div>
+        <div class="detail-title">Click &amp; Type</div>
+        <div class="detail-summary">Element interaction tools. CSS selectors target elements; text labels work for buttons and links. Confirmation required — these tools mutate page state.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Click</span>
+browser_click { selector: string }
+<span class="co">→ browser_click { selector: "button[type=submit]" }</span>
+<span class="co">→ browser_click { selector: "text=Sign In" }</span>
+
+<span class="cm"># Type</span>
+browser_type  { selector: string, text: string }
+<span class="co">→ browser_type { selector: "#email", text: "user@example.com" }</span>
+
+<span class="cm"># Hover (for tooltips / menus)</span>
+browser_hover { selector: string }
+
+<span class="cm"># Scroll</span>
+browser_scroll { selector?: string, direction: "up"|"down", distance?: number }</pre>
+        </div>
+        <div class="tip">
+          <strong>Selector priority:</strong> Playwright prefers aria roles and accessible text labels over CSS selectors. If <code>browser_snapshot</code> shows accessible names, use those for more resilient selectors than fragile CSS classes.
+        </div>
+      </div>
+    </div>
+
+    <!-- FORM -->
+    <div class="detail-panel" id="panel-form">
+      <div class="detail-header">
+        <div class="detail-chip detail-chip-warn">Ask — Interaction</div>
+        <div class="detail-title">Form Filling</div>
+        <div class="detail-summary">Fill multiple form fields in one tool call, or use select_option for dropdowns. Handles text inputs, textareas, checkboxes, and radio buttons.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Fill multiple fields atomically</span>
+browser_fill_form {
+  fields: [
+    { selector: <span class="cs">"#name"</span>,    value: <span class="cs">"Matthew Byrden"</span> },
+    { selector: <span class="cs">"#email"</span>,   value: <span class="cs">"matt@opta.com"</span> },
+    { selector: <span class="cs">"#company"</span>, value: <span class="cs">"Opta Operations"</span> }
+  ]
+}
+
+<span class="cm"># Select dropdown option</span>
+browser_select_option {
+  selector: <span class="cs">"#country"</span>,
+  value: <span class="cs">"AU"</span>          <span class="cm"># or label: "Australia"</span>
+}
+
+<span class="cm"># Pattern: scrape form then fill</span>
+<span class="co">→ browser_snapshot  ← read form fields + selectors</span>
+<span class="co">→ browser_fill_form { fields: […] }</span>
+<span class="co">→ browser_click     { selector: "[type=submit]" }</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- KEYBOARD -->
+    <div class="detail-panel" id="panel-keyboard">
+      <div class="detail-header">
+        <div class="detail-chip detail-chip-warn">Ask — Interaction</div>
+        <div class="detail-title">Keyboard &amp; Drag</div>
+        <div class="detail-summary">Keyboard shortcuts, key chords, and drag-and-drop for UI interactions that can't be achieved with click and type alone.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Key press (single or chord)</span>
+browser_press_key { key: <span class="cs">"Enter"</span> }
+browser_press_key { key: <span class="cs">"Control+A"</span> }
+browser_press_key { key: <span class="cs">"Escape"</span> }
+browser_press_key { key: <span class="cs">"Tab"</span> }
+
+<span class="cm"># Drag and drop</span>
+browser_drag {
+  startSelector: <span class="cs">".draggable-item"</span>,
+  endSelector:   <span class="cs">".drop-zone"</span>
+}
+
+<span class="cm"># Use cases</span>
+<span class="co">→ Ctrl+A then Delete to clear a field</span>
+<span class="co">→ Tab navigation through a form</span>
+<span class="co">→ Escape to close modals</span>
+<span class="co">→ Drag list items to reorder</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- DIALOG -->
+    <div class="detail-panel" id="panel-dialog">
+      <div class="detail-header">
+        <div class="detail-chip detail-chip-warn">Ask — Interaction</div>
+        <div class="detail-title">Dialog Handling</div>
+        <div class="detail-summary">Intercept and respond to browser alert, confirm, and prompt dialogs that would otherwise block automation.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Handle next dialog before triggering action</span>
+browser_handle_dialog {
+  action: <span class="cs">"accept"</span> | <span class="cs">"dismiss"</span>,
+  promptText?: string    <span class="cm"># for window.prompt()</span>
+}
+
+<span class="cm"># Pattern: handle delete confirmation</span>
+<span class="co">→ browser_handle_dialog { action: "accept" }</span>
+<span class="co">→ browser_click { selector: "#delete-btn" }</span>
+<span class="co"># Dialog intercepted and accepted automatically</span>
+
+<span class="cm"># Pattern: dismiss unsaved changes dialog</span>
+<span class="co">→ browser_handle_dialog { action: "dismiss" }</span>
+<span class="co">→ browser_navigate { url: "https://app.example.com" }</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCREENSHOT -->
+    <div class="detail-panel" id="panel-screenshot">
+      <div class="detail-header">
+        <div class="detail-chip">Capture</div>
+        <div class="detail-title">Screenshot</div>
+        <div class="detail-summary">Full-page or viewport PNG screenshots returned as base64. Used by the agent to see the current page state — the primary visual input for understanding layouts and reading dynamic content.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Basic screenshot</span>
+browser_screenshot {}
+<span class="co">→ { data: "data:image/png;base64,…", mimeType: "image/png" }</span>
+
+<span class="cm"># Full-page screenshot (scrolls entire page)</span>
+browser_screenshot { fullPage: true }
+
+<span class="cm"># Screenshot is passed to vision model</span>
+<span class="cm"># Agent can read text, see layout, understand UI</span>
+
+<span class="cm"># Peekaboo alternative (macOS only)</span>
+<span class="cm"># capturePeekabooScreenPng() — captures from</span>
+<span class="cm"># Chromium window buffer regardless of focus</span>
+<span class="cm"># 500ms frame cache to avoid redundant captures</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Vision pipeline:</strong> Screenshots are base64-encoded PNG blobs that go directly into the model's vision input. The agent can read text, count elements, identify UI patterns, and understand visual hierarchy from screenshots alone.
+        </div>
+      </div>
+    </div>
+
+    <!-- SNAPSHOT -->
+    <div class="detail-panel" id="panel-snapshot">
+      <div class="detail-header">
+        <div class="detail-chip">Capture</div>
+        <div class="detail-title">DOM Snapshot</div>
+        <div class="detail-summary">Accessibility tree snapshot of the current page. Gives the agent element roles, names, and selectors without needing to parse raw HTML. More reliable than screenshots for identifying interactive elements.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># DOM snapshot</span>
+browser_snapshot {}
+<span class="co">→ accessibility tree (ARIA roles + names + selectors)</span>
+
+<span class="cm"># Example output (excerpt)</span>
+<span class="co">button "Sign In" [selector: button[type=submit]]</span>
+<span class="co">textbox "Email" [selector: #email]</span>
+<span class="co">link "Forgot password?" [selector: a.forgot-link]</span>
+<span class="co">heading "Welcome back" [level: 1]</span>
+
+<span class="cm"># When to use snapshot vs screenshot:</span>
+<span class="co">browser_snapshot  ← find selectors, read form fields</span>
+<span class="co">browser_screenshot ← understand visual layout, read images</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- NETWORK -->
+    <div class="detail-panel" id="panel-network">
+      <div class="detail-header">
+        <div class="detail-chip">Capture</div>
+        <div class="detail-title">Network Requests</div>
+        <div class="detail-summary">Intercept and inspect all network requests made by the page. Useful for understanding API calls, capturing auth tokens in flight, and debugging SPA data fetching.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Get all network requests since page load</span>
+browser_network_requests {}
+<span class="co">→ [</span>
+<span class="co">    { method: "GET", url: "https://api.example.com/user",</span>
+<span class="co">      status: 200, responseBodySize: 1240 },</span>
+<span class="co">    { method: "POST", url: "https://api.example.com/session",</span>
+<span class="co">      status: 201, headers: { authorization: "Bearer …" } }</span>
+<span class="co">  ]</span>
+
+<span class="cm"># Use cases:</span>
+<span class="co">→ Find the API endpoint a page calls for its data</span>
+<span class="co">→ Inspect auth headers to understand auth flow</span>
+<span class="co">→ Debug why a page isn't loading data</span>
+<span class="co">→ Discover undocumented internal APIs</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- EVALUATE -->
+    <div class="detail-panel" id="panel-evaluate">
+      <div class="detail-header">
+        <div class="detail-chip detail-chip-deny">Policy Gated — High Risk</div>
+        <div class="detail-title">JS Evaluate</div>
+        <div class="detail-summary">Execute arbitrary JavaScript in the page context. Extremely powerful — can read DOM, call page APIs, modify state — but requires explicit config opt-in due to injection risk.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Enable in config first</span>
+opta config set browser.policy.allowEvaluate true
+
+<span class="cm"># Execute JS in page context</span>
+browser_evaluate { js: <span class="cs">"document.title"</span> }
+<span class="co">→ "GitHub - opta/cli"</span>
+
+browser_evaluate { js: <span class="cs">"window.__APP_STATE__"</span> }
+<span class="co">→ { userId: "user_01…", featureFlags: […] }</span>
+
+browser_evaluate {
+  js: <span class="cs">"Array.from(document.querySelectorAll('h2')).map(e=>e.textContent)"</span>
+}
+<span class="co">→ ["Setup", "Installation", "Configuration", …]</span>
+
+<span class="cm"># Also requires confirmation (policy-gated)</span></pre>
+        </div>
+        <div class="warn">
+          <strong>Injection risk:</strong> <code>browser_evaluate</code> executes in the page's JS context and can access cookies, localStorage, and page state. Only enable on pages you trust. The policy engine denies by default — enable deliberately per-session.
+        </div>
+      </div>
+    </div>
+
+    <!-- PEEKABOO -->
+    <div class="detail-panel" id="panel-peekaboo">
+      <div class="detail-header">
+        <div class="detail-chip">Advanced</div>
+        <div class="detail-title">Peekaboo TUI</div>
+        <div class="detail-summary">macOS-only: captures the Chromium window buffer directly (regardless of focus) and streams it into the TUI sidebar. Watch what the agent is doing in real time without switching windows.</div>
+      </div>
+      <div class="detail-body">
+        <p>Peekaboo uses macOS screen capture APIs to grab the Chromium window buffer by app name (<code style="color:var(--neon-green)">PLAYWRIGHT_BROWSER_APP_NAME = "Chromium"</code>). The frame is cached for 500ms to avoid redundant captures. Sensitive text is redacted from the log output before display.</p>
+        <div class="code-block">
+<pre><span class="cm"># Peekaboo functions (src/browser/peekaboo.ts)</span>
+capturePeekabooScreenPng()      <span class="co">→ PNG buffer (500ms cache)</span>
+isPeekabooAvailable()           <span class="co">→ bool (macOS only)</span>
+peekabooClickLabel(label)       <span class="co">→ click by accessible label</span>
+peekabooPressKey(key)           <span class="co">→ synthetic key event</span>
+peekabooTypeText(text)          <span class="co">→ type into active field</span>
+redactPeekabooSensitiveText(t)  <span class="co">→ mask passwords/tokens</span>
+
+<span class="cm"># TUI sidebar shows live browser preview</span>
+<span class="co"># No focus change needed — works behind other windows</span>
+<span class="cm"># Enabled automatically when browser.mcp.enabled=true (macOS)</span></pre>
+        </div>
+        <div class="tip">
+          <strong>macOS only:</strong> Peekaboo depends on macOS screen capture permissions. On Windows/Linux, use <code>browser_screenshot</code> for visual feedback instead.
+        </div>
+      </div>
+    </div>
+
+    <!-- VISUAL DIFF -->
+    <div class="detail-panel" id="panel-visual-diff">
+      <div class="detail-header">
+        <div class="detail-chip">Advanced</div>
+        <div class="detail-title">Visual Diff</div>
+        <div class="detail-summary">Pixel-level before/after screenshot comparison. Used automatically by the interceptor to detect unexpected page changes after interactions, and available as an explicit tool for regression testing.</div>
+      </div>
+      <div class="detail-body">
+        <div class="code-block">
+<pre><span class="cm"># Visual diff pipeline (src/browser/visual-diff.ts)</span>
+
+<span class="cm"># Automatic: MCP interceptor captures before/after</span>
+<span class="co">before_screenshot = capture() ← before action</span>
+<span class="co">execute_tool(action)</span>
+<span class="co">after_screenshot  = capture() ← after action</span>
+<span class="co">diff = pixelDiff(before, after)</span>
+<span class="co">→ { changed: true, changedRegions: [{ x, y, w, h }] }</span>
+
+<span class="cm"># Diff result available in tool result payload</span>
+<span class="co">tool_result.visualDiff = {</span>
+<span class="co">  changedPixelPercent: 0.12,</span>
+<span class="co">  significantChange: true</span>
+<span class="co">}</span>
+
+<span class="cm"># Agent uses diff to verify actions had expected effect</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBAGENT -->
+    <div class="detail-panel" id="panel-subagent">
+      <div class="detail-header">
+        <div class="detail-chip">Advanced</div>
+        <div class="detail-title">Sub-Agent Delegation</div>
+        <div class="detail-summary">Delegate complex multi-step browser tasks to a full-peer specialist agent. The sub-agent gets its own browser session, tool set, and conversation context — returning a structured result to the parent agent.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--neon-green)">delegateToBrowserSubAgent()</code> in <code>src/browser/sub-agent-delegator.ts</code> spawns a complete child agent with browser-focused system prompt and tool permissions. The parent agent continues once the sub-agent completes or hits a defined checkpoint. Ideal for goals like "go to this site and fill out the form".</p>
+        <div class="code-block">
+<pre><span class="cm"># Sub-agent delegation</span>
+opta do <span class="cs">"go to linear.app and create an issue for the bug in #9234"</span>
+
+<span class="co">Parent agent:</span>
+<span class="co">→ delegateToBrowserSubAgent({ goal: "create Linear issue for #9234" })</span>
+
+<span class="co">Browser sub-agent (full peer):</span>
+<span class="co">→ browser_navigate https://linear.app</span>
+<span class="co">→ browser_click { selector: "New Issue" }</span>
+<span class="co">→ browser_fill_form { fields: [{ title: "Bug: …" }] }</span>
+<span class="co">→ browser_click { selector: "Create Issue" }</span>
+<span class="co">→ return { issueId: "ENG-421", url: "https://…" }</span>
+
+<span class="co">Parent agent resumes with result.</span></pre>
+        </div>
+        <div class="tip">
+          <strong>MCP alternative:</strong> If the target site has an MCP server (e.g. Linear, GitHub), prefer the MCP tool over browser delegation — it's more reliable and doesn't require UI interaction. Browser delegation is for sites without MCP coverage.
+        </div>
+      </div>
+    </div>
+
+    <!-- REPLAY -->
+    <div class="detail-panel" id="panel-replay">
+      <div class="detail-header">
+        <div class="detail-chip">Advanced</div>
+        <div class="detail-title">Session Replay</div>
+        <div class="detail-summary">Deterministic replay of a recorded browser session from its action log. Useful for regression testing, debugging, and demonstrating a workflow without re-running the full agent.</div>
+      </div>
+      <div class="detail-body">
+        <p><code style="color:var(--neon-green)">src/browser/replay.ts</code> reads the artifact action log from a previous session and re-executes each browser action in order. Actions are timed to match original delays. Screenshots are captured at each step for side-by-side comparison with the original.</p>
+        <div class="code-block">
+<pre><span class="cm"># Replay a recorded session</span>
+opta browser replay <span class="cs">--session</span> sess_01J5X3…
+
+<span class="co">◆ Loading action log (42 actions)…</span>
+<span class="co">  → browser_navigate https://app.example.com     ✓</span>
+<span class="co">  → browser_fill_form { email, password }         ✓</span>
+<span class="co">  → browser_click { selector: "#submit" }         ✓</span>
+<span class="co">  → browser_wait_for { event: "networkidle" }     ✓</span>
+<span class="co">  …</span>
+<span class="co">✓ Replay complete. 42/42 actions succeeded.</span>
+<span class="co">  Visual diff: 3 regions changed vs original.</span>
+
+<span class="cm"># Action log stored in session artifact dir</span>
+<span class="cm"># ~/.config/opta/sessions/sess_01J5…/artifacts/</span></pre>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <span style="color:var(--neon-green)">browser automation</span> &nbsp;·&nbsp; opta cli &nbsp;·&nbsp; 2026-03-06 &nbsp;·&nbsp;
+  <span class="kbd">↑↓</span> navigate &nbsp; <span class="kbd">/</span> search
+</footer>
+
+<script>
+var allFeatures = [
+  { id:'live-host',       cat:'arch',     terms:'live host session slots port chromium pool' },
+  { id:'mcp-interceptor', cat:'arch',     terms:'mcp interceptor middleware policy artifact' },
+  { id:'policy',          cat:'arch',     terms:'policy engine risk tier allow ask deny domain' },
+  { id:'navigate',        cat:'nav',      terms:'navigate tabs url forward back history' },
+  { id:'wait',            cat:'nav',      terms:'wait timing networkidle element selector' },
+  { id:'click-type',      cat:'interact', terms:'click type hover scroll selector' },
+  { id:'form',            cat:'interact', terms:'form fill select option textarea checkbox' },
+  { id:'keyboard',        cat:'interact', terms:'keyboard key press chord drag drop' },
+  { id:'dialog',          cat:'interact', terms:'dialog alert confirm prompt handle' },
+  { id:'screenshot',      cat:'capture',  terms:'screenshot fullpage png base64 vision' },
+  { id:'snapshot',        cat:'capture',  terms:'snapshot accessibility aria dom tree selector' },
+  { id:'network',         cat:'capture',  terms:'network requests api headers status intercept' },
+  { id:'evaluate',        cat:'advanced', terms:'evaluate javascript js execute inject context' },
+  { id:'peekaboo',        cat:'advanced', terms:'peekaboo tui preview macos window buffer' },
+  { id:'visual-diff',     cat:'advanced', terms:'visual diff pixel compare before after regression' },
+  { id:'subagent',        cat:'advanced', terms:'subagent delegation browser specialist goal' },
+  { id:'replay',          cat:'advanced', terms:'replay deterministic session action log' },
+];
+var currentFeature = 'live-host';
+
+function showFeature(id, btn) {
+  document.querySelectorAll('.detail-panel').forEach(function(p){ p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + id);
+  if (panel) { panel.classList.add('active'); panel.scrollTop = 0; }
+  document.querySelectorAll('.feat-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) { btn.classList.add('active'); btn.scrollIntoView({block:'nearest'}); }
+  else { var t=document.querySelector('[data-feature="'+id+'"]'); if(t){ t.classList.add('active'); } }
+  currentFeature = id;
+}
+
+var si = document.getElementById('searchInput');
+si.addEventListener('input', function(){
+  var q = this.value.toLowerCase().trim();
+  var btns = document.querySelectorAll('.feat-btn');
+  var cats = document.querySelectorAll('.cat-lbl');
+  if (!q) { btns.forEach(function(b){b.style.display='';}); cats.forEach(function(c){c.style.display='';}); return; }
+  var catVis = {};
+  allFeatures.forEach(function(f){
+    var match = (f.id+' '+f.terms).indexOf(q) !== -1;
+    var btn = document.querySelector('[data-feature="'+f.id+'"]');
+    if (btn) btn.style.display = match?'':'none';
+    if (match) catVis[f.cat] = true;
+  });
+  cats.forEach(function(c){ var k=c.getAttribute('data-cat'); c.style.display=catVis[k]?'':'none'; });
+});
+
+document.addEventListener('keydown', function(e){
+  if (document.activeElement === si) return;
+  var visible = Array.from(document.querySelectorAll('.feat-btn')).filter(function(b){ return b.style.display!=='none'; });
+  var cur = visible.findIndex(function(b){ return b.getAttribute('data-feature')===currentFeature; });
+  if (e.key==='ArrowDown' && cur<visible.length-1){ e.preventDefault(); var n=visible[cur+1]; showFeature(n.getAttribute('data-feature'),n); }
+  else if (e.key==='ArrowUp' && cur>0){ e.preventDefault(); var p=visible[cur-1]; showFeature(p.getAttribute('data-feature'),p); }
+  else if (e.key==='/'){ e.preventDefault(); si.focus(); }
+});
+</script>
+</body>
+</html>

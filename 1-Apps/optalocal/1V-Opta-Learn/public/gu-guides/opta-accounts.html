@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta Accounts Masterclass</title>
+<style>
+:root {
+  --void: #09090b;
+  --surface: #18181b;
+  --elevated: #27272a;
+  --border: #3f3f46;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-muted: #52525b;
+  --primary: #8b5cf6;
+  --primary-glow: #a855f7;
+  --neon-blue: #3b82f6;
+  --neon-green: #22c55e;
+  --neon-amber: #f59e0b;
+  --neon-red: #ef4444;
+  --neon-cyan: #06b6d4;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--void);
+  color: var(--text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px; line-height: 1.6;
+}
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 0;
+}
+.glass { background: rgba(255,255,255,0.04); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,0.08); }
+.glass-subtle { background: rgba(255,255,255,0.02); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.05); }
+
+.hero {
+  position: relative; z-index: 1;
+  padding: 60px 32px 48px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(59,130,246,0.10) 0%, transparent 70%);
+}
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--neon-blue); margin-bottom: 20px; padding: 6px 14px;
+  border-radius: 100px; border: 1px solid rgba(59,130,246,0.3); background: rgba(59,130,246,0.08);
+}
+.hero h1 {
+  font-size: clamp(26px, 5vw, 50px); font-weight: 700; letter-spacing: -0.03em;
+  background: linear-gradient(135deg, #fff 0%, #93c5fd 50%, #818cf8 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  margin-bottom: 14px;
+}
+.hero-sub { font-size: 15px; color: var(--text-secondary); max-width: 560px; margin: 0 auto 32px; }
+.stat-row { display: flex; justify-content: center; gap: 36px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.stat-value { font-family: monospace; font-size: 22px; font-weight: 700; color: var(--neon-blue); text-shadow: 0 0 20px rgba(59,130,246,0.4); }
+.stat-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; }
+
+.explorer { position: relative; z-index: 1; display: grid; grid-template-columns: 260px 1fr; min-height: 640px; border-top: 1px solid rgba(255,255,255,0.05); }
+.sidebar { border-right: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; }
+.sidebar-search { padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+.search-input {
+  width: 100%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px; padding: 8px 12px; color: var(--text-primary); font-size: 13px; outline: none;
+}
+.search-input:focus { border-color: rgba(59,130,246,0.4); }
+.search-input::placeholder { color: var(--text-muted); }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 8px; }
+.cat-label { font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); padding: 12px 8px 4px; }
+.feat-btn {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%; text-align: left; background: none; border: none; border-radius: 8px;
+  padding: 9px 10px; color: var(--text-secondary); font-size: 13px; cursor: pointer;
+  transition: all 0.12s; margin-bottom: 1px;
+}
+.feat-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+.feat-btn.active { background: rgba(59,130,246,0.10); color: var(--text-primary); border: 1px solid rgba(59,130,246,0.2); }
+.feat-icon { width: 24px; height: 24px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+
+.detail-pane { padding: 32px; overflow-y: auto; max-height: 700px; }
+.detail-panel { display: none; }
+.detail-panel.active { display: block; }
+.detail-header { margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.detail-chip {
+  display: inline-block; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+  padding: 3px 8px; border-radius: 4px; margin-bottom: 10px; font-family: monospace;
+  background: rgba(59,130,246,0.12); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.22);
+}
+.detail-title { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--text-primary); margin-bottom: 8px; }
+.detail-summary { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+.detail-body p { color: var(--text-secondary); line-height: 1.7; margin-bottom: 12px; }
+.code-block {
+  background: rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.06); border-radius: 10px;
+  padding: 16px; margin: 14px 0; overflow-x: auto;
+}
+.code-block pre { font-family: monospace; font-size: 12px; line-height: 1.7; color: var(--neon-green); white-space: pre; }
+.code-block pre .cm { color: var(--text-muted); }
+.code-block pre .ca { color: var(--primary); }
+.code-block pre .cs { color: var(--neon-cyan); }
+.code-block pre .cb { color: var(--neon-blue); }
+.code-block pre .co { color: var(--text-secondary); }
+.tip { background: rgba(59,130,246,0.06); border: 1px solid rgba(59,130,246,0.18); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.tip strong { color: var(--neon-blue); }
+.warn { background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.18); border-radius: 10px; padding: 14px 16px; margin: 14px 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+.warn strong { color: var(--neon-amber); }
+
+.related { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.rel-btn { background: none; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 5px 12px; color: var(--text-muted); font-size: 11px; cursor: pointer; transition: all 0.12s; }
+.rel-btn:hover { border-color: rgba(59,130,246,0.4); color: var(--neon-blue); }
+
+.footer { position: relative; z-index: 1; padding: 28px; border-top: 1px solid rgba(255,255,255,0.05); text-align: center; font-family: monospace; font-size: 11px; color: var(--text-muted); }
+.kbd { display: inline-block; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; padding: 1px 6px; font-size: 10px; font-family: monospace; }
+
+@media (max-width: 700px) {
+  .explorer { grid-template-columns: 1fr; }
+  .sidebar { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.05); max-height: 280px; }
+  .detail-pane { max-height: none; }
+}
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-eyebrow">◆ accounts · masterclass</div>
+  <h1>Opta Accounts</h1>
+  <p class="hero-sub">Centralized SSO for the entire optalocal.com ecosystem — OAuth, vault encryption, device control plane, and CLI auth in one system.</p>
+  <div class="stat-row">
+    <div class="stat"><span class="stat-value">5</span><span class="stat-label">Auth Methods</span></div>
+    <div class="stat"><span class="stat-value">8</span><span class="stat-label">Apps on SSO</span></div>
+    <div class="stat"><span class="stat-value">AES-256</span><span class="stat-label">Vault Encryption</span></div>
+    <div class="stat"><span class="stat-value">1</span><span class="stat-label">Supabase Project</span></div>
+  </div>
+</section>
+
+<section class="explorer">
+  <aside class="sidebar glass-subtle">
+    <div class="sidebar-search">
+      <input class="search-input" type="text" id="searchInput" placeholder="Search topics…" autocomplete="off" />
+    </div>
+    <nav class="sidebar-nav" id="sidebarNav">
+
+      <div class="cat-label" data-cat="auth">Authentication</div>
+      <button class="feat-btn active" data-feature="oauth" onclick="showFeature('oauth', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">🔐</span><span>OAuth Flow</span>
+      </button>
+      <button class="feat-btn" data-feature="cli-auth" onclick="showFeature('cli-auth', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">⌨</span><span>CLI Browser Auth</span>
+      </button>
+      <button class="feat-btn" data-feature="sessions" onclick="showFeature('sessions', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">🍪</span><span>Session &amp; Cookies</span>
+      </button>
+      <button class="feat-btn" data-feature="sso" onclick="showFeature('sso', this)">
+        <span class="feat-icon" style="background:rgba(59,130,246,0.15)">🔗</span><span>Cross-Domain SSO</span>
+      </button>
+
+      <div class="cat-label" data-cat="vault">Vault</div>
+      <button class="feat-btn" data-feature="vault-enc" onclick="showFeature('vault-enc', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">🔒</span><span>Encryption Model</span>
+      </button>
+      <button class="feat-btn" data-feature="vault-pull" onclick="showFeature('vault-pull', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">⬇</span><span>vault.pull Sync</span>
+      </button>
+      <button class="feat-btn" data-feature="vault-keys" onclick="showFeature('vault-keys', this)">
+        <span class="feat-icon" style="background:rgba(139,92,246,0.15)">🗝</span><span>Managed Keys</span>
+      </button>
+
+      <div class="cat-label" data-cat="control">Control Plane</div>
+      <button class="feat-btn" data-feature="pairing" onclick="showFeature('pairing', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">📱</span><span>Device Pairing</span>
+      </button>
+      <button class="feat-btn" data-feature="bridge" onclick="showFeature('bridge', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">🌉</span><span>Bridge Worker</span>
+      </button>
+      <button class="feat-btn" data-feature="openclaw" onclick="showFeature('openclaw', this)">
+        <span class="feat-icon" style="background:rgba(34,197,94,0.15)">🦀</span><span>OpenClaw Identity</span>
+      </button>
+
+      <div class="cat-label" data-cat="security">Security</div>
+      <button class="feat-btn" data-feature="redirect" onclick="showFeature('redirect', this)">
+        <span class="feat-icon" style="background:rgba(245,158,11,0.15)">🛡</span><span>Redirect Safety</span>
+      </button>
+      <button class="feat-btn" data-feature="supabase-ssr" onclick="showFeature('supabase-ssr', this)">
+        <span class="feat-icon" style="background:rgba(245,158,11,0.15)">🔑</span><span>Supabase SSR Pattern</span>
+      </button>
+
+    </nav>
+    <div style="padding:10px 14px;border-top:1px solid rgba(255,255,255,0.05);font-size:11px;color:var(--text-muted)">
+      <span class="kbd">↑↓</span> navigate &nbsp; <span class="kbd">/</span> search
+    </div>
+  </aside>
+
+  <div class="detail-pane">
+
+    <!-- OAUTH -->
+    <div class="detail-panel active" id="panel-oauth">
+      <div class="detail-header">
+        <div class="detail-chip">Authentication</div>
+        <div class="detail-title">OAuth Flow</div>
+        <div class="detail-summary">PKCE-based OAuth for Google and Apple. The accounts portal at accounts.optalocal.com handles the full redirect dance and sets cross-domain cookies on success.</div>
+      </div>
+      <div class="detail-body">
+        <p>Supabase handles the OAuth provider integration. When a user clicks "Sign in with Google", Supabase generates a PKCE code challenge and redirects to Google's authorization endpoint. After consent, Google redirects back to <code style="color:var(--neon-green)">/auth/callback</code> with a code, which is exchanged for a Supabase session.</p>
+        <div class="code-block">
+<pre><span class="cm"># Auth callback route (simplified)</span>
+<span class="cm"># GET /auth/callback?code=…&amp;next=/dashboard</span>
+
+supabase.auth.exchangeCodeForSession(code)
+<span class="co">→ Supabase issues access_token + refresh_token</span>
+
+<span class="cm"># Cookies set on response:</span>
+Set-Cookie: sb-access-token=…;
+  domain=<span class="cs">.optalocal.com</span>;
+  secure; sameSite=lax; httpOnly
+
+<span class="cm"># Redirect user to their destination</span>
+sanitizeRedirect(next)   <span class="cm"># validates vs allowlist</span>
+<span class="co">→ 302 to /dashboard (or safe fallback /)</span></pre>
+        </div>
+        <div class="tip">
+          <strong>PKCE enforced:</strong> Supabase uses Proof Key for Code Exchange for all OAuth flows. The code verifier is generated client-side and validated server-side, preventing authorization code interception attacks.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('sessions', document.querySelector('[data-feature=sessions]'))">Sessions →</button>
+        <button class="rel-btn" onclick="showFeature('redirect', document.querySelector('[data-feature=redirect]'))">Redirect Safety →</button>
+      </div>
+    </div>
+
+    <!-- CLI AUTH -->
+    <div class="detail-panel" id="panel-cli-auth">
+      <div class="detail-header">
+        <div class="detail-chip">Authentication</div>
+        <div class="detail-title">CLI Browser Auth</div>
+        <div class="detail-summary">The CLI opens accounts.optalocal.com in the system browser, starts a local HTTP listener, and captures the auth token via a localhost redirect callback.</div>
+      </div>
+      <div class="detail-body">
+        <p>When you run <code style="color:var(--neon-green)">opta account login</code>, the CLI binds a temporary HTTP server on localhost:9998. It then opens the accounts portal with <code>?redirect_to=http://localhost:9998/callback</code>. After OAuth, the portal redirects to the CLI's local listener with the session token.</p>
+        <div class="code-block">
+<pre><span class="cm"># CLI flow</span>
+opta account login
+
+<span class="co">◆ Starting local callback server on :9998…</span>
+<span class="co">◆ Opening accounts.optalocal.com in browser…</span>
+<span class="cm"># User completes Google/Apple/email auth</span>
+<span class="co">◆ Callback received: ?token=opta_tok_01J5…</span>
+<span class="co">✓ Authenticated as matt@optalocal.com</span>
+<span class="co">✓ Token stored in OS keychain</span>
+
+<span class="cm"># Token is now used for all daemon requests</span>
+<span class="cb">Authorization: Bearer opta_tok_01J5…</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Localhost redirect is safe:</strong> The <code>redirect_to=http://localhost:9998</code> is validated against the accounts app allowlist before the OAuth flow starts. The token is only ever sent to the loopback interface — never over the network.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('vault-pull', document.querySelector('[data-feature=vault-pull]'))">vault.pull Sync →</button>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div class="detail-panel" id="panel-sessions">
+      <div class="detail-header">
+        <div class="detail-chip">Authentication</div>
+        <div class="detail-title">Session &amp; Cookies</div>
+        <div class="detail-summary">Supabase SSR cookies with .optalocal.com domain enable persistent, automatically-refreshed sessions across all subdomains without re-authentication.</div>
+      </div>
+      <div class="detail-body">
+        <p>The <code style="color:var(--neon-green)">@supabase/ssr</code> package splits the Supabase client into three variants: browser client, server client, and middleware. Cookies are managed by the middleware on every request, transparently refreshing expired access tokens using the refresh token.</p>
+        <div class="code-block">
+<pre><span class="cm"># Cookie architecture</span>
+sb-access-token   <span class="cm"># JWT, 1h expiry</span>
+sb-refresh-token  <span class="cm"># long-lived, rotated on use</span>
+
+domain=<span class="cs">.optalocal.com</span>  <span class="cm"># prod only (omitted localhost)</span>
+secure=true               <span class="cm"># HTTPS only</span>
+sameSite=lax              <span class="cm"># CSRF protection</span>
+
+<span class="cm"># Middleware auto-refresh (Next.js)</span>
+<span class="cm"># src/lib/supabase/middleware.ts</span>
+supabase.auth.getUser()
+<span class="co">→ if token expired: refreshSession() → new cookies set</span>
+<span class="co">→ if no session: redirect to /sign-in</span></pre>
+        </div>
+        <div class="tip">
+          <strong>getUser() vs getSession():</strong> Middleware uses <code>getUser()</code> (validates JWT with Supabase server) not <code>getSession()</code> (reads local cookie only). This prevents session forgery via tampered cookies.
+        </div>
+      </div>
+    </div>
+
+    <!-- SSO -->
+    <div class="detail-panel" id="panel-sso">
+      <div class="detail-header">
+        <div class="detail-chip">Authentication</div>
+        <div class="detail-title">Cross-Domain SSO</div>
+        <div class="detail-summary">One login at accounts.optalocal.com grants authenticated access to all 8 management sites. The .optalocal.com cookie domain is the mechanism.</div>
+      </div>
+      <div class="detail-body">
+        <p>Setting <code style="color:var(--neon-green)">domain=.optalocal.com</code> on the Supabase session cookies means the browser automatically sends them to every <code>*.optalocal.com</code> subdomain. Each app's Next.js middleware validates the session independently with <code>getUser()</code>.</p>
+        <div class="code-block">
+<pre><span class="cm"># User signs in at accounts.optalocal.com</span>
+<span class="cm"># Cookie set: domain=.optalocal.com</span>
+
+<span class="cm"># User visits lmx.optalocal.com</span>
+<span class="co">GET https://lmx.optalocal.com/dashboard</span>
+<span class="co">Cookie: sb-access-token=eyJ…  ← auto-sent by browser</span>
+
+<span class="cm"># LMX Dashboard middleware</span>
+supabase.auth.getUser() <span class="co">→ { id: "user_…", email: "matt@…" }</span>
+<span class="co">→ Page renders with authenticated session</span>
+<span class="co">→ No second login required</span>
+
+<span class="cm"># Works for: 1L, 1O, 1R, 1S, 1T, 1U, 1V, 1X</span></pre>
+        </div>
+        <div class="warn">
+          <strong>Dev note:</strong> The <code>domain</code> attribute is omitted in development (localhost). Each app runs on a different port, so cookies are port-scoped — no cross-app SSO locally. This is expected behavior.
+        </div>
+      </div>
+    </div>
+
+    <!-- VAULT ENCRYPTION -->
+    <div class="detail-panel" id="panel-vault-enc">
+      <div class="detail-header">
+        <div class="detail-chip">Vault</div>
+        <div class="detail-title">Encryption Model</div>
+        <div class="detail-summary">All secrets are encrypted with AES-256-GCM client-side before leaving the device. Supabase stores only ciphertext. The encryption key is derived from the user's Supabase session — never transmitted.</div>
+      </div>
+      <div class="detail-body">
+        <p>The vault encryption key is derived from a combination of the Supabase user ID and a device fingerprint using HKDF. This means the same user on a different device needs to re-authenticate to derive the correct key — providing per-device isolation even if the Supabase ciphertext is leaked.</p>
+        <div class="code-block">
+<pre><span class="cm"># Key derivation (src/accounts/vault.ts)</span>
+material = userId + <span class="cs">":"</span> + deviceFingerprint
+key = HKDF-SHA256(material, salt=<span class="cs">"opta-vault-v1"</span>, length=32)
+
+<span class="cm"># Encryption</span>
+iv = randomBytes(12)
+ciphertext = AES-256-GCM(plaintext, key, iv)
+blob = JSON.stringify({ iv, ciphertext, tag })
+
+<span class="cm"># Stored in Supabase as base64 blob</span>
+<span class="cm"># Supabase never sees plaintext</span>
+
+<span class="cm"># Decryption (on vault.pull)</span>
+key = HKDF-SHA256(userId + deviceFingerprint)
+plaintext = AES-256-GCM-decrypt(ciphertext, key, iv, tag)</pre>
+        </div>
+        <div class="tip">
+          <strong>Zero-knowledge storage:</strong> Even with full Supabase DB access, secrets cannot be decrypted without the user's session credentials AND the device fingerprint. Machine wipes require re-authentication.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('vault-pull', document.querySelector('[data-feature=vault-pull]'))">vault.pull Sync →</button>
+      </div>
+    </div>
+
+    <!-- VAULT PULL -->
+    <div class="detail-panel" id="panel-vault-pull">
+      <div class="detail-header">
+        <div class="detail-chip">Vault</div>
+        <div class="detail-title">vault.pull Sync</div>
+        <div class="detail-summary">The daemon operation that fetches the encrypted vault blob from Supabase, decrypts it, and writes individual secrets to the OS keychain. Triggered after login or on demand.</div>
+      </div>
+      <div class="detail-body">
+        <p>The <code style="color:var(--neon-green)">vault.pull</code> daemon operation is registered in <code>src/daemon/operations/registry.ts</code>. It calls <code>pullVaultKeys()</code> from <code>src/accounts/vault.ts</code>, which authenticates with Supabase using the stored bearer token, downloads the encrypted blob, decrypts it, and writes each key to the OS keychain via the native keytar module.</p>
+        <div class="code-block">
+<pre><span class="cm"># Trigger via daemon operation</span>
+POST /v3/operations
+<span class="ca">{ "op": "vault.pull" }</span>
+
+<span class="cm"># Response schema (Zod-validated)</span>
+<span class="ca">{</span>
+  <span class="cs">"ok"</span>: true,
+  <span class="cs">"syncedKeys"</span>: [<span class="cs">"ANTHROPIC_API_KEY"</span>, <span class="cs">"OPENAI_API_KEY"</span>],
+  <span class="cs">"failedKeys"</span>: [],
+  <span class="cs">"skippedKeys"</span>: []
+<span class="ca">}</span>
+
+<span class="cm"># Also triggers automatically after:</span>
+<span class="co">opta account login    ← on successful auth callback</span>
+<span class="co">opta account sync     ← explicit manual sync</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Structured response:</strong> The vault.pull operation returns categorized key lists so the CLI can surface exactly which keys synced, failed, or were skipped (e.g. already up to date). This replaced the earlier boolean-only response.
+        </div>
+      </div>
+    </div>
+
+    <!-- VAULT KEYS -->
+    <div class="detail-panel" id="panel-vault-keys">
+      <div class="detail-header">
+        <div class="detail-chip">Vault</div>
+        <div class="detail-title">Managed Keys</div>
+        <div class="detail-summary">Provider API keys stored in the vault survive machine wipes and auto-configure the CLI on new devices. Keys are written to the OS keychain after decryption.</div>
+      </div>
+      <div class="detail-body">
+        <p>The vault manages provider credentials centrally. After <code style="color:var(--neon-green)">vault.pull</code>, keys are available to both the CLI (reads from keychain) and the daemon (uses them for provider routing). New providers added via the accounts portal are available on all devices after the next sync.</p>
+        <div class="code-block">
+<pre><span class="cm"># Keys managed in vault</span>
+ANTHROPIC_API_KEY       <span class="co">→ claude-sonnet-4-6 access</span>
+OPENAI_API_KEY          <span class="co">→ gpt-4o fallback</span>
+LMX_TOKEN               <span class="co">→ LMX instance auth</span>
+GITHUB_TOKEN            <span class="co">→ MCP github server</span>
+BRAVE_SEARCH_KEY        <span class="co">→ web search backend</span>
+<span class="cm"># …and user-defined custom keys</span>
+
+<span class="cm"># OS keychain storage (keytar)</span>
+keytar.setPassword(<span class="cs">"opta"</span>, <span class="cs">"ANTHROPIC_API_KEY"</span>, value)
+keytar.getPassword(<span class="cs">"opta"</span>, <span class="cs">"ANTHROPIC_API_KEY"</span>)
+
+<span class="cm"># Config reads keychain first, falls back to env</span>
+process.env.ANTHROPIC_API_KEY
+  || keychain.get(<span class="cs">"ANTHROPIC_API_KEY"</span>)
+  || config.providers.anthropic.apiKey</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAIRING -->
+    <div class="detail-panel" id="panel-pairing">
+      <div class="detail-header">
+        <div class="detail-chip">Control Plane</div>
+        <div class="detail-title">Device Pairing</div>
+        <div class="detail-summary">Devices register with the accounts control plane to receive remote commands. Each paired device gets a unique deviceId and bridgeToken for secure bidirectional communication.</div>
+      </div>
+      <div class="detail-body">
+        <p>When the CLI authenticates and the daemon bridge is enabled, the daemon registers itself as a paired device with the accounts control plane API (<code style="color:var(--neon-green)">/api/pairing</code>). The control plane assigns a <code>deviceId</code> and <code>bridgeToken</code>. These credentials are stored in the bridge state machine.</p>
+        <div class="code-block">
+<pre><span class="cm"># Pairing request (from daemon bridge)</span>
+POST /api/pairing
+<span class="ca">{</span>
+  <span class="cs">"userId"</span>: <span class="cs">"user_01J5…"</span>,
+  <span class="cs">"deviceName"</span>: <span class="cs">"Opta48 MacBook"</span>,
+  <span class="cs">"platform"</span>: <span class="cs">"darwin"</span>,
+  <span class="cs">"cliVersion"</span>: <span class="cs">"0.5.2"</span>
+<span class="ca">}</span>
+
+<span class="cm"># Response</span>
+<span class="ca">{</span>
+  <span class="cs">"deviceId"</span>: <span class="cs">"dev_01J5…"</span>,
+  <span class="cs">"bridgeToken"</span>: <span class="cs">"brdg_…"</span>,
+  <span class="cs">"sessionId"</span>: <span class="cs">"sess_01J5…"</span>  <span class="cm">← OpenClaw scope</span>
+<span class="ca">}</span>
+
+<span class="cm"># Bridge state: offline → pairing → connected</span></pre>
+        </div>
+        <div class="tip">
+          <strong>State machine:</strong> The bridge state progresses: <code>offline</code> → <code>pairing</code> → <code>connected</code>, with recovery states <code>degraded</code> (transient errors) and <code>unauthorized</code> (auth failures). Each state maps to the broader <code>ActivationState</code> shown in the desktop UI.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('bridge', document.querySelector('[data-feature=bridge]'))">Bridge Worker →</button>
+      </div>
+    </div>
+
+    <!-- BRIDGE -->
+    <div class="detail-panel" id="panel-bridge">
+      <div class="detail-header">
+        <div class="detail-chip">Control Plane</div>
+        <div class="detail-title">Bridge Worker</div>
+        <div class="detail-summary">Long-running polling loop that connects the local daemon to the accounts control plane. Receives remote commands, executes them locally, and posts results back.</div>
+      </div>
+      <div class="detail-body">
+        <p>The bridge worker in <code style="color:var(--neon-green)">src/daemon/bridge-worker.ts</code> continuously polls <code>/api/bridge/commands</code> on the control plane. Each command is dispatched to the daemon's operation registry and the result is POSTed back. A unique <code>connectionId</code> detects when credentials change and restarts the polling loop.</p>
+        <div class="code-block">
+<pre><span class="cm"># Bridge polling loop</span>
+GET /api/bridge/commands
+  ?deviceId=dev_01J5…
+  Authorization: Bearer brdg_…
+
+<span class="co">→ [{ commandId, op, payload }, …]</span>
+
+<span class="cm"># Dispatch to daemon operation</span>
+result = await registry.run(op, payload)
+
+<span class="cm"># Post result back</span>
+POST /api/bridge/results
+<span class="ca">{ commandId, result, deviceId }</span>
+
+<span class="cm"># Reconnect with new connectionId if bridge state changes</span></pre>
+        </div>
+        <div class="tip">
+          <strong>OpenClaw injection:</strong> For LMX completion commands, the bridge worker derives an OpenClaw agent ID (SHA-256 of session scope, first 24 hex chars, prefixed <code>opta-bridge-</code>) and injects it as <code>X-OpenClaw-Agent-ID</code> and as the <code>user</code> field in the request body.
+        </div>
+      </div>
+      <div class="related">
+        <button class="rel-btn" onclick="showFeature('openclaw', document.querySelector('[data-feature=openclaw]'))">OpenClaw Identity →</button>
+      </div>
+    </div>
+
+    <!-- OPENCLAW -->
+    <div class="detail-panel" id="panel-openclaw">
+      <div class="detail-header">
+        <div class="detail-chip">Control Plane</div>
+        <div class="detail-title">OpenClaw Identity</div>
+        <div class="detail-summary">Deterministic agent IDs derived from session scope via SHA-256. Enables consistent API attribution across the bridge, daemon, and LMX layers — even as requests flow through multiple hops.</div>
+      </div>
+      <div class="detail-body">
+        <p>OpenClaw is the Opta identity and request attribution system. When the bridge worker receives a command, it resolves a scope string (from the command's explicit scope, actor field, or session ID), hashes it with SHA-256, and uses the first 24 hex characters as the agent ID. The deterministic design means the same session always produces the same agent ID.</p>
+        <div class="code-block">
+<pre><span class="cm"># Agent ID derivation (src/utils/openclaw-scope.ts)</span>
+scope = command.scope || command.actor || sessionId
+normalized = scope.trim()
+hash = SHA-256(normalized)
+agentId = <span class="cs">"opta-bridge-"</span> + hash.slice(0, 24)
+<span class="co">→ "opta-bridge-a3f912bd04e8c721f3a0bc47"</span>
+
+<span class="cm"># Injected into LMX requests</span>
+X-Client-ID: opta-bridge-a3f912bd04e8c721f3a0bc47
+X-OpenClaw-Agent-ID: opta-bridge-a3f912bd04e8c721f3a0bc47
+body.user: <span class="cs">"opta-bridge-a3f912bd04e8c721f3a0bc47"</span>
+
+<span class="cm"># Why deterministic?</span>
+<span class="co">→ Rate limiting by agent across requests</span>
+<span class="co">→ Usage attribution in LMX metrics</span>
+<span class="co">→ Audit trail correlation across system layers</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- REDIRECT SAFETY -->
+    <div class="detail-panel" id="panel-redirect">
+      <div class="detail-header">
+        <div class="detail-chip">Security</div>
+        <div class="detail-title">Redirect Safety</div>
+        <div class="detail-summary">All redirect_to and next parameters are validated against a strict allowlist before use. Open redirect attacks are blocked at the accounts portal boundary.</div>
+      </div>
+      <div class="detail-body">
+        <p>The <code style="color:var(--neon-green)">sanitizeRedirect()</code> function in <code>lib/allowed-redirects.ts</code> validates every <code>next</code> and <code>redirect_to</code> query parameter. Absolute URLs (including deep links like <code>opta-life://</code>) are only allowed if they're in the explicit allowlist. Everything else falls back to <code>/</code>.</p>
+        <div class="code-block">
+<pre><span class="cm"># Allowed redirects (allowlist)</span>
+<span class="co">*.optalocal.com paths      ← all subdomains</span>
+<span class="co">opta-life://…              ← iOS deep link</span>
+<span class="co">opta://…                   ← Desktop deep link</span>
+<span class="co">http://localhost:9998/…    ← CLI callback</span>
+
+<span class="cm"># sanitizeRedirect logic</span>
+<span class="ca">function</span> sanitizeRedirect(next: string): string {
+  <span class="ca">if</span> (!next) return <span class="cs">"/"</span>
+  <span class="ca">if</span> (isInAllowlist(next)) return next
+  <span class="ca">if</span> (isRelativePath(next)) return next  <span class="cm">← safe</span>
+  return <span class="cs">"/"</span>                              <span class="cm">← fallback</span>
+}</pre>
+        </div>
+        <div class="warn">
+          <strong>Never allow open redirects:</strong> Without validation, an attacker could craft <code>?next=https://evil.com</code> and steal auth codes after OAuth. The allowlist approach is stricter than a same-origin check because it also covers app deep links.
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPABASE SSR -->
+    <div class="detail-panel" id="panel-supabase-ssr">
+      <div class="detail-header">
+        <div class="detail-chip">Security</div>
+        <div class="detail-title">Supabase SSR Pattern</div>
+        <div class="detail-summary">Three-client split (browser / server / middleware) ensures sessions are always validated server-side. Cookies are managed automatically, with domain set for cross-subdomain SSO in production.</div>
+      </div>
+      <div class="detail-body">
+        <p>Every Opta Next.js app that needs auth uses the same three-client pattern from <code style="color:var(--neon-green)">@supabase/ssr</code>. This ensures no session is trusted from a client-only cookie read — the middleware always validates with Supabase's server before serving protected pages.</p>
+        <div class="code-block">
+<pre><span class="cm"># Three client variants used across all apps</span>
+
+<span class="cm"># 1. Browser client (Client Components)</span>
+<span class="co">lib/supabase/client.ts → createBrowserClient()</span>
+
+<span class="cm"># 2. Server client (Server Components, Route Handlers)</span>
+<span class="co">lib/supabase/server.ts → createServerClient() + cookies()</span>
+
+<span class="cm"># 3. Middleware (every request)</span>
+<span class="co">lib/supabase/middleware.ts → createServerClient()</span>
+<span class="ca">supabase.auth.getUser()</span>   <span class="cm">← validates with Supabase server</span>
+<span class="ca">response.cookies.set(…)</span>   <span class="cm">← refreshes cookies if needed</span>
+
+<span class="cm"># Critical: never use getSession() in middleware</span>
+<span class="cm"># getSession() reads cookie without server validation</span></pre>
+        </div>
+        <div class="tip">
+          <strong>Cookie domain in server.ts:</strong> The <code>createServerClient</code> cookie adapter in each app sets <code>domain: '.optalocal.com'</code> only in production. This is the sole mechanism for cross-subdomain SSO — it must be consistent across all apps.
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <span style="color:var(--neon-blue)">opta accounts</span> &nbsp;·&nbsp; accounts.optalocal.com &nbsp;·&nbsp; 2026-03-06
+</footer>
+
+<script>
+var allFeatures = [
+  { id: 'oauth',       cat: 'auth',     terms: 'oauth google apple pkce redirect code' },
+  { id: 'cli-auth',   cat: 'auth',     terms: 'cli browser auth login local callback port' },
+  { id: 'sessions',   cat: 'auth',     terms: 'sessions cookies refresh token httponly' },
+  { id: 'sso',         cat: 'auth',     terms: 'sso cross domain subdomain cookie shared' },
+  { id: 'vault-enc',  cat: 'vault',    terms: 'vault encryption aes gcm key derivation hkdf' },
+  { id: 'vault-pull', cat: 'vault',    terms: 'vault pull sync daemon operation keys' },
+  { id: 'vault-keys', cat: 'vault',    terms: 'vault keys anthropic openai keychain managed' },
+  { id: 'pairing',    cat: 'control',  terms: 'device pairing control plane register bridge' },
+  { id: 'bridge',     cat: 'control',  terms: 'bridge worker polling commands results daemon' },
+  { id: 'openclaw',   cat: 'control',  terms: 'openclaw identity agent id sha256 attribution' },
+  { id: 'redirect',   cat: 'security', terms: 'redirect safety allowlist open attack next' },
+  { id: 'supabase-ssr', cat: 'security', terms: 'supabase ssr middleware server browser client' },
+];
+var currentFeature = 'oauth';
+
+function showFeature(id, btn) {
+  document.querySelectorAll('.detail-panel').forEach(function(p){ p.classList.remove('active'); });
+  var panel = document.getElementById('panel-' + id);
+  if (panel) { panel.classList.add('active'); panel.scrollTop = 0; }
+  document.querySelectorAll('.feat-btn').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) { btn.classList.add('active'); btn.scrollIntoView({block:'nearest'}); }
+  else { var t = document.querySelector('[data-feature="'+id+'"]'); if(t){ t.classList.add('active'); } }
+  currentFeature = id;
+}
+
+var si = document.getElementById('searchInput');
+si.addEventListener('input', function() {
+  var q = this.value.toLowerCase().trim();
+  var btns = document.querySelectorAll('.feat-btn');
+  var cats = document.querySelectorAll('.cat-label');
+  if (!q) { btns.forEach(function(b){b.style.display='';}); cats.forEach(function(c){c.style.display='';}); return; }
+  var catVis = {};
+  allFeatures.forEach(function(f) {
+    var match = (f.id+' '+f.terms).indexOf(q) !== -1;
+    var btn = document.querySelector('[data-feature="'+f.id+'"]');
+    if (btn) btn.style.display = match ? '' : 'none';
+    if (match) catVis[f.cat] = true;
+  });
+  cats.forEach(function(c) {
+    var k = c.getAttribute('data-cat');
+    c.style.display = catVis[k] ? '' : 'none';
+  });
+});
+
+document.addEventListener('keydown', function(e) {
+  if (document.activeElement === si) return;
+  var visible = Array.from(document.querySelectorAll('.feat-btn')).filter(function(b){ return b.style.display !== 'none'; });
+  var cur = visible.findIndex(function(b){ return b.getAttribute('data-feature') === currentFeature; });
+  if (e.key === 'ArrowDown' && cur < visible.length-1) { e.preventDefault(); var n=visible[cur+1]; showFeature(n.getAttribute('data-feature'),n); }
+  else if (e.key === 'ArrowUp' && cur > 0) { e.preventDefault(); var p=visible[cur-1]; showFeature(p.getAttribute('data-feature'),p); }
+  else if (e.key === '/') { e.preventDefault(); si.focus(); }
+});
+</script>
+</body>
+</html>
