@@ -12,4 +12,10 @@ export const TUI_COLORS = {
   warning: '#f59e0b',      // Amber for warnings
   danger: '#ef4444',       // Rose for errors/risk
   dim: '#6b7280',          // Slate for low hierarchy text
+  // Feature identity colours — synced across all optalocal surfaces
+  // (Desktop Studios, web apps, Opta Learn guides, CLI menus)
+  // Canonical source: design/studio-system/identity/ECOSYSTEM-IDENTITY.md
+  browser: '#22d3ee',      // Opta Browser — cyan (matches info, intentional alias)
+  models: '#a78bfa',       // Opta Models — soft violet (distinct from accentSoft)
+  atpo: '#f472b6',         // Opta Atpo — pink
 } as const;

@@ -66,8 +66,8 @@ const PAGES: SettingsPage[] = [
   { id: 'models',     label: 'Models',      color: '#a78bfa' },
   { id: 'safety',     label: 'Safety',      color: '#f59e0b' },
   { id: 'system',     label: 'System',      color: '#38bdf8' },
-  { id: 'advanced',   label: 'Advanced',    color: '#22d3ee' },
-  { id: 'atpo',       label: 'Atpo',        color: '#c084fc' },
+  { id: 'advanced',   label: 'Advanced',    color: '#94a3b8' },  // slate (cyan freed for Browser identity)
+  { id: 'atpo',       label: 'Atpo',        color: '#f472b6' },  // Atpo pink — synced with ecosystem identity
   { id: 'actions',    label: 'Actions',     color: '#ec4899' },
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
