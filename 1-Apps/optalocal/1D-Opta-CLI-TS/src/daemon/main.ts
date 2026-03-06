@@ -2,7 +2,7 @@ import { nanoid } from 'nanoid';
 import { getDaemonDir } from '../platform/paths.js';
 import { SessionManager } from './session-manager.js';
 import { startHttpServer } from './http-server.js';
-import { clearDaemonState, createDaemonToken, defaultDaemonHost, defaultDaemonPort, writeDaemonToken } from './lifecycle.js';
+import { clearDaemonState, createDaemonToken, defaultDaemonPort, resolveDaemonBindHost, writeDaemonToken } from './lifecycle.js';
 import { logDaemonEvent } from './telemetry.js';
 import { loadConfig } from '../core/config.js';
 import { resolveLmxEndpoint } from '../lmx/endpoints.js';
@@ -21,7 +21,7 @@ export async function runDaemon(options?: RunDaemonOptions): Promise<void> {
     minFreeBytes: diskHeadroomMbToBytes(startupConfig.safety?.diskHeadroomMb),
   });
 
-  const host = options?.host ?? defaultDaemonHost();
+  const host = options?.host ?? await resolveDaemonBindHost();
   const preferredPort = options?.port ?? defaultDaemonPort();
   const token = options?.token ?? await createDaemonToken();
   if (options?.token) {

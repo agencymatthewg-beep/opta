@@ -9,6 +9,7 @@ import { debug } from '../core/debug.js';
 import { daemonLogsPath } from './telemetry.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom } from '../utils/disk.js';
 import { isWindows, restrictFileToCurrentUser } from '../platform/index.js';
+import { loadConfig } from '../core/config.js';
 
 export interface DaemonState {
   pid: number;
@@ -111,6 +112,25 @@ export function defaultDaemonHost(): string {
 
 export function defaultDaemonPort(): number {
   return DEFAULT_PORT;
+}
+
+/**
+ * Resolve the bind host for the daemon.
+ *
+ * When `daemon.lanExpose` is `true` in the user config, the daemon binds to
+ * `0.0.0.0` so it is reachable from other devices on the LAN. Otherwise it
+ * binds to `127.0.0.1` (loopback only), which is the safe default.
+ */
+export async function resolveDaemonBindHost(): Promise<string> {
+  try {
+    const config = await loadConfig();
+    if (config.daemon?.lanExpose === true) {
+      return '0.0.0.0';
+    }
+  } catch {
+    // Fall through to default on config load failure.
+  }
+  return DEFAULT_HOST;
 }
 
 export function isProcessRunning(pid: number): boolean {

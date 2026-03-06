@@ -621,6 +621,13 @@ export const OptaConfigSchema = z.object({
     })
     .default({}),
   atpo: AtpoConfigSchema.default({}),
+  daemon: z
+    .object({
+      host: z.string().default('127.0.0.1'),
+      port: z.number().default(9999),
+      lanExpose: z.boolean().default(false),
+    })
+    .default({}),
 });
 
 export type OptaConfig = z.infer<typeof OptaConfigSchema>;

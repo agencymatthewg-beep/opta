@@ -7,6 +7,7 @@ import {
   installDaemonService,
   uninstallDaemonService,
 } from '../daemon/installer.js';
+import { saveConfig } from '../core/config.js';
 
 interface DaemonCmdOptions {
   host?: string;
@@ -14,9 +15,15 @@ interface DaemonCmdOptions {
   json?: boolean;
   token?: string;
   model?: string;
+  lan?: boolean;
 }
 
 export async function daemonStart(opts: DaemonCmdOptions): Promise<void> {
+  // --lan flag: persist lanExpose=true in config so the daemon binds 0.0.0.0
+  if (opts.lan) {
+    await saveConfig({ 'daemon.lanExpose': true });
+  }
+
   const host = opts.host;
   const port = opts.port ? Number.parseInt(opts.port, 10) : undefined;
   const state = await ensureDaemonRunning({ host, port });

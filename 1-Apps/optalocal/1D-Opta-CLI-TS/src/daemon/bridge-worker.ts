@@ -19,7 +19,8 @@ const RESULT_TIMEOUT_MS = 10_000;
 const FAILURE_BACKOFF_BASE_MS = 1_000;
 const FAILURE_BACKOFF_MAX_MS = 8_000;
 const FAILURE_DEGRADED_THRESHOLD = 3;
-const IDLE_POLL_DELAY_MS = 300;
+const SSE_RECONNECT_DELAY_MS = 100;
+const SSE_CONNECT_TIMEOUT_MS = 10_000;
 
 interface BridgeStreamCommand {
   id: string;
@@ -265,6 +266,79 @@ async function waitWithAbort(ms: number, signal: AbortSignal): Promise<void> {
   });
 }
 
+// Phase 3: Scoped parallel command executor
+// Serializes commands within the same scope key, parallelizes across different scope keys
+class ScopedCommandExecutor {
+  private readonly queues = new Map<string, Promise<void>>();
+
+  enqueue(key: string, task: () => Promise<void>): void {
+    const prev = this.queues.get(key) ?? Promise.resolve();
+    // errors don't stall queue; suppress unhandled rejection on the chained promise
+    const next = prev.then(task, () => task()).catch(() => undefined);
+    this.queues.set(key, next);
+    next.finally(() => {
+      if (this.queues.get(key) === next) this.queues.delete(key);
+    });
+  }
+
+  async drainAll(): Promise<void> {
+    await Promise.allSettled([...this.queues.values()]);
+    this.queues.clear();
+  }
+}
+
+function deriveScopeKey(command: BridgeStreamCommand, bridgeSessionId: string | null): string {
+  return (
+    resolveBridgeScopeSeed({
+      scope: command.scope,
+      actor: command.actor,
+      bridgeSessionId,
+    }) ?? 'default'
+  );
+}
+
+// Phase 2: SSE stream parser — lightweight async generator, no external dependencies
+async function* parseSSEStream(
+  response: Response,
+  signal: AbortSignal
+): AsyncGenerator<{ event: string; data: string }> {
+  if (!response.body) return;
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let currentEvent = 'message';
+  let currentData = '';
+
+  try {
+    while (!signal.aborted) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (line.startsWith('event:')) {
+          currentEvent = line.slice(6).trim();
+        } else if (line.startsWith('data:')) {
+          currentData = line.slice(5).trim();
+        } else if (line.startsWith(':')) {
+          // SSE comment / keepalive — ignore
+        } else if (line === '') {
+          // blank line = dispatch event
+          if (currentData) {
+            yield { event: currentEvent, data: currentData };
+          }
+          currentEvent = 'message';
+          currentData = '';
+        }
+      }
+    }
+  } finally {
+    reader.cancel().catch(() => undefined);
+  }
+}
+
 export class BridgeOutboundWorker {
   private readonly fetchImpl: typeof fetch;
   private readonly accountsBaseUrl: string;
@@ -276,6 +350,12 @@ export class BridgeOutboundWorker {
       }
     | null = null;
   private closed = false;
+
+  // Phase 3: Scoped parallel executor
+  private readonly executor = new ScopedCommandExecutor();
+
+  // Phase 5: Idempotency guard — tracks in-flight command IDs
+  private readonly inFlightCommandIds = new Set<string>();
 
   constructor(options?: { fetchImpl?: typeof fetch; accountsBaseUrl?: string }) {
     this.fetchImpl = options?.fetchImpl ?? fetch;
@@ -319,17 +399,67 @@ export class BridgeOutboundWorker {
     if (!this.active) return;
     this.active.controller.abort();
     this.active = null;
+    this.inFlightCommandIds.clear();
   }
 
   async close(): Promise<void> {
     this.closed = true;
     const active = this.active;
     this.active = null;
+    this.inFlightCommandIds.clear();
     if (!active) return;
     active.controller.abort();
     await active.done;
+    await this.executor.drainAll();
   }
 
+  // Phase 2: SSE subscription — replaces pollCommandStream
+  private async *subscribeCommandStream(input: {
+    deviceId: string;
+    bridgeToken: string;
+    signal: AbortSignal;
+  }): AsyncGenerator<BridgeStreamCommand> {
+    const endpoint = new URL('/api/device-commands/stream', this.accountsBaseUrl);
+    endpoint.searchParams.set('deviceId', input.deviceId);
+
+    const response = await this.fetchWithTimeout(
+      endpoint.toString(),
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${input.bridgeToken}`,
+          Accept: 'text/event-stream',
+          'Cache-Control': 'no-store',
+        },
+      },
+      SSE_CONNECT_TIMEOUT_MS,
+      input.signal
+    );
+
+    if (response.status === 401 || response.status === 403) {
+      throw new BridgeUnauthorizedError(`Bridge stream rejected token (${response.status})`);
+    }
+    if (!response.ok) {
+      throw new Error(`Bridge stream request failed (${response.status})`);
+    }
+
+    for await (const { event, data } of parseSSEStream(response, input.signal)) {
+      if (event === 'command') {
+        try {
+          const parsed = JSON.parse(data) as unknown;
+          const commands = parseCommandStreamPayload(parsed);
+          for (const cmd of commands) yield cmd;
+        } catch {
+          // malformed event data — skip
+        }
+      } else if (event === 'end') {
+        return; // server closed cleanly, will reconnect
+      }
+      // ignore 'connected', keepalive comments, unknown events
+    }
+  }
+
+  // Phase 2 + 3 + 5: Restructured runLoop using SSE + scoped parallel execution + idempotency
   private async runLoop(connectionId: string, signal: AbortSignal): Promise<void> {
     let consecutiveFailures = 0;
 
@@ -349,13 +479,11 @@ export class BridgeOutboundWorker {
       }
 
       try {
-        const commands = await this.pollCommandStream({
+        for await (const command of this.subscribeCommandStream({
           deviceId: snapshot.deviceId,
           bridgeToken: snapshot.bridgeToken,
           signal,
-        });
-
-        for (const command of commands) {
+        })) {
           const current = getBridgeWorkerSnapshot();
           if (
             !current ||
@@ -365,24 +493,29 @@ export class BridgeOutboundWorker {
           ) {
             return;
           }
-          await this.processCommand(
-            command,
-            current.deviceId,
-            current.bridgeToken,
-            current.sessionId,
-            signal
+          // Phase 3: scope-parallel dispatch (non-blocking — executor handles queuing)
+          const scopeKey = deriveScopeKey(command, current.sessionId);
+          const captured = { ...current };
+          this.executor.enqueue(scopeKey, () =>
+            this.processCommand(
+              command,
+              captured.deviceId,
+              captured.bridgeToken,
+              captured.sessionId,
+              signal
+            )
           );
         }
 
+        // SSE stream ended cleanly (server sent 'end' or connection closed normally)
         consecutiveFailures = 0;
         const state = getBridgeState();
         if (state.status === 'degraded' || state.status === 'unauthorized') {
           markBridgeConnected();
         }
 
-        if (commands.length === 0) {
-          await waitWithAbort(IDLE_POLL_DELAY_MS, signal);
-        }
+        // Brief reconnect delay before next subscription
+        await waitWithAbort(SSE_RECONNECT_DELAY_MS, signal);
       } catch (err) {
         if (signal.aborted) return;
         consecutiveFailures += 1;
@@ -410,72 +543,42 @@ export class BridgeOutboundWorker {
     bridgeSessionId: string | null,
     signal: AbortSignal
   ): Promise<void> {
-    if (!bridgeToken) {
-      throw new Error('Bridge token unavailable while processing command');
+    // Phase 5: Idempotency guard — skip if already in-flight
+    if (this.inFlightCommandIds.has(command.id)) return;
+    this.inFlightCommandIds.add(command.id);
+
+    try {
+      if (!bridgeToken) {
+        throw new Error('Bridge token unavailable while processing command');
+      }
+
+      const scopeSeed = resolveBridgeScopeSeed({
+        scope: command.scope,
+        actor: command.actor,
+        bridgeSessionId,
+      });
+      const lmxProxyPayload = parseLmxProxyMutationPayload(command.payload);
+      const scopedLmxProxyPayload = lmxProxyPayload
+        ? applyBridgeIdentityToMutation(lmxProxyPayload, scopeSeed)
+        : null;
+      const result = lmxProxyPayload
+        ? await this.executeLmxProxyMutation(scopedLmxProxyPayload ?? lmxProxyPayload, signal)
+        : await executeDaemonOperation({
+            id: command.command as never,
+            input: applyOperationScope(command, scopeSeed),
+            confirmDangerous: command.confirmDangerous,
+          });
+
+      await this.postCommandResult({
+        command,
+        deviceId,
+        result,
+        bridgeToken,
+        signal,
+      });
+    } finally {
+      this.inFlightCommandIds.delete(command.id);
     }
-
-    const scopeSeed = resolveBridgeScopeSeed({
-      scope: command.scope,
-      actor: command.actor,
-      bridgeSessionId,
-    });
-    const lmxProxyPayload = parseLmxProxyMutationPayload(command.payload);
-    const scopedLmxProxyPayload = lmxProxyPayload
-      ? applyBridgeIdentityToMutation(lmxProxyPayload, scopeSeed)
-      : null;
-    const result = lmxProxyPayload
-      ? await this.executeLmxProxyMutation(scopedLmxProxyPayload ?? lmxProxyPayload, signal)
-      : await executeDaemonOperation({
-          id: command.command as never,
-          input: applyOperationScope(command, scopeSeed),
-          confirmDangerous: command.confirmDangerous,
-        });
-
-    await this.postCommandResult({
-      command,
-      deviceId,
-      result,
-      bridgeToken,
-      signal,
-    });
-  }
-
-  private async pollCommandStream(input: {
-    deviceId: string;
-    bridgeToken: string;
-    signal: AbortSignal;
-  }): Promise<BridgeStreamCommand[]> {
-    const endpoint = new URL('/api/device-commands/stream', this.accountsBaseUrl);
-    endpoint.searchParams.set('deviceId', input.deviceId);
-
-    const response = await this.fetchWithTimeout(
-      endpoint.toString(),
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${input.bridgeToken}`,
-          Accept: 'application/json',
-          'Cache-Control': 'no-store',
-        },
-      },
-      STREAM_TIMEOUT_MS,
-      input.signal
-    );
-
-    if (response.status === 204) {
-      return [];
-    }
-
-    if (response.status === 401 || response.status === 403) {
-      throw new BridgeUnauthorizedError(`Bridge stream rejected token (${response.status})`);
-    }
-
-    if (!response.ok) {
-      throw new Error(`Bridge stream request failed (${response.status})`);
-    }
-
-    const payload = await response.json().catch(() => null);
-    return parseCommandStreamPayload(payload);
   }
 
   private async postCommandResult(input: {

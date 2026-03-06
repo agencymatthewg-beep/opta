@@ -390,6 +390,7 @@ interface DaemonCommandOptions {
   host?: string;
   port?: string;
   json?: boolean;
+  lan?: boolean;
 }
 
 interface DoctorCommandOptions {
@@ -1175,6 +1176,7 @@ daemonCmd
   .option('--host <host>', 'bind host', '127.0.0.1')
   .option('--port <port>', 'preferred port', '9999')
   .option('--json', 'machine-readable output')
+  .option('--lan', 'bind to 0.0.0.0 for LAN access (sets daemon.lanExpose in config)')
   .action(async (opts: DaemonCommandOptions) => {
     const { daemonStart } = await import('./commands/daemon.js');
     await daemonStart(opts);
