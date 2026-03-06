@@ -128,12 +128,19 @@ export const OptaConfigSchema = z.object({
       adminKey: z.string().optional(),
       adminKeysByHost: z.record(z.string(), z.string()).default({}),
       apiKey: z.string().optional(),
+      /** Per-host inference API keys — mirror of adminKeysByHost for the inference path. */
+      apiKeysByHost: z.record(z.string(), z.string()).default({}),
+      /** Tracks how the active apiKey was provisioned — set by OAuth callback or keychain writes. */
+      apiKeySource: z.enum(['manual', 'cloud-synced', 'keychain']).optional(),
       ssh: z
         .object({
+          /** SSH username on the remote host. Keep stable across environments. */
           user: z.string().default('opta'),
           identityFile: z.string().default('~/.ssh/id_ed25519'),
           connectTimeoutSec: z.number().min(3).max(120).default(20),
+          /** Absolute path to the LMX source/install directory on the remote host. Must be set before using remote operations. */
           lmxPath: z.string().default('/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX'),
+          /** Path to the Python interpreter used to run LMX on the remote host. Must be set before using remote operations. */
           pythonPath: z.string().default('/Users/opta/.mlx-env/bin/python'),
         })
         .default({}),
@@ -1109,7 +1116,7 @@ function coerceConfigValue(path: string, rawValue: unknown): unknown {
       .filter((item) => item.length > 0);
   }
 
-  if (path === 'connection.adminKeysByHost') {
+  if (path === 'connection.adminKeysByHost' || path === 'connection.apiKeysByHost') {
     const parsed = parseAdminKeysByHost(rawValue);
     return parsed ?? rawValue;
   }

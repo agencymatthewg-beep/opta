@@ -165,7 +165,9 @@ Examples:
   $ opta browser host start      Start browser live host for frontend viewers
   $ opta env save laptop         Save current host/model as a named profile
   $ opta env use laptop          Switch to that profile
-  $ opta update                  Update CLI, LMX, and Plus
+  $ opta update                  Update CLI + daemon (choose local/remote)
+  $ opta health                  Quick health for CLI + daemon
+  $ opta settings                Open interactive settings menu
   $ opta daemon start            Start background daemon
   $ opta status                  Check connection
   $ opta models                  Open interactive model manager
@@ -231,6 +233,15 @@ interface BenchmarkCommandOptions {
   json?: boolean;
 }
 
+interface CeoBenchCommandOptions extends DeviceOption {
+  model?: string;
+  filter?: string;
+  provider?: ProviderOverrideName;
+  autonomyLevel?: string;
+  remote?: boolean;
+  json?: boolean;
+}
+
 interface StatusCommandOptions extends DeviceOption {
   json?: boolean;
   full?: boolean;
@@ -265,6 +276,10 @@ interface EnvCommandOptions {
 }
 
 interface ConfigCommandOptions {
+  json?: boolean;
+}
+
+interface SettingsCommandOptions {
   json?: boolean;
 }
 
@@ -358,6 +373,10 @@ interface UpdateCommandOptions {
   dryRun?: boolean;
   build?: boolean;
   pull?: boolean;
+  json?: boolean;
+}
+
+interface HealthCommandOptions {
   json?: boolean;
 }
 
@@ -539,12 +558,27 @@ program
   .description('Run internal autonomous CEO benchmarking suite against the active model')
   .option('--model <id>', 'Override model to benchmark')
   .option('--filter <string>', 'Filter tasks by id')
+  .option('--autonomy-level <n>', 'autonomy level 1-5 (default: 5)', '5')
+  .option('--provider <name>', `override provider for this run (${PROVIDER_OPTION_HELP})`, parseProviderOption)
+  .option('--device <host[:port]>', 'target LLM network device host (optionally with port)')
+  .option('--remote', 'use configured remote connection host (alias for --device from config)')
   .option('--json', 'Output results as JSON')
-  .action(async (opts: any) => {
+  .action(async (opts: CeoBenchCommandOptions) => {
     const { runCeoBenchmark } = await import('./benchmark/ceo/runner.js');
     const { ExitError, EXIT } = await import('./core/errors.js');
     try {
-      await runCeoBenchmark(opts);
+      await applyModelsTargetOption(opts);
+      const configOverrides: Record<string, unknown> = {};
+      if (opts.provider) {
+        configOverrides['provider'] = { active: opts.provider };
+      }
+      await runCeoBenchmark({
+        filter: opts.filter,
+        model: opts.model,
+        json: opts.json,
+        autonomyLevel: Number.parseInt(opts.autonomyLevel ?? '5', 10),
+        configOverrides: Object.keys(configOverrides).length > 0 ? configOverrides : undefined,
+      });
     } catch (err) {
       if (!opts.json) {
         console.error('\\x1b[31m✗\\x1b[0m Benchmark failed:', err instanceof Error ? err.message : String(err));
@@ -1039,21 +1073,18 @@ program
 
 program
   .command('update')
-  .description('Update Opta components (CLI, LMX, Plus; optional Web) on local/remote targets')
+  .description('Update Opta CLI + daemon on a local or remote target')
   .option(
     '-c, --components <list>',
-    'comma-separated components: cli,lmx,plus,web (default: cli,lmx,plus)'
+    'comma-separated components: cli,daemon (default: cli,daemon)'
   )
-  .option('-t, --target <mode>', 'target mode: auto|local|remote|both (default: auto)', 'auto')
+  .option('-t, --target <mode>', 'target mode: local|remote (default: interactive prompt)')
   .option(
     '--remote-host <host>',
     'override remote host (default: connection.host; otherwise uses configured + discovered LAN hosts)'
   )
-  .option('--remote-all', 'roll out updates to all reachable remote hosts')
-  .option(
-    '--remote-hosts <list>',
-    'comma-separated remote hosts to target (takes precedence over --remote-host when provided)'
-  )
+  .option('--remote-all', 'roll out updates to all reachable remote hosts (advanced)')
+  .option('--remote-hosts <list>', 'comma-separated remote hosts to target (advanced)')
   .option('--remote-user <user>', 'override SSH user (default: connection.ssh.user)')
   .option(
     '--identity-file <path>',
@@ -1070,8 +1101,9 @@ program
     `
 Examples:
   $ opta update
-  $ opta update --components web --target local
-  $ opta update --components lmx --target both
+  $ opta update --target local
+  $ opta update --target remote
+  $ opta update --components daemon --target local
   $ opta update --target remote --remote-host lmx-a.local
   $ opta update --target remote --remote-all
   $ opta update --target remote --remote-hosts lmx-a.local,lmx-b.local
@@ -1081,6 +1113,16 @@ Examples:
   .action(async (opts: UpdateCommandOptions) => {
     const { updateCommand } = await import('./commands/update.js');
     await updateCommand(opts);
+  });
+
+program
+  .command('health')
+  .description('Quick health check for Opta CLI, daemon, and LMX inference server')
+  .option('--json', 'machine-readable output')
+  .option('--skip-lmx', 'skip LMX reachability check (useful when LMX is intentionally offline)')
+  .action(async (opts: HealthCommandOptions) => {
+    const { runHealth } = await import('./commands/health.js');
+    await runHealth(opts);
   });
 
 program
@@ -1203,6 +1245,16 @@ program
     const effectiveOpts = { format: opts.json ? 'json' : opts.format, fix: opts.fix };
     const { runDoctor } = await import('./commands/doctor.js');
     await runDoctor(effectiveOpts);
+  });
+
+program
+  .command('settings [action] [key] [value]')
+  .description('Open interactive settings menu (alias for `opta config menu`)')
+  .option('--json', 'machine-readable output (applies to list/get actions)')
+  .action(async (action: string | undefined, key: string | undefined, value: string | undefined, opts: SettingsCommandOptions) => {
+    const { config } = await import('./commands/config.js');
+    const resolvedAction = action ?? (opts.json ? 'list' : 'menu');
+    await config(resolvedAction, key, value, { json: opts.json });
   });
 
 program

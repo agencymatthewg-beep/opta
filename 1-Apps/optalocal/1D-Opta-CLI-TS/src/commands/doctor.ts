@@ -3,7 +3,7 @@ import { readdir, stat, access, mkdir } from 'node:fs/promises';
 import { join } from 'node:path';
 import * as os from 'node:os';
 import { execaCommand } from 'execa';
-import { loadConfig } from '../core/config.js';
+import { getConfigStore, loadConfig } from '../core/config.js';
 import { getConfigDir, getSessionsDir, getDaemonDir } from '../platform/paths.js';
 import { VERSION } from '../core/version.js';
 import { debug } from '../core/debug.js';
@@ -412,12 +412,36 @@ export async function checkConfig(
 
     // Check for common misconfigurations
     const issues: string[] = [];
+    const host = config.connection.host?.trim() ?? '';
+    const port = Number(config.connection.port);
+    const fallbackHosts = Array.isArray(config.connection.fallbackHosts)
+      ? config.connection.fallbackHosts
+      : [];
+    const fallbackHost = fallbackHosts.find((value) => value.trim().length > 0);
+    const suggestedHost = fallbackHost ?? 'localhost';
 
-    if (!config.connection.host) {
+    if (!host) {
       issues.push('connection.host is empty');
     }
-    if (config.connection.port === 0) {
-      issues.push('connection.port is 0');
+    if (!Number.isFinite(port) || port <= 0 || port > 65535) {
+      issues.push('connection.port must be between 1 and 65535');
+    }
+
+    // Warn when a remote host is configured but SSH settings are missing
+    const isRemoteHost = host && host.toLowerCase() !== 'localhost' && host !== '127.0.0.1' && host !== '::1';
+    if (isRemoteHost) {
+      if (!config.connection.ssh.user?.trim()) {
+        issues.push(
+          'connection.ssh.user is empty — required for remote operations (opta key create, opta update --remote). ' +
+          'Fix: opta settings set connection.ssh.user <your-username>'
+        );
+      }
+      if (!config.connection.ssh.lmxPath?.trim()) {
+        issues.push(
+          'connection.ssh.lmxPath is empty — required to sync keys and run remote LMX operations. ' +
+          'Fix: opta settings set connection.ssh.lmxPath <absolute-path-on-remote-host>'
+        );
+      }
     }
 
     if (issues.length > 0) {
@@ -426,6 +450,18 @@ export async function checkConfig(
         status: 'warn',
         message: `Config has issues: ${issues.join(', ')}`,
         detail: "Run 'opta config list' to review current settings",
+        fix: async () => {
+          const store = await getConfigStore();
+          let hostResetMessage = 'host unchanged';
+          if (!host) {
+            store.set('connection.host', suggestedHost);
+            hostResetMessage = `host=${suggestedHost}`;
+          }
+          if (!Number.isFinite(port) || port <= 0 || port > 65535) {
+            store.set('connection.port', 1234);
+          }
+          return `Reset invalid connection settings (${hostResetMessage}, port=1234 where needed)`;
+        },
       };
     }
 

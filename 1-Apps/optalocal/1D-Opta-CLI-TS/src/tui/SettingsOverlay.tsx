@@ -6,6 +6,7 @@ import { resolveSupabaseAuthConfig } from '../accounts/supabase.js';
 import { InlineSelect, InlineSlider, type SelectOption } from './InlineSelect.js';
 import { OPTA_BRAND_GLYPH, OPTA_BRAND_NAME } from '../ui/brand.js';
 import { errorMessage } from '../utils/errors.js';
+import { parseCloudFallbackOrder } from '../utils/provider-normalization.js';
 import { TUI_COLORS } from './palette.js';
 
 // --- TYPES ---
@@ -21,6 +22,7 @@ interface SettingsItem {
   configKey: string;
   defaultValue: string;
   sensitive?: boolean;      // Mask displayed value with ●●●●●
+  required?: boolean;       // Only true when this field is strictly required in all runtime paths
   /** Validates the typed value; returns an error message string, or null when valid. */
   validate?: (v: string) => string | null;
   hint?: string;            // Extra help text shown below the input field
@@ -185,7 +187,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
       }
     },
     { label: 'LMX Admin Key',       configKey: 'connection.adminKey',          defaultValue: '',                    description: 'Admin key for protected /admin endpoints', sensitive: true, hint: 'Used by status/models/load on secured hosts' },
-    { label: 'LMX API Key',         configKey: 'connection.apiKey',            defaultValue: 'opta-lmx',            description: 'API key for LMX (if auth enabled)', sensitive: true,      hint: 'Default: opta-lmx (no auth)' },
+    { label: 'LMX API Key',         configKey: 'connection.apiKey',            defaultValue: '',                    description: 'API key for LMX when endpoint auth is enabled', sensitive: true,      hint: 'Optional: blank uses env/keychain/accounts/default (opta-lmx)' },
     { label: 'Auto Discover',       configKey: 'connection.autoDiscover',      defaultValue: 'true',                description: 'Automatically discover local inference hosts',
       inputType: 'toggle', options: [{ label: 'Enabled', value: 'true'}, { label: 'Disabled', value: 'false'}] },
     { label: 'Fallback Hosts',      configKey: 'connection.fallbackHosts',     defaultValue: '',                    description: 'Comma-separated fallback LMX hosts',                       hint: 'e.g. 10.0.0.2:1234,10.0.0.3:1234' },
@@ -202,9 +204,9 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     },
     { label: 'Check LMX Status',    configKey: '__action_lmx_status',          defaultValue: '',                    description: 'Run an immediate LMX health check in chat',                hint: 'Runs `/lmx status`', inputType: 'action', action: () => {} },
     { label: 'Reconnect LMX',       configKey: '__action_lmx_reconnect',       defaultValue: '',                    description: 'Force reconnection against configured host(s)',            hint: 'Runs `/lmx reconnect`', inputType: 'action', action: () => {} },
-    { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: 'opta',                description: 'SSH username for remote LMX server',                       hint: 'User on the remote host' },
+    { label: 'SSH User',            configKey: 'connection.ssh.user',          defaultValue: '',                    description: 'SSH username for remote LMX server (defaults to current OS user if unset)',       hint: 'e.g. matthew — required for remote operations' },
     { label: 'SSH Key Path',        configKey: 'connection.ssh.identityFile',  defaultValue: '~/.ssh/id_ed25519',   description: 'Path to SSH private key',                                  hint: 'Full path or ~ expansion' },
-    { label: 'Remote LMX Path',     configKey: 'connection.ssh.lmxPath',       defaultValue: '~/opta-lmx', description: 'LMX install path on remote host (git clone or pip install dir)', hint: 'Absolute path on remote machine' },
+    { label: 'Remote LMX Path',     configKey: 'connection.ssh.lmxPath',       defaultValue: '',       description: 'Absolute path to LMX install directory on the remote host — required for opta key create and opta update --remote', hint: 'e.g. /Users/opta/Opta/1-Apps/1M-Opta-LMX' },
     { label: 'Inference Timeout',   configKey: 'connection.inferenceTimeout',  defaultValue: '120000',              description: 'Max ms to wait for model response',                        hint: 'In milliseconds (120000 = 2 min)' },
   ],
   models: [
@@ -491,19 +493,19 @@ function getConfigHostKeyMap(config: Record<string, unknown> | undefined, key: s
 
 /**
  * Returns the Unicode glyph that reflects whether a config field has been set.
- * Sensitive fields use a warning glyph when still at the default (likely empty).
+ * Warning state is reserved for truly required fields only.
  */
-function statusGlyph(value: string, defaultVal: string, sensitive?: boolean): string {
-  if (!value || value === defaultVal) return sensitive ? '⚠' : '○';
+function statusGlyph(value: string, defaultVal: string, required?: boolean): string {
+  if (!value || value === defaultVal) return required ? '⚠' : '○';
   return '✓';
 }
 
 /**
  * Returns the color that reflects whether a config field has been set.
- * Sensitive fields use a warning color when still at the default (likely empty).
+ * Warning color is reserved for truly required fields only.
  */
-function statusColor(value: string, defaultVal: string, sensitive?: boolean): string {
-  if (!value || value === defaultVal) return sensitive ? COLOR.warning : COLOR.muted;
+function statusColor(value: string, defaultVal: string, required?: boolean): string {
+  if (!value || value === defaultVal) return required ? COLOR.warning : COLOR.muted;
   return COLOR.success;
 }
 
@@ -935,14 +937,15 @@ export function SettingsOverlay({
     if (selectedPage === 'models') {
       const activeProvider = String(changes['provider.active'] ?? getConfigValue(config, 'provider.active', 'lmx'));
       const fallbackEnabled = String(changes['provider.fallbackOnFailure'] ?? getConfigValue(config, 'provider.fallbackOnFailure', 'false')) === 'true';
+      const cloudFallbackProviders = new Set(parseCloudFallbackOrder());
       
       baseItems = baseItems.filter(item => {
         if (item.configKey.startsWith('provider.') && !['provider.active', 'provider.fallbackOnFailure'].includes(item.configKey)) {
           const providerName = item.configKey.split('.')[1];
           // Show the fields if it's the currently active provider.
           if (providerName === activeProvider) return true;
-          // Fallback is hardcoded to Anthropic currently, so always show Anthropic if fallback is enabled.
-          if (fallbackEnabled && providerName === 'anthropic') return true;
+          // When fallback is enabled, expose provider fields for the configured fallback order.
+          if (fallbackEnabled && providerName && cloudFallbackProviders.has(providerName as 'anthropic' | 'gemini' | 'openai' | 'opencode_zen')) return true;
           return false;
         }
         return true;
@@ -1248,9 +1251,10 @@ export function SettingsOverlay({
                       ? (configVal === 'true' ? '[x]' : '[ ]') + ' ' + (selectLabel ?? configVal)
                       : item.inputType === 'slider' && item.sliderLabels
                         ? `${configVal} — ${item.sliderLabels[parseInt(configVal, 10)] ?? ''}`
-                        : selectLabel ?? (configVal || '(not set)');
-                const glyph = isActionItem ? '→' : statusGlyph(configVal, item.defaultValue, item.sensitive);
-                const glyphColor = isActionItem ? pageColor : statusColor(configVal, item.defaultValue, item.sensitive);
+                        : selectLabel ?? (configVal || (item.sensitive ? '(auto)' : '(not set)'));
+                const isRequired = !isActionItem && item.required === true;
+                const glyph = isActionItem ? '→' : statusGlyph(configVal, item.defaultValue, isRequired);
+                const glyphColor = isActionItem ? pageColor : statusColor(configVal, item.defaultValue, isRequired);
                 const isChanged = !autoSave && !isActionItem && changes[item.configKey] !== undefined;
                 const isJustSaved = item.configKey === lastSavedKey;
                 

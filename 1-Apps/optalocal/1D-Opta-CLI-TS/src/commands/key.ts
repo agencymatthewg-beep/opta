@@ -8,7 +8,7 @@ import { homedir, isWindows } from '../platform/index.js';
 
 const SSH_CONNECT_TIMEOUT_SECONDS = 25;
 
-export type KeySource = 'env' | 'config' | 'unset';
+export type KeySource = 'env' | 'config' | 'config-per-host' | 'cloud-synced' | 'unset';
 
 interface ResolvedKey {
   key: string | null;
@@ -80,15 +80,35 @@ export function maskKey(key: string): string {
   return `${key.slice(0, 7)}${'*'.repeat(Math.max(0, key.length - 11))}${key.slice(-4)}`;
 }
 
-export function resolveConfiguredInferenceKey(connection: { apiKey?: string }): ResolvedKey {
+export function resolveConfiguredInferenceKey(connection: {
+  apiKey?: string;
+  apiKeysByHost?: Record<string, string>;
+  apiKeySource?: 'manual' | 'cloud-synced' | 'keychain';
+  host?: string;
+}): ResolvedKey {
+  // 1. Env var always wins
   const envKey = process.env['OPTA_API_KEY']?.trim();
   if (envKey) {
     return { key: envKey, source: 'env' };
   }
 
+  // 2. Per-host inference key (mirrors adminKeysByHost pattern)
+  const host = connection.host?.trim();
+  if (host && connection.apiKeysByHost) {
+    const hostKey = connection.apiKeysByHost[host]?.trim();
+    if (hostKey) {
+      return { key: hostKey, source: 'config-per-host' };
+    }
+  }
+
+  // 3. Global apiKey — report source based on how it was provisioned
   const configKey = connection.apiKey?.trim();
   if (configKey) {
-    return { key: configKey, source: 'config' };
+    const source: KeySource =
+      connection.apiKeySource === 'cloud-synced' ? 'cloud-synced'
+      : connection.apiKeySource === 'keychain' ? 'config'  // keychain writes land in config
+      : 'config';
+    return { key: configKey, source };
   }
 
   return { key: null, source: 'unset' };
@@ -416,7 +436,26 @@ export async function keyCreate(opts?: KeyCreateOptions): Promise<void> {
   };
 
   if (remoteRequested && !isLocalHost(remoteHost)) {
-    if (isWindows) {
+    // Preflight: require SSH config before attempting remote operations
+    if (!config.connection.ssh.user?.trim()) {
+      output.remote = {
+        ok: false,
+        message: 'SSH user not configured. Set it with: opta settings set connection.ssh.user <username>',
+      };
+      if (!opts?.json) {
+        console.log(chalk.yellow('!') + ' Remote key sync skipped: SSH user not configured');
+        console.log(chalk.dim('  Run: opta settings set connection.ssh.user <username>'));
+      }
+    } else if (!config.connection.ssh.lmxPath?.trim()) {
+      output.remote = {
+        ok: false,
+        message: 'Remote LMX path not configured. Set it with: opta settings set connection.ssh.lmxPath <path>',
+      };
+      if (!opts?.json) {
+        console.log(chalk.yellow('!') + ' Remote key sync skipped: LMX path not configured');
+        console.log(chalk.dim('  Run: opta settings set connection.ssh.lmxPath <path-on-remote>'));
+      }
+    } else if (isWindows) {
       output.remote = {
         ok: false,
         message:
@@ -559,7 +598,14 @@ export async function keyShow(opts?: KeyShowOptions): Promise<void> {
     return;
   }
 
-  console.log(`Key (${resolved.source}): ${displayKey}`);
+  const sourceLabel: Record<KeySource, string> = {
+    'env': 'env var OPTA_API_KEY',
+    'config': 'config file',
+    'config-per-host': `config file (per-host: ${config.connection.host})`,
+    'cloud-synced': 'config file (synced via OAuth)',
+    'unset': 'unset',
+  };
+  console.log(`Key (${sourceLabel[resolved.source] ?? resolved.source}): ${displayKey}`);
   if (!opts?.reveal) {
     console.log(chalk.dim('Tip: use --reveal to print full key, or --copy to copy.'));
   }
