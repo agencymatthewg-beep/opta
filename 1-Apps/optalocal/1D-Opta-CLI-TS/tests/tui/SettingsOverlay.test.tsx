@@ -36,10 +36,9 @@ describe('SettingsOverlay', () => {
     expect(frame).toContain('Connection');
     expect(frame).toContain('Models');
     expect(frame).toContain('Safety');
-    expect(frame).toContain('Browser');
-    expect(frame).toContain('Atpo');
     expect(frame).toContain('System');
-    expect(frame).toContain('Workspace');
+    expect(frame).toContain('Advanced');
+    expect(frame).toContain('Atpo');
     expect(frame).toContain('Account');
   });
 
@@ -115,10 +114,10 @@ describe('SettingsOverlay', () => {
     );
   });
 
-  it('shows response intent tone option on Browser page', async () => {
+  it('shows response intent tone option on Advanced page', async () => {
     const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
     await flush();
-    stdin.write('4');
+    stdin.write('5');
     await flush();
     expect(lastFrame()).not.toContain('Response Intent Tone');
     stdin.write(SHIFT_TAB);
@@ -145,7 +144,7 @@ describe('SettingsOverlay', () => {
     const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
     await flush();
 
-    stdin.write('4');
+    stdin.write('5');
     await flush();
     const optaFrame = lastFrame() ?? '';
     expect(optaFrame).toContain('Browser Enable');
@@ -169,8 +168,8 @@ describe('SettingsOverlay', () => {
   it('shows toggle indicator for boolean settings', async () => {
     const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} maxWidth={140} />);
     await flush();
-    // Navigate to Browser page (page 4)
-    stdin.write('4');
+    // Navigate to Advanced page (page 5)
+    stdin.write('5');
     await flush();
     const frame = lastFrame() ?? '';
     // Browser Enabled is a toggle with default 'false'
@@ -181,16 +180,16 @@ describe('SettingsOverlay', () => {
   it('uses left/right arrows for page navigation until a setting is activated', async () => {
     const { stdin, lastFrame } = render(<SettingsOverlay {...baseProps} />);
     await flush();
-    stdin.write('4'); // Browser
+    stdin.write('5'); // Advanced
     await flush();
-    const browserFrame = lastFrame() ?? '';
-    expect(browserFrame).toMatch(/\[x\]\s*4\./);
-    expect(browserFrame).toContain('\n│  Browser');
+    const advancedFrame = lastFrame() ?? '';
+    expect(advancedFrame).toMatch(/\[x\]\s*5\./);
+    expect(advancedFrame).toContain('\n│  Advanced');
 
     stdin.write(ARROW_RIGHT);
     await flush();
     const atpoFrame = lastFrame() ?? '';
-    expect(atpoFrame).toMatch(/\[x\]\s*5\./);
+    expect(atpoFrame).toMatch(/\[x\]\s*6\./);
     expect(atpoFrame).toContain('\n│  Atpo');
   });
 
@@ -258,7 +257,7 @@ describe('SettingsOverlay', () => {
       <SettingsOverlay {...baseProps} maxWidth={140} />
     );
     await flush();
-    stdin.write('4'); // Browser
+    stdin.write('5'); // Advanced
     await flush();
     expect(lastFrame()).toContain('[ ]');
 

@@ -11,7 +11,7 @@ import { TUI_COLORS } from './palette.js';
 
 // --- TYPES ---
 
-type SettingsPageId = 'connection' | 'models' | 'safety' | 'system' | 'browser' | 'atpo' | 'workspace' | 'account';
+type SettingsPageId = 'connection' | 'models' | 'safety' | 'system' | 'advanced' | 'atpo' | 'actions' | 'account';
 type SettingsDisplayProfile = 'compact' | 'opta' | 'advanced';
 
 interface SettingsPage { id: SettingsPageId; label: string; color: string; }
@@ -65,10 +65,10 @@ const PAGES: SettingsPage[] = [
   { id: 'connection', label: 'Connection',  color: '#10b981' },
   { id: 'models',     label: 'Models',      color: '#a78bfa' },
   { id: 'safety',     label: 'Safety',      color: '#f59e0b' },
-  { id: 'browser',    label: 'Browser',     color: '#22d3ee' },  // cyan — synced with Code Desktop browser identity
-  { id: 'atpo',       label: 'Atpo',        color: '#f472b6' },  // Atpo pink — synced with ecosystem identity
   { id: 'system',     label: 'System',      color: '#38bdf8' },
-  { id: 'workspace',  label: 'Workspace',   color: '#c084fc' },  // GenUI, display, actions
+  { id: 'advanced',   label: 'Advanced',    color: '#94a3b8' },  // slate (cyan freed for Browser identity)
+  { id: 'atpo',       label: 'Atpo',        color: '#f472b6' },  // Atpo pink — synced with ecosystem identity
+  { id: 'actions',    label: 'Actions',     color: '#ec4899' },
   { id: 'account',    label: 'Account',     color: '#f472b6' },
 ];
 
@@ -310,7 +310,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Ledger Path',         configKey: 'learning.ledgerPath',          defaultValue: '.opta/learning/ledger.jsonl', description: 'Path to learning reinforcement ledger',        hint: 'Relative or absolute' },
     { label: 'Audit Log Path',      configKey: 'policy.audit.path',            defaultValue: '.opta/policy/audit.jsonl',   description: 'Path to policy audit log',                    hint: 'Relative or absolute' },
   ],
-  browser: [
+  advanced: [
     { label: 'Browser Enabled',     configKey: 'browser.enabled',              defaultValue: 'false',               description: 'Enable Playwright browser automation',
       inputType: 'toggle', options: [
         { label: 'Enabled',  value: 'true',  description: 'Playwright browser sessions available' },
@@ -374,7 +374,7 @@ const PAGE_ITEMS: Record<SettingsPageId, SettingsItem[]> = {
     { label: 'Auto Pause Limit',  configKey: 'atpo.limits.autoPauseThreshold', defaultValue: '5',               description: 'Pause Atpo after this much cost/percentage is reached', hint: 'Value based on payment method' },
     { label: 'Provider Failover', configKey: 'atpo.limits.providerFailover', defaultValue: 'false',             description: 'Switch providers when limit is reached instead of pausing', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
   ],
-  workspace: [
+  actions: [
     { label: 'GenUI Output',      configKey: 'genui.enabled',               defaultValue: 'true',                description: 'Enable Generative UI output artifacts for specific commands', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
     { label: 'Auto-Open Browser', configKey: 'genui.autoOpenBrowser',       defaultValue: 'true',                description: 'Automatically open GenUI artifacts in the default browser', inputType: 'toggle', options: [{label: 'Enabled', value: 'true'}, {label: 'Disabled', value: 'false'}] },
     { label: 'Generate UI',       configKey: '__action_genui_gu',           defaultValue: '',                    description: 'Trigger /gu to generate a UI from prompt', hint: 'Runs `/gu`', inputType: 'action', action: () => {} },
