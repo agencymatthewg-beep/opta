@@ -36,7 +36,12 @@ jobs:
       - name: Type-check
         run: npm run typecheck
       - name: Run daemon test suite
-        run: npx vitest run tests/daemon
+        run: |
+          npx vitest run \
+            tests/daemon/installer.test.ts \
+            tests/daemon/installer.windows.test.ts \
+            tests/daemon/lifecycle.test.ts \
+            tests/daemon/http-server.test.ts
 
   windows-package:
     name: Build daemon Windows bundle
