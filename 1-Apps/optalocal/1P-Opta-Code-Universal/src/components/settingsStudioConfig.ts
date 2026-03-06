@@ -17,7 +17,6 @@ import {
   SquareTerminal,
   Terminal,
   Timer,
-  Zap,
 } from "lucide-react";
 
 export type SettingsTabId =
@@ -27,7 +26,6 @@ export type SettingsTabId =
   | "autonomy-policies"
   | "permissions-safety"
   | "browser-research"
-  | "atpo"
   | "tools-agents-learning"
   | "mcp-integrations"
   | "environment-profiles"
@@ -41,16 +39,16 @@ export type SettingsTabId =
   | "cli-system-advanced";
 
 export type SettingsCategoryGroup =
-  | "core"
-  | "behaviour"
-  | "workspace"
-  | "system";
+  | "infrastructure"
+  | "control"
+  | "security"
+  | "workspace";
 
 export const SETTINGS_GROUP_LABELS: Record<SettingsCategoryGroup, string> = {
-  core: "Core",
-  behaviour: "Behaviour",
+  infrastructure: "Infrastructure",
+  control: "Control & Ops",
+  security: "Security & Identity",
   workspace: "Workspace",
-  system: "System",
 };
 
 export interface SettingsCategory {
@@ -79,103 +77,82 @@ export interface SettingsStudioModuleRegistration {
 }
 
 export const SETTINGS_CATEGORIES: SettingsCategory[] = [
-  // ── Core ───────────────────────────────────────────────────────────
   {
     id: "connection-network",
-    title: "Connection",
-    desc: "Daemon host, port, and network discovery",
+    title: "Connection & Network",
+    desc: "Daemon host, sockets, and connectivity flow",
     icon: Network,
     supportsDeepLayer: true,
     accentColor: "#10b981",
-    group: "core",
+    group: "infrastructure",
   },
   {
     id: "lmx-models",
-    title: "Models",
-    desc: "Local models, providers, and inference routing",
+    title: "LMX & Models",
+    desc: "Inference routing, local models, and providers",
     icon: Cpu,
     supportsDeepLayer: true,
     accentColor: "#a78bfa",
-    group: "core",
+    group: "infrastructure",
   },
   {
     id: "daemon-runtime",
-    title: "AI Engine",
-    desc: "Daemon lifecycle, health, and runtime controls",
+    title: "Daemon Runtime",
+    desc: "Daemon lifecycle, health, and execution runtime",
     icon: Terminal,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
-    group: "core",
+    group: "infrastructure",
   },
-  // ── Behaviour ──────────────────────────────────────────────────────
   {
     id: "autonomy-policies",
-    title: "Behaviour",
-    desc: "How much the AI does on its own",
+    title: "Autonomy & Policies",
+    desc: "Autonomy levels, policy controls, and guardrails",
     icon: Activity,
     supportsDeepLayer: true,
     accentColor: "#c084fc",
-    group: "behaviour",
+    group: "control",
   },
   {
     id: "permissions-safety",
-    title: "Safety",
-    desc: "Tool approvals, permissions, and guardrails",
+    title: "Permissions & Safety",
+    desc: "Tool approvals, safety posture, and defaults",
     icon: Shield,
     supportsDeepLayer: true,
     accentColor: "#f59e0b",
-    group: "behaviour",
+    group: "security",
   },
   {
     id: "browser-research",
-    title: "Browser",
-    desc: "AI web browsing and research tools",
+    title: "Browser & Research",
+    desc: "Browser automation and research surfaces",
     icon: Globe,
     supportsDeepLayer: true,
     accentColor: "#22d3ee",
-    group: "behaviour",
-  },
-  {
-    id: "atpo",
-    title: "Atpo",
-    desc: "Automated supervisor — oversight and cost controls",
-    icon: Zap,
-    supportsDeepLayer: true,
-    accentColor: "#f472b6",
-    group: "behaviour",
+    group: "control",
   },
   {
     id: "tools-agents-learning",
-    title: "Tools & Agents",
-    desc: "Sub-agents, tool memory, and learning",
+    title: "Tools, Agents & Learning",
+    desc: "Tooling operations and learning memory controls",
     icon: Brain,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
-    group: "behaviour",
+    group: "control",
   },
   {
     id: "mcp-integrations",
-    title: "Integrations",
-    desc: "MCP servers and third-party connections",
+    title: "MCP & Integrations",
+    desc: "MCP server and integration management",
     icon: Cable,
     supportsDeepLayer: true,
     accentColor: "#22d3ee",
-    group: "behaviour",
-  },
-  // ── Workspace ──────────────────────────────────────────────────────
-  {
-    id: "accounts-vault",
-    title: "Account",
-    desc: "Login, API keys, and secrets vault",
-    icon: KeyRound,
-    supportsDeepLayer: true,
-    accentColor: "#f472b6",
-    group: "workspace",
+    group: "control",
   },
   {
     id: "environment-profiles",
-    title: "Profiles",
-    desc: "Environment profiles and context switching",
+    title: "Environment Profiles",
+    desc: "Environment profile lifecycle and context routing",
     icon: Layers,
     supportsDeepLayer: true,
     accentColor: "#8b5cf6",
@@ -183,67 +160,75 @@ export const SETTINGS_CATEGORIES: SettingsCategory[] = [
   },
   {
     id: "config-studio",
-    title: "Config",
-    desc: "Raw config editor, reset flows, and overrides",
+    title: "Config Studio",
+    desc: "Config keys, reset flows, and raw configuration",
     icon: SlidersHorizontal,
     supportsDeepLayer: true,
     accentColor: "#60a5fa",
     group: "workspace",
   },
   {
+    id: "accounts-vault",
+    title: "Accounts & Vault",
+    desc: "Account auth, key controls, and secrets vault",
+    icon: KeyRound,
+    supportsDeepLayer: true,
+    accentColor: "#f472b6",
+    group: "security",
+  },
+  {
     id: "tiles-workspace-layout",
-    title: "Layout",
-    desc: "Workspace tiles, panels, and display density",
+    title: "Tiles & Workspace Layout",
+    desc: "Workspace widgets, tile layout, and visibility",
     icon: Grid3X3,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
     group: "workspace",
   },
   {
+    id: "apps-catalog",
+    title: "Apps Catalog",
+    desc: "Install, remove, and inspect Opta app modules",
+    icon: AppWindow,
+    supportsDeepLayer: true,
+    accentColor: "#a78bfa",
+    group: "workspace",
+  },
+  {
     id: "session-memory",
-    title: "Memory",
-    desc: "Session memory, recall, and retention",
+    title: "Session Memory",
+    desc: "Session memory retrieval and lifecycle operations",
     icon: HardDrive,
     supportsDeepLayer: true,
     accentColor: "#c084fc",
     group: "workspace",
   },
-  // ── System ─────────────────────────────────────────────────────────
-  {
-    id: "apps-catalog",
-    title: "Apps",
-    desc: "Install, remove, and manage Opta app modules",
-    icon: AppWindow,
-    supportsDeepLayer: true,
-    accentColor: "#a78bfa",
-    group: "system",
-  },
   {
     id: "background-jobs",
-    title: "Background",
-    desc: "Background tasks and scheduled operations",
+    title: "Background Jobs",
+    desc: "Start, inspect, and control background processes",
     icon: Timer,
     supportsDeepLayer: true,
     accentColor: "#60a5fa",
-    group: "system",
+    group: "control",
   },
   {
     id: "daemon-logs",
-    title: "Logs",
-    desc: "Live daemon logs with filters and triage",
+    title: "Daemon Logs",
+    desc: "Realtime daemon logs with filters and triage",
     icon: Logs,
     supportsDeepLayer: true,
     accentColor: "#38bdf8",
-    group: "system",
+    group: "infrastructure",
   },
   {
     id: "cli-system-advanced",
-    title: "Advanced",
-    desc: "CLI parity tools and system-level controls",
+    title: "CLI/System Advanced",
+    desc: "Full operation parity for advanced workflows",
     icon: SquareTerminal,
     supportsDeepLayer: true,
     accentColor: "#94a3b8",
-    group: "system",
+    group: "control",
   },
 ];
 
@@ -255,14 +240,13 @@ export const SETTINGS_CATEGORIES_BY_GROUP: Record<
   SettingsCategoryGroup,
   SettingsCategory[]
 > = {
-  core: SETTINGS_CATEGORIES.filter((c) => c.group === "core"),
-  behaviour: SETTINGS_CATEGORIES.filter((c) => c.group === "behaviour"),
+  infrastructure: SETTINGS_CATEGORIES.filter((c) => c.group === "infrastructure"),
+  control: SETTINGS_CATEGORIES.filter((c) => c.group === "control"),
+  security: SETTINGS_CATEGORIES.filter((c) => c.group === "security"),
   workspace: SETTINGS_CATEGORIES.filter((c) => c.group === "workspace"),
-  system: SETTINGS_CATEGORIES.filter((c) => c.group === "system"),
 };
 
 const LEGACY_SETTINGS_TAB_MAP: Record<string, SettingsTabId> = {
-  // legacy internal IDs
   connection: "connection-network",
   lmx: "lmx-models",
   daemon: "daemon-runtime",
@@ -279,12 +263,6 @@ const LEGACY_SETTINGS_TAB_MAP: Record<string, SettingsTabId> = {
   policy: "autonomy-policies",
   mcp: "mcp-integrations",
   secrets: "accounts-vault",
-  account: "accounts-vault",
-  // simplified group names → canonical IDs
-  infrastructure: "connection-network",
-  control: "autonomy-policies",
-  security: "accounts-vault",
-  workspace: "environment-profiles",
 };
 
 export function isSettingsTabId(value: string): value is SettingsTabId {
