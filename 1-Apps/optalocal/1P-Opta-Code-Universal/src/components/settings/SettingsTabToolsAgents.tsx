@@ -86,7 +86,6 @@ export function SettingsTabToolsAgents({ connection }: Props) {
         <motion.div key="tools" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <div className="st-header">
                 <div>
-                    <h3 className="opta-studio-section-title">Tools &amp; Agents</h3>
                     <p className="st-desc">Sub-agent delegation, background process limits, LSP, and TUI preferences.</p>
                 </div>
                 <button type="button" className="st-save-btn" onClick={save} disabled={saving}>

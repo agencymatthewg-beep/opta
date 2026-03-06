@@ -95,7 +95,6 @@ export function SettingsTabSafety({ connection }: Props) {
         <motion.div key="safety" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <div className="st-header">
                 <div>
-                    <h3 className="opta-studio-section-title">Safety &amp; Limits</h3>
                     <p className="st-desc">Configure execution limits, circuit breakers, computer control policies, and git behaviour.</p>
                 </div>
                 <button type="button" className="st-save-btn" onClick={save} disabled={saving}>

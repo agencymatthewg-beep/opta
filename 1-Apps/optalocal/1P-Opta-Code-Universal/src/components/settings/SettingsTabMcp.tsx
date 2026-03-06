@@ -45,24 +45,24 @@ export function SettingsTabMcp({ connection }: { connection: DaemonConnectionOpt
 
   const handleAdd = async () => {
     if (!newServerName || !newServerCommand) return;
-    
+
     // Robust parser to handle quotes
     const parseArgs = (cmd: string) => {
       const match = cmd.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g);
       if (!match) return [];
       return match.map(m => m.replace(/^['"]|['"]$/g, ''));
     };
-    
+
     const parts = parseArgs(newServerCommand);
     const command = parts[0];
     const args = parts.slice(1);
-    
-    const result = await runOperation('mcp.add', { 
-      name: newServerName, 
+
+    const result = await runOperation('mcp.add', {
+      name: newServerName,
       command: command,
       args: args
     });
-    
+
     if (result && result.ok) {
       setNewServerName("");
       setNewServerCommand("");
@@ -87,9 +87,6 @@ export function SettingsTabMcp({ connection }: { connection: DaemonConnectionOpt
     >
       <div className="flex justify-between items-start">
         <div>
-          <h3 className="opta-studio-section-title mb-1.5 flex items-center gap-2">
-            <Activity size={18} /> MCP Integrations
-          </h3>
           <p className="text-zinc-400 text-[0.85rem] leading-relaxed m-0">
             Manage Model Context Protocol servers to give the agent access to external tools and data.
           </p>
@@ -165,7 +162,7 @@ export function SettingsTabMcp({ connection }: { connection: DaemonConnectionOpt
           ))
         )}
       </div>
-      
+
       {lastResult?.id === 'mcp.test' && (
         <div className={`p-2.5 px-3.5 rounded-lg border text-xs font-mono whitespace-pre-wrap break-words ${lastResult.ok ? "border-emerald-500/35 bg-emerald-500/10 text-emerald-300/95" : "border-red-500/35 bg-red-500/10 text-red-300/95"}`}>
           {lastResult.ok ? `✓ Test successful` : `✗ Test failed: ${lastResult.error?.message || "Unknown error"}`}

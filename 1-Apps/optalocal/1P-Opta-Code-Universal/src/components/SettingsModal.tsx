@@ -809,9 +809,6 @@ export function SettingsModal({
         }}
       >
         <div>
-          <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-            Client Connection
-          </h3>
           <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
             Manage saved daemon targets and discover new ones on your local network.
             Port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>{" "}
@@ -830,7 +827,6 @@ export function SettingsModal({
 
   const renderAutonomyModule = () => (
     <>
-      <h3 className="opta-studio-section-title">ATPO Autonomy</h3>
       <p
         style={{
           color: "#a1a1aa",
@@ -907,7 +903,6 @@ export function SettingsModal({
 
   const renderGenUiModule = () => (
     <>
-      <h3 className="opta-studio-section-title">Generative UI</h3>
       <p
         style={{
           color: "#a1a1aa",
@@ -1015,7 +1010,6 @@ export function SettingsModal({
     <>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
         <div>
-          <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>LMX Inference Routing</h3>
           <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
             Where the daemon routes inference requests. Point this to your LMX host.
           </p>
@@ -1248,7 +1242,6 @@ export function SettingsModal({
 
   const renderDaemonModule = () => (
     <>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Daemon Control Centre</h3>
       <p style={{ color: "#a1a1aa", fontSize: "0.85rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
         Start, stop, or restart the Opta daemon process. The daemon must be running for all Opta Code features to work.
       </p>
@@ -1342,9 +1335,6 @@ export function SettingsModal({
 
   const renderDaemonRuntimePolicyModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Runtime Policy
-      </h3>
       <p className="st-desc">
         Stabilize runtime behavior in one place so daemon controls, background jobs,
         and keyboard navigation stay coherent in both fullscreen and docked modes.
@@ -1405,9 +1395,6 @@ export function SettingsModal({
 
   const renderMcpIntegrationsStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Integration Posture
-      </h3>
       <p className="st-desc">
         Define default MCP onboarding behavior so every server follows the same trust,
         sync, and isolation posture before module-specific overrides are applied.
@@ -1463,9 +1450,6 @@ export function SettingsModal({
 
   const renderEnvironmentProfilesStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Profile Routing
-      </h3>
       <p className="st-desc">
         Route every settings surface through explicit environment profiles so local,
         LAN, and cloud contexts stay deterministic across sessions.
@@ -1505,9 +1489,6 @@ export function SettingsModal({
 
   const renderAccountsVaultStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Access & Vault Policy
-      </h3>
       <p className="st-desc">
         Keep account controls and secret handling in one hardened lane with explicit
         authentication and vault lock rules.
@@ -1546,7 +1527,6 @@ export function SettingsModal({
 
   const renderTilesWorkspaceModule = () => (
     <div className="opta-studio-tile-layout-module">
-      <h3 className="opta-studio-section-title">Tiles & Workspace Layout</h3>
       <p className="st-desc">
         Workspace tile controls are now consolidated into Settings Studio.
         Use these actions to enter layout mode and manage visual arrangement from one place.
@@ -1625,9 +1605,6 @@ export function SettingsModal({
 
   const renderAppsCatalogStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Catalog Governance
-      </h3>
       <p className="st-desc">
         Control how app modules are admitted into the workspace while keeping
         install/update flows consistent with the new Studio layout.
@@ -1671,9 +1648,6 @@ export function SettingsModal({
 
   const renderSessionMemoryStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        Memory Lifecycle
-      </h3>
       <p className="st-desc">
         Tune retention, semantic recall, and summarization so long-running sessions
         remain fast without losing strategic context.
@@ -1726,9 +1700,6 @@ export function SettingsModal({
 
   const renderCliAdvancedStudioModule = () => (
     <div>
-      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
-        CLI/System Guardrails
-      </h3>
       <p className="st-desc">
         Align advanced CLI and system operations with explicit confirmations and
         shell defaults so parity tools stay safe under keyboard-only workflows.

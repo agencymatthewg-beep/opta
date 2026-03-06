@@ -85,7 +85,6 @@ export function SettingsTabResearch({ connection }: Props) {
         <motion.div key="research" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <div className="st-header">
                 <div>
-                    <h3 className="opta-studio-section-title">Research</h3>
                     <p className="st-desc">Configure web research providers and search engine integration.</p>
                 </div>
                 <button type="button" className="st-save-btn" onClick={save} disabled={saving}>

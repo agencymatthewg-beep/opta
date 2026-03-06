@@ -82,7 +82,6 @@ export function SettingsTabPermissions({ connection }: Props) {
         <motion.div key="permissions" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <div className="st-header">
                 <div>
-                    <h3 className="opta-studio-section-title">Tool Permissions</h3>
                     <p className="st-desc">Control which tools require approval before execution. Changes are saved globally for this Opta profile.</p>
                 </div>
                 <div className="st-header-actions">

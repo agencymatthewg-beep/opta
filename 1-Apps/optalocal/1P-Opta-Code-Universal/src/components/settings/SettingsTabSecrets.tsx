@@ -91,11 +91,7 @@ export function SettingsTabSecrets({
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="opta-studio-section-title flex items-center gap-2" style={{ marginBottom: "0.45rem" }}>
-            <Shield size={20} />
-            Secrets & Vault
-          </h3>
-          <p className="st-desc">
+          <p className="st-desc" style={{ marginTop: "0.2rem" }}>
             Manage your API keys securely. Keys are stored in the local daemon
             keychain.
           </p>
@@ -113,11 +109,10 @@ export function SettingsTabSecrets({
 
       {statusMsg && (
         <div
-          className={`st-status-banner ${
-            statusMsg.type === "success"
+          className={`st-status-banner ${statusMsg.type === "success"
               ? "st-status-banner-success"
               : "st-status-banner-error"
-          }`}
+            }`}
         >
           {statusMsg.type === "success" ? (
             <CheckCircle size={16} />

@@ -100,7 +100,6 @@ export function SettingsTabModelProvider({ connection }: Props) {
         <motion.div key="model" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
             <div className="st-header">
                 <div>
-                    <h3 className="opta-studio-section-title">Model &amp; Provider</h3>
                     <p className="st-desc">Configure default models, context limits, and inference provider routing.</p>
                 </div>
                 <button type="button" className="st-save-btn" onClick={save} disabled={saving}>

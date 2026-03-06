@@ -25,9 +25,6 @@ export function SettingsTabFleet({ connection }: { connection: DaemonConnectionO
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h3 className="opta-studio-section-title" style={{ marginBottom: "0.45rem" }}>
-          Fleet & Model Dashboard
-        </h3>
         <p className="st-desc">
           Monitor your inference hardware and manage loaded models.
         </p>
