@@ -1,6 +1,6 @@
 # Opta Path Contract (Canonical)
 
-Updated: 2026-02-28
+Updated: 2026-03-06
 
 ## Rule
 Each app has **one canonical source path** under domain folders in `1-Apps/` (`optalocal/`, `optamize/`, `shared/`).
@@ -25,6 +25,7 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 - `shared/1A-AI-Components` — Shared AI components (includes legacy AICompare merge)
 - `shared/1I-OptaPlus` — OptaPlus design system
 - `shared/1N-Opta-Cloud-Accounts` — Auth/contracts spec
+- `1Q-Opta-Other` — Utility apps (opta-pa-messenger)
 
 ## Product Boundary
 - **Opta CLI** is the execution engine.
@@ -33,6 +34,7 @@ Top-level `1-Apps/1X-*` entries are compatibility aliases/symlinks only.
 ## Alias Policy
 - Aliases/symlinks may exist for backward compatibility.
 - `1L-Opta-Local` is retired and must not be used as a source path.
+- `1Q-Opta-Other/kimi-proxy` and `1Q-Opta-Other/opta-phone-bridge` are archived under `_archived/2026-03-06-1q-cleanup/`.
 - All docs/build tooling must point to canonical paths.
 - New work must not be started in alias locations.
 

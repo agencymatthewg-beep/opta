@@ -59,7 +59,7 @@ export function useAuthDeepLinkListener({
       for (const url of normalizePayload(event.payload)) {
         if (typeof url !== "string") continue;
         if (!url.toLowerCase().startsWith(AUTH_CALLBACK_PREFIX)) continue;
-        notify?.("Auth callback detected. Refreshing account status...");
+        notify?.("Auth callback received. Completing sign-in\u2026");
         try {
           await onAuthCallback(url);
         } catch {

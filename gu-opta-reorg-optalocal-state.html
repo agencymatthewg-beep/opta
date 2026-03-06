@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta — Reorganisation & OptalLocal State</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Particle background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(139,92,246,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59,130,246,0.05) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 60% 30%, rgba(168,85,247,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Subtle grid */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 48px 48px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Glass panel mixin */
+  .glass {
+    background: rgba(24,24,27,0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+  }
+
+  .glass-elevated {
+    background: rgba(39,39,42,0.7);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass-elevated::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--primary-glow);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+
+  .header-badge::before {
+    content: '';
+    width: 6px; height: 6px;
+    background: var(--primary);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--primary);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.8); }
+  }
+
+  h1 {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 700;
+    line-height: 1.1;
+    background: linear-gradient(135deg, #fafafa 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 16px;
+  }
+
+  .header-sub {
+    font-size: 18px;
+    color: var(--text-secondary);
+    font-weight: 300;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* Section header */
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .section-icon {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .icon-violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.3); }
+  .icon-green { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.3); }
+  .icon-amber { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.3); }
+  .icon-blue { background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3); }
+  .icon-cyan { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.3); }
+  .icon-red { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), rgba(139,92,246,0.3), transparent);
+    box-shadow: 0 0 12px rgba(139,92,246,0.3);
+    margin-bottom: 32px;
+  }
+
+  /* Reorg section */
+  .reorg-section {
+    margin-bottom: 40px;
+  }
+
+  /* Before/After layout */
+  .before-after {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 16px;
+    align-items: start;
+    margin-bottom: 32px;
+  }
+
+  .ba-column { padding: 20px; }
+
+  .ba-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .ba-label.before { color: var(--text-muted); }
+  .ba-label.after { color: var(--neon-green); }
+
+  .ba-arrow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 40px;
+    font-size: 24px;
+    color: var(--primary);
+    filter: drop-shadow(0 0 8px var(--primary));
+  }
+
+  .dir-tree {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+  }
+
+  .dir-line {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 2px 0;
+  }
+
+  .dir-indent { padding-left: 16px; }
+  .dir-name { color: var(--text-secondary); }
+  .dir-name.moved { color: var(--neon-amber); }
+  .dir-name.new { color: var(--neon-green); }
+  .dir-name.archived { color: var(--neon-red); text-decoration: line-through; opacity: 0.6; }
+  .dir-name.unchanged { color: var(--text-secondary); }
+  .dir-name.active { color: var(--primary); font-weight: 700; }
+
+  .dir-badge {
+    font-size: 9px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-new { background: rgba(34,197,94,0.15); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.3); }
+  .badge-moved { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.3); }
+  .badge-archived { background: rgba(239,68,68,0.1); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.2); }
+  .badge-intact { background: rgba(139,92,246,0.15); color: var(--primary); border: 1px solid rgba(139,92,246,0.3); }
+  .badge-pending { background: rgba(245,158,11,0.12); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); animation: badge-glow 2s ease-in-out infinite; }
+
+  @keyframes badge-glow {
+    0%, 100% { box-shadow: none; }
+    50% { box-shadow: 0 0 8px rgba(245,158,11,0.3); }
+  }
+
+  /* Move table */
+  .move-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'JetBrains Mono', monospace;
+    margin-bottom: 20px;
+  }
+
+  .move-table th {
+    text-align: left;
+    padding: 8px 12px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+
+  .move-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+  }
+
+  .move-table tr:last-child td { border-bottom: none; }
+  .move-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .old-path { color: var(--text-muted); text-decoration: line-through; opacity: 0.7; }
+  .new-path { color: var(--neon-green); }
+  .arrow-cell { color: var(--primary); text-align: center; }
+
+  /* Sync status banner */
+  .sync-banner {
+    padding: 16px 20px;
+    margin-bottom: 32px;
+    border-radius: 12px;
+    border: 1px solid rgba(245,158,11,0.25);
+    background: rgba(245,158,11,0.06);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .sync-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    background: rgba(245,158,11,0.15);
+    border: 1px solid rgba(245,158,11,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+
+  .sync-text { flex: 1; }
+  .sync-title { font-size: 14px; font-weight: 600; color: var(--neon-amber); margin-bottom: 2px; }
+  .sync-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* Final step */
+  .final-step {
+    padding: 24px;
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 14px;
+    background: rgba(139,92,246,0.06);
+    margin-bottom: 40px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .final-step::after {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 120px; height: 120px;
+    background: radial-gradient(circle, rgba(139,92,246,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 10px;
+  }
+
+  .step-cmd {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    color: var(--neon-green);
+    background: rgba(0,0,0,0.4);
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid rgba(34,197,94,0.2);
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .step-note { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  /* App cards grid */
+  .apps-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 16px;
+    margin-bottom: 40px;
+  }
+
+  .app-card {
+    padding: 20px;
+    border-radius: 14px;
+    border: 1px solid rgba(255,255,255,0.07);
+    background: rgba(24,24,27,0.5);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .app-card:hover {
+    border-color: rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  }
+
+  .app-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+  }
+
+  .app-card.primary-app {
+    border-color: rgba(139,92,246,0.2);
+  }
+
+  .app-card.primary-app::after {
+    content: '';
+    position: absolute;
+    top: -30px; right: -30px;
+    width: 80px; height: 80px;
+    background: radial-gradient(circle, rgba(139,92,246,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .app-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .app-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 6px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .app-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .app-domain {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: 'JetBrains Mono', monospace;
+    margin-top: 2px;
+  }
+
+  .app-stack {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+
+  .stack-tag {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 100px;
+    font-weight: 500;
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.02em;
+  }
+
+  .tag-ts { background: rgba(59,130,246,0.12); color: #93c5fd; border: 1px solid rgba(59,130,246,0.2); }
+  .tag-next { background: rgba(255,255,255,0.06); color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.1); }
+  .tag-react { background: rgba(6,182,212,0.1); color: #67e8f9; border: 1px solid rgba(6,182,212,0.2); }
+  .tag-tauri { background: rgba(245,158,11,0.1); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+  .tag-rust { background: rgba(239,68,68,0.1); color: #fca5a5; border: 1px solid rgba(239,68,68,0.2); }
+  .tag-python { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .tag-mlx { background: rgba(168,85,247,0.12); color: #c4b5fd; border: 1px solid rgba(168,85,247,0.25); }
+  .tag-swift { background: rgba(245,158,11,0.1); color: #fcd34d; border: 1px solid rgba(245,158,11,0.2); }
+  .tag-ink { background: rgba(139,92,246,0.1); color: #c4b5fd; border: 1px solid rgba(139,92,246,0.2); }
+  .tag-supabase { background: rgba(34,197,94,0.1); color: #86efac; border: 1px solid rgba(34,197,94,0.2); }
+  .tag-static { background: rgba(255,255,255,0.04); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.08); }
+  .tag-ssr { background: rgba(59,130,246,0.08); color: #93c5fd; border: 1px solid rgba(59,130,246,0.15); }
+
+  .app-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: 12px;
+  }
+
+  .app-highlights {
+    border-top: 1px solid rgba(255,255,255,0.05);
+    padding-top: 12px;
+  }
+
+  .highlight-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    line-height: 1.5;
+  }
+
+  .highlight-item::before {
+    content: '→';
+    color: var(--primary);
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    margin-top: 2px;
+  }
+
+  .highlight-item span { color: var(--text-secondary); }
+
+  /* Status indicators */
+  .status-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .status-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .dot-active { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+  .dot-stable { background: var(--primary); box-shadow: 0 0 6px var(--primary); }
+  .dot-building { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); animation: pulse 1.5s infinite; }
+  .dot-symhub { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+
+  .status-text {
+    font-size: 10px;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-muted);
+  }
+
+  /* Routes chip list */
+  .routes-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  .route-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.07);
+    color: var(--text-muted);
+  }
+
+  /* Stats row */
+  .stats-row {
+    display: flex;
+    gap: 16px;
+    margin-top: 12px;
+  }
+
+  .stat {
+    text-align: center;
+  }
+
+  .stat-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    line-height: 1;
+    display: block;
+    margin-bottom: 2px;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Section spacing */
+  .section { margin-bottom: 56px; }
+
+  /* Summary cards row */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .summary-card {
+    padding: 16px;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .sc-val {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .sc-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+  }
+
+  .sc-green .sc-val { color: var(--neon-green); }
+  .sc-violet .sc-val { color: var(--primary); }
+  .sc-amber .sc-val { color: var(--neon-amber); }
+  .sc-blue .sc-val { color: var(--neon-blue); }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    color: var(--text-muted);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9em;
+    background: rgba(255,255,255,0.05);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--text-secondary);
+  }
+
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), rgba(139,92,246,0.2), transparent);
+    box-shadow: 0 0 8px rgba(139,92,246,0.25);
+    margin: 32px 0;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .before-after { grid-template-columns: 1fr; }
+    .ba-arrow { padding: 0; transform: rotate(90deg); }
+    .summary-cards { grid-template-columns: repeat(2, 1fr); }
+    .apps-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-badge">Openclaw Report · 2026-03-06</div>
+    <h1>Opta Reorganisation & OptalLocal State</h1>
+    <p class="header-sub">What the openclaw bot restructured, what's still pending sync to MacBook, and the live state of all 12 optalocal apps.</p>
+  </div>
+
+  <!-- SUMMARY NUMBERS -->
+  <div class="summary-cards">
+    <div class="glass summary-card sc-green">
+      <span class="sc-val">8</span>
+      <span class="sc-label">Dirs Moved</span>
+    </div>
+    <div class="glass summary-card sc-violet">
+      <span class="sc-val">12</span>
+      <span class="sc-label">OptalLocal Apps</span>
+    </div>
+    <div class="glass summary-card sc-amber">
+      <span class="sc-val">1</span>
+      <span class="sc-label">Step Remaining</span>
+    </div>
+    <div class="glass summary-card sc-blue">
+      <span class="sc-val">⏳</span>
+      <span class="sc-label">Sync Pending</span>
+    </div>
+  </div>
+
+  <!-- SYNC STATUS BANNER -->
+  <div class="sync-banner">
+    <div class="sync-icon">⟳</div>
+    <div class="sync-text">
+      <div class="sync-title">Syncthing propagation pending</div>
+      <div class="sync-desc">
+        The reorganisation ran on <strong>Mono512</strong> (Mac Studio, 192.168.188.11). MacBook (Opta48) still shows the old
+        <code>1-Apps/</code> flat structure — the new numbered layout will appear once Syncthing propagates.
+        MacBook is MASTER for conflicts; Mono512 changes sync up automatically.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: REORGANISATION -->
+  <div class="section glass" style="padding: 28px;">
+    <div class="section-header">
+      <div class="section-icon icon-violet">🗂</div>
+      <div class="section-title">What The Bot Did — Root Reorganisation</div>
+    </div>
+    <div class="section-divider"></div>
+
+    <div class="before-after">
+      <!-- BEFORE -->
+      <div class="glass-elevated ba-column">
+        <div class="ba-label before">Before (old)</div>
+        <div class="dir-tree">
+          <div class="dir-line"><span class="dir-name archived">1-Apps/</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name archived">optamize/</span> <span class="dir-badge badge-moved">→ 3</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name archived">shared/</span> <span class="dir-badge badge-moved">→ 4</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name unchanged">optalocal/</span> <span class="dir-badge badge-intact">intact</span></div>
+          <div class="dir-line"><span class="dir-name archived">2-Docs/</span> <span class="dir-badge badge-moved">→ 7</span></div>
+          <div class="dir-line"><span class="dir-name archived">3-Services/</span> <span class="dir-badge badge-moved">→ 5</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name archived">3A-Opta-Gateway</span></div>
+          <div class="dir-line"><span class="dir-name archived">4-Ideas/</span> <span class="dir-badge badge-moved">→ 8</span></div>
+          <div class="dir-line"><span class="dir-name unchanged">6-Packages/</span></div>
+          <div class="dir-line"><span class="dir-name archived">7-Personal/</span> <span class="dir-badge badge-moved">→ 9</span></div>
+          <div class="dir-line"><span class="dir-name archived">8-Project/</span> <span class="dir-badge badge-moved">→ 10</span></div>
+          <div class="dir-line"><span class="dir-name" style="color:var(--text-muted); font-style: italic;">— (no business layer)</span></div>
+        </div>
+      </div>
+
+      <!-- ARROW -->
+      <div class="ba-arrow">→</div>
+
+      <!-- AFTER -->
+      <div class="glass-elevated ba-column">
+        <div class="ba-label after">After (new)</div>
+        <div class="dir-tree">
+          <div class="dir-line"><span class="dir-name new">1-Business/</span> <span class="dir-badge badge-new">NEW</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name new">VISION.md</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name new">BRAND.md</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name new">NAMING.md</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name new">BUSINESS-MODEL.md</span></div>
+          <div class="dir-line"><span class="dir-name active">1-Apps/optalocal/</span> <span class="dir-badge badge-pending">→ 2 PENDING</span></div>
+          <div class="dir-line"><span class="dir-name new">3-Optamize/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line"><span class="dir-name new">4-Shared/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line"><span class="dir-name new">5-Services/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line dir-indent"><span class="dir-name new">5A-Opta-Gateway</span></div>
+          <div class="dir-line"><span class="dir-name unchanged">6-Packages/</span></div>
+          <div class="dir-line"><span class="dir-name new">7-Docs/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line"><span class="dir-name new">8-Ideas/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line"><span class="dir-name new">9-Personal/</span> <span class="dir-badge badge-moved">moved</span></div>
+          <div class="dir-line"><span class="dir-name new">10-Project/</span> <span class="dir-badge badge-moved">moved</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MOVE TABLE -->
+    <table class="move-table">
+      <thead>
+        <tr>
+          <th>Old Path</th>
+          <th></th>
+          <th>New Path</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="old-path">1-Apps/optamize/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">3-Optamize/</td>
+          <td style="color:var(--text-muted); font-size:11px;">5 personal apps, IDs preserved</td>
+        </tr>
+        <tr>
+          <td class="old-path">1-Apps/shared/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">4-Shared/</td>
+          <td style="color:var(--text-muted); font-size:11px;">3 shared libs, IDs preserved</td>
+        </tr>
+        <tr>
+          <td class="old-path">3-Services/3A-Opta-Gateway</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">5-Services/5A-Opta-Gateway</td>
+          <td style="color:var(--text-muted); font-size:11px;">ID updated to match section</td>
+        </tr>
+        <tr>
+          <td class="old-path">2-Docs/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">7-Docs/</td>
+          <td style="color:var(--text-muted); font-size:11px;">7A-OPIS · 7B-Ops · 7C-Research · 7D-Cloud · 7E-Export</td>
+        </tr>
+        <tr>
+          <td class="old-path">4-Ideas/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">8-Ideas/</td>
+          <td style="color:var(--text-muted); font-size:11px;">Content moved</td>
+        </tr>
+        <tr>
+          <td class="old-path">7-Personal/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">9-Personal/</td>
+          <td style="color:var(--text-muted); font-size:11px;">7A/B → 9A/B</td>
+        </tr>
+        <tr>
+          <td class="old-path">8-Project/</td>
+          <td class="arrow-cell">→</td>
+          <td class="new-path">10-Project/</td>
+          <td style="color:var(--text-muted); font-size:11px;">8A/B → 10A/B</td>
+        </tr>
+        <tr>
+          <td style="color:var(--neon-red); font-family: 'JetBrains Mono'; font-size:12px;">1L, 1N (root), 1Q + 7 symlinks</td>
+          <td class="arrow-cell">→</td>
+          <td style="color:var(--neon-red); font-family: 'JetBrains Mono'; font-size:12px;">_archived/2026-03-06-1apps-cleanup/</td>
+          <td style="color:var(--text-muted); font-size:11px;">Stale symlinks + retired apps</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div style="font-size: 12px; color: var(--text-muted); padding: 8px 12px; background: rgba(34,197,94,0.04); border-radius: 8px; border: 1px solid rgba(34,197,94,0.1);">
+      ✓ Updated: <code>pnpm-workspace.yaml</code> · <code>ROOT README.md</code> · <code>INDEX.md</code> · <code>APPS-INDEX.md</code> · <code>AI26/1-SOT/PROJECTS.md</code> · bot's MEMORY.md
+    </div>
+  </div>
+
+  <!-- SECTION 2: FINAL STEP -->
+  <div class="final-step">
+    <div class="step-label">⚡ One Command Remaining</div>
+    <code class="step-cmd">mv 1-Apps/optalocal/ 2-OptaLocal/ && sed -i '' 's|1-Apps/optalocal/|2-OptaLocal/|g' pnpm-workspace.yaml</code>
+    <p class="step-note">
+      All AI agents in optalocal must finish their current work before this runs.
+      The optalocal directory was explicitly left untouched — all 12 apps are exactly as they were.
+      This is the only remaining move to complete the numbered-section structure.
+    </p>
+  </div>
+
+  <!-- SECTION 3: OPTALOCAL APPS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-icon icon-violet">🏗</div>
+      <div class="section-title">OptalLocal Apps — Current State (all 12 intact)</div>
+    </div>
+    <div class="section-divider"></div>
+
+    <div class="apps-grid">
+
+      <!-- 1D CLI -->
+      <div class="app-card primary-app">
+        <div class="app-header">
+          <div class="app-id">1D</div>
+          <div>
+            <div class="app-name">Opta CLI TS</div>
+            <div class="app-domain">optalocal/1D-Opta-CLI-TS/</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-ts">TypeScript ESM</span>
+          <span class="stack-tag tag-ink">Ink/React TUI</span>
+          <span class="stack-tag tag-ts">Commander</span>
+          <span class="stack-tag tag-ts">tsup + vitest</span>
+        </div>
+        <div class="app-desc">
+          The execution engine. CLI + full-screen TUI + persistent daemon. Owns session orchestration, tool dispatch, permission gating, event persistence. Primary product.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>2,300+ tests across 197+ test files (~14s run)</span></div>
+          <div class="highlight-item"><span>Daemon: HTTP v3 REST + WS streaming at 127.0.0.1:9999</span></div>
+          <div class="highlight-item"><span>Browser automation: 30+ Playwright tools via BrowserMcpInterceptor</span></div>
+          <div class="highlight-item"><span>New: health.ts command, bridge-state/worker, path-safety, openclaw-scope</span></div>
+          <div class="highlight-item"><span>Provider routing: LMX primary → Anthropic fallback</span></div>
+        </div>
+        <div class="stats-row">
+          <div class="stat">
+            <span class="stat-val">2300+</span>
+            <span class="stat-label">Tests</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val">8</span>
+            <span class="stat-label">Tools</span>
+          </div>
+          <div class="stat">
+            <span class="stat-val">v3</span>
+            <span class="stat-label">Protocol</span>
+          </div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-active"></div>
+          <span class="status-text">VERY ACTIVE — heavy CI, cross-platform gates</span>
+        </div>
+      </div>
+
+      <!-- 1M LMX -->
+      <div class="app-card primary-app">
+        <div class="app-header">
+          <div class="app-id">1M</div>
+          <div>
+            <div class="app-name">Opta LMX</div>
+            <div class="app-domain">optalocal/1M-Opta-LMX/</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-python">Python 3.12</span>
+          <span class="stack-tag tag-mlx">MLX</span>
+          <span class="stack-tag tag-python">FastAPI + Uvicorn</span>
+          <span class="stack-tag tag-python">Pydantic v2</span>
+        </div>
+        <div class="app-desc">
+          Apple Silicon inference server. OpenAI-compatible <code>/v1/chat/completions</code> API. Runs on Mono512 at 192.168.188.11:1234. Must never crash on OOM — unload and degrade instead.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>Admin API: /admin/models/load|unload|download + /healthz</span></div>
+          <div class="highlight-item"><span>MDNS discovery: pure Python, LAN peer announcement</span></div>
+          <div class="highlight-item"><span>Never exceed 90% unified memory; LRU eviction</span></div>
+          <div class="highlight-item"><span>Config: config.yaml.template + default-config.yaml updated</span></div>
+          <div class="highlight-item"><span>Hosted on Mono512 only — NEVER run on MacBook (Opta48)</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — running on Mono512, active CI</span>
+        </div>
+      </div>
+
+      <!-- 1P Code Desktop -->
+      <div class="app-card primary-app">
+        <div class="app-header">
+          <div class="app-id">1P</div>
+          <div>
+            <div class="app-name">Opta Code Universal</div>
+            <div class="app-domain">optalocal/1P-Opta-Code-Universal/</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-tauri">Tauri v2</span>
+          <span class="stack-tag tag-react">React 18</span>
+          <span class="stack-tag tag-ts">Vite 7</span>
+          <span class="stack-tag tag-rust">Rust</span>
+        </div>
+        <div class="app-desc">
+          Native desktop client for Opta CLI daemon. Connects over HTTP/WS in web mode (localhost:5173), or native OS via Tauri shell. macOS + Windows target.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>Settings Studio: layered keyboard navigation (L3 controls)</span></div>
+          <div class="highlight-item"><span>SettingsModal, lazy pages, studio config system</span></div>
+          <div class="highlight-item"><span>lmx_mdns.rs: native MDNS discovery in Rust</span></div>
+          <div class="highlight-item"><span>E2E Playwright tests: visual, keyboard, L3 controls</span></div>
+          <div class="highlight-item"><span>Windows build CI + installer smoke tests</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-active"></div>
+          <span class="status-text">ACTIVE — settings studio, MDNS, Windows compat</span>
+        </div>
+      </div>
+
+      <!-- 1L LMX Dashboard -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1L</div>
+          <div>
+            <div class="app-name">Opta LMX Dashboard</div>
+            <div class="app-domain">lmx.optalocal.com · :3003</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-ts">TypeScript</span>
+          <span class="stack-tag tag-react">SWR polling</span>
+        </div>
+        <div class="app-desc">
+          Web dashboard for Opta LMX. Monitor loaded models, sessions, metrics, agent health. Rapidly expanding with new feature pages.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>20+ app routes — one of the most feature-rich web apps now</span></div>
+        </div>
+        <div class="routes-list">
+          <span class="route-chip">agents</span><span class="route-chip">arena</span><span class="route-chip">audio</span>
+          <span class="route-chip">benchmark</span><span class="route-chip">chat</span><span class="route-chip">connect</span>
+          <span class="route-chip">console</span><span class="route-chip">diagnostics</span><span class="route-chip">logs</span>
+          <span class="route-chip">metrics</span><span class="route-chip">models</span><span class="route-chip">pair</span>
+          <span class="route-chip">predictor</span><span class="route-chip">presets</span><span class="route-chip">quantize</span>
+          <span class="route-chip">rag</span><span class="route-chip">sessions</span><span class="route-chip">settings</span>
+          <span class="route-chip">setup</span><span class="route-chip">skills</span>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-building"></div>
+          <span class="status-text">BUILDING — many new routes added recently</span>
+        </div>
+      </div>
+
+      <!-- 1O Init -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1O</div>
+          <div>
+            <div class="app-name">Opta Init</div>
+            <div class="app-domain">init.optalocal.com · :3001</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-tauri">Tauri v2</span>
+          <span class="stack-tag tag-static">Static Export</span>
+        </div>
+        <div class="app-desc">
+          Download and setup landing. Distribution + update metadata control plane. Includes a native Desktop Manager (Tauri) for the installer experience.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>channels/beta.json + stable.json for update manifests</span></div>
+          <div class="highlight-item"><span>lmx_mdns.rs — native MDNS in desktop-manager Rust</span></div>
+          <div class="highlight-item"><span>Network discovery docs + validate-docs-live-status.mjs</span></div>
+          <div class="highlight-item"><span>Design PRESERVED — no aesthetic changes allowed</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — design preserved, MDNS + manifest work</span>
+        </div>
+      </div>
+
+      <!-- 1R Accounts -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1R</div>
+          <div>
+            <div class="app-name">Opta Accounts</div>
+            <div class="app-domain">accounts.optalocal.com · :3002</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-supabase">Supabase SSR</span>
+          <span class="stack-tag tag-ssr">SSR</span>
+        </div>
+        <div class="app-desc">
+          SSO portal and auth control plane. All optalocal apps share one Supabase project. Cookie domain <code>.optalocal.com</code> enables cross-subdomain SSO.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>Control plane hardening v2 (SQL migration)</span></div>
+          <div class="highlight-item"><span>New APIs: bridge/, cli/, device-commands/, pairing/</span></div>
+          <div class="highlight-item"><span>Token relay, CLI handoff, control plane lifecycle tests</span></div>
+          <div class="highlight-item"><span>8+ new test files for auth flows</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-active"></div>
+          <span class="status-text">ACTIVE — control plane hardening, pairing APIs</span>
+        </div>
+      </div>
+
+      <!-- 1T Home -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1T</div>
+          <div>
+            <div class="app-name">Opta Home</div>
+            <div class="app-domain">optalocal.com · :3000</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-react">React</span>
+          <span class="stack-tag tag-ts">Tailwind</span>
+        </div>
+        <div class="app-desc">
+          Primary ecosystem landing. "Precision over decoration" philosophy — real data as texture, terminal DNA (JetBrains Mono stats). No generic AI aesthetics.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>New: ActivationFlow.tsx, MotionRoot.tsx, OptaExplainer.tsx</span></div>
+          <div class="highlight-item"><span>Moved from eslintrc → eslint.config.mjs (flat config)</span></div>
+          <div class="highlight-item"><span>Design NON-NEGOTIABLE — never add output:'export'</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — design preserved, new motion components</span>
+        </div>
+      </div>
+
+      <!-- 1U Help -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1U</div>
+          <div>
+            <div class="app-name">Opta Help</div>
+            <div class="app-domain">help.optalocal.com · :3006</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-static">Static Export</span>
+          <span class="stack-tag tag-ts">MDX</span>
+        </div>
+        <div class="app-desc">
+          Documentation site with platform-aware content (macOS/Windows toggle). Recently gained voice/LMX docs and a contextual diagnostics panel.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>New: LMX voice docs at /docs/lmx/voice/</span></div>
+          <div class="highlight-item"><span>DiagnosticsBundlePanel, LearnAboutPanel components</span></div>
+          <div class="highlight-item"><span>PlatformContext + PlatformToggle for OS-aware content</span></div>
+          <div class="highlight-item"><span>DocsShell component; generated lib/ directory</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-active"></div>
+          <span class="status-text">ACTIVE — platform context system, voice docs</span>
+        </div>
+      </div>
+
+      <!-- 1V Learn -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1V</div>
+          <div>
+            <div class="app-name">Opta Learn</div>
+            <div class="app-domain">learn.optalocal.com · :3007</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-ts">TypeScript guides</span>
+        </div>
+        <div class="app-desc">
+          Guides portal. Guides are TypeScript objects implementing the Guide interface — not markdown files. 4 template levels (L1–L4). Uses Gemini for generation.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>12 guides across CLI, LMX, accounts, browser, RAG, voice, templates</span></div>
+          <div class="highlight-item"><span>LearnHomeClient.tsx — new client component for home page</span></div>
+          <div class="highlight-item"><span>guides-manifest.json + validate-guides.mjs CI quality gate</span></div>
+          <div class="highlight-item"><span>Removed: template-deep-dive.ts (merged into templates.ts)</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — guide system solid, manifest CI active</span>
+        </div>
+      </div>
+
+      <!-- 1S Status -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1S</div>
+          <div>
+            <div class="app-name">Opta Status</div>
+            <div class="app-domain">status.optalocal.com · :3005</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-react">SWR polling</span>
+          <span class="stack-tag tag-ts">marked</span>
+        </div>
+        <div class="app-desc">
+          Status dashboard + feature registry. Polls health APIs every 30s. Shows live status for all optalocal.com services. Also hosts the feature release notes.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>release-notes.generated.ts auto-generated from updates/</span></div>
+          <div class="highlight-item"><span>websites.registry.generated.json mirrors optalocal/websites.registry.json</span></div>
+          <div class="highlight-item"><span>proxy.ts — local dev reverse proxy</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — running, auto-generated release notes</span>
+        </div>
+      </div>
+
+      <!-- 1X Admin -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1X</div>
+          <div>
+            <div class="app-name">Opta Admin</div>
+            <div class="app-domain">admin.optalocal.com · :3008</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-next">Next.js 16</span>
+          <span class="stack-tag tag-supabase">Supabase SSR</span>
+          <span class="stack-tag tag-ssr">Private</span>
+        </div>
+        <div class="app-desc">
+          Private admin control plane. Website fleet operations and guide promotion. Only accessible to authorised accounts.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>promote API: /api/promote — deploys guide updates to Learn</span></div>
+          <div class="highlight-item"><span>websites.registry.generated.json for fleet visibility</span></div>
+          <div class="highlight-item"><span>favicon.svg added (was missing)</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-stable"></div>
+          <span class="status-text">STABLE — admin operations running</span>
+        </div>
+      </div>
+
+      <!-- 1W Canonical Hub -->
+      <div class="app-card">
+        <div class="app-header">
+          <div class="app-id">1W</div>
+          <div>
+            <div class="app-name">Canonical optalocal.com Hub</div>
+            <div class="app-domain">optalocal/1W-CANONICAL-optalocal.com/</div>
+          </div>
+        </div>
+        <div class="app-stack">
+          <span class="stack-tag tag-static">Symlink Hub</span>
+          <span class="stack-tag tag-ts">No build</span>
+        </div>
+        <div class="app-desc">
+          Canonical reference directory. Contains named symlinks pointing to each live optalocal.com Next.js site. Useful as a single-entry-point reference for the 6 Vercel deployments.
+        </div>
+        <div class="app-highlights">
+          <div class="highlight-item"><span>Links: Opta-Accounts → 1R, Opta-Help → 1U, Opta-Home → 1T</span></div>
+          <div class="highlight-item"><span>Links: Opta-Init → 1O, Opta-Learn → 1V, Opta-Status → 1S</span></div>
+          <div class="highlight-item"><span>Not a buildable app — reference and navigation tool</span></div>
+        </div>
+        <div class="status-row">
+          <div class="status-dot dot-symhub"></div>
+          <span class="status-text">SYMLINK HUB — no dev server needed</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SECTION 4: STACK DIAGRAM -->
+  <div class="section glass" style="padding: 28px;">
+    <div class="section-header">
+      <div class="section-icon icon-blue">⚡</div>
+      <div class="section-title">The Local AI Stack — Runtime Relationships</div>
+    </div>
+    <div class="section-divider"></div>
+
+    <div style="font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 2; color: var(--text-secondary);">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <span style="color: var(--primary); font-weight: 700;">opta chat / opta tui / opta do</span>
+        <span style="color: var(--text-muted); font-size: 11px;">(1D — CLI commands)</span>
+      </div>
+      <div style="padding-left: 32px; color: var(--text-muted);">│</div>
+      <div style="padding-left: 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <span style="color: var(--neon-blue); font-weight: 600;">opta daemon  127.0.0.1:9999</span>
+        <span style="color: var(--text-muted); font-size: 11px;">(1D — HTTP v3 REST + WS streaming)</span>
+      </div>
+      <div style="padding-left: 32px; color: var(--text-muted);">│ <span style="font-size: 10px; color: var(--text-muted);">bearer auth · ?token= WS</span></div>
+      <div style="padding-left: 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 4px;">
+        <span style="color: var(--neon-green); font-weight: 600;">Opta LMX  192.168.188.11:1234</span>
+        <span style="color: var(--text-muted); font-size: 11px;">(1M — OpenAI-compat /v1/chat/completions)</span>
+      </div>
+      <div style="padding-left: 32px; color: var(--text-muted);">│</div>
+      <div style="padding-left: 16px; display: flex; align-items: center; gap: 12px;">
+        <span style="color: var(--neon-amber); font-weight: 600;">Opta Code Desktop</span>
+        <span style="color: var(--text-muted); font-size: 11px;">(1P — web :5173 or Tauri native)</span>
+      </div>
+
+      <div class="neon-divider" style="margin: 20px 0;"></div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; font-size: 11px;">
+        <div>
+          <div style="color: var(--text-muted); font-weight: 600; margin-bottom: 8px; letter-spacing: 0.06em;">OPTA48 (MacBook) — CLIENT ONLY</div>
+          <div style="color: var(--text-secondary);">→ runs: opta CLI, Code Desktop, web browsers</div>
+          <div style="color: var(--text-secondary);">→ never: opta-lmx inference</div>
+        </div>
+        <div>
+          <div style="color: var(--text-muted); font-weight: 600; margin-bottom: 8px; letter-spacing: 0.06em;">MONO512 (Mac Studio) — INFERENCE HOST</div>
+          <div style="color: var(--text-secondary);">→ runs: Opta LMX, LMX Dashboard, model weights</div>
+          <div style="color: var(--text-secondary);">→ 512GB unified memory · MLX Apple Silicon</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="footer">
+    <span style="color: var(--primary);">opta</span> · generated 2026-03-06 · openclaw bot reorganisation + optalocal state
+  </div>
+
+</div>
+</body>
+</html>

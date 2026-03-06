@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta CLI Backend Hardening — Handoff Guide</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 50% at 20% 10%, rgba(139,92,246,0.07) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 80%, rgba(59,130,246,0.05) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 48px 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+
+  .header-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--primary-glow);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 24px;
+  }
+
+  .header h1 {
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 700;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 16px;
+  }
+
+  .header-sub {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto 32px;
+  }
+
+  .header-meta {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+
+  .meta-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .meta-chip .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+
+  /* Section */
+  .section {
+    margin-bottom: 56px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .section-num {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--neon-blue));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+    box-shadow: 0 0 16px rgba(139,92,246,0.4);
+  }
+
+  .section-title {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .section-desc {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Glass cards */
+  .glass {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
+  }
+
+  .glass-strong {
+    background: rgba(255,255,255,0.055);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px;
+  }
+
+  /* Change cards */
+  .change-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .change-card {
+    padding: 20px 24px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-left: 3px solid;
+    transition: all 0.2s ease;
+  }
+
+  .change-card:hover {
+    background: rgba(255,255,255,0.05);
+    transform: translateX(2px);
+  }
+
+  .change-card.green { border-left-color: var(--neon-green); }
+  .change-card.blue { border-left-color: var(--neon-blue); }
+  .change-card.violet { border-left-color: var(--primary); }
+  .change-card.amber { border-left-color: var(--neon-amber); }
+  .change-card.cyan { border-left-color: var(--neon-cyan); }
+
+  .change-card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+  }
+
+  .change-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .change-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 3px 10px;
+    border-radius: 6px;
+    flex-shrink: 0;
+  }
+
+  .status-confirmed {
+    background: rgba(34,197,94,0.12);
+    color: var(--neon-green);
+    border: 1px solid rgba(34,197,94,0.2);
+  }
+
+  .status-gap {
+    background: rgba(239,68,68,0.12);
+    color: var(--neon-red);
+    border: 1px solid rgba(239,68,68,0.2);
+  }
+
+  .change-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.65;
+  }
+
+  .file-ref {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    padding: 3px 10px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--neon-cyan);
+    margin-right: 8px;
+    margin-bottom: 6px;
+  }
+
+  .file-refs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 8px;
+  }
+
+  /* Two-column layout */
+  .two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+
+  @media (max-width: 768px) {
+    .two-col { grid-template-columns: 1fr; }
+  }
+
+  /* Why It Changed — paired view */
+  .why-pair {
+    padding: 20px 24px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+  }
+
+  .why-before {
+    font-size: 12px;
+    color: var(--neon-red);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 6px;
+  }
+
+  .why-after {
+    font-size: 12px;
+    color: var(--neon-green);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 12px;
+    margin-bottom: 6px;
+  }
+
+  .why-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* Validation table */
+  .val-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  .val-table th {
+    text-align: left;
+    padding: 12px 16px;
+    color: var(--text-muted);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .val-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    vertical-align: top;
+  }
+
+  .val-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .val-table tr:hover td {
+    background: rgba(255,255,255,0.02);
+  }
+
+  .tick { color: var(--neon-green); font-size: 14px; }
+  .cross { color: var(--neon-red); font-size: 14px; }
+  .warn { color: var(--neon-amber); font-size: 14px; }
+
+  /* Gap cards */
+  .gap-card {
+    padding: 24px;
+    background: rgba(239,68,68,0.04);
+    border: 1px solid rgba(239,68,68,0.15);
+    border-radius: 14px;
+    margin-bottom: 16px;
+  }
+
+  .gap-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+
+  .gap-num {
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: rgba(239,68,68,0.2);
+    border: 1px solid rgba(239,68,68,0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--neon-red);
+    flex-shrink: 0;
+  }
+
+  .gap-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .gap-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.65;
+    margin-bottom: 12px;
+  }
+
+  /* Plan cards */
+  .plan-card {
+    padding: 28px;
+    border-radius: 16px;
+    margin-bottom: 24px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .plan-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .plan-pill {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+
+  .plan-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .plan-subtitle {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .plan-priority {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 4px 12px;
+    border-radius: 6px;
+  }
+
+  .priority-critical { background: rgba(239,68,68,0.15); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.25); }
+  .priority-high { background: rgba(245,158,11,0.15); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+  .priority-medium { background: rgba(59,130,246,0.15); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+
+  .plan-body {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    line-height: 1.7;
+  }
+
+  .plan-steps {
+    background: rgba(0,0,0,0.25);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+  }
+
+  .plan-step {
+    display: flex;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .plan-step:last-child { border-bottom: none; }
+
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    padding-top: 2px;
+  }
+
+  .plan-risk {
+    padding: 14px 18px;
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 10px;
+    font-size: 13px;
+    color: var(--neon-amber);
+    margin-bottom: 12px;
+  }
+
+  .plan-risk-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .plan-checklist {
+    padding: 16px 20px;
+    background: rgba(34,197,94,0.05);
+    border: 1px solid rgba(34,197,94,0.12);
+    border-radius: 10px;
+  }
+
+  .plan-checklist-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--neon-green);
+    margin-bottom: 10px;
+  }
+
+  .checklist-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 5px 0;
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .check-box {
+    width: 16px;
+    height: 16px;
+    border-radius: 4px;
+    border: 1.5px solid rgba(34,197,94,0.3);
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  /* Code block */
+  .code-block {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px;
+    padding: 16px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--neon-cyan);
+    overflow-x: auto;
+    line-height: 1.8;
+    margin: 12px 0;
+    white-space: pre;
+  }
+
+  .code-comment { color: var(--text-muted); }
+  .code-key { color: var(--primary-glow); }
+  .code-val { color: var(--neon-green); }
+  .code-type { color: var(--neon-amber); }
+
+  /* Divider */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary), transparent);
+    opacity: 0.3;
+    margin: 40px 0;
+    box-shadow: 0 0 8px rgba(139,92,246,0.3);
+  }
+
+  /* Summary stats */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 48px;
+  }
+
+  @media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .stat-card {
+    padding: 20px;
+    border-radius: 14px;
+    text-align: center;
+  }
+
+  .stat-val {
+    font-size: 36px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    line-height: 1.1;
+    margin-bottom: 6px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* Rollback box */
+  .rollback-box {
+    padding: 18px 22px;
+    background: rgba(59,130,246,0.06);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: 12px;
+    margin-top: 12px;
+  }
+
+  .rollback-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--neon-blue);
+    margin-bottom: 8px;
+  }
+
+  .rollback-text {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  /* TOC */
+  .toc {
+    padding: 24px 28px;
+    border-radius: 16px;
+    margin-bottom: 48px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 32px;
+  }
+
+  .toc-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+
+  .toc-item:hover { color: var(--text-primary); }
+
+  .toc-icon {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+  }
+
+  /* Animations */
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 0.6; }
+    50% { opacity: 1; }
+  }
+
+  .pulse { animation: pulse-glow 2.5s ease-in-out infinite; }
+
+  /* Update log strip */
+  .log-strip {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .log-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: rgba(34,197,94,0.08);
+    border: 1px solid rgba(34,197,94,0.18);
+    color: var(--neon-green);
+  }
+
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-badge">
+      <span class="pulse" style="color: var(--neon-green);">●</span>
+      Handoff Guide · March 6, 2026
+    </div>
+    <h1>Opta CLI Backend<br>Hardening Handoff</h1>
+    <p class="header-sub">Verification report, change rationale, residual gaps, and implementation plan for the next phase of hardening work on <code style="font-family: 'JetBrains Mono'; font-size: 13px; color: var(--primary-glow);">1D-Opta-CLI-TS</code></p>
+    <div class="header-meta">
+      <div class="meta-chip"><span class="dot" style="background:var(--neon-green)"></span>All 9 changes confirmed</div>
+      <div class="meta-chip"><span class="dot" style="background:var(--neon-amber)"></span>4 residual gaps</div>
+      <div class="meta-chip"><span class="dot" style="background:var(--neon-blue)"></span>2488+ tests passing</div>
+      <div class="meta-chip"><span class="dot" style="background:var(--primary)"></span>3 update logs filed</div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card glass-strong" style="border-top: 2px solid var(--neon-green);">
+      <div class="stat-val" style="color: var(--neon-green);">9</div>
+      <div class="stat-label">Changes Confirmed</div>
+    </div>
+    <div class="stat-card glass-strong" style="border-top: 2px solid var(--neon-red);">
+      <div class="stat-val" style="color: var(--neon-red);">4</div>
+      <div class="stat-label">Residual Gaps</div>
+    </div>
+    <div class="stat-card glass-strong" style="border-top: 2px solid var(--neon-blue);">
+      <div class="stat-val" style="color: var(--neon-blue);">2488+</div>
+      <div class="stat-label">Tests Passing</div>
+    </div>
+    <div class="stat-card glass-strong" style="border-top: 2px solid var(--primary);">
+      <div class="stat-val" style="color: var(--primary);">67KB</div>
+      <div class="stat-label">update.ts size</div>
+    </div>
+  </div>
+
+  <!-- TOC -->
+  <div class="toc glass">
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(34,197,94,0.12); color:var(--neon-green);">✓</div>
+      <span>§1 — What Changed (9 changes)</span>
+    </div>
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(139,92,246,0.12); color:var(--primary);">↻</div>
+      <span>§2 — Why It Changed</span>
+    </div>
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(59,130,246,0.12); color:var(--neon-blue);">⬡</div>
+      <span>§3 — What Was Validated</span>
+    </div>
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(239,68,68,0.12); color:var(--neon-red);">!</div>
+      <span>§4 — Residual Gaps</span>
+    </div>
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(245,158,11,0.12); color:var(--neon-amber);">→</div>
+      <span>§5 — What To Do Next (Prioritized)</span>
+    </div>
+    <div class="toc-item">
+      <div class="toc-icon" style="background:rgba(6,182,212,0.12); color:var(--neon-cyan);">⚑</div>
+      <span>§6 — Implementation Plan (4 gaps)</span>
+    </div>
+  </div>
+
+  <!-- §1 WHAT CHANGED -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">What Changed</div>
+      <div class="section-desc">9 confirmed · all with line refs</div>
+    </div>
+
+    <div class="change-grid">
+
+      <!-- C1 -->
+      <div class="change-card green">
+        <div class="change-card-header">
+          <div class="change-title">SCP Upload + Packaged CLI Fallback Flow</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          Three new functions power the fallback update path. <code style="font-family:JetBrains Mono;color:var(--neon-cyan)">runScpUpload</code> uploads any file to the remote host with <code>BatchMode=yes</code>, <code>ConnectTimeout=15</code>, and <code>ServerAliveInterval=10</code> flags to prevent hangs. <code>createLocalCliPackArtifact</code> invokes <code>npm pack --silent</code> to produce a portable tarball. <code>installLocalCliPackOnRemote</code> uploads it to <code>/tmp/</code>, installs globally via <code>npm install -g</code>, then cleans up. The fallback triggers automatically when <code>verifyRemoteCliCommands</code> detects missing command entries and a <code>localAppsRoot</code> is available.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:562-593</span>
+          <span class="file-ref">update.ts:595-638</span>
+          <span class="file-ref">update.ts:645-695</span>
+          <span class="file-ref">update.ts:1590-1692</span>
+        </div>
+      </div>
+
+      <!-- C2 -->
+      <div class="change-card blue">
+        <div class="change-card-header">
+          <div class="change-title">Build Script with Install Fallback + Forced Link</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          <code>CLI_UPDATE_BUILD_SCRIPT</code> is a compound shell one-liner that attempts <code>typecheck && build</code> directly, and if that fails (missing deps), re-runs <code>npm install --no-fund --no-audit</code> first, then retries. After a successful build, it runs <code>npm link --force || npm link</code> so the binary is always globalised even when a stale link exists from a prior install.
+        </div>
+        <div class="code-block"><span class="code-comment"># update.ts:99</span>
+<span class="code-key">CLI_UPDATE_BUILD_SCRIPT</span> = <span class="code-val">((npm run -s typecheck && npm run -s build)
+  || (npm install --no-fund --no-audit && npm run -s typecheck && npm run -s build))
+  && (npm link --force || npm link)</span></div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:99</span>
+        </div>
+      </div>
+
+      <!-- C3 -->
+      <div class="change-card violet">
+        <div class="change-card-header">
+          <div class="change-title">Stale Surface Messaging in Verify Step</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          <code>summarizeMissingCommandSurface</code> compares the installed help output against a manifest of modern surface commands: <code>health</code>, <code>settings</code>, <code>update</code>, and <code>doctor</code>. If any are absent, it emits a human-readable message like <em>"CLI surface appears outdated — missing: health, settings"</em> so users understand WHY an update is recommended rather than seeing a silent error or bare exit code.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:136-152</span>
+          <span class="file-ref">update.ts:101-119</span>
+        </div>
+      </div>
+
+      <!-- C4 -->
+      <div class="change-card cyan">
+        <div class="change-card-header">
+          <div class="change-title">Linux Remote Root Candidates</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          <code>buildRemoteAppsRootCandidates</code> now includes Linux-style home directory paths (<code>/home/${remoteUser}/...</code>) alongside the macOS <code>/Users/</code> convention. A <code>dedupePaths</code> helper removes any duplicates. This means remote updates to Debian/Ubuntu machines work without manual config.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:438-468</span>
+          <span class="file-ref">update.ts:459-462 (Linux paths)</span>
+        </div>
+      </div>
+
+      <!-- C5 -->
+      <div class="change-card amber">
+        <div class="change-card-header">
+          <div class="change-title">Double-optalocal Path Guard</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          When deriving the <code>optalocal</code> sub-path from a discovered root, the code now checks if the dirname is already <code>optalocal</code> before appending it again. Without this guard, paths like <code>…/optalocal/optalocal/1D-Opta-CLI-TS</code> were produced, causing SCP uploads and remote build commands to target non-existent directories.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:444-448</span>
+        </div>
+      </div>
+
+      <!-- C6 -->
+      <div class="change-card green">
+        <div class="change-card-header">
+          <div class="change-title">Windows Guards on Remote + Local Update</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          Two platform guards prevent crash-prone execution on Windows. The remote SSH update path exits early with a clear message (<em>"Remote SSH update is not supported on Windows"</em>) because native OpenSSH + SCP interaction is unreliable. The local update path (POSIX build shell) similarly exits because it relies on <code>&&</code> / <code>||</code> chaining that Cmd and PowerShell don't support.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">update.ts:1236-1246</span>
+          <span class="file-ref">update.ts:1237 (remote guard)</span>
+          <span class="file-ref">update.ts:1242 (local guard)</span>
+        </div>
+      </div>
+
+      <!-- C7 -->
+      <div class="change-card blue">
+        <div class="change-card-header">
+          <div class="change-title">Cross-Platform health.ts — No bash -lc</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          <code>resolveOptaBinaryPath</code> selects the correct platform binary-lookup command: <code>where</code> on Windows, <code>which</code> on POSIX. Crucially, it never wraps commands in <code>bash -lc</code>, so health checks work natively on Windows (where bash isn't on PATH). The CLI surface check directly executes <code>opta --version</code> and <code>opta --help</code> via <code>execa</code>.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">health.ts:36-45</span>
+          <span class="file-ref">health.ts:20-28</span>
+          <span class="file-ref">health.ts:47-88</span>
+        </div>
+      </div>
+
+      <!-- C8 -->
+      <div class="change-card violet">
+        <div class="change-card-header">
+          <div class="change-title">doctor.ts — Fallback Host Logic</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          The autofix in <code>doctor.ts</code> no longer blindly sets <code>connection.host</code> to <code>localhost</code>. It first checks <code>fallbackHosts</code> (existing configured hosts) and picks the first one, only falling back to <code>'localhost'</code> if none exist. This prevents overwriting a valid Mono512 or remote LAN host with localhost during a <code>--fix</code> run.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">doctor.ts:417-421</span>
+          <span class="file-ref">doctor.ts:436-447</span>
+        </div>
+      </div>
+
+      <!-- C9 -->
+      <div class="change-card cyan">
+        <div class="change-card-header">
+          <div class="change-title">settings alias in index.ts</div>
+          <span class="change-status status-confirmed">✓ Confirmed</span>
+        </div>
+        <div class="change-body">
+          A full <code>settings [action] [key] [value]</code> command was added to the CLI root. Supports <code>--json</code> for machine-readable output and resolves the action as: explicit arg → <code>--json</code> implies <code>'list'</code> → falls back to interactive <code>'menu'</code> mode. All actions delegate to the existing <code>config()</code> function, keeping the implementation DRY.
+        </div>
+        <div class="file-refs">
+          <span class="file-ref">index.ts:1249-1257</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- §2 WHY IT CHANGED -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">Why It Changed</div>
+      <div class="section-desc">root cause → remediation</div>
+    </div>
+
+    <div class="two-col">
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — Remote update was fragile</div>
+        <div class="why-text">Updates to Mono512 required the remote side to already have a working Opta CLI with all deps installed. If <code>node_modules</code> was stale or <code>npm link</code> was broken, the remote CLI would silently fail to update.</div>
+        <div class="why-after">AFTER — Packaged CLI fallback</div>
+        <div class="why-text">If remote verify fails, the CLI packs itself locally → SCPs it → installs it from tarball. This is a self-bootstrapping update path that works even on a clean remote machine.</div>
+      </div>
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — Build could hang on missing deps</div>
+        <div class="why-text"><code>npm run build</code> would fail cryptically if <code>node_modules</code> hadn't been installed first (e.g. after a fresh clone or failed prior install).</div>
+        <div class="why-after">AFTER — Install-on-failure retry</div>
+        <div class="why-text">The compound build script automatically reinstalls deps on first failure then retries. <code>npm link --force</code> handles the case where a stale global link points to a different version.</div>
+      </div>
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — Linux remotes not considered</div>
+        <div class="why-text">Root candidate discovery only knew about macOS <code>/Users/</code> paths. Any Debian/Ubuntu remote would fail to find the CLI source directory.</div>
+        <div class="why-after">AFTER — Platform-aware discovery</div>
+        <div class="why-text">Linux <code>/home/${user}/</code> paths are now included in the candidate list. <code>dedupePaths</code> prevents duplicates when user names overlap with path segments.</div>
+      </div>
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — Windows would crash or hang</div>
+        <div class="why-text">The remote SSH path used POSIX shell features; the local update path assumed a Unix-compatible shell. On Windows, both silently failed or produced misleading errors.</div>
+        <div class="why-after">AFTER — Early platform guard with message</div>
+        <div class="why-text">Platform guards now exit immediately on Windows with actionable messages. This sets up a clear extension point for a future native Windows update path.</div>
+      </div>
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — health.ts used bash -lc on PATH lookup</div>
+        <div class="why-text">Using <code>bash -lc "which opta"</code> loads the user's login profile, which is unpredictable and unavailable on Windows entirely.</div>
+        <div class="why-after">AFTER — Native binary resolution per platform</div>
+        <div class="why-text"><code>where</code> (Windows) / <code>which</code> (POSIX) are called directly. No bash dependency. Predictable in all CI and headless environments.</div>
+      </div>
+
+      <div class="why-pair">
+        <div class="why-before">BEFORE — doctor --fix forced localhost</div>
+        <div class="why-text">Autofix always wrote <code>localhost</code> to <code>connection.host</code>, wiping out valid Mono512 LAN IPs that users had configured for local AI inference.</div>
+        <div class="why-after">AFTER — Prefer existing configured fallback</div>
+        <div class="why-text">The fix now checks <code>fallbackHosts</code> first. A known good host is preserved. <code>localhost</code> is only used as a last resort when no fallbacks exist at all.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- §3 WHAT WAS VALIDATED -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">What Was Validated</div>
+      <div class="section-desc">tests + update logs + manual review</div>
+    </div>
+
+    <div class="glass" style="padding: 0; overflow: hidden;">
+      <table class="val-table">
+        <thead>
+          <tr>
+            <th>Area</th>
+            <th>Method</th>
+            <th>Coverage</th>
+            <th>Result</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">update.ts — full file</td>
+            <td>Vitest unit tests + manual code audit</td>
+            <td>Exit codes 40-43 tested; packaged fallback path tested; Windows guards tested</td>
+            <td><span class="tick">✓</span> Pass</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">health.ts — CLI surface check</td>
+            <td>Cross-platform binary resolution + vitest</td>
+            <td><code>where</code> / <code>which</code> branch coverage; 2.5s timeout; 401/403 auth-pass tested</td>
+            <td><span class="tick">✓</span> Pass</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">doctor.ts — fallback host</td>
+            <td>Unit tests on config fix flow</td>
+            <td>Empty host detection; fallback host preference; localhost last-resort</td>
+            <td><span class="tick">✓</span> Pass</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">index.ts — settings alias</td>
+            <td>CLI integration test</td>
+            <td><code>--json</code> flag, action resolution, config() delegation</td>
+            <td><span class="tick">✓</span> Pass</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">Full test suite</td>
+            <td>npm test (vitest)</td>
+            <td>2488+ tests, ~14s runtime</td>
+            <td><span class="tick">✓</span> 2488 passing</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">Update logs filed</td>
+            <td>updates/ directory convention</td>
+            <td>3 logs: #222, #223, #224</td>
+            <td><span class="tick">✓</span> Present</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">config.ts SSH defaults</td>
+            <td>Code audit (Zod schema)</td>
+            <td>Defaults are hardcoded Mono512-specific values</td>
+            <td><span class="warn">⚠</span> Gap found</td>
+          </tr>
+          <tr>
+            <td style="color:var(--text-primary); font-weight:500;">key.ts KeySource enum</td>
+            <td>Code audit</td>
+            <td><code>'env' | 'config' | 'unset'</code> only — no keychain/cloud variants</td>
+            <td><span class="warn">⚠</span> Gap found</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="log-strip" style="margin-top: 20px;">
+      <div class="log-badge">📋 222_2026-03-06_opta-update-local-cli-daemon.md</div>
+      <div class="log-badge">📋 223_2026-03-06_opta-update-remote-cli-daemon.md</div>
+      <div class="log-badge">📋 224_2026-03-06_opta-update-remote-cli.md</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- §4 RESIDUAL GAPS -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">Residual Gaps</div>
+      <div class="section-desc">4 gaps · NOT yet fixed</div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-header">
+        <div class="gap-num">G1</div>
+        <div class="gap-title">SSH Defaults Are Machine-Specific (Mono512-hardcoded)</div>
+      </div>
+      <div class="gap-body">
+        In <strong style="color:var(--text-primary)">src/core/config.ts</strong>, the Zod schema defaults for SSH configuration point to absolute paths on Matthew's Mono512 Mac Studio. Any other user running <code>opta update --remote</code> without first configuring these values will silently target non-existent paths and fail with confusing errors.
+      </div>
+      <div class="file-refs">
+        <span class="file-ref">config.ts:133 — user: 'opta'</span>
+        <span class="file-ref">config.ts:134 — lmxPath: '/Users/Shared/312/...'</span>
+        <span class="file-ref">config.ts:135 — pythonPath: '/Users/opta/.mlx-env/bin/python'</span>
+      </div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-header">
+        <div class="gap-num">G2</div>
+        <div class="gap-title">opta key show Does Not Reflect Keychain/Cloud Key Source</div>
+      </div>
+      <div class="gap-body">
+        The <strong style="color:var(--text-primary)">KeySource</strong> type in <strong>src/commands/key.ts</strong> only knows about <code>'env'</code>, <code>'config'</code>, and <code>'unset'</code>. The OAuth flow in <code>http-server.ts</code> can sync keys from Supabase cloud into the config, and a future keychain integration would store keys in the OS keychain. Neither is surfaced in <code>opta key show</code>, so users cannot tell where their active key came from.
+      </div>
+      <div class="file-refs">
+        <span class="file-ref">key.ts:11 — KeySource type</span>
+        <span class="file-ref">key.ts:83 — resolveConfiguredInferenceKey</span>
+        <span class="file-ref">http-server.ts:174+ — OAuth key sync</span>
+      </div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-header">
+        <div class="gap-num">G3</div>
+        <div class="gap-title">No Per-Host Inference API Keys (apiKeysByHost)</div>
+      </div>
+      <div class="gap-body">
+        <code>connection.adminKeysByHost</code> already exists as a <code>z.record()</code> map for per-host admin keys, proving the pattern works. But inference API keys have only one slot (<code>connection.apiKey</code>). Users who run multiple LMX instances on different hosts (e.g. Mono512 + a remote cloud box) must configure a single key and cannot have per-host inference keys.
+      </div>
+      <div class="file-refs">
+        <span class="file-ref">config.ts:129 — adminKeysByHost (template)</span>
+        <span class="file-ref">config.ts:128 — apiKey (only single slot)</span>
+      </div>
+    </div>
+
+    <div class="gap-card">
+      <div class="gap-header">
+        <div class="gap-num">G4</div>
+        <div class="gap-title">health.ts Only Checks Local Daemon — No Remote LMX Health</div>
+      </div>
+      <div class="gap-body">
+        <code>runHealth</code> runs two checks in parallel: CLI surface and local daemon runtime (<code>127.0.0.1:9999/v3/health</code>). It does not check whether the LMX inference server at <code>connection.host:1234</code> is alive. A user with a broken Mono512 connection sees a green health report from the local daemon, then hits confusing inference errors only at chat time.
+      </div>
+      <div class="file-refs">
+        <span class="file-ref">health.ts:141 — runHealth (only 2 checks)</span>
+        <span class="file-ref">health.ts:90 — checkDaemonRuntime</span>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- §5 WHAT TO DO NEXT -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">What To Do Next (Prioritized)</div>
+      <div class="section-desc">sequenced by user-impact</div>
+    </div>
+
+    <div class="glass" style="padding: 0; overflow: hidden;">
+      <table class="val-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Gap</th>
+            <th>Priority</th>
+            <th>Rationale</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="font-family:'JetBrains Mono';color:var(--text-muted);font-size:12px;">1st</td>
+            <td style="color:var(--text-primary);font-weight:500;">G4 — Remote LMX health check</td>
+            <td><span style="color:var(--neon-red);font-weight:600;">Critical</span></td>
+            <td>Users see misleading "healthy" status while LMX is unreachable. Silent failure until chat. Highest day-1 UX impact.</td>
+          </tr>
+          <tr>
+            <td style="font-family:'JetBrains Mono';color:var(--text-muted);font-size:12px;">2nd</td>
+            <td style="color:var(--text-primary);font-weight:500;">G1 — User-agnostic SSH defaults</td>
+            <td><span style="color:var(--neon-red);font-weight:600;">Critical</span></td>
+            <td>Blocks any user who isn't Matthew. Remote update is completely non-functional out-of-the-box for anyone else.</td>
+          </tr>
+          <tr>
+            <td style="font-family:'JetBrains Mono';color:var(--text-muted);font-size:12px;">3rd</td>
+            <td style="color:var(--text-primary);font-weight:500;">G2 — KeySource: keychain + cloud</td>
+            <td><span style="color:var(--neon-amber);font-weight:600;">High</span></td>
+            <td>Needed to complete the OAuth sync loop. Users can't audit their key provenance. Required for Accounts integration.</td>
+          </tr>
+          <tr>
+            <td style="font-family:'JetBrains Mono';color:var(--text-muted);font-size:12px;">4th</td>
+            <td style="color:var(--text-primary);font-weight:500;">G3 — Per-host inference keys</td>
+            <td><span style="color:var(--neon-blue);font-weight:600;">Medium</span></td>
+            <td>Power-user feature. Schema pattern already exists via adminKeysByHost. Low risk, clean implementation path.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- §6 IMPLEMENTATION PLAN -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-num">6</div>
+      <div class="section-title">Implementation Plan</div>
+      <div class="section-desc">propose-only · no code generated</div>
+    </div>
+
+    <!-- PLAN G4 -->
+    <div class="plan-card">
+      <div class="plan-header">
+        <div class="plan-pill" style="background:rgba(239,68,68,0.15); color:var(--neon-red); border:1px solid rgba(239,68,68,0.25);">G4</div>
+        <div>
+          <div class="plan-title">Remote LMX Health Check</div>
+          <div class="plan-subtitle">health.ts — add checkLmxRuntime()</div>
+        </div>
+        <div class="plan-priority priority-critical">Critical · Do First</div>
+      </div>
+
+      <div class="plan-body">
+        Add a third parallel health check that pings the configured LMX host. The check should be <strong style="color:var(--text-primary)">optional by default</strong> — if no <code>connection.host</code> is configured, skip silently. If configured, send a GET to <code>http://{host}:{port}/health</code> with a 3s timeout. Report three states: <strong style="color:var(--neon-green)">reachable</strong>, <strong style="color:var(--neon-amber)">timeout</strong>, <strong style="color:var(--neon-red)">refused</strong> — with actionable messages for each.
+      </div>
+
+      <div class="plan-steps">
+        <div class="plan-step">
+          <div class="step-num">01.</div>
+          <div>Add <code>checkLmxRuntime(config: OptaConfig): Promise&lt;HealthResult&gt;</code> to <code>health.ts</code>. Read <code>connection.host</code> + <code>connection.port</code> from config. If host is <code>'localhost'</code> or <code>'127.0.0.1'</code> only, prompt user to configure a remote host for full health check.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">02.</div>
+          <div>Use the existing <code>checkDaemonRuntime</code> timeout pattern (AbortSignal.timeout). Return a <code>HealthResult</code> discriminated union: <code>{ ok: true, latencyMs }</code> or <code>{ ok: false, reason: 'timeout' | 'refused' | 'auth-error' | 'unexpected' }</code>.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">03.</div>
+          <div>Add to the parallel <code>Promise.all</code> in <code>runHealth</code>. Gate it behind a config check: <code>if (config.connection.host && config.connection.host !== '127.0.0.1')</code>.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">04.</div>
+          <div>Add a <code>--skip-lmx</code> flag to <code>opta health</code> for environments where LMX is intentionally offline (development, test VMs). This prevents CI flakiness.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">05.</div>
+          <div>Write vitest tests: (a) host not configured → skip; (b) host configured, mock server returns 200 → pass; (c) mock server timeout → warn; (d) ECONNREFUSED → fail with message.</div>
+        </div>
+      </div>
+
+      <div class="plan-risk">
+        <div class="plan-risk-label">⚠ Risk &amp; Rollback</div>
+        <div>Network check can slow <code>opta health</code> by up to 3s (timeout). Mitigate: parallel execution already applied; 3s is acceptable. If LMX is on a slow network, the <code>--skip-lmx</code> flag is the escape hatch. Rollback: remove the third item from the <code>Promise.all</code> array.</div>
+      </div>
+
+      <div class="plan-checklist">
+        <div class="plan-checklist-label">✓ Validation Checklist</div>
+        <div class="checklist-item"><div class="check-box"></div><span>checkLmxRuntime returns <code>{ skipped: true }</code> when host not configured</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Returns <code>{ ok: true, latencyMs: N }</code> for mock 200 at configured host</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Returns <code>{ ok: false, reason: 'timeout' }</code> after 3s with no response</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>--skip-lmx</code> flag causes LMX check to be skipped entirely</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Existing test suite still passes (2488+ tests)</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Output format matches existing health output style</span></div>
+      </div>
+    </div>
+
+    <!-- PLAN G1 -->
+    <div class="plan-card">
+      <div class="plan-header">
+        <div class="plan-pill" style="background:rgba(239,68,68,0.15); color:var(--neon-red); border:1px solid rgba(239,68,68,0.25);">G1</div>
+        <div>
+          <div class="plan-title">User-Agnostic SSH Defaults</div>
+          <div class="plan-subtitle">config.ts — remove Mono512-specific hardcodes</div>
+        </div>
+        <div class="plan-priority priority-critical">Critical · Do Second</div>
+      </div>
+
+      <div class="plan-body">
+        The current Zod defaults embed <code>'/Users/Shared/312/Opta/...'</code> and <code>'/Users/opta/.mlx-env/bin/python'</code> — paths that only exist on one specific machine. The fix is to <strong style="color:var(--text-primary)">remove the defaults entirely</strong> (set to <code>undefined</code> or use <code>z.string().optional()</code>) and instead surface helpful prompts in <code>opta doctor</code> when these values are absent before a remote update attempt.
+      </div>
+
+      <div class="plan-steps">
+        <div class="plan-step">
+          <div class="step-num">01.</div>
+          <div>Change <code>connection.ssh.user</code> from <code>z.string().default('opta')</code> to <code>z.string().optional()</code>. Change <code>lmxPath</code> and <code>pythonPath</code> similarly. This removes the implicit assumption that every user is running the Mono512 setup.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">02.</div>
+          <div>In <code>update.ts</code>'s remote update flow, add a preflight guard: if <code>ssh.user</code> is <code>undefined</code>, exit early with <em>"SSH user not configured. Run <code>opta settings set connection.ssh.user &lt;username&gt;</code>"</em>. Same for <code>lmxPath</code> and <code>pythonPath</code>.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">03.</div>
+          <div>Add a <code>doctor.ts</code> check for missing SSH config when <code>connection.host</code> is a non-localhost value. Report with a clear actionable message listing all three required keys.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">04.</div>
+          <div>Update README / CLAUDE.md to document the three config keys required for remote SSH update: <code>connection.ssh.user</code>, <code>connection.ssh.lmxPath</code>, <code>connection.ssh.pythonPath</code>.</div>
+        </div>
+      </div>
+
+      <div class="plan-risk">
+        <div class="plan-risk-label">⚠ Risk &amp; Rollback</div>
+        <div>Removing defaults is a breaking change for Matthew's current setup — his existing config will no longer have implicit values. Mitigate: run <code>opta settings set connection.ssh.user opta</code> etc. once after the change. The old defaults were only correct for one machine, so this is an intentional breaking change. Rollback: restore the three <code>.default()</code> calls in config.ts Zod schema.</div>
+      </div>
+
+      <div class="plan-checklist">
+        <div class="plan-checklist-label">✓ Validation Checklist</div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>opta settings list | grep ssh</code> shows no values when not configured</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Remote update attempt with missing <code>ssh.user</code> exits with actionable error (not silent fail)</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>opta doctor</code> reports missing SSH config when remote host is set</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>After setting all 3 values, remote update proceeds normally</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>TypeScript compiles with <code>optional()</code> types propagated correctly through SSH functions</span></div>
+      </div>
+    </div>
+
+    <!-- PLAN G2 -->
+    <div class="plan-card">
+      <div class="plan-header">
+        <div class="plan-pill" style="background:rgba(245,158,11,0.15); color:var(--neon-amber); border:1px solid rgba(245,158,11,0.25);">G2</div>
+        <div>
+          <div class="plan-title">Expand KeySource to Include Keychain + Cloud</div>
+          <div class="plan-subtitle">key.ts — widen KeySource type + update resolver</div>
+        </div>
+        <div class="plan-priority priority-high">High · Do Third</div>
+      </div>
+
+      <div class="plan-body">
+        The OAuth key sync in <code>http-server.ts</code> writes keys to <code>connection.apiKey</code> in config. A future keychain integration would store to the OS keychain. Neither path is reflected in <code>opta key show</code>. The fix has two parts: (1) widen the <code>KeySource</code> union and (2) update <code>resolveConfiguredInferenceKey</code> to detect the provenance of a key when it exists.
+      </div>
+
+      <div class="plan-steps">
+        <div class="plan-step">
+          <div class="step-num">01.</div>
+          <div>Extend <code>KeySource</code> at <code>key.ts:11</code>: <code>'env' | 'config' | 'keychain' | 'cloud-synced' | 'unset'</code>. The <code>'cloud-synced'</code> value means the key was written by the OAuth callback flow (can detect via a metadata flag or by checking <code>connection.apiKeySource</code> if added to config).</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">02.</div>
+          <div>Add an optional <code>connection.apiKeySource</code> field to the Zod schema (<code>z.enum(['manual', 'cloud-synced', 'keychain']).optional()</code>). The OAuth callback in <code>http-server.ts</code> should write this alongside the key itself.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">03.</div>
+          <div>Update <code>resolveConfiguredInferenceKey</code> to read <code>apiKeySource</code> and return the correct <code>KeySource</code> discriminant. If the key exists and <code>apiKeySource === 'cloud-synced'</code>, return <code>'cloud-synced'</code>.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">04.</div>
+          <div>Update <code>opta key show</code> output to display the source label with context: <em>"Key: sk-ant-… (source: cloud-synced via OAuth)"</em> vs <em>"Key: sk-ant-… (source: config file)"</em>.</div>
+        </div>
+      </div>
+
+      <div class="plan-risk">
+        <div class="plan-risk-label">⚠ Risk &amp; Rollback</div>
+        <div>Low risk — additive change only. The new <code>apiKeySource</code> config field is optional so existing configs continue to work. The <code>KeySource</code> union expansion is backward-compatible for any switch statements as long as exhaustive checks use a default case. Rollback: remove <code>apiKeySource</code> from config schema, revert <code>KeySource</code> to 3-variant union.</div>
+      </div>
+
+      <div class="plan-checklist">
+        <div class="plan-checklist-label">✓ Validation Checklist</div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>opta key show</code> displays source label for all 4 source types</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>After OAuth callback, <code>opta key show</code> reports <code>cloud-synced</code></span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Manually set key via <code>opta settings set</code> shows <code>config</code> source</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Env var <code>OPTA_API_KEY</code> still takes precedence and shows <code>env</code> source</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>TypeScript exhaustive checks on <code>KeySource</code> compile without errors</span></div>
+      </div>
+    </div>
+
+    <!-- PLAN G3 -->
+    <div class="plan-card">
+      <div class="plan-header">
+        <div class="plan-pill" style="background:rgba(59,130,246,0.15); color:var(--neon-blue); border:1px solid rgba(59,130,246,0.25);">G3</div>
+        <div>
+          <div class="plan-title">Per-Host Inference API Keys (apiKeysByHost)</div>
+          <div class="plan-subtitle">config.ts + key.ts — mirror adminKeysByHost pattern</div>
+        </div>
+        <div class="plan-priority priority-medium">Medium · Do Fourth</div>
+      </div>
+
+      <div class="plan-body">
+        <code>connection.adminKeysByHost</code> already exists as <code>z.record(z.string(), z.string()).default({})</code> at config.ts:129. Adding <code>apiKeysByHost</code> with the same schema creates a parallel per-host inference key map. The key resolver would check <code>apiKeysByHost[currentHost]</code> before falling back to the global <code>apiKey</code>. This is the minimal change needed to support multi-host setups.
+      </div>
+
+      <div class="plan-steps">
+        <div class="plan-step">
+          <div class="step-num">01.</div>
+          <div>Add to config.ts Zod schema, adjacent to <code>adminKeysByHost</code>: <code>apiKeysByHost: z.record(z.string(), z.string()).default({})</code>. No breaking change — defaults to empty object.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">02.</div>
+          <div>In <code>resolveConfiguredInferenceKey</code> (key.ts:83), after the env check and before reading <code>connection.apiKey</code>, add: <code>const hostKey = config.connection.apiKeysByHost[config.connection.host];</code>. If found, return it with a new <code>'config-per-host'</code> source label.</div>
+        </div>
+        <div class="plan-step">
+          <div class="step-num">03.</div>
+          <div>Add CLI convenience: <code>opta key set --host 192.168.188.11 sk-ant-…</code> that writes to <code>apiKeysByHost['192.168.188.11']</code>. Mirror the existing <code>opta key set</code> flow.</div>
+        </div>
+      </div>
+
+      <div class="rollback-box">
+        <div class="rollback-label">↩ Rollback Plan</div>
+        <div class="rollback-text">Because <code>apiKeysByHost</code> defaults to <code>{}</code>, removing it from the schema is safe — existing configs with the field populated will just ignore it silently after rollback. No migration needed.</div>
+      </div>
+
+      <div class="plan-checklist">
+        <div class="plan-checklist-label">✓ Validation Checklist</div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>opta key set --host &lt;ip&gt; &lt;key&gt;</code> writes to <code>apiKeysByHost</code></span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>When <code>connection.host</code> matches a key in <code>apiKeysByHost</code>, that key is used (not global <code>apiKey</code>)</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Global <code>apiKey</code> still used when no per-host key exists</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span>Env var <code>OPTA_API_KEY</code> still has highest precedence</span></div>
+        <div class="checklist-item"><div class="check-box"></div><span><code>opta key show</code> shows which per-host key is active</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Footer -->
+  <div class="neon-divider"></div>
+  <div style="text-align: center; padding: 32px 0 16px; color: var(--text-muted); font-size: 12px; font-family: 'JetBrains Mono', monospace;">
+    <div style="margin-bottom: 8px;">1D-Opta-CLI-TS · Hardening Phase Complete · March 6, 2026</div>
+    <div>9 changes confirmed · 4 gaps proposed · Ready for next dev session</div>
+  </div>
+
+</div>
+</body>
+</html>

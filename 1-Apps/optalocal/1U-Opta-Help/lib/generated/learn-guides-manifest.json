@@ -1,0 +1,40 @@
+{
+  "generatedAt": "2026-03-06T04:58:50.830Z",
+  "source": "https://learn.optalocal.com/api/guides-manifest",
+  "upstreamGeneratedAt": "2026-03-05T23:54:42.321Z",
+  "guideCount": 8,
+  "guides": [
+    {
+      "slug": "opta-local-intro",
+      "title": "Introduction to Local"
+    },
+    {
+      "slug": "lmx",
+      "title": "Getting Started with LMX"
+    },
+    {
+      "slug": "cli",
+      "title": "CLI Masterclass"
+    },
+    {
+      "slug": "code-desktop",
+      "title": "Code Desktop Overview"
+    },
+    {
+      "slug": "accounts",
+      "title": "Accounts Local Sync"
+    },
+    {
+      "slug": "lmx-masterclass",
+      "title": "LMX Masterclass"
+    },
+    {
+      "slug": "code-desktop-masterclass",
+      "title": "Code Desktop Masterclass"
+    },
+    {
+      "slug": "accounts-masterclass",
+      "title": "Accounts Masterclass"
+    }
+  ]
+}

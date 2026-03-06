@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta Ecosystem Identity — Colour Sync System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --primary: #8b5cf6;
+      --primary-glow: #a855f7;
+
+      /* Feature Identity Tokens — canonical */
+      --feature-browser:        #22d3ee;
+      --feature-browser-glow:   rgba(34, 211, 238, 0.35);
+      --feature-browser-soft:   rgba(34, 211, 238, 0.12);
+      --feature-browser-border: rgba(34, 211, 238, 0.28);
+      --feature-browser-text:   #67e8f9;
+
+      --feature-models:         #a78bfa;
+      --feature-models-glow:    rgba(167, 139, 250, 0.35);
+      --feature-models-soft:    rgba(167, 139, 250, 0.12);
+      --feature-models-border:  rgba(167, 139, 250, 0.28);
+      --feature-models-text:    #c4b5fd;
+
+      --feature-atpo:           #f472b6;
+      --feature-atpo-glow:      rgba(244, 114, 182, 0.35);
+      --feature-atpo-soft:      rgba(244, 114, 182, 0.12);
+      --feature-atpo-border:    rgba(244, 114, 182, 0.28);
+      --feature-atpo-text:      #f9a8d4;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', sans-serif;
+      background: var(--void);
+      color: var(--text-primary);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background:
+        radial-gradient(1000px 600px at 80% 10%, rgba(34,211,238,0.07), transparent 55%),
+        radial-gradient(800px 500px at 10% 80%, rgba(244,114,182,0.06), transparent 50%),
+        radial-gradient(600px 400px at 50% 50%, rgba(167,139,250,0.05), transparent 50%);
+      pointer-events: none; z-index: 0;
+    }
+
+    .content { position: relative; z-index: 1; max-width: 1140px; margin: 0 auto; padding: 2rem 1.5rem 5rem; }
+
+    /* ── HEADER ── */
+    .header { text-align: center; padding: 3rem 0 2.5rem; }
+    .header-logo { font-family: 'Press Start 2P', monospace; font-size: 2.2rem; color: #a855f7; letter-spacing: 0.12em; text-shadow: 2px 2px 0 #09090b, 3px 3px 0 #09090b, 4px 4px 0 #a855f7, 5px 5px 0 #a855f7, 7px 7px 0 #09090b; filter: drop-shadow(0 0 22px rgba(168,85,247,0.4)); }
+    .header-sub { font-family: 'Press Start 2P', monospace; font-size: 0.58rem; color: #8b5cf6; letter-spacing: 0.18em; text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #8b5cf6; opacity: 0.8; margin: 0.45rem 0 1.2rem; }
+    .header-tagline { font-size: 0.92rem; color: var(--text-secondary); max-width: 580px; margin: 0 auto; line-height: 1.7; }
+    .divider { height: 1px; background: linear-gradient(90deg, transparent, var(--primary) 40%, var(--feature-browser) 60%, transparent); filter: drop-shadow(0 0 6px rgba(139,92,246,0.4)); margin: 2.5rem 0; }
+    section { margin-bottom: 3.5rem; }
+    .section-label { font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; font-weight: 600; letter-spacing: 0.18em; text-transform: uppercase; color: var(--primary); margin-bottom: 0.4rem; }
+    h2.section-title { font-size: 1.5rem; font-weight: 700; background: linear-gradient(135deg, #fff 0%, #a78bfa 50%, #38bdf8 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 0.5rem; }
+    .section-desc { color: var(--text-secondary); font-size: 0.88rem; line-height: 1.72; margin-bottom: 2rem; }
+
+    /* ── THREE HEROES ── */
+    .heroes { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1.5rem; margin-bottom: 2.5rem; }
+    @media (max-width: 800px) { .heroes { grid-template-columns: 1fr; } }
+
+    .hero-card { border-radius: 22px; padding: 2rem; position: relative; overflow: hidden; transition: transform 260ms cubic-bezier(0.22,1,0.36,1); }
+    .hero-card:hover { transform: translateY(-5px); }
+
+    .hero-card--browser {
+      background: linear-gradient(145deg, rgba(34,211,238,0.13) 0%, rgba(6,12,24,0.85) 100%);
+      border: 1px solid var(--feature-browser-border);
+      box-shadow: 0 10px 40px rgba(34,211,238,0.08);
+    }
+    .hero-card--models {
+      background: linear-gradient(145deg, rgba(167,139,250,0.13) 0%, rgba(6,12,24,0.85) 100%);
+      border: 1px solid var(--feature-models-border);
+      box-shadow: 0 10px 40px rgba(167,139,250,0.08);
+    }
+    .hero-card--atpo {
+      background: linear-gradient(145deg, rgba(244,114,182,0.13) 0%, rgba(6,12,24,0.85) 100%);
+      border: 1px solid var(--feature-atpo-border);
+      box-shadow: 0 10px 40px rgba(244,114,182,0.08);
+    }
+
+    .hero-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+    .hero-card--browser::before { background: linear-gradient(90deg, transparent, var(--feature-browser), transparent); filter: drop-shadow(0 0 8px var(--feature-browser)); }
+    .hero-card--models::before  { background: linear-gradient(90deg, transparent, var(--feature-models), transparent); filter: drop-shadow(0 0 8px var(--feature-models)); }
+    .hero-card--atpo::before    { background: linear-gradient(90deg, transparent, var(--feature-atpo), transparent); filter: drop-shadow(0 0 8px var(--feature-atpo)); }
+
+    .hero-keybind { font-family: 'JetBrains Mono', monospace; font-size: 0.68rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 6px; display: inline-block; margin-bottom: 0.8rem; }
+    .hero-keybind--browser { background: var(--feature-browser-soft); border: 1px solid var(--feature-browser-border); color: var(--feature-browser-text); }
+    .hero-keybind--models  { background: var(--feature-models-soft);  border: 1px solid var(--feature-models-border);  color: var(--feature-models-text); }
+    .hero-keybind--atpo    { background: var(--feature-atpo-soft);    border: 1px solid var(--feature-atpo-border);    color: var(--feature-atpo-text); }
+
+    .hero-logo { font-family: 'Press Start 2P', monospace; font-size: 0.9rem; line-height: 1; letter-spacing: 0.15em; margin: 0.3rem 0 0.5rem; }
+    .hero-logo--browser { color: var(--feature-browser); text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 var(--feature-browser); filter: drop-shadow(0 0 12px var(--feature-browser-glow)); }
+    .hero-logo--models  { color: var(--feature-models);  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 var(--feature-models);  filter: drop-shadow(0 0 12px var(--feature-models-glow)); }
+    .hero-logo--atpo    { color: var(--feature-atpo);    text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 var(--feature-atpo);    filter: drop-shadow(0 0 12px var(--feature-atpo-glow)); }
+
+    .hero-hex { font-family: 'JetBrains Mono', monospace; font-size: 1.35rem; font-weight: 600; }
+    .hero-hex--browser { color: var(--feature-browser); }
+    .hero-hex--models  { color: var(--feature-models); }
+    .hero-hex--atpo    { color: var(--feature-atpo); }
+
+    .hero-name { font-size: 1rem; font-weight: 700; margin: 0.2rem 0 0.5rem; }
+    .hero-desc { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── SURFACE MATRIX ── */
+    .matrix-wrap { background: linear-gradient(140deg, rgba(18,34,60,0.55) 0%, rgba(8,16,30,0.5) 100%); backdrop-filter: blur(16px); border: 1px solid rgba(167,204,255,0.14); border-radius: 18px; overflow: hidden; margin-bottom: 2rem; }
+
+    .matrix-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .matrix-table th { text-align: left; padding: 0.7rem 1.1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid rgba(255,255,255,0.07); }
+    .matrix-table th:nth-child(2) { color: var(--feature-browser-text); }
+    .matrix-table th:nth-child(3) { color: var(--feature-models-text); }
+    .matrix-table th:nth-child(4) { color: var(--feature-atpo-text); }
+
+    .matrix-table td { padding: 0.7rem 1.1rem; border-bottom: 1px solid rgba(255,255,255,0.04); vertical-align: top; line-height: 1.4; }
+    .matrix-table tr:last-child td { border-bottom: none; }
+    .matrix-table tr:hover td { background: rgba(255,255,255,0.015); }
+    .matrix-table .surface-name { font-weight: 600; font-size: 0.84rem; }
+    .matrix-table .surface-sub { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.15rem; font-family: 'JetBrains Mono', monospace; }
+
+    .dot-yes-browser { color: var(--feature-browser); font-size: 0.78rem; }
+    .dot-yes-models  { color: var(--feature-models);  font-size: 0.78rem; }
+    .dot-yes-atpo    { color: var(--feature-atpo);    font-size: 0.78rem; }
+    .dot-no          { color: #27272a; font-size: 0.78rem; }
+
+    .cell-val { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; }
+    .cell-val--browser { color: var(--feature-browser-text); }
+    .cell-val--models  { color: var(--feature-models-text); }
+    .cell-val--atpo    { color: var(--feature-atpo-text); }
+    .cell-val--fixed   { color: var(--text-muted); font-size: 0.68rem; }
+
+    /* ── CODE BLOCK ── */
+    .code-block { background: rgba(4,11,24,0.85); border: 1px solid rgba(167,204,255,0.12); border-radius: 12px; padding: 1rem 1.2rem; font-family: 'JetBrains Mono', monospace; font-size: 0.77rem; line-height: 1.75; color: #c8d9f5; overflow-x: auto; margin: 0.8rem 0; }
+    .c { color: #3f3f46; } .k { color: #a78bfa; } .s { color: #86efac; } .v { color: #67e8f9; } .p { color: #fcd34d; }
+    .cb { color: #22d3ee; } .cm { color: #a78bfa; } .ca { color: #f9a8d4; }
+
+    /* ── CALLOUT ── */
+    .callout { border-radius: 10px; padding: 0.85rem 1.05rem; margin: 1rem 0; display: flex; gap: 0.6rem; font-size: 0.82rem; line-height: 1.62; }
+    .callout--warn { background: rgba(245,158,11,0.09); border: 1px solid rgba(245,158,11,0.22); }
+    .callout--good { background: rgba(34,197,94,0.09); border: 1px solid rgba(34,197,94,0.22); }
+    .callout--fix  { background: rgba(239,68,68,0.09); border: 1px solid rgba(239,68,68,0.22); }
+    .callout--info { background: rgba(59,130,246,0.09); border: 1px solid rgba(59,130,246,0.22); }
+    .callout-icon { flex-shrink: 0; }
+    .callout-body { color: var(--text-secondary); }
+    .callout-body strong { color: var(--text-primary); }
+
+    /* ── SWATCH STRIP ── */
+    .swatch-strip { display: flex; gap: 0; border-radius: 12px; overflow: hidden; height: 48px; margin: 1.2rem 0; }
+    .swatch { flex: 1; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; font-weight: 600; color: rgba(0,0,0,0.6); }
+
+    /* ── CLI MOCK ── */
+    .cli-mock { background: #0a0a0a; border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.4rem 1.6rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; line-height: 2.0; overflow-x: auto; }
+    .cli-prompt { color: #52525b; }
+    .cli-cmd { color: #fafafa; }
+    .cli-b { color: #22d3ee; font-weight: 600; }
+    .cli-m { color: #a78bfa; font-weight: 600; }
+    .cli-a { color: #f472b6; font-weight: 600; }
+    .cli-v { color: #8b5cf6; }
+    .cli-dim { color: #3f3f46; }
+
+    /* ── CHIP ── */
+    .chip { display: inline-flex; align-items: center; gap: 0.3rem; padding: 0.22rem 0.6rem; border-radius: 100px; font-size: 0.68rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .chip--done { background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.28); color: #86efac; }
+    .chip--done .chip-dot { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+    .chip--fix { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.28); color: #fca5a5; }
+    .chip--fix .chip-dot { background: #ef4444; }
+    .chip--new { background: rgba(34,211,238,0.14); border: 1px solid rgba(34,211,238,0.28); color: #67e8f9; }
+    .chip--new .chip-dot { background: #22d3ee; }
+
+    h3.sub { font-size: 0.95rem; font-weight: 600; margin: 1.8rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    h3.sub::before { content: ''; display: block; width: 3px; height: 1em; background: var(--primary); border-radius: 2px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+<div class="content">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">OPTA</div>
+    <div class="header-sub">ECOSYSTEM IDENTITY</div>
+    <p class="header-tagline">
+      The canonical colour sync system for Browser, Models, and Atpo — from CLI TUI menus to Desktop Studios to web landing pages to Opta Learn guides. One hex per feature, consistent everywhere.
+    </p>
+    <div class="divider"></div>
+  </header>
+
+  <!-- ═══ THREE IDENTITIES ═══ -->
+  <section>
+    <div class="section-label">/ canonical identities</div>
+    <h2 class="section-title">The Three Feature Colours</h2>
+    <p class="section-desc">These three hex values are locked. Every mention, card, badge, tab, category accent, and Studio overlay in the optalocal ecosystem uses exactly these colours for these features — no exceptions, no variations.</p>
+
+    <div class="heroes">
+
+      <div class="hero-card hero-card--browser">
+        <span class="hero-keybind hero-keybind--browser">Ctrl + B</span>
+        <div class="hero-logo hero-logo--browser">BROWSER</div>
+        <div class="hero-hex hero-hex--browser">#22d3ee</div>
+        <div class="hero-name">Opta Browser</div>
+        <div class="hero-desc">Browser automation · localhost management · live previews · web sessions · port registry · devtools</div>
+      </div>
+
+      <div class="hero-card hero-card--models">
+        <span class="hero-keybind hero-keybind--models">Ctrl + M</span>
+        <div class="hero-logo hero-logo--models">MODELS</div>
+        <div class="hero-hex hero-hex--models">#a78bfa</div>
+        <div class="hero-name">Opta Models</div>
+        <div class="hero-desc">LMX model lifecycle · inference routing · load/unload · quantization · benchmarks · VRAM gauges</div>
+      </div>
+
+      <div class="hero-card hero-card--atpo">
+        <span class="hero-keybind hero-keybind--atpo">Ctrl + A</span>
+        <div class="hero-logo hero-logo--atpo">ATPO</div>
+        <div class="hero-hex hero-hex--atpo">#f472b6</div>
+        <div class="hero-name">Opta Atpo</div>
+        <div class="hero-desc">App/module management · fleet · install · update · rollback · permissions · dependency graph</div>
+      </div>
+
+    </div>
+
+    <!-- Colour swatch strip for reference -->
+    <div class="swatch-strip">
+      <div class="swatch" style="background:#22d3ee;">#22d3ee</div>
+      <div class="swatch" style="background:#a78bfa;">#a78bfa</div>
+      <div class="swatch" style="background:#f472b6;">#f472b6</div>
+    </div>
+
+    <div class="callout callout--info">
+      <span class="callout-icon">ℹ</span>
+      <span class="callout-body">
+        <strong>Why these are distinct from the Opta brand colour:</strong> The brand violet (<code>#8b5cf6</code> / <code>#a855f7</code>) belongs to Opta as a whole — Settings Studio, CTAs, active states. The feature colours identify specific product areas. Models (<code>#a78bfa</code>) is intentionally close to but different from the brand glow (<code>#a855f7</code>) — subtle enough to feel like Opta, distinct enough to identify Models specifically.
+      </span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══ SURFACE MATRIX ═══ -->
+  <section>
+    <div class="section-label">/ colour sync · surface matrix</div>
+    <h2 class="section-title">Where Each Colour Appears</h2>
+    <p class="section-desc">Every surface in the optalocal ecosystem that references one of these features should use the canonical colour. This is the sync matrix — current state and target state.</p>
+
+    <div class="matrix-wrap">
+      <table class="matrix-table">
+        <thead>
+          <tr>
+            <th>Surface</th>
+            <th>● Browser <span style="font-size:0.6rem;opacity:0.6;">#22d3ee</span></th>
+            <th>● Models <span style="font-size:0.6rem;opacity:0.6;">#a78bfa</span></th>
+            <th>● Atpo <span style="font-size:0.6rem;opacity:0.6;">#f472b6</span></th>
+          </tr>
+        </thead>
+        <tbody>
+
+          <tr>
+            <td>
+              <div class="surface-name">Desktop — Settings Studio</div>
+              <div class="surface-sub">1P / settingsStudioConfig.ts</div>
+            </td>
+            <td><span class="cell-val cell-val--browser">✓ #22d3ee</span><br/><span class="cell-val cell-val--fixed">browser-research accent</span></td>
+            <td><span class="cell-val cell-val--models">✓ #a78bfa</span><br/><span class="cell-val cell-val--fixed">lmx-models accent</span></td>
+            <td><span class="cell-val cell-val--fixed">— (no atpo cat yet)</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Desktop — Browser Studio</div>
+              <div class="surface-sub">1P / Ctrl+B overlay (planned)</div>
+            </td>
+            <td><span class="cell-val cell-val--browser">✓ shell accent + logo</span></td>
+            <td class="dot-no">—</td>
+            <td class="dot-no">—</td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Desktop — Models Studio</div>
+              <div class="surface-sub">1P / Ctrl+M overlay (planned)</div>
+            </td>
+            <td class="dot-no">—</td>
+            <td><span class="cell-val cell-val--models">✓ shell accent + logo</span></td>
+            <td class="dot-no">—</td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Desktop — Atpo Studio</div>
+              <div class="surface-sub">1P / Ctrl+A overlay (planned)</div>
+            </td>
+            <td class="dot-no">—</td>
+            <td class="dot-no">—</td>
+            <td><span class="cell-val cell-val--atpo">✓ shell accent + logo</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">CLI palette.ts <span class="chip chip--done" style="font-size:0.6rem;padding:0.1rem 0.45rem;"><span class="chip-dot"></span>DONE</span></div>
+              <div class="surface-sub">1D / TUI_COLORS feature identities</div>
+            </td>
+            <td><span class="cell-val cell-val--browser">✓ browser: '#22d3ee'</span></td>
+            <td><span class="cell-val cell-val--models">✓ models: '#a78bfa'</span></td>
+            <td><span class="cell-val cell-val--atpo">✓ atpo: '#f472b6'</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">CLI SettingsOverlay PAGES <span class="chip chip--done" style="font-size:0.6rem;padding:0.1rem 0.45rem;"><span class="chip-dot"></span>FIXED</span></div>
+              <div class="surface-sub">1D / SettingsOverlay.tsx page tabs</div>
+            </td>
+            <td><span class="cell-val cell-val--fixed">Advanced freed ✓</span></td>
+            <td><span class="cell-val cell-val--models">✓ models: '#a78bfa'</span></td>
+            <td><span class="cell-val cell-val--atpo">✓ atpo: was #c084fc → fixed #f472b6</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">CLI OptaMenuOverlay</div>
+              <div class="surface-sub">1D / menu items + indicators</div>
+            </td>
+            <td><span class="cell-val cell-val--fixed">Use TUI_COLORS.browser</span></td>
+            <td><span class="cell-val cell-val--fixed">Use TUI_COLORS.models</span></td>
+            <td><span class="cell-val cell-val--fixed">Use TUI_COLORS.atpo</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Opta Home (optalocal.com)</div>
+              <div class="surface-sub">1T / feature section highlights</div>
+            </td>
+            <td><span class="cell-val cell-val--fixed">--opta-feature-browser</span></td>
+            <td><span class="cell-val cell-val--fixed">--opta-feature-models</span></td>
+            <td><span class="cell-val cell-val--fixed">--opta-feature-atpo</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Opta Learn (learn.optalocal.com)</div>
+              <div class="surface-sub">1V / guide card accents + callouts</div>
+            </td>
+            <td><span class="cell-val cell-val--fixed">data-feature="browser"</span></td>
+            <td><span class="cell-val cell-val--fixed">data-feature="models"</span></td>
+            <td><span class="cell-val cell-val--fixed">data-feature="atpo"</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Opta Help (help.optalocal.com)</div>
+              <div class="surface-sub">1U / section callouts + badges</div>
+            </td>
+            <td><span class="cell-val cell-val--fixed">.feature-callout-browser</span></td>
+            <td><span class="cell-val cell-val--fixed">.feature-callout-models</span></td>
+            <td><span class="cell-val cell-val--fixed">.feature-callout-atpo</span></td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Opta LMX Dashboard (lmx.optalocal.com)</div>
+              <div class="surface-sub">1L / model sections + status</div>
+            </td>
+            <td class="dot-no">—</td>
+            <td><span class="cell-val cell-val--fixed">--opta-feature-models</span></td>
+            <td class="dot-no">—</td>
+          </tr>
+
+          <tr>
+            <td>
+              <div class="surface-name">Gemini context files</div>
+              <div class="surface-sub">design/studio-system/gemini/</div>
+            </td>
+            <td><span class="cell-val cell-val--browser">✓ documented</span></td>
+            <td><span class="cell-val cell-val--models">✓ documented</span></td>
+            <td><span class="cell-val cell-val--atpo">✓ documented</span></td>
+          </tr>
+
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ THE FIX ═══ -->
+  <section>
+    <div class="section-label">/ fixes applied · 2026-03-06</div>
+    <h2 class="section-title">Corrections Made This Session</h2>
+
+    <div class="callout callout--fix">
+      <span class="callout-icon">🔧</span>
+      <span class="callout-body">
+        <strong>CLI Atpo colour corrected:</strong> <code>SettingsOverlay.tsx</code> PAGES array had <code>atpo: '#c084fc'</code> (light purple). Corrected to <code>#f472b6</code> (canonical pink). The old colour conflicted with the Opta brand palette and didn't match the Atpo Studio identity established in the Desktop.
+      </span>
+    </div>
+
+    <div class="callout callout--fix">
+      <span class="callout-icon">🔧</span>
+      <span class="callout-body">
+        <strong>CLI Advanced colour freed:</strong> <code>advanced: '#22d3ee'</code> was using the Browser identity cyan for an unrelated "Advanced" settings category. Changed to <code>#94a3b8</code> (slate) to free cyan exclusively for Browser-related UI.
+      </span>
+    </div>
+
+    <div class="callout callout--good">
+      <span class="callout-icon">✓</span>
+      <span class="callout-body">
+        <strong>Feature identity tokens added to palette.ts:</strong> <code>TUI_COLORS.browser</code>, <code>TUI_COLORS.models</code>, <code>TUI_COLORS.atpo</code> are now the canonical source for feature colours in all CLI TUI components. Import from <code>palette.ts</code> — don't hardcode hex in TUI components.
+      </span>
+    </div>
+
+    <h3 class="sub">What was changed</h3>
+
+    <div class="code-block">
+<span class="c">// palette.ts — BEFORE</span><br/>
+<span class="k">export const</span> TUI_COLORS = {<br/>
+&nbsp;&nbsp;info: <span class="cb">'#22d3ee'</span>,  <span class="c">// cyan — general info colour, no feature identity</span><br/>
+&nbsp;&nbsp;...<br/>
+<span class="c">// (no browser / models / atpo entries)</span><br/>
+}<br/><br/>
+
+<span class="c">// palette.ts — AFTER ✓</span><br/>
+<span class="k">export const</span> TUI_COLORS = {<br/>
+&nbsp;&nbsp;info: <span class="cb">'#22d3ee'</span>,  <span class="c">// still exists as general semantic colour</span><br/>
+&nbsp;&nbsp;...<br/>
+&nbsp;&nbsp;<span class="c">// Feature identity colours — canonical, synced with desktop + web</span><br/>
+&nbsp;&nbsp;browser: <span class="cb">'#22d3ee'</span>,  <span class="c">// Opta Browser</span><br/>
+&nbsp;&nbsp;models:  <span class="cm">'#a78bfa'</span>,  <span class="c">// Opta Models</span><br/>
+&nbsp;&nbsp;atpo:    <span class="ca">'#f472b6'</span>,  <span class="c">// Opta Atpo</span><br/>
+}
+    </div>
+
+    <div class="code-block">
+<span class="c">// SettingsOverlay.tsx PAGES — BEFORE (wrong atpo + misused cyan)</span><br/>
+{ id: <span class="s">'advanced'</span>, label: <span class="s">'Advanced'</span>, color: <span class="cb">'#22d3ee'</span> }, <span class="c">// ← browser cyan on wrong thing</span><br/>
+{ id: <span class="s">'atpo'</span>,     label: <span class="s">'Atpo'</span>,     color: <span class="cm">'#c084fc'</span> }, <span class="c">// ← wrong colour for Atpo</span><br/><br/>
+
+<span class="c">// SettingsOverlay.tsx PAGES — AFTER ✓</span><br/>
+{ id: <span class="s">'advanced'</span>, label: <span class="s">'Advanced'</span>, color: <span class="v">'#94a3b8'</span> }, <span class="c">// slate — neutral, frees cyan</span><br/>
+{ id: <span class="s">'atpo'</span>,     label: <span class="s">'Atpo'</span>,     color: <span class="ca">'#f472b6'</span> }, <span class="c">// ← canonical Atpo pink ✓</span>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <!-- ═══ HOW TO USE ═══ -->
+  <section>
+    <div class="section-label">/ usage · token reference</div>
+    <h2 class="section-title">How to Use These Tokens</h2>
+
+    <h3 class="sub">In Web Apps (CSS)</h3>
+    <div class="code-block">
+<span class="c">/* @import once in your app's global CSS */</span><br/>
+<span class="k">@import</span> <span class="s">'design/studio-system/identity/ecosystem-identity-tokens.css'</span>;<br/><br/>
+
+<span class="c">/* Then use in any component: */</span><br/>
+.browser-card { border-color: <span class="k">var</span>(<span class="cb">--opta-feature-browser</span>); }<br/>
+.models-badge { background: <span class="k">var</span>(<span class="cm">--opta-feature-models-soft</span>); color: <span class="k">var</span>(<span class="cm">--opta-feature-models-text</span>); }<br/>
+.atpo-section { border-left: 3px solid <span class="k">var</span>(<span class="ca">--opta-feature-atpo</span>); }
+    </div>
+
+    <h3 class="sub">In CLI TUI Components (TypeScript/Ink)</h3>
+    <div class="code-block">
+<span class="k">import</span> { TUI_COLORS } from <span class="s">'./palette.js'</span>;<br/>
+<span class="k">import</span> chalk from <span class="s">'chalk'</span>;<br/><br/>
+
+<span class="c">// Use feature identity colours directly</span><br/>
+<span class="k">const</span> browserLabel = chalk.hex(TUI_COLORS.browser)(<span class="s">'Browser'</span>);<br/>
+<span class="k">const</span> modelsLabel  = chalk.hex(TUI_COLORS.models)(<span class="s">'Models'</span>);<br/>
+<span class="k">const</span> atpoLabel    = chalk.hex(TUI_COLORS.atpo)(<span class="s">'Atpo'</span>);<br/><br/>
+
+<span class="c">// In Ink/React JSX:</span><br/>
+<span class="p">&lt;Text</span> color={TUI_COLORS.browser}<span class="p">&gt;</span>Browser<span class="p">&lt;/Text&gt;</span><br/>
+<span class="p">&lt;Text</span> color={TUI_COLORS.models}<span class="p">&gt;</span>Models<span class="p">&lt;/Text&gt;</span><br/>
+<span class="p">&lt;Text</span> color={TUI_COLORS.atpo}<span class="p">&gt;</span>Atpo<span class="p">&lt;/Text&gt;</span>
+    </div>
+
+    <h3 class="sub">In Opta Learn Guide Cards</h3>
+    <div class="code-block">
+<span class="c">// Tag guides with data-feature for automatic colour routing</span><br/>
+<span class="p">&lt;div</span> className=<span class="s">"guide-card"</span> data-feature=<span class="cb">"browser"</span><span class="p">&gt;</span><span class="c"> ← cyan accent</span><span class="p">&lt;/div&gt;</span><br/>
+<span class="p">&lt;div</span> className=<span class="s">"guide-card"</span> data-feature=<span class="cm">"models"</span><span class="p">&gt;</span><span class="c">  ← violet accent</span><span class="p">&lt;/div&gt;</span><br/>
+<span class="p">&lt;div</span> className=<span class="s">"guide-card"</span> data-feature=<span class="ca">"atpo"</span><span class="p">&gt;</span><span class="c">    ← pink accent</span><span class="p">&lt;/div&gt;</span>
+    </div>
+
+    <h3 class="sub">Simulated CLI Appearance</h3>
+    <div class="cli-mock">
+      <span class="cli-prompt">opta ›</span> <span class="cli-cmd">/settings</span><br/><br/>
+      <span class="cli-dim">──── Opta Settings ────────────────────────────</span><br/>
+      &nbsp;<span class="cli-v">[ Connection  ]</span>  <span class="cli-b">[ Models      ]</span>  <span class="cli-v">[ Safety     ]</span><br/>
+      &nbsp;<span class="cli-v">[ System      ]</span>  <span class="cli-dim">[ Advanced   ]</span>  <span class="cli-a">[ Atpo       ]</span><br/>
+      &nbsp;<span class="cli-v">[ Actions     ]</span>  <span class="cli-v">[ Account     ]</span><br/><br/>
+      <span class="cli-dim">──── Models ────────────────────────────────────</span><br/>
+      &nbsp;<span class="cli-m">Current model:</span>  deepseek-r1:70b<br/>
+      &nbsp;<span class="cli-m">VRAM used:</span>     42GB / 192GB<br/>
+      &nbsp;<span class="cli-m">Inference:</span>     local (mono512)<br/><br/>
+      <span class="cli-dim">──── Atpo ──────────────────────────────────────</span><br/>
+      &nbsp;<span class="cli-a">Installed:</span>     opta-cli v0.9.2, opta-lmx v0.7.1<br/>
+      &nbsp;<span class="cli-a">Updates:</span>       1 available<br/>
+    </div>
+  </section>
+
+  <!-- ═══ HIERARCHY ═══ -->
+  <section>
+    <div class="section-label">/ colour hierarchy</div>
+    <h2 class="section-title">Full Colour Hierarchy</h2>
+    <p class="section-desc">The complete picture of how Opta colours layer from brand foundation to feature identity.</p>
+
+    <div class="code-block">
+<span class="c">/* ── Level 1: Opta Brand Foundation ── */</span><br/>
+--opta-primary:      <span class="v">#8b5cf6</span>;  <span class="c">/* Electric Violet — brand identity, CTAs */</span><br/>
+--opta-primary-glow: <span class="v">#a855f7</span>;  <span class="c">/* Settings Studio, logo glow */</span><br/><br/>
+
+<span class="c">/* ── Level 2: Studio Atmosphere ── */</span><br/>
+--studio-atmo-0: <span class="v">#040b18</span>;  <span class="c">/* deep space blue — any Studio backdrop */</span><br/>
+--studio-border: <span class="v">rgba(167,204,255,0.24)</span>;  <span class="c">/* cool blue glass borders */</span><br/><br/>
+
+<span class="c">/* ── Level 3: Feature Identity (cross-ecosystem) ── */</span><br/>
+--opta-feature-browser: <span class="cb">#22d3ee</span>;  <span class="c">/* Browser — all surfaces */</span><br/>
+--opta-feature-models:  <span class="cm">#a78bfa</span>;  <span class="c">/* Models  — all surfaces */</span><br/>
+--opta-feature-atpo:    <span class="ca">#f472b6</span>;  <span class="c">/* Atpo    — all surfaces */</span><br/><br/>
+
+<span class="c">/* ── Level 4: State / Semantic (universal) ── */</span><br/>
+--opta-success:  <span class="v">#10b981</span>;  <span class="c">/* emerald — success states */</span><br/>
+--opta-warning:  <span class="v">#f59e0b</span>;  <span class="c">/* amber — warnings */</span><br/>
+--opta-danger:   <span class="v">#ef4444</span>;  <span class="c">/* rose — errors */</span>
+    </div>
+  </section>
+
+  <footer style="text-align:center;padding:3rem 0 1rem;color:var(--text-muted);font-size:0.74rem;">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.5rem;color:var(--primary);opacity:0.55;margin-bottom:0.4rem;letter-spacing:0.15em;">OPTA ECOSYSTEM IDENTITY</div>
+    design/studio-system/identity/ · 2026-03-06 · /gu
+  </footer>
+
+</div>
+</body>
+</html>

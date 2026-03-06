@@ -4,38 +4,8 @@
   "framework": null,
   "redirects": [
     {
-      "source": "/downloads/opta-cli/v0.6.2/2026-03-02-stable-1",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-lmx/v0.6.2/2026-03-02-stable-1",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-code-universal/v0.5.4/2026-03-02-stable-1",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-daemon/v0.4.1/2026-03-02-stable-1",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-stable-1",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-cli/v0.7.0-beta.2/2026-03-02-beta-2",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-lmx/v0.7.0-beta.2/2026-03-02-beta-2",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-code-universal/v0.6.0-beta.1/2026-03-02-beta-2",
-      "destination": "https://init.optalocal.com/releases/2026-03-02-beta-2",
+      "source": "/downloads/opta-cli/v0.5.0-alpha.15/opta-cli-npm.tgz",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
       "permanent": false
     },
     {
@@ -46,11 +16,6 @@
     {
       "source": "/downloads/opta-daemon/v0.0.0-beta.test.5/opta-daemon-windows-x64.zip",
       "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-daemon-v0.0.0-beta.test.5/opta-daemon-windows-x64.zip",
-      "permanent": false
-    },
-    {
-      "source": "/downloads/opta-cli/v0.5.0-alpha.15/opta-cli-npm.tgz",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.5.0-alpha.15/opta-cli-npm.tgz",
       "permanent": false
     },
     {

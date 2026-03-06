@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta Help — Aesthetic Handoff</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --elevated: #27272a;
+      --border: rgba(255,255,255,0.07);
+      --border-accent: rgba(139,92,246,0.3);
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --primary: #8b5cf6;
+      --primary-glow: #a855f7;
+      --neon-blue: #3b82f6;
+      --neon-green: #22c55e;
+      --neon-amber: #f59e0b;
+      --neon-red: #ef4444;
+      --neon-cyan: #06b6d4;
+      --neon-purple: #8b5cf6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sora', system-ui, -apple-system, sans-serif;
+      background-color: var(--void);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Atmospheric background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background:
+        radial-gradient(120% 55% at 50% -5%, rgba(139,92,246,0.18) 0%, transparent 60%),
+        radial-gradient(80% 40% at 80% 100%, rgba(59,130,246,0.08) 0%, transparent 55%),
+        radial-gradient(60% 35% at 10% 80%, rgba(6,182,212,0.06) 0%, transparent 50%);
+    }
+
+    /* Starfield */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        radial-gradient(rgba(139,92,246,0.22) 1px, transparent 1px),
+        radial-gradient(rgba(255,255,255,0.12) 0.7px, transparent 0.7px);
+      background-size: 32px 32px, 88px 88px;
+      background-position: 0 0, 18px 22px;
+      opacity: 0.35;
+    }
+
+    .page {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2.5rem 1.5rem 5rem;
+    }
+
+    /* ── Typography ── */
+    .text-moonlight {
+      background: linear-gradient(135deg, #ffffff 0%, #ffffff 45%, rgba(168,85,247,0.55) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    h1 { font-size: 2.4rem; font-weight: 700; line-height: 1.2; }
+    h2 { font-size: 1.35rem; font-weight: 600; color: var(--text-primary); margin-bottom: 1rem; }
+    h3 { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.5rem; }
+    p { color: var(--text-secondary); font-size: 0.9rem; line-height: 1.75; }
+    code {
+      font-family: 'JetBrains Mono', ui-monospace, monospace;
+      font-size: 0.8rem;
+      background: rgba(12,12,18,0.72);
+      color: var(--neon-cyan);
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    /* ── Glass panels ── */
+    .glass {
+      background: linear-gradient(180deg, rgba(12,12,18,0.62), rgba(9,9,14,0.42));
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--border);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.03), 0 16px 36px rgba(0,0,0,0.26);
+    }
+
+    .glass-subtle {
+      background: linear-gradient(180deg, rgba(9,9,11,0.56), rgba(9,9,11,0.32));
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.018), 0 8px 22px rgba(0,0,0,0.18);
+    }
+
+    .glass-accent {
+      background: linear-gradient(180deg, rgba(12,12,18,0.62), rgba(9,9,14,0.42));
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--border-accent);
+      box-shadow: inset 0 1px 0 rgba(139,92,246,0.06), 0 0 24px rgba(139,92,246,0.08), 0 12px 28px rgba(0,0,0,0.22);
+    }
+
+    .embed-block {
+      position: relative;
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .embed-block::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      pointer-events: none;
+      background:
+        radial-gradient(85% 95% at 50% 0%, rgba(168,85,247,0.04), transparent 64%),
+        linear-gradient(180deg, rgba(255,255,255,0.012), transparent 68%);
+      z-index: 0;
+    }
+
+    .embed-block > * { position: relative; z-index: 1; }
+
+    /* ── Layout ── */
+    .hero { text-align: center; padding: 3rem 0 2.5rem; margin-bottom: 3rem; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.28);
+      color: var(--primary-glow);
+      margin-bottom: 1.4rem;
+    }
+
+    .hero p {
+      max-width: 520px;
+      margin: 0.85rem auto 0;
+      font-size: 0.975rem;
+      color: var(--text-secondary);
+    }
+
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(139,92,246,0.25), transparent);
+      margin: 2.5rem 0;
+    }
+
+    .section { margin-bottom: 2.5rem; }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .section-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      padding: 0.2rem 0.6rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    /* ── Progress cards ── */
+    .passes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .pass-card {
+      padding: 1.25rem 1.4rem;
+    }
+
+    .pass-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .pass-num {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+    }
+
+    .badge-done { background: rgba(34,197,94,0.1); color: var(--neon-green); border: 1px solid rgba(34,197,94,0.25); }
+    .badge-partial { background: rgba(245,158,11,0.1); color: var(--neon-amber); border: 1px solid rgba(245,158,11,0.25); }
+    .badge-pending { background: rgba(59,130,246,0.1); color: var(--neon-blue); border: 1px solid rgba(59,130,246,0.25); }
+    .badge-watch { background: rgba(239,68,68,0.1); color: var(--neon-red); border: 1px solid rgba(239,68,68,0.22); }
+    .badge-live { background: rgba(139,92,246,0.1); color: var(--primary-glow); border: 1px solid rgba(139,92,246,0.28); }
+
+    .pass-files {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin-top: 0.6rem;
+    }
+
+    .file-chip {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      color: var(--text-secondary);
+    }
+
+    /* ── Component table ── */
+    .comp-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 0.5rem;
+    }
+
+    .comp-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.6rem 0.9rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      gap: 0.5rem;
+    }
+
+    .comp-name {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* ── Design tokens ── */
+    .token-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+      gap: 0.6rem;
+    }
+
+    .token-card {
+      padding: 0.85rem 1rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .token-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .token-name { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; color: var(--text-muted); }
+    .token-val { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: var(--neon-cyan); margin-top: 0.15rem; }
+
+    /* ── Continuation steps ── */
+    .steps-list { display: flex; flex-direction: column; gap: 0.7rem; }
+
+    .step-row {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 0.9rem 1.1rem;
+      border-radius: 12px;
+    }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--primary);
+      shrink: 0;
+      flex-shrink: 0;
+    }
+
+    .step-body h4 { font-size: 0.9rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem; }
+    .step-body p { font-size: 0.82rem; }
+
+    /* ── Routes overview ── */
+    .routes-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 0.45rem;
+    }
+
+    .route-item {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      padding: 0.4rem 0.7rem;
+      border-radius: 7px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.04);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .route-item .dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── CSS class ref ── */
+    .css-block {
+      background: rgba(7,8,12,0.7);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 1.2rem 1.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      line-height: 1.9;
+      color: var(--text-secondary);
+      overflow-x: auto;
+    }
+
+    .css-block .cls { color: #e879f9; }
+    .css-block .prop { color: #7dd3fc; }
+    .css-block .val { color: var(--neon-cyan); }
+    .css-block .cmt { color: var(--text-muted); font-style: italic; }
+
+    /* ── Neon glow divider ── */
+    .neon-rule {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(139,92,246,0.5) 35%, rgba(6,182,212,0.3) 65%, transparent 100%);
+      box-shadow: 0 0 8px rgba(139,92,246,0.2);
+      margin: 2rem 0;
+    }
+
+    /* ── Verification box ── */
+    .verify-box {
+      padding: 1.25rem 1.5rem;
+    }
+
+    .verify-cmd {
+      background: rgba(7,8,12,0.7);
+      border: 1px solid rgba(34,197,94,0.2);
+      border-radius: 10px;
+      padding: 0.85rem 1.1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      color: var(--neon-green);
+      margin-top: 0.75rem;
+      line-height: 2;
+    }
+
+    .verify-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+
+    /* ── Footer ── */
+    .doc-footer {
+      text-align: center;
+      padding: 2rem 0 0;
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      letter-spacing: 0.04em;
+    }
+
+    /* two-col layout for sections */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* glow on section headers */
+    .glow-heading {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      text-shadow: 0 0 18px rgba(139,92,246,0.3);
+      margin-bottom: 0.25rem;
+    }
+
+    .inset-divider {
+      height: 1px;
+      background: linear-gradient(90deg, rgba(139,92,246,0.2), transparent 70%);
+      margin: 0.5rem 0 1rem;
+    }
+
+    /* snapshot preview */
+    .snapshot-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+
+    .snapshot-card {
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      padding: 0.75rem;
+    }
+
+    .snapshot-card img {
+      width: 100%;
+      border-radius: 8px;
+      opacity: 0.9;
+      display: block;
+    }
+
+    .snapshot-label {
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 0.5rem;
+      text-align: center;
+    }
+
+    @media (max-width: 700px) { .snapshot-row { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-badge">&#9670; Opta Help · Aesthetic Handoff</div>
+    <h1 class="text-moonlight">Embedded Docs — Work State</h1>
+    <p>Three passes of aesthetic hardening complete. This document captures what was done, what Codex handed to Claude Code, and the full continuation roadmap.</p>
+  </div>
+
+  <div class="neon-rule"></div>
+
+  <!-- ── DESIGN GOAL ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Design Mission</span>
+    </div>
+    <div class="embed-block glass-accent" style="padding: 1.4rem 1.6rem;">
+      <h2 style="margin-bottom:0.6rem;">No tiles. No boxes. Seamless embedding.</h2>
+      <p style="max-width: 680px;">Opta Help should feel like reading text laid directly on the void canvas. Surfaces are atmospheric, not boxed. Separators are gone or replaced with gradient fades. Interactive regions use glass <em>depth</em>, not borders, to establish hierarchy. The result is a premium dark-ops aesthetic — content-first, chrome-light.</p>
+      <div style="display:flex;gap:0.75rem;flex-wrap:wrap;margin-top:1rem;">
+        <span class="badge badge-live">Background: atmospheric gradients + starfield</span>
+        <span class="badge badge-live">Surfaces: .doc-embed-block pseudo glow</span>
+        <span class="badge badge-live">Borders: transparent or gradient-fade only</span>
+        <span class="badge badge-live">Typography: .prose-opta, dark only</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── 3 PASSES ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Completed</span>
+      <h2 style="margin:0;">Three Aesthetic Passes</h2>
+    </div>
+
+    <div class="passes-grid">
+
+      <div class="embed-block glass pass-card">
+        <div class="pass-header">
+          <span class="pass-num">Pass 01</span>
+          <span class="badge badge-done">&#10003; Done</span>
+        </div>
+        <div class="glow-heading">Atmospheric Foundation</div>
+        <div class="inset-divider"></div>
+        <p>Full-page background: OLED void + dual radial violet/cyan glows + dual-density starfield via <code>body::before</code> + <code>body::after</code>. Docs surfaces shifted from hard-bordered cards to embedded glass classes.</p>
+        <div class="pass-files">
+          <span class="file-chip">globals.css</span>
+          <span class="file-chip">DocsShell.tsx</span>
+        </div>
+      </div>
+
+      <div class="embed-block glass pass-card">
+        <div class="pass-header">
+          <span class="pass-num">Pass 02</span>
+          <span class="badge badge-done">&#10003; Done</span>
+        </div>
+        <div class="glow-heading">Core Component Refactor</div>
+        <div class="inset-divider"></div>
+        <p>All primary docs components reduced from bordered card pattern to embedded <code>.doc-embed-block</code> system. Hard separators removed. Navigation borders eliminated. Callouts, tables, API endpoints, tabs, prev/next nav, code blocks all aligned.</p>
+        <div class="pass-files">
+          <span class="file-chip">CodeBlock.tsx</span>
+          <span class="file-chip">CommandBlock.tsx</span>
+          <span class="file-chip">ApiEndpoint.tsx</span>
+          <span class="file-chip">FeatureTable.tsx</span>
+          <span class="file-chip">TabGroup.tsx</span>
+          <span class="file-chip">PrevNextNav.tsx</span>
+          <span class="file-chip">Nav.tsx</span>
+        </div>
+      </div>
+
+      <div class="embed-block glass pass-card">
+        <div class="pass-header">
+          <span class="pass-num">Pass 03</span>
+          <span class="badge badge-done">&#10003; Done</span>
+        </div>
+        <div class="glow-heading">Border &amp; Separator Reduction</div>
+        <div class="inset-divider"></div>
+        <p>Second sweep removed residual <code>border-b</code>/<code>border-t</code> separators via global <code>.docs-embedded</code> override rules. Prose table borders softened. Verification ran clean: <code>npm run check</code> passed (typecheck + lint + sync + build).</p>
+        <div class="pass-files">
+          <span class="file-chip">globals.css</span>
+          <span class="file-chip">+ screenshot captures</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── DESIGN SYSTEM REFERENCE ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Design System</span>
+      <h2 style="margin:0;">Key CSS Classes Applied</h2>
+    </div>
+
+    <div class="two-col" style="margin-bottom:1rem;">
+      <div>
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;color:var(--text-muted);">Surface classes (all borderless)</p>
+        <div class="css-block">
+<span class="cls">.doc-embed-block</span>   <span class="cmt">/* pseudo ::before glow */</span>
+<span class="cls">.glass</span>            <span class="cmt">/* backdrop-blur:12px, dark grad */</span>
+<span class="cls">.glass-subtle</span>     <span class="cmt">/* backdrop-blur:8px, near-void */</span>
+<span class="cls">.glass-strong</span>     <span class="cmt">/* backdrop-blur:20px, overlay */</span>
+<span class="cls">.obsidian</span>         <span class="cmt">/* angular dark glass */</span>
+<span class="cls">.surface-embedded</span> <span class="cmt">/* micro-surface, 0 border */</span>
+<span class="cls">.surface-embedded-code</span> <span class="cmt">/* code region embed */</span>
+        </div>
+      </div>
+      <div>
+        <p style="font-size:0.8rem;margin-bottom:0.75rem;color:var(--text-muted);">Typography classes</p>
+        <div class="css-block">
+<span class="cls">.prose-opta</span>       <span class="cmt">/* full doc prose system */</span>
+<span class="cls">.text-moonlight</span>   <span class="cmt">/* gradient heading fill */</span>
+<span class="cls">.docs-embedded</span>    <span class="cmt">/* scope: strips all border-b/t */</span>
+
+<span class="cmt">/* Prose border overrides */</span>
+<span class="cls">.docs-embedded</span> <span class="cls">[class*="border-b"]</span>,
+<span class="cls">.docs-embedded</span> <span class="cls">[class*="border-t"]</span> {
+  <span class="prop">border-color</span>: <span class="val">transparent !important</span>;
+}
+        </div>
+      </div>
+    </div>
+
+    <div class="token-grid">
+      <div class="token-card"><div class="token-swatch" style="background:#09090b;"></div><div class="token-name">--void</div><div class="token-val">#09090b</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#0c0c12;"></div><div class="token-name">--surface</div><div class="token-val">#0c0c12</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#a855f7;"></div><div class="token-name">--primary</div><div class="token-val">#a855f7</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#8b5cf6;"></div><div class="token-name">--neon-purple</div><div class="token-val">#8b5cf6</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#06b6d4;"></div><div class="token-name">--neon-cyan</div><div class="token-val">#06b6d4</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#3b82f6;"></div><div class="token-name">--neon-blue</div><div class="token-val">#3b82f6</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#22c55e;"></div><div class="token-name">--neon-green</div><div class="token-val">#22c55e</div></div>
+      <div class="token-card"><div class="token-swatch" style="background:#f59e0b;"></div><div class="token-name">--neon-amber</div><div class="token-val">#f59e0b</div></div>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── COMPONENT INVENTORY ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Inventory</span>
+      <h2 style="margin:0;">All 21 Components — Audit Status</h2>
+    </div>
+
+    <div class="comp-grid">
+      <!-- Layout -->
+      <div class="comp-row"><span class="comp-name">layout/Nav.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">layout/Sidebar.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">layout/Footer.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">layout/Breadcrumb.tsx</span><span class="badge badge-partial">&#9632; Audit</span></div>
+      <!-- Docs core -->
+      <div class="comp-row"><span class="comp-name">docs/DocsShell.tsx</span><span class="badge badge-done">&#10003; Pass 01</span></div>
+      <div class="comp-row"><span class="comp-name">docs/CodeBlock.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/CommandBlock.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/ApiEndpoint.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/FeatureTable.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/TabGroup.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/PrevNextNav.tsx</span><span class="badge badge-done">&#10003; Pass 02</span></div>
+      <div class="comp-row"><span class="comp-name">docs/Callout.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <!-- Untracked — new -->
+      <div class="comp-row"><span class="comp-name">docs/PlatformToggle.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">docs/DiagnosticsBundlePanel.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">docs/LearnAboutPanel.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">docs/PlatformContext.tsx</span><span class="badge badge-done">&#10003; Logic only</span></div>
+      <div class="comp-row"><span class="comp-name">docs/PlatformContextWarning.tsx</span><span class="badge badge-partial">&#9632; Audit</span></div>
+      <div class="comp-row"><span class="comp-name">docs/SearchDialog.tsx</span><span class="badge badge-done">&#10003; glass-strong</span></div>
+      <div class="comp-row"><span class="comp-name">docs/TableOfContents.tsx</span><span class="badge badge-done">&#10003; Clean</span></div>
+      <div class="comp-row"><span class="comp-name">docs/StepList.tsx</span><span class="badge badge-partial">&#9632; Audit</span></div>
+      <div class="comp-row"><span class="comp-name">shared/OptaRing.tsx</span><span class="badge badge-live">&#9670; Never touch</span></div>
+    </div>
+
+    <div style="margin-top:1rem;padding:0.85rem 1.1rem;border-radius:10px;background:rgba(245,158,11,0.06);border:1px solid rgba(245,158,11,0.18);">
+      <p style="font-size:0.82rem;color:var(--neon-amber);"><strong style="color:var(--neon-amber);">Audit priority:</strong> <code>Breadcrumb.tsx</code>, <code>PlatformContextWarning.tsx</code>, and <code>StepList.tsx</code> flagged for next audit pass. Also: all 54 <code>page.tsx</code> doc routes may carry inline Tailwind box patterns not covered by global CSS overrides.</p>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── ROUTE MAP ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Routes</span>
+      <h2 style="margin:0;">54 Doc Pages — Audit Surface</h2>
+    </div>
+    <p style="margin-bottom:1rem;font-size:0.83rem;">Individual page.tsx files are not yet audited. Each may contain inline Tailwind <code>border</code>, <code>bg-white/5</code>, <code>rounded-lg</code>, or <code>divide-y</code> patterns that create boxed visual artifacts not covered by global overrides.</p>
+    <div class="routes-grid">
+      <div class="route-item"><div class="dot" style="background:var(--neon-green)"></div>/docs/getting-started/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-green)"></div>/docs/getting-started/installation/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-amber)"></div>/docs/getting-started/lan-setup/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-amber)"></div>/docs/getting-started/first-session/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/chat-and-do/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/models/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/sessions/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/configuration/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-blue)"></div>/docs/cli/slash-commands/</div>
+      <div class="route-item"><div class="dot" style="background:var(--primary)"></div>/docs/daemon/</div>
+      <div class="route-item"><div class="dot" style="background:var(--primary)"></div>/docs/daemon/lifecycle/</div>
+      <div class="route-item"><div class="dot" style="background:var(--primary)"></div>/docs/daemon/troubleshooting/</div>
+      <div class="route-item"><div class="dot" style="background:var(--primary)"></div>/docs/daemon/http-api/</div>
+      <div class="route-item"><div class="dot" style="background:var(--primary)"></div>/docs/daemon/websocket/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/setup/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/models/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/api/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/monitoring/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-cyan)"></div>/docs/lmx/voice/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-amber)"></div>/docs/code-desktop/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-amber)"></div>/docs/code-desktop/daemon-controls/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-amber)"></div>/docs/code-desktop/sessions/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-green)"></div>/docs/ecosystem/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-green)"></div>/docs/ecosystem/synergies/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-green)"></div>/docs/ecosystem/change-impact/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-red)"></div>/docs/security/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-red)"></div>/docs/security/privacy/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-red)"></div>/docs/security/permissions/</div>
+      <div class="route-item"><div class="dot" style="background:var(--neon-red)"></div>/docs/security/guardrails/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/accounts/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/accounts/auth/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/accounts/sync/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/accounts/troubleshooting/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/developer/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/developer/sdk/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/developer/auth/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/developer/mcp/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/browser-automation/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/browser-automation/tools/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/browser-automation/recording/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/local-web/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/local-web/chat/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/local-web/dashboard/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/local-web/remote-access/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/status/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/status/feature-registry/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/status/releases/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/status/service-cards/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/support/faq/</div>
+      <div class="route-item"><div class="dot" style="background:var(--text-muted)"></div>/docs/feature-status/</div>
+    </div>
+    <div style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.9rem;font-size:0.72rem;color:var(--text-muted);">
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-green);margin-right:4px;"></span>Screenshot captured</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--neon-amber);margin-right:4px;"></span>Likely clean (simple prose)</span>
+      <span><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--text-muted);margin-right:4px;"></span>Not yet audited</span>
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── CONTINUATION ROADMAP ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Next Steps</span>
+      <h2 style="margin:0;">Continuation Roadmap (from Codex handoff)</h2>
+    </div>
+
+    <div class="steps-list">
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Audit remaining components: <code>Breadcrumb</code>, <code>PlatformContextWarning</code>, <code>StepList</code></h4>
+          <p>These three unread components are flagged — check for <code>border</code>, <code>divide-y</code>, or hard <code>bg-*</code> Tailwind patterns. Apply <code>.doc-embed-block</code> / <code>.glass-subtle</code> as needed.</p>
+        </div>
+      </div>
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>Audit high-priority doc page routes for inline box patterns</h4>
+          <p>Sample <code>/docs/cli/</code>, <code>/docs/daemon/</code>, <code>/docs/security/privacy/</code> for inline <code>rounded-lg border bg-white/5</code> patterns that create tiled sections. Replace with prose-only or <code>doc-embed-block</code> wrapping.</p>
+        </div>
+      </div>
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Verify OS toggle, Learn About, Diagnostics panel, and Search still work</h4>
+          <p>These are live functional components. Ensure any CSS changes haven't broken click/keyboard interactions, state persistence, or copy-to-clipboard. Quick smoke test: toggle platform, open search ⌘K, copy a bundle command.</p>
+        </div>
+      </div>
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Run full verification</h4>
+          <p><code>cd 1-Apps/optalocal/1U-Opta-Help &amp;&amp; npm run check</code> must pass clean. This runs typecheck + lint + sync:learn-guides + validate:learn-links + build.</p>
+        </div>
+      </div>
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">5</div>
+        <div class="step-body">
+          <h4>Capture updated screenshots for 3 required routes</h4>
+          <p>Save to <code>1-Apps/opta-help-embedded-*.png</code>: <code>/docs/getting-started/</code>, <code>/docs/cli/</code>, <code>/docs/security/privacy/</code>. These are the three routes specified in the Codex handoff.</p>
+        </div>
+      </div>
+
+      <div class="step-row embed-block glass-subtle">
+        <div class="step-num">6</div>
+        <div class="step-body">
+          <h4>Deliver completion report</h4>
+          <p>List exact files changed, what visual problems were fixed, and what (if anything) remains. The report should confirm the site looks and builds production-grade.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- ── VERIFICATION PROTOCOL ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Verify</span>
+      <h2 style="margin:0;">Verification Protocol</h2>
+    </div>
+
+    <div class="embed-block glass verify-box">
+      <span class="verify-label">Full check command</span>
+      <div class="verify-cmd">
+        cd /Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1U-Opta-Help<br>
+        npm run check<br>
+        <span style="color:var(--text-muted)"># Expected: typecheck ✓ lint ✓ sync:learn-guides ✓ validate:learn-links ✓ build ✓</span>
+      </div>
+
+      <span class="verify-label" style="display:block;margin-top:1rem;">Screenshot capture (Playwright or manual)</span>
+      <div class="verify-cmd">
+        <span style="color:var(--text-muted)"># Navigate to each route and capture:</span><br>
+        http://localhost:3006/docs/getting-started/<br>
+        http://localhost:3006/docs/cli/<br>
+        http://localhost:3006/docs/security/privacy/
+      </div>
+
+      <span class="verify-label" style="display:block;margin-top:1rem;">Visual checklist</span>
+      <div style="margin-top:0.5rem;display:flex;flex-direction:column;gap:0.35rem;font-size:0.8rem;">
+        <span style="color:var(--text-secondary);">&#9744; No visible box borders around doc sections</span>
+        <span style="color:var(--text-secondary);">&#9744; No hard separator lines between paragraphs</span>
+        <span style="color:var(--text-secondary);">&#9744; PlatformToggle embedded (no card outline)</span>
+        <span style="color:var(--text-secondary);">&#9744; Callouts use left-glow only (no full border box)</span>
+        <span style="color:var(--text-secondary);">&#9744; Feature tables use soft row separators only</span>
+        <span style="color:var(--text-secondary);">&#9744; OS toggle switches platform correctly</span>
+        <span style="color:var(--text-secondary);">&#9744; Search dialog opens/closes, results navigate</span>
+        <span style="color:var(--text-secondary);">&#9744; Diagnostics copy button works (macOS + Windows)</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-rule"></div>
+
+  <!-- ── CONSTRAINTS ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-label">Constraints</span>
+      <h2 style="margin:0;">Hard Rules for This Work</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:0.6rem;">
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(239,68,68,0.18);background:rgba(239,68,68,0.04);">
+        <h4 style="color:var(--neon-red);font-size:0.82rem;margin-bottom:0.3rem;">No unrelated changes</h4>
+        <p style="font-size:0.78rem;">This is a large multi-project workspace. Only touch 1U-Opta-Help files.</p>
+      </div>
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(239,68,68,0.18);background:rgba(239,68,68,0.04);">
+        <h4 style="color:var(--neon-red);font-size:0.82rem;margin-bottom:0.3rem;">Never touch OptaRing</h4>
+        <p style="font-size:0.78rem;"><code>shared/OptaRing.tsx</code> CSS keyframes are sacred. Do not modify.</p>
+      </div>
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(245,158,11,0.18);background:rgba(245,158,11,0.04);">
+        <h4 style="color:var(--neon-amber);font-size:0.82rem;margin-bottom:0.3rem;">Static export</h4>
+        <p style="font-size:0.78rem;">No API routes, no server actions. <code>output: 'export'</code> in next.config.ts.</p>
+      </div>
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(245,158,11,0.18);background:rgba(245,158,11,0.04);">
+        <h4 style="color:var(--neon-amber);font-size:0.82rem;margin-bottom:0.3rem;">CSS variables only</h4>
+        <p style="font-size:0.78rem;">Never write hex/rgb literals in component code. Use <code>var(--color-*)</code>.</p>
+      </div>
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(34,197,94,0.18);background:rgba(34,197,94,0.04);">
+        <h4 style="color:var(--neon-green);font-size:0.82rem;margin-bottom:0.3rem;">npm (not pnpm)</h4>
+        <p style="font-size:0.78rem;">This app uses npm. Do not use pnpm or bun inside 1U-Opta-Help.</p>
+      </div>
+      <div style="padding:0.85rem 1rem;border-radius:10px;border:1px solid rgba(34,197,94,0.18);background:rgba(34,197,94,0.04);">
+        <h4 style="color:var(--neon-green);font-size:0.82rem;margin-bottom:0.3rem;">Readability first</h4>
+        <p style="font-size:0.78rem;">Remove chrome, not contrast. Preserve spacing, hierarchy, and text legibility.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="neon-rule"></div>
+
+  <div class="doc-footer">
+    OPTA HELP &nbsp;·&nbsp; Aesthetic Handoff &nbsp;·&nbsp; Generated 2026-03-06 &nbsp;·&nbsp; help.optalocal.com
+  </div>
+
+</div>
+</body>
+</html>

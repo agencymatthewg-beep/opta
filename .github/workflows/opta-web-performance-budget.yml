@@ -1,0 +1,32 @@
+name: Opta Web Performance Budgets
+
+on:
+  pull_request:
+    paths:
+      - "1-Apps/optalocal/1T-Opta-Home/**"
+      - "1-Apps/optalocal/1U-Opta-Help/**"
+      - "1-Apps/optalocal/1V-Opta-Learn/**"
+      - "1-Apps/optalocal/lighthouserc.opta-web.json"
+      - ".github/workflows/opta-web-performance-budget.yml"
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * 1"
+
+jobs:
+  lighthouse-budgets:
+    name: Lighthouse Budget Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run Lighthouse performance budget assertions
+        run: npx -y @lhci/cli autorun --config=1-Apps/optalocal/lighthouserc.opta-web.json

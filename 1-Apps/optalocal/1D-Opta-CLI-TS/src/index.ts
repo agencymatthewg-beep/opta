@@ -1312,9 +1312,10 @@ vaultCmd
 vaultCmd
   .command('push-rules [file]')
   .description('Push a local rules file to the Accounts vault (default: ~/.config/opta/non-negotiables.md)')
-  .action(async (file: string | undefined) => {
+  .option('--force', 'Overwrite remote without If-Match check (disaster recovery)')
+  .action(async (file: string | undefined, opts: { force?: boolean }) => {
     const { runVaultCommand } = await import('./commands/vault.js');
-    await runVaultCommand('push-rules', file);
+    await runVaultCommand('push-rules', file, opts);
   });
 
 vaultCmd

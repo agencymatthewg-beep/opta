@@ -397,3 +397,58 @@ code, pre {
   outline-offset: 2px;
   border-radius: 4px;
 }
+
+/* ── Navigation CTA button ── */
+.nav-cta {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.nav-cta:hover {
+  box-shadow: 0 0 16px color-mix(in srgb, var(--color-primary) 42%, transparent);
+}
+
+.nav-cta:active {
+  transform: scale(0.97);
+}
+
+/* ── Mobile nav panel ── */
+.mobile-nav-panel {
+  background: linear-gradient(165deg, rgba(15, 10, 22, 0.88), rgba(9, 9, 14, 0.68));
+  box-shadow: 16px 0 28px rgba(0, 0, 0, 0.28);
+}
+
+/* ── Platform context warning panel ── */
+.warning-embed-block {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-neon-amber) 20%, transparent);
+}
+
+/* ── Prose link hover underline animation ── */
+.prose-opta a {
+  text-decoration-line: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  transition: color 0.15s ease, text-decoration-color 0.15s ease;
+}
+
+.prose-opta a:hover {
+  text-decoration-color: color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+/* ── Search ⌘K hint pulse ── */
+@keyframes kbd-hint {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(168, 85, 247, 0); }
+  50% { box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.22); }
+}
+
+.search-kbd-hint {
+  animation: kbd-hint 3.5s ease-in-out 2s infinite;
+}
+
+/* ── Sidebar section labels ── */
+.sidebar-section-label {
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+}

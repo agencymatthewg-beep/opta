@@ -1,0 +1,14 @@
+/* Opta Transition Motion Tokens
+   Source of truth for reusable Settings Studio motion timing.
+   Keep synchronized with src/settings.css custom properties. */
+
+:root {
+  --opta-transition-logo-duration: 340ms;
+  --opta-transition-logo-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --opta-transition-overlay-duration: 320ms;
+  --opta-transition-overlay-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --opta-transition-layer-duration: 220ms;
+  --opta-transition-layer-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}

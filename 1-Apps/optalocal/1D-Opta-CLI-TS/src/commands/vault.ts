@@ -27,6 +27,7 @@ type VaultAction = 'pull' | 'pull-keys' | 'pull-rules' | 'push-rules' | 'status'
 export async function runVaultCommand(
     action: VaultAction,
     file?: string,
+    options: { force?: boolean } = {},
 ): Promise<void> {
     const state = await loadAccountState();
 
@@ -47,7 +48,7 @@ export async function runVaultCommand(
             await handlePullRules(state);
             break;
         case 'push-rules':
-            await handlePushRules(state, file);
+            await handlePushRules(state, file, options);
             break;
         case 'status':
             await handleStatus(state);
@@ -125,6 +126,7 @@ async function handlePullRules(
 async function handlePushRules(
     state: Awaited<ReturnType<typeof loadAccountState>>,
     file?: string,
+    options: { force?: boolean } = {},
 ): Promise<void> {
     const sourcePath = file ?? join(getConfigDir(), 'non-negotiables.md');
     let content: string;
@@ -136,12 +138,15 @@ async function handlePushRules(
         return;
     }
 
+    if (options.force) {
+        console.log(chalk.yellow('  ⚠ --force: bypassing optimistic concurrency — will overwrite remote.'));
+    }
     console.log(chalk.dim(`Pushing ${sourcePath} to vault...`));
-    const result = await pushVaultRules(state, content);
+    const result = await pushVaultRules(state, content, undefined, options);
     if (result.ok) {
         console.log(chalk.green('  ✓ Rules pushed to Opta Vault.'));
     } else if (result.conflict) {
-        console.error(chalk.red('  ✗ Conflict: vault was updated remotely. Pull first, then push.'));
+        console.error(chalk.red('  ✗ Conflict: vault was updated remotely. Pull first, or use --force to overwrite.'));
         process.exitCode = 1;
     } else {
         console.error(chalk.red('  ✗ Failed to push rules. Check your connection.'));

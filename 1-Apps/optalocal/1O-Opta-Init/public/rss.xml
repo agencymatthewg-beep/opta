@@ -4,21 +4,21 @@
     <title>Opta Init Releases</title>
     <link>https://init.optalocal.com/changelog</link>
     <description>Release announcements for Opta Init manager channels.</description>
-    <lastBuildDate>Fri, 06 Mar 2026 04:40:30 GMT</lastBuildDate>
+    <lastBuildDate>Fri, 06 Mar 2026 06:40:49 GMT</lastBuildDate>
     <language>en-us</language>
+    <item>
+      <title>Opta Init beta — 2026.03.02-beta.2</title>
+      <link>https://github.com/agencymatthewg-beep/opta/releases/tag/opta-daemon-v0.0.0-beta.test.5</link>
+      <guid>https://github.com/agencymatthewg-beep/opta/releases/tag/opta-daemon-v0.0.0-beta.test.5</guid>
+      <pubDate>Fri, 06 Mar 2026 00:23:55 GMT</pubDate>
+      <description>Opta Init beta release 2026.03.02-beta.2</description>
+    </item>
     <item>
       <title>Opta Init stable — 2026.03.02-stable.1</title>
       <link>https://init.optalocal.com/releases/2026-03-02-stable-1</link>
       <guid>https://init.optalocal.com/releases/2026-03-02-stable-1</guid>
       <pubDate>Thu, 05 Mar 2026 13:21:48 GMT</pubDate>
       <description>Opta Init stable release 2026.03.02-stable.1</description>
-    </item>
-    <item>
-      <title>Opta Init beta — 2026.03.02-beta.2</title>
-      <link>https://init.optalocal.com/releases/2026-03-02-beta-2</link>
-      <guid>https://init.optalocal.com/releases/2026-03-02-beta-2</guid>
-      <pubDate>Mon, 02 Mar 2026 02:20:00 GMT</pubDate>
-      <description>Opta Init beta release 2026.03.02-beta.2</description>
     </item>
   </channel>
 </rss>

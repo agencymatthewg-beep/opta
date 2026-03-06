@@ -25,7 +25,10 @@ export default async function SignUpPage({ searchParams }: SignUpPageProps) {
     }
   }
 
-  const redirectAfter = params.redirect_to ?? params.next;
+  // CLI flows carry a /cli/callback destination — honour it directly.
+  // All other sign-ups land on /onboarding so new users get the setup wizard.
+  const incoming = params.redirect_to ?? params.next ?? '';
+  const redirectAfter = incoming.startsWith('/cli/') ? incoming : incoming || '/onboarding';
 
   return <AuthForm mode="sign-up" redirectAfter={redirectAfter} />;
 }

@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta Code — Studio System Review & Ideation</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --elevated: #27272a;
+      --border: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --primary: #8b5cf6;
+      --primary-glow: #a855f7;
+      --neon-blue: #3b82f6;
+      --neon-green: #22c55e;
+      --neon-amber: #f59e0b;
+      --neon-red: #ef4444;
+      --neon-cyan: #22d3ee;
+      --neon-pink: #f472b6;
+      --studio-atmo-0: #040b18;
+      --studio-atmo-1: #091327;
+      --studio-border: rgba(167, 204, 255, 0.24);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', system-ui, sans-serif;
+      background: var(--void);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Ambient particles */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1400px 800px at 75% 8%, rgba(139, 92, 246, 0.12), transparent 60%),
+        radial-gradient(900px 600px at 15% 85%, rgba(59, 130, 246, 0.08), transparent 55%),
+        radial-gradient(600px 400px at 90% 70%, rgba(34, 211, 238, 0.06), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .page-noise {
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0.6;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 5rem;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      padding: 4rem 0 3rem;
+      position: relative;
+    }
+
+    .header-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 2.8rem;
+      color: var(--primary-glow);
+      letter-spacing: 0.12em;
+      text-shadow:
+        2px 2px 0 #09090b,
+        3px 3px 0 #09090b,
+        4px 4px 0 var(--primary-glow),
+        5px 5px 0 var(--primary-glow),
+        7px 7px 0 #09090b;
+      filter: drop-shadow(0 0 28px rgba(168, 85, 247, 0.45));
+      margin-bottom: 0.6rem;
+    }
+
+    .header-sub {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.7rem;
+      color: var(--primary);
+      letter-spacing: 0.18em;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 var(--primary);
+      opacity: 0.85;
+      margin-bottom: 1.5rem;
+    }
+
+    .header-desc {
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      max-width: 640px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    .header-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary) 40%, var(--neon-cyan) 60%, transparent);
+      filter: drop-shadow(0 0 8px rgba(139, 92, 246, 0.5));
+      margin: 2.5rem 0;
+    }
+
+    /* ── Glass Panel ── */
+    .glass-panel {
+      background: linear-gradient(140deg,
+        rgba(18, 34, 60, 0.65) 0%,
+        rgba(12, 24, 43, 0.5) 50%,
+        rgba(8, 16, 30, 0.6) 100%);
+      backdrop-filter: blur(18px) saturate(155%);
+      -webkit-backdrop-filter: blur(18px) saturate(155%);
+      border: 1px solid rgba(167, 204, 255, 0.18);
+      border-radius: 20px;
+      padding: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.06) 1px, transparent 0);
+      background-size: 28px 28px;
+      mix-blend-mode: soft-light;
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .glass-panel--elevated {
+      background: linear-gradient(145deg, rgba(24, 40, 70, 0.7) 0%, rgba(14, 25, 48, 0.55) 100%);
+      border-color: rgba(167, 204, 255, 0.22);
+      box-shadow: 0 12px 40px rgba(2, 6, 18, 0.45), inset 0 1px 0 rgba(255,255,255,0.18);
+    }
+
+    /* ── Section titles ── */
+    .section-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .section-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #a78bfa 50%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.6rem;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.7;
+      margin-bottom: 2rem;
+    }
+
+    /* Neon glow divider */
+    .neon-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--primary) 30%, var(--neon-cyan) 70%, transparent 100%);
+      filter: blur(0.5px) drop-shadow(0 0 6px rgba(139,92,246,0.4));
+      margin: 2.5rem 0;
+    }
+
+    /* ── STATUS CHIPS ── */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.3rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    .chip-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .chip--green { background: rgba(34,197,94,0.15); border: 1px solid rgba(34,197,94,0.35); color: #86efac; }
+    .chip--green .chip-dot { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+    .chip--amber { background: rgba(245,158,11,0.15); border: 1px solid rgba(245,158,11,0.35); color: #fcd34d; }
+    .chip--amber .chip-dot { background: #f59e0b; box-shadow: 0 0 6px #f59e0b; }
+    .chip--red { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.35); color: #fca5a5; }
+    .chip--red .chip-dot { background: #ef4444; box-shadow: 0 0 6px #ef4444; }
+    .chip--violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.35); color: #c4b5fd; }
+    .chip--violet .chip-dot { background: #8b5cf6; box-shadow: 0 0 6px #8b5cf6; }
+    .chip--cyan { background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.35); color: #67e8f9; }
+    .chip--cyan .chip-dot { background: #22d3ee; box-shadow: 0 0 6px #22d3ee; }
+
+    /* ── REVIEW FINDINGS GRID ── */
+    .findings-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 780px) { .findings-grid { grid-template-columns: 1fr; } }
+
+    .finding-card {
+      border-radius: 14px;
+      padding: 1.25rem 1.4rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .finding-card--strength {
+      background: linear-gradient(135deg, rgba(34,197,94,0.1), rgba(34,197,94,0.04));
+      border: 1px solid rgba(34,197,94,0.25);
+    }
+
+    .finding-card--concern {
+      background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(245,158,11,0.04));
+      border: 1px solid rgba(245,158,11,0.25);
+    }
+
+    .finding-card--critical {
+      background: linear-gradient(135deg, rgba(239,68,68,0.1), rgba(239,68,68,0.04));
+      border: 1px solid rgba(239,68,68,0.25);
+    }
+
+    .finding-card--info {
+      background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(59,130,246,0.04));
+      border: 1px solid rgba(59,130,246,0.25);
+    }
+
+    .finding-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .finding-body {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .finding-file {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+
+    .icon { font-size: 1rem; }
+
+    /* ── CODE BLOCK ── */
+    .code-block {
+      background: rgba(4, 11, 24, 0.8);
+      border: 1px solid rgba(167, 204, 255, 0.15);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.7;
+      color: #c8d9f5;
+      overflow-x: auto;
+      margin: 1rem 0;
+      position: relative;
+    }
+
+    .code-block .comment { color: #52525b; }
+    .code-block .keyword { color: #a78bfa; }
+    .code-block .string { color: #86efac; }
+    .code-block .type { color: #67e8f9; }
+    .code-block .func { color: #fcd34d; }
+
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-bottom: 2rem;
+    }
+
+    .stat-item {
+      flex: 1;
+      min-width: 160px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      text-align: center;
+    }
+
+    .stat-value {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.6rem;
+      font-weight: 600;
+      color: var(--primary-glow);
+      display: block;
+    }
+
+    .stat-label {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 0.2rem;
+      letter-spacing: 0.05em;
+    }
+
+    /* ── STUDIO SYSTEM CARDS ── */
+    .studio-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2.5rem;
+    }
+
+    @media (max-width: 900px) { .studio-grid { grid-template-columns: 1fr; } }
+
+    .studio-card {
+      border-radius: 20px;
+      padding: 1.6rem;
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 280ms cubic-bezier(0.22,1,0.36,1), box-shadow 280ms ease;
+    }
+
+    .studio-card:hover {
+      transform: translateY(-4px) scale(1.015);
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    .studio-card--browser {
+      background: linear-gradient(145deg, rgba(34,211,238,0.12), rgba(6,12,24,0.8));
+      border: 1px solid rgba(34,211,238,0.3);
+      box-shadow: 0 8px 32px rgba(34,211,238,0.08);
+    }
+
+    .studio-card--atpo {
+      background: linear-gradient(145deg, rgba(244,114,182,0.12), rgba(6,12,24,0.8));
+      border: 1px solid rgba(244,114,182,0.3);
+      box-shadow: 0 8px 32px rgba(244,114,182,0.08);
+    }
+
+    .studio-card--models {
+      background: linear-gradient(145deg, rgba(139,92,246,0.14), rgba(6,12,24,0.8));
+      border: 1px solid rgba(139,92,246,0.35);
+      box-shadow: 0 8px 32px rgba(139,92,246,0.1);
+    }
+
+    .studio-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      opacity: 0.5;
+    }
+
+    .studio-card--browser::before { color: rgba(34,211,238,0.6); }
+    .studio-card--atpo::before { color: rgba(244,114,182,0.6); }
+    .studio-card--models::before { color: rgba(139,92,246,0.6); }
+
+    .studio-keybind {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 0.75rem;
+    }
+
+    .studio-keybind--cyan { background: rgba(34,211,238,0.15); border: 1px solid rgba(34,211,238,0.4); color: #67e8f9; }
+    .studio-keybind--pink { background: rgba(244,114,182,0.15); border: 1px solid rgba(244,114,182,0.4); color: #f9a8d4; }
+    .studio-keybind--violet { background: rgba(139,92,246,0.15); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd; }
+
+    .studio-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.8rem;
+      line-height: 1;
+      letter-spacing: 0.12em;
+      margin: 0.5rem 0 0.6rem;
+    }
+
+    .studio-logo--cyan {
+      color: #22d3ee;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(34,211,238,0.6);
+      filter: drop-shadow(0 0 10px rgba(34,211,238,0.3));
+    }
+
+    .studio-logo--pink {
+      color: #f472b6;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(244,114,182,0.6);
+      filter: drop-shadow(0 0 10px rgba(244,114,182,0.3));
+    }
+
+    .studio-logo--violet {
+      color: #a78bfa;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 rgba(139,92,246,0.6);
+      filter: drop-shadow(0 0 10px rgba(139,92,246,0.3));
+    }
+
+    .studio-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.3rem;
+    }
+
+    .studio-purpose {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 1rem;
+      line-height: 1.5;
+    }
+
+    .studio-features {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .studio-features li {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+
+    .studio-features li::before {
+      content: '›';
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    /* ── ARCHITECTURE DIAGRAM ── */
+    .arch-diagram {
+      background: rgba(4,11,24,0.9);
+      border: 1px solid rgba(167,204,255,0.15);
+      border-radius: 16px;
+      padding: 2rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      line-height: 1.9;
+      color: #8b9bbc;
+      overflow-x: auto;
+    }
+
+    .arch-highlight { color: #a78bfa; font-weight: 600; }
+    .arch-new { color: #22d3ee; }
+    .arch-existing { color: #86efac; }
+    .arch-arrow { color: #52525b; }
+
+    /* ── KEYBOARD NAV VISUALIZATION ── */
+    .kbd-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.8rem;
+      margin: 1.5rem 0;
+    }
+
+    .kbd-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .kbd-key {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      background: rgba(139,92,246,0.15);
+      border: 1px solid rgba(139,92,246,0.35);
+      border-radius: 5px;
+      color: #c4b5fd;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .kbd-action {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+    }
+
+    /* ── LAYER SYSTEM VIZ ── */
+    .layer-viz {
+      display: flex;
+      gap: 1rem;
+      margin: 1.5rem 0;
+      flex-wrap: wrap;
+    }
+
+    .layer-card {
+      flex: 1;
+      min-width: 160px;
+      border-radius: 14px;
+      padding: 1.1rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .layer-card--l1 {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    .layer-card--l2 {
+      background: rgba(139,92,246,0.08);
+      border: 1px solid rgba(139,92,246,0.25);
+      transform: translateY(-6px);
+    }
+
+    .layer-card--l3 {
+      background: rgba(34,211,238,0.08);
+      border: 1px solid rgba(34,211,238,0.25);
+      transform: translateY(-12px);
+    }
+
+    .layer-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem;
+      font-weight: 700;
+      opacity: 0.5;
+    }
+
+    .layer-name {
+      font-size: 0.78rem;
+      font-weight: 600;
+      margin: 0.3rem 0 0.2rem;
+    }
+
+    .layer-desc { font-size: 0.72rem; color: var(--text-muted); }
+
+    /* ── IMPL TABLE ── */
+    .impl-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+
+    .impl-table th {
+      text-align: left;
+      padding: 0.6rem 1rem;
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .impl-table td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .impl-table tr:last-child td { border-bottom: none; }
+    .impl-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+    .impl-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: #67e8f9; }
+    .impl-table .muted { color: var(--text-muted); font-size: 0.78rem; }
+
+    /* ── VERDICT BOX ── */
+    .verdict-box {
+      background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(34,211,238,0.08));
+      border: 1px solid rgba(139,92,246,0.35);
+      border-radius: 18px;
+      padding: 2rem;
+      margin-top: 2rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .verdict-box::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--primary), var(--neon-cyan));
+      filter: drop-shadow(0 0 6px rgba(139,92,246,0.6));
+    }
+
+    .verdict-title {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.65rem;
+      letter-spacing: 0.15em;
+      color: var(--primary-glow);
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 var(--primary-glow);
+      margin-bottom: 1rem;
+    }
+
+    .verdict-body {
+      font-size: 0.9rem;
+      line-height: 1.75;
+      color: var(--text-secondary);
+    }
+
+    .verdict-body strong { color: var(--text-primary); }
+
+    /* ── CALLOUT ── */
+    .callout {
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin: 1.2rem 0;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .callout--info { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.25); }
+    .callout--warn { background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25); }
+    .callout--good { background: rgba(34,197,94,0.1); border: 1px solid rgba(34,197,94,0.25); }
+    .callout--idea { background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.25); }
+
+    .callout-icon { font-size: 1rem; flex-shrink: 0; margin-top: 0.05rem; }
+    .callout-body { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.65; }
+    .callout-body strong { color: var(--text-primary); }
+
+    /* ── SHARED DNA PILLS ── */
+    .dna-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      margin: 1rem 0;
+    }
+
+    .dna-pill {
+      font-size: 0.76rem;
+      padding: 0.35rem 0.8rem;
+      border-radius: 100px;
+      background: rgba(139,92,246,0.12);
+      border: 1px solid rgba(139,92,246,0.28);
+      color: #c4b5fd;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── SCROLLBAR ── */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.3); border-radius: 3px; }
+
+    /* Section spacing */
+    section { margin-bottom: 3.5rem; }
+
+    h3.sub { font-size: 1rem; font-weight: 600; color: var(--text-primary); margin: 1.5rem 0 0.75rem; }
+
+    /* ── Animation: pulse glow on header logo ── */
+    @keyframes pulse-glow {
+      0%, 100% { filter: drop-shadow(0 0 20px rgba(168,85,247,0.35)); }
+      50% { filter: drop-shadow(0 0 40px rgba(168,85,247,0.65)); }
+    }
+    .header-logo { animation: pulse-glow 4s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+<div class="page-noise"></div>
+<div class="content">
+
+  <!-- ═══════════════════════════════════════════ HEADER ═══ -->
+  <header class="header">
+    <div class="header-logo">OPTA</div>
+    <div class="header-sub">CODE STUDIO SYSTEM</div>
+    <p class="header-desc">
+      Code Review · Stability Audit · Multi-Studio System Design
+      <br />
+      <span style="color:var(--text-muted);font-size:0.82rem;">
+        1P-Opta-Code-Universal — 2026-03-06
+      </span>
+    </p>
+    <div class="header-divider"></div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════ OVERVIEW ═══ -->
+  <section>
+    <div class="section-label">/ code review · verdict</div>
+    <h2 class="section-title">Stability & Functionality Assessment</h2>
+    <p class="section-desc">Opta Code Universal (1P) is in a strong, stable state. All 14 E2E tests pass, all 17 Settings Studio categories function correctly, cross-platform Rust gates are enforced in CI, and the React-controlled-input keyboard bug has been correctly resolved.</p>
+
+    <div class="stats-row">
+      <div class="stat-item">
+        <span class="stat-value">14/14</span>
+        <span class="stat-label">E2E Tests Passing</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">17</span>
+        <span class="stat-label">Settings Categories</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">2731</span>
+        <span class="stat-label">App.tsx Lines</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">2019</span>
+        <span class="stat-label">settings.css Lines</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">2251</span>
+        <span class="stat-label">SettingsModal.tsx Lines</span>
+      </div>
+      <div class="stat-item">
+        <span class="stat-value">✓</span>
+        <span class="stat-label">Rust CI Gates (mac + win)</span>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:0.6rem;flex-wrap:wrap;margin-bottom:2rem;">
+      <span class="chip chip--green"><span class="chip-dot"></span>APPROVED</span>
+      <span class="chip chip--green"><span class="chip-dot"></span>All Tests Pass</span>
+      <span class="chip chip--amber"><span class="chip-dot"></span>3 Concerns (Non-blocking)</span>
+      <span class="chip chip--violet"><span class="chip-dot"></span>Studio System Ready</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ FINDINGS ═══ -->
+  <section>
+    <div class="section-label">/ review · findings</div>
+    <h2 class="section-title">Strengths & Concerns</h2>
+
+    <div class="findings-grid">
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> Settings Layer State Machine</div>
+        <div class="finding-body">Three-layer navigation (L1 idle → L2 category grid → L3 deep page) is cleanly modelled with directional Framer Motion variants. <code>settingsLayerVariants</code> correctly parameterises direction ("deeper"/"shallower") and motion type ("root"/"intra") to produce depth illusion via scale + translate + blur.</div>
+        <div class="finding-file">App.tsx · settingsLayerVariants</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> settingsStudioConfig.ts — Config-Driven Architecture</div>
+        <div class="finding-body">17 categories, accent colours, icon map, <code>SETTINGS_TAB_SEQUENCE</code>, and a <code>LEGACY_SETTINGS_TAB_MAP</code> for backward compatibility. Clean canonical config pattern — exactly what multi-Studio needs. Adding a new Studio = adding a new config file.</div>
+        <div class="finding-file">src/components/settingsStudioConfig.ts</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> isTypingTarget Guard — React Input Fix</div>
+        <div class="finding-body">The critical fix for React-controlled <code>&lt;input type="number"&gt;</code> is correct: when the active element is a native typing control, the custom adjuster is bypassed and browser ArrowUp/Down propagates naturally. React's synthetic onChange delegation then handles state updates correctly.</div>
+        <div class="finding-file">App.tsx:1676 — adjustLayer3SelectedSetting guard</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> CSS Token Architecture</div>
+        <div class="finding-body"><code>--studio-*</code> tokens in settings.css establish a "deep space blue" palette (atmo-0 <code>#040b18</code> → atmo-3 <code>#1a2d4f</code>) that sits above the global <code>--opta-*</code> foundation. Smart two-tier architecture — studio chrome has its own thermal depth while inheriting base tokens.</div>
+        <div class="finding-file">settings.css:1-41 / opta.css:root tokens</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> lazyAppModules.tsx — Code Splitting</div>
+        <div class="finding-body">All heavy overlay components (SettingsModal, SettingsView, SetupWizard, PermissionModal, LiveBrowserView) are properly lazy-loaded. Test-mode mocks prevent bundle issues in Vitest. <code>preloadSettingsModal()</code> / <code>preloadSettingsView()</code> enable ahead-of-time loading on layer descent.</div>
+        <div class="finding-file">src/lazyAppModules.tsx</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> Opta Text Logo Animation System</div>
+        <div class="finding-body">Press Start 2P font with staggered letter transitions (26ms delay increments), <code>max-height</code> CSS transition on <code>.opta-studio-logo-reserve</code> for the "Settings" sub-label animation, and pixel-drop-shadow layering is a distinctive and reusable system. New Studios only need to change the sub-label text.</div>
+        <div class="finding-file">settings.css:160-280 · SettingsModal.tsx logo render</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> Rust Config Single Source of Truth</div>
+        <div class="finding-body"><code>config_paths.rs</code> with <code>#[cfg(target_os)]</code> branching ensures consistent path resolution across daemon_ops.rs and setup_wizard.rs. macOS → <code>~/.config/opta</code>, Windows → <code>%APPDATA%\opta</code>, Linux → XDG or HOME. Eliminates the previous split-brain risk.</div>
+        <div class="finding-file">src-tauri/src/config_paths.rs</div>
+      </div>
+
+      <div class="finding-card finding-card--strength">
+        <div class="finding-title"><span class="icon">✦</span> CI Parity — Rust Gates on Both Platforms</div>
+        <div class="finding-body">Both macOS and Windows CI workflows now include <code>cargo check</code> + <code>cargo test lmx_mdns config_paths</code>. Fast compile validation catches Rust errors without full native builds. The parity test in <code>runOperationParity.test.ts</code> guards 86 daemon operations against drift.</div>
+        <div class="finding-file">.github/workflows/ (both files)</div>
+      </div>
+
+      <!-- CONCERNS -->
+
+      <div class="finding-card finding-card--concern">
+        <div class="finding-title"><span class="icon">⚠</span> SettingsModal.tsx at 2251 Lines</div>
+        <div class="finding-body">A single component managing 30+ settings categories, parallel daemon fetches, LMX discovery, connection probing, 12 distinct tab renders, and form state is doing too much. It currently works, but will become a maintenance burden. Recommend extracting settings state into a custom hook and splitting tab components into their own module.</div>
+        <div class="finding-file">src/components/SettingsModal.tsx — loadRemoteSettings()</div>
+      </div>
+
+      <div class="finding-card finding-card--concern">
+        <div class="finding-title"><span class="icon">⚠</span> Massive Promise.all in loadRemoteSettings</div>
+        <div class="finding-body">32 parallel <code>daemonClient.configGet()</code> calls with individual <code>.catch()</code> fallbacks fire every time the settings modal opens. No debounce, no timeout, no stale-while-revalidate. If the daemon is slow, the entire settings page is blocked. A single <code>configGetBulk</code> endpoint would reduce this to one HTTP round-trip.</div>
+        <div class="finding-file">SettingsModal.tsx:442–479 · Promise.all([…32 calls])</div>
+      </div>
+
+      <div class="finding-card finding-card--concern">
+        <div class="finding-title"><span class="icon">⚠</span> Scroll Reset Triple-Timeout Pattern</div>
+        <div class="finding-body">Tab switch scroll reset uses RAF + <code>setTimeout(80ms)</code> + <code>setTimeout(180ms)</code> — three sequential fallbacks. This is a code smell that likely patches a layout timing race. The correct fix is a <code>ResizeObserver</code> or a <code>useLayoutEffect</code> that waits for the content panel to settle before scrolling to top.</div>
+        <div class="finding-file">SettingsModal.tsx:415–430 — resetScroll pattern</div>
+      </div>
+
+      <div class="finding-card finding-card--info">
+        <div class="finding-title"><span class="icon">ℹ</span> showTerminal State Naming</div>
+        <div class="finding-body"><code>showTerminal</code> controls the LiveBrowserView sidebar panel. The naming mismatch between "terminal" and "browser" creates cognitive load. The hardcoded <code>width: '400px'</code> inline style bypasses the CSS token system. Suggest renaming to <code>showBrowserSidebar</code> and using <code>--live-browser-panel-width: 400px</code> in opta.css.</div>
+        <div class="finding-file">App.tsx:2639–2651 — v1-right-panel</div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════════════════════════════════ KEYBOARD NAV ═══ -->
+  <section>
+    <div class="section-label">/ review · keyboard system</div>
+    <h2 class="section-title">Settings Studio Keyboard Map</h2>
+    <p class="section-desc">The existing Settings Studio keyboard system is the DNA for all new Studios. All bindings below are inherited by each new Studio overlay — only the Studio-specific content changes.</p>
+
+    <div class="layer-viz">
+      <div class="layer-card layer-card--l1">
+        <div class="layer-num">L1</div>
+        <div class="layer-name">App Idle</div>
+        <div class="layer-desc">Ctrl+, / Ctrl+B / Ctrl+M open overlay</div>
+      </div>
+      <div class="layer-card layer-card--l2">
+        <div class="layer-num">L2</div>
+        <div class="layer-name">Category Grid</div>
+        <div class="layer-desc">Arrow nav, Shift+← / → cycle, Tab to descend</div>
+      </div>
+      <div class="layer-card layer-card--l3">
+        <div class="layer-num">L3</div>
+        <div class="layer-name">Deep Page</div>
+        <div class="layer-desc">Enter to edit, Esc to cancel, Space to back</div>
+      </div>
+    </div>
+
+    <div class="kbd-grid">
+      <div class="kbd-item"><span class="kbd-key">Ctrl + ,</span><span class="kbd-action">Settings Studio</span></div>
+      <div class="kbd-item"><span class="kbd-key">Ctrl + B</span><span class="kbd-action">Browser Studio (NEW)</span></div>
+      <div class="kbd-item"><span class="kbd-key">Ctrl + M</span><span class="kbd-action">Models Studio (NEW)</span></div>
+      <div class="kbd-item"><span class="kbd-key">Ctrl + A</span><span class="kbd-action">Atpo Studio (NEW)</span></div>
+      <div class="kbd-item"><span class="kbd-key">Shift + Space</span><span class="kbd-action">Toggle fullscreen</span></div>
+      <div class="kbd-item"><span class="kbd-key">Escape / Space</span><span class="kbd-action">Layer up / close</span></div>
+      <div class="kbd-item"><span class="kbd-key">↑ ↓ ← →</span><span class="kbd-action">Grid navigation</span></div>
+      <div class="kbd-item"><span class="kbd-key">Tab / Backspace</span><span class="kbd-action">Descend / ascend layer</span></div>
+      <div class="kbd-item"><span class="kbd-key">Shift + ← →</span><span class="kbd-action">Cycle category</span></div>
+      <div class="kbd-item"><span class="kbd-key">Enter</span><span class="kbd-action">Commit edit / select</span></div>
+      <div class="kbd-item"><span class="kbd-key">Home / End</span><span class="kbd-action">Adjust to min/max</span></div>
+      <div class="kbd-item"><span class="kbd-key">PageUp / PageDown</span><span class="kbd-action">Large step adjust</span></div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══════════════════════════════════════════ RUNIDEA ═══ -->
+  <section>
+    <div class="section-label">/ runidea · multi-studio system</div>
+    <h2 class="section-title">The Multi-Studio System</h2>
+    <p class="section-desc">
+      The Settings Studio has established a complete, polished UI pattern — glass shell, fullscreen toggle, Opta Text Logo animation, 3-layer navigation, and a unified keyboard system. The idea is to extract this into a <strong>StudioOverlay base</strong> and build purpose-built Studios that share 100% of the chrome while providing optimal UX for their specific domain.
+    </p>
+
+    <div class="callout callout--idea">
+      <span class="callout-icon">💡</span>
+      <span class="callout-body">
+        <strong>Core Principle:</strong> Every Studio shares the same glass aesthetic, fullscreen capability, Opta Text Logo animation (with its own unique sub-label in Press Start 2P), layer transitions, and keyboard bindings. Only the content, accent colour, and category structure differ. Users build muscle memory once; it works everywhere.
+      </span>
+    </div>
+
+    <!-- Shared DNA -->
+    <h3 class="sub">Shared DNA — Every Studio Gets This</h3>
+    <div class="dna-row">
+      <span class="dna-pill">Glass shell (.opta-studio-shell)</span>
+      <span class="dna-pill">--studio-* tokens</span>
+      <span class="dna-pill">Framer Motion layerVariants</span>
+      <span class="dna-pill">Shift+Space fullscreen</span>
+      <span class="dna-pill">Opta Text Logo (staggered)</span>
+      <span class="dna-pill">Unique sub-label animation</span>
+      <span class="dna-pill">max-height logo reserve</span>
+      <span class="dna-pill">Arrow key nav</span>
+      <span class="dna-pill">Tab/Esc layer travel</span>
+      <span class="dna-pill">Grid highlight ring</span>
+      <span class="dna-pill">Keyboard / pointer handoff</span>
+      <span class="dna-pill">Preload on hover/focus</span>
+    </div>
+
+    <!-- The three Studios -->
+    <div class="studio-grid">
+
+      <!-- Browser Studio -->
+      <div class="studio-card studio-card--browser">
+        <span class="studio-keybind studio-keybind--cyan">Ctrl + B</span>
+        <div class="studio-logo studio-logo--cyan">BROWSER</div>
+        <div class="studio-name">Opta Browser</div>
+        <div class="studio-purpose">Unified interface for browser sessions, localhost endpoints, live previews, and web automation status</div>
+        <ul class="studio-features">
+          <li>L2 grid: sessions, endpoints, live-view, automation, screenshots, cookies, headers</li>
+          <li>L3: per-session browser state, devtools snapshot, DOM inspector</li>
+          <li>Live preview embedded in L3 (current LiveBrowserView)</li>
+          <li>Localhost port registry with liveness pings</li>
+          <li>Browser automation queue and permission gates</li>
+          <li>Navigation history and snapshot timeline</li>
+        </ul>
+      </div>
+
+      <!-- Atpo Studio -->
+      <div class="studio-card studio-card--atpo">
+        <span class="studio-keybind studio-keybind--pink">Ctrl + A</span>
+        <div class="studio-logo studio-logo--pink">ATPO</div>
+        <div class="studio-name">Opta Atpo</div>
+        <div class="studio-purpose">Atpo management interface — install, inspect, configure, and control Opta apps and modules</div>
+        <ul class="studio-features">
+          <li>L2 grid: installed apps, available catalog, updates, permissions, fleet</li>
+          <li>L3: per-app config, health status, logs, uninstall</li>
+          <li>One-click install / update / rollback</li>
+          <li>Fleet overview across connected devices</li>
+          <li>App permission matrix</li>
+          <li>Module dependency graph</li>
+        </ul>
+      </div>
+
+      <!-- Models Studio -->
+      <div class="studio-card studio-card--models">
+        <span class="studio-keybind studio-keybind--violet">Ctrl + M</span>
+        <div class="studio-logo studio-logo--violet">MODELS</div>
+        <div class="studio-name">Opta Models</div>
+        <div class="studio-purpose">Complete model management — LMX routing, local model lifecycle, benchmarks, and inference profiling</div>
+        <ul class="studio-features">
+          <li>L2 grid: loaded models, available models, benchmarks, routing, providers, quantize</li>
+          <li>L3: per-model stats (VRAM, speed, context), load/unload controls</li>
+          <li>Inference routing matrix (local vs cloud vs fallback)</li>
+          <li>Real-time VRAM and throughput gauges</li>
+          <li>Quantization level selector</li>
+          <li>Model comparison and benchmark runner</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ ARCHITECTURE ═══ -->
+  <section>
+    <div class="section-label">/ runidea · architecture</div>
+    <h2 class="section-title">Implementation Architecture</h2>
+
+    <div class="arch-diagram">
+      <span class="comment">// Multi-Studio Architecture — shared base, per-studio content</span>
+      <br/><br/>
+      <span class="arch-highlight">StudioOverlay</span> <span class="arch-arrow">(NEW base component)</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Glass shell</span> <span class="comment">// .opta-studio-shell (reuse settings.css)</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Backdrop + radial gradients</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Opta Logo (staggered, shared)</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-new">Studio sub-label slot</span> <span class="comment">// "SETTINGS" | "BROWSER" | "MODELS" | "ATPO"</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">max-height reserve transition</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Shift+Space fullscreen toggle</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Framer Motion layerVariants</span>
+      <br/>
+      <span class="arch-arrow">└─</span> <span class="arch-new">children (L2 grid + L3 content)</span>
+      <br/><br/>
+      <span class="arch-highlight">App.tsx keyboard handler</span> <span class="comment">// one dispatch, four studios</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-existing">Ctrl+, → openStudio('settings')</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-new">Ctrl+B → openStudio('browser')</span>
+      <br/>
+      <span class="arch-arrow">├─</span> <span class="arch-new">Ctrl+M → openStudio('models')</span>
+      <br/>
+      <span class="arch-arrow">└─</span> <span class="arch-new">Ctrl+A → openStudio('atpo')</span>
+      <br/><br/>
+      <span class="comment">// Per-studio config files (same shape as settingsStudioConfig.ts)</span>
+      <br/>
+      <span class="arch-new">browserStudioConfig.ts</span> <span class="comment">// BrowserStudioId, BROWSER_CATEGORIES, accent=#22d3ee</span>
+      <br/>
+      <span class="arch-new">modelsStudioConfig.ts</span> <span class="comment">// ModelsStudioId, MODELS_CATEGORIES, accent=#8b5cf6</span>
+      <br/>
+      <span class="arch-new">atpoStudioConfig.ts</span> <span class="comment">// AtpoStudioId, ATPO_CATEGORIES, accent=#f472b6</span>
+      <br/><br/>
+      <span class="comment">// lazyAppModules.tsx additions</span>
+      <br/>
+      <span class="arch-new">LazyBrowserStudio, preloadBrowserStudio()</span>
+      <br/>
+      <span class="arch-new">LazyModelsStudio, preloadModelsStudio()</span>
+      <br/>
+      <span class="arch-new">LazyAtpoStudio, preloadAtpoStudio()</span>
+    </div>
+
+    <!-- Implementation Table -->
+    <h3 class="sub">Files to Create / Modify</h3>
+
+    <div class="glass-panel glass-panel--elevated" style="padding:0;overflow:hidden;margin-top:1rem;">
+      <table class="impl-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>Action</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">src/components/StudioOverlay.tsx</td>
+            <td><span class="chip chip--cyan" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>CREATE</span></td>
+            <td class="muted">Base component: glass shell, logo, sub-label slot, fullscreen, layer variants. Extracted from SettingsModal.tsx chrome.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/components/browserStudioConfig.ts</td>
+            <td><span class="chip chip--cyan" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>CREATE</span></td>
+            <td class="muted">Same shape as settingsStudioConfig.ts. 7-8 browser categories, cyan accent #22d3ee.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/components/modelsStudioConfig.ts</td>
+            <td><span class="chip chip--cyan" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>CREATE</span></td>
+            <td class="muted">6 model categories, violet accent #8b5cf6.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/components/atpoStudioConfig.ts</td>
+            <td><span class="chip chip--cyan" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>CREATE</span></td>
+            <td class="muted">5 atpo categories, pink accent #f472b6.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/lazyAppModules.tsx</td>
+            <td><span class="chip chip--amber" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>MODIFY</span></td>
+            <td class="muted">Add LazyBrowserStudio, LazyModelsStudio, LazyAtpoStudio with preload functions.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/App.tsx</td>
+            <td><span class="chip chip--amber" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>MODIFY</span></td>
+            <td class="muted">Add openStudio() dispatch, Ctrl+B/M/A key bindings to handleKeyDown. Add browserStudioOpen, modelsStudioOpen, atpoStudioOpen state booleans.</td>
+          </tr>
+          <tr>
+            <td class="mono">src/settings.css</td>
+            <td><span class="chip chip--amber" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>MODIFY</span></td>
+            <td class="muted">Add --browser-studio-*, --models-studio-*, --atpo-studio-* accent token blocks. Reuse all structural classes.</td>
+          </tr>
+          <tr>
+            <td class="mono">tests/e2e/studio-browser.spec.ts</td>
+            <td><span class="chip chip--cyan" style="font-size:0.68rem;padding:0.15rem 0.55rem;"><span class="chip-dot"></span>CREATE</span></td>
+            <td class="muted">Ctrl+B opens overlay, logo shows "BROWSER", fullscreen works, Escape closes.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ LOGO SYSTEM ═══ -->
+  <section>
+    <div class="section-label">/ runidea · logo system</div>
+    <h2 class="section-title">Opta Text Logo System — Per-Studio Identity</h2>
+    <p class="section-desc">
+      Each Studio gets the same animated OPTA lettermark (staggered 26ms transitions, pixel drop-shadow), but a unique sub-label beneath it in Press Start 2P. The sub-label uses the same <code>max-height</code> CSS transition as "SETTINGS" to animate in/out as layers change.
+    </p>
+
+    <div class="callout callout--good">
+      <span class="callout-icon">✓</span>
+      <span class="callout-body">
+        <strong>Zero new animation code needed.</strong> The existing <code>.opta-studio-logo-reserve</code> with <code>max-height</code> transition + <code>.opta-studio-logo-settings</code> class is the system. For new Studios, simply add:<br/>
+        <code style="color:#67e8f9;">.opta-studio-logo-browser</code>, <code style="color:#67e8f9;">.opta-studio-logo-models</code>, <code style="color:#67e8f9;">.opta-studio-logo-atpo</code><br/>
+        with the studio's accent colour in place of <code>--opta-primary-glow</code>. The animation is fully CSS — no JS changes.
+      </span>
+    </div>
+
+    <div class="code-block">
+<span class="comment">/* settings.css — Add per-studio sub-label accent */</span>
+<br/><br/>
+<span class="comment">/* Existing Settings sub-label — reference */</span>
+<br/>
+<span class="keyword">.opta-studio-logo-settings</span> {
+<br/>
+  color: <span class="string">var(--opta-primary-glow, #a855f7)</span>;
+<br/>
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 <span class="string">var(--opta-primary-glow)</span>;
+<br/>
+  filter: <span class="func">drop-shadow</span>(0 0 14px rgba(168, 85, 247, 0.24));
+<br/>
+}
+<br/><br/>
+<span class="comment">/* Browser Studio — cyan identity */</span>
+<br/>
+<span class="keyword">.opta-studio-logo-browser</span> {
+<br/>
+  color: <span class="string">#22d3ee</span>;
+<br/>
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 <span class="string">rgba(34,211,238,0.6)</span>;
+<br/>
+  filter: <span class="func">drop-shadow</span>(0 0 14px rgba(34, 211, 238, 0.28));
+<br/>
+}
+<br/><br/>
+<span class="comment">/* Models Studio — violet identity */</span>
+<br/>
+<span class="keyword">.opta-studio-logo-models</span> {
+<br/>
+  color: <span class="string">#a78bfa</span>;
+<br/>
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 <span class="string">rgba(139,92,246,0.6)</span>;
+<br/>
+  filter: <span class="func">drop-shadow</span>(0 0 14px rgba(139, 92, 246, 0.28));
+<br/>
+}
+<br/><br/>
+<span class="comment">/* Atpo Studio — pink identity */</span>
+<br/>
+<span class="keyword">.opta-studio-logo-atpo</span> {
+<br/>
+  color: <span class="string">#f472b6</span>;
+<br/>
+  text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b, 3px 3px 0 <span class="string">rgba(244,114,182,0.6)</span>;
+<br/>
+  filter: <span class="func">drop-shadow</span>(0 0 14px rgba(244, 114, 182, 0.28));
+<br/>
+}
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════ VERDICT ═══ -->
+  <section>
+    <div class="verdict-box">
+      <div class="verdict-title">/ VERDICT</div>
+      <div class="verdict-body">
+        <strong>Opta Code Universal is stable and ready.</strong> All tests pass, the React input keyboard bug is correctly resolved, Rust gates enforce cross-platform Rust correctness in CI, and the Settings Studio has matured into a polished, production-quality overlay system.
+        <br/><br/>
+        The three amber concerns (SettingsModal size, Promise.all bulk fetch, scroll reset triple-timeout) are non-blocking technical debt — nothing that affects users today, but worth targeting in a dedicated refactor sprint.
+        <br/><br/>
+        <strong>The multi-Studio system (Ctrl+B Browser, Ctrl+M Models, Ctrl+A Atpo) is architecturally clear and low-risk.</strong> The existing code is 80% of the foundation already. The key addition is extracting <code>StudioOverlay.tsx</code> from SettingsModal's chrome, adding three config files following the <code>settingsStudioConfig.ts</code> pattern, wiring three key bindings in App.tsx, and adding per-studio sub-label CSS classes. Each Studio inherits the full glass aesthetic, fullscreen capability, Framer Motion depth system, and Opta Text Logo animation with no duplication.
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer style="text-align:center;padding:3rem 0 1rem;color:var(--text-muted);font-size:0.75rem;letter-spacing:0.04em;">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.55rem;color:var(--primary);opacity:0.6;margin-bottom:0.5rem;letter-spacing:0.15em;">OPTA CODE · 1P-Opta-Code-Universal</div>
+    Generated 2026-03-06 · /code-reviewer + /gu + /runidea
+  </footer>
+
+</div>
+</body>
+</html>

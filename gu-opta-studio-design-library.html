@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Opta Studio Design Library — System Plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --void: #09090b;
+      --surface: #18181b;
+      --elevated: #27272a;
+      --border: #3f3f46;
+      --text-primary: #fafafa;
+      --text-secondary: #a1a1aa;
+      --text-muted: #52525b;
+      --primary: #8b5cf6;
+      --primary-glow: #a855f7;
+      --neon-blue: #3b82f6;
+      --neon-green: #22c55e;
+      --neon-amber: #f59e0b;
+      --neon-red: #ef4444;
+      --neon-cyan: #22d3ee;
+      --neon-pink: #f472b6;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Sora', system-ui, sans-serif;
+      background: var(--void);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(1200px 700px at 70% 5%, rgba(139,92,246,0.11), transparent 58%),
+        radial-gradient(800px 500px at 10% 90%, rgba(59,130,246,0.07), transparent 52%),
+        radial-gradient(500px 350px at 92% 75%, rgba(34,211,238,0.05), transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 6rem;
+    }
+
+    /* ── HEADER ── */
+    .header {
+      text-align: center;
+      padding: 3.5rem 0 2.5rem;
+    }
+
+    .header-logo {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 2.4rem;
+      color: var(--primary-glow);
+      letter-spacing: 0.12em;
+      text-shadow:
+        2px 2px 0 #09090b,
+        3px 3px 0 #09090b,
+        4px 4px 0 var(--primary-glow),
+        6px 6px 0 #09090b;
+      filter: drop-shadow(0 0 24px rgba(168,85,247,0.4));
+      animation: logo-pulse 4s ease-in-out infinite;
+    }
+
+    .header-sub {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.62rem;
+      color: var(--primary);
+      letter-spacing: 0.18em;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 var(--primary);
+      opacity: 0.8;
+      margin: 0.5rem 0 1.2rem;
+    }
+
+    @keyframes logo-pulse {
+      0%, 100% { filter: drop-shadow(0 0 18px rgba(168,85,247,0.35)); }
+      50% { filter: drop-shadow(0 0 38px rgba(168,85,247,0.6)); }
+    }
+
+    .header-tagline {
+      font-size: 0.93rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .header-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--primary) 40%, var(--neon-cyan) 60%, transparent);
+      filter: drop-shadow(0 0 7px rgba(139,92,246,0.45));
+      margin: 2.5rem 0;
+    }
+
+    /* ── GLASS ── */
+    .glass {
+      background: linear-gradient(140deg, rgba(18,34,60,0.62) 0%, rgba(12,24,43,0.48) 50%, rgba(8,16,30,0.58) 100%);
+      backdrop-filter: blur(18px) saturate(155%);
+      -webkit-backdrop-filter: blur(18px) saturate(155%);
+      border: 1px solid rgba(167,204,255,0.17);
+      border-radius: 18px;
+      padding: 1.75rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .glass::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,0.055) 1px, transparent 0);
+      background-size: 28px 28px;
+      opacity: 0.18;
+      pointer-events: none;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .section-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.63rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--primary);
+      margin-bottom: 0.4rem;
+    }
+
+    h2.section-title {
+      font-size: 1.55rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #ffffff 0%, #a78bfa 55%, #38bdf8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.55rem;
+    }
+
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 0.88rem;
+      line-height: 1.72;
+      margin-bottom: 2rem;
+    }
+
+    h3.sub {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 1.8rem 0 0.8rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    h3.sub::before {
+      content: '';
+      display: block;
+      width: 3px;
+      height: 1em;
+      background: var(--primary);
+      border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    section { margin-bottom: 3.5rem; }
+
+    .neon-divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent 0%, var(--primary) 30%, var(--neon-cyan) 70%, transparent 100%);
+      filter: blur(0.5px) drop-shadow(0 0 5px rgba(139,92,246,0.35));
+      margin: 2.5rem 0;
+    }
+
+    /* ── PROBLEM / SOLUTION CONTRAST ── */
+    .contrast-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 700px) { .contrast-row { grid-template-columns: 1fr; } }
+
+    .contrast-card {
+      border-radius: 14px;
+      padding: 1.25rem 1.4rem;
+    }
+
+    .contrast-card--before {
+      background: rgba(239,68,68,0.07);
+      border: 1px solid rgba(239,68,68,0.22);
+    }
+
+    .contrast-card--after {
+      background: rgba(34,197,94,0.07);
+      border: 1px solid rgba(34,197,94,0.22);
+    }
+
+    .contrast-heading {
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .contrast-heading--before { color: #fca5a5; }
+    .contrast-heading--after { color: #86efac; }
+
+    .contrast-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .contrast-list li {
+      font-size: 0.82rem;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 0.55rem;
+      line-height: 1.5;
+    }
+
+    .contrast-list li .bullet { flex-shrink: 0; opacity: 0.65; }
+
+    /* ── DIRECTORY TREE ── */
+    .dir-tree {
+      background: rgba(4,11,24,0.88);
+      border: 1px solid rgba(167,204,255,0.14);
+      border-radius: 14px;
+      padding: 1.5rem 1.75rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      line-height: 2.0;
+      overflow-x: auto;
+    }
+
+    .dir-tree .dir { color: #67e8f9; font-weight: 600; }
+    .dir-tree .file-new { color: #86efac; }
+    .dir-tree .file-existing { color: #a1a1aa; }
+    .dir-tree .file-modified { color: #fcd34d; }
+    .dir-tree .comment { color: #3f3f46; font-size: 0.72rem; }
+    .dir-tree .tree-line { color: #27272a; }
+
+    /* ── ASSET CARDS ── */
+    .asset-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .asset-card {
+      border-radius: 14px;
+      padding: 1.25rem;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .asset-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+    }
+
+    .asset-card--logo::before { background: linear-gradient(90deg, var(--primary-glow), #c084fc); }
+    .asset-card--glass::before { background: linear-gradient(90deg, #22d3ee, #3b82f6); }
+    .asset-card--motion::before { background: linear-gradient(90deg, var(--primary), var(--neon-pink)); }
+    .asset-card--tokens::before { background: linear-gradient(90deg, var(--neon-amber), #f97316); }
+    .asset-card--gemini::before { background: linear-gradient(90deg, var(--neon-green), #22d3ee); }
+
+    .asset-icon { font-size: 1.5rem; margin-bottom: 0.65rem; display: block; }
+    .asset-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.3rem; }
+    .asset-path { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--neon-cyan); margin-bottom: 0.6rem; }
+    .asset-desc { font-size: 0.79rem; color: var(--text-muted); line-height: 1.55; }
+
+    /* ── CHIP ── */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.25rem 0.65rem;
+      border-radius: 100px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .chip-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0; }
+    .chip--green { background: rgba(34,197,94,0.14); border: 1px solid rgba(34,197,94,0.3); color: #86efac; }
+    .chip--green .chip-dot { background: #22c55e; box-shadow: 0 0 5px #22c55e; }
+    .chip--amber { background: rgba(245,158,11,0.14); border: 1px solid rgba(245,158,11,0.3); color: #fcd34d; }
+    .chip--amber .chip-dot { background: #f59e0b; }
+    .chip--violet { background: rgba(139,92,246,0.14); border: 1px solid rgba(139,92,246,0.3); color: #c4b5fd; }
+    .chip--violet .chip-dot { background: #8b5cf6; }
+    .chip--cyan { background: rgba(34,211,238,0.14); border: 1px solid rgba(34,211,238,0.3); color: #67e8f9; }
+    .chip--cyan .chip-dot { background: #22d3ee; }
+    .chip--red { background: rgba(239,68,68,0.14); border: 1px solid rgba(239,68,68,0.3); color: #fca5a5; }
+    .chip--red .chip-dot { background: #ef4444; }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.8rem 0; }
+
+    /* ── CALLOUT ── */
+    .callout {
+      border-radius: 11px;
+      padding: 0.9rem 1.1rem;
+      margin: 1.1rem 0;
+      display: flex;
+      gap: 0.65rem;
+      align-items: flex-start;
+      font-size: 0.83rem;
+      line-height: 1.65;
+    }
+
+    .callout--info { background: rgba(59,130,246,0.09); border: 1px solid rgba(59,130,246,0.22); }
+    .callout--good { background: rgba(34,197,94,0.09); border: 1px solid rgba(34,197,94,0.22); }
+    .callout--warn { background: rgba(245,158,11,0.09); border: 1px solid rgba(245,158,11,0.22); }
+    .callout--idea { background: rgba(139,92,246,0.09); border: 1px solid rgba(139,92,246,0.22); }
+
+    .callout-icon { flex-shrink: 0; font-size: 1rem; margin-top: 0.05rem; }
+    .callout-body { color: var(--text-secondary); }
+    .callout-body strong { color: var(--text-primary); }
+
+    /* ── FLOW DIAGRAM ── */
+    .flow {
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      margin: 1.5rem 0;
+    }
+
+    .flow-step {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .flow-line {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      flex-shrink: 0;
+    }
+
+    .flow-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .flow-dot--done { background: rgba(34,197,94,0.2); border: 1px solid rgba(34,197,94,0.4); color: #86efac; }
+    .flow-dot--next { background: rgba(139,92,246,0.2); border: 1px solid rgba(139,92,246,0.4); color: #c4b5fd; }
+    .flow-dot--later { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); color: var(--text-muted); }
+
+    .flow-connector {
+      width: 1px;
+      flex: 1;
+      min-height: 24px;
+      background: linear-gradient(180deg, rgba(139,92,246,0.4), rgba(139,92,246,0.1));
+      margin: 2px 0;
+    }
+
+    .flow-content {
+      padding: 0.2rem 0 1.2rem;
+      flex: 1;
+    }
+
+    .flow-title {
+      font-size: 0.88rem;
+      font-weight: 600;
+      margin-bottom: 0.2rem;
+      line-height: 1.6;
+    }
+
+    .flow-body {
+      font-size: 0.79rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* ── LIVE LOGO DEMO ── */
+    .logo-demo {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 2rem;
+      background: #040b18;
+      border: 1px solid rgba(167,204,255,0.18);
+      border-radius: 16px;
+      margin: 1rem 0;
+    }
+
+    .demo-opta {
+      display: flex;
+      gap: 0.18rem;
+    }
+
+    .demo-letter {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 2.2rem;
+      color: #a855f7;
+      text-shadow:
+        2px 2px 0 #09090b,
+        3px 3px 0 #09090b,
+        4px 4px 0 #a855f7,
+        5px 5px 0 #a855f7,
+        7px 7px 0 #09090b;
+      filter: drop-shadow(0 0 18px rgba(168,85,247,0.4));
+      line-height: 1;
+    }
+
+    .demo-letter:nth-child(1) { animation: letter-float 3s 0ms ease-in-out infinite; }
+    .demo-letter:nth-child(2) { animation: letter-float 3s 80ms ease-in-out infinite; }
+    .demo-letter:nth-child(3) { animation: letter-float 3s 160ms ease-in-out infinite; }
+    .demo-letter:nth-child(4) { animation: letter-float 3s 240ms ease-in-out infinite; }
+
+    @keyframes letter-float {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-3px) scale(1.04); }
+    }
+
+    .demo-sublabel {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.62rem;
+      letter-spacing: 0.2em;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #09090b;
+      margin-top: 0.2rem;
+    }
+
+    .demo-sublabel--settings { color: #a855f7; text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #a855f7; filter: drop-shadow(0 0 10px rgba(168,85,247,0.3)); }
+    .demo-sublabel--browser  { color: #22d3ee; text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #22d3ee; filter: drop-shadow(0 0 10px rgba(34,211,238,0.3)); }
+    .demo-sublabel--models   { color: #a78bfa; text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #a78bfa; filter: drop-shadow(0 0 10px rgba(139,92,246,0.3)); }
+    .demo-sublabel--atpo     { color: #f472b6; text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #f472b6; filter: drop-shadow(0 0 10px rgba(244,114,182,0.3)); }
+
+    .demo-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 700px) { .demo-row { grid-template-columns: 1fr 1fr; } }
+
+    .demo-variant {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.3rem;
+      padding: 1.2rem;
+      background: #040b18;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .demo-opta-sm {
+      display: flex;
+      gap: 0.1rem;
+    }
+
+    .demo-letter-sm {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 1.1rem;
+      color: #a855f7;
+      text-shadow: 1px 1px 0 #09090b, 2px 2px 0 #a855f7;
+      line-height: 1;
+    }
+
+    .demo-sublabel-sm {
+      font-family: 'Press Start 2P', monospace;
+      font-size: 0.42rem;
+      letter-spacing: 0.2em;
+    }
+
+    /* ── CODE ── */
+    .code-block {
+      background: rgba(4,11,24,0.82);
+      border: 1px solid rgba(167,204,255,0.13);
+      border-radius: 10px;
+      padding: 0.9rem 1.1rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.76rem;
+      line-height: 1.75;
+      color: #c8d9f5;
+      overflow-x: auto;
+      margin: 0.8rem 0;
+    }
+
+    .code-block .c { color: #3f3f46; }
+    .code-block .k { color: #a78bfa; }
+    .code-block .s { color: #86efac; }
+    .code-block .v { color: #67e8f9; }
+    .code-block .p { color: #fcd34d; }
+
+    /* ── TABLE ── */
+    .plan-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .plan-table th {
+      text-align: left;
+      padding: 0.55rem 1rem;
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .plan-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .plan-table tr:last-child td { border-bottom: none; }
+    .plan-table tr:hover td { background: rgba(255,255,255,0.015); }
+    .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.74rem; color: #67e8f9; }
+    .muted { color: var(--text-muted); font-size: 0.78rem; }
+  </style>
+</head>
+<body>
+<div class="content">
+
+  <!-- HEADER -->
+  <header class="header">
+    <div class="header-logo">OPTA</div>
+    <div class="header-sub">STUDIO DESIGN LIBRARY</div>
+    <p class="header-tagline">
+      A permanent, organised system for storing and reusing every design primitive of the Opta Studio system — tokens, animations, glass components, logo variants, and Gemini context — so any new menu can be assembled from saved parts rather than rebuilt from scratch.
+    </p>
+    <div class="header-divider"></div>
+  </header>
+
+  <!-- ═══ PROBLEM ═══ -->
+  <section>
+    <div class="section-label">/ situation · what's missing</div>
+    <h2 class="section-title">The Gap: Design Lives in Code, Not in a Library</h2>
+    <p class="section-desc">The Settings Studio has been carefully built — a refined glass shell, Opta Text Logo animation, layer transitions, token system. But it all lives inside <code>settings.css</code> and <code>SettingsModal.tsx</code>. There's no extractable, reusable, self-contained reference that Gemini or any future work can pull from directly.</p>
+
+    <div class="contrast-row">
+      <div class="contrast-card contrast-card--before">
+        <div class="contrast-heading contrast-heading--before">⊗ Now — Buried in Source</div>
+        <ul class="contrast-list">
+          <li><span class="bullet">×</span>Logo animation CSS is in <code>settings.css:160–280</code> — not portable</li>
+          <li><span class="bullet">×</span>Layer transition variants are Framer Motion TS — can't paste into Gemini prompt</li>
+          <li><span class="bullet">×</span><code>--studio-*</code> tokens mixed with 2019 lines of structural CSS</li>
+          <li><span class="bullet">×</span>No self-contained HTML demo for the glass shell — can't render in isolation</li>
+          <li><span class="bullet">×</span>No Gemini context file — must re-explain the system every session</li>
+          <li><span class="bullet">×</span>New Studio = grep through 2700-line App.tsx to copy patterns</li>
+          <li><span class="bullet">×</span><code>design/</code> folder covers logos and brand; nothing for motion/component primitives</li>
+        </ul>
+      </div>
+      <div class="contrast-card contrast-card--after">
+        <div class="contrast-heading contrast-heading--after">✓ After — Organised Library</div>
+        <ul class="contrast-list">
+          <li><span class="bullet">›</span>Opta Text Logo: one self-contained <code>.html</code> demo file (like the existing logo templates)</li>
+          <li><span class="bullet">›</span>Glass shell: one <code>glass-shell.html</code> you can open/share/adapt</li>
+          <li><span class="bullet">›</span>All transitions: <code>transitions.css</code> — copy the 8 vars, you have the full animation system</li>
+          <li><span class="bullet">›</span>Layer motion: <code>layer-motion.ts</code> — the Framer variants extracted as a drop-in snippet</li>
+          <li><span class="bullet">›</span>Gemini prompt file: paste one markdown file → Gemini has full context</li>
+          <li><span class="bullet">›</span>New Studio: copy <code>studio-template/</code>, rename sub-label, change accent colour — done</li>
+          <li><span class="bullet">›</span><code>design/studio-system/</code> sits next to <code>design/logos/</code> — same pattern</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══ THE LIBRARY STRUCTURE ═══ -->
+  <section>
+    <div class="section-label">/ plan · directory structure</div>
+    <h2 class="section-title">The Studio Design Library</h2>
+    <p class="section-desc">Extends the existing <code>design/</code> folder pattern. Lives alongside <code>design/logos/</code> and <code>design/aesthetics/</code>. Every asset is self-contained and purposeful.</p>
+
+    <div class="dir-tree">
+      <span class="dir">optalocal/design/</span><span class="comment"> ← existing folder</span><br/>
+      <span class="tree-line">├─</span> logos/ <span class="comment"> ← existing (logos per app)</span><br/>
+      <span class="tree-line">├─</span> aesthetics/ <span class="comment"> ← existing (brand rules per app)</span><br/>
+      <span class="tree-line">├─</span> relationships/ <span class="comment"> ← existing (architecture docs)</span><br/>
+      <span class="tree-line">└─</span> <span class="dir">studio-system/</span> <span class="comment"> ← NEW: all reusable Studio primitives</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="file-new">STUDIO-SYSTEM.md</span> <span class="comment"> ← master reference (humans + AI)</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="dir">tokens/</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">studio-tokens.css</span> <span class="comment"> ← all --studio-* vars, extracted clean</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; └─</span> <span class="file-new">transition-tokens.css</span> <span class="comment"> ← --opta-transition-* vars</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="dir">components/</span> <span class="comment"> ← self-contained HTML demos (like opta-logo-template.html)</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">opta-text-logo.html</span> <span class="comment"> ← live demo: OPTA lettermark + any sub-label</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">glass-shell.html</span> <span class="comment"> ← live demo: the Studio glass panel</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">backdrop-gradient.html</span> <span class="comment"> ← live demo: Studio backdrop radial gradients</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; └─</span> <span class="file-new">layer-transition-demo.html</span> <span class="comment"> ← CSS-only layer depth animation demo</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="dir">motion/</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">layer-variants.ts</span> <span class="comment"> ← settingsLayerVariants extracted, drop-in Framer snippet</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; └─</span> <span class="file-new">logo-animation.css</span> <span class="comment"> ← staggered OPTA letters, max-height sub-label, all values</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="dir">studio-template/</span> <span class="comment"> ← copy this to make a new Studio in seconds</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">StudioOverlay.tsx</span> <span class="comment"> ← base component (glass + logo + fullscreen + layers)</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; ├─</span> <span class="file-new">studioConfig.ts</span> <span class="comment"> ← config shape (same as settingsStudioConfig.ts)</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│&nbsp;&nbsp; └─</span> <span class="file-new">studio-accent.css</span> <span class="comment"> ← accent colour override block (change 1 colour)</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">│</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">└─</span> <span class="dir">gemini/</span> <span class="comment"> ← drop these into any Gemini session</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">├─</span> <span class="file-new">GEMINI-CONTEXT-STUDIO.md</span> <span class="comment"> ← complete system spec for design prompts</span><br/>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="tree-line">└─</span> <span class="file-new">GEMINI-CONTEXT-LOGO.md</span> <span class="comment"> ← Opta Text Logo spec for Gemini design work</span><br/>
+    </div>
+
+    <div class="callout callout--info">
+      <span class="callout-icon">ℹ</span>
+      <span class="callout-body">
+        <strong>Same pattern as <code>design/logos/</code>.</strong> The logos folder has <code>opta-logo-template.html</code> as a self-contained, openable reference for the logo system. The <code>studio-system/components/</code> folder does the same for UI components — each is a standalone HTML file you can open in a browser, screenshot, or paste into Gemini.
+      </span>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══ WHAT GETS SAVED ═══ -->
+  <section>
+    <div class="section-label">/ plan · what gets extracted</div>
+    <h2 class="section-title">Six Primitive Assets to Capture</h2>
+    <p class="section-desc">Each is a discrete, self-contained piece of the Settings Studio that can be reused without modification, or adapted by changing one variable (accent colour, sub-label text).</p>
+
+    <div class="asset-grid">
+
+      <div class="asset-card asset-card--logo">
+        <span class="asset-icon">🔤</span>
+        <div class="asset-name">Opta Text Logo</div>
+        <div class="asset-path">components/opta-text-logo.html</div>
+        <div class="asset-desc">
+          Press Start 2P font · staggered 4-letter animation (26ms delay increments) · pixel multi-layer drop-shadow · <code>max-height</code> sub-label transition · parameterised by sub-label text and accent colour. This is the full identity for every Studio.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--violet"><span class="chip-dot"></span>Press Start 2P</span>
+          <span class="chip chip--violet"><span class="chip-dot"></span>CSS-only animation</span>
+        </div>
+      </div>
+
+      <div class="asset-card asset-card--glass">
+        <span class="asset-icon">🪟</span>
+        <div class="asset-name">Glass Shell</div>
+        <div class="asset-path">components/glass-shell.html</div>
+        <div class="asset-desc">
+          The full <code>.opta-studio-shell</code> with all layers: backdrop radial gradients, noise overlay, specular inset borders, dot-grid texture, and <code>min(940px, 95vw) × min(730px, 92vh)</code> responsive sizing. The foundation for every Studio overlay.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--cyan"><span class="chip-dot"></span>backdrop-filter</span>
+          <span class="chip chip--cyan"><span class="chip-dot"></span>radial gradients</span>
+        </div>
+      </div>
+
+      <div class="asset-card asset-card--motion">
+        <span class="asset-icon">🌊</span>
+        <div class="asset-name">Layer Transitions</div>
+        <div class="asset-path">motion/layer-variants.ts</div>
+        <div class="asset-desc">
+          The Framer Motion <code>settingsLayerVariants</code> extracted as a standalone snippet. Drives the 3D depth illusion between L1/L2/L3 via scale + translate + blur. Parameterised by <code>direction</code> ("deeper"/"shallower") and <code>motion</code> ("root"/"intra"). Drop-in for any Studio.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--violet"><span class="chip-dot"></span>Framer Motion</span>
+          <span class="chip chip--violet"><span class="chip-dot"></span>3 layers</span>
+        </div>
+      </div>
+
+      <div class="asset-card asset-card--tokens">
+        <span class="asset-icon">🎨</span>
+        <div class="asset-name">Studio Token Set</div>
+        <div class="asset-path">tokens/studio-tokens.css</div>
+        <div class="asset-desc">
+          Every <code>--studio-*</code> CSS custom property extracted clean: atmo palette (0–3), ice/lilac/cyan overlay colours, border strengths, blur levels, shadow depths, radius scale, and ease curve. Add one <code>@import</code> and any HTML file has the full Studio design system.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--amber"><span class="chip-dot"></span>28 tokens</span>
+          <span class="chip chip--amber"><span class="chip-dot"></span>zero dependencies</span>
+        </div>
+      </div>
+
+      <div class="asset-card asset-card--logo">
+        <span class="asset-icon">⏱</span>
+        <div class="asset-name">Transition Tokens</div>
+        <div class="asset-path">tokens/transition-tokens.css</div>
+        <div class="asset-desc">
+          The 6 <code>--opta-transition-*</code> variables: logo duration (340ms), logo ease, overlay duration (320ms), overlay ease, layer duration (220ms), layer ease — all using the same <code>cubic-bezier(0.22, 1, 0.36, 1)</code> spring feel. Paste 6 vars → everything moves the same way.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--amber"><span class="chip-dot"></span>6 vars</span>
+          <span class="chip chip--amber"><span class="chip-dot"></span>spring cubic-bezier</span>
+        </div>
+      </div>
+
+      <div class="asset-card asset-card--gemini">
+        <span class="asset-icon">🤖</span>
+        <div class="asset-name">Gemini Context Files</div>
+        <div class="asset-path">gemini/GEMINI-CONTEXT-STUDIO.md</div>
+        <div class="asset-desc">
+          Two markdown files: one for the full Studio system (tokens, transitions, keyboard system, layer architecture), one focused on the Opta Text Logo (font, shadow recipe, sub-label animation). Drop into any Gemini session — Gemini has everything needed to design a new Studio without you re-explaining the system.
+        </div>
+        <div class="chip-row">
+          <span class="chip chip--green"><span class="chip-dot"></span>Gemini-ready</span>
+          <span class="chip chip--green"><span class="chip-dot"></span>no re-explanation</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══ OPTA TEXT LOGO LIVE DEMO ═══ -->
+  <section>
+    <div class="section-label">/ asset · opta text logo</div>
+    <h2 class="section-title">Opta Text Logo — The Identity System</h2>
+    <p class="section-desc">This is the element you want preserved. Each Studio gets the same four animated letters, but a unique sub-label that names its purpose. The sub-label is the only thing that changes. The font, shadow system, and stagger timing are locked.</p>
+
+    <div class="logo-demo">
+      <div class="demo-opta">
+        <div class="demo-letter">O</div>
+        <div class="demo-letter">P</div>
+        <div class="demo-letter">T</div>
+        <div class="demo-letter">A</div>
+      </div>
+      <div class="demo-sublabel demo-sublabel--settings">SETTINGS</div>
+    </div>
+
+    <div class="demo-row">
+      <div class="demo-variant">
+        <div class="demo-opta-sm">
+          <div class="demo-letter-sm" style="color:#a855f7;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a855f7;">O</div>
+          <div class="demo-letter-sm" style="color:#a855f7;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a855f7;">P</div>
+          <div class="demo-letter-sm" style="color:#a855f7;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a855f7;">T</div>
+          <div class="demo-letter-sm" style="color:#a855f7;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a855f7;">A</div>
+        </div>
+        <div class="demo-sublabel-sm demo-sublabel--settings">SETTINGS</div>
+      </div>
+      <div class="demo-variant">
+        <div class="demo-opta-sm">
+          <div class="demo-letter-sm" style="color:#22d3ee;text-shadow:1px 1px 0 #09090b,2px 2px 0 #22d3ee;">O</div>
+          <div class="demo-letter-sm" style="color:#22d3ee;text-shadow:1px 1px 0 #09090b,2px 2px 0 #22d3ee;">P</div>
+          <div class="demo-letter-sm" style="color:#22d3ee;text-shadow:1px 1px 0 #09090b,2px 2px 0 #22d3ee;">T</div>
+          <div class="demo-letter-sm" style="color:#22d3ee;text-shadow:1px 1px 0 #09090b,2px 2px 0 #22d3ee;">A</div>
+        </div>
+        <div class="demo-sublabel-sm demo-sublabel--browser">BROWSER</div>
+      </div>
+      <div class="demo-variant">
+        <div class="demo-opta-sm">
+          <div class="demo-letter-sm" style="color:#a78bfa;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a78bfa;">O</div>
+          <div class="demo-letter-sm" style="color:#a78bfa;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a78bfa;">P</div>
+          <div class="demo-letter-sm" style="color:#a78bfa;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a78bfa;">T</div>
+          <div class="demo-letter-sm" style="color:#a78bfa;text-shadow:1px 1px 0 #09090b,2px 2px 0 #a78bfa;">A</div>
+        </div>
+        <div class="demo-sublabel-sm demo-sublabel--models">MODELS</div>
+      </div>
+      <div class="demo-variant">
+        <div class="demo-opta-sm">
+          <div class="demo-letter-sm" style="color:#f472b6;text-shadow:1px 1px 0 #09090b,2px 2px 0 #f472b6;">O</div>
+          <div class="demo-letter-sm" style="color:#f472b6;text-shadow:1px 1px 0 #09090b,2px 2px 0 #f472b6;">P</div>
+          <div class="demo-letter-sm" style="color:#f472b6;text-shadow:1px 1px 0 #09090b,2px 2px 0 #f472b6;">T</div>
+          <div class="demo-letter-sm" style="color:#f472b6;text-shadow:1px 1px 0 #09090b,2px 2px 0 #f472b6;">A</div>
+        </div>
+        <div class="demo-sublabel-sm demo-sublabel--atpo">ATPO</div>
+      </div>
+    </div>
+
+    <div class="callout callout--good">
+      <span class="callout-icon">✓</span>
+      <span class="callout-body">
+        <strong>The recipe to save:</strong> Press Start 2P font · <code>font-size: 2.2rem</code> letters · pixel shadow stack (<code>2px 2px 0 #09090b, 3px 3px 0 #09090b, 4px 4px 0 [accent], 5px 5px 0 [accent], 7px 7px 0 #09090b</code>) · <code>drop-shadow(0 0 20px [accent]40%)</code> glow · staggered <code>transform + font-size + filter</code> transitions at 26ms increments per letter · sub-label uses <code>font-size: 1.1rem</code>, same font, same shadow (reduced to 3 layers).
+      </span>
+    </div>
+
+    <h3 class="sub">What the token file will contain</h3>
+    <div class="code-block">
+<span class="c">/* motion/logo-animation.css — Opta Text Logo complete spec */</span>
+<br/><br/>
+<span class="k">:root</span> {
+<br/>
+  <span class="c">/* Font */</span>
+<br/>
+  <span class="v">--studio-logo-font</span>: <span class="s">'Press Start 2P'</span>, monospace;
+<br/>
+  <span class="v">--studio-logo-size</span>: 2.2rem;
+<br/>
+  <span class="v">--studio-logo-sub-size</span>: 1.1rem;
+<br/><br/>
+  <span class="c">/* Shadow recipe — uses [accent] slot */</span>
+<br/>
+  <span class="v">--studio-logo-shadow-base</span>: 2px 2px 0 #09090b, 3px 3px 0 #09090b;
+<br/>
+  <span class="v">--studio-logo-shadow-accent</span>: 4px 4px 0 <span class="s">var(--studio-accent)</span>, 5px 5px 0 <span class="s">var(--studio-accent)</span>;
+<br/>
+  <span class="v">--studio-logo-shadow-cap</span>: 7px 7px 0 #09090b, 8px 8px 0 #09090b;
+<br/><br/>
+  <span class="c">/* Stagger timing */</span>
+<br/>
+  <span class="v">--studio-logo-stagger</span>: 26ms;  <span class="c">/* per letter delay increment */</span>
+<br/><br/>
+  <span class="c">/* Animation duration (matches opta-transition-logo-duration) */</span>
+<br/>
+  <span class="v">--studio-logo-duration</span>: <span class="s">var(--opta-transition-logo-duration, 340ms)</span>;
+<br/>
+  <span class="v">--studio-logo-ease</span>: <span class="s">var(--opta-transition-logo-ease, cubic-bezier(0.22, 1, 0.36, 1))</span>;
+<br/><br/>
+  <span class="c">/* Sub-label reserve (max-height transition) */</span>
+<br/>
+  <span class="v">--studio-logo-reserve-collapsed</span>: 0px;
+<br/>
+  <span class="v">--studio-logo-reserve-expanded</span>: 2.5rem;
+<br/>
+}
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══ WORKFLOW ═══ -->
+  <section>
+    <div class="section-label">/ plan · workflow with gemini</div>
+    <h2 class="section-title">The Gemini Design Workflow</h2>
+    <p class="section-desc">Two context files let you and Gemini collaborate on new Studio designs without re-explaining the system each time. Gemini gets the full spec; you give it one creative direction.</p>
+
+    <div class="flow">
+
+      <div class="flow-step">
+        <div class="flow-line">
+          <div class="flow-dot flow-dot--done">1</div>
+          <div class="flow-connector"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Create the Design Library <span class="chip chip--green" style="margin-left:0.5rem;"><span class="chip-dot"></span>Do this once</span></div>
+          <div class="flow-body">Build <code>design/studio-system/</code> with the extracted token files, component HTML demos, and Gemini context markdowns. This is the investment — done once, reused forever.</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-line">
+          <div class="flow-dot flow-dot--next">2</div>
+          <div class="flow-connector"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Open Gemini — Paste Context File</div>
+          <div class="flow-body">Drop <code>GEMINI-CONTEXT-STUDIO.md</code> into the Gemini prompt. Gemini now knows: the full token set, the glass shell spec, all transition values, the keyboard system, and the logo recipe. Zero re-explanation needed.</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-line">
+          <div class="flow-dot flow-dot--next">3</div>
+          <div class="flow-connector"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Give Gemini One Design Brief</div>
+          <div class="flow-body">e.g. "Design the L2 grid for the Browser Studio — 7 categories, cyan accent, optimal layout for managing localhost endpoints and browser sessions." Gemini generates within the established system constraints.</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-line">
+          <div class="flow-dot flow-dot--next">4</div>
+          <div class="flow-connector"></div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">Gemini Outputs HTML Demo → Review in Browser</div>
+          <div class="flow-body">Gemini generates a self-contained HTML mockup. Open it in browser — it inherits all the Studio tokens automatically because the context includes the <code>:root</code> CSS block.</div>
+        </div>
+      </div>
+
+      <div class="flow-step">
+        <div class="flow-line">
+          <div class="flow-dot flow-dot--later">5</div>
+        </div>
+        <div class="flow-content">
+          <div class="flow-title">You + Claude: Implement into the Codebase</div>
+          <div class="flow-body">Approved design goes from Gemini HTML → code. Claude implements using the <code>studio-template/</code> files as the starting point, replacing only content — not re-engineering the chrome.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="callout callout--idea">
+      <span class="callout-icon">💡</span>
+      <span class="callout-body">
+        <strong>Key insight:</strong> Gemini excels at design generation when given precise system constraints. The more specific the context file (exact pixel values, exact token names, exact easing curves), the more on-system the output. The <code>GEMINI-CONTEXT-STUDIO.md</code> is dense by design — it tells Gemini exactly what NOT to change (glass formula, logo system, transition timings) and what it can freely create (category content, iconography, layout density).
+      </span>
+    </div>
+  </section>
+
+  <div class="neon-divider"></div>
+
+  <!-- ═══ WHAT TO BUILD NOW ═══ -->
+  <section>
+    <div class="section-label">/ action plan · next steps</div>
+    <h2 class="section-title">What Needs to Be Built</h2>
+
+    <div class="glass" style="padding:0;overflow:hidden;">
+      <table class="plan-table">
+        <thead>
+          <tr>
+            <th>File</th>
+            <th>What it captures</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">studio-system/STUDIO-SYSTEM.md</td>
+            <td class="muted">Master reference: overview, all asset paths, how to create a new Studio step-by-step, what to never change</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">tokens/studio-tokens.css</td>
+            <td class="muted">All 28 <code>--studio-*</code> vars extracted from settings.css:1-41, clean and standalone</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">tokens/transition-tokens.css</td>
+            <td class="muted">6 <code>--opta-transition-*</code> vars from settings.css:35-40. The timing bible.</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">motion/logo-animation.css</td>
+            <td class="muted">Complete Opta Text Logo spec: font, size, all shadow layers, stagger timing, sub-label reserve</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">motion/layer-variants.ts</td>
+            <td class="muted">settingsLayerVariants extracted verbatim as a standalone Framer Motion snippet with usage comments</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">components/opta-text-logo.html</td>
+            <td class="muted">Self-contained HTML demo — open in browser, shows all 4 Studio logo variants side by side, animating</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">components/glass-shell.html</td>
+            <td class="muted">Self-contained HTML demo of the full glass shell with all layers and sizing</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">components/layer-transition-demo.html</td>
+            <td class="muted">CSS-only 3-layer depth transition demo — share with Gemini, shows the motion without Framer Motion</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">studio-template/StudioOverlay.tsx</td>
+            <td class="muted">Base component (glass + logo + fullscreen + layer variants). Copy → rename sub-label → new Studio</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">studio-template/studioConfig.ts</td>
+            <td class="muted">Config template with same shape as settingsStudioConfig.ts — fill in categories + accent colour</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">gemini/GEMINI-CONTEXT-STUDIO.md</td>
+            <td class="muted">Full system spec for Gemini: all tokens, glass recipe, keyboard system, what to preserve vs adapt</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+          <tr>
+            <td class="mono">gemini/GEMINI-CONTEXT-LOGO.md</td>
+            <td class="muted">Opta Text Logo complete spec: font name, shadow layers, stagger math, sub-label anatomy</td>
+            <td><span class="chip chip--amber"><span class="chip-dot"></span>TO BUILD</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout callout--warn">
+      <span class="callout-icon">⚠</span>
+      <span class="callout-body">
+        <strong>Nothing gets moved from the codebase.</strong> The library extracts and documents — it does not refactor. <code>settings.css</code> stays as-is. The library creates authoritative references that Gemini and future Claude sessions can use, without touching production code.
+      </span>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer style="text-align:center;padding:3rem 0 1rem;color:var(--text-muted);font-size:0.75rem;">
+    <div style="font-family:'Press Start 2P',monospace;font-size:0.52rem;color:var(--primary);opacity:0.55;margin-bottom:0.5rem;letter-spacing:0.15em;">OPTA STUDIO DESIGN LIBRARY</div>
+    design/studio-system/ · 2026-03-06 · /gu
+  </footer>
+
+</div>
+</body>
+</html>

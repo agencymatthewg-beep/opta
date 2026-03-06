@@ -1,0 +1,2772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Opta Code Desktop — Masterclass</title>
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: rgba(255,255,255,0.07);
+    --border-bright: rgba(255,255,255,0.12);
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background-color: var(--void);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -2;
+    background:
+      radial-gradient(75rem 35rem at 50% -8%, rgba(139,92,246,0.18), transparent 60%),
+      radial-gradient(48rem 22rem at 80% 110%, rgba(6,182,212,0.08), transparent 65%);
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: -1;
+    background-image:
+      radial-gradient(rgba(139,92,246,0.18) 1px, transparent 1px),
+      radial-gradient(rgba(255,255,255,0.1) 0.8px, transparent 0.8px);
+    background-size: 30px 30px, 84px 84px;
+    background-position: 0 0, 14px 18px;
+    opacity: 0.35;
+  }
+
+  /* ── Layout ── */
+  .container { max-width: 960px; margin: 0 auto; padding: 0 2rem; }
+
+  /* ── Header ── */
+  .hero {
+    padding: 5rem 2rem 4rem;
+    text-align: center;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 1rem;
+    border: 1px solid rgba(139,92,246,0.35);
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--primary-glow);
+    background: rgba(139,92,246,0.08);
+    margin-bottom: 2rem;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--primary-glow);
+    box-shadow: 0 0 8px var(--primary-glow);
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    font-weight: 800;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #ffffff 0%, #ffffff 45%, rgba(168,85,247,0.65) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 1.25rem;
+  }
+
+  .hero-sub {
+    font-size: 1.1rem;
+    color: var(--text-secondary);
+    max-width: 580px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.8;
+  }
+
+  .hero-meta {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .hero-meta-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .hero-meta-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .hero-meta-label {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  /* ── Section nav ── */
+  .section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    background: linear-gradient(180deg, rgba(9,9,11,0.85), rgba(9,9,11,0.65));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 0.75rem 2rem;
+  }
+
+  .section-nav-inner {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .section-nav-inner::-webkit-scrollbar { display: none; }
+
+  .nav-pill {
+    flex-shrink: 0;
+    padding: 0.35rem 0.9rem;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    border: 1px solid transparent;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+
+  .nav-pill:hover {
+    color: var(--text-secondary);
+    border-color: var(--border-bright);
+    background: rgba(255,255,255,0.03);
+  }
+
+  /* ── Glass panels ── */
+  .glass {
+    background: linear-gradient(180deg, rgba(24,24,27,0.72), rgba(9,9,14,0.5));
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,0.04),
+      0 20px 40px rgba(0,0,0,0.3);
+  }
+
+  .glass-subtle {
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+
+  /* ── Sections ── */
+  section {
+    padding: 4rem 0;
+    border-top: 1px solid var(--border);
+  }
+
+  section:first-of-type { border-top: none; }
+
+  .section-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--primary-glow);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-size: 1.9rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .section-lead {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    max-width: 640px;
+    margin-bottom: 2.5rem;
+    line-height: 1.8;
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    padding: 2rem;
+    border-radius: 16px;
+    background: rgba(9,9,11,0.7);
+    border: 1px solid var(--border-bright);
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .arch-diagram::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(60% 50% at 50% 0%, rgba(139,92,246,0.07), transparent 70%);
+  }
+
+  .arch-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    position: relative;
+    z-index: 1;
+  }
+
+  .arch-node {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px;
+    border: 1px solid var(--border-bright);
+    background: rgba(255,255,255,0.03);
+    min-width: 140px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  .arch-node.active {
+    border-color: rgba(139,92,246,0.45);
+    background: rgba(139,92,246,0.08);
+    box-shadow: 0 0 28px rgba(139,92,246,0.12);
+  }
+
+  .arch-node.lmx {
+    border-color: rgba(168,85,247,0.4);
+    background: rgba(168,85,247,0.07);
+  }
+
+  .arch-node.daemon {
+    border-color: rgba(6,182,212,0.35);
+    background: rgba(6,182,212,0.06);
+  }
+
+  .arch-node-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+  }
+
+  .arch-node-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    font-family: ui-monospace, monospace;
+  }
+
+  .arch-node-sub {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+  }
+
+  .arch-connector {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0 0.75rem;
+    min-width: 90px;
+    flex-shrink: 0;
+  }
+
+  .arch-connector-line {
+    width: 100%;
+    height: 2px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.4), rgba(6,182,212,0.4));
+    position: relative;
+    overflow: hidden;
+  }
+
+  .arch-connector-line::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+    animation: flow-right 2s ease-in-out infinite;
+  }
+
+  @keyframes flow-right {
+    0% { left: -40%; }
+    100% { left: 140%; }
+  }
+
+  .arch-connector-label {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+    white-space: nowrap;
+  }
+
+  /* ── Interface anatomy ── */
+  .ui-anatomy {
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border-bright);
+    box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+    margin-bottom: 2rem;
+  }
+
+  .ui-titlebar {
+    height: 42px;
+    background: rgba(20,20,28,0.95);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 0.5rem;
+  }
+
+  .traffic-lights { display: flex; gap: 0.4rem; }
+
+  .traffic-light {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+  }
+
+  .tl-red { background: #ef4444; }
+  .tl-amber { background: #f59e0b; }
+  .tl-green { background: #22c55e; }
+
+  .ui-titlebar-title {
+    flex: 1;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+  }
+
+  .ui-conn-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--neon-green);
+    box-shadow: 0 0 6px var(--neon-green);
+    animation: conn-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes conn-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .ui-body {
+    display: grid;
+    grid-template-columns: 200px 1fr 220px;
+    height: 360px;
+    background: rgba(9,9,11,0.96);
+  }
+
+  .ui-rail {
+    background: rgba(18,18,24,0.9);
+    border-right: 1px solid var(--border);
+    padding: 1rem 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow: hidden;
+  }
+
+  .rail-label {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    padding: 0 0.75rem;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+  }
+
+  .session-item {
+    margin: 0 0.5rem;
+    padding: 0.6rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.68rem;
+    font-family: ui-monospace, monospace;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+
+  .session-item.active {
+    background: rgba(139,92,246,0.12);
+    border: 1px solid rgba(139,92,246,0.25);
+    color: var(--text-secondary);
+  }
+
+  .session-item-title {
+    color: var(--text-primary);
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  .session-item-meta {
+    color: var(--text-muted);
+    font-size: 0.62rem;
+  }
+
+  .ui-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .timeline {
+    flex: 1;
+    overflow-y: auto;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    scrollbar-width: thin;
+    scrollbar-color: #3f3f46 transparent;
+  }
+
+  .turn-user {
+    align-self: flex-end;
+    max-width: 70%;
+    background: rgba(139,92,246,0.15);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 12px 12px 2px 12px;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+  }
+
+  .turn-model {
+    align-self: flex-start;
+    max-width: 82%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border);
+    border-radius: 2px 12px 12px 12px;
+    padding: 0.75rem;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .turn-stats {
+    display: flex;
+    gap: 0.75rem;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+    padding-top: 0.4rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .stat-val {
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .tool-card {
+    background: rgba(6,182,212,0.06);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.65rem;
+    font-family: ui-monospace, monospace;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--neon-cyan);
+  }
+
+  .tool-result {
+    background: rgba(34,197,94,0.06);
+    border-color: rgba(34,197,94,0.2);
+    color: var(--neon-green);
+  }
+
+  .composer-area {
+    border-top: 1px solid var(--border);
+    padding: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .composer-pills {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+
+  .composer-pill {
+    padding: 0.2rem 0.55rem;
+    border-radius: 999px;
+    font-size: 0.6rem;
+    font-family: ui-monospace, monospace;
+    border: 1px solid;
+    font-weight: 500;
+  }
+
+  .pill-mode { color: #86efac; border-color: rgba(34,197,94,0.35); background: rgba(34,197,94,0.08); }
+  .pill-model { color: #c4b5fd; border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.08); }
+  .pill-perm { color: #94a3b8; border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.04); }
+
+  .composer-input {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(139,92,246,0.25);
+    border-radius: 8px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 0.85em;
+    background: var(--primary);
+    animation: blink 1s step-end infinite;
+    margin-left: 1px;
+    vertical-align: text-bottom;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+
+  .ui-side {
+    background: rgba(14,14,20,0.8);
+    border-left: 1px solid var(--border);
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow: hidden;
+  }
+
+  .side-section-title {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--text-muted);
+    margin-bottom: 0.6rem;
+  }
+
+  .telemetry-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.68rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .telemetry-label { color: var(--text-muted); font-family: ui-monospace, monospace; }
+
+  .telemetry-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
+    flex: 1;
+    margin: 0 0.6rem;
+  }
+
+  .telemetry-fill {
+    height: 100%;
+    border-radius: 2px;
+    animation: bar-breathe 3s ease-in-out infinite;
+  }
+
+  @keyframes bar-breathe {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.75; }
+  }
+
+  .fill-green { background: var(--neon-green); width: 67%; }
+  .fill-blue { background: var(--neon-blue); width: 48%; }
+  .fill-purple { background: var(--primary); width: 82%; }
+
+  .telemetry-val {
+    font-family: ui-monospace, monospace;
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    min-width: 3rem;
+    text-align: right;
+  }
+
+  /* ── Feature grid ── */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .feature-card {
+    padding: 1.25rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+    transition: all 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(80% 80% at 0% 0%, var(--card-glow, rgba(139,92,246,0.06)), transparent 70%);
+  }
+
+  .feature-card:hover {
+    border-color: var(--border-bright);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(0,0,0,0.25);
+  }
+
+  .feature-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.9rem;
+  }
+
+  .feature-title {
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.4rem;
+  }
+
+  .feature-desc {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    line-height: 1.6;
+  }
+
+  /* ── Mode comparison ── */
+  .mode-split {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .mode-card {
+    border-radius: 16px;
+    border: 1px solid var(--border-bright);
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .mode-card.chat {
+    background: linear-gradient(145deg, rgba(6,182,212,0.06), rgba(9,9,11,0.4));
+    border-color: rgba(6,182,212,0.25);
+  }
+
+  .mode-card.do {
+    background: linear-gradient(145deg, rgba(34,197,94,0.06), rgba(9,9,11,0.4));
+    border-color: rgba(34,197,94,0.25);
+  }
+
+  .mode-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .mode-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+  }
+
+  .mode-title {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .mode-cmd {
+    font-family: ui-monospace, monospace;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+  }
+
+  .mode-items { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .mode-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  .mode-item::before {
+    content: '';
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    margin-top: 0.55rem;
+    flex-shrink: 0;
+  }
+
+  .mode-card.chat .mode-item::before { background: var(--neon-cyan); }
+  .mode-card.do .mode-item::before { background: var(--neon-green); }
+
+  /* ── Connection states ── */
+  .conn-states {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .conn-card {
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    align-items: center;
+    text-align: center;
+  }
+
+  .conn-indicator {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+  }
+
+  .conn-connected { background: var(--neon-green); box-shadow: 0 0 10px var(--neon-green); }
+  .conn-reconnecting {
+    background: var(--neon-amber);
+    box-shadow: 0 0 10px var(--neon-amber);
+    animation: conn-amber-pulse 1s ease-in-out infinite;
+  }
+
+  @keyframes conn-amber-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .conn-disconnected { background: var(--neon-red); box-shadow: 0 0 10px var(--neon-red); }
+
+  .conn-state-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .conn-state-desc {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.5;
+  }
+
+  /* ── Workflow steps ── */
+  .workflow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    margin-bottom: 2rem;
+  }
+
+  .step {
+    display: grid;
+    grid-template-columns: 56px 1fr;
+    gap: 1.25rem;
+    align-items: stretch;
+    position: relative;
+  }
+
+  .step:not(:last-child) .step-line {
+    display: block;
+  }
+
+  .step-left {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0;
+  }
+
+  .step-num {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--border-bright);
+    background: rgba(139,92,246,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--primary-glow);
+    font-family: ui-monospace, monospace;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .step-line {
+    display: none;
+    width: 1px;
+    flex: 1;
+    background: linear-gradient(to bottom, rgba(139,92,246,0.3), transparent);
+    min-height: 1rem;
+  }
+
+  .step-content {
+    padding: 0.2rem 0 1.5rem;
+  }
+
+  .step-title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .step-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+  }
+
+  .step-code {
+    margin-top: 0.6rem;
+    font-family: ui-monospace, monospace;
+    font-size: 0.72rem;
+    color: var(--neon-cyan);
+    background: rgba(6,182,212,0.06);
+    border: 1px solid rgba(6,182,212,0.15);
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+    display: inline-block;
+  }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 0.9rem;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    line-height: 1.7;
+  }
+
+  .callout-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 0.05rem; }
+  .callout-title { font-weight: 600; margin-bottom: 0.3rem; }
+  .callout-body { color: var(--text-secondary); }
+
+  .callout-info {
+    background: rgba(59,130,246,0.08);
+    border: 1px solid rgba(59,130,246,0.2);
+  }
+  .callout-info .callout-title { color: #93c5fd; }
+
+  .callout-tip {
+    background: rgba(34,197,94,0.07);
+    border: 1px solid rgba(34,197,94,0.18);
+  }
+  .callout-tip .callout-title { color: #86efac; }
+
+  .callout-warning {
+    background: rgba(245,158,11,0.07);
+    border: 1px solid rgba(245,158,11,0.2);
+  }
+  .callout-warning .callout-title { color: #fcd34d; }
+
+  /* ── Code block ── */
+  .code-block {
+    background: rgba(7,8,12,0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    font-size: 0.78rem;
+  }
+
+  .code-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(255,255,255,0.02);
+  }
+
+  .code-lang {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-family: ui-monospace, monospace;
+  }
+
+  .code-file {
+    font-size: 0.68rem;
+    color: var(--text-muted);
+    font-family: ui-monospace, monospace;
+  }
+
+  .code-body {
+    padding: 1.1rem 1.25rem;
+    font-family: ui-monospace, monospace;
+    line-height: 1.65;
+    color: var(--text-secondary);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  .code-comment { color: #3f3f46; }
+  .code-kw { color: #c4b5fd; }
+  .code-string { color: #86efac; }
+  .code-prop { color: var(--neon-cyan); }
+  .code-val { color: #fca5a5; }
+
+  /* ── Keyboard shortcuts ── */
+  .shortcut-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+  }
+
+  .shortcut-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border);
+    font-size: 0.78rem;
+  }
+
+  .shortcut-action { color: var(--text-secondary); }
+
+  .kbd {
+    display: inline-flex;
+    gap: 0.2rem;
+  }
+
+  .key {
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    font-family: ui-monospace, monospace;
+    font-size: 0.65rem;
+    color: var(--text-muted);
+  }
+
+  /* ── Recovery matrix ── */
+  .recovery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1px;
+    background: var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .recovery-cell {
+    background: rgba(9,9,11,0.9);
+    padding: 1.1rem;
+  }
+
+  .recovery-step {
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--primary-glow);
+    margin-bottom: 0.5rem;
+    font-family: ui-monospace, monospace;
+  }
+
+  .recovery-title {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.35rem;
+  }
+
+  .recovery-desc {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    line-height: 1.55;
+  }
+
+  /* ── Footer ── */
+  .guide-footer {
+    padding: 3rem 2rem;
+    border-top: 1px solid var(--border);
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: gap;
+    gap: 1rem;
+  }
+
+  .footer-brand {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .footer-name {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-family: ui-monospace, monospace;
+    letter-spacing: 0.1em;
+  }
+
+  .footer-sub { font-size: 0.72rem; color: var(--text-muted); }
+
+  .footer-links {
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .footer-link {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .footer-link:hover { color: var(--text-secondary); }
+
+  /* ── Neon dividers ── */
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(139,92,246,0.4), transparent);
+    margin: 1.5rem 0;
+  }
+
+  /* ── Tag badges ── */
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    font-family: ui-monospace, monospace;
+    border: 1px solid;
+  }
+
+  .tag-desktop { color: #c4b5fd; border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08); }
+  .tag-tauri { color: #93c5fd; border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.06); }
+  .tag-cli { color: #86efac; border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.06); }
+  .tag-daemon { color: #67e8f9; border-color: rgba(6,182,212,0.3); background: rgba(6,182,212,0.06); }
+
+  /* ── Responsive ── */
+  @media (max-width: 700px) {
+    .ui-body { grid-template-columns: 1fr; }
+    .ui-rail, .ui-side { display: none; }
+    .mode-split { grid-template-columns: 1fr; }
+    .conn-states { grid-template-columns: 1fr; }
+    .arch-row { flex-direction: column; gap: 0.5rem; }
+    .arch-connector { transform: rotate(90deg); padding: 0.5rem 0; }
+  }
+
+  /* ══════════════════════ INTERACTIVE FEATURE EXPLORER ══════════════════════ */
+  .explorer-section { margin: 6rem 0; padding: 0 2rem; }
+
+  .explorer-chrome {
+    max-width: 1100px; margin: 2rem auto 0;
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 12px;
+    overflow: hidden; background: rgba(12,12,18,0.6);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.4);
+  }
+
+  .explorer-titlebar {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: rgba(18,18,26,0.9); border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+  .traffic-lights { display: flex; gap: 0.4rem; }
+  .tl { width: 12px; height: 12px; border-radius: 50%; }
+  .tl-red { background: #ff5f57; } .tl-amber { background: #febc2e; } .tl-green { background: #28c840; }
+  .chrome-title-text { flex: 1; text-align: center; font-size: 0.75rem; color: var(--text-secondary); }
+  .chrome-badge-count {
+    font-size: 0.65rem; background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2); border-radius: 20px;
+    padding: 0.1rem 0.5rem; color: #c084fc;
+  }
+
+  .explorer-body { display: grid; grid-template-columns: 220px 1fr; height: 540px; }
+
+  .explorer-sidebar {
+    border-right: 1px solid rgba(255,255,255,0.06);
+    overflow-y: auto; background: rgba(9,9,11,0.5);
+    scrollbar-width: thin; scrollbar-color: rgba(63,63,70,0.5) transparent;
+  }
+  .sidebar-search-wrap {
+    padding: 0.5rem; position: sticky; top: 0;
+    background: rgba(9,9,11,0.85); backdrop-filter: blur(8px);
+    border-bottom: 1px solid rgba(255,255,255,0.05); z-index: 1;
+  }
+  .sidebar-search-input {
+    width: 100%; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 6px;
+    padding: 0.35rem 0.5rem; font-size: 0.75rem;
+    color: var(--text-secondary); outline: none; transition: border-color 0.15s;
+  }
+  .sidebar-search-input:focus { border-color: rgba(139,92,246,0.4); background: rgba(139,92,246,0.04); }
+  .sidebar-search-input::placeholder { color: var(--text-muted); }
+
+  .cat-group { padding: 0.4rem 0; }
+  .cat-label {
+    font-size: 0.6rem; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text-muted); padding: 0.25rem 0.75rem 0.1rem;
+  }
+  .feat-item {
+    display: flex; align-items: center; gap: 0.4rem;
+    width: 100%; padding: 0.3rem 0.75rem;
+    background: transparent; border: none; cursor: pointer;
+    text-align: left; transition: background 0.1s; border-radius: 0;
+  }
+  .feat-item:hover { background: rgba(255,255,255,0.03); }
+  .feat-item.active { background: rgba(139,92,246,0.08); box-shadow: inset 2px 0 0 rgba(139,92,246,0.8); }
+  .feat-icon { font-size: 0.85rem; width: 18px; text-align: center; flex-shrink: 0; }
+  .feat-name { font-size: 0.775rem; color: var(--text-secondary); }
+  .feat-item.active .feat-name { color: var(--text-primary); }
+
+  .explorer-detail {
+    overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: rgba(63,63,70,0.5) transparent;
+  }
+  .detail-panel { display: none; padding: 1.5rem 1.75rem; animation: dp-fade 0.15s ease; }
+  .detail-panel.dp-active { display: block; }
+
+  @keyframes dp-fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+  .dp-header { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
+  .dp-icon-badge {
+    width: 48px; height: 48px; border-radius: 10px; border: 1px solid;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .dp-title { font-size: 1.1rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.25rem; }
+  .dp-cat-chip {
+    font-size: 0.65rem; font-weight: 600; letter-spacing: 0.07em;
+    text-transform: uppercase; border: 1px solid; border-radius: 20px;
+    padding: 0.15rem 0.5rem; display: inline-block;
+  }
+  .dp-tagline {
+    font-style: italic; color: var(--text-secondary); font-size: 0.9rem;
+    margin-bottom: 0.75rem; padding-left: 0.6rem;
+    border-left: 2px solid rgba(139,92,246,0.35);
+  }
+  .dp-desc { font-size: 0.875rem; color: var(--text-secondary); line-height: 1.7; margin-bottom: 1.25rem; }
+  .dp-desc code, .dp-tips-list code {
+    font-family: 'Courier New', monospace; font-size: 0.82em;
+    background: rgba(6,182,212,0.08); color: #67e8f9;
+    padding: 0.1rem 0.3rem; border-radius: 3px;
+  }
+  .dp-visual {
+    background: rgba(9,9,11,0.7); border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 1.25rem;
+  }
+  .dp-visual-label, .dp-tips-label, .dp-related-label {
+    font-size: 0.63rem; text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--text-muted); font-weight: 600; margin-bottom: 0.4rem;
+  }
+  .dp-mockup { line-height: 1.55; }
+  .dp-tips { margin-bottom: 1.25rem; }
+  .dp-tips-list { list-style: none; display: grid; gap: 0.3rem; }
+  .dp-tips-list li {
+    font-size: 0.8rem; color: var(--text-secondary);
+    padding-left: 1.1rem; position: relative;
+  }
+  .dp-tips-list li::before {
+    content: '→'; position: absolute; left: 0;
+    color: var(--primary); font-size: 0.75rem;
+  }
+  .dp-chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .dp-chip {
+    font-size: 0.75rem; color: var(--text-muted);
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 20px; padding: 0.2rem 0.65rem; cursor: pointer; transition: all 0.15s;
+  }
+  .dp-chip:hover {
+    color: var(--text-primary); background: rgba(139,92,246,0.08);
+    border-color: rgba(139,92,246,0.3);
+  }
+  @media (max-width: 700px) {
+    .explorer-body { grid-template-columns: 1fr; height: auto; }
+    .explorer-sidebar { height: 220px; }
+    .explorer-chrome { margin: 1rem 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <div class="hero-badge">Opta Code Desktop · Visual Masterclass</div>
+  <h1>Opta Code<br>Desktop Masterclass</h1>
+  <p class="hero-sub">The definitive visual guide to running, navigating, and mastering the Opta Code native desktop application. Built for visual learners who want to understand the system, not just use it.</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">
+      <span class="hero-meta-value">Tauri v2</span>
+      <span class="hero-meta-label">Shell Runtime</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-value">React 18</span>
+      <span class="hero-meta-label">UI Layer</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-value">WS + HTTP</span>
+      <span class="hero-meta-label">Daemon Transport</span>
+    </div>
+    <div class="hero-meta-item">
+      <span class="hero-meta-value">macOS / Win</span>
+      <span class="hero-meta-label">Platforms</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sticky nav -->
+<nav class="section-nav">
+  <div class="section-nav-inner">
+    <a href="#what-is" class="nav-pill">What Is It</a>
+    <a href="#architecture" class="nav-pill">Architecture</a>
+    <a href="#interface" class="nav-pill">Interface</a>
+    <a href="#modes" class="nav-pill">Chat vs Do</a>
+    <a href="#features" class="nav-pill">Features</a>
+    <a href="#daemon-panel" class="nav-pill">Daemon Panel</a>
+    <a href="#connection" class="nav-pill">Connection</a>
+    <a href="#streaming" class="nav-pill">Streaming</a>
+    <a href="#triage" class="nav-pill">Triage Workflow</a>
+    <a href="#recovery" class="nav-pill">Recovery</a>
+    <a href="#shortcuts" class="nav-pill">Shortcuts</a>
+  </div>
+</nav>
+
+<div class="container">
+
+<!-- 1. What Is It -->
+<section id="what-is">
+  <div class="section-label">01 — Orientation</div>
+  <h2 class="section-title">What is Opta Code Desktop?</h2>
+  <p class="section-lead">Opta Code Desktop is a native graphical shell built around the same daemon that powers your terminal. It's a <em>stateless viewport</em> into the daemon's brain — it doesn't run inference or orchestrate agents. It shows you what the daemon is doing, in real time, with a polished visual layer.</p>
+
+  <div style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.75rem;">
+    <span class="tag tag-desktop">Tauri v2</span>
+    <span class="tag tag-tauri">React 18 + Vite</span>
+    <span class="tag tag-cli">CLI-compatible</span>
+    <span class="tag tag-daemon">Daemon-connected</span>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">💡</div>
+    <div>
+      <div class="callout-title">Key mental model</div>
+      <div class="callout-body">Think of Code Desktop as a <strong>live dashboard panel</strong> bolted onto the CLI daemon. Every session you run via <code>opta chat</code> or <code>opta do</code> is visible here, in real time, with zero extra setup.</div>
+    </div>
+  </div>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+    <div class="glass-subtle" style="padding:1.25rem;">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); margin-bottom:0.75rem;">Code Desktop CAN</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:0.5rem; font-size:0.8rem; color:var(--text-secondary);">
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-green);margin-top:0.1rem;">✓</span> Show live streaming output and tool calls</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-green);margin-top:0.1rem;">✓</span> Browse historical sessions and turns</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-green);margin-top:0.1rem;">✓</span> Control daemon lifecycle (start/stop/restart)</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-green);margin-top:0.1rem;">✓</span> Export conversations to JSON or Markdown</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-green);margin-top:0.1rem;">✓</span> Submit new turns (Chat and Do mode)</li>
+      </ul>
+    </div>
+    <div class="glass-subtle" style="padding:1.25rem;">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); margin-bottom:0.75rem;">Code Desktop CANNOT</div>
+      <ul style="list-style:none; display:flex; flex-direction:column; gap:0.5rem; font-size:0.8rem; color:var(--text-secondary);">
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-red);margin-top:0.1rem;">✗</span> Run its own inference or load models</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-red);margin-top:0.1rem;">✗</span> Work without a running daemon</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-red);margin-top:0.1rem;">✗</span> Replace the CLI for power workflows</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-red);margin-top:0.1rem;">✗</span> Modify daemon configuration directly</li>
+        <li style="display:flex;gap:0.5rem;align-items:flex-start;"><span style="color:var(--neon-red);margin-top:0.1rem;">✗</span> Run on a machine without Opta CLI installed</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Architecture -->
+<section id="architecture">
+  <div class="section-label">02 — Architecture</div>
+  <h2 class="section-title">How It All Connects</h2>
+  <p class="section-lead">Code Desktop sits at the top of a three-layer stack. Understanding these layers tells you exactly what to restart when something breaks.</p>
+
+  <div class="arch-diagram">
+    <div class="arch-row" style="margin-bottom:1.5rem;">
+      <div class="arch-node active">
+        <div class="arch-node-icon" style="background:rgba(139,92,246,0.15);">🖥️</div>
+        <div class="arch-node-name">Opta Code Desktop</div>
+        <div class="arch-node-sub">Tauri v2 + React 18</div>
+        <div class="arch-node-sub" style="color:rgba(168,85,247,0.7); margin-top:0.25rem;">localhost:5173 (web) / native</div>
+      </div>
+      <div class="arch-connector">
+        <div class="arch-connector-line"></div>
+        <div class="arch-connector-label">HTTP REST + WS</div>
+      </div>
+      <div class="arch-node daemon">
+        <div class="arch-node-icon" style="background:rgba(6,182,212,0.12);">⚙️</div>
+        <div class="arch-node-name">Opta Daemon</div>
+        <div class="arch-node-sub">Node.js + Express</div>
+        <div class="arch-node-sub" style="color:rgba(6,182,212,0.6); margin-top:0.25rem;">127.0.0.1:9999</div>
+      </div>
+      <div class="arch-connector">
+        <div class="arch-connector-line"></div>
+        <div class="arch-connector-label">OpenAI-compat API</div>
+      </div>
+      <div class="arch-node lmx">
+        <div class="arch-node-icon" style="background:rgba(168,85,247,0.12);">🧠</div>
+        <div class="arch-node-name">Opta LMX</div>
+        <div class="arch-node-sub">Python + MLX</div>
+        <div class="arch-node-sub" style="color:rgba(168,85,247,0.6); margin-top:0.25rem;">192.168.x.x:1234</div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1rem; padding-top:1rem; border-top:1px solid var(--border); position:relative; z-index:1;">
+      <div style="font-size:0.72rem; text-align:center; color:var(--text-muted);">
+        <div style="color:var(--primary-glow); font-weight:600; margin-bottom:0.3rem;">Native Layer</div>
+        Rust shell handles OS token storage, window management, and native IPC
+      </div>
+      <div style="font-size:0.72rem; text-align:center; color:var(--text-muted);">
+        <div style="color:var(--neon-cyan); font-weight:600; margin-bottom:0.3rem;">Orchestration Layer</div>
+        Daemon owns sessions, tool permissions, event persistence, and inference proxying
+      </div>
+      <div style="font-size:0.72rem; text-align:center; color:var(--text-muted);">
+        <div style="color:var(--primary-glow); font-weight:600; margin-bottom:0.3rem;">Inference Layer</div>
+        LMX runs on Apple Silicon (MLX), OpenAI-compatible API, never on your MacBook
+      </div>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang">text</span>
+      <span class="code-file">Transport contracts</span>
+    </div>
+    <div class="code-body"><span class="code-comment"># Tauri commands (native runtime only)</span>
+<span class="code-kw">bootstrap_metadata</span>  → <span class="code-string">{ host, port, token }</span>
+<span class="code-kw">secure_store_get</span>    → daemon token from OS keyring
+
+<span class="code-comment"># HTTP REST (both native + browser/dev mode)</span>
+<span class="code-prop">GET</span>  /v3/sessions          → session list
+<span class="code-prop">POST</span> /v3/sessions          → create session
+<span class="code-prop">POST</span> /v3/sessions/:id/turns → submit turn
+<span class="code-prop">POST</span> /v3/sessions/:id/stop  → cancel run
+
+<span class="code-comment"># WebSocket (real-time event stream)</span>
+<span class="code-kw">ws://127.0.0.1:9999/v3/events?token=&lt;T&gt;</span>
+<span class="code-comment"># Events: turn.token · turn.done · tool.call · tool.result · session.cancelled</span></div>
+  </div>
+</section>
+
+<!-- 3. Interface -->
+<section id="interface">
+  <div class="section-label">03 — Interface Anatomy</div>
+  <h2 class="section-title">Every Panel, Explained</h2>
+  <p class="section-lead">The interface has three persistent panes. Learn what each surface is for — and you'll never be lost navigating a session.</p>
+
+  <div class="ui-anatomy">
+    <div class="ui-titlebar">
+      <div class="traffic-lights">
+        <div class="traffic-light tl-red"></div>
+        <div class="traffic-light tl-amber"></div>
+        <div class="traffic-light tl-green"></div>
+      </div>
+      <div class="ui-titlebar-title">Opta Code Desktop — refactor-auth-layer</div>
+      <div class="ui-conn-dot" title="Connected"></div>
+    </div>
+    <div class="ui-body">
+
+      <!-- Session Rail -->
+      <div class="ui-rail">
+        <div class="rail-label">Sessions</div>
+        <div style="padding:0 0.5rem 0.5rem; position:relative;">
+          <input type="text" placeholder="Search..." style="width:100%; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:6px; padding:0.35rem 0.6rem; font-size:0.65rem; color:var(--text-muted); outline:none; font-family:ui-monospace,monospace;" readonly />
+        </div>
+        <div class="session-item active">
+          <div class="session-item-title">refactor-auth-layer</div>
+          <div class="session-item-meta">Active · 12 turns</div>
+        </div>
+        <div class="session-item">
+          <div class="session-item-title">add-pagination-api</div>
+          <div class="session-item-meta">Done · 8 turns</div>
+        </div>
+        <div class="session-item">
+          <div class="session-item-title">debug-deploy-webhook</div>
+          <div class="session-item-meta">Done · 5 turns</div>
+        </div>
+        <div class="session-item">
+          <div class="session-item-title">write-readme-update</div>
+          <div class="session-item-meta">Done · 3 turns</div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="ui-main">
+        <div class="timeline">
+          <div class="turn-user">Refactor the auth middleware to use the new JWT library and add refresh token rotation</div>
+          <div class="turn-model">
+            <span>I'll refactor the auth middleware step by step. Let me start by reading the existing implementation.</span>
+            <div class="tool-card">
+              <span>🔍 read_file · src/middleware/auth.ts</span>
+              <span style="color:var(--text-muted); font-size:0.6rem;">pending…</span>
+            </div>
+            <div class="tool-card tool-result">
+              <span>✓ read_file complete · 142 lines</span>
+              <span style="font-size:0.6rem; opacity:0.7;">82ms</span>
+            </div>
+            <div class="turn-stats">
+              <span><span class="stat-val">1,847</span> tokens</span>
+              <span><span class="stat-val">94</span> tok/s</span>
+              <span><span class="stat-val">19.6s</span></span>
+              <span><span class="stat-val">3</span> tools</span>
+            </div>
+          </div>
+          <div class="turn-user">Looks good. Now write the updated middleware.<span class="cursor-blink"></span></div>
+        </div>
+        <div class="composer-area">
+          <div class="composer-pills">
+            <span class="composer-pill pill-mode">DO MODE</span>
+            <span class="composer-pill pill-model">⚡ LMX · Mono512</span>
+            <span class="composer-pill pill-perm">L2 · Safe</span>
+          </div>
+          <div class="composer-input">
+            <span style="opacity:0.4;">Type a message…</span>
+            <span style="font-size:0.6rem; color:var(--text-muted);">⌘↩ Send</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Telemetry side panel -->
+      <div class="ui-side">
+        <div>
+          <div class="side-section-title">Telemetry</div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">Tok/s</span>
+            <div class="telemetry-bar"><div class="telemetry-fill fill-green"></div></div>
+            <span class="telemetry-val" style="color:var(--neon-green);">94</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">VRAM</span>
+            <div class="telemetry-bar"><div class="telemetry-fill fill-blue"></div></div>
+            <span class="telemetry-val">48%</span>
+          </div>
+          <div class="telemetry-row">
+            <span class="telemetry-label">Context</span>
+            <div class="telemetry-bar"><div class="telemetry-fill fill-purple"></div></div>
+            <span class="telemetry-val" style="color:var(--primary-glow);">82%</span>
+          </div>
+        </div>
+        <div class="neon-divider"></div>
+        <div>
+          <div class="side-section-title">Daemon</div>
+          <div style="display:flex; flex-direction:column; gap:0.4rem; font-size:0.65rem; font-family:ui-monospace,monospace;">
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Status</span>
+              <span style="color:var(--neon-green);">● Running</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Port</span>
+              <span style="color:var(--text-secondary);">9999</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Uptime</span>
+              <span style="color:var(--text-secondary);">2h 14m</span>
+            </div>
+            <div style="display:flex; justify-content:space-between;">
+              <span style="color:var(--text-muted);">Sessions</span>
+              <span style="color:var(--text-secondary);">4 active</span>
+            </div>
+          </div>
+        </div>
+        <div class="neon-divider"></div>
+        <div>
+          <div class="side-section-title">Active Turn</div>
+          <div style="font-size:0.62rem; font-family:ui-monospace,monospace; color:var(--text-muted);">
+            <div style="color:var(--neon-amber);">● Streaming…</div>
+            <div style="margin-top:0.3rem;">Elapsed: <span style="color:var(--text-secondary);">00:00:19</span></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="feature-grid" style="margin-top:1.5rem;">
+    <div class="feature-card" style="--card-glow:rgba(6,182,212,0.07);">
+      <div class="feature-icon" style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2);">📋</div>
+      <div class="feature-title">Session Rail</div>
+      <div class="feature-desc">Left sidebar lists all daemon sessions. Searchable by title or session ID. Selecting a session loads its full timeline.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(139,92,246,0.07);">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.2);">⏱️</div>
+      <div class="feature-title">Timeline View</div>
+      <div class="feature-desc">Chronological turns with user messages, model responses, and tool call/result cards. Virtually-rendered so it never slows down.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(34,197,94,0.05);">
+      <div class="feature-icon" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);">✍️</div>
+      <div class="feature-title">Composer</div>
+      <div class="feature-desc">Smart input with per-turn override pills for mode, model, and permission level. Switch Chat↔Do without leaving the conversation.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(59,130,246,0.06);">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2);">📊</div>
+      <div class="feature-title">Telemetry Panel</div>
+      <div class="feature-desc">Live token velocity, VRAM usage, context fill, and daemon heartbeat. First stop for debugging performance regressions.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 4. Chat vs Do Modes -->
+<section id="modes">
+  <div class="section-label">04 — Two Modes</div>
+  <h2 class="section-title">Chat Mode vs Do Mode</h2>
+  <p class="section-lead">Code Desktop exposes both interaction modes from the same Composer. The mode pill controls how the daemon orchestrates your turn — not just what gets displayed.</p>
+
+  <div class="mode-split">
+    <div class="mode-card chat">
+      <div class="mode-header">
+        <div class="mode-icon" style="background:rgba(6,182,212,0.12); border:1px solid rgba(6,182,212,0.2);">💬</div>
+        <div>
+          <div class="mode-title" style="color:var(--neon-cyan);">Chat Mode</div>
+          <div class="mode-cmd">opta chat · CHAT MODE pill</div>
+        </div>
+      </div>
+      <ul class="mode-items">
+        <li class="mode-item">Interactive back-and-forth conversation</li>
+        <li class="mode-item">You approve every tool call before it runs</li>
+        <li class="mode-item">Model streams responses token-by-token</li>
+        <li class="mode-item">Best for exploration, review, and steering</li>
+        <li class="mode-item">No auto-execution of file or shell tools</li>
+      </ul>
+      <div style="margin-top:1.25rem; padding:0.75rem; border-radius:8px; background:rgba(6,182,212,0.06); border:1px solid rgba(6,182,212,0.15); font-size:0.72rem; color:var(--neon-cyan); font-family:ui-monospace,monospace;">
+        → "Explain what this function does and suggest improvements"
+      </div>
+    </div>
+
+    <div class="mode-card do">
+      <div class="mode-header">
+        <div class="mode-icon" style="background:rgba(34,197,94,0.12); border:1px solid rgba(34,197,94,0.2);">⚡</div>
+        <div>
+          <div class="mode-title" style="color:var(--neon-green);">Do Mode</div>
+          <div class="mode-cmd">opta do "task" · DO MODE pill</div>
+        </div>
+      </div>
+      <ul class="mode-items">
+        <li class="mode-item">Autonomous agent loop until task completes</li>
+        <li class="mode-item">Safe tools run automatically (read, search)</li>
+        <li class="mode-item">Dangerous tools need permission (write, exec)</li>
+        <li class="mode-item">Best for well-defined, repeatable tasks</li>
+        <li class="mode-item">Timeline shows full tool call trace</li>
+      </ul>
+      <div style="margin-top:1.25rem; padding:0.75rem; border-radius:8px; background:rgba(34,197,94,0.06); border:1px solid rgba(34,197,94,0.15); font-size:0.72rem; color:var(--neon-green); font-family:ui-monospace,monospace;">
+        → "Refactor all API routes to use the new error handler"
+      </div>
+    </div>
+  </div>
+
+  <div class="callout callout-tip">
+    <div class="callout-icon">💡</div>
+    <div>
+      <div class="callout-title">Switching mid-session</div>
+      <div class="callout-body">You can switch modes per turn without creating a new session. Click the mode pill in the Composer to toggle. Chat a few turns to explore, then switch to Do to execute — all in the same session timeline.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Features Deep Dive -->
+<section id="features">
+  <div class="section-label">05 — Core Features</div>
+  <h2 class="section-title">Feature Reference</h2>
+  <p class="section-lead">Every capability Code Desktop adds on top of raw CLI access.</p>
+
+  <div class="feature-grid">
+    <div class="feature-card" style="--card-glow:rgba(139,92,246,0.07);">
+      <div class="feature-icon" style="background:rgba(139,92,246,0.1); border:1px solid rgba(139,92,246,0.2);">🃏</div>
+      <div class="feature-title">Tool Cards</div>
+      <div class="feature-desc">Every tool call renders as a collapsible card showing tool name, arguments, and result. Expand any card to see the full payload.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(6,182,212,0.06);">
+      <div class="feature-icon" style="background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.2);">📈</div>
+      <div class="feature-title">Turn Statistics</div>
+      <div class="feature-desc">Each completed turn shows: token count, generation speed (tok/s), elapsed time, and tool call count — at a glance.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(34,197,94,0.05);">
+      <div class="feature-icon" style="background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.2);">📁</div>
+      <div class="feature-title">Session Export</div>
+      <div class="feature-desc">Export any session as formatted JSON or Markdown. Useful for archiving, bug reports, or sharing session context with teammates.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(245,158,11,0.05);">
+      <div class="feature-icon" style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2);">🔄</div>
+      <div class="feature-title">Auto-Reconnect</div>
+      <div class="feature-desc">WebSocket drops reconnect with exponential backoff. Code Desktop resumes streaming from your last received event sequence — no state lost.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(59,130,246,0.06);">
+      <div class="feature-icon" style="background:rgba(59,130,246,0.1); border:1px solid rgba(59,130,246,0.2);">🔐</div>
+      <div class="feature-title">Secure Token Storage</div>
+      <div class="feature-desc">Native runtime stores the daemon token in the OS keyring (macOS Keychain / Windows Credential Store). Dev mode falls back to localStorage.</div>
+    </div>
+    <div class="feature-card" style="--card-glow:rgba(168,85,247,0.06);">
+      <div class="feature-icon" style="background:rgba(168,85,247,0.1); border:1px solid rgba(168,85,247,0.2);">🎛️</div>
+      <div class="feature-title">Composer Overrides</div>
+      <div class="feature-desc">Inline pills above the input let you override model, mode, and permission level per turn without changing your global configuration.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 6. Daemon Panel -->
+<section id="daemon-panel">
+  <div class="section-label">06 — Daemon Controls</div>
+  <h2 class="section-title">The Daemon Panel</h2>
+  <p class="section-lead">A dedicated surface for daemon lifecycle management — no terminal required. This is where you restart a stuck daemon, tail logs, and check process health.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:2rem;">
+    <div class="glass" style="padding:1.5rem;">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); margin-bottom:1rem;">Status Metrics</div>
+      <div style="display:flex; flex-direction:column; gap:0.7rem; font-size:0.82rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-secondary);">Process state</span>
+          <span style="color:var(--neon-green); font-family:ui-monospace,monospace; font-size:0.75rem;">● Running</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-secondary);">PID</span>
+          <span style="color:var(--text-primary); font-family:ui-monospace,monospace;">84721</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-secondary);">Port</span>
+          <span style="color:var(--text-primary); font-family:ui-monospace,monospace;">9999</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-secondary);">Uptime</span>
+          <span style="color:var(--text-primary); font-family:ui-monospace,monospace;">2h 14m 33s</span>
+        </div>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--text-secondary);">Active sessions</span>
+          <span style="color:var(--text-primary); font-family:ui-monospace,monospace;">4</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass" style="padding:1.5rem;">
+      <div style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.12em; color:var(--text-muted); margin-bottom:1rem;">Lifecycle Actions</div>
+      <div style="display:flex; flex-direction:column; gap:0.75rem;">
+        <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+          <div style="width:28px; height:28px; border-radius:6px; background:rgba(245,158,11,0.12); border:1px solid rgba(245,158,11,0.25); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">⏹</div>
+          <div>
+            <div style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">Stop</div>
+            <div style="font-size:0.72rem; color:var(--text-muted);">Graceful shutdown. Sessions persist to disk.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+          <div style="width:28px; height:28px; border-radius:6px; background:rgba(6,182,212,0.1); border:1px solid rgba(6,182,212,0.25); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">🔄</div>
+          <div>
+            <div style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">Restart</div>
+            <div style="font-size:0.72rem; color:var(--text-muted);">Stop/start cycle. UI auto-reconnects and rotates token.</div>
+          </div>
+        </div>
+        <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+          <div style="width:28px; height:28px; border-radius:6px; background:rgba(34,197,94,0.1); border:1px solid rgba(34,197,94,0.25); display:flex; align-items:center; justify-content:center; font-size:0.85rem; flex-shrink:0;">⌨️</div>
+          <div>
+            <div style="font-size:0.8rem; font-weight:600; color:var(--text-primary);">CLI Ops</div>
+            <div style="font-size:0.72rem; color:var(--text-muted);">Handoff to terminal for deep diagnostics.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log viewer mockup -->
+  <div class="code-block">
+    <div class="code-header">
+      <span class="code-lang">Live Log Viewer</span>
+      <span style="display:flex; gap:0.5rem; align-items:center; font-size:0.65rem;">
+        <span style="padding:0.15rem 0.5rem; border-radius:4px; background:rgba(239,68,68,0.12); border:1px solid rgba(239,68,68,0.2); color:#fca5a5; font-family:ui-monospace,monospace;">ERROR</span>
+        <span style="padding:0.15rem 0.5rem; border-radius:4px; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.2); color:#fcd34d; font-family:ui-monospace,monospace;">WARN</span>
+        <span style="padding:0.15rem 0.5rem; border-radius:4px; background:rgba(255,255,255,0.04); border:1px solid var(--border); color:var(--text-muted); font-family:ui-monospace,monospace;">INFO</span>
+      </span>
+    </div>
+    <div class="code-body"><span class="code-comment">14:23:01.812  INFO  [session]  Session s-a8f2 created</span>
+<span class="code-comment">14:23:02.441  INFO  [lmx]      Model connection established · 192.168.188.11:1234</span>
+<span class="code-comment">14:23:04.003  INFO  [tools]    Tool worker pool ready · 8 workers</span>
+<span style="color:#86efac;">14:23:09.224  INFO  [session]  Turn submitted · session=s-a8f2 model=lmx</span>
+<span style="color:#86efac;">14:23:09.891  INFO  [stream]   Token stream active · 94.2 tok/s</span>
+<span style="color:#67e8f9;">14:23:14.556  INFO  [tools]    Tool call: read_file · src/middleware/auth.ts</span>
+<span style="color:#67e8f9;">14:23:14.639  INFO  [tools]    Tool result: read_file · 142 lines · 83ms</span>
+<span style="color:#86efac;">14:23:28.110  INFO  [session]  Turn complete · 1847 tokens · 19.6s</span></div>
+  </div>
+
+  <div class="callout callout-warning">
+    <div class="callout-icon">⚠️</div>
+    <div>
+      <div class="callout-title">Token rotation on restart</div>
+      <div class="callout-body">Every daemon restart generates a new auth token. In native runtime, Code Desktop updates secure storage automatically. In browser/dev mode, it updates localStorage. Either way, you don't need to do anything manually.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Connection States -->
+<section id="connection">
+  <div class="section-label">07 — Connection Model</div>
+  <h2 class="section-title">Connection States</h2>
+  <p class="section-lead">The header indicator tells you the current state of the WebSocket connection to the daemon. Know what each state means before you start debugging.</p>
+
+  <div class="conn-states">
+    <div class="conn-card" style="border-color:rgba(34,197,94,0.25);">
+      <div class="conn-indicator conn-connected"></div>
+      <div class="conn-state-name" style="color:var(--neon-green);">Connected</div>
+      <div class="conn-state-desc">WebSocket active. Daemon responding to health checks. All features available.</div>
+    </div>
+    <div class="conn-card" style="border-color:rgba(245,158,11,0.25);">
+      <div class="conn-indicator conn-reconnecting"></div>
+      <div class="conn-state-name" style="color:var(--neon-amber);">Reconnecting</div>
+      <div class="conn-state-desc">WebSocket dropped. Attempting reconnect with exponential backoff. Session state preserved.</div>
+    </div>
+    <div class="conn-card" style="border-color:rgba(239,68,68,0.25);">
+      <div class="conn-indicator conn-disconnected"></div>
+      <div class="conn-state-name" style="color:var(--neon-red);">Disconnected</div>
+      <div class="conn-state-desc">Multiple attempts failed. Daemon may be stopped. Open Daemon Panel to restart.</div>
+    </div>
+  </div>
+
+  <div class="callout callout-info">
+    <div class="callout-icon">🔌</div>
+    <div>
+      <div class="callout-title">Auto-discovery on startup</div>
+      <div class="callout-body">On launch, Code Desktop reads <code>~/.config/opta/</code> (macOS/Linux) or <code>%APPDATA%\opta\</code> (Windows) to find the daemon's host, port, and token. If you moved your daemon or changed ports, update these files or re-run <code>opta daemon install</code>.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 8. Streaming & Performance -->
+<section id="streaming">
+  <div class="section-label">08 — Streaming & Performance</div>
+  <h2 class="section-title">How Streaming Works</h2>
+  <p class="section-lead">High-throughput local models can produce 90–120 tokens per second. Code Desktop uses two techniques to stay smooth even under that load.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem;">
+    <div>
+      <div style="font-size:0.85rem; font-weight:600; color:var(--text-primary); margin-bottom:0.5rem;">Virtual Rendering</div>
+      <div class="glass-subtle" style="padding:1rem; height:180px; position:relative; overflow:hidden;">
+        <div style="display:flex; flex-direction:column; gap:0.5rem; position:absolute; inset:1rem;">
+          <div style="padding:0.5rem; border-radius:6px; background:rgba(255,255,255,0.02); border:1px solid var(--border); font-size:0.65rem; font-family:ui-monospace,monospace; color:var(--text-muted); opacity:0.25; display:flex; justify-content:space-between;">
+            <span>Turn #1 (Unmounted)</span><span>-210 nodes</span>
+          </div>
+          <div style="padding:0.5rem; border-radius:6px; background:rgba(255,255,255,0.02); border:1px solid var(--border); font-size:0.65rem; font-family:ui-monospace,monospace; color:var(--text-muted); opacity:0.25; display:flex; justify-content:space-between;">
+            <span>Turn #2 (Unmounted)</span><span>-180 nodes</span>
+          </div>
+          <div style="padding:0.6rem; border-radius:6px; background:rgba(6,182,212,0.07); border:1px solid rgba(6,182,212,0.2); font-size:0.65rem; font-family:ui-monospace,monospace; color:var(--neon-cyan); display:flex; justify-content:space-between; align-items:center;">
+            <span>Turn #12 (Rendered) ←</span><span>VISIBLE</span>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.6;">Off-screen turns are unmounted from the DOM. Scrolling back mounts them on demand. The timeline never slows down no matter how long the session.</p>
+    </div>
+
+    <div>
+      <div style="font-size:0.85rem; font-weight:600; color:var(--text-primary); margin-bottom:0.5rem;">Stream Debouncing</div>
+      <div class="glass-subtle" style="padding:1rem; height:180px; display:flex; flex-direction:column; gap:0.75rem; justify-content:center;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="font-size:0.65rem; color:var(--text-muted); width:80px; text-align:right; font-family:ui-monospace,monospace;">Raw tokens</div>
+          <div style="flex:1; height:8px; border-radius:4px; background:rgba(255,255,255,0.04); overflow:hidden; position:relative;">
+            <div style="position:absolute; inset:0; background:repeating-linear-gradient(90deg, var(--neon-cyan) 0px, var(--neon-cyan) 2px, transparent 2px, transparent 8px); animation:token-flow 0.4s linear infinite;"></div>
+          </div>
+          <div style="font-size:0.62rem; color:var(--neon-cyan); font-family:ui-monospace,monospace;">94/s</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.5rem; padding-left:86px;">
+          <div style="font-size:1rem; color:var(--text-muted);">↓</div>
+          <div style="font-size:0.65rem; color:var(--primary-glow); font-family:ui-monospace,monospace;">useStreamingMarkdown · 16ms debounce</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <div style="font-size:0.65rem; color:var(--text-muted); width:80px; text-align:right; font-family:ui-monospace,monospace;">DOM updates</div>
+          <div style="flex:1; height:8px; border-radius:4px; background:rgba(255,255,255,0.04); overflow:hidden; position:relative;">
+            <div style="position:absolute; inset:0; background:repeating-linear-gradient(90deg, var(--neon-green) 0px, var(--neon-green) 6px, transparent 6px, transparent 30px); animation:token-flow 0.4s linear infinite;"></div>
+          </div>
+          <div style="font-size:0.62rem; color:var(--neon-green); font-family:ui-monospace,monospace;">60fps</div>
+        </div>
+      </div>
+      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:0.75rem; line-height:1.6;">Raw token events are batched with a 16ms debounce before re-rendering. The cursor stays smooth at 60fps regardless of how fast the model is streaming.</p>
+    </div>
+  </div>
+
+  <style>
+    @keyframes token-flow {
+      from { background-position: 0 0; }
+      to { background-position: 100px 0; }
+    }
+  </style>
+</section>
+
+<!-- 9. Triage Workflow -->
+<section id="triage">
+  <div class="section-label">09 — Operator Workflow</div>
+  <h2 class="section-title">Session Triage in 5 Steps</h2>
+  <p class="section-lead">When a session behaves unexpectedly, run this deterministic loop — not ad-hoc clicking. Each step either resolves the issue or narrows the search space.</p>
+
+  <div class="workflow-steps">
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">01</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-title">Confirm Route + Permissions</div>
+        <div class="step-desc">Check the Composer header: which mode is active? Which model? Which permission level? A mismatched pill is the #1 cause of unexpected behaviour. Verify before touching anything else.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">02</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-title">Check Telemetry Heartbeat</div>
+        <div class="step-desc">Open the telemetry panel. Is tok/s non-zero? Is the daemon status green? If VRAM is at 100% and tokens have stalled, the model is OOM — unload a model in LMX Dashboard first.</div>
+        <div class="step-code">opta status · then check LMX Dashboard at lmx.optalocal.com</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">03</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-title">Find the Divergence Point in the Timeline</div>
+        <div class="step-desc">Scroll the timeline to the last known-good turn. Look at the event immediately after: was it a model switch, a tool escalation, a context injection, or a daemon reconnect? That event is your root cause candidate.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">04</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-title">Send a Single Minimal Probe Turn</div>
+        <div class="step-desc">Send the simplest possible prompt ("What is 2+2?") and watch whether UI rendering, daemon response, and tool flow all complete in a single cycle. This tells you whether the fault is in <em>interaction state</em>, <em>orchestration state</em>, or <em>inference state</em>.</div>
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-left">
+        <div class="step-num">05</div>
+        <div class="step-line"></div>
+      </div>
+      <div class="step-content">
+        <div class="step-title">Classify the Failure Domain, Then Fix</div>
+        <div class="step-desc">After the probe, you know exactly which layer failed. UI hydration drift → refresh. WebSocket transport → soft reconnect via Daemon Panel. Daemon task deadlock → restart daemon. Inference issue → unload/reload model in LMX.</div>
+        <div class="step-code">opta daemon restart  ·  or use the Daemon Panel in Code Desktop</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 10. Recovery -->
+<section id="recovery">
+  <div class="section-label">10 — Recovery Runbook</div>
+  <h2 class="section-title">Recovery Mini-Runbook</h2>
+  <p class="section-lead">When a session fails, preserve evidence before restarting anything. These five actions, in order, contain the failure and prevent recurrence.</p>
+
+  <div class="recovery-grid">
+    <div class="recovery-cell">
+      <div class="recovery-step">Step 01 · Capture</div>
+      <div class="recovery-title">Collect evidence</div>
+      <div class="recovery-desc">Note the last timeline event ID, current telemetry metrics, and the last tool invocation. These three artifacts identify the fault layer.</div>
+    </div>
+    <div class="recovery-cell">
+      <div class="recovery-step">Step 02 · Contain</div>
+      <div class="recovery-title">Stop new risky tasks</div>
+      <div class="recovery-desc">Pause non-critical runs. Keep the current session alive if possible — don't restart the daemon until you've captured evidence.</div>
+    </div>
+    <div class="recovery-cell">
+      <div class="recovery-step">Step 03 · Reconnect</div>
+      <div class="recovery-title">Restore transport first</div>
+      <div class="recovery-desc">Use the Daemon Panel to reconnect or soft-restart. Validate with one probe turn before executing any real work.</div>
+    </div>
+    <div class="recovery-cell">
+      <div class="recovery-step">Step 04 · Replay</div>
+      <div class="recovery-title">Isolate root cause</div>
+      <div class="recovery-desc">Rerun the failing prompt with a smaller context window. If it succeeds, the issue was context overflow. If it fails again, the issue is model or tool state.</div>
+    </div>
+    <div class="recovery-cell">
+      <div class="recovery-step">Step 05 · Document</div>
+      <div class="recovery-title">Write a postmortem note</div>
+      <div class="recovery-desc">Record: trigger → symptom → containment → fix. Even one sentence per incident builds a reusable runbook over time.</div>
+    </div>
+  </div>
+</section>
+
+<!-- 11. Shortcuts -->
+<section id="shortcuts">
+  <div class="section-label">11 — Power User</div>
+  <h2 class="section-title">Keyboard Shortcuts</h2>
+  <p class="section-lead">The interactions that matter most are all reachable without leaving the keyboard.</p>
+
+  <div class="shortcut-grid">
+    <div class="shortcut-item">
+      <span class="shortcut-action">Submit turn</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">↩</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Cancel active run</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">.</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">New session</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">N</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Toggle Chat / Do</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">M</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Search sessions</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">K</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Focus composer</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">L</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Export session</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">⇧</span><span class="key">E</span></span>
+    </div>
+    <div class="shortcut-item">
+      <span class="shortcut-action">Open daemon panel</span>
+      <span class="kbd"><span class="key">⌘</span><span class="key">D</span></span>
+    </div>
+  </div>
+
+  <div class="neon-divider" style="margin-top:2rem;"></div>
+
+  <div class="callout callout-tip" style="margin-top:1.5rem;">
+    <div class="callout-icon">🎯</div>
+    <div>
+      <div class="callout-title">Best practice: CLI + Desktop together</div>
+      <div class="callout-body">Start and manage the daemon in the CLI. Execute tasks with <code>opta do</code>. Use Code Desktop as your live visual panel. This pairing gives you the speed of terminal + the observability of a GUI — without duplicating effort.</div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /container -->
+
+<!-- ══════════════════════ INTERACTIVE FEATURE EXPLORER ══════════════════════ -->
+<section class="explorer-section">
+  <div style="max-width:1100px;margin:0 auto;">
+    <div class="section-label">12 — Interactive Explorer</div>
+    <h2 class="section-title text-moonlight">Feature Deep-Dive</h2>
+    <p class="section-lead">Click any feature to explore it in depth. Every capability, every control surface — 16 features across 5 categories.</p>
+  </div>
+
+  <div class="explorer-chrome">
+    <div class="explorer-titlebar">
+      <div class="traffic-lights"><span class="tl tl-red"></span><span class="tl tl-amber"></span><span class="tl tl-green"></span></div>
+      <span class="chrome-title-text">Opta Code Desktop — Feature Explorer</span>
+      <span class="chrome-badge-count">16 Features</span>
+    </div>
+
+    <div class="explorer-body">
+      <!-- ── SIDEBAR ── -->
+      <aside class="explorer-sidebar">
+        <div class="sidebar-search-wrap">
+          <input id="feature-search" type="text" placeholder="⌕  Search features..." class="sidebar-search-input" autocomplete="off" spellcheck="false">
+        </div>
+
+        <div class="cat-group" data-cat="interface">
+          <div class="cat-label">Interface</div>
+          <button class="feat-item active" data-id="tui-layout" onclick="selectFeature('tui-layout')"><span class="feat-icon" style="color:#8b5cf6">⬛</span><span class="feat-name">TUI Chat Layout</span></button>
+          <button class="feat-item" data-id="markdown-renderer" onclick="selectFeature('markdown-renderer')"><span class="feat-icon" style="color:#06b6d4">✦</span><span class="feat-name">Markdown Renderer</span></button>
+          <button class="feat-item" data-id="model-picker" onclick="selectFeature('model-picker')"><span class="feat-icon" style="color:#22c55e">◉</span><span class="feat-name">Model Picker</span></button>
+          <button class="feat-item" data-id="chat-modes" onclick="selectFeature('chat-modes')"><span class="feat-icon" style="color:#f59e0b">⇄</span><span class="feat-name">Chat vs Do Modes</span></button>
+          <button class="feat-item" data-id="opta-menu" onclick="selectFeature('opta-menu')"><span class="feat-icon" style="color:#a855f7">⌘</span><span class="feat-name">Opta Menu ⌘M</span></button>
+        </div>
+
+        <div class="cat-group" data-cat="daemon">
+          <div class="cat-label">Daemon</div>
+          <button class="feat-item" data-id="daemon-connect" onclick="selectFeature('daemon-connect')"><span class="feat-icon" style="color:#3b82f6">⬡</span><span class="feat-name">Daemon Connection</span></button>
+          <button class="feat-item" data-id="session-store" onclick="selectFeature('session-store')"><span class="feat-icon" style="color:#06b6d4">☰</span><span class="feat-name">Session Store</span></button>
+          <button class="feat-item" data-id="event-stream" onclick="selectFeature('event-stream')"><span class="feat-icon" style="color:#22c55e">⋯</span><span class="feat-name">Event Streaming</span></button>
+          <button class="feat-item" data-id="tool-dispatch" onclick="selectFeature('tool-dispatch')"><span class="feat-icon" style="color:#f59e0b">⚙</span><span class="feat-name">Tool Dispatch</span></button>
+        </div>
+
+        <div class="cat-group" data-cat="intelligence">
+          <div class="cat-label">Intelligence</div>
+          <button class="feat-item" data-id="lmx-routing" onclick="selectFeature('lmx-routing')"><span class="feat-icon" style="color:#a855f7">⬡</span><span class="feat-name">LMX Routing</span></button>
+          <button class="feat-item" data-id="provider-mgr" onclick="selectFeature('provider-mgr')"><span class="feat-icon" style="color:#3b82f6">⊕</span><span class="feat-name">Provider Manager</span></button>
+          <button class="feat-item" data-id="extended-thinking" onclick="selectFeature('extended-thinking')"><span class="feat-icon" style="color:#8b5cf6">◈</span><span class="feat-name">Extended Thinking</span></button>
+        </div>
+
+        <div class="cat-group" data-cat="automation">
+          <div class="cat-label">Automation</div>
+          <button class="feat-item" data-id="browser-auto" onclick="selectFeature('browser-auto')"><span class="feat-icon" style="color:#06b6d4">◻</span><span class="feat-name">Browser Automation</span></button>
+          <button class="feat-item" data-id="agent-loop" onclick="selectFeature('agent-loop')"><span class="feat-icon" style="color:#f59e0b">↻</span><span class="feat-name">Agentic Loop</span></button>
+        </div>
+
+        <div class="cat-group" data-cat="security">
+          <div class="cat-label">Security</div>
+          <button class="feat-item" data-id="vault" onclick="selectFeature('vault')"><span class="feat-icon" style="color:#22c55e">⊛</span><span class="feat-name">Credential Vault</span></button>
+          <button class="feat-item" data-id="permissions" onclick="selectFeature('permissions')"><span class="feat-icon" style="color:#ef4444">⊘</span><span class="feat-name">Permission Gates</span></button>
+        </div>
+      </aside>
+
+      <!-- ── DETAIL PANELS — all pre-rendered ── -->
+      <main class="explorer-detail">
+
+        <!-- 01 TUI CHAT LAYOUT -->
+        <div id="dp-tui-layout" class="detail-panel dp-active">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.3)"><span style="font-size:1.5rem">⬛</span></div>
+            <div><div class="dp-title">TUI Chat Layout</div><span class="dp-cat-chip" style="background:rgba(139,92,246,0.1);color:#a78bfa;border-color:rgba(139,92,246,0.2)">Interface</span></div>
+          </div>
+          <p class="dp-tagline">"Your coding companion, rendered in pure terminal"</p>
+          <p class="dp-desc">The TUI is Opta's primary interface — a full-screen Ink/React rendering inside your terminal. Three zones: a scrolling message timeline, a live streaming region, and a multi-line composer at the bottom. The layout uses Opta's obsidian glass design system adapted for TTY rendering via Ink's yoga-layout engine.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Terminal Layout</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.5">
+              <div style="color:#52525b;border-bottom:1px solid rgba(255,255,255,0.07);padding-bottom:0.4rem;margin-bottom:0.4rem">┌─ opta tui ─────────────────────── session #a3b2 ─┐</div>
+              <div style="color:#a1a1aa">│  You: Refactor auth middleware to use jose        │</div>
+              <div style="color:#8b5cf6;margin-top:0.2rem">│  ◈ Assistant ──────────────────────────────────  │</div>
+              <div style="color:#fafafa">│    I'll update auth.ts to use jose JWT. Let me   │</div>
+              <div style="color:#fafafa">│    start by reading the current implementation…  │</div>
+              <div style="color:#52525b">│    ▸ tool: read_file("src/middleware/auth.ts")    │</div>
+              <div style="color:#06b6d4;border-top:1px solid rgba(255,255,255,0.07);margin-top:0.4rem;padding-top:0.3rem">│  ▌ Type a message… (Tab: model · ⌘M: menu)  [Chat] │</div>
+              <div style="color:#52525b">└──────────────────────────────────────────────────┘</div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Press <code>Tab</code> in the composer to open the Model Picker overlay</li>
+              <li><code>Ctrl+C</code> cancels an in-progress stream immediately</li>
+              <li>Arrow keys scroll the message timeline without leaving the composer</li>
+              <li>The session ID in the header is your key for daemon API calls</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('markdown-renderer')">✦ Markdown Renderer</button>
+            <button class="dp-chip" onclick="selectFeature('chat-modes')">⇄ Chat vs Do Modes</button>
+            <button class="dp-chip" onclick="selectFeature('opta-menu')">⌘ Opta Menu</button>
+          </div></div>
+        </div>
+
+        <!-- 02 MARKDOWN RENDERER -->
+        <div id="dp-markdown-renderer" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3)"><span style="font-size:1.5rem">✦</span></div>
+            <div><div class="dp-title">Markdown Renderer</div><span class="dp-cat-chip" style="background:rgba(6,182,212,0.1);color:#67e8f9;border-color:rgba(6,182,212,0.2)">Interface</span></div>
+          </div>
+          <p class="dp-tagline">"Rich text, code blocks, and tables — live in your terminal"</p>
+          <p class="dp-desc">Opta CLI includes a zero-dependency Markdown renderer that converts assistant output to styled terminal content. Code blocks get syntax-highlighted cyan borders with a language label. Inline code uses neon-cyan styling. Headers are bolded with violet accent. Tables auto-align columns. All rendering is stateless and streams token-by-token.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Rendered Output Sample</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.55">
+              <div style="color:#8b5cf6;font-weight:bold">## Authentication Update</div>
+              <div style="color:#a1a1aa;margin-top:0.2rem">Replace <span style="color:#06b6d4;background:rgba(6,182,212,0.08);padding:0 3px;border-radius:2px">jwt.verify()</span> with jose:</div>
+              <div style="border:1px solid rgba(6,182,212,0.28);border-radius:4px;padding:0.35rem 0.5rem;margin-top:0.35rem">
+                <div style="color:#52525b;font-size:0.65rem;margin-bottom:0.2rem">typescript</div>
+                <div><span style="color:#22c55e">import</span><span style="color:#fafafa"> { jwtVerify } </span><span style="color:#22c55e">from</span><span style="color:#f59e0b"> 'jose'</span><span style="color:#fafafa">;</span></div>
+                <div><span style="color:#22c55e">const</span><span style="color:#fafafa"> { payload } = </span><span style="color:#06b6d4">await</span><span style="color:#fafafa"> jwtVerify(token, key);</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Code blocks render with language labels pulled from the fence marker</li>
+              <li>Tables are automatically padded for terminal-width column alignment</li>
+              <li>Blockquotes render with a violet left-border accent</li>
+              <li>Streaming renders incrementally — output appears as tokens arrive</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('tui-layout')">⬛ TUI Chat Layout</button>
+            <button class="dp-chip" onclick="selectFeature('extended-thinking')">◈ Extended Thinking</button>
+          </div></div>
+        </div>
+
+        <!-- 03 MODEL PICKER -->
+        <div id="dp-model-picker" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3)"><span style="font-size:1.5rem">◉</span></div>
+            <div><div class="dp-title">Model Picker</div><span class="dp-cat-chip" style="background:rgba(34,197,94,0.1);color:#86efac;border-color:rgba(34,197,94,0.2)">Interface</span></div>
+          </div>
+          <p class="dp-tagline">"Switch models mid-session with a single keypress"</p>
+          <p class="dp-desc">Press <code>Tab</code> in the TUI composer to open the Model Picker overlay — a searchable list of all models configured across every provider. Recent models appear first. Selection updates the active session immediately with no restart. The current model is always visible in the status bar.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Model Picker Overlay</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.5">
+              <div style="border:1px solid rgba(139,92,246,0.28);border-radius:6px;padding:0.45rem 0.6rem">
+                <div style="color:#52525b;font-size:0.63rem;margin-bottom:0.35rem;letter-spacing:0.08em">SELECT MODEL</div>
+                <div style="background:rgba(139,92,246,0.14);border-radius:3px;padding:0.18rem 0.4rem;margin-bottom:0.2rem"><span style="color:#a78bfa">◉</span> <span style="color:#fafafa">claude-sonnet-4-6</span> <span style="color:#52525b;font-size:0.68rem">· LMX local</span></div>
+                <div style="padding:0.18rem 0.4rem;margin-bottom:0.2rem"><span style="color:#52525b">◌</span> <span style="color:#a1a1aa">claude-opus-4-6</span> <span style="color:#52525b;font-size:0.68rem">· LMX local</span></div>
+                <div style="padding:0.18rem 0.4rem;margin-bottom:0.2rem"><span style="color:#52525b">◌</span> <span style="color:#a1a1aa">claude-sonnet-4-6</span> <span style="color:#52525b;font-size:0.68rem">· Anthropic cloud</span></div>
+                <div style="padding:0.18rem 0.4rem"><span style="color:#52525b">◌</span> <span style="color:#a1a1aa">gpt-4o</span> <span style="color:#52525b;font-size:0.68rem">· OpenAI</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Type to filter — fuzzy matching on model name and provider</li>
+              <li>LMX models appear first if LMX is healthy</li>
+              <li>The picked model persists for the current session only</li>
+              <li>Use <code>opta config set default-model</code> to change the session default</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('lmx-routing')">⬡ LMX Routing</button>
+            <button class="dp-chip" onclick="selectFeature('provider-mgr')">⊕ Provider Manager</button>
+            <button class="dp-chip" onclick="selectFeature('tui-layout')">⬛ TUI Layout</button>
+          </div></div>
+        </div>
+
+        <!-- 04 CHAT VS DO MODES -->
+        <div id="dp-chat-modes" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3)"><span style="font-size:1.5rem">⇄</span></div>
+            <div><div class="dp-title">Chat vs Do Modes</div><span class="dp-cat-chip" style="background:rgba(245,158,11,0.1);color:#fcd34d;border-color:rgba(245,158,11,0.2)">Interface</span></div>
+          </div>
+          <p class="dp-tagline">"Two modes: think with it, or let it act"</p>
+          <p class="dp-desc">Chat mode is conversational — you exchange messages and tool calls require your approval. Do mode (<code>opta do</code>) is agentic — the model orchestrates a full task loop: reads files, edits code, runs commands, browses the web, and iterates until done. The mode pill in the composer switches instantly, mid-session.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Mode Comparison</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.5">
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem">
+                <div style="border:1px solid rgba(59,130,246,0.28);border-radius:4px;padding:0.4rem 0.5rem">
+                  <div style="color:#60a5fa;font-weight:bold;margin-bottom:0.2rem">CHAT</div>
+                  <div style="color:#a1a1aa">✓ Conversational</div>
+                  <div style="color:#a1a1aa">✓ Approval gate</div>
+                  <div style="color:#a1a1aa">✓ Step-by-step</div>
+                  <div style="color:#a1a1aa">✓ Explain first</div>
+                </div>
+                <div style="border:1px solid rgba(245,158,11,0.28);border-radius:4px;padding:0.4rem 0.5rem">
+                  <div style="color:#fcd34d;font-weight:bold;margin-bottom:0.2rem">DO</div>
+                  <div style="color:#a1a1aa">✓ Autonomous</div>
+                  <div style="color:#a1a1aa">✓ Auto-approve safe</div>
+                  <div style="color:#a1a1aa">✓ Multi-step</div>
+                  <div style="color:#a1a1aa">✓ Timeline view</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Start in Chat to explore, switch to Do when the plan is clear</li>
+              <li>Do mode respects permission policies — write once, reuse across sessions</li>
+              <li><code>Ctrl+C</code> pauses the loop (not kills it) — you can resume</li>
+              <li><code>opta do "task"</code> starts directly in agentic mode from the shell</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('agent-loop')">↻ Agentic Loop</button>
+            <button class="dp-chip" onclick="selectFeature('tool-dispatch')">⚙ Tool Dispatch</button>
+            <button class="dp-chip" onclick="selectFeature('permissions')">⊘ Permission Gates</button>
+          </div></div>
+        </div>
+
+        <!-- 05 OPTA MENU -->
+        <div id="dp-opta-menu" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3)"><span style="font-size:1.5rem">⌘</span></div>
+            <div><div class="dp-title">Opta Menu ⌘M</div><span class="dp-cat-chip" style="background:rgba(168,85,247,0.1);color:#c084fc;border-color:rgba(168,85,247,0.2)">Interface</span></div>
+          </div>
+          <p class="dp-tagline">"Every command, one key away"</p>
+          <p class="dp-desc">Press <code>⌘M</code> to open the Opta Menu — a searchable command palette with all slash commands, session actions, settings shortcuts, and model controls. Navigate by arrow keys or type to fuzzy-filter. Selecting executes immediately or prefills the composer.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Menu Overlay</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.5">
+              <div style="border:1px solid rgba(168,85,247,0.28);border-radius:6px;padding:0.45rem 0.6rem">
+                <div style="color:#52525b;font-size:0.63rem;letter-spacing:0.08em;margin-bottom:0.3rem">OPTA MENU</div>
+                <div style="color:#a1a1aa;border-bottom:1px solid rgba(255,255,255,0.05);padding-bottom:0.25rem;margin-bottom:0.25rem">/clear <span style="color:#52525b">· Clear session history</span></div>
+                <div style="background:rgba(168,85,247,0.12);padding:0.15rem 0.35rem;border-radius:3px;color:#fafafa;margin-bottom:0.15rem">/compact <span style="color:#a1a1aa">· Compress context window</span></div>
+                <div style="color:#a1a1aa;padding:0.15rem 0.35rem">/model <span style="color:#52525b">· Open model picker</span></div>
+                <div style="color:#a1a1aa;padding:0.15rem 0.35rem">/settings <span style="color:#52525b">· Open settings overlay</span></div>
+                <div style="color:#a1a1aa;padding:0.15rem 0.35rem">/export <span style="color:#52525b">· Export as markdown</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Type <code>/</code> in the composer to jump directly to the command palette</li>
+              <li>Recently used commands float to the top of the list</li>
+              <li><code>/compact</code> compresses context — essential for long sessions</li>
+              <li>Custom commands can be registered in <code>~/.config/opta/commands/</code></li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('tui-layout')">⬛ TUI Layout</button>
+            <button class="dp-chip" onclick="selectFeature('model-picker')">◉ Model Picker</button>
+          </div></div>
+        </div>
+
+        <!-- 06 DAEMON CONNECTION -->
+        <div id="dp-daemon-connect" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3)"><span style="font-size:1.5rem">⬡</span></div>
+            <div><div class="dp-title">Daemon Connection</div><span class="dp-cat-chip" style="background:rgba(59,130,246,0.1);color:#93c5fd;border-color:rgba(59,130,246,0.2)">Daemon</span></div>
+          </div>
+          <p class="dp-tagline">"The local HTTP backbone powering every session"</p>
+          <p class="dp-desc">The Opta Daemon runs at <code>127.0.0.1:9999</code> and exposes an HTTP v3 REST API plus WebSocket streaming. CLI, Code Desktop, and the LMX Dashboard all connect to it. HTTP uses Bearer token auth; WebSocket uses <code>?token=T</code> query param. The daemon auto-starts when you run any <code>opta</code> command.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Connection Architecture</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;text-align:center;line-height:1.8">
+              <div style="display:inline-block;border:1px solid rgba(59,130,246,0.28);border-radius:4px;padding:0.2rem 0.7rem;color:#93c5fd">opta tui</div>
+              <div style="color:#52525b">│ HTTP/WS</div>
+              <div style="display:inline-block;border:1px solid rgba(139,92,246,0.35);border-radius:4px;padding:0.2rem 0.7rem;color:#c084fc;background:rgba(139,92,246,0.07)">daemon 127.0.0.1:9999</div>
+              <div style="color:#52525b">│ OpenAI API</div>
+              <div style="display:inline-block;border:1px solid rgba(34,197,94,0.28);border-radius:4px;padding:0.2rem 0.7rem;color:#86efac">LMX 192.168.188.11:1234</div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li><code>opta daemon status</code> checks if the daemon is running and shows its PID</li>
+              <li><code>opta daemon install</code> registers a launchd/systemd service for auto-start</li>
+              <li>Daemon token lives at <code>~/.config/opta/daemon/token</code></li>
+              <li>Multiple CLI instances share one daemon — sessions are isolated by ID</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('session-store')">☰ Session Store</button>
+            <button class="dp-chip" onclick="selectFeature('event-stream')">⋯ Event Streaming</button>
+            <button class="dp-chip" onclick="selectFeature('lmx-routing')">⬡ LMX Routing</button>
+          </div></div>
+        </div>
+
+        <!-- 07 SESSION STORE -->
+        <div id="dp-session-store" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3)"><span style="font-size:1.5rem">☰</span></div>
+            <div><div class="dp-title">Session Store</div><span class="dp-cat-chip" style="background:rgba(6,182,212,0.1);color:#67e8f9;border-color:rgba(6,182,212,0.2)">Daemon</span></div>
+          </div>
+          <p class="dp-tagline">"Every conversation, safely persisted to JSONL"</p>
+          <p class="dp-desc">Sessions are stored as append-only JSONL files under <code>~/.config/opta/daemon/sessions/</code>. Each line is a timestamped event envelope. Sessions survive daemon restarts and can be replayed from any point using the event cursor (<code>afterSeq</code>). Use <code>opta sessions list</code> to browse all sessions with metadata.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">JSONL Event Format</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.68rem;line-height:1.6">
+              <div style="color:#52525b">~/.config/opta/daemon/sessions/a3b2c1.jsonl</div>
+              <div style="color:#22c55e;margin-top:0.3rem">{"seq":1,"event":"session.start","ts":"2026-03-06…"}</div>
+              <div style="color:#fafafa">{"seq":2,"event":"turn.start","role":"user","text":"…"}</div>
+              <div style="color:#06b6d4">{"seq":3,"event":"turn.token","delta":"I'll ","model":"…"}</div>
+              <div style="color:#f59e0b">{"seq":5,"event":"tool.call","name":"read_file","args":{…}}</div>
+              <div style="color:#8b5cf6">{"seq":7,"event":"turn.done","tokens":428,"elapsed":3.2}</div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Session files are human-readable — pipe through <code>jq</code> for inspection</li>
+              <li>Resume any session with <code>opta tui --session &lt;id&gt;</code></li>
+              <li>Export to markdown with <code>opta sessions export &lt;id&gt;</code></li>
+              <li>Sessions are never auto-deleted — archive with <code>opta sessions prune</code></li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('daemon-connect')">⬡ Daemon Connection</button>
+            <button class="dp-chip" onclick="selectFeature('event-stream')">⋯ Event Streaming</button>
+          </div></div>
+        </div>
+
+        <!-- 08 EVENT STREAMING -->
+        <div id="dp-event-stream" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3)"><span style="font-size:1.5rem">⋯</span></div>
+            <div><div class="dp-title">WebSocket Event Streaming</div><span class="dp-cat-chip" style="background:rgba(34,197,94,0.1);color:#86efac;border-color:rgba(34,197,94,0.2)">Daemon</span></div>
+          </div>
+          <p class="dp-tagline">"Real-time tokens, tool calls, and turn events over WS"</p>
+          <p class="dp-desc">Connect to <code>ws://127.0.0.1:9999/v3/sessions/{id}/stream</code> for live events. Events include <code>turn.token</code> (each streaming token), <code>turn.done</code> (final stats with token counts and speed), <code>tool.call</code>, <code>tool.result</code>, and <code>turn.error</code>. Reconnect with <code>afterSeq</code> to resume without re-delivery.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Live Event Stream</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.68rem;line-height:1.6">
+              <div style="color:#52525b;margin-bottom:0.3rem">WS ws://127.0.0.1:9999/v3/sessions/a3b2/stream</div>
+              <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.15rem"><span style="background:rgba(6,182,212,0.14);color:#67e8f9;padding:0 4px;border-radius:2px;font-size:0.63rem">turn.token</span><span style="color:#fafafa">"I'll update"</span></div>
+              <div style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.15rem"><span style="background:rgba(245,158,11,0.14);color:#fcd34d;padding:0 4px;border-radius:2px;font-size:0.63rem">tool.call</span><span style="color:#a1a1aa">read_file(auth.ts)</span></div>
+              <div style="display:flex;gap:0.5rem;align-items:center"><span style="background:rgba(139,92,246,0.14);color:#a78bfa;padding:0 4px;border-radius:2px;font-size:0.63rem">turn.done</span><span style="color:#a1a1aa">428 tok · 3.2s · 134 t/s</span></div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Store <code>lastReceivedSeq</code> on disconnect; pass as <code>afterSeq</code> on reconnect</li>
+              <li><code>turn.done</code> includes <code>tokens</code>, <code>elapsed</code>, and <code>tokensPerSec</code></li>
+              <li>Code Desktop subscribes to this stream for its live UI updates</li>
+              <li>Third-party tools can build on this API — see the daemon interop contract</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('daemon-connect')">⬡ Daemon Connection</button>
+            <button class="dp-chip" onclick="selectFeature('session-store')">☰ Session Store</button>
+          </div></div>
+        </div>
+
+        <!-- 09 TOOL DISPATCH -->
+        <div id="dp-tool-dispatch" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3)"><span style="font-size:1.5rem">⚙</span></div>
+            <div><div class="dp-title">Tool Dispatch</div><span class="dp-cat-chip" style="background:rgba(245,158,11,0.1);color:#fcd34d;border-color:rgba(245,158,11,0.2)">Daemon</span></div>
+          </div>
+          <p class="dp-tagline">"Execute files, run commands, browse — with approval gates"</p>
+          <p class="dp-desc">When the model requests a tool call, the daemon routes it through the permission gate before executing. Read operations (read_file, list_dir) auto-approve. Write/execute operations (write_file, run_command, browser_navigate) require confirmation unless a policy grants them. Tool results stream back to the model in the same turn.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Approval Gate</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.5">
+              <div style="color:#52525b;margin-bottom:0.3rem;font-size:0.68rem">Tool Request Received:</div>
+              <div style="border:1px solid rgba(245,158,11,0.28);border-radius:4px;padding:0.35rem 0.5rem;margin-bottom:0.35rem">
+                <div style="color:#fcd34d">⚙ run_command</div>
+                <div style="color:#a1a1aa;font-size:0.68rem;margin-top:0.15rem">cmd: npm run test · cwd: …/project</div>
+              </div>
+              <div style="display:flex;gap:0.4rem">
+                <div style="background:rgba(34,197,94,0.13);border:1px solid rgba(34,197,94,0.28);border-radius:3px;padding:0.15rem 0.5rem;color:#86efac;font-size:0.68rem">Allow</div>
+                <div style="background:rgba(239,68,68,0.09);border:1px solid rgba(239,68,68,0.2);border-radius:3px;padding:0.15rem 0.5rem;color:#fca5a5;font-size:0.68rem">Deny</div>
+                <div style="background:rgba(59,130,246,0.09);border:1px solid rgba(59,130,246,0.2);border-radius:3px;padding:0.15rem 0.5rem;color:#93c5fd;font-size:0.68rem">Always Allow</div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>"Always Allow" adds a persistent policy entry for that tool</li>
+              <li>In Do mode, safe read tools auto-approve without prompting</li>
+              <li>Tool calls run in parallel when the model requests multiple (up to 8 concurrent)</li>
+              <li>View the full tool call log with <code>opta sessions tools &lt;id&gt;</code></li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('permissions')">⊘ Permission Gates</button>
+            <button class="dp-chip" onclick="selectFeature('agent-loop')">↻ Agentic Loop</button>
+            <button class="dp-chip" onclick="selectFeature('chat-modes')">⇄ Chat vs Do Modes</button>
+          </div></div>
+        </div>
+
+        <!-- 10 LMX ROUTING -->
+        <div id="dp-lmx-routing" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(168,85,247,0.12);border-color:rgba(168,85,247,0.3)"><span style="font-size:1.5rem">⬡</span></div>
+            <div><div class="dp-title">LMX Routing</div><span class="dp-cat-chip" style="background:rgba(168,85,247,0.1);color:#c084fc;border-color:rgba(168,85,247,0.2)">Intelligence</span></div>
+          </div>
+          <p class="dp-tagline">"Your Mac Studio as an always-on inference engine"</p>
+          <p class="dp-desc">When LMX is configured, requests route to <code>192.168.188.11:1234</code> — your Mac Studio running MLX models. The daemon caches LMX preflight health checks for 10 seconds. If LMX is unreachable, the daemon automatically falls back to the configured cloud provider with no user action required.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Routing Decision</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.6">
+              <div style="color:#52525b;margin-bottom:0.25rem">Request: claude-sonnet-4-6</div>
+              <div style="display:flex;align-items:center;gap:0.4rem;margin-bottom:0.2rem">
+                <span style="background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.22);border-radius:3px;padding:0.08rem 0.35rem;color:#86efac;font-size:0.63rem">LMX healthy ✓</span>
+                <span style="color:#52525b">→</span>
+                <span style="color:#22c55e">192.168.188.11:1234</span>
+              </div>
+              <div style="color:#52525b;font-size:0.63rem;margin-bottom:0.35rem">preflight cached 10s</div>
+              <div style="height:1px;background:rgba(255,255,255,0.05);margin-bottom:0.3rem"></div>
+              <div style="display:flex;align-items:center;gap:0.4rem">
+                <span style="background:rgba(239,68,68,0.09);border:1px solid rgba(239,68,68,0.18);border-radius:3px;padding:0.08rem 0.35rem;color:#fca5a5;font-size:0.63rem">LMX offline</span>
+                <span style="color:#52525b">→</span>
+                <span style="color:#a1a1aa">Anthropic cloud fallback</span>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>LMX serves OpenAI-compatible <code>/v1/chat/completions</code> — any model name works</li>
+              <li>Set <code>OPTA_LMX_HOST</code> to override the default <code>192.168.188.11</code></li>
+              <li>Check LMX health with <code>opta doctor</code> — includes LMX latency ping</li>
+              <li>LMX runs on Mono512 (Mac Studio M3 Ultra, 512GB RAM) for peak throughput</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('provider-mgr')">⊕ Provider Manager</button>
+            <button class="dp-chip" onclick="selectFeature('daemon-connect')">⬡ Daemon Connection</button>
+            <button class="dp-chip" onclick="selectFeature('model-picker')">◉ Model Picker</button>
+          </div></div>
+        </div>
+
+        <!-- 11 PROVIDER MANAGER -->
+        <div id="dp-provider-mgr" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(59,130,246,0.12);border-color:rgba(59,130,246,0.3)"><span style="font-size:1.5rem">⊕</span></div>
+            <div><div class="dp-title">Provider Manager</div><span class="dp-cat-chip" style="background:rgba(59,130,246,0.1);color:#93c5fd;border-color:rgba(59,130,246,0.2)">Intelligence</span></div>
+          </div>
+          <p class="dp-tagline">"LMX local, Anthropic cloud, OpenAI — one unified router"</p>
+          <p class="dp-desc">The Provider Manager normalizes requests across LMX, Anthropic, and OpenAI-compatible providers. It handles streaming format differences, token counting normalization, and provider-specific error codes. Switching providers only requires changing the model name — no API surface changes in your session or daemon code.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Provider Registry</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.55">
+              <div style="display:grid;gap:0.22rem">
+                <div style="border:1px solid rgba(34,197,94,0.28);border-radius:3px;padding:0.22rem 0.5rem;display:flex;justify-content:space-between"><span style="color:#86efac">LMX (local)</span><span style="color:#22c55e;font-size:0.65rem">● active</span></div>
+                <div style="border:1px solid rgba(245,158,11,0.2);border-radius:3px;padding:0.22rem 0.5rem;display:flex;justify-content:space-between"><span style="color:#fcd34d">Anthropic</span><span style="color:#f59e0b;font-size:0.65rem">● standby</span></div>
+                <div style="border:1px solid rgba(255,255,255,0.07);border-radius:3px;padding:0.22rem 0.5rem;display:flex;justify-content:space-between"><span style="color:#a1a1aa">OpenAI</span><span style="color:#52525b;font-size:0.65rem">○ configured</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Provider priority: LMX first (if healthy), then cloud fallback order</li>
+              <li>Add providers with <code>opta config add-provider</code></li>
+              <li>Each provider credential lives in the Vault — never in config files</li>
+              <li>Provider normalization means the same streaming code works for all</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('lmx-routing')">⬡ LMX Routing</button>
+            <button class="dp-chip" onclick="selectFeature('vault')">⊛ Credential Vault</button>
+            <button class="dp-chip" onclick="selectFeature('model-picker')">◉ Model Picker</button>
+          </div></div>
+        </div>
+
+        <!-- 12 EXTENDED THINKING -->
+        <div id="dp-extended-thinking" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(139,92,246,0.12);border-color:rgba(139,92,246,0.3)"><span style="font-size:1.5rem">◈</span></div>
+            <div><div class="dp-title">Extended Thinking</div><span class="dp-cat-chip" style="background:rgba(139,92,246,0.1);color:#a78bfa;border-color:rgba(139,92,246,0.2)">Intelligence</span></div>
+          </div>
+          <p class="dp-tagline">"Watch the model reason before it responds"</p>
+          <p class="dp-desc">For supported models (Claude 3.7+ and compatible LMX models), Opta streams thinking blocks interleaved with response tokens. Thinking blocks appear with an indented, muted violet treatment — collapsible via a toggle key. The TUI tracks thinking token counts separately in the turn stats so you can see the reasoning overhead.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Thinking Block</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.73rem;line-height:1.5">
+              <div style="border-left:2px solid rgba(139,92,246,0.35);padding-left:0.5rem;margin-bottom:0.4rem">
+                <div style="color:#52525b;font-size:0.63rem;margin-bottom:0.12rem">◈ thinking · 312 tokens</div>
+                <div style="color:#6b5f8a">The user wants to refactor auth middleware.</div>
+                <div style="color:#6b5f8a">Plan: 1) read current impl, 2) find jwt.verify,</div>
+                <div style="color:#6b5f8a">3) replace with jose, 4) update imports…</div>
+              </div>
+              <div style="color:#8b5cf6;font-weight:bold">◈ Assistant</div>
+              <div style="color:#fafafa">I'll update the middleware to use jose. Let me start by reading the current implementation…</div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Enable with <code>opta config set thinking true</code> for a session</li>
+              <li>Thinking tokens count toward context — monitor for long sessions</li>
+              <li>Collapse thinking blocks with the toggle to reduce visual noise</li>
+              <li>Significantly improves accuracy on complex multi-step reasoning tasks</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('markdown-renderer')">✦ Markdown Renderer</button>
+            <button class="dp-chip" onclick="selectFeature('provider-mgr')">⊕ Provider Manager</button>
+          </div></div>
+        </div>
+
+        <!-- 13 BROWSER AUTOMATION -->
+        <div id="dp-browser-auto" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(6,182,212,0.12);border-color:rgba(6,182,212,0.3)"><span style="font-size:1.5rem">◻</span></div>
+            <div><div class="dp-title">Browser Automation</div><span class="dp-cat-chip" style="background:rgba(6,182,212,0.1);color:#67e8f9;border-color:rgba(6,182,212,0.2)">Automation</span></div>
+          </div>
+          <p class="dp-tagline">"Peekaboo: full web control via MCP"</p>
+          <p class="dp-desc">Opta integrates with Peekaboo — an MCP server bridging to Playwright. When enabled, the model can navigate URLs, click elements, fill forms, take screenshots, extract page content, and evaluate JavaScript. Browser sessions are sandboxed per agent loop and tracked in the session store alongside other tool calls.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Available Browser Tools</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.6">
+              <div style="display:grid;gap:0.18rem">
+                <div style="display:flex;gap:0.45rem"><span style="color:#06b6d4;min-width:130px">browser_navigate</span><span style="color:#a1a1aa">"https://docs.example.com"</span></div>
+                <div style="display:flex;gap:0.45rem"><span style="color:#06b6d4;min-width:130px">browser_snapshot</span><span style="color:#a1a1aa">→ accessibility tree</span></div>
+                <div style="display:flex;gap:0.45rem"><span style="color:#06b6d4;min-width:130px">browser_click</span><span style="color:#a1a1aa">"[data-testid=submit]"</span></div>
+                <div style="display:flex;gap:0.45rem"><span style="color:#06b6d4;min-width:130px">browser_fill_form</span><span style="color:#a1a1aa">{selector, value}</span></div>
+                <div style="display:flex;gap:0.45rem"><span style="color:#06b6d4;min-width:130px">browser_screenshot</span><span style="color:#a1a1aa">→ PNG to session store</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Enable with <code>opta config set mcp.peekaboo true</code></li>
+              <li>Browser sessions are sandboxed — no persistent cookies between loops</li>
+              <li>Use <code>browser_snapshot</code> for DOM analysis before <code>browser_click</code></li>
+              <li>Screenshots saved to <code>~/.config/opta/browser-snapshots/</code> for review</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('agent-loop')">↻ Agentic Loop</button>
+            <button class="dp-chip" onclick="selectFeature('tool-dispatch')">⚙ Tool Dispatch</button>
+          </div></div>
+        </div>
+
+        <!-- 14 AGENTIC LOOP -->
+        <div id="dp-agent-loop" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(245,158,11,0.12);border-color:rgba(245,158,11,0.3)"><span style="font-size:1.5rem">↻</span></div>
+            <div><div class="dp-title">Agentic Loop</div><span class="dp-cat-chip" style="background:rgba(245,158,11,0.1);color:#fcd34d;border-color:rgba(245,158,11,0.2)">Automation</span></div>
+          </div>
+          <p class="dp-tagline">"Multi-step autonomous task execution"</p>
+          <p class="dp-desc">In Do mode, the model enters an agent loop: generate → tool calls → results → generate again, until the task is complete or a step limit is hit. The loop surfaces a live progress timeline in the TUI showing each step, its tool calls, and current status. Loops can be paused or cancelled at any point.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Loop Timeline</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.6">
+              <div style="display:grid;gap:0.2rem">
+                <div style="display:flex;gap:0.4rem"><span style="color:#22c55e">✓</span><span style="color:#a1a1aa">Step 1: Read auth middleware</span></div>
+                <div style="display:flex;gap:0.4rem"><span style="color:#22c55e">✓</span><span style="color:#a1a1aa">Step 2: Identify jwt.verify calls (3 found)</span></div>
+                <div style="display:flex;gap:0.4rem"><span style="color:#f59e0b">▶</span><span style="color:#fafafa">Step 3: Rewriting with jose…</span></div>
+                <div style="display:flex;gap:0.4rem"><span style="color:#52525b">○</span><span style="color:#52525b">Step 4: Run tests</span></div>
+                <div style="display:flex;gap:0.4rem"><span style="color:#52525b">○</span><span style="color:#52525b">Step 5: Update imports</span></div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Set <code>opta config set max-steps 20</code> to adjust the step limit</li>
+              <li>The model self-corrects when tool calls fail — review in the timeline</li>
+              <li>Pause with <code>Ctrl+C</code> — progress is saved, resume with <code>opta tui --session &lt;id&gt;</code></li>
+              <li>Use <code>opta do --watch</code> for desktop notifications on completion</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('tool-dispatch')">⚙ Tool Dispatch</button>
+            <button class="dp-chip" onclick="selectFeature('browser-auto')">◻ Browser Automation</button>
+            <button class="dp-chip" onclick="selectFeature('chat-modes')">⇄ Chat vs Do Modes</button>
+          </div></div>
+        </div>
+
+        <!-- 15 CREDENTIAL VAULT -->
+        <div id="dp-vault" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(34,197,94,0.12);border-color:rgba(34,197,94,0.3)"><span style="font-size:1.5rem">⊛</span></div>
+            <div><div class="dp-title">Credential Vault</div><span class="dp-cat-chip" style="background:rgba(34,197,94,0.1);color:#86efac;border-color:rgba(34,197,94,0.2)">Security</span></div>
+          </div>
+          <p class="dp-tagline">"API keys stored in OS keychain, never in plaintext"</p>
+          <p class="dp-desc">The Vault stores all credentials — API keys, bearer tokens, provider secrets — in the OS-native keychain. macOS Keychain on macOS, DPAPI/Credential Manager on Windows. Keys are retrieved at runtime and never written to config files or logs. The <code>opta account</code> command manages vault entries with full add/list/remove support.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Vault Operations</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.6">
+              <div style="color:#22c55e">$ opta account add anthropic</div>
+              <div style="color:#a1a1aa">Enter API key: <span style="color:#52525b">••••••••••••••</span></div>
+              <div style="color:#22c55e;margin-bottom:0.3rem">✓ Stored in macOS Keychain</div>
+              <div style="color:#22c55e">$ opta account list</div>
+              <div style="color:#a1a1aa">anthropic  <span style="color:#52525b">sk-ant-••••3f2a</span></div>
+              <div style="color:#a1a1aa">lmx-local  <span style="color:#52525b">opta_••••••••</span></div>
+              <div style="color:#a1a1aa">openai     <span style="color:#52525b">sk-••••4b1c</span></div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Keys are scoped to your OS user account — inaccessible to other users</li>
+              <li><code>opta account rotate anthropic</code> replaces a key without interrupting active sessions</li>
+              <li>Never set API keys as environment variables — the Vault is more secure</li>
+              <li>Vault entries sync to other devices via the Opta Accounts sync layer</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('permissions')">⊘ Permission Gates</button>
+            <button class="dp-chip" onclick="selectFeature('provider-mgr')">⊕ Provider Manager</button>
+          </div></div>
+        </div>
+
+        <!-- 16 PERMISSION GATES -->
+        <div id="dp-permissions" class="detail-panel">
+          <div class="dp-header">
+            <div class="dp-icon-badge" style="background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.3)"><span style="font-size:1.5rem">⊘</span></div>
+            <div><div class="dp-title">Permission Gates</div><span class="dp-cat-chip" style="background:rgba(239,68,68,0.1);color:#fca5a5;border-color:rgba(239,68,68,0.2)">Security</span></div>
+          </div>
+          <p class="dp-tagline">"Fine-grained control over every tool the model can invoke"</p>
+          <p class="dp-desc">Every tool is categorized by risk level. Read operations always auto-approve. Write/execute operations require confirmation or a matching policy. Policy files in <code>~/.config/opta/policies/</code> can pre-approve specific tools, enabling fully autonomous runs in trusted project environments without per-call prompts.</p>
+          <div class="dp-visual">
+            <div class="dp-visual-label">Permission Matrix</div>
+            <div class="dp-mockup" style="font-family:monospace;font-size:0.7rem;line-height:1.6">
+              <div style="display:grid;grid-template-columns:1fr 70px;gap:0.18rem">
+                <div style="color:#52525b;font-size:0.63rem">TOOL</div><div style="color:#52525b;font-size:0.63rem">DEFAULT</div>
+                <div style="color:#a1a1aa">read_file, list_dir</div><div style="color:#22c55e">✓ auto</div>
+                <div style="color:#a1a1aa">search_files, grep</div><div style="color:#22c55e">✓ auto</div>
+                <div style="color:#a1a1aa">write_file, edit_file</div><div style="color:#f59e0b">⚠ prompt</div>
+                <div style="color:#a1a1aa">run_command</div><div style="color:#ef4444">✗ deny</div>
+                <div style="color:#a1a1aa">browser_navigate</div><div style="color:#f59e0b">⚠ prompt</div>
+              </div>
+            </div>
+          </div>
+          <div class="dp-tips">
+            <div class="dp-tips-label">Pro Tips</div>
+            <ul class="dp-tips-list">
+              <li>Create a project policy at <code>.opta/policy.yaml</code> to allow tools per-project</li>
+              <li><code>opta doctor --policy</code> validates your policy files for syntax errors</li>
+              <li>Policies stack: project → user → defaults (project wins on conflict)</li>
+              <li>In CI/CD, set <code>OPTA_POLICY=unrestricted</code> for fully autonomous operation</li>
+            </ul>
+          </div>
+          <div class="dp-related"><div class="dp-related-label">Related Features</div><div class="dp-chips">
+            <button class="dp-chip" onclick="selectFeature('vault')">⊛ Credential Vault</button>
+            <button class="dp-chip" onclick="selectFeature('tool-dispatch')">⚙ Tool Dispatch</button>
+            <button class="dp-chip" onclick="selectFeature('agent-loop')">↻ Agentic Loop</button>
+          </div></div>
+        </div>
+
+      </main><!-- /explorer-detail -->
+    </div><!-- /explorer-body -->
+  </div><!-- /explorer-chrome -->
+</section>
+
+<script>
+function selectFeature(id) {
+  var items = document.querySelectorAll('.feat-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].classList.toggle('active', items[i].dataset.id === id);
+  }
+  var panels = document.querySelectorAll('.detail-panel');
+  for (var i = 0; i < panels.length; i++) {
+    panels[i].classList.toggle('dp-active', panels[i].id === 'dp-' + id);
+  }
+  var active = document.querySelector('.feat-item.active');
+  if (active) active.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  var detail = document.querySelector('.explorer-detail');
+  if (detail) detail.scrollTop = 0;
+}
+
+var searchInput = document.getElementById('feature-search');
+if (searchInput) {
+  searchInput.addEventListener('input', function() {
+    var q = this.value.toLowerCase().trim();
+    var groups = document.querySelectorAll('.cat-group');
+    for (var g = 0; g < groups.length; g++) {
+      var items = groups[g].querySelectorAll('.feat-item');
+      var anyVisible = false;
+      for (var i = 0; i < items.length; i++) {
+        var name = items[i].querySelector('.feat-name').textContent.toLowerCase();
+        var vis = !q || name.includes(q);
+        items[i].style.display = vis ? '' : 'none';
+        if (vis) anyVisible = true;
+      }
+      groups[g].style.display = anyVisible ? '' : 'none';
+    }
+  });
+}
+
+document.addEventListener('keydown', function(e) {
+  if (e.target && e.target.id === 'feature-search') return;
+  if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+  e.preventDefault();
+  var allItems = document.querySelectorAll('.feat-item');
+  var items = [];
+  for (var i = 0; i < allItems.length; i++) {
+    if (allItems[i].style.display !== 'none') items.push(allItems[i]);
+  }
+  var current = document.querySelector('.feat-item.active');
+  var idx = items.indexOf(current);
+  var next = e.key === 'ArrowDown' ? idx + 1 : idx - 1;
+  if (next >= 0 && next < items.length) {
+    selectFeature(items[next].dataset.id);
+  }
+});
+</script>
+
+<!-- Footer -->
+<footer class="guide-footer">
+  <div class="footer-brand">
+    <div class="footer-name">OPTA HELP</div>
+    <div class="footer-sub">Opta Code Desktop Masterclass · /gu format</div>
+  </div>
+  <div class="footer-links">
+    <a href="https://help.optalocal.com/docs/code-desktop/" class="footer-link">Code Desktop Docs</a>
+    <a href="https://help.optalocal.com/docs/daemon/" class="footer-link">Daemon Reference</a>
+    <a href="https://learn.optalocal.com" class="footer-link">Opta Learn</a>
+    <a href="https://lmx.optalocal.com" class="footer-link">LMX Dashboard</a>
+  </div>
+</footer>
+
+</body>
+</html>

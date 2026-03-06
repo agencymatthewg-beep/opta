@@ -1,0 +1,94 @@
+name: Opta Accounts Control Plane PR Gate
+
+on:
+  pull_request:
+    paths:
+      - "1-Apps/optalocal/1R-Opta-Accounts/**"
+      - ".github/workflows/opta-accounts-control-plane-pr.yml"
+  workflow_dispatch:
+
+jobs:
+  strict-control-plane-gate:
+    name: Strict Control Plane Verify + Smoke
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal/1R-Opta-Accounts
+    env:
+      SUPABASE_URL: ${{ secrets.OPTA_SUPABASE_URL }}
+      NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.OPTA_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.OPTA_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.OPTA_SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.OPTA_SUPABASE_SERVICE_ROLE_KEY }}
+      OPTA_ACCOUNTS_BASE_URL: http://127.0.0.1:3002
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Preflight secret check (strict)
+        run: |
+          missing=()
+          for key in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY; do
+            if [[ -z "${!key:-}" ]]; then
+              missing+=("$key")
+            fi
+          done
+
+          if [[ ${#missing[@]} -gt 0 ]]; then
+            printf '::error::Missing required secret-backed env(s): %s\n' "$(IFS=', '; echo "${missing[*]}")"
+            exit 1
+          fi
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/1R-Opta-Accounts/package-lock.json"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Strict control-plane schema verify
+        run: npm run verify:control-plane:schema
+
+      - name: Build app
+        run: npm run build
+
+      - name: Start app
+        run: |
+          npm run start > /tmp/opta-accounts-start.log 2>&1 &
+          echo $! > /tmp/opta-accounts.pid
+
+      - name: Wait for app readiness
+        run: |
+          for i in {1..90}; do
+            if curl -fsS "http://127.0.0.1:3002/api/health/supabase?mode=deep" >/dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error::App failed to become ready within timeout"
+          cat /tmp/opta-accounts-start.log || true
+          exit 1
+
+      - name: Strict control-plane API smoke
+        run: npm run smoke:api:control-plane
+
+      - name: Upload startup log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-accounts-start-log
+          path: /tmp/opta-accounts-start.log
+          if-no-files-found: ignore
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [[ -f /tmp/opta-accounts.pid ]]; then
+            kill "$(cat /tmp/opta-accounts.pid)" || true
+          fi

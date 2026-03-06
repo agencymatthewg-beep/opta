@@ -1,0 +1,16 @@
+[
+  { "docsPrefix": "/docs/getting-started/", "guides": ["opta-local-intro", "cli", "lmx"] },
+  { "docsPrefix": "/docs/ecosystem/", "guides": ["opta-local-intro", "cli", "lmx"] },
+  { "docsPrefix": "/docs/cli/", "guides": ["cli", "code-desktop-masterclass"] },
+  { "docsPrefix": "/docs/daemon/", "guides": ["cli", "code-desktop"] },
+  { "docsPrefix": "/docs/lmx/", "guides": ["lmx", "lmx-masterclass"] },
+  { "docsPrefix": "/docs/local-web/", "guides": ["lmx", "code-desktop"] },
+  { "docsPrefix": "/docs/code-desktop/", "guides": ["code-desktop", "code-desktop-masterclass"] },
+  { "docsPrefix": "/docs/accounts/", "guides": ["accounts", "accounts-masterclass"] },
+  { "docsPrefix": "/docs/browser-automation/", "guides": ["cli", "code-desktop-masterclass"] },
+  { "docsPrefix": "/docs/security/", "guides": ["accounts-masterclass", "opta-local-intro"] },
+  { "docsPrefix": "/docs/developer/", "guides": ["cli", "lmx-masterclass"] },
+  { "docsPrefix": "/docs/status/", "guides": ["opta-local-intro", "code-desktop"] },
+  { "docsPrefix": "/docs/support/", "guides": ["opta-local-intro", "accounts"] },
+  { "docsPrefix": "/docs/feature-status/", "guides": ["opta-local-intro", "code-desktop-masterclass"] }
+]

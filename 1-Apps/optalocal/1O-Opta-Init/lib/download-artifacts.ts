@@ -15,7 +15,7 @@ type ProductTarget = {
 // Latest Opta Init Manager — stable v0.7.2 (2026-03-05)
 const INIT_VERSION = "0.7.2";
 const INIT_MACOS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-mac.dmg";
-const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-windows-x64.exe";
+const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip";
 
 // Latest Opta CLI — v0.5.0-alpha.15 (2026-03-01)
 const CLI_VERSION = "0.5.0-alpha.15";
@@ -29,12 +29,13 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
     platforms: {
       macos: {
         manifestUrl: "/desktop-updates/stable.json",
-        platformKeys: [],
+        // darwin-aarch64 first (Apple Silicon), fallback to darwin-x86_64 (Intel)
+        platformKeys: ["darwin-aarch64", "darwin-x86_64"],
         fallbackUrl: INIT_MACOS_INSTALLER_ENDPOINT,
       },
       windows: {
         manifestUrl: "/desktop-updates/stable.json",
-        platformKeys: [],
+        platformKeys: ["windows-x86_64"],
         fallbackUrl: INIT_WINDOWS_INSTALLER_ENDPOINT,
       },
     },

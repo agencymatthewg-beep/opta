@@ -63,23 +63,28 @@ function unwrapOperationResponse(
 export async function runAccountBrowserLogin(
   connection: DaemonConnectionOptions,
 ): Promise<{ authResult: unknown; statusResult: unknown }> {
+  // In native Tauri mode, use the PKCE OAuth flow directly — no daemon dependency.
+  // The OAuth URL is opened in the system browser; the session arrives via deep link
+  // (opta-code://auth/callback) and is exchanged in useAccountsAuthControls.
+  if (isNativeDesktop()) {
+    const { startNativeOAuthFlow } = await import("../auth");
+    await startNativeOAuthFlow("google");
+    // Session delivery is async (deep link fires later); return placeholder.
+    return { authResult: { status: "oauth_pending" }, statusResult: null };
+  }
+
+  // Web mode fallback: relay through daemon (requires CLI to be installed).
   const loginResponse = await daemonClient.runOperation(
     connection,
     "account.login",
     { input: OAUTH_BROWSER_LOGIN_INPUT },
   );
-  const authResult = unwrapOperationResponse(
-    "account.login",
-    loginResponse,
-  );
+  const authResult = unwrapOperationResponse("account.login", loginResponse);
   const statusResponse = await daemonClient.runOperation(
     connection,
     "account.status",
   );
-  const statusResult = unwrapOperationResponse(
-    "account.status",
-    statusResponse,
-  );
+  const statusResult = unwrapOperationResponse("account.status", statusResponse);
   return { authResult, statusResult };
 }
 

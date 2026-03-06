@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Studios — Complete Implementation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Press+Start+2P&display=swap');
+
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --browser: #22d3ee;
+    --models: #a78bfa;
+    --atpo: #f472b6;
+    --settings: #8b5cf6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: 'Sora', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* Ambient bg */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(900px 600px at 10% 0%, rgba(139, 92, 246, 0.12), transparent 65%),
+      radial-gradient(700px 500px at 90% 80%, rgba(34, 211, 238, 0.06), transparent 60%);
+    pointer-events: none;
+  }
+
+  .page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3rem 2rem 6rem;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Header ── */
+  .hero {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .hero-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .hero-title {
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #fafafa 0%, #a78bfa 50%, #8b5cf6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.1;
+    margin-bottom: 1.2rem;
+  }
+
+  .hero-sub {
+    font-size: 1.05rem;
+    color: var(--text-secondary);
+    max-width: 620px;
+    margin: 0 auto;
+  }
+
+  /* ── OPTA Logo preview ── */
+  .logo-preview-row {
+    display: flex;
+    justify-content: center;
+    gap: 3rem;
+    margin: 2.5rem 0 3rem;
+    flex-wrap: wrap;
+  }
+
+  .logo-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .logo-word {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 1.6rem;
+    letter-spacing: 0.12em;
+    line-height: 1;
+    display: flex;
+    gap: 2px;
+  }
+
+  .logo-word .l { display: inline-block; }
+
+  .logo-word.browser .l {
+    color: var(--browser);
+    text-shadow:
+      0 0 0 var(--browser),
+      2px 2px 0 #040b18,
+      3px 3px 0 #22d3ee44,
+      4px 4px 0 #040b18,
+      5px 5px 0 #22d3ee22;
+  }
+
+  .logo-word.models .l {
+    color: var(--models);
+    text-shadow:
+      0 0 0 var(--models),
+      2px 2px 0 #040b18,
+      3px 3px 0 #a78bfa44,
+      4px 4px 0 #040b18,
+      5px 5px 0 #a78bfa22;
+  }
+
+  .logo-word.atpo .l {
+    color: var(--atpo);
+    text-shadow:
+      0 0 0 var(--atpo),
+      2px 2px 0 #040b18,
+      3px 3px 0 #f472b644,
+      4px 4px 0 #040b18,
+      5px 5px 0 #f472b622;
+  }
+
+  .logo-word.settings .l {
+    color: var(--settings);
+    text-shadow:
+      0 0 0 var(--settings),
+      2px 2px 0 #040b18,
+      3px 3px 0 #8b5cf644,
+      4px 4px 0 #040b18,
+      5px 5px 0 #8b5cf622;
+  }
+
+  .logo-sublabel {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.85;
+  }
+
+  .logo-sublabel.browser { color: var(--browser); }
+  .logo-sublabel.models { color: var(--models); }
+  .logo-sublabel.atpo { color: var(--atpo); }
+  .logo-sublabel.settings { color: var(--settings); }
+
+  .logo-keybind {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 0.15rem 0.5rem;
+    border-radius: 5px;
+  }
+
+  /* ── Section ── */
+  .section {
+    margin-bottom: 3rem;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+  }
+
+  .section-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .section-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* ── Studio cards ── */
+  .studios-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+    margin-bottom: 2rem;
+  }
+
+  .studio-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.09);
+    border-radius: 18px;
+    padding: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, background 0.2s;
+  }
+
+  .studio-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--c);
+    opacity: 0.7;
+  }
+
+  .studio-card:hover {
+    border-color: color-mix(in srgb, var(--c) 30%, transparent);
+    background: rgba(255,255,255,0.045);
+  }
+
+  .studio-card[data-studio="browser"] { --c: #22d3ee; }
+  .studio-card[data-studio="models"] { --c: #a78bfa; }
+  .studio-card[data-studio="atpo"] { --c: #f472b6; }
+  .studio-card[data-studio="settings"] { --c: #8b5cf6; }
+
+  .studio-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .studio-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    background: color-mix(in srgb, var(--c) 15%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
+    color: var(--c);
+    flex-shrink: 0;
+  }
+
+  .studio-name {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .studio-keybind {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--c);
+    background: color-mix(in srgb, var(--c) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--c) 25%, transparent);
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    margin-left: auto;
+  }
+
+  .studio-desc {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+    line-height: 1.5;
+  }
+
+  .studio-features {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .studio-features li {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .studio-features li::before {
+    content: '·';
+    color: var(--c);
+    font-weight: 700;
+    margin-top: 1px;
+    flex-shrink: 0;
+  }
+
+  /* ── Keybind table ── */
+  .keybind-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .keybind-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+  }
+
+  .keybind-key {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    flex-shrink: 0;
+    min-width: 70px;
+    text-align: center;
+  }
+
+  .keybind-action {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+  }
+
+  /* ── Architecture diagram ── */
+  .arch-diagram {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    line-height: 2;
+    color: var(--text-secondary);
+  }
+
+  .arch-line-label {
+    display: inline-block;
+    font-weight: 700;
+    padding: 0.1rem 0.4rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+  }
+
+  .arch-browser { color: var(--browser); }
+  .arch-models { color: var(--models); }
+  .arch-atpo { color: var(--atpo); }
+  .arch-settings { color: var(--settings); }
+
+  /* ── Shared design rules ── */
+  .rule-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.75rem;
+  }
+
+  .rule-card {
+    padding: 0.9rem 1.1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+  }
+
+  .rule-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 0.35rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .rule-value {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+  }
+
+  /* ── Commits ── */
+  .commit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .commit-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.7rem 1rem;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    font-size: 0.78rem;
+  }
+
+  .commit-hash {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--primary);
+    flex-shrink: 0;
+  }
+
+  .commit-type {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 0.15rem 0.45rem;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+
+  .commit-type.fix { background: rgba(239,68,68,0.15); color: #ef4444; }
+  .commit-type.feat { background: rgba(139,92,246,0.15); color: #8b5cf6; }
+
+  .commit-msg { color: var(--text-secondary); }
+
+  /* ── Footer ── */
+  .footer {
+    margin-top: 4rem;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .neon-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--primary) 30%, var(--primary-glow) 50%, var(--primary) 70%, transparent);
+    margin: 2.5rem 0;
+    opacity: 0.4;
+    box-shadow: 0 0 12px rgba(139,92,246,0.4);
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ── Hero ── -->
+  <div class="hero">
+    <div class="hero-eyebrow">Opta Studio System · Implementation Complete</div>
+    <h1 class="hero-title">Three Studios. One Aesthetic.</h1>
+    <p class="hero-sub">Browser, Models, and Atpo Studios are now live in Opta Code Desktop — each with the same glass shell, Opta Text Logo, fullscreen toggle, and keyboard-first navigation as Settings Studio.</p>
+  </div>
+
+  <!-- ── Logo previews ── -->
+  <div class="logo-preview-row">
+    <div class="logo-mini">
+      <div class="logo-word settings">
+        <span class="l">O</span><span class="l">P</span><span class="l">T</span><span class="l">A</span>
+      </div>
+      <div class="logo-sublabel settings">OPTA SETTINGS</div>
+      <div class="logo-keybind">Ctrl+S</div>
+    </div>
+    <div class="logo-mini">
+      <div class="logo-word browser">
+        <span class="l">O</span><span class="l">P</span><span class="l">T</span><span class="l">A</span>
+      </div>
+      <div class="logo-sublabel browser">OPTA BROWSER</div>
+      <div class="logo-keybind">Ctrl+B</div>
+    </div>
+    <div class="logo-mini">
+      <div class="logo-word models">
+        <span class="l">O</span><span class="l">P</span><span class="l">T</span><span class="l">A</span>
+      </div>
+      <div class="logo-sublabel models">OPTA MODELS</div>
+      <div class="logo-keybind">Ctrl+M</div>
+    </div>
+    <div class="logo-mini">
+      <div class="logo-word atpo">
+        <span class="l">O</span><span class="l">P</span><span class="l">T</span><span class="l">A</span>
+      </div>
+      <div class="logo-sublabel atpo">OPTA ATPO</div>
+      <div class="logo-keybind">Ctrl+A</div>
+    </div>
+  </div>
+
+  <div class="neon-divider"></div>
+
+  <!-- ── Studios ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#8b5cf6;box-shadow:0 0 6px #8b5cf6"></div>
+      <div class="section-title">Feature Studios — What's Built</div>
+    </div>
+
+    <div class="studios-grid">
+      <div class="studio-card" data-studio="settings">
+        <div class="studio-card-header">
+          <div class="studio-icon">⚙</div>
+          <div>
+            <div class="studio-name">Settings Studio</div>
+            <div style="font-size:0.65rem;color:var(--text-muted);font-family:'JetBrains Mono',monospace;">Existing · 3-layer</div>
+          </div>
+          <div class="studio-keybind">Ctrl+S</div>
+        </div>
+        <div class="studio-desc">17-category spatial navigation system. L1 idle → L2 grid → L3 deep configuration with keyboard-first navigation.</div>
+        <ul class="studio-features">
+          <li>3-layer depth system (L1/L2/L3)</li>
+          <li>Grid + drill-down with WASD navigation</li>
+          <li>Shift+Space fullscreen</li>
+          <li>Settings tab sequence + cycler</li>
+        </ul>
+      </div>
+
+      <div class="studio-card" data-studio="browser">
+        <div class="studio-card-header">
+          <div class="studio-icon">⬡</div>
+          <div>
+            <div class="studio-name">Browser Studio</div>
+            <div style="font-size:0.65rem;color:var(--browser);font-family:'JetBrains Mono',monospace;">NEW · Single-layer</div>
+          </div>
+          <div class="studio-keybind">Ctrl+B</div>
+        </div>
+        <div class="studio-desc">Localhost registry and browser session management. Live port ping with animated status indicators.</div>
+        <ul class="studio-features">
+          <li>8-port localhost registry (5173, 9999, 1234…)</li>
+          <li>Live ping with up/down/checking animation</li>
+          <li>Open in browser from card</li>
+          <li>Cyan (#22d3ee) identity throughout</li>
+          <li>Auto-pings on open</li>
+        </ul>
+      </div>
+
+      <div class="studio-card" data-studio="models">
+        <div class="studio-card-header">
+          <div class="studio-icon">◈</div>
+          <div>
+            <div class="studio-name">Models Studio</div>
+            <div style="font-size:0.65rem;color:var(--models);font-family:'JetBrains Mono',monospace;">NEW · Single-layer</div>
+          </div>
+          <div class="studio-keybind">Ctrl+M</div>
+        </div>
+        <div class="studio-desc">LMX inference engine visibility. Routing selector, model load status, VRAM usage, and tokens/sec.</div>
+        <ul class="studio-features">
+          <li>LMX / Cloud routing pills (toggle)</li>
+          <li>Online/offline status with Mono512 host</li>
+          <li>Model list: loaded/available badges</li>
+          <li>tok/s performance and VRAM display</li>
+          <li>Soft violet (#a78bfa) identity</li>
+        </ul>
+      </div>
+
+      <div class="studio-card" data-studio="atpo">
+        <div class="studio-card-header">
+          <div class="studio-icon">◇</div>
+          <div>
+            <div class="studio-name">Atpo Studio</div>
+            <div style="font-size:0.65rem;color:var(--atpo);font-family:'JetBrains Mono',monospace;">NEW · Single-layer</div>
+          </div>
+          <div class="studio-keybind">Ctrl+A</div>
+        </div>
+        <div class="studio-desc">App and module lifecycle management. Installed/catalog tabs with per-app category coloring.</div>
+        <ul class="studio-features">
+          <li>Installed / Catalog tab switching</li>
+          <li>Per-app category colour coding</li>
+          <li>Update badge + remove controls</li>
+          <li>Install from catalog</li>
+          <li>Pink (#f472b6) identity throughout</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Keyboard map ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#60a5fa;box-shadow:0 0 6px #60a5fa"></div>
+      <div class="section-title">Keyboard Navigation Map</div>
+    </div>
+    <div class="keybind-grid">
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(139,92,246,0.12);color:#8b5cf6;border:1px solid #8b5cf644">Ctrl+S</div>
+        <div class="keybind-action">Toggle Settings Studio</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(34,211,238,0.12);color:#22d3ee;border:1px solid #22d3ee44">Ctrl+B</div>
+        <div class="keybind-action">Toggle Browser Studio</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(167,139,250,0.12);color:#a78bfa;border:1px solid #a78bfa44">Ctrl+M</div>
+        <div class="keybind-action">Toggle Models Studio</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(244,114,182,0.12);color:#f472b6;border:1px solid #f472b644">Ctrl+A</div>
+        <div class="keybind-action">Toggle Atpo Studio</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(255,255,255,0.05);color:#a1a1aa;border:1px solid #3f3f46">Shift+Space</div>
+        <div class="keybind-action">Toggle fullscreen (any Studio)</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(255,255,255,0.05);color:#a1a1aa;border:1px solid #3f3f46">Esc</div>
+        <div class="keybind-action">Close current Studio</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(255,255,255,0.05);color:#a1a1aa;border:1px solid #3f3f46">Ctrl+S+Shift</div>
+        <div class="keybind-action">Settings → first tab</div>
+      </div>
+      <div class="keybind-row">
+        <div class="keybind-key" style="background:rgba(255,255,255,0.05);color:#a1a1aa;border:1px solid #3f3f46">WASD / ↑↓←→</div>
+        <div class="keybind-action">Navigate Settings grid</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Shared rules ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#10b981;box-shadow:0 0 6px #10b981"></div>
+      <div class="section-title">Shared Design Rules — All Studios</div>
+    </div>
+    <div class="rule-grid">
+      <div class="rule-card">
+        <div class="rule-label">Shell</div>
+        <div class="rule-value">.opta-studio-shell + .opta-studio-shell--embedded. Same glassmorphism, same border radius, same grid dot pattern.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Entry/Exit Animation</div>
+        <div class="rule-value">settingsLayerVariants (Framer Motion). Same scale + blur + translate depth illusion. mode="wait" in AnimatePresence.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Logo System</div>
+        <div class="rule-value">Press Start 2P, 7-layer pixel shadow stack per-accent. .opta-studio-logo-reserve with is-docked (always). is-active in fullscreen only.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Fullscreen</div>
+        <div class="rule-value">Shared studioFullscreen state in App. Shift+Space toggles. .v1-settings-overlay-expanded + .opta-studio-shell--fullscreen on open.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Mutual Exclusivity</div>
+        <div class="rule-value">Only one overlay at a time. Opening a Studio auto-closes Settings. Ctrl+S auto-clears activeStudio. isAnyOverlayActive = settings OR studio.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Lazy Loading</div>
+        <div class="rule-value">All three Studios in lazyAppModules.tsx as React.lazy(). Zero upfront JS cost. No Suspense fallback needed (instant load).</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Architecture ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#f59e0b;box-shadow:0 0 6px #f59e0b"></div>
+      <div class="section-title">State Architecture in App.tsx</div>
+    </div>
+    <div class="arch-diagram">
+      <span style="color:rgba(255,255,255,0.6)">// Existing Settings layer machine</span><br>
+      settingsLayer: <span class="arch-settings">1 | 2 | 3</span>  &nbsp;&nbsp;<span style="color:rgba(255,255,255,0.35)">← Ctrl+S, L2 grid, L3 deep</span><br>
+      settingsFullscreen: <span class="arch-settings">boolean</span><br><br>
+      <span style="color:rgba(255,255,255,0.6)">// New Feature Studio state</span><br>
+      activeStudio: <span class="arch-browser">'browser'</span> | <span class="arch-models">'models'</span> | <span class="arch-atpo">'atpo'</span> | null<br>
+      studioFullscreen: boolean<br><br>
+      <span style="color:rgba(255,255,255,0.6)">// Combined overlay flag</span><br>
+      isAnyOverlayActive = settingsLayer &gt; 1 || activeStudio !== null<br><br>
+      <span style="color:rgba(255,255,255,0.6)">// Mutual exclusivity rule</span><br>
+      Opening a Studio: if (settingsLayer &gt; 1) goToSettingsLayer(1)<br>
+      Opening Settings: setActiveStudio(null) [implicit via Ctrl+S]<br><br>
+      <span style="color:rgba(255,255,255,0.6)">// Same render container — AnimatePresence mode="wait"</span><br>
+      {settingsLayer === 2 &amp;&amp; &lt;<span class="arch-settings">LazySettingsView</span> /&gt;}<br>
+      {settingsLayer === 3 &amp;&amp; &lt;<span class="arch-settings">LazySettingsModal</span> /&gt;}<br>
+      {settingsLayer === 1 &amp;&amp; activeStudio === 'browser' &amp;&amp; &lt;<span class="arch-browser">LazyBrowserStudio</span> /&gt;}<br>
+      {settingsLayer === 1 &amp;&amp; activeStudio === 'models' &amp;&amp; &lt;<span class="arch-models">LazyModelsStudio</span> /&gt;}<br>
+      {settingsLayer === 1 &amp;&amp; activeStudio === 'atpo' &amp;&amp; &lt;<span class="arch-atpo">LazyAtpoStudio</span> /&gt;}
+    </div>
+  </div>
+
+  <!-- ── Commits ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#22d3ee;box-shadow:0 0 6px #22d3ee"></div>
+      <div class="section-title">Commits Shipped</div>
+    </div>
+    <div class="commit-list">
+      <div class="commit-row">
+        <div class="commit-hash">cbeb4cdc</div>
+        <div class="commit-type fix">fix</div>
+        <div class="commit-msg"><b>cli:</b> sync feature identity colours — atpo #c084fc → #f472b6, advanced cyan freed, browser/models/atpo tokens added to TUI_COLORS</div>
+      </div>
+      <div class="commit-row">
+        <div class="commit-hash">a2cee9c8</div>
+        <div class="commit-type feat">feat</div>
+        <div class="commit-msg"><b>design:</b> Studio System design library — tokens, motion, components, identity, gemini context, studio-template, STUDIO-SYSTEM.md</div>
+      </div>
+      <div class="commit-row">
+        <div class="commit-hash">676169ed</div>
+        <div class="commit-type feat">feat</div>
+        <div class="commit-msg"><b>code:</b> BrowserStudio (Ctrl+B), ModelsStudio (Ctrl+M), AtpoStudio (Ctrl+A) — shared shell aesthetic, unique logos, keyboard handlers</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Next steps ── -->
+  <div class="section">
+    <div class="section-header">
+      <div class="section-dot" style="background:#a78bfa;box-shadow:0 0 6px #a78bfa"></div>
+      <div class="section-title">What Comes Next</div>
+    </div>
+    <div class="rule-grid">
+      <div class="rule-card">
+        <div class="rule-label">Web Apps</div>
+        <div class="rule-value">Propagate ecosystem-identity-tokens.css to 1T-Opta-Home, 1V-Opta-Learn, 1U-Opta-Help for consistent Browser/Models/Atpo feature colouring.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Models Studio Live Data</div>
+        <div class="rule-value">Wire daemon proxy endpoint for LMX model list. Currently fetches /lmx/health — add model management actions (load/unload) when daemon API is ready.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">Atpo Studio Live Data</div>
+        <div class="rule-value">Connect to daemon's module registry API when available. The current catalog is seeded with optalocal ecosystem modules.</div>
+      </div>
+      <div class="rule-card">
+        <div class="rule-label">New Studios</div>
+        <div class="rule-value">Use design/studio-system/studio-template/StudioOverlay.tsx as the copy-paste base. The STUDIO-SYSTEM.md has the full 7-step creation guide.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Opta Studio System · 2026-03-06 · 3 commits · 0 TypeScript errors · pushed to main
+  </div>
+</div>
+</body>
+</html>
