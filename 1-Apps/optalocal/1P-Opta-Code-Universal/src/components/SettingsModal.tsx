@@ -54,7 +54,6 @@ import {
   SETTINGS_CATEGORIES,
   SETTINGS_CATEGORIES_BY_GROUP,
   SETTINGS_GROUP_LABELS,
-  SETTINGS_TAB_SEQUENCE,
   normalizeSettingsTabId,
   type SettingsCategoryGroup,
   type SettingsTabId,
@@ -272,7 +271,7 @@ export function SettingsModal({
     useRef<Partial<Record<SettingsTabId, HTMLButtonElement | null>>>({});
   const contentRef = useRef<HTMLElement | null>(null);
   const [internalActiveTab, setInternalActiveTab] =
-    useState<SettingsTabId>(SETTINGS_TAB_SEQUENCE[0] ?? "connection-network");
+    useState<SettingsTabId>("connection-network");
   const activeTab = normalizeSettingsTabId(
     controlledActiveTab ?? internalActiveTab,
   );
@@ -367,11 +366,6 @@ export function SettingsModal({
   const [cliDefaultShell, setCliDefaultShell] =
     useState<"zsh" | "bash" | "pwsh">("zsh");
   const [cliVerboseDiagnostics, setCliVerboseDiagnostics] = useState(false);
-
-  // --- Atpo State ---
-  const [atpoEnabled, setAtpoEnabled] = useState(true);
-  const [atpoAutonomyLevel, setAtpoAutonomyLevel] = useState(2);
-  const [atpoProvider, setAtpoProvider] = useState("auto");
 
   useEffect(() => {
     setConnForm({
@@ -660,20 +654,6 @@ export function SettingsModal({
         setCliVerboseDiagnostics(
           readBooleanSetting(cliVerboseDiagnosticsRaw, false),
         );
-
-        // Atpo
-        const [atpoEnabledRaw, atpoLevelRaw, atpoProviderRaw] =
-          await Promise.all([
-            daemonClient.configGet(connection, "atpo.enabled").catch(() => null),
-            daemonClient.configGet(connection, "atpo.autonomyLevel").catch(() => null),
-            daemonClient.configGet(connection, "atpo.provider").catch(() => null),
-          ]);
-        if (!cancelled) {
-          setAtpoEnabled(readBooleanSetting(atpoEnabledRaw, true));
-          setAtpoAutonomyLevel(readPositiveInteger(atpoLevelRaw, 2));
-          const providerStr = typeof atpoProviderRaw === "string" ? atpoProviderRaw : "auto";
-          setAtpoProvider(providerStr || "auto");
-        }
       } catch (error) {
         if (!cancelled)
           console.error("Failed to load settings from daemon", error);
@@ -1724,81 +1704,6 @@ export function SettingsModal({
     </div>
   );
 
-  const renderAtpoModule = () => (
-    <>
-      <p style={{ color: "#a1a1aa", fontSize: "0.85rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
-        Atpo is your automated supervisor. It watches sessions, catches errors, and
-        can step in to fix problems — how much it does is up to you.
-      </p>
-
-      <label style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1.5rem", cursor: "pointer" }}>
-        <input
-          type="checkbox"
-          checked={atpoEnabled}
-          style={{ width: "18px", height: "18px", accentColor: "#f472b6" }}
-          onChange={(e) => {
-            setAtpoEnabled(e.target.checked);
-            void saveRemoteSettings("atpo.enabled", e.target.checked);
-          }}
-        />
-        <span style={{ fontFamily: "Sora", color: "#fafafa", fontSize: "0.9rem" }}>
-          Enable Atpo
-        </span>
-      </label>
-
-      <div className="opta-studio-slider-container">
-        <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.5rem" }}>
-          <span style={{ color: "#fafafa", fontFamily: "Sora", fontWeight: 500 }}>
-            Oversight Level {atpoAutonomyLevel}
-          </span>
-          <span style={{ color: "#f472b6", fontFamily: "JetBrains Mono", fontSize: "0.8rem" }}>
-            {["", "Fallback", "Warn", "Auto-Fix", "Co-Pilot", "Full"][atpoAutonomyLevel] ?? ""}
-          </span>
-        </div>
-        <input
-          type="range"
-          min="1"
-          max="4"
-          value={atpoAutonomyLevel}
-          className="opta-studio-slider"
-          disabled={!atpoEnabled}
-          onChange={(e) => {
-            const val = parseInt(e.target.value, 10);
-            setAtpoAutonomyLevel(val);
-            void saveRemoteSettings("atpo.autonomyLevel", val);
-          }}
-        />
-        <div style={{ display: "flex", justifyContent: "space-between", color: "#a1a1aa", fontSize: "0.75rem", fontFamily: "Sora" }}>
-          <span>L1: Warn only</span>
-          <span>L2: Auto-fix errors</span>
-          <span>L4: Full oversight</span>
-        </div>
-      </div>
-
-      <div style={{ marginTop: "2rem" }} className="opta-studio-form-group">
-        <label>AI Provider</label>
-        <select
-          className="opta-studio-select"
-          value={atpoProvider}
-          disabled={!atpoEnabled}
-          onChange={(e) => {
-            setAtpoProvider(e.target.value);
-            void saveRemoteSettings("atpo.provider", e.target.value);
-          }}
-        >
-          <option value="auto">Auto (recommended)</option>
-          <option value="anthropic">Anthropic</option>
-          <option value="gemini">Google Gemini</option>
-          <option value="openai">OpenAI</option>
-          <option value="opencode_zen">OpenCode Zen</option>
-        </select>
-        <p style={{ color: "#a1a1aa", fontSize: "0.78rem", marginTop: "0.4rem" }}>
-          Auto selects the best available provider. Override if you want Atpo to use a specific one.
-        </p>
-      </div>
-    </>
-  );
-
   const renderCliAdvancedStudioModule = () => (
     <div>
       <p className="st-desc">
@@ -2109,11 +2014,6 @@ export function SettingsModal({
             </section>
           </div>,
         );
-      case "atpo":
-        return wrap(
-          "atpo",
-          <section className="opta-studio-module-card">{renderAtpoModule()}</section>,
-        );
       default:
         return null;
     }
@@ -2179,7 +2079,6 @@ export function SettingsModal({
     "background-jobs": "JOBS",
     "daemon-logs": "LOGS",
     "cli-system-advanced": "ADVANCED",
-    "atpo": "ATPO",
   };
 
   const hexToRgba = (hex: string, alpha: number) => {
@@ -2334,7 +2233,7 @@ export function SettingsModal({
       <div className={`opta-studio-layout ${isDeepLayer ? "opta-studio-layout--deep" : ""} ${isFullscreen ? "opta-studio-layout--fullscreen" : ""}`}>
         {!isDeepLayer ? (
           <aside className="opta-studio-sidebar">
-            {(["core", "behaviour", "workspace", "system"] as const).map((group) => (
+            {(["infrastructure", "control", "security", "workspace"] as const).map((group) => (
               <div key={group} className="opta-studio-tab-group">
                 <div className="opta-studio-tab-group-label">
                   {SETTINGS_GROUP_LABELS[group as SettingsCategoryGroup]}

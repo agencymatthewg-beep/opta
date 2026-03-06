@@ -6772,22 +6772,6 @@ button.active,
   text-transform: uppercase;
 }
 
-.pp-projects-logo {
-  font-family: "Press Start 2P", monospace;
-  font-size: 0.85rem;
-  color: #f472b6;
-  text-transform: uppercase;
-  -webkit-font-smoothing: none;
-  font-smooth: never;
-  text-shadow:
-    1px 1px 0 #09090b,
-    2px 2px 0 #f472b6,
-    3px 3px 0 #09090b,
-    4px 4px 0 #f472b6;
-  letter-spacing: 0.05em;
-  filter: drop-shadow(0 0 8px rgba(244, 114, 182, 0.4));
-}
-
 .pp-icon-btn {
   background: transparent;
   border: 1px solid transparent;
