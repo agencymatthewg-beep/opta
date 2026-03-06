@@ -2113,15 +2113,50 @@ export function SettingsModal({
           aria-hidden="true"
         >
           <div className="opta-studio-logo-stack">
-            <div className="opta-studio-logo-word" aria-label={word} style={dynamicStyle}>
-              {word.split("").map((letter, index) => (
-                <span
-                  key={`settings-logo-letter-${letter}-${index}`}
-                  className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
-                >
-                  {letter}
-                </span>
-              ))}
+            <div className="v1-brand-word" aria-label={word} style={{ ...dynamicStyle, perspective: "1000px" }}>
+              <AnimatePresence mode="popLayout">
+                {word.split("").map((letter, index) => {
+                  if (letter === " ") {
+                    return <span key={`${word}-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
+                  }
+                  return (
+                    <motion.span
+                      key={`${word}-${index}`}
+                      className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                      custom={index}
+                      variants={{
+                        initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                        animate: (i: number) => ({
+                          opacity: 1,
+                          rotateX: 0,
+                          filter: "blur(0px)",
+                          transition: {
+                            type: "spring",
+                            stiffness: 150,
+                            damping: 15,
+                            delay: i * 0.05
+                          }
+                        }),
+                        exit: (i: number) => ({
+                          opacity: 0,
+                          rotateX: -90,
+                          filter: "blur(4px)",
+                          transition: {
+                            duration: 0.2,
+                            delay: i * 0.03
+                          }
+                        })
+                      }}
+                      initial="initial"
+                      animate="animate"
+                      exit="exit"
+                      style={{ display: "inline-block", transformOrigin: "center center" }}
+                    >
+                      {letter}
+                    </motion.span>
+                  );
+                })}
+              </AnimatePresence>
             </div>
             <div className="opta-studio-logo-sub">Code Environment</div>
           </div>

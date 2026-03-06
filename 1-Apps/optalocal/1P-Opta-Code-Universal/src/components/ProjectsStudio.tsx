@@ -262,7 +262,7 @@ export function ProjectsStudio({
                                                 <button
                                                     type="button"
                                                     className="feature-studio-action-mini feature-studio-action-mini--danger"
-                                                    title="Delete Workspace (TBD)"
+                                                    title="Delete Workspace"
                                                 >
                                                     <Trash2 size={11} /> Delete
                                                 </button>
@@ -330,7 +330,7 @@ export function ProjectsStudio({
                                                 <button
                                                     type="button"
                                                     className="feature-studio-action-mini feature-studio-action-mini--danger"
-                                                    title="Delete Session (TBD)"
+                                                    title="Delete Session"
                                                 >
                                                     <Trash2 size={11} />
                                                 </button>
