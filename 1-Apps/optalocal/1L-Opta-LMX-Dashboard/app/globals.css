@@ -354,6 +354,82 @@ pre,
   background: rgba(139, 92, 246, 0.4);
 }
 
+/* ── Neon Edge Buttons ──────────────────────── */
+.btn-pairing {
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%);
+  border: none;
+  color: #fff;
+  padding: 1rem 2.5rem;
+  border-radius: 8px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.btn-pairing::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.6) 0%, rgba(139, 92, 246, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.btn-pairing:hover {
+  transform: scale(1.05) translateY(-2px);
+  box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.5);
+  color: #fff;
+  /* Keep text white on hover */
+}
+
+.btn-pairing:hover::before {
+  opacity: 1;
+}
+
+.btn-pairing span {
+  position: relative;
+  z-index: 2;
+}
+
+.btn-setup {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.7);
+  padding: 1rem 2.5rem;
+  border-radius: 8px;
+  font-family: var(--font-jetbrains), monospace;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.btn-setup:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #fff;
+  transform: scale(1.05) translateY(-2px);
+}
+
 /* ── Config Label ────────────────────────────── */
 .config-label {
   font-size: 11px;

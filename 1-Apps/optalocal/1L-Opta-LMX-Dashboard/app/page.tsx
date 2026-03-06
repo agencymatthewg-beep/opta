@@ -75,25 +75,16 @@ export default function DashboardHome() {
                         )}
                         <div className="mt-8 flex flex-wrap gap-4 justify-center">
                             {pairedDevice.mode === 'paired' && !pairedDevice.session ? (
-                                <Link
-                                    href="/pair"
-                                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(139,92,246,0.15)] text-[13px] font-mono uppercase tracking-[0.1em] text-primary hover:bg-[rgba(139,92,246,0.3)] hover:text-white hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all duration-300 backdrop-blur-md"
-                                >
-                                    Start Pairing
+                                <Link href="/pair" className="btn-pairing">
+                                    <span>Start Pairing</span>
                                 </Link>
                             ) : (
-                                <Link
-                                    href="/settings"
-                                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(139,92,246,0.15)] text-[13px] font-mono uppercase tracking-[0.1em] text-primary hover:bg-[rgba(139,92,246,0.3)] hover:text-white hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all duration-300 backdrop-blur-md"
-                                >
-                                    Open Connection Settings
+                                <Link href="/settings" className="btn-pairing">
+                                    <span>Open Connection Settings</span>
                                 </Link>
                             )}
-                            <Link
-                                href="/setup"
-                                className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-[13px] font-mono uppercase tracking-[0.1em] text-[rgba(255,255,255,0.8)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] hover:text-white hover:scale-[1.03] transition-all duration-300 backdrop-blur-md"
-                            >
-                                Setup Checks
+                            <Link href="/setup" className="btn-setup">
+                                <span>Setup Checks</span>
                             </Link>
                         </div>
                     </div>
