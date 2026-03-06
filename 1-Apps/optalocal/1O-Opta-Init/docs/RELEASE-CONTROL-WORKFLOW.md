@@ -37,8 +37,11 @@ This document defines the internal release-control contract for Opta Init channe
 - Current integration:
   - `/.github/workflows/opta-cli-release.yml` calls the reusable sync workflow on release tags.
   - `/.github/workflows/opta-code-release-manifest-sync.yml` syncs `opta-code-universal` from release tags/assets.
+  - `/.github/workflows/opta-code-macos-build.yml` and `/.github/workflows/opta-code-windows-build.yml` publish release assets consumed by Opta Code manifest sync.
   - `/.github/workflows/opta-lmx-release.yml` builds/publishes LMX release assets and syncs `opta-lmx`.
+  - `/.github/workflows/opta-daemon-macos-build.yml` and `/.github/workflows/opta-daemon-windows-build.yml` publish Opta Daemon macOS + Windows release bundles.
   - `/.github/workflows/opta-daemon-release-manifest-sync.yml` syncs `opta-daemon` from release tags/assets.
+    - Enforced requirement: both macOS and Windows artifacts must resolve before sync.
 
 This keeps `channels/<channel>.json`, `public/desktop/manifest-<channel>.json`,
 and `vercel.json` synchronized from component release events, then re-runs contract validation.
@@ -232,6 +235,7 @@ Known live verification note (2026-03-05):
 - `commit_changes`: whether generated manifest changes are committed
 - `strict_require_artifacts`: require at least one artifact for the updated component
 - `strict_require_signatures`: require signature metadata for every artifact of the updated component
+- `strict_require_platforms_for`: require platform coverage for updated component (for example `opta-daemon:macos,windows`)
 
 ## Promote Beta to Stable
 

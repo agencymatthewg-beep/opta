@@ -1,0 +1,84 @@
+name: Opta Daemon — Windows Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "opta-daemon-v*"
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
+      - ".github/workflows/opta-daemon-windows-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
+      - ".github/workflows/opta-daemon-windows-build.yml"
+  workflow_dispatch:
+  schedule:
+    # Nightly daemon Windows bundle health run (UTC)
+    - cron: "0 7 * * *"
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+
+jobs:
+  unit-tests:
+    name: Daemon tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run daemon test suite
+        run: npx vitest run tests/daemon
+
+  windows-package:
+    name: Build daemon Windows bundle
+    runs-on: windows-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build daemon package
+        run: npm run build
+      - name: Trim dev dependencies from runtime bundle
+        run: npm prune --omit=dev
+      - name: Prepare Windows daemon bundle
+        run: node scripts/release/prepare-daemon-bundle.mjs --platform windows --arch x64 --output-dir dist-release
+      - name: Verify Windows daemon bundle
+        run: node scripts/release/verify-daemon-bundle.mjs --bundle dist-release/opta-daemon-windows-x64
+      - name: Archive Windows daemon bundle
+        shell: pwsh
+        run: |
+          Compress-Archive `
+            -Path dist-release\opta-daemon-windows-x64 `
+            -DestinationPath dist-release\opta-daemon-windows-x64.zip `
+            -Force
+          Get-ChildItem dist-release\opta-daemon-windows-x64.zip | Format-List Name,Length,LastWriteTime
+      - name: Upload Windows daemon bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-daemon-windows-bundle
+          path: 1-Apps/optalocal/1D-Opta-CLI-TS/dist-release/opta-daemon-windows-x64.zip
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish Windows daemon release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: 1-Apps/optalocal/1D-Opta-CLI-TS/dist-release/opta-daemon-windows-x64.zip
+          fail_on_unmatched_files: true

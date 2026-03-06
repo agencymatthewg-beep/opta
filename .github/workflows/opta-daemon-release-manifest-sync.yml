@@ -120,7 +120,7 @@ jobs:
           }
 
           async function resolveReleaseAssets({ repository, tag, token }) {
-            const maxAttempts = 30;
+            const maxAttempts = 60;
             const waitMs = 15000;
 
             for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
@@ -150,8 +150,11 @@ jobs:
                 /windows.*daemon.*\.(?:zip|exe|msi)$/i,
               ]);
 
-              if (!mac && !windows) {
-                console.log(`Release ${tag} exists but no daemon assets matched yet (attempt ${attempt}/${maxAttempts})`);
+              if (!mac || !windows) {
+                const missing = [];
+                if (!mac) missing.push('macOS');
+                if (!windows) missing.push('Windows');
+                console.log(`Release ${tag} exists but still missing ${missing.join(' + ')} daemon asset(s) (attempt ${attempt}/${maxAttempts})`);
                 await sleep(waitMs);
                 continue;
               }
@@ -217,8 +220,11 @@ jobs:
             notesUrl = `https://github.com/${repository}/releases/tag/${tag}`;
           }
 
-          if (!macUrl && !windowsUrl) {
-            fail('No daemon artifacts resolved. Provide overrides or ensure release assets exist.');
+          if (!macUrl) {
+            fail('Both macOS and Windows artifacts are required for Opta Daemon release; missing macOS artifact.');
+          }
+          if (!windowsUrl) {
+            fail('Both macOS and Windows artifacts are required for Opta Daemon release; missing Windows artifact.');
           }
 
           if (macUrl && !httpsRegex.test(macUrl)) {
@@ -229,6 +235,9 @@ jobs:
           }
           if (!httpsRegex.test(notesUrl)) {
             fail(`Resolved notes URL must be https: ${notesUrl}`);
+          }
+          if (macUrl === windowsUrl) {
+            fail('Resolved macOS and Windows artifact URLs must be distinct.');
           }
 
           const payload = {
@@ -280,5 +289,6 @@ jobs:
       payload_json: ${{ needs.prepare.outputs.payload_json }}
       metadata_ref: ${{ needs.prepare.outputs.metadata_ref }}
       strict_require_artifacts: true
+      strict_require_platforms_for: 'opta-daemon:macos,windows'
       strict_require_signatures: false
     secrets: inherit

@@ -1,0 +1,61 @@
+name: Opta Daemon — Release PR Cross-Platform Gate
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
+
+permissions:
+  statuses: read
+  checks: read
+
+jobs:
+  require-macos-and-windows-builds:
+    name: Require macOS + Windows daemon build success on PR head
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify platform workflows are passing
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          required_workflows=(
+            "Opta Daemon — macOS Build"
+            "Opta Daemon — Windows Build"
+          )
+
+          for attempt in 1 2 3 4 5; do
+            status_code=$(curl -s -o /tmp/checks.json -w "%{http_code}" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${REPO}/commits/${SHA}/check-runs?filter=latest&per_page=100")
+
+            if [ "$status_code" -ne 200 ]; then
+              echo "GitHub checks API returned HTTP $status_code"
+              cat /tmp/checks.json
+              exit 1
+            fi
+
+            for workflow in "${required_workflows[@]}"; do
+              if ! jq -e --arg workflow "$workflow" \
+                '.check_runs | any(.name == $workflow and .status == "completed" and .conclusion == "success")' /tmp/checks.json >/dev/null; then
+                if [ "$attempt" -lt 5 ]; then
+                  echo "Waiting for workflow '${workflow}' success (attempt ${attempt}/5)..."
+                  sleep 20
+                  continue 2
+                fi
+
+                echo "Required workflow '${workflow}' did not complete successfully for PR head ${SHA}."
+                echo "Required check runs:"
+                jq -r '.check_runs[] | "- \(.name): \(.status)/\(.conclusion)//\(.details_url)"' /tmp/checks.json | grep -E "Opta Daemon" || cat /tmp/checks.json
+                exit 1
+              fi
+            done
+
+            echo "Required daemon platform workflows are passing for ${SHA}."
+            exit 0
+          done

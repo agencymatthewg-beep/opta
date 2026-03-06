@@ -1,0 +1,81 @@
+name: Opta Daemon — macOS Build
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "opta-daemon-v*"
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
+      - ".github/workflows/opta-daemon-macos-build.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
+      - ".github/workflows/opta-daemon-macos-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
+
+jobs:
+  unit-tests:
+    name: Daemon tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Type-check
+        run: npm run typecheck
+      - name: Run daemon test suite
+        run: npx vitest run tests/daemon
+
+  macos-package:
+    name: Build daemon macOS bundle
+    runs-on: macos-latest
+    needs: unit-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install dependencies
+        run: npm ci
+      - name: Build daemon package
+        run: npm run build
+      - name: Trim dev dependencies from runtime bundle
+        run: npm prune --omit=dev
+      - name: Prepare macOS daemon bundle
+        run: |
+          node scripts/release/prepare-daemon-bundle.mjs \
+            --platform macos \
+            --arch universal \
+            --output-dir dist-release
+      - name: Verify macOS daemon bundle
+        run: node scripts/release/verify-daemon-bundle.mjs --bundle dist-release/opta-daemon-macos-universal
+      - name: Archive macOS daemon bundle
+        run: |
+          tar -C dist-release -czf dist-release/opta-daemon-macos-universal.tar.gz opta-daemon-macos-universal
+          ls -lh dist-release/opta-daemon-macos-universal.tar.gz
+      - name: Upload macOS daemon bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: opta-daemon-macos-bundle
+          path: 1-Apps/optalocal/1D-Opta-CLI-TS/dist-release/opta-daemon-macos-universal.tar.gz
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publish macOS daemon release asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: 1-Apps/optalocal/1D-Opta-CLI-TS/dist-release/opta-daemon-macos-universal.tar.gz
+          fail_on_unmatched_files: true

@@ -2,6 +2,11 @@
 
 > Goal: a new user can open `init.optalocal.com`, download real artifacts, install, and successfully run the Opta Local stack end to end.
 
+## Priority Directive (2026-03-06)
+
+- P0 ASAP: completely develop and ship Windows versions for `opta-code-universal` and `opta-daemon`.
+- Hold non-critical release work until these two Windows lanes are buildable, installable, and validated on a clean Windows machine.
+
 ## Ownership Map
 
 | Area              | Primary Owner        | Backup Owner | Scope                                                |
@@ -18,7 +23,7 @@
 | ------------------------------------------------------------- | ------------- | ------ |
 | Real CLI package URL returns `200`                            | 1D            | [x]    |
 | Active manifest artifact URLs under `init.optalocal.com/downloads/...` resolve (redirect or file) | 1O + Infra | [x] |
-| Real LMX macOS package URL returns `200`                      | 1M            | [ ]    |
+| Real LMX macOS package URL returns `200`                      | 1M            | [x]    |
 | Bootstrap endpoint `https://init.optalocal.com/init` (canonical) returns `200` | 1O + Infra | [x]    |
 | Root-domain bootstrap alias `https://optalocal.com/init` redirects to canonical endpoint | Infra | [ ] |
 | Init site points only to valid links                          | 1O            | [x]    |
@@ -44,7 +49,7 @@ curl -I -L "https://github.com/agencymatthewg-beep/opta/releases/latest/download
 
 ### 1M Opta LMX (inference runtime and packaging)
 
-- [ ] Build and publish signed macOS installer artifact to GitHub Releases.
+- [x] Build and publish macOS installer artifact to GitHub Releases.
 - [ ] Ensure install config starts service cleanly and remains healthy.
 - [ ] Verify OpenAI-compatible endpoint responds after install.
 - [ ] Validate graceful behavior under constrained memory conditions.
@@ -55,6 +60,32 @@ Verification:
 ```bash
 curl -I -L "https://github.com/optaops/opta-lmx/releases/latest/download/<final-lmx-pkg-name>.pkg"
 curl -sSf "http://127.0.0.1:1234/v1/models" >/dev/null
+```
+
+### 1P Opta Code Universal (Windows P0 ASAP)
+
+- [x] Build and publish Windows artifacts for `opta-code-universal` on tagged releases (automated CI lane configured).
+- [ ] Ensure installer path supports clean install + launch with no manual patching.
+- [ ] Sync Windows artifact URLs into stable/beta channel manifests.
+- [ ] Validate install/launch/update flow on a clean Windows machine.
+
+Verification:
+
+```bash
+curl -I -L "https://init.optalocal.com/downloads/opta-code-universal/latest"
+```
+
+### Opta Daemon (Windows P0 ASAP)
+
+- [x] Build and publish Windows artifacts for `opta-daemon` on tagged releases (automated CI lanes configured via `opta-daemon-windows-build.yml` + tag-triggered release publish).
+- [ ] Ensure daemon service install/start/stop behavior is production-safe on Windows.
+- [ ] Sync Windows artifact URLs into stable/beta channel manifests.
+- [ ] Validate daemon health and lifecycle commands on a clean Windows machine.
+
+Verification:
+
+```bash
+curl -I -L "https://init.optalocal.com/downloads/opta-daemon/latest"
 ```
 
 ### 1O Opta Init (onboarding and conversion)
@@ -120,9 +151,10 @@ Pass criteria:
 ## Immediate Blockers (current state)
 
 - [x] `init.optalocal.com` is live.
-- [ ] Non-CLI component installers are not yet published (`opta-lmx`, `opta-code-universal`, `opta-daemon`).
-- [ ] LMX package artifact still pending in release feed.
-- [ ] Signed Windows installer lane remains blocked by missing Windows signing secrets (`WINDOWS_CERTIFICATE`, `WINDOWS_CERTIFICATE_PASSWORD`); zero-cost unsigned cross-platform releases are now supported.
+- [ ] P0 ASAP: Windows development for `opta-code-universal` and `opta-daemon` is not yet complete (clean-machine install + update + daemon lifecycle validation still required).
+- [ ] Non-CLI component installers (`opta-lmx`, `opta-code-universal`, `opta-daemon`) still require complete macOS + Windows artifact URLs in channel manifests.
+- [ ] LMX package artifact metadata is still incomplete in channel manifests for strict cross-platform release readiness.
+- [x] Windows manager updater + installer feeds are live for stable and beta (unsigned lanes validated where platform-signing secrets are intentionally optional) as of 2026-03-06.
 - [x] Root-domain bootstrap alias is live and redirects correctly: `https://optalocal.com/init` -> `https://init.optalocal.com/init`.
 - [x] `https://lmx.optalocal.com` returns `200`.
 

@@ -4,6 +4,8 @@ status: active
 
 # Opta Init — Roadmap
 
+> Priority directive (2026-03-06): complete Windows development for `opta-code-universal` and `opta-daemon` ASAP. Treat this as P0 work ahead of non-critical roadmap items.
+
 ## v1.0 — Live & Functional ✅ SHIPPED 2026-02-28
 
 **All acceptance criteria met. Site live at https://init.optalocal.com**
@@ -90,10 +92,15 @@ _Partially delivered: release-asset detection + state-aware CTA shipped. Remaini
 - [x] Added release sync workflow for `opta-code-universal` (`/.github/workflows/opta-code-release-manifest-sync.yml`)
 - [x] Added release build + sync workflow for `opta-lmx` (`/.github/workflows/opta-lmx-release.yml`)
 - [x] Added release sync workflow for `opta-daemon` (`/.github/workflows/opta-daemon-release-manifest-sync.yml`)
+- [x] Added Opta Daemon cross-platform build/release workflows (`/.github/workflows/opta-daemon-macos-build.yml`, `/.github/workflows/opta-daemon-windows-build.yml`) and PR gate (`/.github/workflows/opta-daemon-release-cross-platform-gate.yml`)
 - [x] Added promotion visibility/reporting script (`scripts/promotion-status-report.mjs`) and CI artifact export (`opta-init-promotion-status`)
 - [x] Added conditional stable hard-gate in release-manifest checks (`npm run validate:stable-promotion` when stable feeds change)
-- [ ] Publish stable real installers for `opta-lmx`, `opta-code-universal`, and `opta-daemon` artifacts
-- [ ] Publish Windows manager updater + installer for stable+beta (`Opta-Init-Manager_x64-setup.nsis.zip` and `opta-init-windows-x64.exe`) to GitHub release tags
+- [x] P0 ASAP: ship automated Windows build/package/release lanes for `opta-code-universal` (artifact generation + release asset publish + manifest sync automation in place)
+- [x] P0 ASAP: ship automated Windows build/package/release lanes for `opta-daemon` (artifact generation + release asset publish + manifest sync automation in place)
+- [ ] P0 ASAP: run clean Windows machine E2E verification for Opta Code + Opta Daemon and capture evidence in docs/ops
+- [ ] Publish stable real installers for `opta-lmx`, `opta-code-universal`, and `opta-daemon` artifacts in channel manifests with complete macOS + Windows URLs
+- [x] Publish Windows manager updater + installer for stable+beta (`Opta-Init-Manager_x64-setup.nsis.zip` and `opta-init-windows-x64.exe`) to GitHub release tags
+- [x] Add docs/live-status hard gate (`npm run validate:docs:live-status`) to prevent drift between active docs and live release feeds (2026-03-06)
 
 ## v2.0 — optalocal.com Platform Root
 

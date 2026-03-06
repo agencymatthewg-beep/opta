@@ -77,6 +77,7 @@ Update both release-control contracts whenever a new release ships:
    - `npm run report:promotion-status` (prints current promoted vs non-promoted state)
    - `npm run validate:stable-promotion` (hard gate for full stable catalog readiness)
    - `npm run validate:docs` (active docs references + workflow path consistency)
+   - `npm run validate:docs:live-status` (fails if docs claim pending/blocked release states that are live in feeds + URLs)
    - optional strict gate before a manager rollout:
      - `npm run validate:manager-update-links -- --strict`
 7. Smoke-check manager updater feed:
@@ -105,10 +106,33 @@ Use reusable workflow:
 
 Current production wiring:
 - `/.github/workflows/opta-cli-release.yml` automatically calls the sync workflow for tag releases (`opta-cli-v*`).
+- `/.github/workflows/opta-code-macos-build.yml` and `/.github/workflows/opta-code-windows-build.yml` build and publish Opta Code release assets.
+- `/.github/workflows/opta-code-release-cross-platform-gate.yml` enforces macOS + Windows Opta Code build success on PR heads.
 - `/.github/workflows/opta-code-release-manifest-sync.yml` auto-syncs `opta-code-universal` on `opta-code-v*` tags (or manual dispatch).
 - `/.github/workflows/opta-lmx-release.yml` builds/publishes LMX release assets and syncs `opta-lmx` on `opta-lmx-v*` tags (or manual dispatch).
-- `/.github/workflows/opta-daemon-release-manifest-sync.yml` syncs `opta-daemon` on `opta-daemon-v*` tags (or manual dispatch).
+- `/.github/workflows/opta-daemon-macos-build.yml` and `/.github/workflows/opta-daemon-windows-build.yml` build and publish Opta Daemon macOS + Windows release bundles.
+- `/.github/workflows/opta-daemon-release-cross-platform-gate.yml` enforces macOS + Windows Opta Daemon build success on PR heads.
+- `/.github/workflows/opta-daemon-release-manifest-sync.yml` syncs `opta-daemon` on `opta-daemon-v*` tags (or manual dispatch) and waits for both platform assets before sync.
 - `/.github/workflows/opta-init-component-manifest-sync-manual.yml` provides manual dispatch sync for any component (`opta-cli`, `opta-lmx`, `opta-code-universal`, `opta-daemon`).
+
+## P0 ASAP — Windows Completion (Opta Code + Opta Daemon)
+
+Priority directive (2026-03-06): complete Windows development for `opta-code-universal` and `opta-daemon` before non-critical roadmap work.
+
+Execution sequence:
+1. Build and publish Windows artifacts on tagged releases for both components.
+2. Sync stable/beta manifests so Windows URLs are present and live.
+3. Run strict release checks:
+   - `npm run validate:release-contract:strict`
+   - `npm run validate:stable-promotion`
+4. Validate on a clean Windows machine:
+   - install
+   - launch
+   - update path
+   - daemon/service lifecycle behavior
+5. Capture evidence and update:
+   - `docs/GO-LIVE-CHECKLIST.md`
+   - `docs/ROADMAP.md`
 
 Local equivalent command:
 
@@ -163,10 +187,10 @@ The workflow:
    - updater signing: `TAURI_SIGNING_PRIVATE_KEY`, `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
    - platform signing secrets are only required when `enable_platform_signing=true`
 
-Known live gap (2026-03-03):
-- Manager release tags `opta-init-manager-stable-v0.6.1` and `opta-init-manager-beta-v0.6.1`
-  currently expose only `opta-init-mac.dmg` assets in GitHub Releases.
-- Missing Windows signing secrets currently only block signed Windows installers; unsigned Windows bundles can still be released in zero-cost mode.
+Live status (2026-03-06):
+- Stable/beta manager updater feeds include Windows updater artifacts.
+- Public alias endpoints for manager downloads (including Windows `.exe`) are live and validated.
+- Platform signing secrets remain optional for zero-cost unsigned release lanes.
 
 ## Lighthouse Audit
 
