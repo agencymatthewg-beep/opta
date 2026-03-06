@@ -5,9 +5,6 @@ on:
     branches: [main]
     tags:
       - "opta-daemon-v*"
-    paths:
-      - "1-Apps/optalocal/1D-Opta-CLI-TS/**"
-      - ".github/workflows/opta-daemon-macos-build.yml"
   pull_request:
     branches: [main]
     paths:
