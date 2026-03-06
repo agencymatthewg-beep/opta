@@ -40,17 +40,17 @@
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-mac.dmg",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_aarch64.dmg",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/Opta-Init-Manager_aarch64.dmg",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-windows-x64.exe",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/opta-init-windows-x64.exe",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/opta-init-windows-x64.exe",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
-      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.2/Opta-Init-Manager_x64-setup.nsis.zip",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/Opta-Init-Manager_x64-setup.nsis.zip",
       "permanent": false
     },
     {

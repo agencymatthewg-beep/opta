@@ -15,7 +15,7 @@ type ProductTarget = {
 // Latest Opta Init Manager — stable v0.7.2 (2026-03-05)
 const INIT_VERSION = "0.7.2";
 const INIT_MACOS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-mac.dmg";
-const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip";
+const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-windows-x64.exe";
 
 // Latest Opta CLI — v0.5.0-alpha.15 (2026-03-01)
 const CLI_VERSION = "0.5.0-alpha.15";
@@ -130,6 +130,8 @@ function labelFor(url: string | null, available: boolean) {
 }
 
 function isInstallerAsset(url: string) {
+  // .nsis.zip is the Tauri updater bundle (consumed by the in-app updater), not a user-facing installer
+  if (url.endsWith(".nsis.zip")) return false;
   return url.endsWith(".pkg") || url.endsWith(".dmg") || url.endsWith(".exe") || url.endsWith(".msi") || url.endsWith(".zip");
 }
 

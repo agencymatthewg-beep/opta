@@ -55,9 +55,9 @@ export const FEATURES = [
   },
   {
     icon: "cpu",
-    title: "Apple Silicon Native",
+    title: "Native Performance",
     description:
-      "Built as a blazingly fast Rust/Tauri desktop application specifically optimized for M1, M2, M3, and M4 hardware.",
+      "Built as a blazingly fast Rust/Tauri desktop application. Apple Silicon (M1–M4) optimized on macOS; Windows x64 supported.",
   },
   {
     icon: "plug",
