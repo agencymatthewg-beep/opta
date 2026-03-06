@@ -120,7 +120,7 @@ export function ModelsStudio({
             className="opta-studio-logo-settings"
             style={{ color: ACCENT, textShadow: `0 0 18px ${ACCENT}88` }}
           >
-            OPTA MODELS
+            MODELS
           </div>
           <div className="opta-studio-logo-sub">LMX Inference Engine</div>
         </div>

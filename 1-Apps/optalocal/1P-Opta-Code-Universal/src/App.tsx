@@ -120,7 +120,7 @@ function modeSubmitNotice(mode: SessionSubmitMode): string {
 
 type SettingsLayer = 1 | 2 | 3;
 type SettingsLayerDirection = "deeper" | "shallower";
-type SettingsLayerMotion = "root" | "intra";
+type SettingsLayerMotion = "root" | "intra" | "switch";
 type SettingsLayerTransition = {
   direction: SettingsLayerDirection;
   motion: SettingsLayerMotion;
@@ -140,30 +140,36 @@ const settingsLayerVariants = {
   enter: ({ direction, motion }: SettingsLayerTransition) => ({
     opacity: 0,
     scale:
-      motion === "intra"
-        ? direction === "deeper"
-          ? 0.985
-          : 1.015
-        : direction === "deeper"
-          ? 0.96
-          : 1.02,
+      motion === "switch"
+        ? 0.975
+        : motion === "intra"
+          ? direction === "deeper"
+            ? 0.985
+            : 1.015
+          : direction === "deeper"
+            ? 0.96
+            : 1.02,
     x:
-      motion === "intra"
-        ? direction === "deeper"
-          ? 28
-          : -28
-        : direction === "deeper"
-          ? 72
-          : -72,
+      motion === "switch"
+        ? 0
+        : motion === "intra"
+          ? direction === "deeper"
+            ? 28
+            : -28
+          : direction === "deeper"
+            ? 72
+            : -72,
     y:
-      motion === "intra"
-        ? direction === "deeper"
-          ? 10
-          : -10
-        : direction === "deeper"
-          ? 24
-          : -24,
-    filter: motion === "intra" ? "blur(8px)" : "blur(14px)",
+      motion === "switch"
+        ? 10
+        : motion === "intra"
+          ? direction === "deeper"
+            ? 10
+            : -10
+          : direction === "deeper"
+            ? 24
+            : -24,
+    filter: motion === "switch" ? "blur(6px)" : motion === "intra" ? "blur(8px)" : "blur(14px)",
   }),
   center: ({ motion }: SettingsLayerTransition) => ({
     opacity: 1,
@@ -172,38 +178,44 @@ const settingsLayerVariants = {
     y: 0,
     filter: "blur(0px)",
     transition: {
-      duration: motion === "intra" ? 0.2 : 0.5,
+      duration: motion === "switch" ? 0.14 : motion === "intra" ? 0.2 : 0.5,
     },
   }),
   exit: ({ direction, motion }: SettingsLayerTransition) => ({
     opacity: 0,
     scale:
-      motion === "intra"
-        ? direction === "deeper"
-          ? 1.01
-          : 0.985
-        : direction === "deeper"
-          ? 1.03
-          : 0.94,
+      motion === "switch"
+        ? 1.02
+        : motion === "intra"
+          ? direction === "deeper"
+            ? 1.01
+            : 0.985
+          : direction === "deeper"
+            ? 1.03
+            : 0.94,
     x:
-      motion === "intra"
-        ? direction === "deeper"
-          ? -24
-          : 24
-        : direction === "deeper"
-          ? -56
-          : 56,
+      motion === "switch"
+        ? 0
+        : motion === "intra"
+          ? direction === "deeper"
+            ? -24
+            : 24
+          : direction === "deeper"
+            ? -56
+            : 56,
     y:
-      motion === "intra"
-        ? direction === "deeper"
-          ? -8
-          : 8
-        : direction === "deeper"
-          ? -18
-          : 18,
-    filter: motion === "intra" ? "blur(6px)" : "blur(12px)",
+      motion === "switch"
+        ? -8
+        : motion === "intra"
+          ? direction === "deeper"
+            ? -8
+            : 8
+          : direction === "deeper"
+            ? -18
+            : 18,
+    filter: motion === "switch" ? "blur(6px)" : motion === "intra" ? "blur(6px)" : "blur(12px)",
     transition: {
-      duration: motion === "intra" ? 0.16 : 0.35,
+      duration: motion === "switch" ? 0.11 : motion === "intra" ? 0.16 : 0.35,
     },
   }),
 };
@@ -259,6 +271,8 @@ function App() {
   const [settingsLayer3FocusIndex, setSettingsLayer3FocusIndex] = useState(0);
   const [settingsLayer3EditMode, setSettingsLayer3EditMode] = useState(false);
   const [activeStudio, setActiveStudio] = useState<FeatureStudioId | null>(null);
+  // Ref tracking studio-to-studio switches for fast crossfade variant (vs full fly-in)
+  const studioSwitchingRef = useRef(false);
   const [studioFullscreen, setStudioFullscreen] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useLocalStorage(
     "opta:sidebar-visible",
@@ -1624,7 +1638,11 @@ function App() {
         if (settingsLayer > 1) {
           goToSettingsLayer(1);
         }
-        setActiveStudio((current) => (current === studioId ? null : studioId));
+        setActiveStudio((current) => {
+          // Detect switch: going from one studio directly to another
+          studioSwitchingRef.current = current !== null && current !== studioId;
+          return current === studioId ? null : studioId;
+        });
         setStudioFullscreen(false);
         return;
       }
@@ -2545,11 +2563,12 @@ function App() {
                     <motion.div
                       key="studio-browser"
                       className="v1-settings-motion-layer"
-                      custom={{ direction: "deeper", motion: "root" }}
+                      custom={{ direction: "deeper", motion: studioSwitchingRef.current ? "switch" : "root" }}
                       variants={settingsLayerVariants}
                       initial="enter"
                       animate="center"
                       exit="exit"
+                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
@@ -2571,11 +2590,12 @@ function App() {
                     <motion.div
                       key="studio-models"
                       className="v1-settings-motion-layer"
-                      custom={{ direction: "deeper", motion: "root" }}
+                      custom={{ direction: "deeper", motion: studioSwitchingRef.current ? "switch" : "root" }}
                       variants={settingsLayerVariants}
                       initial="enter"
                       animate="center"
                       exit="exit"
+                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
@@ -2596,11 +2616,12 @@ function App() {
                     <motion.div
                       key="studio-atpo"
                       className="v1-settings-motion-layer"
-                      custom={{ direction: "deeper", motion: "root" }}
+                      custom={{ direction: "deeper", motion: studioSwitchingRef.current ? "switch" : "root" }}
                       variants={settingsLayerVariants}
                       initial="enter"
                       animate="center"
                       exit="exit"
+                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}

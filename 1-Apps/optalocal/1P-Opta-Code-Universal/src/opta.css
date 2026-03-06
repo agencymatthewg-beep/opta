@@ -6176,8 +6176,10 @@ button.active,
     2px 2px 0 #09090b,
     3px 3px 0 var(--opta-primary-glow);
   filter: drop-shadow(0 0 18px rgba(168, 85, 247, 0.28));
-  opacity: 1;
-  transform: translateY(0) scale(1);
+  /* Hidden by default — only appears when settings overlay is open */
+  opacity: 0;
+  transform: translateY(10px) scale(0.92);
+  pointer-events: none;
   transition:
     opacity var(--opta-transition-overlay-duration) var(--opta-transition-overlay-ease),
     transform var(--opta-transition-overlay-duration) var(--opta-transition-overlay-ease);
@@ -6208,10 +6210,11 @@ button.active,
   transition-delay: 78ms;
 }
 
+/* Settings overlay open: reveal "OPTA SETTINGS" label */
 .app-shell.settings-nav-open .v1-brand-settings {
-  opacity: 0;
-  transform: translateY(-12px) scale(0.9);
-  pointer-events: none;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
 }
 
 .v1-brand-sub {
