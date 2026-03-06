@@ -3,6 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Sora:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <title>Opta Code Desktop — Masterclass</title>
 <style>
   :root {
@@ -1294,9 +1297,90 @@
     .explorer-sidebar { height: 220px; }
     .explorer-chrome { margin: 1rem 0; }
   }
+
+/* ══ Premium Opta Aesthetic Enhancement ══ */
+
+/* Aurora orbs */
+.aurora{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(90px);animation:orb-drift 22s ease-in-out infinite;will-change:transform}
+.orb-1{width:700px;height:700px;background:radial-gradient(circle,rgba(139,92,246,0.13) 0%,transparent 70%);top:-280px;left:-180px}
+.orb-2{width:520px;height:520px;background:radial-gradient(circle,rgba(59,130,246,0.07) 0%,transparent 70%);top:45%;right:-200px;animation-delay:-8s}
+.orb-3{width:460px;height:460px;background:radial-gradient(circle,rgba(168,85,247,0.09) 0%,transparent 70%);bottom:-120px;left:35%;animation-delay:-15s}
+@keyframes orb-drift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(28px,-18px) scale(1.04)}66%{transform:translate(-18px,12px) scale(0.97)}}
+
+/* Enhanced glass */
+.glass{backdrop-filter:blur(20px) saturate(1.5) !important;-webkit-backdrop-filter:blur(20px) saturate(1.5) !important;
+  box-shadow:0 24px 64px rgba(0,0,0,0.45),inset 0 1px 0 rgba(255,255,255,0.1),0 0 0 1px rgba(255,255,255,0.03) !important}
+
+/* Spring transitions */
+.feat-item{transition:background 0.4s cubic-bezier(0.34,1.56,0.64,1),color 0.2s !important}
+.feat-item.active{background:rgba(139,92,246,0.16) !important;box-shadow:inset 0 0 28px rgba(139,92,246,0.07)}
+.feat-item.active::before{box-shadow:0 0 10px rgba(139,92,246,0.6);width:3px !important;transition:all 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.dp-chip{transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1) !important}
+.dp-chip:hover{transform:translateY(-1px) !important}
+.nav-pill,.tab-btn{transition:all 0.35s cubic-bezier(0.34,1.56,0.64,1) !important}
+.card,.flow-card,.app-card,.infra-card,.tier-card{transition:transform 0.4s cubic-bezier(0.34,1.56,0.64,1),box-shadow 0.3s ease !important}
+.card:hover,.flow-card:hover,.app-card:hover,.infra-card:hover,.tier-card:hover{transform:translateY(-2px) !important;box-shadow:0 12px 40px rgba(0,0,0,0.4) !important}
+
+/* Neon glow text */
+h1{text-shadow:0 0 80px rgba(139,92,246,0.35),0 0 24px rgba(139,92,246,0.15) !important}
+.hero h1{text-shadow:0 0 80px rgba(139,92,246,0.35),0 0 24px rgba(139,92,246,0.15) !important}
+.dp-title{text-shadow:0 0 20px rgba(139,92,246,0.2)}
+.section-title,.page-title{text-shadow:0 0 40px rgba(139,92,246,0.2)}
+
+/* Breathing glow on hero badge/chip */
+@keyframes hero-breathe{0%,100%{box-shadow:0 0 14px rgba(139,92,246,0.25),inset 0 0 14px rgba(139,92,246,0.06)}50%{box-shadow:0 0 32px rgba(139,92,246,0.55),inset 0 0 24px rgba(139,92,246,0.12)}}
+.app-chip,.hero-badge{animation:hero-breathe 3.5s ease-in-out infinite !important}
+
+/* Sora font override */
+body{font-family:'Sora',system-ui,sans-serif !important}
+code,pre,kbd,samp,.mono,.stat,.qr-key,.ep-badge,.cat-label,.feat-name,.dp-cat,.dp-label,.breadcrumb,
+.titlebar-label,.search-input,.config-table td:first-child,.app-chip,.feat-category,
+.hero-meta-label,.section-label,.nav-pill{font-family:'JetBrains Mono',ui-monospace,monospace !important}
+
+/* Staggered entrance animations */
+@keyframes slide-up-in{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:translateY(0)}}
+.site-header,.hero{animation:slide-up-in 0.65s 0.05s both}
+.arch-section{animation:slide-up-in 0.6s 0.18s both}
+.arch-diagram{animation:slide-up-in 0.6s 0.18s both}
+.explorer-chrome{animation:slide-up-in 0.65s 0.3s both}
+.quick-ref{animation:slide-up-in 0.6s 0.35s both}
+.stack-diagram{animation:slide-up-in 0.6s 0.25s both}
+section:nth-of-type(1){animation:slide-up-in 0.6s 0.2s both}
+section:nth-of-type(2){animation:slide-up-in 0.6s 0.28s both}
+section:nth-of-type(3){animation:slide-up-in 0.6s 0.36s both}
+.stat-pill:nth-child(1),.hero-meta-item:nth-child(1){animation:slide-up-in 0.5s 0.22s both}
+.stat-pill:nth-child(2),.hero-meta-item:nth-child(2){animation:slide-up-in 0.5s 0.27s both}
+.stat-pill:nth-child(3),.hero-meta-item:nth-child(3){animation:slide-up-in 0.5s 0.32s both}
+.stat-pill:nth-child(4),.hero-meta-item:nth-child(4){animation:slide-up-in 0.5s 0.37s both}
+.stat-pill:nth-child(5){animation:slide-up-in 0.5s 0.42s both}
+.stat-pill:nth-child(6){animation:slide-up-in 0.5s 0.47s both}
+
+/* Specular top-edge highlight on cards */
+.card,.flow-card,.app-card,.infra-card,.tier-card,.arch-box,.qr-card{
+  border-top-color:rgba(255,255,255,0.12) !important;
+  box-shadow:0 20px 50px rgba(0,0,0,0.4),inset 0 1px 0 rgba(255,255,255,0.09) !important}
+
+/* Glow line enhancement */
+.glow-line,.section-divider{opacity:0.7 !important;filter:blur(0.5px)}
+
+/* Search input focus glow */
+.search-input:focus{border-color:rgba(139,92,246,0.6) !important;box-shadow:0 0 0 3px rgba(139,92,246,0.12) !important}
+
+/* ══ End Premium Enhancement ══ */
+
+
+/* ── Opta brand purple coloring ── */
+.opta-brand { color: #a855f7; font-weight: inherit; }
+
 </style>
 </head>
 <body>
+<div class="aurora" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
 
 <!-- Hero -->
 <div class="hero">
