@@ -64,7 +64,7 @@ jobs:
           INPUT_WINDOWS_URL: ${{ github.event.inputs.windows_artifact_url || '' }}
         run: |
           node <<'NODE'
-          const fs = require('node:fs');
+          import fs from 'node:fs';
 
           const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
           const httpsRegex = /^https:\/\//;
