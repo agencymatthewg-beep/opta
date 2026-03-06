@@ -1,6 +1,7 @@
 import type { DaemonSessionSummary, AgentBarItem } from "../types";
 import type { ConnectionHealthState } from "../hooks/useConnectionHealth";
 import { handleExternalClick } from "../lib/openUrl";
+import { Plus } from "lucide-react";
 
 interface ProjectPaneProps {
     sessions: DaemonSessionSummary[];
@@ -80,22 +81,19 @@ export function ProjectPane({
 
     return (
         <aside
-            className={`project-pane${collapsed ? " collapsed" : ""}`}
+            className={`project-pane glass-subtle${collapsed ? " collapsed" : ""}`}
             aria-hidden={collapsed ? "true" : undefined}
         >
             {/* Projects Section */}
             <div className="pp-header">
                 <span className="pp-title">Projects</span>
                 <button
-                    className="pp-icon-btn"
+                    className="pp-icon-btn pp-btn-glass"
                     onClick={onCreateSession}
                     type="button"
                     title="New Session"
                 >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <line x1="12" y1="5" x2="12" y2="19" />
-                        <line x1="5" y1="12" x2="19" y2="12" />
-                    </svg>
+                    <Plus size={16} strokeWidth={2.5} />
                 </button>
             </div>
 
