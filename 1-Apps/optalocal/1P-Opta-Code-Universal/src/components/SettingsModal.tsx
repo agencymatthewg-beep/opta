@@ -2034,6 +2034,50 @@ export function SettingsModal({
       : "Navigate mode · ←↑↓→ or W/A/S/D highlight · Enter select/edit · Shift+←/→ category · Tab/Backspace down layer · Space up layer · Shift+Space fullscreen"
     : "Layer 2 · ←↑↓→ or W/A/S/D highlight · Enter open category · Shift+←/→ switch category · Tab/Backspace down layer · Space up layer";
 
+  let word = "SETTINGS";
+  let dynamicStyle: CSSProperties = {};
+
+  const mapCategoryToWord: Record<string, string> = {
+    "connection-network": "CONNECTION",
+    "lmx-models": "INFERENCE",
+    "daemon-runtime": "DAEMON",
+    "autonomy-policies": "AUTONOMY",
+    "permissions-safety": "SAFETY",
+    "browser-research": "RESEARCH",
+    "tools-agents-learning": "AGENTS",
+    "mcp-integrations": "INTEGRATIONS",
+    "environment-profiles": "PROFILES",
+    "config-studio": "CONFIG",
+    "accounts-vault": "VAULT",
+    "tiles-workspace-layout": "WORKSPACE",
+    "apps-catalog": "CATALOG",
+    "session-memory": "MEMORY",
+    "background-jobs": "JOBS",
+    "daemon-logs": "LOGS",
+    "cli-system-advanced": "ADVANCED",
+  };
+
+  const hexToRgba = (hex: string, alpha: number) => {
+    const h = hex.replace("#", "");
+    const r = parseInt(h.length === 3 ? h[0] + h[0] : h.substring(0, 2), 16);
+    const g = parseInt(h.length === 3 ? h[1] + h[1] : h.substring(2, 4), 16);
+    const b = parseInt(h.length === 3 ? h[2] + h[2] : h.substring(4, 6), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  if (isDeepLayer && activeCategory) {
+    word = mapCategoryToWord[activeCategory.id] ?? "SETTINGS";
+    dynamicStyle = {
+      "--opta-primary-glow": activeCategory.accentColor,
+      "--opta-dynamic-filter": hexToRgba(activeCategory.accentColor, 0.34),
+    } as CSSProperties;
+  } else {
+    dynamicStyle = {
+      "--opta-primary-glow": "#f1f5f9",
+      "--opta-dynamic-filter": "rgba(241, 245, 249, 0.22)",
+    } as CSSProperties;
+  }
+
   const shell = (
     <div
       className={`opta-studio-shell ${embedded ? "opta-studio-shell--embedded" : ""} ${isDeepLayer ? "opta-studio-shell--deep" : ""} ${isFullscreen ? "opta-studio-shell--fullscreen" : ""}`}
@@ -2044,17 +2088,16 @@ export function SettingsModal({
         aria-hidden="true"
       >
         <div className="opta-studio-logo-stack">
-          <div className="opta-studio-logo-word" aria-label="OPTA">
-            {OPTA_LOGO_LETTERS.map((letter, index) => (
+          <div className="opta-studio-logo-word" aria-label={word} style={dynamicStyle}>
+            {word.split("").map((letter, index) => (
               <span
-                key={`settings-logo-letter-${letter}`}
+                key={`settings-logo-letter-${letter}-${index}`}
                 className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
               >
                 {letter}
               </span>
             ))}
           </div>
-          <div className="opta-studio-logo-settings">OPTA SETTINGS</div>
           <div className="opta-studio-logo-sub">Code Environment</div>
         </div>
       </div>
