@@ -59,14 +59,12 @@ async function main() {
   const options = parseArgs(process.argv.slice(2));
 
   const distDir = path.join(packageRoot, 'dist');
-  const binDir = path.join(packageRoot, 'bin');
   const modulesDir = path.join(packageRoot, 'node_modules');
   const packageJsonPath = path.join(packageRoot, 'package.json');
   const packageLockPath = path.join(packageRoot, 'package-lock.json');
   const readmePath = path.join(packageRoot, 'README.md');
 
   requirePathExists(path.join(distDir, 'index.js'), 'Compiled daemon entrypoint');
-  requirePathExists(path.join(binDir, 'opta.js'), 'CLI launcher');
   requirePathExists(modulesDir, 'Runtime dependencies');
   requirePathExists(packageJsonPath, 'package.json');
 
@@ -79,11 +77,22 @@ async function main() {
 
   await rm(bundleRoot, { recursive: true, force: true });
   await mkdir(bundleRoot, { recursive: true });
+  await mkdir(path.join(bundleRoot, 'bin'), { recursive: true });
 
   await cp(distDir, path.join(bundleRoot, 'dist'), { recursive: true });
-  await cp(binDir, path.join(bundleRoot, 'bin'), { recursive: true });
   await cp(modulesDir, path.join(bundleRoot, 'node_modules'), { recursive: true });
   await cp(packageJsonPath, path.join(bundleRoot, 'package.json'));
+
+  const launcherScript = `#!/usr/bin/env node
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+
+const binDir = dirname(fileURLToPath(import.meta.url));
+const entry = resolve(binDir, '../dist/index.js');
+await import(pathToFileURL(entry).href);
+`;
+  await writeFile(path.join(bundleRoot, 'bin', 'opta.js'), launcherScript, 'utf-8');
+  await chmod(path.join(bundleRoot, 'bin', 'opta.js'), 0o755);
 
   if (existsSync(packageLockPath)) {
     await cp(packageLockPath, path.join(bundleRoot, 'package-lock.json'));
