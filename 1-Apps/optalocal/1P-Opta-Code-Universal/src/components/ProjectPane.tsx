@@ -86,7 +86,7 @@ export function ProjectPane({
         >
             {/* Projects Section */}
             <div className="pp-header">
-                <span className="pp-title">Projects</span>
+                <span className="pp-title pp-projects-logo">PROJECTS</span>
                 <button
                     className="pp-icon-btn pp-btn-glass"
                     onClick={onCreateSession}
