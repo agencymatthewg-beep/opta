@@ -25,6 +25,8 @@ import {
   accountStatus,
 } from '../../commands/account.js';
 import { runVaultCommand } from '../../commands/vault.js';
+import { loadAccountState } from '../../accounts/storage.js';
+import { syncVault, pullVaultKeys } from '../../accounts/vault.js';
 import { completions } from '../../commands/completions.js';
 import { config as configCommand } from '../../commands/config.js';
 import { getConfigStore } from '../../core/config.js';
@@ -463,16 +465,41 @@ export const operationRegistry = {
       await accountLogout({ json: true });
     })
   ),
-  'vault.pull': defineOperation('vault.pull', async () =>
-    runCommandForText(async () => {
-      await runVaultCommand('pull');
-    })
-  ),
-  'vault.pull-keys': defineOperation('vault.pull-keys', async () =>
-    runCommandForText(async () => {
-      await runVaultCommand('pull-keys');
-    })
-  ),
+  'vault.pull': defineOperation('vault.pull', async () => {
+    const state = await loadAccountState();
+    if (!state?.session?.access_token) {
+      const err = new Error('Not signed in. Run `opta auth login` first.') as Error & { code: string };
+      err.code = 'not_authenticated';
+      throw err;
+    }
+    const { keys, rules } = await syncVault(state);
+    return {
+      synced: keys.synced,
+      skipped: keys.skipped,
+      errors: keys.errors,
+      cached: keys.cached ?? false,
+      syncedAt: new Date().toISOString(),
+      keys: keys.syncedKeys,
+      rulesConfigured: rules.configured,
+    };
+  }),
+  'vault.pull-keys': defineOperation('vault.pull-keys', async () => {
+    const state = await loadAccountState();
+    if (!state?.session?.access_token) {
+      const err = new Error('Not signed in. Run `opta auth login` first.') as Error & { code: string };
+      err.code = 'not_authenticated';
+      throw err;
+    }
+    const result = await pullVaultKeys(state);
+    return {
+      synced: result.synced,
+      skipped: result.skipped,
+      errors: result.errors,
+      cached: result.cached ?? false,
+      syncedAt: new Date().toISOString(),
+      keys: result.syncedKeys,
+    };
+  }),
   'vault.pull-rules': defineOperation('vault.pull-rules', async () =>
     runCommandForText(async () => {
       await runVaultCommand('pull-rules');

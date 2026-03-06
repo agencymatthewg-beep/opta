@@ -520,6 +520,34 @@ const TextCommandOutputSchema = z
   })
   .strict();
 
+const VaultSyncedKeySchema = z.object({
+  provider: z.string(),
+  label: z.string().nullable(),
+});
+
+const VaultPullResultSchema = z
+  .object({
+    synced: z.number(),
+    skipped: z.number(),
+    errors: z.array(z.string()),
+    cached: z.boolean(),
+    syncedAt: z.string(),
+    keys: z.array(VaultSyncedKeySchema),
+    rulesConfigured: z.boolean().optional(),
+  })
+  .strict();
+
+const VaultPullKeysResultSchema = z
+  .object({
+    synced: z.number(),
+    skipped: z.number(),
+    errors: z.array(z.string()),
+    cached: z.boolean(),
+    syncedAt: z.string(),
+    keys: z.array(VaultSyncedKeySchema),
+  })
+  .strict();
+
 const AccountUserSchema = z
   .object({
     id: z.string().nullable(),
@@ -633,8 +661,8 @@ export const OperationOutputSchemaById = {
       warning: z.string().nullable(),
     })
     .strict(),
-  'vault.pull': TextCommandOutputSchema,
-  'vault.pull-keys': TextCommandOutputSchema,
+  'vault.pull': VaultPullResultSchema,
+  'vault.pull-keys': VaultPullKeysResultSchema,
   'vault.pull-rules': TextCommandOutputSchema,
   'vault.push-rules': TextCommandOutputSchema,
   'vault.status': TextCommandOutputSchema,
