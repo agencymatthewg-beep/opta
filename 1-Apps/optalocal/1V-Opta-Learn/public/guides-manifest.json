@@ -1,75 +1,103 @@
 {
-  "generatedAt": "2026-03-06T02:32:10.591Z",
+  "generatedAt": "2026-03-06T08:30:22.378Z",
   "root": "content/guides",
   "counts": {
-    "published": 8,
-    "draft": 3,
+    "published": 6,
+    "draft": 9,
     "orphan": 0
   },
   "published": [
+    {
+      "slug": "opta-code-masterclass",
+      "title": "Opta Code Desktop Masterclass",
+      "file": "content/guides/opta-code-masterclass.ts",
+      "exportName": "codeDesktopGUMasterclass",
+      "status": "verified"
+    },
+    {
+      "slug": "lmx-masterclass",
+      "title": "Opta LMX Masterclass",
+      "file": "content/guides/lmx-masterclass-gu.ts",
+      "exportName": "lmxMasterclassGU",
+      "status": "verified"
+    },
+    {
+      "slug": "cli-masterclass",
+      "title": "Opta CLI Masterclass",
+      "file": "content/guides/cli-masterclass-gu.ts",
+      "exportName": "cliMasterclassGU",
+      "status": "verified"
+    },
+    {
+      "slug": "opta-architecture",
+      "title": "Opta Local Architecture",
+      "file": "content/guides/opta-architecture-gu.ts",
+      "exportName": "optaArchitectureGU",
+      "status": "verified"
+    },
+    {
+      "slug": "opta-accounts",
+      "title": "Opta Accounts Masterclass",
+      "file": "content/guides/opta-accounts-gu.ts",
+      "exportName": "optaAccountsGU",
+      "status": "verified"
+    },
+    {
+      "slug": "browser-automation",
+      "title": "Browser Automation Deep Dive",
+      "file": "content/guides/browser-automation-gu.ts",
+      "exportName": "browserAutomationGU",
+      "status": "verified"
+    }
+  ],
+  "draft": [
     {
       "slug": "opta-local-intro",
       "title": "Introduction to Local",
       "file": "content/guides/opta-local-intro.ts",
       "exportName": "optaLocalIntro",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "lmx",
       "title": "Getting Started with LMX",
       "file": "content/guides/lmx-overview.ts",
       "exportName": "lmxOverview",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "cli",
       "title": "CLI Masterclass",
       "file": "content/guides/cli-masterclass.ts",
       "exportName": "cliMasterclass",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "code-desktop",
       "title": "Code Desktop Overview",
       "file": "content/guides/code-desktop-overview.ts",
       "exportName": "codeDesktopOverview",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "accounts",
       "title": "Accounts Local Sync",
       "file": "content/guides/accounts-sync.ts",
       "exportName": "accountsSync",
-      "status": "verified"
-    },
-    {
-      "slug": "lmx-masterclass",
-      "title": "LMX Masterclass",
-      "file": "content/guides/lmx-masterclass.ts",
-      "exportName": "lmxMasterclass",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "code-desktop-masterclass",
       "title": "Code Desktop Masterclass",
       "file": "content/guides/code-desktop-masterclass.ts",
       "exportName": "codeDesktopMasterclass",
-      "status": "verified"
+      "status": "draft"
     },
     {
       "slug": "accounts-masterclass",
       "title": "Accounts Masterclass",
       "file": "content/guides/accounts-masterclass.ts",
       "exportName": "accountsMasterclass",
-      "status": "verified"
-    }
-  ],
-  "draft": [
-    {
-      "slug": "browser-automation",
-      "title": "Browser Automation Deep Dive",
-      "file": "content/guides/browser-automation.ts",
-      "exportName": "browserAutomationGuide",
       "status": "draft"
     },
     {
