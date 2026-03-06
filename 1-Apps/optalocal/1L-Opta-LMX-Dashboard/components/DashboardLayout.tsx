@@ -22,6 +22,7 @@ import {
     Link2,
     MessageSquare,
     Mic,
+    Radio,
     Settings,
     Sparkles,
     Stethoscope,
@@ -71,6 +72,7 @@ const NAV_GROUPS = [
     {
         label: 'System',
         items: [
+            { href: '/bridge', label: 'Bridge', icon: Radio },
             { href: '/setup', label: 'Setup', icon: Stethoscope },
             { href: '/pair', label: 'Pair Device', icon: Link2 },
             { href: '/settings', label: 'Settings', icon: Settings },
