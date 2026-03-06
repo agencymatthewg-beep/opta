@@ -2486,7 +2486,7 @@ function App() {
         <div className="v1-blob v1-blob-2" />
       </div>
       <div
-        className={`app-shell${platformClass} ${palette.isOpen ? "palette-open" : ""}${isSettingsNavigationActive ? " settings-nav-open" : ""}${settingsLayer === 3 ? " settings-deep-open" : ""}${isSettingsFocusMode ? " settings-focus-mode" : ""}${activeStudio ? ` studio-${activeStudio}-open studio-nav-open` : ""}`}
+        className={`app-shell${platformClass} ${palette.isOpen ? "palette-open" : ""}${isSettingsNavigationActive ? " settings-nav-open" : ""}${isSettingsFocusMode ? " settings-focus-mode" : ""}${activeStudio ? ` studio-${activeStudio}-open studio-nav-open` : ""}`}
         data-settings-layer={settingsNavigationState.activeLayer}
         data-settings-highlight={settingsNavigationState.highlightedNodeKey ?? ""}
         data-settings-editing={settingsNavigationState.editMode ? "true" : "false"}
@@ -2601,49 +2601,54 @@ function App() {
                         const word =
                           activeStudio === "browser" ? "BROWSER" :
                             activeStudio === "models" ? "MODELS" :
-                              activeStudio === "projects" ? "PROJECTS" :
+                              activeStudio === "projects" ? "PROJECT MANAGER" :
                                 activeStudio === "atpo" ? "ATPO" :
                                   activeStudio === "live" ? "LIVE" : "OPTA";
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
                           <div className={`v1-brand-word${wordClass}`} aria-label={word} style={{ perspective: "1000px" }}>
                             <AnimatePresence mode="popLayout">
-                              {word.split("").map((letter, index) => (
-                                <motion.span
-                                  key={`${word}-${index}`}
-                                  className={`v1-brand-letter v1-brand-letter-${index + 1}`}
-                                  custom={index}
-                                  variants={{
-                                    initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
-                                    animate: (i: number) => ({
-                                      opacity: 1,
-                                      rotateX: 0,
-                                      filter: "blur(0px)",
-                                      transition: {
-                                        type: "spring",
-                                        stiffness: 150,
-                                        damping: 15,
-                                        delay: i * 0.05
-                                      }
-                                    }),
-                                    exit: (i: number) => ({
-                                      opacity: 0,
-                                      rotateX: -90,
-                                      filter: "blur(4px)",
-                                      transition: {
-                                        duration: 0.2,
-                                        delay: i * 0.03
-                                      }
-                                    })
-                                  }}
-                                  initial="initial"
-                                  animate="animate"
-                                  exit="exit"
-                                  style={{ display: "inline-block", transformOrigin: "center center" }}
-                                >
-                                  {letter}
-                                </motion.span>
-                              ))}
+                              {word.split("").map((letter, index) => {
+                                if (letter === " ") {
+                                  return <span key={`${word}-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
+                                }
+                                return (
+                                  <motion.span
+                                    key={`${word}-${index}`}
+                                    className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                                    custom={index}
+                                    variants={{
+                                      initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                                      animate: (i: number) => ({
+                                        opacity: 1,
+                                        rotateX: 0,
+                                        filter: "blur(0px)",
+                                        transition: {
+                                          type: "spring",
+                                          stiffness: 150,
+                                          damping: 15,
+                                          delay: i * 0.05
+                                        }
+                                      }),
+                                      exit: (i: number) => ({
+                                        opacity: 0,
+                                        rotateX: -90,
+                                        filter: "blur(4px)",
+                                        transition: {
+                                          duration: 0.2,
+                                          delay: i * 0.03
+                                        }
+                                      })
+                                    }}
+                                    initial="initial"
+                                    animate="animate"
+                                    exit="exit"
+                                    style={{ display: "inline-block", transformOrigin: "center center" }}
+                                  >
+                                    {letter}
+                                  </motion.span>
+                                );
+                              })}
 
                               {/* Recording Circle for LIVE Studio */}
                               {word === "LIVE" && (

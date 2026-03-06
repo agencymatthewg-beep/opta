@@ -248,12 +248,7 @@ html.opta-backdrop-fallback .app-shell.settings-fullscreen .v1-right-panel {
   transform: none;
 }
 
-.app-shell.settings-deep-open:not(.settings-focus-mode) .v1-branding {
-  opacity: 0.24;
-  transition:
-    filter 240ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 240ms cubic-bezier(0.22, 1, 0.36, 1);
-}
+
 
 .app-topbar {
   position: relative;
@@ -6238,6 +6233,14 @@ button.active,
 }
 
 /* Studio letter scale — subtle inward shift matching settings behavior */
+.v1-brand-word--projects .v1-brand-letter {
+  font-size: 2.8rem;
+}
+
+.app-shell.settings-nav-open .v1-brand-word--projects .v1-brand-letter {
+  font-size: 2.4rem;
+}
+
 .app-shell.studio-nav-open .v1-brand-letter {
   transform: scale(0.88);
 }
@@ -6458,8 +6461,7 @@ button.active,
     radial-gradient(1200px 760px at 84% 10%, rgba(134, 90, 255, 0.2), transparent 58%),
     radial-gradient(960px 680px at 14% 84%, rgba(87, 205, 255, 0.14), transparent 62%),
     linear-gradient(145deg, rgba(14, 28, 49, 0.66), rgba(10, 18, 33, 0.58));
-  -webkit-backdrop-filter: blur(38px) saturate(155%);
-  backdrop-filter: blur(38px) saturate(155%);
+
   border: 1px solid rgba(171, 207, 255, 0.23);
   border-radius: 22px;
   box-shadow:
@@ -6522,6 +6524,8 @@ button.active,
     0 36px 120px rgba(2, 6, 18, 0.72),
     0 0 0 1px rgba(170, 207, 255, 0.22),
     inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  -webkit-backdrop-filter: blur(38px) saturate(155%);
+  backdrop-filter: blur(38px) saturate(155%);
 }
 
 /* Settings is always visible (rendered conditionally in React) */

@@ -2107,24 +2107,26 @@ export function SettingsModal({
       className={`opta-studio-shell ${embedded ? "opta-studio-shell--embedded" : ""} ${isDeepLayer ? "opta-studio-shell--deep" : ""} ${isFullscreen ? "opta-studio-shell--fullscreen" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
-      <div
-        className={`opta-studio-logo-reserve ${isDeepLayer ? "is-docked" : ""} ${isFullscreen ? "is-active" : ""}`}
-        aria-hidden="true"
-      >
-        <div className="opta-studio-logo-stack">
-          <div className="opta-studio-logo-word" aria-label={word} style={dynamicStyle}>
-            {word.split("").map((letter, index) => (
-              <span
-                key={`settings-logo-letter-${letter}-${index}`}
-                className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
-              >
-                {letter}
-              </span>
-            ))}
+      {isFullscreen && (
+        <div
+          className={`opta-studio-logo-reserve ${isDeepLayer ? "is-docked" : ""} ${isFullscreen ? "is-active" : ""}`}
+          aria-hidden="true"
+        >
+          <div className="opta-studio-logo-stack">
+            <div className="opta-studio-logo-word" aria-label={word} style={dynamicStyle}>
+              {word.split("").map((letter, index) => (
+                <span
+                  key={`settings-logo-letter-${letter}-${index}`}
+                  className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
+                >
+                  {letter}
+                </span>
+              ))}
+            </div>
+            <div className="opta-studio-logo-sub">Code Environment</div>
           </div>
-          <div className="opta-studio-logo-sub">Code Environment</div>
         </div>
-      </div>
+      )}
 
       <div className="opta-studio-top-chrome">
         <div className="opta-studio-top-chrome-left">
