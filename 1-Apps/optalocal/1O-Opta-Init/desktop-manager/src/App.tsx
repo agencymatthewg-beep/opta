@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef, type CSSProperties }
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import { Activity, Settings } from "lucide-react";
+import { Settings } from "lucide-react";
 import { buildLmxMagicUrl } from "./lib/magicLink";
 import { DaemonDrawer } from "./components/DaemonDrawer";
 import { SetupWizard } from "./pages/SetupWizard";
@@ -1551,36 +1551,6 @@ export function App() {
       <div className="header">
         <div className="sidebar-text">INIT MANAGER</div>
         <h1 className="main-title">{displayApp ? displayApp.name : "Select Environment"}</h1>
-        <div className="header-utility-row">
-          <button className="header-icon-btn" onClick={() => setShowSettings(true)} title="Settings" disabled={controlsDisabled}>
-            <Settings size={18} />
-          </button>
-          <button
-            className="header-icon-btn"
-            onClick={() => setShowDaemonDrawer(true)}
-            title="Daemon Activity (Shift+J)"
-            disabled={confirmationOpen}
-          >
-            <Activity size={18} />
-          </button>
-          <button
-            className="header-icon-btn"
-            onClick={() => requestActionConfirmation({
-              title: "Enable Opta Anywhere?",
-              description: "This opens the Opta Anywhere setup flow for secure remote access.",
-              actionLabel: "Enable",
-              action: () => setShowTunnelWizard(true),
-            })}
-            title={!optaAnywhereSupported ? `Opta Anywhere unavailable: ${optaAnywhereUnavailableMessage}` : "Enable Opta Anywhere"}
-            disabled={optaAnywhereDisabled}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="2" y1="12" x2="22" y2="12" />
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-            </svg>
-          </button>
-        </div>
         {displayApp && (
           <p className="app-desc-text fade-in">{displayApp.description}</p>
         )}
@@ -1655,7 +1625,7 @@ export function App() {
 
       <div className="bottom-panel">
         <div className="centered-bottom-group">
-          <div className="status-row">
+          <div className="bottom-status-row">
             <div
               className="status-badge"
               onClick={() => requestDaemonActionConfirmation(daemon?.running ? "stop" : "start")}
@@ -1665,19 +1635,22 @@ export function App() {
               {daemon?.running ? 'Daemon Active' : 'Daemon Stopped'}
               {pendingKey?.includes('daemon') && " (Working...)"}
             </div>
-            <div className={`manager-update-chip ${managerUpdateChipClass}`}>
-              <span className="manager-update-chip-title">Manager</span>
-              <span>{MANAGER_UPDATE_LABELS[managerUpdateState]}</span>
-            </div>
+
+            {managerUpdateWarning ? (
+              <p className="manager-update-warning" title={managerUpdateWarning}>
+                {managerUpdateWarning}
+              </p>
+            ) : (
+              <div className={`manager-update-chip ${managerUpdateChipClass}`}>
+                <span className="manager-update-chip-title">Manager</span>
+                <span>{MANAGER_UPDATE_LABELS[managerUpdateState]}</span>
+              </div>
+            )}
+
             <div className="scan-hint" onClick={() => requestScanConfirmation()} title="Scan system for Opta apps">
               Scan <kbd>S</kbd>
             </div>
           </div>
-          {managerUpdateWarning && (
-            <p className="manager-update-warning" title={managerUpdateWarning}>
-              {managerUpdateWarning}
-            </p>
-          )}
 
           <div className="action-buttons centered-actions">
             {managerUpdateState === "update_available" && (
@@ -1743,43 +1716,43 @@ export function App() {
             ) : (
               <div className="fade-in hero-actions-stack">
                 <div className="hero-action-row">
-                <button
-                  className="btn hero-btn hero-btn-core"
-                  onClick={() => requestActionConfirmation({
-                    title: "Install Core Stack?",
-                    description: "This installs Opta daemon, core runtime services, and starts pairing setup.",
-                    actionLabel: "Install",
-                    action: () => runCoreStackInstall(),
-                  })}
-                  disabled={controlsDisabled}
-                >
-                  {coreStackPending ? "Installing Core Stack..." : "Install Core Stack"}
-                </button>
-                <button
-                  className="btn hero-btn hero-btn-anywhere"
-                  onClick={() => requestActionConfirmation({
-                    title: "Enable Opta Anywhere?",
-                    description: "This opens the Opta Anywhere setup flow for secure remote access.",
-                    actionLabel: "Enable",
-                    action: () => setShowTunnelWizard(true),
-                  })}
-                  disabled={optaAnywhereDisabled}
-                  title={!optaAnywhereSupported ? optaAnywhereUnavailableMessage : "Enable Opta Anywhere"}
-                >
-                  Enable Opta Anywhere
-                </button>
-                <button
-                  className="btn hero-btn hero-btn-refresh"
-                  onClick={() => requestActionConfirmation({
-                    title: "Refresh Stack?",
-                    description: "This refreshes installed apps, daemon status, and account linkage data.",
-                    actionLabel: "Refresh",
-                    action: () => refreshData(),
-                  })}
-                  disabled={controlsDisabled}
-                >
-                  Refresh Stack
-                </button>
+                  <button
+                    className="btn hero-btn hero-btn-core"
+                    onClick={() => requestActionConfirmation({
+                      title: "Install Core Stack?",
+                      description: "This installs Opta daemon, core runtime services, and starts pairing setup.",
+                      actionLabel: "Install",
+                      action: () => runCoreStackInstall(),
+                    })}
+                    disabled={controlsDisabled}
+                  >
+                    {coreStackPending ? "Installing Core Stack..." : "Install Core Stack"}
+                  </button>
+                  <button
+                    className="btn hero-btn hero-btn-anywhere"
+                    onClick={() => requestActionConfirmation({
+                      title: "Enable Opta Anywhere?",
+                      description: "This opens the Opta Anywhere setup flow for secure remote access.",
+                      actionLabel: "Enable",
+                      action: () => setShowTunnelWizard(true),
+                    })}
+                    disabled={optaAnywhereDisabled}
+                    title={!optaAnywhereSupported ? optaAnywhereUnavailableMessage : "Enable Opta Anywhere"}
+                  >
+                    Enable Opta Anywhere
+                  </button>
+                  <button
+                    className="btn hero-btn hero-btn-refresh"
+                    onClick={() => requestActionConfirmation({
+                      title: "Refresh Stack?",
+                      description: "This refreshes installed apps, daemon status, and account linkage data.",
+                      actionLabel: "Refresh",
+                      action: () => refreshData(),
+                    })}
+                    disabled={controlsDisabled}
+                  >
+                    Refresh Stack
+                  </button>
                 </div>
                 {showLocalAiAction && (
                   <div className="hero-action-aux">
@@ -1817,6 +1790,31 @@ export function App() {
                 )}
               </div>
             )}
+            <div className="bottom-icon-stack">
+              <button
+                className="bottom-icon-btn"
+                onClick={() => setShowSettings(true)}
+                title="Settings"
+                disabled={controlsDisabled}
+              >
+                <Settings size={16} />
+              </button>
+              <button
+                className="bottom-icon-btn"
+                onClick={() => {
+                  const magicUrl = buildLmxMagicUrl({ host: lmxHost, port: lmxPort, via: "lan" });
+                  invoke("open_url", { url: magicUrl }).catch(console.error);
+                }}
+                title="Open Opta Local"
+                disabled={controlsDisabled}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="2" y1="12" x2="22" y2="12" />
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>
