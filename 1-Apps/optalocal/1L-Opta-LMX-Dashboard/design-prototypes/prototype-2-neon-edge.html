@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prototype 2: Neon Edge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        bg: '#09090b',
+                        surface: '#18181b',
+                        primary: '#8b5cf6',
+                        'text-primary': '#fafafa',
+                        'text-muted': '#52525b'
+                    },
+                    fontFamily: {
+                        sans: ['Sora', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #09090b;
+            color: #fafafa;
+        }
+
+        /* Prototype 2 Scrollbar: Neon Edge (Thin) */
+        .sidebar-scroll::-webkit-scrollbar {
+            width: 2px;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+            background: #8b5cf6;
+        }
+
+        /* Buttons: Gradient background, borderless, large */
+        .btn-pairing {
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.3) 0%, rgba(139, 92, 246, 0.1) 100%);
+            border: none;
+            color: #fff;
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            font-weight: 500;
+        }
+
+        .btn-pairing::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, rgba(139, 92, 246, 0.6) 0%, rgba(139, 92, 246, 0.1) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-pairing:hover {
+            transform: scale(1.05) translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(139, 92, 246, 0.5);
+        }
+
+        .btn-pairing:hover::before {
+            opacity: 1;
+        }
+
+        .btn-pairing span {
+            position: relative;
+            z-index: 2;
+        }
+
+        .btn-setup {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7);
+            padding: 1rem 2.5rem;
+            border-radius: 8px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2.5px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            font-weight: 500;
+        }
+
+        .btn-setup:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            transform: scale(1.05) translateY(-2px);
+        }
+    </style>
+</head>
+
+<body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside class="w-56 flex-shrink-0 flex flex-col border-r border-white/5 bg-black/40 backdrop-blur-md">
+        <div class="px-5 py-4 border-b border-white/5 font-bold tracking-wider text-sm flex gap-3 items-center">
+            <div class="w-6 h-6 bg-primary/20 rounded shadow-[0_0_10px_rgba(139,92,246,0.5)]"></div>
+            OPTA LMX
+        </div>
+        <nav class="flex-1 overflow-y-auto py-4 px-3 sidebar-scroll">
+            <div class="mb-6">
+                <p class="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-2 px-2">Core</p>
+                <div class="flex flex-col gap-1">
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded bg-primary/15 text-primary border border-primary/20">Overview</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Models</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Compress</a>
+                    <!-- Dummy items for scrolling -->
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Agents</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Skills</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Presets</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Playground</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Knowledge</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Audio</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Metrics</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Forecasts</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Compare</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Benchmark</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Sessions</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Logs</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Diagnostics</a>
+                    <a href="#" class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Bot
+                        Connection</a>
+                    <a href="#" class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Health
+                        Check</a>
+                    <a href="#" class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Pair
+                        Device</a>
+                    <a href="#"
+                        class="px-3 py-2 text-sm rounded text-white/60 hover:text-white hover:bg-white/5">Settings</a>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 overflow-y-auto relative flex flex-col items-center justify-center p-10">
+        <div
+            class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_zero,rgba(139,92,246,0.15)_0,transparent_60%)] pointer-events-none">
+        </div>
+        <div class="relative z-10 text-center">
+            <h1 class="text-2xl font-semibold mb-2">Opta LMX Dashboard</h1>
+            <p class="text-sm text-text-muted max-w-md mx-auto mb-8">
+                The primary management surface for your local AI inference engine.
+            </p>
+            <div class="flex gap-4 justify-center items-center">
+                <button class="btn-pairing"><span>Start Pairing</span></button>
+                <button class="btn-setup"><span>Setup Checks</span></button>
+            </div>
+        </div>
+    </main>
+</body>
+
+</html>

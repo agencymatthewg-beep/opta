@@ -221,7 +221,7 @@ export default function SettingsPage() {
                                     placeholder="Leave blank if LMX has no key set"
                                 />
                                 <p className="text-[11px] text-text-muted mt-1">
-                                    Sent with every AI request. Leave blank if your server doesn't require one.
+                                    Sent with every AI request. Leave blank if your server doesn&apos;t require one.
                                 </p>
                             </div>
 
@@ -230,8 +230,8 @@ export default function SettingsPage() {
                                 <p className="config-label">Status</p>
                                 <div className="flex items-center gap-2 mt-1">
                                     <span className={`status-dot ${status === 'connected' ? 'status-dot-online'
-                                            : status === 'connecting' ? 'status-dot-loading'
-                                                : 'status-dot-offline'
+                                        : status === 'connecting' ? 'status-dot-loading'
+                                            : 'status-dot-offline'
                                         }`} />
                                     <span className={`text-sm font-mono ${statusColor}`}>{statusLabel}</span>
                                 </div>

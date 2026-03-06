@@ -34,7 +34,7 @@ function _sha256Hex(input: string): string {
     // Dynamic require so webpack/turbopack does not attempt to bundle `crypto`
     // for the browser — the result is a compile-time constant string anyway.
     try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        // eslint-disable-next-line
         const { createHash } = require('node:crypto') as typeof import('crypto')
         return createHash('sha256').update(input.trim()).digest('hex')
     } catch {

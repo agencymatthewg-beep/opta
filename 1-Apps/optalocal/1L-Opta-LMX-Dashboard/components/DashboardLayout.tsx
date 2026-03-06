@@ -157,7 +157,7 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 overflow-y-auto py-4 px-3">
+                <nav className="flex-1 overflow-y-auto py-4 px-3 sidebar-scroll">
                     {NAV_GROUPS.map((group) => (
                         <div key={group.label} className="mb-6">
                             <p className="text-[10px] font-semibold uppercase tracking-widest text-text-muted mb-2 px-2">
@@ -253,8 +253,8 @@ export function DashboardLayout({ children }: { children: ReactNode }) {
                             >
                                 <div
                                     className={`max-w-[88%] sm:max-w-[78%] px-3.5 py-2.5 rounded-xl text-sm ${message.role === 'user'
-                                            ? 'bg-primary/20 border border-primary/30 text-white'
-                                            : 'config-panel text-text-primary'
+                                        ? 'bg-primary/20 border border-primary/30 text-white'
+                                        : 'config-panel text-text-primary'
                                         }`}
                                 >
                                     <pre className="font-mono text-sm whitespace-pre-wrap break-words">

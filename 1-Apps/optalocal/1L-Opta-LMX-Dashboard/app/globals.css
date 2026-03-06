@@ -331,6 +331,29 @@ pre,
   cursor: not-allowed;
 }
 
+/* ── Stealth Scrollbar (Prototype 3/1 Hybrid) ─── */
+.sidebar-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 6px;
+  border: 1px solid transparent;
+}
+
+.sidebar-scroll:hover::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.2);
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(139, 92, 246, 0.4);
+}
+
 /* ── Config Label ────────────────────────────── */
 .config-label {
   font-size: 11px;

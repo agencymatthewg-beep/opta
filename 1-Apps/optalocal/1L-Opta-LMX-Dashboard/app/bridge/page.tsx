@@ -180,7 +180,7 @@ export default function BridgePage() {
                             </div>
                             <p className="text-sm font-semibold text-text-primary">Securely relayed to your machine</p>
                             <p className="text-xs text-text-muted">
-                                The command travels through Opta's cloud relay, authenticated to your device only.
+                                The command travels through Opta&apos;s cloud relay, authenticated to your device only.
                             </p>
                         </div>
                         <div className="flex flex-col gap-2">

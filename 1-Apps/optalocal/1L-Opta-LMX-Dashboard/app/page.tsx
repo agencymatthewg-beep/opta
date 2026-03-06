@@ -73,25 +73,25 @@ export default function DashboardHome() {
                                 <span>{connectErrorMessage}</span>
                             </div>
                         )}
-                        <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                        <div className="mt-8 flex flex-wrap gap-4 justify-center">
                             {pairedDevice.mode === 'paired' && !pairedDevice.session ? (
                                 <Link
                                     href="/pair"
-                                    className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(139,92,246,0.15)] text-[13px] font-mono uppercase tracking-[0.1em] text-primary hover:bg-[rgba(139,92,246,0.3)] hover:text-white hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all duration-300 backdrop-blur-md"
                                 >
                                     Start Pairing
                                 </Link>
                             ) : (
                                 <Link
                                     href="/settings"
-                                    className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                                    className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(139,92,246,0.15)] text-[13px] font-mono uppercase tracking-[0.1em] text-primary hover:bg-[rgba(139,92,246,0.3)] hover:text-white hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(139,92,246,0.4)] transition-all duration-300 backdrop-blur-md"
                                 >
                                     Open Connection Settings
                                 </Link>
                             )}
                             <Link
                                 href="/setup"
-                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                                className="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-[rgba(255,255,255,0.02)] border border-[rgba(255,255,255,0.05)] text-[13px] font-mono uppercase tracking-[0.1em] text-[rgba(255,255,255,0.8)] hover:bg-[rgba(255,255,255,0.05)] hover:border-[rgba(255,255,255,0.1)] hover:text-white hover:scale-[1.03] transition-all duration-300 backdrop-blur-md"
                             >
                                 Setup Checks
                             </Link>
@@ -132,10 +132,10 @@ export default function DashboardHome() {
                                     <div>
                                         <p className="config-label">Status</p>
                                         <p className={`font-mono text-sm ${dashboard.healthStatus === 'ok'
-                                                ? 'text-[var(--opta-neon-green)]'
-                                                : dashboard.healthStatus === 'degraded'
-                                                    ? 'text-[var(--opta-neon-amber)]'
-                                                    : 'text-[var(--opta-neon-red)]'
+                                            ? 'text-[var(--opta-neon-green)]'
+                                            : dashboard.healthStatus === 'degraded'
+                                                ? 'text-[var(--opta-neon-amber)]'
+                                                : 'text-[var(--opta-neon-red)]'
                                             }`}>{dashboard.healthStatus}</p>
                                     </div>
                                     <div>
