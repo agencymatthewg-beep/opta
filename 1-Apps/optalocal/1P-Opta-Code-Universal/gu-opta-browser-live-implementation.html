@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Opta Browser — Live Implementation Guide</title>
+<style>
+  :root {
+    --void: #09090b;
+    --surface: #18181b;
+    --elevated: #27272a;
+    --border: #3f3f46;
+    --text-primary: #fafafa;
+    --text-secondary: #a1a1aa;
+    --text-muted: #52525b;
+    --primary: #8b5cf6;
+    --primary-glow: #a855f7;
+    --primary-dim: rgba(139,92,246,0.15);
+    --neon-blue: #3b82f6;
+    --neon-green: #22c55e;
+    --neon-amber: #f59e0b;
+    --neon-red: #ef4444;
+    --neon-cyan: #06b6d4;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--void);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Particle field */
+  .particle-field {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+    z-index: 0;
+  }
+  .particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: var(--primary);
+    opacity: 0;
+    animation: float var(--dur, 8s) var(--delay, 0s) infinite ease-in-out;
+  }
+  @keyframes float {
+    0%,100% { opacity: 0; transform: translateY(0) scale(0.5); }
+    50% { opacity: 0.4; transform: translateY(-40px) scale(1); }
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* Header */
+  .hero {
+    text-align: center;
+    margin-bottom: 64px;
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--primary-dim);
+    border: 1px solid rgba(139,92,246,0.4);
+    border-radius: 100px;
+    padding: 6px 16px;
+    font-size: 12px;
+    color: var(--primary-glow);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 24px;
+  }
+  .hero-badge::before { content: '●'; animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity:1 } 50% { opacity:0.3 } }
+
+  h1 {
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 50%, #818cf8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1.15;
+    margin-bottom: 16px;
+    font-family: 'Sora', -apple-system, sans-serif;
+  }
+  .hero-sub {
+    color: var(--text-secondary);
+    font-size: 1.05rem;
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  /* Section labels */
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+    margin-top: 56px;
+  }
+  .section-label h2 {
+    font-size: 0.75rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(139,92,246,0.4), transparent);
+  }
+  .neon-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 8px var(--primary); flex-shrink: 0; }
+
+  /* Glass cards */
+  .glass {
+    background: rgba(24,24,27,0.7);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .glass::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 60%);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
+  .card {
+    padding: 28px;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Sora', -apple-system, sans-serif;
+  }
+  .card-title .icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+
+  .card-desc { color: var(--text-secondary); font-size: 0.875rem; line-height: 1.7; }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+  @media (max-width: 768px) {
+    .grid-2, .grid-3 { grid-template-columns: 1fr; }
+  }
+
+  /* Architecture diagram */
+  .arch-diagram {
+    padding: 32px;
+    margin-bottom: 16px;
+  }
+  .arch-layer {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    margin-bottom: 6px;
+    transition: all 0.2s;
+  }
+  .arch-layer:hover { transform: translateX(4px); }
+  .arch-layer.cli { background: rgba(139,92,246,0.12); border: 1px solid rgba(139,92,246,0.3); }
+  .arch-layer.daemon { background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.3); }
+  .arch-layer.browser { background: rgba(6,182,212,0.1); border: 1px solid rgba(6,182,212,0.3); }
+  .arch-layer.visual { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.25); }
+  .arch-layer.desktop { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.25); }
+
+  .arch-label {
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    width: 90px;
+    flex-shrink: 0;
+  }
+  .arch-layer.cli .arch-label { color: var(--primary); }
+  .arch-layer.daemon .arch-label { color: var(--neon-blue); }
+  .arch-layer.browser .arch-label { color: var(--neon-cyan); }
+  .arch-layer.visual .arch-label { color: var(--neon-green); }
+  .arch-layer.desktop .arch-label { color: var(--neon-amber); }
+
+  .arch-content { font-size: 0.84rem; color: var(--text-secondary); }
+  .arch-content strong { color: var(--text-primary); }
+  .arch-content code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.78rem;
+    background: rgba(255,255,255,0.07);
+    padding: 1px 5px;
+    border-radius: 4px;
+    color: var(--neon-cyan);
+  }
+
+  .arch-arrow {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding: 4px 0 4px 106px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .arch-arrow::before { content: '↓'; color: var(--primary); font-size: 1rem; }
+
+  /* Tool tag pills */
+  .tool-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 24px;
+  }
+  .tool-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(6,182,212,0.08);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 100px;
+    padding: 5px 12px;
+    font-size: 0.75rem;
+    color: var(--neon-cyan);
+    font-family: 'JetBrains Mono', monospace;
+    transition: all 0.2s;
+  }
+  .tool-tag:hover { background: rgba(6,182,212,0.18); border-color: rgba(6,182,212,0.5); }
+  .tool-tag.nav { border-color: rgba(139,92,246,0.3); background: rgba(139,92,246,0.08); color: var(--primary-glow); }
+  .tool-tag.capture { border-color: rgba(34,197,94,0.3); background: rgba(34,197,94,0.08); color: var(--neon-green); }
+  .tool-tag.interact { border-color: rgba(245,158,11,0.3); background: rgba(245,158,11,0.08); color: var(--neon-amber); }
+  .tool-tag.danger { border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.08); color: var(--neon-red); }
+
+  /* Port / slot diagram */
+  .slot-diagram {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    padding: 24px;
+  }
+  .slot {
+    background: rgba(6,182,212,0.06);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 10px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all 0.3s;
+  }
+  .slot.active {
+    background: rgba(6,182,212,0.15);
+    border-color: rgba(6,182,212,0.6);
+    box-shadow: 0 0 20px rgba(6,182,212,0.2);
+  }
+  .slot-port {
+    font-size: 0.7rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-cyan);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .slot-label { font-size: 0.68rem; color: var(--text-muted); }
+  .slot-status {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-top: 8px;
+    background: var(--text-muted);
+  }
+  .slot.active .slot-status { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); animation: pulse 2s infinite; }
+
+  /* Implementation steps */
+  .step {
+    display: flex;
+    gap: 20px;
+    padding: 20px 28px;
+    margin-bottom: 12px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    background: var(--primary-dim);
+    border: 1px solid rgba(139,92,246,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--primary);
+    flex-shrink: 0;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .step-body { flex: 1; }
+  .step-title {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    margin-bottom: 6px;
+    font-family: 'Sora', -apple-system, sans-serif;
+  }
+  .step-desc { color: var(--text-secondary); font-size: 0.82rem; line-height: 1.65; }
+  .step-file {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2);
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--primary);
+    margin-top: 8px;
+  }
+
+  /* Code block */
+  pre {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 10px;
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: #d4d4d8;
+    margin: 16px 0;
+  }
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .str { color: #86efac; }
+  .cm { color: #4b5563; font-style: italic; }
+  .ty { color: #f0abfc; }
+  .num { color: #fbbf24; }
+  .prop { color: #67e8f9; }
+
+  /* Keyboard keys */
+  .kbd {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--elevated);
+    border: 1px solid var(--border);
+    border-bottom-width: 3px;
+    border-radius: 6px;
+    padding: 3px 9px;
+    font-size: 0.78rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-primary);
+    white-space: nowrap;
+  }
+
+  /* Status indicators */
+  .status-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    padding: 20px 28px;
+  }
+  .status-item {
+    text-align: center;
+    padding: 16px 12px;
+    border-radius: 10px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .status-dot-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.idle { background: var(--text-muted); }
+  .status-dot.active { background: var(--neon-green); box-shadow: 0 0 8px var(--neon-green); animation: pulse 2s infinite; }
+  .status-dot.working { background: var(--neon-amber); box-shadow: 0 0 8px var(--neon-amber); animation: pulse 1.2s infinite; }
+  .status-dot.blocked { background: var(--neon-red); box-shadow: 0 0 8px var(--neon-red); }
+  .status-name { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+  .status-item .status-name.idle { color: var(--text-muted); }
+  .status-item .status-name.active { color: var(--neon-green); }
+  .status-item .status-name.working { color: var(--neon-amber); }
+  .status-item .status-name.blocked { color: var(--neon-red); }
+  .status-desc { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; line-height: 1.5; }
+
+  /* UX mockup */
+  .ux-mockup {
+    border: 1px solid rgba(139,92,246,0.3);
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--surface);
+  }
+  .ux-title-bar {
+    background: rgba(139,92,246,0.1);
+    border-bottom: 1px solid rgba(139,92,246,0.2);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ux-body {
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    min-height: 280px;
+  }
+  .ux-sidebar {
+    background: rgba(0,0,0,0.3);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding: 12px;
+  }
+  .ux-sidebar-item {
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    cursor: default;
+  }
+  .ux-sidebar-item.active {
+    background: var(--primary-dim);
+    color: var(--primary-glow);
+    border: 1px solid rgba(139,92,246,0.25);
+  }
+  .ux-main { padding: 16px; display: flex; flex-direction: column; }
+  .ux-main-label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .ux-frame-preview {
+    flex: 1;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(6,182,212,0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    gap: 8px;
+    min-height: 160px;
+    position: relative;
+    overflow: hidden;
+  }
+  .ux-frame-preview::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(6,182,212,0.04), transparent);
+  }
+  .ux-url-bar {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 0.72rem;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--neon-cyan);
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .ux-controls {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+  .ux-btn {
+    flex: 1;
+    padding: 7px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-align: center;
+    cursor: default;
+  }
+  .ux-btn.primary {
+    background: rgba(139,92,246,0.15);
+    border-color: rgba(139,92,246,0.3);
+    color: var(--primary-glow);
+  }
+
+  /* Keybinding visual */
+  .keybinding-map {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 12px;
+    padding: 24px;
+  }
+  .kb-entry {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .kb-keys { margin-bottom: 8px; }
+  .kb-title { font-size: 0.8rem; font-weight: 700; color: var(--text-primary); margin-bottom: 4px; }
+  .kb-desc { font-size: 0.72rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* Summary highlight */
+  .highlight-row {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .highlight-box {
+    flex: 1;
+    padding: 20px;
+    border-radius: 12px;
+    text-align: center;
+  }
+  .highlight-box.done { background: rgba(34,197,94,0.08); border: 1px solid rgba(34,197,94,0.2); }
+  .highlight-box.partial { background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2); }
+  .highlight-box.todo { background: rgba(139,92,246,0.08); border: 1px solid rgba(139,92,246,0.2); }
+  .highlight-box .hl-num { font-size: 2rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+  .highlight-box.done .hl-num { color: var(--neon-green); }
+  .highlight-box.partial .hl-num { color: var(--neon-amber); }
+  .highlight-box.todo .hl-num { color: var(--primary); }
+  .highlight-box .hl-label { font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; }
+
+  /* Divider */
+  hr { border: none; border-top: 1px solid rgba(255,255,255,0.05); margin: 48px 0; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    padding-top: 32px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+  }
+</style>
+</head>
+<body>
+
+<!-- Particle field -->
+<div class="particle-field">
+  <div class="particle" style="left:8%;top:20%;--dur:9s;--delay:0s;"></div>
+  <div class="particle" style="left:18%;top:60%;--dur:11s;--delay:1.5s;"></div>
+  <div class="particle" style="left:32%;top:40%;--dur:8s;--delay:0.8s;"></div>
+  <div class="particle" style="left:55%;top:75%;--dur:12s;--delay:2.1s;"></div>
+  <div class="particle" style="left:70%;top:25%;--dur:10s;--delay:0.3s;"></div>
+  <div class="particle" style="left:85%;top:50%;--dur:9s;--delay:1.8s;"></div>
+  <div class="particle" style="left:90%;top:10%;--dur:13s;--delay:0.6s;"></div>
+  <div class="particle" style="left:42%;top:85%;--dur:7s;--delay:3s;"></div>
+</div>
+
+<div class="container">
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Browser Architecture Report</div>
+    <h1>Opta Browser<br>Live Implementation Guide</h1>
+    <p class="hero-sub">Full architecture investigation of Opta CLI's browser automation engine, visual streaming infrastructure, and the complete implementation plan for <kbd class="kbd">Ctrl+L</kbd> Live Browser View in Opta Code Desktop.</p>
+  </div>
+
+  <!-- Status summary -->
+  <div class="highlight-row">
+    <div class="highlight-box done">
+      <div class="hl-num">30+</div>
+      <div class="hl-label">Playwright Tools Available</div>
+    </div>
+    <div class="highlight-box done">
+      <div class="hl-num">5</div>
+      <div class="hl-label">Session Slots (ports 46000-46004)</div>
+    </div>
+    <div class="highlight-box partial">
+      <div class="hl-num">800ms</div>
+      <div class="hl-label">Frame Refresh Rate (/frame endpoint)</div>
+    </div>
+    <div class="highlight-box todo">
+      <div class="hl-num">1</div>
+      <div class="hl-label">Keybinding to Implement (Ctrl+L)</div>
+    </div>
+  </div>
+
+  <!-- SECTION 1: Architecture -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>01 — Full Stack Architecture</h2>
+  </div>
+
+  <div class="glass arch-diagram">
+    <div class="arch-layer cli">
+      <div class="arch-label">CLI Agent</div>
+      <div class="arch-content">
+        <strong>opta chat / opta do</strong> — Agent loop dispatches <code>browser_*</code> tool calls via <code>BrowserMcpInterceptor</code>. All calls routed through <code>mcp-interceptor.ts</code> before reaching Playwright.
+      </div>
+    </div>
+    <div class="arch-arrow">Policy evaluation + risk scoring + artifact recording</div>
+    <div class="arch-layer daemon">
+      <div class="arch-label">Daemon</div>
+      <div class="arch-content">
+        <strong>BrowserLiveHost</strong> (<code>live-host.ts</code>) — HTTP server on ports <code>46000–47000</code>. Up to 5 session slots. Each slot exposes <code>/frame</code> returning JPEG via Peekaboo screen capture. 500ms frame cache. Auth via <code>viewerAuthToken</code>.
+      </div>
+    </div>
+    <div class="arch-arrow">JPEG frames over HTTP polling · 800ms interval · token auth</div>
+    <div class="arch-layer browser">
+      <div class="arch-label">Browser</div>
+      <div class="arch-content">
+        <strong>@playwright/mcp</strong> integration with <code>BrowserMcpInterceptor</code>. Policy engine evaluates risk level. High-risk ops (<code>browser_evaluate</code>, <code>browser_file_upload</code>) are gated. Artifacts (screenshots, snapshots) auto-recorded via <code>artifacts.ts</code>.
+      </div>
+    </div>
+    <div class="arch-arrow">Peekaboo capture → macOS screen grab regardless of window focus</div>
+    <div class="arch-layer visual">
+      <div class="arch-label">Visual</div>
+      <div class="arch-content">
+        <strong>Peekaboo</strong> (<code>peekaboo.ts</code>) — macOS screen capture using <code>capturePeekabooScreenPng</code>. Captures Chromium window buffer even when it's in background. Also supports <code>peekabooClickLabel</code>, <code>peekabooTypeText</code>, <code>peekabooPressKey</code> for AI-vision-based interaction. Used by <code>visual-diff.ts</code> pipeline.
+      </div>
+    </div>
+    <div class="arch-arrow">Already-working component: LiveBrowserView.tsx polls /frame</div>
+    <div class="arch-layer desktop">
+      <div class="arch-label">Desktop</div>
+      <div class="arch-content">
+        <strong>LiveBrowserView.tsx</strong> (already in codebase!) — Polls <code>http://127.0.0.1:{slot.port}/frame</code> every 800ms with token auth. Renders as <code>&lt;img className="browser-frame-img"&gt;</code>. Has play/pause/stop controls, URL bar, exponential backoff. <strong>browserLiveHostClient.ts</strong> scans ports 46000–46009 with 24 concurrent workers.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Capabilities -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>02 — Playwright Tools (30+)</h2>
+  </div>
+
+  <div class="glass tool-grid">
+    <span class="tool-tag nav">browser_navigate</span>
+    <span class="tool-tag nav">browser_go_back</span>
+    <span class="tool-tag nav">browser_go_forward</span>
+    <span class="tool-tag nav">browser_tab_new</span>
+    <span class="tool-tag nav">browser_tab_close</span>
+    <span class="tool-tag nav">browser_tab_switch</span>
+    <span class="tool-tag interact">browser_click</span>
+    <span class="tool-tag interact">browser_type</span>
+    <span class="tool-tag interact">browser_fill_form</span>
+    <span class="tool-tag interact">browser_select_option</span>
+    <span class="tool-tag interact">browser_hover</span>
+    <span class="tool-tag interact">browser_drag</span>
+    <span class="tool-tag interact">browser_scroll</span>
+    <span class="tool-tag interact">browser_press_key</span>
+    <span class="tool-tag interact">browser_handle_dialog</span>
+    <span class="tool-tag interact">browser_resize</span>
+    <span class="tool-tag capture">browser_snapshot</span>
+    <span class="tool-tag capture">browser_take_screenshot</span>
+    <span class="tool-tag capture">browser_network_requests</span>
+    <span class="tool-tag capture">browser_console_messages</span>
+    <span class="tool-tag capture">browser_wait_for</span>
+    <span class="tool-tag capture">browser_wait_for_element</span>
+    <span class="tool-tag capture">browser_wait_for_navigation</span>
+    <span class="tool-tag danger">browser_evaluate</span>
+    <span class="tool-tag danger">browser_file_upload</span>
+    <span class="tool-tag">browser_run_code</span>
+    <span class="tool-tag">browser_tabs</span>
+    <span class="tool-tag">browser_navigate_back</span>
+    <span class="tool-tag">browser_install</span>
+    <span class="tool-tag">browser_close</span>
+  </div>
+
+  <div class="grid-3" style="margin-top:0">
+    <div class="glass card">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(6,182,212,0.12);color:var(--neon-cyan)">🔵</div>
+        Nav Tools
+      </div>
+      <div class="card-desc">Tab management, history navigation, URL loading. Low risk — auto-allowed by policy engine.</div>
+    </div>
+    <div class="glass card">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(245,158,11,0.12);color:var(--neon-amber)">🟡</div>
+        Interact Tools
+      </div>
+      <div class="card-desc">Click, type, drag, scroll, form fill. Medium risk — evaluated per-domain policy before execution.</div>
+    </div>
+    <div class="glass card">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(239,68,68,0.12);color:var(--neon-red)">🔴</div>
+        Gated Tools
+      </div>
+      <div class="card-desc"><code style="color:var(--neon-red);font-family:monospace;font-size:0.8rem">browser_evaluate</code> and <code style="color:var(--neon-red);font-family:monospace;font-size:0.8rem">browser_file_upload</code> — always require explicit permission confirmation.</div>
+    </div>
+  </div>
+
+  <!-- SECTION 3: Visual States -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>03 — Browser Visual States (BrowserVisualState)</h2>
+  </div>
+
+  <div class="glass">
+    <div class="status-row">
+      <div class="status-item">
+        <div class="status-dot-row"><div class="status-dot idle"></div></div>
+        <div class="status-name idle">Idle</div>
+        <div class="status-desc">No active browser session. Host not running or no session slots occupied.</div>
+      </div>
+      <div class="status-item">
+        <div class="status-dot-row"><div class="status-dot active"></div></div>
+        <div class="status-name active">Active</div>
+        <div class="status-desc">Browser session running, agent connected, no pending operations.</div>
+      </div>
+      <div class="status-item">
+        <div class="status-dot-row"><div class="status-dot working"></div></div>
+        <div class="status-name working">Working</div>
+        <div class="status-desc">Agent is executing browser tool calls — streaming events in progress.</div>
+      </div>
+      <div class="status-item">
+        <div class="status-dot-row"><div class="status-dot blocked"></div></div>
+        <div class="status-name blocked">Blocked</div>
+        <div class="status-desc">Pending permission gate — agent waiting for user approval before proceeding.</div>
+      </div>
+    </div>
+    <div style="padding: 0 28px 20px; color: var(--text-muted); font-size: 0.78rem;">
+      Derived by <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.78rem">deriveBrowserVisualState()</code> in <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.78rem">browserVisualState.ts</code> — used by LiveBrowserView to render status indicator.
+    </div>
+  </div>
+
+  <!-- SECTION 4: Session Slots -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>04 — Live Host Session Slots</h2>
+  </div>
+
+  <div class="glass">
+    <div class="slot-diagram">
+      <div class="slot active">
+        <div class="slot-port">:46000</div>
+        <div class="slot-label">Slot 0</div>
+        <div class="slot-status"></div>
+      </div>
+      <div class="slot">
+        <div class="slot-port">:46001</div>
+        <div class="slot-label">Slot 1</div>
+        <div class="slot-status"></div>
+      </div>
+      <div class="slot">
+        <div class="slot-port">:46002</div>
+        <div class="slot-label">Slot 2</div>
+        <div class="slot-status"></div>
+      </div>
+      <div class="slot">
+        <div class="slot-port">:46003</div>
+        <div class="slot-label">Slot 3</div>
+        <div class="slot-status"></div>
+      </div>
+      <div class="slot">
+        <div class="slot-port">:46004</div>
+        <div class="slot-label">Slot 4</div>
+        <div class="slot-status"></div>
+      </div>
+    </div>
+    <div style="padding: 0 24px 20px; display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+      <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.6;">
+        <strong style="color:var(--text-primary)">Each slot exposes:</strong><br>
+        <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.76rem">GET /frame</code> — JPEG screenshot via Peekaboo<br>
+        <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.76rem">GET /status</code> — JSON slot metadata<br>
+        <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.76rem">POST /control</code> — play/pause/stop<br>
+        Auth: <code style="color:var(--neon-amber);font-family:monospace;font-size:0.76rem">?token={viewerAuthToken}</code>
+      </div>
+      <div style="font-size:0.8rem; color:var(--text-secondary); line-height:1.6;">
+        <strong style="color:var(--text-primary)">Desktop scanning:</strong><br>
+        <code style="color:var(--neon-cyan);font-family:monospace;font-size:0.76rem">fetchBrowserLiveHostStatus()</code> scans<br>
+        ports 46000–46009 with 24 concurrent<br>
+        workers. Token extracted from HTML.<br>
+        Results cached per control port.
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 5: UX Mockup -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>05 — Ctrl+L Live View — UX Design</h2>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:16px">
+    <div>
+      <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.7;">
+        <span class="kbd">Ctrl+L</span> opens <strong style="color:var(--text-primary)">Compact Live View</strong> — occupies only the chat column. The sidebar and project pane remain visible. This is the default mode.
+      </div>
+      <div class="ux-mockup">
+        <div class="ux-title-bar">⬤ Live Browser — Compact Mode (Ctrl+L)</div>
+        <div class="ux-body">
+          <div class="ux-sidebar">
+            <div class="ux-sidebar-item">Session 1</div>
+            <div class="ux-sidebar-item">Session 2</div>
+            <div class="ux-sidebar-item active">★ Browser Live</div>
+            <div class="ux-sidebar-item">Session 3</div>
+          </div>
+          <div class="ux-main">
+            <div class="ux-main-label">Live Frame · Slot 0 · :46000</div>
+            <div class="ux-frame-preview">
+              <div style="text-align:center;position:relative;z-index:1">
+                <div style="font-size:1.5rem;margin-bottom:6px">⬤</div>
+                <div style="color:var(--neon-cyan);font-size:0.78rem">Live feed</div>
+              </div>
+            </div>
+            <div class="ux-url-bar">🌐 https://localhost:5173</div>
+            <div class="ux-controls">
+              <div class="ux-btn">⏸ Pause</div>
+              <div class="ux-btn primary">⏹ Stop</div>
+              <div class="ux-btn">⛶ Expand</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div style="font-size:0.8rem; color:var(--text-secondary); margin-bottom:12px; line-height:1.7;">
+        <span class="kbd">Ctrl+Space</span> <em>within live view</em> expands to <strong style="color:var(--text-primary)">Full Studio Mode</strong> — identical dimensions to BrowserStudio/ModelsStudio/AtpoStudio.
+      </div>
+      <div class="ux-mockup">
+        <div class="ux-title-bar" style="background:rgba(6,182,212,0.15);border-color:rgba(6,182,212,0.3);color:var(--neon-cyan)">⬤ Live Browser — Full Studio (Ctrl+Space to expand)</div>
+        <div class="ux-body" style="grid-template-columns:1fr;">
+          <div class="ux-main" style="padding:16px">
+            <div class="ux-main-label">Full studio — chat column hidden, same dimensions as other studios</div>
+            <div class="ux-frame-preview" style="min-height:200px;border-color:rgba(6,182,212,0.4)">
+              <div style="text-align:center;position:relative;z-index:1">
+                <div style="font-size:2.5rem;margin-bottom:8px;color:var(--neon-cyan)">⬤</div>
+                <div style="color:var(--neon-cyan);font-size:0.9rem;font-weight:700">Full Browser Canvas</div>
+                <div style="color:var(--text-muted);font-size:0.72rem;margin-top:4px">Ctrl+Space again to collapse</div>
+              </div>
+            </div>
+            <div class="ux-controls">
+              <div class="ux-btn">⏸ Pause</div>
+              <div class="ux-btn primary">⏹ Stop</div>
+              <div class="ux-btn" style="color:var(--neon-cyan);border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.08)">⛶ Collapse</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Keybinding map -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>06 — Complete Studio Keybinding Map</h2>
+  </div>
+
+  <div class="glass">
+    <div class="keybinding-map">
+      <div class="kb-entry">
+        <div class="kb-keys"><span class="kbd">Ctrl+B</span></div>
+        <div class="kb-title">Browser Studio</div>
+        <div class="kb-desc">Opens full browser management interface — start/stop sessions, history, settings, sub-agent delegation.</div>
+      </div>
+      <div class="kb-entry" style="border-color:rgba(6,182,212,0.2);background:rgba(6,182,212,0.04)">
+        <div class="kb-keys"><span class="kbd">Ctrl+L</span></div>
+        <div class="kb-title" style="color:var(--neon-cyan)">Live Browser View ★ NEW</div>
+        <div class="kb-desc">Opens compact live feed in chat column. Shows /frame JPEG from active session slot. Toggle: open/close.</div>
+      </div>
+      <div class="kb-entry">
+        <div class="kb-keys"><span class="kbd">Ctrl+M</span></div>
+        <div class="kb-title">Models Studio</div>
+        <div class="kb-desc">Model selection, LMX inference routing, provider configuration, model benchmarks.</div>
+      </div>
+      <div class="kb-entry">
+        <div class="kb-keys"><span class="kbd">Ctrl+A</span></div>
+        <div class="kb-title">Atpo Studio</div>
+        <div class="kb-desc">Agent/sub-agent management, parallel task coordination, autonomy level controls.</div>
+      </div>
+      <div class="kb-entry" style="border-color:rgba(6,182,212,0.15)">
+        <div class="kb-keys"><span class="kbd">Ctrl+Space</span></div>
+        <div class="kb-title" style="color:var(--neon-cyan)">Expand Live View ★ NEW</div>
+        <div class="kb-desc">While live view is open: toggles between compact (chat column) and full studio expansion mode.</div>
+      </div>
+      <div class="kb-entry">
+        <div class="kb-keys"><span class="kbd">Ctrl+,</span></div>
+        <div class="kb-title">Settings Studio</div>
+        <div class="kb-desc">17-tab settings across Infrastructure, Control, Security, Workspace groups.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: Implementation Steps -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>07 — Implementation Plan</h2>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">01</div>
+    <div class="step-body">
+      <div class="step-title">Add <code style="font-size:0.85rem">isLiveViewOpen</code> + <code style="font-size:0.85rem">isLiveViewExpanded</code> state to App.tsx</div>
+      <div class="step-desc">Two booleans: <code>isLiveViewOpen</code> (Ctrl+L toggles) and <code>isLiveViewExpanded</code> (Ctrl+Space toggles within live view). When expanded, same CSS class as other full-studio overlays.</div>
+      <div class="step-file">src/App.tsx</div>
+    </div>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">02</div>
+    <div class="step-body">
+      <div class="step-title">Wire <kbd class="kbd" style="font-size:0.72rem">Ctrl+L</kbd> and <kbd class="kbd" style="font-size:0.72rem">Ctrl+Space</kbd> keybindings</div>
+      <div class="step-desc">Add to the keyboard handler in App.tsx (same pattern as Ctrl+B/M/A). Ctrl+L toggles <code>isLiveViewOpen</code>. Ctrl+Space, when live view is open, toggles <code>isLiveViewExpanded</code>. Guard: Ctrl+Space only fires when <code>isLiveViewOpen === true</code>.</div>
+      <div class="step-file">src/App.tsx — keyboard handler</div>
+    </div>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">03</div>
+    <div class="step-body">
+      <div class="step-title">Render <code style="font-size:0.85rem">LiveBrowserView</code> in chat column when open (compact mode)</div>
+      <div class="step-desc">In the chat column JSX, add a conditional section above (or replacing) the message list: when <code>isLiveViewOpen && !isLiveViewExpanded</code>, render the existing <code>LazyLiveBrowserView</code> component. The chat list scrolls below. Import already exists as a lazy component.</div>
+      <div class="step-file">src/App.tsx — chat column JSX</div>
+    </div>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">04</div>
+    <div class="step-body">
+      <div class="step-title">Add full-screen overlay mode (expanded) using existing studio CSS</div>
+      <div class="step-desc">When <code>isLiveViewExpanded</code> is true, render <code>LiveBrowserView</code> in an overlay with the same <code>opta-studio-overlay</code> class used by BrowserStudio/ModelsStudio/AtpoStudio. Reuses the entrance animation, backdrop, and close button patterns already built for those studios.</div>
+      <div class="step-file">src/App.tsx — studio overlay section</div>
+    </div>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">05</div>
+    <div class="step-body">
+      <div class="step-title">Add "Start Browser" button to BrowserStudio (Ctrl+B)</div>
+      <div class="step-desc">BrowserStudio should have a primary CTA button that calls the daemon operation to start a browser session. Once started, the live host will allocate a slot. The user can then press Ctrl+L to see the live feed. Wire via <code>daemonClient.runOperation("browser.start")</code>.</div>
+      <div class="step-file">src/components/BrowserStudio.tsx (or equivalent)</div>
+    </div>
+  </div>
+
+  <div class="glass step">
+    <div class="step-num">06</div>
+    <div class="step-body">
+      <div class="step-title">Add Ctrl+L to Command Palette (Ctrl+K)</div>
+      <div class="step-desc">Register a palette command: <code>{ id: "live-browser", title: "Open Live Browser View", run: () => setIsLiveViewOpen(v => !v) }</code>. Makes it discoverable without memorizing the keybinding.</div>
+      <div class="step-file">src/App.tsx — palette commands useMemo</div>
+    </div>
+  </div>
+
+  <!-- SECTION 8: Code sketch -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>08 — Implementation Sketch</h2>
+  </div>
+
+  <pre><span class="cm">// App.tsx additions</span>
+
+<span class="cm">// 1. State</span>
+<span class="kw">const</span> [isLiveViewOpen, setIsLiveViewOpen] = <span class="fn">useState</span>(<span class="kw">false</span>);
+<span class="kw">const</span> [isLiveViewExpanded, setIsLiveViewExpanded] = <span class="fn">useState</span>(<span class="kw">false</span>);
+
+<span class="cm">// 2. Keybindings (in existing keyboard handler)</span>
+<span class="kw">if</span> (e.<span class="prop">ctrlKey</span> && e.<span class="prop">key</span> === <span class="str">"l"</span>) {
+  e.<span class="fn">preventDefault</span>();
+  <span class="fn">setIsLiveViewOpen</span>(v => !v);
+  <span class="kw">if</span> (!isLiveViewOpen) <span class="fn">setIsLiveViewExpanded</span>(<span class="kw">false</span>);  <span class="cm">// reset on re-open</span>
+}
+<span class="kw">if</span> (e.<span class="prop">ctrlKey</span> && e.<span class="prop">key</span> === <span class="str">" "</span> && isLiveViewOpen) {
+  e.<span class="fn">preventDefault</span>();
+  <span class="fn">setIsLiveViewExpanded</span>(v => !v);
+}
+
+<span class="cm">// 3. Compact mode render (inside chat column JSX)</span>
+{isLiveViewOpen && !isLiveViewExpanded && (
+  &lt;<span class="ty">div</span> className=<span class="str">"live-browser-compact"</span>&gt;
+    &lt;<span class="ty">Suspense</span> fallback={&lt;<span class="ty">div</span> className=<span class="str">"opta-loading"</span>&gt;Loading...&lt;/<span class="ty">div</span>&gt;}&gt;
+      &lt;<span class="ty">LazyLiveBrowserView</span>
+        connection={connection}
+        compact={<span class="kw">true</span>}
+        onExpand={() =&gt; <span class="fn">setIsLiveViewExpanded</span>(<span class="kw">true</span>)}
+      /&gt;
+    &lt;/<span class="ty">Suspense</span>&gt;
+  &lt;/<span class="ty">div</span>&gt;
+)}
+
+<span class="cm">// 4. Full studio overlay (same pattern as BrowserStudio/ModelsStudio)</span>
+{isLiveViewOpen && isLiveViewExpanded && (
+  &lt;<span class="ty">div</span> className=<span class="str">"opta-studio-overlay opta-studio-live"</span>&gt;
+    &lt;<span class="ty">div</span> className=<span class="str">"opta-studio-header"</span>&gt;
+      &lt;<span class="ty">span</span>&gt;Live Browser&lt;/<span class="ty">span</span>&gt;
+      &lt;<span class="ty">span</span> className=<span class="str">"opta-studio-hint"</span>&gt;Ctrl+Space to collapse&lt;/<span class="ty">span</span>&gt;
+    &lt;/<span class="ty">div</span>&gt;
+    &lt;<span class="ty">Suspense</span> fallback={<span class="kw">null</span>}&gt;
+      &lt;<span class="ty">LazyLiveBrowserView</span>
+        connection={connection}
+        compact={<span class="kw">false</span>}
+        onCollapse={() =&gt; <span class="fn">setIsLiveViewExpanded</span>(<span class="kw">false</span>)}
+      /&gt;
+    &lt;/<span class="ty">Suspense</span>&gt;
+  &lt;/<span class="ty">div</span>&gt;
+)}
+
+<span class="cm">// 5. Palette command</span>
+{ <span class="prop">id</span>: <span class="str">"live-browser"</span>, <span class="prop">title</span>: <span class="str">"Toggle Live Browser View"</span>, <span class="prop">run</span>: () =&gt; {
+    <span class="fn">setIsLiveViewOpen</span>(v =&gt; !v);
+  }
+}</pre>
+
+  <!-- SECTION 9: What already exists -->
+  <div class="section-label">
+    <div class="neon-dot"></div>
+    <h2>09 — What Already Exists (No Rebuild Needed)</h2>
+  </div>
+
+  <div class="grid-2">
+    <div class="glass card" style="border-color:rgba(34,197,94,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(34,197,94,0.12);color:var(--neon-green)">✓</div>
+        LiveBrowserView.tsx
+      </div>
+      <div class="card-desc">Full component ready: polls <code>/frame</code>, renders JPEG, play/pause/stop controls, URL bar, exponential backoff, visual state indicator. Just needs <code>compact</code> prop + <code>onExpand/onCollapse</code> callbacks added.</div>
+    </div>
+    <div class="glass card" style="border-color:rgba(34,197,94,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(34,197,94,0.12);color:var(--neon-green)">✓</div>
+        browserLiveHostClient.ts
+      </div>
+      <div class="card-desc">Port scanner with 24 concurrent workers, token extraction from HTML, port range 46000–47000, result caching. No changes needed — <code>fetchBrowserLiveHostStatus()</code> is complete.</div>
+    </div>
+    <div class="glass card" style="border-color:rgba(34,197,94,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(34,197,94,0.12);color:var(--neon-green)">✓</div>
+        CLI Live Host Server
+      </div>
+      <div class="card-desc">BrowserLiveHost HTTP server (live-host.ts) exposes <code>/frame</code> endpoint with JPEG via Peekaboo capture. Max 5 slots on ports 46000–46004. Frame cache 500ms. Auth via token.</div>
+    </div>
+    <div class="glass card" style="border-color:rgba(34,197,94,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(34,197,94,0.12);color:var(--neon-green)">✓</div>
+        Studio Overlay CSS & Pattern
+      </div>
+      <div class="card-desc">BrowserStudio, ModelsStudio, and AtpoStudio all use <code>opta-studio-overlay</code> with identical transitions. Live View expanded mode reuses this class and gets the same entrance animation for free.</div>
+    </div>
+    <div class="glass card" style="border-color:rgba(245,158,11,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(245,158,11,0.12);color:var(--neon-amber)">~</div>
+        LazyLiveBrowserView import
+      </div>
+      <div class="card-desc">Need to verify <code>settingsModalLazyPages.ts</code> or <code>lazyAppModules.tsx</code> already exports a lazy wrapper. If not, add: <code>const LazyLiveBrowserView = lazy(() => import('./LiveBrowserView'))</code>.</div>
+    </div>
+    <div class="glass card" style="border-color:rgba(139,92,246,0.2)">
+      <div class="card-title">
+        <div class="icon" style="background:rgba(139,92,246,0.12);color:var(--primary)">★</div>
+        Ctrl+L Keybinding
+      </div>
+      <div class="card-desc">The only truly new addition. ~30 lines total across App.tsx: 2 state vars, 2 keyboard branches, 2 JSX render blocks, 1 palette command. Everything else reuses existing infrastructure.</div>
+    </div>
+  </div>
+
+  <hr>
+
+  <footer>
+    Opta Browser Architecture Guide · Generated 2026-03-06 · Opta Code Desktop (1P-Opta-Code-Universal) · Research complete — implementation ready
+  </footer>
+
+</div>
+</body>
+</html>
