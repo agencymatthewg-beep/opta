@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { daemonClient } from "../lib/daemonClient";
+import { isNativeDesktop } from "../lib/runtime";
+import { useAccountsAuthControls } from "../hooks/useAccountsAuthControls";
 import type { DaemonConnectionOptions } from "../types";
 
 interface AccountControlPageProps {
@@ -292,6 +294,20 @@ function normalizeAccountKeys(result: unknown): AccountKeySummary[] {
 export function AccountControlPage({ connection }: AccountControlPageProps) {
   const [notice, setNotice] = useState<OperationNotice | null>(null);
   const [busyOperation, setBusyOperation] = useState<string | null>(null);
+
+  // ── Native desktop auth (Tauri PKCE) ────────────────────────────────────
+  const nativeDesktop = isNativeDesktop();
+  const [hasNativeSession, setHasNativeSession] = useState(false);
+  const pushNotice = useCallback(
+    (message: string, tone: NoticeTone = "info") =>
+      setNotice({ tone, operationId: "accounts.native", message }),
+    [],
+  );
+  const { handleAccountsLogin } = useAccountsAuthControls({
+    connection,
+    onNotice: pushNotice,
+    onNativeSessionChange: setHasNativeSession,
+  });
 
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
@@ -770,17 +786,31 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
           <button
             type="button"
             className="action-btn"
-            onClick={() => void handleBrowserLogin()}
-            disabled={isRunningAny || isOperationUnavailable(OP_ACCOUNT_LOGIN)}
+            onClick={() =>
+              nativeDesktop
+                ? void handleAccountsLogin()
+                : void handleBrowserLogin()
+            }
+            disabled={isRunningAny || (!nativeDesktop && isOperationUnavailable(OP_ACCOUNT_LOGIN))}
           >
             {busyOperation === OP_ACCOUNT_LOGIN
               ? "Opening browser…"
-              : "Sign in via browser"}
+              : nativeDesktop
+                ? "Sign in with Opta Account"
+                : "Sign in via browser"}
           </button>
-          <p className="account-empty">
-            Browser mode uses <code>{"{ \"oauth\": true }"}</code> and waits for
-            callback completion.
-          </p>
+          {nativeDesktop ? (
+            <p className="account-empty">
+              {hasNativeSession
+                ? "✓ Signed in with Opta Account."
+                : "Opens Google sign-in. Session is stored natively — no daemon required."}
+            </p>
+          ) : (
+            <p className="account-empty">
+              Browser mode uses <code>{"{ \"oauth\": true }"}</code> and waits for
+              callback completion.
+            </p>
+          )}
 
           <div className="account-result-block">
             <h4>Latest status result</h4>
