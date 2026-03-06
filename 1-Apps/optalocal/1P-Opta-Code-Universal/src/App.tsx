@@ -2588,7 +2588,6 @@ function App() {
                           </div>
                         );
                       })()}
-                      <div className="v1-brand-settings">OPTA SETTINGS</div>
                     </div>
                     <div className="v1-brand-sub">Code Environment</div>
                   </div>
