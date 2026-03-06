@@ -2107,7 +2107,7 @@ export function SettingsModal({
       className={`opta-studio-shell ${embedded ? "opta-studio-shell--embedded" : ""} ${isDeepLayer ? "opta-studio-shell--deep" : ""} ${isFullscreen ? "opta-studio-shell--fullscreen" : ""}`}
       onClick={(e) => e.stopPropagation()}
     >
-      {isFullscreen && (
+      {(isFullscreen || isDeepLayer) && (
         <div
           className={`opta-studio-logo-reserve ${isDeepLayer ? "is-docked" : ""} ${isFullscreen ? "is-active" : ""}`}
           aria-hidden="true"
