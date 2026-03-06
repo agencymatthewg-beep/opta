@@ -101,10 +101,13 @@ vi.mock("./settingsModalLazyPages", async () => {
     LazyBackgroundJobsPage: resolvedLazy("Background Jobs Loaded"),
     LazyCliOperationsPage: resolvedLazy("CLI Operations Loaded"),
     LazyConfigStudioPage: resolvedLazy("Config Studio Loaded"),
+    LazyDaemonControlPage: resolvedLazy("Daemon Control Loaded"),
     LazyDaemonLogsPage: resolvedLazy("Daemon Logs Loaded"),
     LazyEnvProfilesPage: resolvedLazy("Environment Profiles Loaded"),
     LazyMcpManagementPage: resolvedLazy("MCP Management Loaded"),
+    LazyModelAliasesPage: resolvedLazy("Model Aliases Loaded"),
     LazySessionMemoryPage: rejectedLazy,
+    LazySystemInfoPage: resolvedLazy("System Info Loaded"),
     LazySystemOperationsPage: resolvedLazy("System Operations Loaded"),
     preloadSettingsModalLazyTab,
   };
@@ -181,7 +184,9 @@ describe("SettingsModal", () => {
       });
 
       expect(screen.getByText("Keyboard Layout")).toBeInTheDocument();
-      expect(screen.getByText("OPTA SETTINGS")).toBeInTheDocument();
+      // "OPTA SETTINGS" static label was removed in the logo redesign; logo
+      // now renders the active tab name dynamically (e.g. "DAEMON").
+      expect(screen.getByLabelText("DAEMON")).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /close settings/i }),
       ).toBeInTheDocument();

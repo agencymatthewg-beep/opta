@@ -51,6 +51,21 @@ const loadSystemOperationsPage = () =>
     default: module.SystemOperationsPage,
   }));
 
+const loadDaemonControlPage = () =>
+  import("../pages/DaemonControlPage").then((module) => ({
+    default: module.DaemonControlPage,
+  }));
+
+const loadSystemInfoPage = () =>
+  import("../pages/SystemInfoPage").then((module) => ({
+    default: module.SystemInfoPage,
+  }));
+
+const loadModelAliasesPage = () =>
+  import("../pages/ModelAliasesPage").then((module) => ({
+    default: module.ModelAliasesPage,
+  }));
+
 export const LazyAppCatalogPage = lazy(loadAppCatalogPage);
 export const LazySessionMemoryPage = lazy(loadSessionMemoryPage);
 export const LazyEnvProfilesPage = lazy(loadEnvProfilesPage);
@@ -61,6 +76,9 @@ export const LazyBackgroundJobsPage = lazy(loadBackgroundJobsPage);
 export const LazyDaemonLogsPage = lazy(loadDaemonLogsPage);
 export const LazyCliOperationsPage = lazy(loadCliOperationsPage);
 export const LazySystemOperationsPage = lazy(loadSystemOperationsPage);
+export const LazyDaemonControlPage = lazy(loadDaemonControlPage);
+export const LazySystemInfoPage = lazy(loadSystemInfoPage);
+export const LazyModelAliasesPage = lazy(loadModelAliasesPage);
 
 const SETTINGS_TAB_PRELOADERS: Partial<Record<SettingsTabId, () => Promise<unknown>>> = {
   "mcp-integrations": loadMcpManagementPage,
@@ -71,8 +89,10 @@ const SETTINGS_TAB_PRELOADERS: Partial<Record<SettingsTabId, () => Promise<unkno
   "session-memory": loadSessionMemoryPage,
   "background-jobs": loadBackgroundJobsPage,
   "daemon-logs": loadDaemonLogsPage,
+  "daemon-runtime": loadDaemonControlPage,
+  "lmx-models": loadModelAliasesPage,
   "cli-system-advanced": async () => {
-    await Promise.all([loadSystemOperationsPage(), loadCliOperationsPage()]);
+    await Promise.all([loadSystemOperationsPage(), loadCliOperationsPage(), loadSystemInfoPage()]);
   },
 };
 

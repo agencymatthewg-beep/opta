@@ -18,7 +18,6 @@ import { ProjectPane } from "./components/ProjectPane";
 import { WidgetPane } from "./components/WidgetPane";
 import {
   SETTINGS_TAB_SEQUENCE,
-  SETTINGS_CATEGORIES,
   normalizeSettingsTabId,
   type SettingsTabId,
 } from "./components/settingsStudioConfig";
@@ -2502,67 +2501,13 @@ function App() {
                       className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
                     >
                       {(() => {
-                        let word = "OPTA";
-                        let wordClass = "";
-                        let dynamicStyle: CSSProperties = {};
-
-                        const hexToRgba = (hex: string, alpha: number) => {
-                          const h = hex.replace("#", "");
-                          const r = parseInt(h.length === 3 ? h[0] + h[0] : h.substring(0, 2), 16);
-                          const g = parseInt(h.length === 3 ? h[1] + h[1] : h.substring(2, 4), 16);
-                          const b = parseInt(h.length === 3 ? h[2] + h[2] : h.substring(4, 6), 16);
-                          return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-                        };
-
-                        if (activeStudio === "browser") {
-                          word = "BROWSER";
-                          wordClass = " v1-brand-word--browser";
-                        } else if (activeStudio === "models") {
-                          word = "MODELS";
-                          wordClass = " v1-brand-word--models";
-                        } else if (activeStudio === "atpo") {
-                          word = "ATPO";
-                          wordClass = " v1-brand-word--atpo";
-                        } else if (settingsLayer === 3) {
-                          const category = SETTINGS_CATEGORIES.find((c) => c.id === settingsActiveTab);
-                          if (category) {
-                            const map: Record<string, string> = {
-                              "connection-network": "CONNECTION",
-                              "lmx-models": "INFERENCE",
-                              "daemon-runtime": "DAEMON",
-                              "autonomy-policies": "AUTONOMY",
-                              "permissions-safety": "SAFETY",
-                              "browser-research": "RESEARCH",
-                              "tools-agents-learning": "AGENTS",
-                              "mcp-integrations": "INTEGRATIONS",
-                              "environment-profiles": "PROFILES",
-                              "config-studio": "CONFIG",
-                              "accounts-vault": "VAULT",
-                              "tiles-workspace-layout": "WORKSPACE",
-                              "apps-catalog": "CATALOG",
-                              "session-memory": "MEMORY",
-                              "background-jobs": "JOBS",
-                              "daemon-logs": "LOGS",
-                              "cli-system-advanced": "ADVANCED",
-                            };
-                            word = map[category.id] ?? "SETTINGS";
-                            wordClass = " v1-brand-word--dynamic";
-                            dynamicStyle = {
-                              "--dynamic-color": category.accentColor,
-                              "--dynamic-shadow": hexToRgba(category.accentColor, 0.34),
-                            } as CSSProperties;
-                          }
-                        } else if (settingsLayer === 2) {
-                          word = "SETTINGS";
-                          wordClass = " v1-brand-word--dynamic";
-                          dynamicStyle = {
-                            "--dynamic-color": "#f1f5f9",
-                            "--dynamic-shadow": "rgba(241, 245, 249, 0.22)",
-                          } as CSSProperties;
-                        }
-
+                        const word =
+                          activeStudio === "browser" ? "BROWSER" :
+                            activeStudio === "models" ? "MODELS" :
+                              activeStudio === "atpo" ? "ATPO" : "OPTA";
+                        const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
-                          <div className={`v1-brand-word${wordClass}`} aria-label={word} style={dynamicStyle}>
+                          <div className={`v1-brand-word${wordClass}`} aria-label={word}>
                             {word.split("").map((letter, index) => (
                               <span
                                 key={`${word}-${index}`}
@@ -2574,6 +2519,7 @@ function App() {
                           </div>
                         );
                       })()}
+                      <div className="v1-brand-settings">OPTA SETTINGS</div>
                     </div>
                     <div className="v1-brand-sub">Code Environment</div>
                   </div>

@@ -151,3 +151,217 @@ export interface AgentBarItem {
   state: "streaming" | "awaiting-review" | "blocked" | "completed";
   elapsedMs: number;
 }
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Session Manager
+   ═══════════════════════════════════════════════════════ */
+
+export interface SessionDetail extends DaemonSessionSummary {
+  messageCount?: number;
+  model?: string;
+  tags?: string[];
+  sizeBytes?: number;
+}
+
+export interface SessionSearchResult {
+  sessions: SessionDetail[];
+  total: number;
+  query?: string;
+}
+
+export interface SessionExportResult {
+  sessionId: string;
+  path: string;
+  format: "json" | "markdown" | "text";
+  sizeBytes?: number;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Environment Profiles
+   ═══════════════════════════════════════════════════════ */
+
+export interface EnvProfile {
+  name: string;
+  vars: Record<string, string>;
+  description?: string;
+  isActive?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface EnvProfilesState {
+  profiles: EnvProfile[];
+  activeProfile: string | null;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Daemon Control
+   ═══════════════════════════════════════════════════════ */
+
+export type DaemonProcessState = "running" | "stopped" | "starting" | "stopping" | "unknown";
+
+export interface DaemonControlStatus {
+  state: DaemonProcessState;
+  pid?: number;
+  uptime?: number;
+  version?: string;
+  port?: number;
+  logPath?: string;
+  installedAs?: "launchd" | "systemd" | "schtasks" | "manual" | null;
+}
+
+export interface DaemonLogEntry {
+  timestamp?: string;
+  level?: "info" | "warn" | "error" | "debug";
+  message: string;
+  raw: string;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — System Info
+   ═══════════════════════════════════════════════════════ */
+
+export type DoctorCheckStatus = "pass" | "warn" | "fail" | "skip";
+
+export interface DoctorCheck {
+  name: string;
+  status: DoctorCheckStatus;
+  message?: string;
+  fix?: string;
+}
+
+export interface SystemInfo {
+  currentVersion: string;
+  latestVersion: string | null;
+  upToDate: boolean | null;
+  updateAvailable: boolean | null;
+  checks: DoctorCheck[];
+  doctorSummary: {
+    passed: number;
+    warnings: number;
+    failures: number;
+  };
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Model Aliases
+   ═══════════════════════════════════════════════════════ */
+
+export interface ModelAlias {
+  alias: string;
+  target: string;
+  provider?: string;
+  description?: string;
+}
+
+export interface ModelHealthCheck {
+  modelId: string;
+  status: "healthy" | "degraded" | "unavailable";
+  latencyMs?: number;
+  error?: string;
+}
+
+export interface ModelLibraryEntry {
+  repoId: string;
+  name: string;
+  description?: string;
+  tags?: string[];
+  sizeBytes?: number;
+  sizeHuman?: string;
+  quantization?: string;
+  downloads?: number;
+  isLocal?: boolean;
+  isLoaded?: boolean;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Audio
+   ═══════════════════════════════════════════════════════ */
+
+export interface AudioTranscribeResult {
+  text: string;
+  language?: string;
+  durationMs?: number;
+  confidence?: number;
+}
+
+export interface AudioTtsResult {
+  audioPath?: string;
+  audioUrl?: string;
+  durationMs?: number;
+  format?: string;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Browser Runtime
+   ═══════════════════════════════════════════════════════ */
+
+export interface BrowserRuntimeSlot {
+  slotId: string;
+  state: "idle" | "active" | "closing";
+  url?: string;
+  title?: string;
+  createdAt?: string;
+}
+
+export interface BrowserRuntimeStatus {
+  enabled: boolean;
+  slots: BrowserRuntimeSlot[];
+  activeSessions: number;
+  maxSessions: number;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Account & Vault
+   ═══════════════════════════════════════════════════════ */
+
+export interface AccountStatus {
+  loggedIn: boolean;
+  email?: string;
+  userId?: string;
+  tier?: string;
+  plan?: string;
+}
+
+export type VaultSyncStatus = "synced" | "behind" | "ahead" | "conflict" | "offline" | "unknown";
+
+export interface VaultStatus {
+  syncStatus: VaultSyncStatus;
+  keyCount: number;
+  ruleCount: number;
+  lastSync?: string;
+  remoteVersion?: number;
+  localVersion?: number;
+}
+
+export type KeychainProvider = "anthropic" | "lmx" | "gemini" | "openai" | "opencode-zen";
+
+export interface KeychainStatus {
+  providers: Record<KeychainProvider, { stored: boolean; lastSet?: string }>;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Connection Discovery
+   ═══════════════════════════════════════════════════════ */
+
+export interface LanDiscoveryTarget {
+  host: string;
+  port: number;
+  name?: string;
+  source: "mdns" | "scan" | "manual";
+  reachable?: boolean;
+  latencyMs?: number;
+  daemonVersion?: string;
+}
+
+/* ═══════════════════════════════════════════════════════
+   Domain Types — Async Operation Result
+   ═══════════════════════════════════════════════════════ */
+
+export type AsyncStatus = "idle" | "loading" | "success" | "error";
+
+export interface AsyncState<T> {
+  status: AsyncStatus;
+  data: T | null;
+  error: string | null;
+}

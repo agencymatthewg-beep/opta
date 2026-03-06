@@ -997,10 +997,18 @@ export const daemonClient = {
   },
 
   async sessionGet(connection: DaemonConnectionOptions, sessionId: string): Promise<SessionDetail | null> {
-    // sessions.get is not a registered operation — find via sessions.search
-    const results = await daemonClient.sessionSearch(connection, sessionId, 10);
-    const match = results.sessions.find((s) => s.sessionId === sessionId);
-    return match ?? null;
+    const response = await daemonClient.runOperation(connection, "sessions.get", { input: { id: sessionId } });
+    if (!response.ok) return null;
+    const record = asRecord(response.result);
+    if (!record) return null;
+    const base = normalizeSessionSummary(response.result);
+    if (!base) return null;
+    return {
+      ...base,
+      messageCount: typeof record.messageCount === "number" ? record.messageCount : undefined,
+      model: typeof record.model === "string" ? record.model : undefined,
+      tags: Array.isArray(record.tags) ? record.tags.filter((t): t is string => typeof t === "string") : undefined,
+    };
   },
 
   // ─── Daemon Process Control ───────────────────────────────────────────────

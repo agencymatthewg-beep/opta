@@ -6224,31 +6224,6 @@ button.active,
   transition-delay: 156ms;
 }
 
-.app-shell.settings-nav-open .v1-brand-letter-8 {
-  transform: translateY(-2px) scale(0.73);
-  transition-delay: 182ms;
-}
-
-.app-shell.settings-nav-open .v1-brand-letter-9 {
-  transform: translateY(-1px) scale(0.74);
-  transition-delay: 208ms;
-}
-
-.app-shell.settings-nav-open .v1-brand-letter-10 {
-  transform: translateY(0px) scale(0.75);
-  transition-delay: 234ms;
-}
-
-.app-shell.settings-nav-open .v1-brand-letter-11 {
-  transform: translateY(-1px) scale(0.76);
-  transition-delay: 260ms;
-}
-
-.app-shell.settings-nav-open .v1-brand-letter-12 {
-  transform: translateY(-2px) scale(0.77);
-  transition-delay: 286ms;
-}
-
 /* Settings overlay open: reveal "OPTA SETTINGS" label */
 .app-shell.settings-nav-open .v1-brand-settings {
   opacity: 1;
@@ -6296,26 +6271,6 @@ button.active,
   transition-delay: 108ms;
 }
 
-.app-shell.studio-nav-open .v1-brand-letter-8 {
-  transition-delay: 126ms;
-}
-
-.app-shell.studio-nav-open .v1-brand-letter-9 {
-  transition-delay: 144ms;
-}
-
-.app-shell.studio-nav-open .v1-brand-letter-10 {
-  transition-delay: 162ms;
-}
-
-.app-shell.studio-nav-open .v1-brand-letter-11 {
-  transition-delay: 180ms;
-}
-
-.app-shell.studio-nav-open .v1-brand-letter-12 {
-  transition-delay: 198ms;
-}
-
 .v1-brand-sub {
   font-family: "JetBrains Mono", monospace;
   font-size: 0.85rem;
@@ -6325,20 +6280,45 @@ button.active,
   font-weight: 600;
 }
 
-/* Dynamic Logo Variants using CSS Variables (fed by App.tsx) */
-.v1-brand-word--dynamic .v1-brand-letter {
-  color: var(--dynamic-color, var(--opta-primary-glow));
+/* Dynamic Logo Variants */
+.v1-brand-word--browser .v1-brand-letter {
+  color: #22d3ee;
   text-shadow:
     2px 2px 0 #09090b,
     3px 3px 0 #09090b,
-    4px 4px 0 var(--dynamic-color, var(--opta-primary-glow)),
-    5px 5px 0 var(--dynamic-color, var(--opta-primary-glow)),
+    4px 4px 0 #22d3ee,
+    5px 5px 0 #22d3ee,
     7px 7px 0 #09090b,
     8px 8px 0 #09090b,
-    9px 9px 0 var(--dynamic-color, var(--opta-primary-glow));
-  filter: drop-shadow(0 0 26px var(--dynamic-shadow, rgba(168, 85, 247, 0.34)));
+    9px 9px 0 #22d3ee;
+  filter: drop-shadow(0 0 26px rgba(34, 211, 238, 0.34));
 }
 
+.v1-brand-word--models .v1-brand-letter {
+  color: #a78bfa;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 #a78bfa,
+    5px 5px 0 #a78bfa,
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 #a78bfa;
+  filter: drop-shadow(0 0 26px rgba(167, 139, 250, 0.34));
+}
+
+.v1-brand-word--atpo .v1-brand-letter {
+  color: #f472b6;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 #f472b6,
+    5px 5px 0 #f472b6,
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 #f472b6;
+  filter: drop-shadow(0 0 26px rgba(244, 114, 182, 0.34));
+}
 
 /* ── Settings Overlay — in-place Ctrl+S transition ─────────────────────── */
 
