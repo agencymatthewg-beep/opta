@@ -36,7 +36,10 @@ import {
 } from "./lib/browserVisualState";
 import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
 import {
+  LazyAtpoStudio,
+  LazyBrowserStudio,
   LazyLiveBrowserView,
+  LazyModelsStudio,
   LazyPermissionModal,
   LazySettingsModal,
   LazySettingsView,
@@ -44,6 +47,8 @@ import {
   preloadSettingsModal,
   preloadSettingsView,
 } from "./lazyAppModules";
+
+type FeatureStudioId = "browser" | "models" | "atpo";
 import type {
   PaletteCommand,
   SessionSubmitMode,
@@ -253,6 +258,8 @@ function App() {
   const [settingsFullscreen, setSettingsFullscreen] = useState(false);
   const [settingsLayer3FocusIndex, setSettingsLayer3FocusIndex] = useState(0);
   const [settingsLayer3EditMode, setSettingsLayer3EditMode] = useState(false);
+  const [activeStudio, setActiveStudio] = useState<FeatureStudioId | null>(null);
+  const [studioFullscreen, setStudioFullscreen] = useState(false);
   const [sidebarVisible, setSidebarVisible] = useLocalStorage(
     "opta:sidebar-visible",
     true,
@@ -1302,6 +1309,8 @@ function App() {
 
   const isSettingsNavigationActive = settingsLayer > 1;
   const isSettingsFocusMode = isSettingsNavigationActive && settingsFullscreen;
+  const isStudioActive = activeStudio !== null;
+  const isAnyOverlayActive = isSettingsNavigationActive || isStudioActive;
 
   useEffect(() => {
     if (settingsLayer !== 2) return;
@@ -1597,12 +1606,42 @@ function App() {
         e.preventDefault();
         setSettingsNavigationInputMode("keyboard");
         if (settingsLayer === 1) {
+          setActiveStudio(null);
           focusSettingsTab(lastSettingsTab);
           goToSettingsLayer(lastSettingsLayer);
           return;
         }
         goToSettingsLayer(1);
         return;
+      }
+
+      // Feature Studio keybindings (Ctrl+B/M/A) — mutually exclusive with Settings
+      if (isCtrlOrMeta && (key === "b" || key === "m" || key === "a") && !e.shiftKey) {
+        e.preventDefault();
+        const studioId: FeatureStudioId =
+          key === "b" ? "browser" : key === "m" ? "models" : "atpo";
+        // Close settings if open
+        if (settingsLayer > 1) {
+          goToSettingsLayer(1);
+        }
+        setActiveStudio((current) => (current === studioId ? null : studioId));
+        setStudioFullscreen(false);
+        return;
+      }
+
+      // Studio overlay keyboard navigation
+      if (activeStudio !== null) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setActiveStudio(null);
+          setStudioFullscreen(false);
+          return;
+        }
+        if (e.shiftKey && e.code === "Space") {
+          e.preventDefault();
+          setStudioFullscreen((f) => !f);
+          return;
+        }
       }
 
       const moveLeftKey = key === "a" || e.key === "ArrowLeft";
@@ -2436,7 +2475,7 @@ function App() {
                 <>
                   {!activeSessionId && (
                     <div className="v1-chat-header">
-                      Try pressing <b>Ctrl+S</b>
+                      <b>Ctrl+S</b> Settings · <b>Ctrl+B</b> Browser · <b>Ctrl+M</b> Models · <b>Ctrl+A</b> Atpo
                     </div>
                   )}
                   <div className="v1-branding">
@@ -2501,6 +2540,79 @@ function App() {
                     </motion.div>
                   )}
 
+                  {/* Feature Studio Overlays — Ctrl+B/M/A */}
+                  {settingsLayer === 1 && activeStudio === "browser" && (
+                    <motion.div
+                      key="studio-browser"
+                      className="v1-settings-motion-layer"
+                      custom={{ direction: "deeper", motion: "root" }}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        style={settingsOverlayDockStyle}
+                      >
+                        <Suspense fallback={null}>
+                          <LazyBrowserStudio
+                            isFullscreen={studioFullscreen}
+                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {settingsLayer === 1 && activeStudio === "models" && (
+                    <motion.div
+                      key="studio-models"
+                      className="v1-settings-motion-layer"
+                      custom={{ direction: "deeper", motion: "root" }}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        style={settingsOverlayDockStyle}
+                      >
+                        <Suspense fallback={null}>
+                          <LazyModelsStudio
+                            isFullscreen={studioFullscreen}
+                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {settingsLayer === 1 && activeStudio === "atpo" && (
+                    <motion.div
+                      key="studio-atpo"
+                      className="v1-settings-motion-layer"
+                      custom={{ direction: "deeper", motion: "root" }}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        style={settingsOverlayDockStyle}
+                      >
+                        <Suspense fallback={null}>
+                          <LazyAtpoStudio
+                            isFullscreen={studioFullscreen}
+                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+
                   {settingsLayer === 3 && (
                     <motion.div
                       key="settings-layer-3"
@@ -2557,7 +2669,7 @@ function App() {
                 </AnimatePresence>
 
                 {/* Chat Pane (hidden when settings navigation is active) */}
-                <div className={`v1-chat-pane ${isSettingsNavigationActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
+                <div className={`v1-chat-pane ${isAnyOverlayActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
                   {activePage === "sessions" ? (
                     <>
                       {!activeSessionId ? (
@@ -2603,7 +2715,7 @@ function App() {
               {/* Statically positioned Composer below middle layer */}
               {activePage === "sessions" && (
                 <div
-                  className={`v1-composer-dock ${isSettingsNavigationActive ? "v1-composer-dock--minimized" : ""}`}
+                  className={`v1-composer-dock ${isAnyOverlayActive ? "v1-composer-dock--minimized" : ""}`}
                 >
                   <Composer
                     value={composerDraft}
