@@ -149,6 +149,12 @@ beforeEach(async () => {
   delete process.env['OPENCODE_API_KEY'];
   delete process.env['OPENCODE_ZEN_API_KEY'];
   delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
+  delete process.env['OPTA_GEMINI_AUTH_MODE'];
+  delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
+  delete process.env['GOOGLE_CLOUD_PROJECT'];
+  delete process.env['GOOGLE_CLOUD_LOCATION'];
+  delete process.env['GCLOUD_PROJECT'];
+  delete process.env['GCP_PROJECT'];
 });
 
 afterEach(async () => {
@@ -164,6 +170,12 @@ afterEach(async () => {
   delete process.env['OPENCODE_API_KEY'];
   delete process.env['OPENCODE_ZEN_API_KEY'];
   delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
+  delete process.env['OPTA_GEMINI_AUTH_MODE'];
+  delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
+  delete process.env['GOOGLE_CLOUD_PROJECT'];
+  delete process.env['GOOGLE_CLOUD_LOCATION'];
+  delete process.env['GCLOUD_PROJECT'];
+  delete process.env['GCP_PROJECT'];
 });
 
 // ---------------------------------------------------------------------------
@@ -321,6 +333,18 @@ describe('probeProvider — LMX unreachable + cloud provider keys', () => {
     const provider = await probeProvider(DEFAULT_CONFIG);
 
     expect(provider.name).toBe('openai');
+  });
+
+  it('falls back to Gemini when Vertex OAuth is enabled and project is set', async () => {
+    process.env['GOOGLE_GENAI_USE_VERTEXAI'] = 'true';
+    process.env['GOOGLE_CLOUD_PROJECT'] = 'opta-test-project';
+    const probeLmx = await getProbeLmxConnection();
+    probeLmx.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'connection refused' });
+
+    const { probeProvider } = await getProbeProvider();
+    const provider = await probeProvider(DEFAULT_CONFIG);
+
+    expect(provider.name).toBe('gemini');
   });
 });
 

@@ -27,6 +27,7 @@ function extractModuleData(filePath) {
   const template = source.match(/template:\s*['"`]([^'"`]+)['"`]/)?.[1] ?? null;
   const headingCount = (source.match(/\bheading:\s*['"`]/g) || []).length;
   const hasCode = /\bcode:\s*['"`]/.test(source);
+  const visualCount = (source.match(/\bvisual:\s*['"`]/g) || []).length;
   const links = Array.from(
     source.matchAll(/href=["']\/guides\/([a-z0-9-]+)["']/gi),
     (match) => match[1].toLowerCase(),
@@ -48,6 +49,7 @@ function extractModuleData(filePath) {
     template,
     headingCount,
     hasCode,
+    visualCount,
     links,
     wordCount,
     source,
@@ -230,6 +232,7 @@ export function collectGuidesInventory(projectRoot = process.cwd()) {
       template: module.template,
       headingCount: module.headingCount,
       hasCode: module.hasCode,
+      visualCount: module.visualCount,
       links: module.links,
       wordCount: module.wordCount,
     })),

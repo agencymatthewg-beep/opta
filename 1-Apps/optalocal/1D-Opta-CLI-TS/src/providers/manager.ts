@@ -24,6 +24,7 @@ import {
   pickFirstConfiguredCloudProvider,
   providerDisplayName,
   providerEnvVarNames,
+  resolveGeminiRuntimeAuth,
   readEnvProviderApiKey,
 } from '../utils/provider-normalization.js';
 
@@ -37,7 +38,7 @@ function providerCacheKey(config: OptaConfig): string {
     const envValue = customProvider.apiKeyEnvVar
       ? (process.env[customProvider.apiKeyEnvVar] ?? '').trim()
       : '';
-    return `custom:${customProvider.id}|${customProvider.baseURL}|${envValue.slice(0, 8)}`;
+    return `custom:${customProvider.id}|${customProvider.protocol}|${customProvider.baseURL}|${envValue.slice(0, 8)}`;
   }
 
   const active = normalizeProviderName(activeRaw, 'lmx');
@@ -52,11 +53,40 @@ function providerCacheKey(config: OptaConfig): string {
   }
   let apiKey = '';
   if (active === 'anthropic') apiKey = config.provider.anthropic.apiKey || readEnvProviderApiKey('anthropic') || '';
-  if (active === 'gemini') apiKey = config.provider.gemini.apiKey || readEnvProviderApiKey('gemini') || '';
+  if (active === 'gemini') {
+    const geminiAuth = resolveGeminiRuntimeAuth();
+    if (geminiAuth.enabled) {
+      return `${active}|vertex|${geminiAuth.project}|${geminiAuth.location}`;
+    }
+    apiKey = config.provider.gemini.apiKey || readEnvProviderApiKey('gemini') || '';
+  }
   if (active === 'openai') apiKey = config.provider.openai.apiKey || readEnvProviderApiKey('openai') || '';
   if (active === 'opencode_zen') apiKey = config.provider.opencode_zen.apiKey || readEnvProviderApiKey('opencode_zen') || '';
 
   return `${active}|${apiKey.slice(0, 8)}`;
+}
+
+async function instantiateCustomProvider(
+  config: OptaConfig,
+  customProvider: NonNullable<OptaConfig['provider']['customProviders']>[number],
+): Promise<ProviderClient> {
+  const apiKey = customProvider.apiKeyEnvVar
+    ? process.env[customProvider.apiKeyEnvVar]
+    : undefined;
+
+  if (customProvider.protocol === 'anthropic-compatible') {
+    const { AnthropicProvider } = await import('./anthropic.js');
+    return instantiateOrInvoke<ProviderClient>(AnthropicProvider, config, {
+      baseURL: customProvider.baseURL,
+      apiKey,
+    });
+  }
+
+  const { CloudProvider } = await import('./cloud.js');
+  return instantiateOrInvoke<ProviderClient>(CloudProvider, 'openai', config, {
+    baseURL: customProvider.baseURL,
+    apiKey,
+  });
 }
 
 export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
@@ -69,11 +99,7 @@ export async function getProvider(config: OptaConfig): Promise<ProviderClient> {
   const customProvider = config.provider.customProviders?.find((provider) => provider.id === activeRaw);
 
   if (customProvider) {
-    const { CloudProvider } = await import('./cloud.js');
-    cachedProvider = instantiateOrInvoke<ProviderClient>(CloudProvider, 'openai', config, {
-      baseURL: customProvider.baseURL,
-      apiKey: customProvider.apiKeyEnvVar ? process.env[customProvider.apiKeyEnvVar] : undefined,
-    });
+    cachedProvider = await instantiateCustomProvider(config, customProvider);
   } else {
     const active = normalizeProviderName(activeRaw, 'lmx');
     if (active === 'anthropic') {
@@ -128,11 +154,7 @@ export async function probeProvider(config: OptaConfig): Promise<ProviderClient>
   const customProvider = config.provider.customProviders?.find((provider) => provider.id === activeRaw);
   if (customProvider) {
     verbose(`Provider probe: user configured custom provider ${customProvider.id}, skipping LMX probe`);
-    const { CloudProvider } = await import('./cloud.js');
-    return instantiateOrInvoke<ProviderClient>(CloudProvider, 'openai', config, {
-      baseURL: customProvider.baseURL,
-      apiKey: customProvider.apiKeyEnvVar ? process.env[customProvider.apiKeyEnvVar] : undefined,
-    });
+    return instantiateCustomProvider(config, customProvider);
   }
 
   const active = normalizeProviderName(activeRaw, 'lmx');

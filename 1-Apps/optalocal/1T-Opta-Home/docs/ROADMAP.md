@@ -1,54 +1,50 @@
 # Opta Home — Roadmap
 
-**Status:** v0.1 Draft complete — awaiting spec lock before v1.0.
+**Status:** v1.1 implementation pass (hero/logo rollout + production drift closure).
 
 ---
 
-## v0.1 — Initial Draft (✅ 2026-03-01)
+## v1.0 — Live Baseline (✅ 2026-03-01)
 
-Built from Gemini 3.1 Pro UX spec and init.optalocal.com reference.
+Baseline production release that moved `optalocal.com` root from dashboard routing to brand-home routing.
 
-**What exists:**
-- [x] Full 8-section page (Nav, Hero, Ecosystem, HardwareStats, CliPreview, FeatureTrio, CtaBlock, Footer)
-- [x] Design system from init.optalocal.com (CSS vars, glass, obsidian, OptaRing)
-- [x] Framer Motion scroll animations
-- [x] Static Next.js 16 build succeeding
-- [x] OPIS documentation scaffold
-
-**Open issues from draft:**
-- [ ] No animated number counters in HardwareStats (simplified for build speed)
-- [ ] OptaRing uses simplified version (not full init.optalocal.com complexity)
-- [ ] Copy not finalized — awaiting Matthew feedback
-- [ ] Sections/scope not confirmed — answers to APP.md §10 needed
+**Completed:**
+- [x] Root domain positioned as Opta ecosystem entry point (not LMX dashboard)
+- [x] Next.js app structure stabilized (`Nav`, `Hero`, `BenchmarkStrip`, `QuickStart`, `HardwareStats`, `Ecosystem`, `DataSync`, `ArchDiagram`, `ModelGrid`, `CliPreview`, `FeatureTrio`, `CtaBlock`, `Footer`)
+- [x] Opta visual system parity (void background, violet accents, glass/obsidian panels, Sora + JetBrains Mono)
+- [x] Build pipeline verified
 
 ---
 
-## v1.0 — Spec-Locked Release (⏳ Pending)
+## v1.1 — Hero + Messaging Refresh (✅ 2026-03-05)
 
-Blocked on Matthew Q&A. Once questions answered:
+Focused visual and positioning update aligned to stepped-arc prototype direction.
 
-**Acceptance criteria:**
-- [ ] Copy approved by Matthew
-- [ ] Section scope confirmed (add/remove sections)
-- [ ] All links verified pointing to correct destinations
-- [ ] Mobile responsive QA
-- [ ] Lighthouse: ≥95 Performance, 100 Accessibility, 100 SEO
-- [ ] Vercel deploy to optalocal.com
+**Completed:**
+- [x] Hero heading simplified around primary statement: `Run autonomous AI.`
+- [x] Supporting copy updated for explicit cloud/local operating modes
+- [x] Stepped arc composition tuned for new logo balance (Init/CLI elevated, LMX/Code centered)
+- [x] Hero glow intensity reduced for cleaner OLED readability and lower visual noise
+- [x] Mobile-safe responsive spacing retained
 
----
-
-## v1.1 — Polish (Future)
-
-- [ ] Animated number counters (HardwareStats)
-- [ ] Full OptaRing component from init
-- [ ] Film grain overlay on hero
-- [ ] Spotlight hover effect on ecosystem cards
-- [ ] optamize.biz cross-link strategy implemented
+**Validation checklist:**
+- [x] `npm run build` succeeds locally
+- [x] Production deploy + post-deploy smoke check (`optalocal.com` aliased on 2026-03-05)
+- [ ] Lighthouse target confirmation (≥95 Performance, 100 Accessibility, 100 SEO)
 
 ---
 
-## v2.0 — Expansion (Conditional on Matthew's answers)
+## v1.2 — Polish Backlog (Next)
 
-- [ ] Multi-page (if needed: /stack, /models)
-- [ ] Blog or changelog (if in scope)
-- [ ] Status indicator (live system health)
+- [ ] Animated number counters in `HardwareStats`
+- [ ] Optional film grain texture layer in hero (subtle, toggleable)
+- [ ] Spotlight hover refinement for ecosystem cards
+- [ ] Real product screenshots in ecosystem cards
+
+---
+
+## v2.0 — Expansion (Conditional)
+
+- [ ] Multi-page extension (`/stack`, `/models`) if needed
+- [ ] Public release changelog/blog flow
+- [ ] Live status signal surface (status.optalocal.com integration)

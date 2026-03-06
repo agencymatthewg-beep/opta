@@ -75,7 +75,7 @@ cargo test connection_secrets -- --nocapture
 
 ## Security Notes
 
-- **Token storage:** Bearer tokens are persisted via `keyring` v3 to the Windows Credential Store (entry name: `opta-code/daemon-token`). The Tauri bridge (`get_connection_secret` / `set_connection_secret` / `delete_connection_secret`) mediates all access.
+- **Token storage:** Bearer tokens are persisted via `keyring` v3 to the Windows Credential Store using service `com.opta.code.desktop` and account key format `daemon:<host>:<port>`. The Tauri bridge (`get_connection_secret` / `set_connection_secret` / `delete_connection_secret`) mediates all access.
 - **Browser fallback:** When `window.__TAURI__` is not available (dev server, web mode), tokens fall back to `localStorage`. Acceptable for local development only.
 - **No plaintext token logging:** The daemon bearer token is never logged or serialised to disk outside the OS credential store.
 - **CSP:** Tauri enforces a Content Security Policy restricting connections to `localhost` origins. Remote daemon connections require updating `tauri.conf.json`.

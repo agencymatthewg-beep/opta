@@ -1,10 +1,14 @@
 'use client'
 
+import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { Sparkles, AlertCircle } from 'lucide-react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { HudRing } from '@/components/HudRing'
 import { PageHeader } from '@/components/PageHeader'
 import { useConnection } from '@/lib/connection'
+import { getConnectErrorMessage } from '@/lib/connect-hints'
+import { usePairedDevice } from '@/lib/paired-device'
 import { useDashboard } from '@/hooks/use-dashboard'
 
 function formatUptime(seconds: number): string {
@@ -17,7 +21,16 @@ function formatUptime(seconds: number): string {
 
 export default function DashboardHome() {
     const { isConnected } = useConnection()
+    const pairedDevice = usePairedDevice()
     const dashboard = useDashboard()
+    const [connectErrorCode, setConnectErrorCode] = useState<string | null>(null)
+
+    useEffect(() => {
+        const query = new URLSearchParams(window.location.search)
+        setConnectErrorCode(query.get('connect_error'))
+    }, [])
+
+    const connectErrorMessage = getConnectErrorMessage(connectErrorCode)
 
     return (
         <DashboardLayout>
@@ -41,6 +54,41 @@ export default function DashboardHome() {
                             Connect to your Opta LMX instance to monitor models, memory, and throughput.
                         </p>
                         <p className="text-xs text-text-muted font-mono">Default endpoint: 127.0.0.1:1234</p>
+                        {pairedDevice.mode === 'paired' && !pairedDevice.session && (
+                            <div className="mt-5 inline-flex items-center gap-2 text-xs font-mono text-[var(--opta-neon-amber)] bg-[var(--opta-neon-amber)]/10 border border-[var(--opta-neon-amber)]/20 px-3 py-2 rounded-md">
+                                <AlertCircle size={12} />
+                                <span>Pairing is required before dashboard control is enabled.</span>
+                            </div>
+                        )}
+                        {connectErrorMessage && (
+                            <div className="mt-5 inline-flex items-center gap-2 text-xs font-mono text-[var(--opta-neon-red)] bg-[var(--opta-neon-red)]/10 border border-[var(--opta-neon-red)]/20 px-3 py-2 rounded-md">
+                                <AlertCircle size={12} />
+                                <span>{connectErrorMessage}</span>
+                            </div>
+                        )}
+                        <div className="mt-6 flex flex-wrap gap-3 justify-center">
+                            {pairedDevice.mode === 'paired' && !pairedDevice.session ? (
+                                <Link
+                                    href="/pair"
+                                    className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                                >
+                                    Start Pairing
+                                </Link>
+                            ) : (
+                                <Link
+                                    href="/settings"
+                                    className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                                >
+                                    Open Connection Settings
+                                </Link>
+                            )}
+                            <Link
+                                href="/setup"
+                                className="inline-flex items-center justify-center px-4 py-2 rounded-md border border-primary/30 text-xs font-mono uppercase tracking-wider text-primary hover:bg-primary/10 transition-colors"
+                            >
+                                Setup Checks
+                            </Link>
+                        </div>
                     </div>
                 ) : (
                     <>

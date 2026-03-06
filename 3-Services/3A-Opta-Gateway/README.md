@@ -113,7 +113,7 @@ Update your API keys.
 **Request:**
 ```json
 {
-  "gemini": "AIzaSyDa6-K4vJl1lewF9rxw-m8aDU9WDallCB8",
+  "gemini": "AIzaREDACTED_ROTATE_IMMEDIATELY",
   "claude": "sk-ant-api03-...",
   "opencode": "sk-or-v1-...",
   "minimax": "sk-cp-...",

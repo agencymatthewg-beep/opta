@@ -104,6 +104,12 @@ export const lmxStatusHandler = async (args: string, ctx: SlashContext): Promise
 export const diagnoseHandler = async (_args: string, ctx: SlashContext): Promise<SlashResult> => {
   const { LmxClient } = await import('../../../lmx/client.js');
   const { getProvider } = await import('../../../providers/manager.js');
+  const {
+    parseCloudFallbackOrder,
+    pickFirstConfiguredCloudProvider,
+    providerDisplayName,
+    providerEnvVarNames,
+  } = await import('../../../utils/provider-normalization.js');
   const { host, port } = ctx.config.connection;
 
   console.log(chalk.dim('  Running diagnostics...\n'));
@@ -168,25 +174,35 @@ export const diagnoseHandler = async (_args: string, ctx: SlashContext): Promise
   // 5. Provider config
   const active = ctx.config.provider?.active ?? 'lmx';
   const fallback = ctx.config.provider?.fallbackOnFailure ?? false;
-  checks.push(`${chalk.green('\u2713')} Provider: ${chalk.bold(active)}${fallback ? chalk.cyan(' + Anthropic fallback') : ''}`);
+  checks.push(`${chalk.green('\u2713')} Provider: ${chalk.bold(active)}${fallback ? chalk.cyan(' + cloud fallback') : ''}`);
 
-  // 6. Anthropic fallback status
-  const hasAnthropicKey = !!(ctx.config.provider?.anthropic?.apiKey || process.env['ANTHROPIC_API_KEY']);
-  if (fallback && hasAnthropicKey) {
+  // 6. Cloud fallback status
+  const fallbackOrder = parseCloudFallbackOrder();
+  const selectedFallback = await pickFirstConfiguredCloudProvider(ctx.config, fallbackOrder);
+  if (fallback && selectedFallback) {
+    const fallbackLabel = providerDisplayName(selectedFallback);
     try {
-      const cfg = { ...ctx.config, provider: { ...ctx.config.provider, active: 'anthropic' as const } };
-      const anthropic = await getProvider(cfg);
-      const aHealth = await anthropic.health();
-      checks.push(aHealth.ok
-        ? `${chalk.green('\u2713')} Anthropic fallback ready ${chalk.dim(`(${aHealth.latencyMs}ms)`)}`
-        : `${chalk.red('\u2717')} Anthropic fallback unhealthy: ${aHealth.error}`);
+      const cfg = { ...ctx.config, provider: { ...ctx.config.provider, active: selectedFallback } };
+      const fallbackProvider = await getProvider(cfg);
+      const fallbackHealth = await fallbackProvider.health();
+      checks.push(fallbackHealth.ok
+        ? `${chalk.green('\u2713')} ${fallbackLabel} fallback ready ${chalk.dim(`(${fallbackHealth.latencyMs}ms)`)}`
+        : `${chalk.red('\u2717')} ${fallbackLabel} fallback unhealthy: ${fallbackHealth.error}`);
     } catch {
-      checks.push(`${chalk.yellow('\u26a0')} Could not verify Anthropic fallback`);
+      checks.push(`${chalk.yellow('\u26a0')} Could not verify ${fallbackLabel} fallback`);
     }
-  } else if (fallback && !hasAnthropicKey) {
-    checks.push(`${chalk.yellow('\u26a0')} Fallback enabled but no Anthropic API key configured`);
-  } else if (!fallback && hasAnthropicKey) {
-    checks.push(`${chalk.dim('\u2139')} Anthropic key present but fallback disabled — set provider.fallbackOnFailure: true to enable`);
+  } else if (fallback && !selectedFallback) {
+    const envHints = Array.from(
+      new Set(fallbackOrder.flatMap((provider) => providerEnvVarNames(provider))),
+    );
+    checks.push(
+      `${chalk.yellow('\u26a0')} Fallback enabled but no cloud API key configured` +
+      (envHints.length > 0 ? chalk.dim(` (${envHints.join(' / ')})`) : ''),
+    );
+  } else if (!fallback && selectedFallback) {
+    checks.push(
+      `${chalk.dim('\u2139')} ${providerDisplayName(selectedFallback)} key present but fallback disabled — set provider.fallbackOnFailure: true to enable`,
+    );
   }
 
   // 7. Inference timeout

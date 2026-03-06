@@ -1,17 +1,17 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
-  CANONICAL_WEB_APP_DIRS,
   CLI_UPDATE_BUILD_SCRIPT,
-  canonicalWebBuildScript,
   extractReachableRemoteHosts,
   missingOptaCommands,
   parseComponentList,
+  parseTargetMode,
   parseRemoteHostList,
   parseRemoteLanGuardMarker,
   remoteConnectFailureStatus,
   resolveRemoteHostCandidates,
   resolveRolloutHosts,
   resolveTargets,
+  summarizeMissingCommandSurface,
   selectReachableRemoteHost,
 } from '../../src/commands/update.js';
 
@@ -25,46 +25,43 @@ describe('update command helpers', () => {
 
   describe('parseComponentList', () => {
     it('defaults to core components when empty', () => {
-      expect(parseComponentList()).toEqual(['cli', 'lmx', 'plus']);
-      expect(parseComponentList('')).toEqual(['cli', 'lmx', 'plus']);
+      expect(parseComponentList()).toEqual(['cli', 'daemon']);
+      expect(parseComponentList('')).toEqual(['cli', 'daemon']);
     });
 
     it('parses and de-duplicates valid components', () => {
-      expect(parseComponentList('lmx,web,cli,lmx')).toEqual(['lmx', 'web', 'cli']);
+      expect(parseComponentList('daemon,cli,daemon')).toEqual(['cli', 'daemon']);
     });
 
     it('throws on invalid component names', () => {
-      expect(() => parseComponentList('lmx,ios')).toThrow(/Invalid components/);
-      expect(() => parseComponentList('lmx,ios')).toThrow(/cli,lmx,plus,web/);
+      expect(() => parseComponentList('daemon,ios')).toThrow(/Invalid components/);
+      expect(() => parseComponentList('daemon,ios')).toThrow(/cli,daemon/);
     });
   });
 
   describe('resolveTargets', () => {
-    it('resolves explicit target modes', () => {
-      expect(resolveTargets('local', 'remote-lab')).toEqual(['local']);
-      expect(resolveTargets('remote', 'remote-lab')).toEqual(['remote']);
-      expect(resolveTargets('both', 'remote-lab')).toEqual(['local', 'remote']);
+    it('resolves only explicit local/remote modes', () => {
+      expect(resolveTargets('local')).toEqual(['local']);
+      expect(resolveTargets('remote')).toEqual(['remote']);
+    });
+  });
+
+  describe('parseTargetMode', () => {
+    it('accepts local and remote values', () => {
+      expect(parseTargetMode('local')).toBe('local');
+      expect(parseTargetMode('remote')).toBe('remote');
+      expect(parseTargetMode(' Local ')).toBe('local');
     });
 
-    it('uses local-only in auto mode for localhost', () => {
-      expect(resolveTargets('auto', 'localhost')).toEqual(['local']);
-      expect(resolveTargets('auto', '127.0.0.1')).toEqual(['local']);
-    });
-
-    it('uses local + remote in auto mode for non-local host', () => {
-      expect(resolveTargets('auto', 'remote-lab')).toEqual(['local', 'remote']);
+    it('throws on invalid values', () => {
+      expect(() => parseTargetMode('auto')).toThrow(/Use: local,remote/);
+      expect(() => parseTargetMode('both')).toThrow(/Use: local,remote/);
     });
   });
 
   describe('remoteConnectFailureStatus', () => {
-    it('uses skip in auto mode to preserve local updates when remote SSH is down', () => {
-      expect(remoteConnectFailureStatus('auto')).toBe('skip');
-    });
-
-    it('uses fail for explicit remote modes', () => {
-      expect(remoteConnectFailureStatus('remote')).toBe('fail');
-      expect(remoteConnectFailureStatus('both')).toBe('fail');
-      expect(remoteConnectFailureStatus('local')).toBe('fail');
+    it('always fails when remote connectivity cannot be established', () => {
+      expect(remoteConnectFailureStatus()).toBe('fail');
     });
   });
 
@@ -244,6 +241,8 @@ Commands:
   serve
   server
   daemon
+  health
+  settings
   update
   doctor
   completions
@@ -265,16 +264,17 @@ Commands:
     });
   });
 
-  describe('canonicalWebBuildScript', () => {
-    it('builds every canonical web app and enforces missing-dir marker', () => {
-      const script = canonicalWebBuildScript();
-      expect(script).toContain('__WEB_APP_MISSING__');
-      for (const appDir of CANONICAL_WEB_APP_DIRS) {
-        expect(script).toContain(appDir);
-      }
-      expect(script).toContain('npm --prefix');
-      expect(script).toContain('run -s typecheck');
-      expect(script).toContain('run -s build');
+  describe('summarizeMissingCommandSurface', () => {
+    it('adds stale-surface guidance for remote when modern commands are missing', () => {
+      const message = summarizeMissingCommandSurface('settings doctor', 'remote');
+      expect(message).toContain('missing command entries in remote opta --help');
+      expect(message).toContain('remote CLI appears older than this workspace');
+    });
+
+    it('keeps message compact when missing commands are non-critical', () => {
+      const message = summarizeMissingCommandSurface('chat do', 'local');
+      expect(message).toBe('missing command entries in local opta --help: chat do');
     });
   });
+
 });

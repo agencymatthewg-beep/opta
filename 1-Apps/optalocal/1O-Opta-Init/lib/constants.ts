@@ -1,6 +1,26 @@
+import type { ActivationState } from "@opta/protocol-shared";
+
 export const DASHBOARD_URL = "https://lmx.optalocal.com";
 export const ACCOUNTS_URL = "https://accounts.optalocal.com";
 export const PLATFORM_URL = "https://optalocal.com";
+
+export const INSTALL_ACTIVATION_LOG: ReadonlyArray<{
+  state: ActivationState;
+  line: string;
+  highlight?: boolean;
+}> = [
+  { state: "runtime_ready", line: "==> Starting Opta Init manager..." },
+  { state: "runtime_ready", line: "==> Checking hardware: Apple M3 Max (128GB)" },
+  { state: "runtime_ready", line: "==> Installing Opta app manager + launcher" },
+  { state: "runtime_ready", line: "==> Registering installed apps and update channels" },
+  { state: "accounts_authenticated", line: "==> Verifying daemon service + auth recovery hooks" },
+  { state: "bridge_connected", line: "==> Syncing runtime status with Opta Local platform" },
+  {
+    state: "code_ready",
+    line: "✔ Manager ready. Apps, updates, and daemon are now coordinated.",
+    highlight: true,
+  },
+] as const;
 
 export const NAV_LINKS = [
   { label: "Features", href: "#features" },

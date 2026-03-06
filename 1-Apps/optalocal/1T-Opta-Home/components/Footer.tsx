@@ -1,5 +1,3 @@
-"use client";
-
 import { OptaRing } from "./OptaRing";
 
 export function Footer() {
@@ -14,7 +12,7 @@ export function Footer() {
                 OPTA LOCAL
               </div>
               <div className="text-xs text-text-muted">
-                Intelligent operating system for autonomous workflows
+                Production entrypoint for the Opta optimization platform
               </div>
             </div>
           </div>
@@ -39,7 +37,7 @@ export function Footer() {
               CLI
             </a>
             <a
-              href="https://help.optalocal.com/docs/opta-code"
+              href="https://help.optalocal.com/docs/code-desktop"
               className="text-text-secondary hover:text-text-primary transition-colors"
             >
               Code

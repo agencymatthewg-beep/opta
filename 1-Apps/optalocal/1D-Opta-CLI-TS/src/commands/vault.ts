@@ -137,9 +137,12 @@ async function handlePushRules(
     }
 
     console.log(chalk.dim(`Pushing ${sourcePath} to vault...`));
-    const ok = await pushVaultRules(state, content);
-    if (ok) {
+    const result = await pushVaultRules(state, content);
+    if (result.ok) {
         console.log(chalk.green('  ✓ Rules pushed to Opta Vault.'));
+    } else if (result.conflict) {
+        console.error(chalk.red('  ✗ Conflict: vault was updated remotely. Pull first, then push.'));
+        process.exitCode = 1;
     } else {
         console.error(chalk.red('  ✗ Failed to push rules. Check your connection.'));
         process.exitCode = 1;

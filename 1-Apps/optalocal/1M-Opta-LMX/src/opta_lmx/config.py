@@ -35,7 +35,7 @@ def _default_routing_aliases() -> dict[str, list[str]]:
 class ServerConfig(BaseModel):
     """Server binding and timeout settings."""
 
-    host: str = "127.0.0.1"
+    host: str = "0.0.0.0"
     port: int = Field(1234, ge=1, le=65535, description="Port 1234 = drop-in LM Studio replacement")
     workers: int = Field(1, ge=1)
     timeout_sec: int = Field(300, ge=1)
@@ -55,7 +55,11 @@ class DiscoveryConfig(BaseModel):
     )
     mdns_service_name: str = Field(
         "_opta-lmx._tcp.local",
-        description="mDNS service type used by discovery consumers",
+        description=(
+            "mDNS service type used by discovery consumers "
+            "(accepts forms like 'opta-lmx', '_opta-lmx._tcp', "
+            "'_opta-lmx._tcp.local', 'opta-lmx._tcp.local')"
+        ),
     )
 
 

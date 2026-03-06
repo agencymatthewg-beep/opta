@@ -44,6 +44,18 @@ describe('/browser approvals slash path', () => {
       screenActionsEnabled: false,
       openSessionCount: 0,
       slots: [],
+      peekabooMetrics: {
+        queueDepth: 0,
+        maxQueueDepth: 0,
+        jobsEnqueued: 0,
+        jobsCompleted: 0,
+        jobsFailed: 0,
+        frameRequests: 0,
+        frameCacheHits: 0,
+        frameCaptureFailures: 0,
+        actionRequests: { total: 0, clickLabel: 0, type: 0, key: 0 },
+        actionFailures: { total: 0, clickLabel: 0, type: 0, key: 0 },
+      },
     });
     startBrowserLiveHostMock = vi.fn().mockResolvedValue({
       running: true,
@@ -63,6 +75,18 @@ describe('/browser approvals slash path', () => {
         { slotIndex: 3, port: 46004 },
         { slotIndex: 4, port: 46005 },
       ],
+      peekabooMetrics: {
+        queueDepth: 0,
+        maxQueueDepth: 0,
+        jobsEnqueued: 0,
+        jobsCompleted: 0,
+        jobsFailed: 0,
+        frameRequests: 0,
+        frameCacheHits: 0,
+        frameCaptureFailures: 0,
+        actionRequests: { total: 0, clickLabel: 0, type: 0, key: 0 },
+        actionFailures: { total: 0, clickLabel: 0, type: 0, key: 0 },
+      },
     });
     stopBrowserLiveHostMock = vi.fn().mockResolvedValue({
       running: false,
@@ -81,6 +105,18 @@ describe('/browser approvals slash path', () => {
         { slotIndex: 3, port: 46004 },
         { slotIndex: 4, port: 46005 },
       ],
+      peekabooMetrics: {
+        queueDepth: 0,
+        maxQueueDepth: 0,
+        jobsEnqueued: 0,
+        jobsCompleted: 0,
+        jobsFailed: 0,
+        frameRequests: 0,
+        frameCacheHits: 0,
+        frameCaptureFailures: 0,
+        actionRequests: { total: 0, clickLabel: 0, type: 0, key: 0 },
+        actionFailures: { total: 0, clickLabel: 0, type: 0, key: 0 },
+      },
     });
     isPeekabooAvailableMock = vi.fn().mockResolvedValue(true);
 

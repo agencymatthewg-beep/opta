@@ -132,3 +132,4 @@
 {"decision":"allow","reason":"Allowed by full policy mode checks.","mode":"full","action":"list_dir","ts":"2026-03-04T00:29:46.589Z","autonomous":true,"actor":"agent","metadata":{"toolCallId":"call_eff15b560fb9439295baf9a1"}}
 {"decision":"allow","reason":"Allowed by full policy mode checks.","mode":"full","action":"list_dir","ts":"2026-03-04T00:29:54.711Z","autonomous":true,"actor":"agent","metadata":{"toolCallId":"call_57c8db83d3c04d2ab211978a"}}
 {"decision":"allow","reason":"Allowed by full policy mode checks.","mode":"full","action":"list_dir","ts":"2026-03-04T00:32:51.137Z","autonomous":true,"actor":"agent","metadata":{"toolCallId":"call_f412df2e89614cb6807d6e30"}}
+{"decision":"allow","reason":"Allowed by full policy mode checks.","mode":"full","action":"run_command","ts":"2026-03-05T17:25:49.929Z","autonomous":true,"actor":"agent","metadata":{"toolCallId":"call_c8d03d7cbb884dd9accbdecb"}}

@@ -33,6 +33,44 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+function Resolve-OptaProductName {
+    param([string]$ConfigPath = '')
+
+    $scriptRoot = $PSScriptRoot
+    if ([string]::IsNullOrWhiteSpace($scriptRoot) -and $MyInvocation.MyCommand.Path) {
+        $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+    }
+
+    $candidates = @()
+    if (-not [string]::IsNullOrWhiteSpace($ConfigPath)) {
+        $candidates += $ConfigPath
+    }
+    if (-not [string]::IsNullOrWhiteSpace($scriptRoot)) {
+        $candidates += Join-Path $scriptRoot '..\..\src-tauri\tauri.conf.json'
+    }
+    $candidates += @(
+        '.\src-tauri\tauri.conf.json',
+        '.\1-Apps\optalocal\1P-Opta-Code-Universal\src-tauri\tauri.conf.json'
+    )
+
+    foreach ($candidate in ($candidates | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)) {
+        $resolved = Resolve-Path -LiteralPath $candidate -ErrorAction SilentlyContinue
+        if (-not $resolved) { continue }
+        $resolvedPath = $resolved.Path
+        try {
+            $config = Get-Content $resolvedPath -Raw | ConvertFrom-Json
+            $name = "$($config.productName)".Trim()
+            if (-not [string]::IsNullOrWhiteSpace($name)) {
+                return $name
+            }
+        } catch {
+            Write-Warning "Could not parse productName from '$resolvedPath': $($_.Exception.Message)"
+        }
+    }
+
+    return 'Opta Code Desktop (Universal)'
+}
+
 function Write-Log {
     param([string]$Message)
     $timestamp = Get-Date -Format 'yyyy-MM-dd HH:mm:ss'
@@ -86,14 +124,21 @@ Write-Log "Silent install completed successfully."
 Write-Log "Step 3: Verifying installed binary exists..."
 
 # NSIS per-user install target (matches installMode: currentUser in tauri.conf.json)
-$appName = 'Opta Code'
+$appName = Resolve-OptaProductName
+$sanitizedName = ($appName -replace '[^A-Za-z0-9 _\\-]', '').Trim()
+if ([string]::IsNullOrWhiteSpace($sanitizedName)) {
+    $sanitizedName = 'Opta Code'
+}
 $installedExe = Join-Path $env:LOCALAPPDATA "Programs\$appName\opta-code.exe"
 
 if (-not (Test-Path $installedExe)) {
     # Try alternative name patterns
     $candidates = @(
+        (Join-Path $env:LOCALAPPDATA "Programs\$sanitizedName\opta-code.exe"),
         (Join-Path $env:LOCALAPPDATA 'Programs\opta-code\opta-code.exe'),
-        (Join-Path $env:LOCALAPPDATA 'Programs\OptaCode\opta-code.exe')
+        (Join-Path $env:LOCALAPPDATA 'Programs\OptaCode\opta-code.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Opta Code Desktop (Universal)\opta-code.exe'),
+        (Join-Path $env:LOCALAPPDATA 'Programs\Opta Code\opta-code.exe')
     )
     $found = $candidates | Where-Object { Test-Path $_ } | Select-Object -First 1
     if ($found) {

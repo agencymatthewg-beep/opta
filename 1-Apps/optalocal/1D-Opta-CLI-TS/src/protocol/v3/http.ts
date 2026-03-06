@@ -49,6 +49,32 @@ export const BackgroundKillHttpSchema = z.object({
   signal: BackgroundSignalSchema.optional(),
 });
 
+export const BridgeConnectHttpSchema = z.object({
+  deviceId: z.string().min(1),
+  sessionId: z.string().min(1).optional(),
+  bridgeToken: z.string().min(1).optional(),
+  force: z.boolean().optional(),
+});
+
+export const DeviceBootstrapHttpSchema = z.object({
+  includeAccount: z.boolean().optional().default(true),
+  includeConnection: z.boolean().optional().default(true),
+  includeRuntime: z.boolean().optional().default(true),
+});
+
+export const DeviceExecuteHttpSchema = z.object({
+  operationId: z.string().min(1),
+  input: z.record(z.string(), z.unknown()).optional().default({}),
+  confirmDangerous: z.boolean().optional(),
+  bridgeMetadata: z
+    .object({
+      commandId: z.string().min(1).optional(),
+      actor: z.string().min(1).optional(),
+      issuedAt: z.string().min(1).optional(),
+    })
+    .optional(),
+});
+
 export const CreateSessionHttpSchema = CreateSessionRequestSchema;
 export const SubmitTurnHttpSchema = ClientSubmitTurnSchema;
 export const PermissionDecisionHttpSchema = PermissionDecisionSchema;

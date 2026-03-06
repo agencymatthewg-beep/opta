@@ -2,7 +2,7 @@ import { OptaRing } from "@/components/shared/OptaRing";
 
 export function Footer() {
   return (
-    <footer className="relative py-16 px-6 border-t border-white/5">
+    <footer className="relative py-16 px-6">
       <div className="max-w-6xl mx-auto">
         <div className="flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="flex items-center gap-3">

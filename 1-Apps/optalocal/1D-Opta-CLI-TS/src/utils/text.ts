@@ -219,6 +219,7 @@ export function formatAssistantDisplayText(
   const quickPath =
     base.length <= 120 &&
     !base.includes('```') &&
+    !/\s#{1,6}\s/.test(base) &&
     !/[,:;]/.test(base) &&
     base.indexOf('\n') === -1;
   let formatted = quickPath ? base.trim() : undefined;

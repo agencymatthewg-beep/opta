@@ -10,7 +10,17 @@ export const CANONICAL_PROVIDER_NAMES = [
 
 export type CanonicalProviderName = (typeof CANONICAL_PROVIDER_NAMES)[number];
 export type CloudProviderName = Exclude<CanonicalProviderName, 'lmx'>;
-export type ProviderKeySource = 'config' | 'env' | 'keychain' | 'cloud' | 'none';
+export type ProviderKeySource = 'config' | 'env' | 'keychain' | 'cloud' | 'vertex' | 'none';
+export type GeminiAuthMode = 'api-key' | 'vertex';
+
+export interface GeminiRuntimeAuth {
+  mode: GeminiAuthMode;
+  project: string;
+  location: string;
+  enabled: boolean;
+}
+
+export const GEMINI_VERTEX_AUTH_SENTINEL = '__opta_gemini_vertex_oauth__';
 
 const PROVIDER_ALIASES: Record<CanonicalProviderName, readonly string[]> = {
   lmx: ['lmx', 'local', 'local_lmx', 'local-lmx'],
@@ -68,6 +78,33 @@ function normalizeAlias(value: string): string {
   return value.trim().toLowerCase().replace(/[\s-]+/g, '_');
 }
 
+function parseBooleanish(value: string | undefined): boolean | null {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) return true;
+  if (['0', 'false', 'no', 'off'].includes(normalized)) return false;
+  return null;
+}
+
+function parseGeminiAuthMode(value: string | undefined): GeminiAuthMode | 'auto' {
+  const normalized = typeof value === 'string' ? value.trim().toLowerCase() : '';
+  if (['vertex', 'vertex_ai', 'vertex-ai', 'oauth', 'adc'].includes(normalized)) {
+    return 'vertex';
+  }
+  if (['api', 'api_key', 'api-key', 'apikey', 'key'].includes(normalized)) {
+    return 'api-key';
+  }
+  return 'auto';
+}
+
+function readFirstEnv(names: readonly string[]): string {
+  for (const name of names) {
+    const value = process.env[name]?.trim();
+    if (value) return value;
+  }
+  return '';
+}
+
 function parseProvider(value: string | undefined): CanonicalProviderName | null {
   if (!value || !value.trim()) return null;
   return ALIAS_TO_PROVIDER.get(normalizeAlias(value)) ?? null;
@@ -81,6 +118,34 @@ function readConfigProviderApiKey(
   if (provider === 'gemini') return config.provider.gemini.apiKey.trim();
   if (provider === 'openai') return config.provider.openai.apiKey.trim();
   return config.provider.opencode_zen.apiKey.trim();
+}
+
+export function resolveGeminiRuntimeAuth(): GeminiRuntimeAuth {
+  const modePreference = parseGeminiAuthMode(process.env['OPTA_GEMINI_AUTH_MODE']);
+  const useVertexFlag = parseBooleanish(process.env['GOOGLE_GENAI_USE_VERTEXAI']);
+  const mode: GeminiAuthMode =
+    modePreference === 'vertex' || useVertexFlag === true ? 'vertex' : 'api-key';
+
+  const project = readFirstEnv([
+    'GOOGLE_CLOUD_PROJECT',
+    'GCLOUD_PROJECT',
+    'GCP_PROJECT',
+    'GOOGLE_PROJECT_ID',
+  ]);
+  const location =
+    readFirstEnv([
+      'GOOGLE_CLOUD_LOCATION',
+      'GOOGLE_GENAI_LOCATION',
+      'VERTEX_AI_LOCATION',
+      'CLOUD_ML_REGION',
+    ]) || 'us-central1';
+
+  return {
+    mode,
+    project,
+    location,
+    enabled: mode === 'vertex',
+  };
 }
 
 function toCloudProvider(provider: CanonicalProviderName): CloudProviderName | null {
@@ -164,6 +229,16 @@ export async function resolveProviderApiKey(
   provider: CloudProviderName,
   options: { includeCloud?: boolean } = {},
 ): Promise<{ apiKey: string; source: ProviderKeySource }> {
+  if (provider === 'gemini') {
+    const vertexAuth = resolveGeminiRuntimeAuth();
+    if (vertexAuth.enabled) {
+      if (!vertexAuth.project) {
+        return { apiKey: '', source: 'none' };
+      }
+      return { apiKey: GEMINI_VERTEX_AUTH_SENTINEL, source: 'vertex' };
+    }
+  }
+
   const configured = readConfigProviderApiKey(config, provider);
   if (configured) return { apiKey: configured, source: 'config' };
 
@@ -202,6 +277,12 @@ export async function hasProviderApiKey(
   provider: CloudProviderName,
   options: { includeCloud?: boolean } = {},
 ): Promise<boolean> {
+  if (provider === 'gemini') {
+    const vertexAuth = resolveGeminiRuntimeAuth();
+    if (vertexAuth.enabled) {
+      return vertexAuth.project.length > 0;
+    }
+  }
   const resolved = await resolveProviderApiKey(config, provider, options);
   return resolved.apiKey.length > 0;
 }

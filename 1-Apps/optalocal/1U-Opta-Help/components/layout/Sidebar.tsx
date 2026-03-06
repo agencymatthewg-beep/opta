@@ -28,8 +28,8 @@ export function Sidebar() {
                         className={cn(
                           "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
                           isActive
-                            ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                            : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                            ? "text-primary font-medium shadow-[inset_2px_0_0_rgba(168,85,247,0.85)] bg-transparent"
+                            : "text-text-secondary hover:text-text-primary hover:bg-white/[0.03]"
                         )}
                       >
                         {isActive && <ChevronRight size={12} className="shrink-0" />}

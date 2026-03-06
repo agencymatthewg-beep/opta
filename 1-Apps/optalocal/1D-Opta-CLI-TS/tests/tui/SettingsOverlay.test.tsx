@@ -47,6 +47,31 @@ describe('SettingsOverlay', () => {
     expect(lastFrame()).toContain('localhost');
   });
 
+  it('treats unset sensitive keys as optional by default', () => {
+    const { lastFrame } = render(<SettingsOverlay {...baseProps} />);
+    const frame = lastFrame() ?? '';
+    expect(frame).toMatch(/LMX Admin Key\s+○/);
+    expect(frame).toMatch(/LMX API Key\s+○/);
+    expect(frame).toContain('(auto)');
+    expect(frame).not.toMatch(/LMX Admin Key\s+⚠/);
+    expect(frame).not.toMatch(/LMX API Key\s+⚠/);
+  });
+
+  it('masks configured sensitive values and marks them as set', () => {
+    const { lastFrame } = render(
+      <SettingsOverlay
+        {...baseProps}
+        config={{
+          ...baseProps.config,
+          'connection.apiKey': 'lmx-secret-key',
+        } as Record<string, unknown>}
+      />
+    );
+    const frame = lastFrame() ?? '';
+    expect(frame).toMatch(/LMX API Key\s+✓/);
+    expect(frame).toContain('●●●●●');
+  });
+
   it('closes on Esc', async () => {
     const onClose = vi.fn();
     const { stdin } = render(<SettingsOverlay {...baseProps} onClose={onClose} />);

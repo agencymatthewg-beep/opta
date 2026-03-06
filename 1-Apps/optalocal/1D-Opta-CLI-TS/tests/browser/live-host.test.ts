@@ -7,11 +7,17 @@ describe('browser live host security and screen controls', () => {
   let stopBrowserLiveHost: typeof import('../../src/browser/live-host.js').stopBrowserLiveHost;
   let capturePeekabooScreenPngMock: ReturnType<typeof vi.fn>;
   let isPeekabooAvailableMock: ReturnType<typeof vi.fn>;
+  let peekabooClickLabelMock: ReturnType<typeof vi.fn>;
+  let peekabooTypeTextMock: ReturnType<typeof vi.fn>;
+  let peekabooPressKeyMock: ReturnType<typeof vi.fn>;
 
   beforeEach(async () => {
     vi.resetModules();
     capturePeekabooScreenPngMock = vi.fn().mockResolvedValue(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
     isPeekabooAvailableMock = vi.fn().mockResolvedValue(true);
+    peekabooClickLabelMock = vi.fn(async () => {});
+    peekabooTypeTextMock = vi.fn(async () => {});
+    peekabooPressKeyMock = vi.fn(async () => {});
 
     vi.doMock('../../src/browser/runtime-daemon.js', () => ({
       getSharedBrowserRuntimeDaemon: vi.fn(async () => ({
@@ -47,9 +53,12 @@ describe('browser live host security and screen controls', () => {
     vi.doMock('../../src/browser/peekaboo.js', () => ({
       isPeekabooAvailable: isPeekabooAvailableMock,
       capturePeekabooScreenPng: capturePeekabooScreenPngMock,
-      peekabooClickLabel: vi.fn(async () => {}),
-      peekabooTypeText: vi.fn(async () => {}),
-      peekabooPressKey: vi.fn(async () => {}),
+      peekabooClickLabel: peekabooClickLabelMock,
+      peekabooTypeText: peekabooTypeTextMock,
+      peekabooPressKey: peekabooPressKeyMock,
+      redactPeekabooSensitiveText: (value: string) => value
+        .replace(/(token\s*[:=]\s*)([^\s,;]+)/gi, '$1[REDACTED]')
+        .replace(/(bearer\s+)([A-Za-z0-9._~+/=-]+)/gi, '$1[REDACTED]'),
     }));
 
     const liveHost = await import('../../src/browser/live-host.js');
@@ -223,5 +232,128 @@ describe('browser live host security and screen controls', () => {
 
     await fetch(`http://${started.host}:${started.controlPort}/api/screen/frame?token=${encodeURIComponent(token)}`);
     expect(capturePeekabooScreenPngMock).toHaveBeenCalledWith(undefined);
+  });
+
+  it('records queue telemetry for overlapping screen actions', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const config = structuredClone(baseConfig);
+    config.computerControl.foreground.enabled = true;
+    config.computerControl.foreground.allowScreenActions = true;
+
+    let releaseFirst = () => {};
+    const firstGate = new Promise<void>((resolve) => {
+      releaseFirst = resolve;
+    });
+    let callCount = 0;
+    peekabooTypeTextMock.mockImplementation(async () => {
+      callCount += 1;
+      if (callCount === 1) {
+        await firstGate;
+      }
+    });
+
+    const started = await startBrowserLiveHost({
+      config,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      portRangeStart: 57_100,
+      portRangeEnd: 57_300,
+      includePeekabooScreen: true,
+    });
+    const controlBase = `http://${started.host}:${started.controlPort}`;
+    const token = (await (await fetch(`${controlBase}/screen`)).text()).match(/const screenToken = "([^"]+)"/)?.[1] ?? '';
+
+    const reqOne = fetch(`${controlBase}/api/screen/type?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: 'first' }),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const reqTwo = fetch(`${controlBase}/api/screen/type?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: 'second' }),
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 25));
+    releaseFirst();
+
+    const [respOne, respTwo] = await Promise.all([reqOne, reqTwo]);
+    expect(respOne.status).toBe(200);
+    expect(respTwo.status).toBe(200);
+
+    const status = await (await fetch(`${controlBase}/api/status`)).json() as {
+      peekabooMetrics: {
+        queueDepth: number;
+        maxQueueDepth: number;
+        actionRequests: { type: number };
+        jobsCompleted: number;
+      };
+    };
+    expect(status.peekabooMetrics.queueDepth).toBe(0);
+    expect(status.peekabooMetrics.maxQueueDepth).toBeGreaterThanOrEqual(2);
+    expect(status.peekabooMetrics.actionRequests.type).toBe(2);
+    expect(status.peekabooMetrics.jobsCompleted).toBeGreaterThanOrEqual(2);
+
+    const combinedLogs = [...infoSpy.mock.calls, ...warnSpy.mock.calls]
+      .map((call) => call.map((part) => String(part)).join(' '))
+      .join('\n');
+    expect(combinedLogs).toContain('peekaboo.queue.enqueued');
+    expect(combinedLogs).toContain('peekaboo.queue.completed');
+  });
+
+  it('redacts sensitive values in screen action failure telemetry', async () => {
+    const infoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    peekabooPressKeyMock.mockRejectedValueOnce(
+      Object.assign(new Error('Peekaboo action failed'), {
+        stdout: 'token=live-secret',
+        stderr: 'Authorization: Bearer opta_sk_super_secret',
+        exitCode: 1,
+      }),
+    );
+
+    const config = structuredClone(baseConfig);
+    config.computerControl.foreground.enabled = true;
+    config.computerControl.foreground.allowScreenActions = true;
+    const started = await startBrowserLiveHost({
+      config,
+      requiredPortCount: 6,
+      maxSessionSlots: 5,
+      portRangeStart: 57_350,
+      portRangeEnd: 57_550,
+      includePeekabooScreen: true,
+    });
+    const controlBase = `http://${started.host}:${started.controlPort}`;
+    const token = (await (await fetch(`${controlBase}/screen`)).text()).match(/const screenToken = "([^"]+)"/)?.[1] ?? '';
+
+    const failedResponse = await fetch(`${controlBase}/api/screen/key?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ key: 'enter' }),
+    });
+    expect(failedResponse.status).toBe(500);
+    const failedBody = await failedResponse.json() as { error: string };
+    expect(failedBody.error).toContain('Peekaboo action failed');
+
+    const status = await (await fetch(`${controlBase}/api/status`)).json() as {
+      peekabooMetrics: {
+        jobsFailed: number;
+        actionFailures: { key: number };
+      };
+    };
+    expect(status.peekabooMetrics.jobsFailed).toBeGreaterThanOrEqual(1);
+    expect(status.peekabooMetrics.actionFailures.key).toBe(1);
+
+    const combinedLogs = [...infoSpy.mock.calls, ...errorSpy.mock.calls]
+      .map((call) => call.map((part) => String(part)).join(' '))
+      .join('\n');
+    expect(combinedLogs).toContain('peekaboo.screen_action.failed');
+    expect(combinedLogs).toContain('peekaboo.queue.failed');
+    expect(combinedLogs).not.toContain('live-secret');
+    expect(combinedLogs).not.toContain('opta_sk_super_secret');
   });
 });

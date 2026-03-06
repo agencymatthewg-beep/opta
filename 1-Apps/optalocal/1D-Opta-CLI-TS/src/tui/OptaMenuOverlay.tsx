@@ -487,9 +487,9 @@ export function OptaMenuOverlay({
       },
       {
         action: 'run-slash',
-        label: 'Update Both',
-        description: 'Update local + Studio in one run',
-        command: '/update --target both',
+        label: 'Update Remote Fleet',
+        description: 'Update all reachable remote hosts',
+        command: '/update --target remote --remote-all',
         color: '#f97316',
       },
       {
@@ -781,7 +781,7 @@ export function OptaMenuOverlay({
 
     const maybeFilterRemote = (items: MenuItem[]): MenuItem[] => {
       if (!hideRemoteFirstActions) return items;
-      return items.filter((item) => item.label !== 'Update Studio' && item.label !== 'Update Both');
+      return items.filter((item) => item.label !== 'Update Studio' && item.label !== 'Update Remote Fleet');
     };
 
     return {

@@ -78,6 +78,15 @@ opta chat --device lmx-host.local:1234
 
 # Resume a previous session
 opta chat --resume <session-id>
+
+# Update local CLI + daemon
+opta update --target local
+
+# Update a reachable remote device
+opta update --target remote
+
+# Quick CLI + daemon health
+opta health
 ```
 
 ## Startup Host Setup (Important)
@@ -104,18 +113,107 @@ opta status --full
 
 ## Dev Launch Troubleshooting
 
-If `npm run -s start` exits during startup, the usual cause is: no reachable LMX host and no Anthropic fallback key configured.
+If `npm run -s start` starts in offline mode, the usual cause is: no reachable LMX host and no configured cloud fallback key.
 
 - Prefer `opta tui` (or `npm run dev -- tui`) for interactive local testing.
 - Configure LMX endpoint(s): `connection.host` and optional `connection.fallbackHosts`.
-- If you want cloud fallback when LMX is unavailable, set `ANTHROPIC_API_KEY`.
-- For in-session diagnostics, run `/debug` (quick snapshot) then `/doctor` for full checks.
+- If you want cloud fallback when LMX is unavailable, configure one of:
+  `ANTHROPIC_API_KEY` / `GEMINI_API_KEY` / `OPENAI_API_KEY` / `OPENCODE_ZEN_API_KEY`.
+- Gemini can also run without `GEMINI_API_KEY` using Vertex OAuth:
+  `GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT=<project-id>` + ADC credentials.
+- In offline TUI mode, slash diagnostics remain available. Run `/debug` (quick snapshot), then `/doctor` or `/lmx status --full`.
+- Normal prompts stay blocked until a model is loaded, but diagnostics and reconnect flows are still available.
+
+### Minimal vs Maximum Config
+
+- Minimal (no cloud keys): You can still open `opta`/`opta tui`, inspect connectivity, and repair config with `/debug`, `/doctor`, `/server status`, and `opta status`.
+- Maximum (local + cloud): Keep LMX primary/fallback hosts configured and add one or more cloud keys for automatic fallback when local inference is unavailable.
+
+## Update Flow (CLI + Daemon)
+
+`opta update` now focuses on two runtime components only:
+- `cli`
+- `daemon`
+
+Default interactive flow:
+1. Select `local` or `remote`.
+2. If `remote`, Opta probes configured + discovered LAN devices and lets you pick a reachable target.
+3. Opta updates `cli` and `daemon` for the selected target.
+
+Advanced flags remain available:
+
+```bash
+opta update --components cli,daemon --target local
+opta update --target remote --remote-host lmx-a.local
+opta update --target remote --remote-all
+opta update --dry-run --json
+```
+
+### Gemini Without API Key (Vertex OAuth)
+
+Opta supports Gemini through Google Vertex AI using OAuth/ADC, so `GEMINI_API_KEY` is optional.
+
+```bash
+export GOOGLE_GENAI_USE_VERTEXAI=true
+export GOOGLE_CLOUD_PROJECT=<your-gcp-project-id>
+export GOOGLE_CLOUD_LOCATION=us-central1   # optional, defaults to us-central1
+
+# Authenticate ADC (interactive) OR use service-account credentials
+gcloud auth application-default login
+# or: export GOOGLE_APPLICATION_CREDENTIALS=/path/to/service-account.json
+```
+
+Then select `Gemini` in `opta onboard` and leave the Gemini API key blank.
+
+## Accounts OAuth Sign-In Flow
+
+Use browser OAuth sign-in:
+
+```bash
+opta account login --oauth
+```
+
+Flow summary:
+
+1. CLI starts a localhost callback server on `127.0.0.1:<ephemeral-port>`.
+2. CLI registers a secure handoff with Accounts (`POST /api/cli/handoff`).
+3. Browser signs in at `accounts.optalocal.com`.
+4. Accounts validates state/handoff and redirects to:
+   `http://127.0.0.1:<port>/callback?exchange_code=...&state=...`
+5. CLI verifies callback state and exchanges `exchange_code` at:
+   `POST /api/cli/exchange`.
+
+### OAuth Troubleshooting
+
+- Browser opens but terminal never completes:
+  - Retry with a longer timeout: `opta account login --oauth --timeout 300`.
+  - Check local blockers (VPN/proxy/firewall) that can prevent loopback callbacks to `127.0.0.1`.
+  - Run `opta account status` and `/whoami` after retry to confirm session state.
+- Exchange errors (`exchange_not_found`) in multi-instance Accounts deployments:
+  - Configure a shared relay secret in Accounts:
+    `OPTA_CLI_TOKEN_RELAY_SECRET` (or `OPTA_ACCOUNTS_CLI_TOKEN_RELAY_SECRET`).
+  - This enables stateless signed relay fallback for cross-instance callback/exchange routing.
+- Exchange errors (`replay_store_unavailable`):
+  - Accounts strict replay protection is enabled but durable replay backend is unavailable.
+  - Ensure Accounts has:
+    - Supabase service-role credentials (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` or `SUPABASE_SERVICE_ROLE_KEY`)
+    - `accounts_cli_replay_nonces` table applied in schema.
+- Need strict one-time memory relay only:
+  - Set `OPTA_CLI_TOKEN_RELAY_DISABLE_STATELESS=1` in Accounts.
+  - Use only when you have sticky/single-instance routing or a shared durable relay backend.
+
+If `opta` fails with `Cannot find module .../dist/index.js` (common with linked local installs after a clean):
+
+- `bin/opta.js` now attempts self-heal (`npm run build`, then `npm install && npm run build` if deps are missing).
+- If self-heal still fails, run `npm run build` inside `1D-Opta-CLI-TS`.
+- Re-link if needed: `npm link`.
+- Global install fallback: `npm i -g @opta/opta-cli`.
 
 ## Features
 
 ### Local LLM Inference
 
-Primary inference runs on Opta LMX (Apple Silicon, MLX-based). If LMX is unreachable, Opta falls back to Anthropic Claude automatically. Switch providers manually with `opta config set provider.active anthropic`.
+Primary inference runs on Opta LMX (Apple Silicon, MLX-based). If LMX is unreachable, Opta falls back to the first configured cloud provider from `OPTA_CLOUD_FALLBACK_ORDER` (default order: Anthropic → Gemini → OpenAI → OpenCode Zen). Switch providers manually with `opta config set provider.active <provider>`.
 
 ### Built-in Tools
 
@@ -336,6 +434,9 @@ opta config set permissions.edit_file allow
 
 # Interactive config menu
 opta config menu
+
+# Settings menu alias
+opta settings
 ```
 
 ### Runtime Capability Enforcement (1R)
@@ -375,6 +476,7 @@ opta env list
 | ------------------- | -------------------------------------- |
 | `OPTA_HOST`         | LMX server host (default: `localhost`) |
 | `OPTA_PORT`         | LMX server port (default: `1234`)      |
+| `OPTA_ACCOUNTS_URL` | Accounts portal base URL override      |
 | `ANTHROPIC_API_KEY` | Anthropic API key for cloud fallback   |
 | `OPTA_MODEL`        | Default model override                 |
 | `OPTA_AUTONOMY`     | Default autonomy level (0-5)           |
@@ -388,6 +490,14 @@ opta keychain set-anthropic sk-ant-...
 opta keychain set-lmx opta_sk_...
 opta keychain status
 ```
+
+### Optional vs Required Keys
+
+Opta supports both minimal and maximal configurations. Most key fields are optional unless your active runtime path strictly requires them.
+
+- LMX key resolution: `OPTA_API_KEY` → `connection.apiKey` → keychain → Opta Accounts cloud key → default `opta-lmx`.
+- Cloud provider key resolution: provider config key → provider env vars → keychain → Opta Accounts cloud key.
+- In the TUI settings overlay, unset optional secret fields are shown as `(auto)` with a neutral status icon (not a warning).
 
 ## Shell Completions
 

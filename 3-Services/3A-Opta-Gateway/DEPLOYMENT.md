@@ -129,7 +129,7 @@ curl -X PUT https://lm.optamize.biz/api/keys \
   -H "Authorization: Bearer YOUR_JWT" \
   -H "Content-Type: application/json" \
   -d '{
-    "gemini": "AIzaSyDa6-K4vJl1lewF9rxw-m8aDU9WDallCB8",
+    "gemini": "AIzaREDACTED_ROTATE_IMMEDIATELY",
     "defaultProvider": "gemini"
   }'
 ```

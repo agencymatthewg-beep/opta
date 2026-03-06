@@ -145,6 +145,7 @@ const REQUIRED_SECURITY_HEADERS = [
 ];
 
 const REQUEST_TIMEOUT_MS = 12000;
+const FAVICON_PATHS = ['/favicon.ico', '/favicon.svg'];
 
 function parsePositiveNumber(rawValue, flagName) {
   const parsed = Number(rawValue);
@@ -160,6 +161,8 @@ function parseCliOptions(argv) {
     latencySummary: false,
     warnLatencyMs: null,
     failLatencyMs: null,
+    siteIds: null,
+    endpointIds: null,
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -184,10 +187,43 @@ function parseCliOptions(argv) {
         options.failLatencyMs = parsedValue;
       }
       index += 1;
+      continue;
+    }
+    if (arg === '--sites' || arg === '--endpoints') {
+      const nextValue = argv[index + 1];
+      if (nextValue == null) {
+        throw new Error(`Missing value for ${arg}`);
+      }
+      const values = nextValue
+        .split(',')
+        .map((value) => value.trim().toLowerCase())
+        .filter(Boolean);
+      if (values.length === 0) {
+        throw new Error(`Invalid value for ${arg}: ${nextValue}`);
+      }
+      if (arg === '--sites') {
+        options.siteIds = new Set(values);
+      } else {
+        options.endpointIds = new Set(values);
+      }
+      index += 1;
     }
   }
 
   return options;
+}
+
+function filterByIds(items, ids, itemType) {
+  if (!ids || ids.size === 0) {
+    return items;
+  }
+  const filtered = items.filter((item) => ids.has(item.id.toLowerCase()));
+  if (filtered.length === 0) {
+    throw new Error(
+      `No ${itemType} matched requested ids: ${[...ids].sort().join(', ')}`
+    );
+  }
+  return filtered;
 }
 
 function canonicalTagPresent(html) {
@@ -227,7 +263,6 @@ async function fetchWithTimeout(url, init = {}, timeoutMs = REQUEST_TIMEOUT_MS) 
 
 async function checkSite(site, includeLatencyMetrics = false) {
   const rootUrl = new URL('/', site.url).toString();
-  const faviconUrl = new URL('/favicon.ico', site.url).toString();
 
   const result = {
     id: site.id,
@@ -236,7 +271,7 @@ async function checkSite(site, includeLatencyMetrics = false) {
     pass: false,
     checks: {
       root: { url: rootUrl, ok: false, status: null, error: null },
-      favicon: { url: faviconUrl, ok: false, status: null, error: null },
+      favicon: { url: null, ok: false, status: null, error: null },
       canonical: { present: false },
       headers: {
         ok: false,
@@ -272,12 +307,20 @@ async function checkSite(site, includeLatencyMetrics = false) {
   }
 
   try {
-    const faviconRequest = await fetchWithTimeout(faviconUrl);
-    const faviconResponse = faviconRequest.response;
-    result.checks.favicon.status = faviconResponse.status;
-    result.checks.favicon.ok = faviconResponse.status === 200;
-    if (includeLatencyMetrics) {
-      result.checks.favicon.latencyMs = faviconRequest.latencyMs;
+    for (const faviconPath of FAVICON_PATHS) {
+      const faviconUrl = new URL(faviconPath, site.url).toString();
+      result.checks.favicon.url = faviconUrl;
+
+      const faviconRequest = await fetchWithTimeout(faviconUrl);
+      const faviconResponse = faviconRequest.response;
+      result.checks.favicon.status = faviconResponse.status;
+      result.checks.favicon.ok = faviconResponse.status === 200;
+      if (includeLatencyMetrics) {
+        result.checks.favicon.latencyMs = faviconRequest.latencyMs;
+      }
+      if (result.checks.favicon.ok) {
+        break;
+      }
     }
   } catch (error) {
     result.checks.favicon.error = error instanceof Error ? error.message : String(error);
@@ -474,14 +517,22 @@ function printHumanOutput(siteResults, healthResults, summary, latencySummary) {
 
 async function main() {
   const options = parseCliOptions(process.argv.slice(2));
+  const selectedSites = filterByIds(SITE_TARGETS, options.siteIds, 'sites');
+  const selectedEndpoints = filterByIds(
+    HEALTH_ENDPOINTS,
+    options.endpointIds,
+    'health endpoints',
+  );
   const shouldEvaluateLatency =
     options.latencySummary || options.warnLatencyMs != null || options.failLatencyMs != null;
 
   const siteResults = await Promise.all(
-    SITE_TARGETS.map((site) => checkSite(site, shouldEvaluateLatency))
+    selectedSites.map((site) => checkSite(site, shouldEvaluateLatency))
   );
   const healthResults = await Promise.all(
-    HEALTH_ENDPOINTS.map((endpoint) => checkHealthEndpoint(endpoint, shouldEvaluateLatency))
+    selectedEndpoints.map((endpoint) =>
+      checkHealthEndpoint(endpoint, shouldEvaluateLatency)
+    )
   );
   let summary = summarize(siteResults, healthResults);
 

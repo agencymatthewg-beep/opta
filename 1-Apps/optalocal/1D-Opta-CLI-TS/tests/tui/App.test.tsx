@@ -241,6 +241,66 @@ describe('App component', () => {
     expect(lastFrame()).not.toContain(marker);
   });
 
+  it('keeps slash diagnostics available while startup offline notice is visible', async () => {
+    const onSlashCommand = vi.fn(async () => ({
+      result: 'handled' as const,
+      output: 'debug snapshot',
+    }));
+
+    const { stdin, lastFrame } = render(
+      <App
+        model="test-model"
+        sessionId="abc123"
+        requireLoadedModel
+        initialModelLoaded={false}
+        startupConnectionNotice={{
+          severity: 'error',
+          bullets: ['LMX unreachable'],
+          attemptedEndpoints: ['localhost:1234'],
+        }}
+        onSlashCommand={onSlashCommand}
+      />,
+      { stdout: { columns: 140, rows: 46 } as NodeJS.WriteStream },
+    );
+
+    await flush();
+    expect(lastFrame()).toContain('/debug');
+
+    for (const ch of '/debug') stdin.write(ch);
+    stdin.write('\r');
+    await flush();
+
+    expect(onSlashCommand).toHaveBeenCalledWith('/debug');
+    expect(lastFrame()).toContain('debug snapshot');
+  });
+
+  it('still blocks normal prompts while no model is loaded in offline startup mode', async () => {
+    const onSubmit = vi.fn();
+    const { stdin, lastFrame } = render(
+      <App
+        model="test-model"
+        sessionId="abc123"
+        requireLoadedModel
+        initialModelLoaded={false}
+        startupConnectionNotice={{
+          severity: 'error',
+          bullets: ['LMX unreachable'],
+          attemptedEndpoints: ['localhost:1234'],
+        }}
+        onSubmit={onSubmit}
+      />,
+      { stdout: { columns: 140, rows: 46 } as NodeJS.WriteStream },
+    );
+
+    await flush();
+    for (const ch of 'hello model') stdin.write(ch);
+    stdin.write('\r');
+    await flush();
+
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(lastFrame()).toContain('No Model Loaded');
+  });
+
   it('toggles runtime safe-mode with keybinding', async () => {
     const { lastFrame, stdin } = render(
       <App model="test-model" sessionId="abc123" />,

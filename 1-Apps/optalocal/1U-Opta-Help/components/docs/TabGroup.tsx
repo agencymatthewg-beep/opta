@@ -16,8 +16,8 @@ export function TabGroup({ tabs }: TabGroupProps) {
   const [active, setActive] = useState(0);
 
   return (
-    <div className="rounded-lg border border-white/5 overflow-hidden mb-4">
-      <div className="flex border-b border-white/5 bg-surface">
+    <div className="rounded-lg doc-embed-block overflow-hidden mb-5">
+      <div className="flex bg-transparent">
         {tabs.map((tab, i) => (
           <button
             key={tab.label}
@@ -25,15 +25,15 @@ export function TabGroup({ tabs }: TabGroupProps) {
             className={cn(
               "px-4 py-2.5 text-sm transition-colors",
               i === active
-                ? "text-primary border-b-2 border-primary font-medium"
-                : "text-text-muted hover:text-text-secondary"
+                ? "text-primary font-medium shadow-[inset_0_-2px_0_0_rgba(168,85,247,0.9)]"
+                : "text-text-muted hover:text-text-secondary hover:bg-white/5"
             )}
           >
             {tab.label}
           </button>
         ))}
       </div>
-      <div className="p-4">{tabs[active].content}</div>
+      <div className="p-4 bg-transparent">{tabs[active].content}</div>
     </div>
   );
 }

@@ -24,6 +24,11 @@ export interface ModelsOptions {
   json?: boolean;
   full?: boolean;
   backend?: string;
+  /**
+   * Internal bridge context used to deterministically scope OpenClaw callers.
+   * Not exposed as a user-facing CLI flag.
+   */
+  openclawScope?: string;
 }
 
 export interface ModelPickerOption {

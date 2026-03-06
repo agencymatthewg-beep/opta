@@ -12,7 +12,7 @@ beforeEach(() => {
 // All commands that should appear in completions
 const ALL_COMMANDS = [
   'do', 'benchmark', 'init', 'status', 'models', 'env', 'config',
-  'sessions', 'mcp', 'diff', 'server', 'daemon', 'serve', 'update', 'completions',
+  'sessions', 'mcp', 'diff', 'server', 'daemon', 'serve', 'update', 'health', 'settings', 'completions',
 ];
 
 describe('completions', () => {
@@ -158,8 +158,9 @@ describe('completions', () => {
       await completions('zsh');
       const text = output.join('\n');
       expect(text).toContain('--components');
-      expect(text).toContain('components:(cli lmx plus web)');
+      expect(text).toContain('components:(cli daemon)');
       expect(text).toContain('--target');
+      expect(text).toContain('target:(local remote)');
       expect(text).toContain('--remote-host');
       expect(text).toContain('--no-build');
       expect(text).toContain('--no-pull');
@@ -209,9 +210,10 @@ describe('completions', () => {
       await completions('fish');
       const text = output.join('\n');
       expect(text).toContain('-l components');
-      expect(text).toContain('Components: cli,lmx,plus,web');
-      expect(text).toContain("-a 'cli lmx plus web'");
+      expect(text).toContain('Components: cli,daemon');
+      expect(text).toContain("-a 'cli daemon'");
       expect(text).toContain('-l target');
+      expect(text).toContain('Target: local|remote');
       expect(text).toContain('-l remote-host');
       expect(text).toContain('-l no-build');
       expect(text).toContain('-l no-pull');

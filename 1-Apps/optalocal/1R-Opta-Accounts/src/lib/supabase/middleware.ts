@@ -15,13 +15,36 @@ import { NextResponse, type NextRequest } from 'next/server';
 const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'production' ? '.optalocal.com' : undefined;
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+function resolveSupabaseConfig() {
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL;
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return { url, key };
+}
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+type UpdateSessionOptions = {
+  requestHeaders?: Headers;
+};
 
-  if (!url || !key) return supabaseResponse;
+export async function updateSession(
+  request: NextRequest,
+  options: UpdateSessionOptions = {},
+) {
+  const passthroughHeaders = options.requestHeaders ?? request.headers;
+  const passthrough = () =>
+    NextResponse.next({
+      request: {
+        headers: passthroughHeaders,
+      },
+    });
+
+  let supabaseResponse = passthrough();
+
+  const config = resolveSupabaseConfig();
+  if (!config) return supabaseResponse;
+  const { url, key } = config;
 
   const supabase = createServerClient(url, key, {
     cookies: {
@@ -38,7 +61,7 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = passthrough();
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, {
             ...options,

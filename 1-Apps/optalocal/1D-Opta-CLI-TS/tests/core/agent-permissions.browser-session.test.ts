@@ -142,6 +142,59 @@ describe('resolveToolDecisions browser session preflight', () => {
     expect(args['session_id']).toBe('sess-auto-001');
   });
 
+  it('applies browser preflight to namespaced Playwright MCP browser tools', async () => {
+    const config = makeConfig();
+    const onPermissionRequest = vi
+      .fn()
+      .mockResolvedValueOnce('allow')
+      .mockResolvedValueOnce('allow');
+
+    const decisions = await resolveToolDecisions(
+      [
+        {
+          id: 'call-mcp-1',
+          name: 'mcp__playwright__browser_navigate',
+          args: JSON.stringify({ url: 'https://example.com' }),
+        },
+      ],
+      config,
+      {
+        isSubAgent: false,
+        silent: true,
+        saveConfig: async () => {},
+        streamCallbacks: { onPermissionRequest },
+        hooks: createHookManager({ hooks: [] }),
+        sessionCtx: {
+          sessionId: 'session-test',
+          cwd: process.cwd(),
+          model: config.model.default,
+        },
+      },
+    );
+
+    expect(onPermissionRequest).toHaveBeenNthCalledWith(
+      1,
+      'browser_open',
+      expect.objectContaining({
+        __opta_spawn_prompt: true,
+        __opta_spawn_trigger_tool: 'browser_navigate',
+      }),
+    );
+    expect(onPermissionRequest).toHaveBeenNthCalledWith(
+      2,
+      'browser_navigate',
+      expect.objectContaining({
+        session_id: 'sess-auto-001',
+        url: 'https://example.com',
+      }),
+    );
+    expect(runtimeDaemon.daemon.openSession).toHaveBeenCalledTimes(1);
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]?.approved).toBe(true);
+    const args = JSON.parse(decisions[0]?.executionArgsJson ?? '{}') as Record<string, unknown>;
+    expect(args['session_id']).toBe('sess-auto-001');
+  });
+
   it('spawns attach browser sessions using configured wsEndpoint when attach mode is enabled', async () => {
     const config = makeConfig();
     config.browser.attach.enabled = true;

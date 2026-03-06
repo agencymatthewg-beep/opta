@@ -1,6 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { isAllowedRedirect } from '@/lib/allowed-redirects';
+import {
+  consumeCliHandoff,
+  isValidCliHandoff,
+  isValidCliState,
+  parseCliCallbackPort,
+  peekCliHandoff,
+} from '@/lib/cli/handoff';
+import { registerCliTokenRelay } from '@/lib/cli/token-relay';
 
 /**
  * CLI callback relay.
@@ -12,39 +19,41 @@ import { isAllowedRedirect } from '@/lib/allowed-redirects';
  *   1. CLI navigates browser to /sign-in?mode=cli&port=PORT&state=CSRF
  *   2. User signs in (OAuth or password)
  *   3. Sign-in page redirects to /cli/callback?port=PORT&state=CSRF
- *   4. This route reads the server session and redirects to
- *      http://127.0.0.1:PORT/callback?access_token=...&refresh_token=...&state=CSRF
- *      and forwards optional return_to/handoff values for desktop deep-link handoff.
+ *   4. This route mints a short-lived one-time relay code and redirects to
+ *      http://127.0.0.1:PORT/callback?exchange_code=...&state=CSRF
+ *      (plus optional return_to/handoff values for desktop deep-link handoff).
+ *   5. CLI exchanges exchange_code at /api/cli/exchange over HTTPS.
  *
  * Security:
  *   - Only redirects to 127.0.0.1 (never 0.0.0.0 or external hosts)
  *   - CSRF state parameter is passed through for CLI verification
- *   - Tokens are short-lived; refresh token enables persistence
+ *   - Session tokens are never placed directly on localhost callback query params
  */
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
-  const port = searchParams.get('port');
-  const state = searchParams.get('state');
-  const returnToRaw = searchParams.get('return_to');
+  const portRaw = searchParams.get('port');
+  const state = searchParams.get('state')?.trim() ?? '';
   const handoffRaw = searchParams.get('handoff');
+  const proofRaw = searchParams.get('proof');
+  const port = parseCliCallbackPort(portRaw);
+  const handoff = handoffRaw?.trim() ?? '';
+  const proof = proofRaw?.trim() ?? '';
 
-  if (!port || !state) {
+  if (!port || !isValidCliState(state)) {
     return NextResponse.redirect(`${origin}/sign-in?error=missing_params`);
   }
-
-  // Validate port is numeric
-  if (!/^\d+$/.test(port)) {
-    return NextResponse.redirect(`${origin}/sign-in?error=invalid_port`);
+  if (handoff.length > 0 && !isValidCliHandoff(handoff)) {
+    return NextResponse.redirect(`${origin}/sign-in?error=invalid_handoff`);
   }
-
-  const returnTo =
-    returnToRaw && !returnToRaw.startsWith('/') && isAllowedRedirect(returnToRaw)
-      ? returnToRaw
-      : null;
-  const handoff =
-    handoffRaw && /^[a-zA-Z0-9_-]{8,128}$/.test(handoffRaw)
-      ? handoffRaw
-      : null;
+  const pendingHandoff = peekCliHandoff({
+    state,
+    port,
+    handoff: handoff.length > 0 ? handoff : null,
+    proof: proof.length > 0 ? proof : null,
+  });
+  if (!pendingHandoff) {
+    return NextResponse.redirect(`${origin}/sign-in?error=invalid_cli_handoff`);
+  }
 
   const supabase = await createClient();
   if (!supabase) {
@@ -58,18 +67,46 @@ export async function GET(request: Request) {
   if (!session) {
     return NextResponse.redirect(`${origin}/sign-in?error=no_session`);
   }
-
-  // Build the CLI callback URL (127.0.0.1 only)
-  const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
-  callbackUrl.searchParams.set('access_token', session.access_token);
-  callbackUrl.searchParams.set('refresh_token', session.refresh_token);
-  callbackUrl.searchParams.set('expires_at', String(session.expires_at ?? ''));
-  callbackUrl.searchParams.set('state', state);
-  if (returnTo) {
-    callbackUrl.searchParams.set('return_to', returnTo);
+  let consumedHandoff: Awaited<ReturnType<typeof consumeCliHandoff>>;
+  try {
+    consumedHandoff = await consumeCliHandoff({
+      state,
+      port,
+      handoff: handoff.length > 0 ? handoff : null,
+      proof: proof.length > 0 ? proof : null,
+    });
+  } catch (error) {
+    console.error('[cli/callback] replay-store consume failed', error);
+    return NextResponse.redirect(`${origin}/sign-in?error=cli_replay_store`);
   }
-  if (handoff) {
-    callbackUrl.searchParams.set('handoff', handoff);
+  if (!consumedHandoff) {
+    return NextResponse.redirect(`${origin}/sign-in?error=invalid_cli_handoff`);
+  }
+
+  const relay = registerCliTokenRelay({
+    state,
+    port,
+    handoff: consumedHandoff.handoff,
+    returnTo: consumedHandoff.returnTo,
+    accessToken: session.access_token,
+    refreshToken: session.refresh_token,
+    expiresAt: session.expires_at ?? null,
+    expiresIn: session.expires_in ?? null,
+    tokenType: session.token_type ?? null,
+    providerToken: session.provider_token ?? null,
+    providerRefreshToken: session.provider_refresh_token ?? null,
+  });
+
+  // Build the CLI callback URL (127.0.0.1 only, one-time exchange code)
+  const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+  callbackUrl.searchParams.set('exchange_code', relay.code);
+  callbackUrl.searchParams.set('exchange_expires_at', String(relay.expiresAt));
+  callbackUrl.searchParams.set('state', state);
+  if (consumedHandoff.returnTo) {
+    callbackUrl.searchParams.set('return_to', consumedHandoff.returnTo);
+  }
+  if (consumedHandoff.handoff) {
+    callbackUrl.searchParams.set('handoff', consumedHandoff.handoff);
   }
 
   return NextResponse.redirect(callbackUrl.toString());

@@ -42,7 +42,9 @@ describe('updateCommand journal integration', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const { updateCommand } = await import('../../src/commands/update.js');
 
-    await expect(updateCommand({ target: 'remote', remoteHost: 'localhost', json: true })).resolves.toBeUndefined();
+    await expect(
+      updateCommand({ target: 'remote', remoteHost: 'mono512', json: true, dryRun: true }),
+    ).resolves.toBeUndefined();
 
     expect(loadConfig).toHaveBeenCalledTimes(1);
     expect(writeUpdateLog).toHaveBeenCalledTimes(1);
@@ -64,7 +66,9 @@ describe('updateCommand journal integration', () => {
     const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const { updateCommand } = await import('../../src/commands/update.js');
 
-    await expect(updateCommand({ target: 'remote', remoteHost: 'localhost', json: true })).resolves.toBeUndefined();
+    await expect(
+      updateCommand({ target: 'remote', remoteHost: 'mono512', json: true, dryRun: true }),
+    ).resolves.toBeUndefined();
 
     expect(writeUpdateLog).toHaveBeenCalledTimes(1);
 

@@ -1,45 +1,49 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { CommandPalette } from "./components/CommandPalette";
 import { Composer } from "./components/Composer";
-import { SetupWizard } from "./components/SetupWizard";
-import { SettingsModal } from "./components/SettingsModal";
-import type { SettingsTabId } from "./components/SettingsModal";
 import { Download } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { TimelineCards } from "./components/TimelineCards";
-import { WorkspaceRail } from "./components/WorkspaceRail";
 import { ProjectPane } from "./components/ProjectPane";
 import { WidgetPane } from "./components/WidgetPane";
-import { SettingsView } from "./components/SettingsView";
+import {
+  SETTINGS_TAB_SEQUENCE,
+  normalizeSettingsTabId,
+  type SettingsTabId,
+} from "./components/settingsStudioConfig";
 import { useWidgetLayout } from "./hooks/useWidgetLayout";
-import { ModelsPage } from "./pages/ModelsPage";
-import { PermissionModal } from "./components/PermissionModal";
-import { BackgroundJobsPage } from "./pages/BackgroundJobsPage";
-import { DaemonLogsPage } from "./pages/DaemonLogsPage";
-import { ToolingOperationsPage } from "./pages/ToolingOperationsPage";
-import { AppCatalogPage } from "./pages/AppCatalogPage";
-import { SessionMemoryPage } from "./pages/SessionMemoryPage";
-import { SystemOperationsPage } from "./pages/SystemOperationsPage";
-import { EnvProfilesPage } from "./pages/EnvProfilesPage";
-import { McpManagementPage } from "./pages/McpManagementPage";
-import { ConfigStudioPage } from "./pages/ConfigStudioPage";
-import { AccountControlPage } from "./pages/AccountControlPage";
-import { CliOperationsPage } from "./pages/CliOperationsPage";
-import { TelemetryPanel } from "./components/TelemetryPanel";
 import { downloadAsFile, exportToMarkdown } from "./lib/sessionExporter";
 import { useCommandPalette } from "./hooks/useCommandPalette";
 import { useDaemonSessions } from "./hooks/useDaemonSessions";
 import { daemonClient } from "./lib/daemonClient";
 import { useBrowserLiveHost } from "./hooks/useBrowserLiveHost";
 import { useConnectionHealth } from "./hooks/useConnectionHealth";
-import { LiveBrowserView } from "./components/LiveBrowserView";
+import { usePlatform } from "./hooks/usePlatform";
 import { OPEN_SETUP_WIZARD_EVENT } from "./components/ErrorBoundary";
 import {
   deriveBrowserVisualState,
   type BrowserVisualSummary,
 } from "./lib/browserVisualState";
-import { useAccountsAuthControls } from "./hooks/useAccountsAuthControls";
 import { getTauriInvoke, isNativeDesktop } from "./lib/runtime";
+import {
+  LazyLiveBrowserView,
+  LazyPermissionModal,
+  LazySettingsModal,
+  LazySettingsView,
+  LazySetupWizard,
+  preloadSettingsModal,
+  preloadSettingsView,
+} from "./lazyAppModules";
 import type {
   PaletteCommand,
   SessionSubmitMode,
@@ -68,6 +72,13 @@ type AppPage =
   | "account"
   | "jobs"
   | "logs";
+
+interface DockInset {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+}
 const ACCOUNTS_PORTAL_URL = "https://accounts.optalocal.com";
 
 export type BrowserViewMode = "default" | "expanded" | "minimized";
@@ -102,15 +113,216 @@ function modeSubmitNotice(mode: SessionSubmitMode): string {
   }
 }
 
+type SettingsLayer = 1 | 2 | 3;
+type SettingsLayerDirection = "deeper" | "shallower";
+type SettingsLayerMotion = "root" | "intra";
+type SettingsLayerTransition = {
+  direction: SettingsLayerDirection;
+  motion: SettingsLayerMotion;
+};
+type SpatialDirection = "left" | "right" | "up" | "down";
+type SettingsNavigationInputMode = "keyboard" | "pointer";
+type SettingsNavigationState = {
+  activeLayer: SettingsLayer;
+  highlightedNodeKey: string | null;
+  editMode: boolean;
+  editTargetKey: string | null;
+  draftValue: string | number | boolean | null;
+  activeScrollContainerKey: "layer-2" | "layer-3" | "none";
+};
+
+const settingsLayerVariants = {
+  enter: ({ direction, motion }: SettingsLayerTransition) => ({
+    opacity: 0,
+    scale:
+      motion === "intra"
+        ? direction === "deeper"
+          ? 0.985
+          : 1.015
+        : direction === "deeper"
+          ? 0.96
+          : 1.02,
+    x:
+      motion === "intra"
+        ? direction === "deeper"
+          ? 28
+          : -28
+        : direction === "deeper"
+          ? 72
+          : -72,
+    y:
+      motion === "intra"
+        ? direction === "deeper"
+          ? 10
+          : -10
+        : direction === "deeper"
+          ? 24
+          : -24,
+    filter: motion === "intra" ? "blur(8px)" : "blur(14px)",
+  }),
+  center: ({ motion }: SettingsLayerTransition) => ({
+    opacity: 1,
+    scale: 1,
+    x: 0,
+    y: 0,
+    filter: "blur(0px)",
+    transition: {
+      duration: motion === "intra" ? 0.2 : 0.5,
+    },
+  }),
+  exit: ({ direction, motion }: SettingsLayerTransition) => ({
+    opacity: 0,
+    scale:
+      motion === "intra"
+        ? direction === "deeper"
+          ? 1.01
+          : 0.985
+        : direction === "deeper"
+          ? 1.03
+          : 0.94,
+    x:
+      motion === "intra"
+        ? direction === "deeper"
+          ? -24
+          : 24
+        : direction === "deeper"
+          ? -56
+          : 56,
+    y:
+      motion === "intra"
+        ? direction === "deeper"
+          ? -8
+          : 8
+        : direction === "deeper"
+          ? -18
+          : 18,
+    filter: motion === "intra" ? "blur(6px)" : "blur(12px)",
+    transition: {
+      duration: motion === "intra" ? 0.16 : 0.35,
+    },
+  }),
+};
+
+function SettingsLayerLoadingFallback({
+  layer,
+  activeTab,
+}: {
+  layer: 2 | 3;
+  activeTab: SettingsTabId;
+}) {
+  if (layer === 2) {
+    return (
+      <div className="settings-view-grid" role="status" aria-live="polite">
+        <section
+          className="settings-view-card is-active"
+          data-settings-tab-id={activeTab}
+          aria-busy="true"
+          style={{ minHeight: 168 }}
+        >
+          <h3>Loading settings</h3>
+          <p>Preparing the Settings Studio overview.</p>
+        </section>
+      </div>
+    );
+  }
+
+  return (
+    <div className="opta-studio-content" role="status" aria-live="polite" aria-busy="true">
+      <p style={{ margin: 0 }}>Loading settings details…</p>
+    </div>
+  );
+}
+
 function App() {
   const nativeDesktop = isNativeDesktop();
+  const platform = usePlatform();
 
   // null = loading (show blank), true = first run (show wizard), false = normal app
   const [firstRun, setFirstRun] = useState<boolean | null>(null);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [isSettingsView, setIsSettingsView] = useState(false);
-  const [settingsInitialTab, setSettingsInitialTab] =
-    useState<SettingsTabId>("connection");
+  const [settingsLayer, setSettingsLayer] = useState<SettingsLayer>(1);
+  const [settingsLayerDirection, setSettingsLayerDirection] =
+    useState<SettingsLayerDirection>("deeper");
+  const [settingsLayerMotion, setSettingsLayerMotion] =
+    useState<SettingsLayerMotion>("root");
+  const [settingsActiveTab, setSettingsActiveTab] =
+    useState<SettingsTabId>("connection-network");
+  const [settingsFocusIndex, setSettingsFocusIndex] = useState(0);
+  const [lastSettingsLayer, setLastSettingsLayer] = useState<Exclude<SettingsLayer, 1>>(2);
+  const [lastSettingsTab, setLastSettingsTab] =
+    useState<SettingsTabId>("connection-network");
+  const [settingsFullscreen, setSettingsFullscreen] = useState(false);
+  const [settingsLayer3FocusIndex, setSettingsLayer3FocusIndex] = useState(0);
+  const [settingsLayer3EditMode, setSettingsLayer3EditMode] = useState(false);
+  const [sidebarVisible, setSidebarVisible] = useLocalStorage(
+    "opta:sidebar-visible",
+    true,
+  );
+  const settingsLayer3EditTargetRef = useRef<HTMLElement | null>(null);
+  const settingsLayer3PendingEditFocusRef = useRef(false);
+  const settingsLayer3EditDraftRef = useRef<string | number | boolean | null>(
+    null,
+  );
+  const layer3ResetKeyRef = useRef<string | null>(null);
+  const settingsNavigationInputModeRef =
+    useRef<SettingsNavigationInputMode>("keyboard");
+  const [settingsNavigationInputMode, setSettingsNavigationInputModeState] =
+    useState<SettingsNavigationInputMode>("keyboard");
+
+  const isTypingControlElement = useCallback((element: EventTarget | null) => {
+    if (!(element instanceof HTMLElement)) return false;
+    return (
+      element instanceof HTMLInputElement ||
+      element instanceof HTMLTextAreaElement ||
+      element instanceof HTMLSelectElement ||
+      element.isContentEditable
+    );
+  }, []);
+
+  const setSettingsNavigationInputMode = useCallback(
+    (mode: SettingsNavigationInputMode) => {
+      if (settingsNavigationInputModeRef.current !== mode) {
+        settingsNavigationInputModeRef.current = mode;
+        setSettingsNavigationInputModeState(mode);
+      } else {
+        settingsNavigationInputModeRef.current = mode;
+      }
+      const layerRoot = settingsLayerRefs.current[3];
+
+      if (mode === "keyboard" && settingsLayer === 3 && !settingsLayer3EditMode) {
+        const activeElement = document.activeElement;
+        if (isTypingControlElement(activeElement)) {
+          (activeElement as HTMLElement).blur();
+        }
+        layerRoot?.focus({ preventScroll: true });
+      }
+    },
+    [isTypingControlElement, settingsLayer, settingsLayer3EditMode],
+  );
+
+  const settingsNavigationState = useMemo<SettingsNavigationState>(() => {
+    const highlightedNodeKey =
+      settingsLayer === 2
+        ? SETTINGS_TAB_SEQUENCE[settingsFocusIndex] ?? settingsActiveTab
+        : settingsLayer === 3
+          ? `l3:${settingsLayer3FocusIndex}`
+          : null;
+
+    return {
+      activeLayer: settingsLayer,
+      highlightedNodeKey,
+      editMode: settingsLayer3EditMode,
+      editTargetKey: settingsLayer3EditTargetRef.current?.tagName?.toLowerCase() ?? null,
+      draftValue: settingsLayer3EditDraftRef.current,
+      activeScrollContainerKey:
+        settingsLayer === 3 ? "layer-3" : settingsLayer === 2 ? "layer-2" : "none",
+    };
+  }, [
+    settingsActiveTab,
+    settingsFocusIndex,
+    settingsLayer,
+    settingsLayer3EditMode,
+    settingsLayer3FocusIndex,
+  ]);
 
   useEffect(() => {
     const invoke = getTauriInvoke();
@@ -154,11 +366,801 @@ function App() {
     try { localStorage.setItem("opta:deviceLabel", label); } catch { /* noop */ }
   }, []);
 
+  const goToSettingsLayer = useCallback((nextLayer: SettingsLayer) => {
+    if (nextLayer >= 2) {
+      void preloadSettingsView();
+      if (nextLayer >= 3) {
+        void preloadSettingsModal();
+      }
+    }
 
-  const openSettings = useCallback((tab: SettingsTabId = "connection") => {
-    setSettingsInitialTab(tab);
-    setIsSettingsOpen(true);
+    setSettingsLayer((currentLayer) => {
+      if (nextLayer === currentLayer) {
+        return currentLayer;
+      }
+      setSettingsLayerDirection(
+        nextLayer > currentLayer ? "deeper" : "shallower",
+      );
+      setSettingsLayerMotion(
+        nextLayer > 1 && currentLayer > 1 ? "intra" : "root",
+      );
+      return nextLayer;
+    });
   }, []);
+
+  const settingsLayerTransition = useMemo<SettingsLayerTransition>(
+    () => ({
+      direction: settingsLayerDirection,
+      motion: settingsLayerMotion,
+    }),
+    [settingsLayerDirection, settingsLayerMotion],
+  );
+
+  const focusSettingsTab = useCallback((tab: SettingsTabId) => {
+    const normalizedTab = normalizeSettingsTabId(tab);
+    setSettingsActiveTab(normalizedTab);
+    const nextIndex = SETTINGS_TAB_SEQUENCE.indexOf(normalizedTab);
+    if (nextIndex >= 0) {
+      setSettingsFocusIndex(nextIndex);
+    }
+  }, []);
+
+  const cycleSettingsTab = useCallback((delta: number) => {
+    setSettingsFocusIndex((currentIndex) => {
+      const length = SETTINGS_TAB_SEQUENCE.length;
+      const nextIndex = (currentIndex + delta + length) % length;
+      setSettingsActiveTab(SETTINGS_TAB_SEQUENCE[nextIndex]);
+      return nextIndex;
+    });
+  }, []);
+
+  const getSettingsGridColumns = useCallback(() => {
+    if (typeof window === "undefined") return 4;
+    if (window.innerWidth <= 760) return 1;
+    if (window.innerWidth <= 1220) return 2;
+    return 4;
+  }, []);
+
+  const moveSettingsGridSelection = useCallback(
+    (direction: "left" | "right" | "up" | "down") => {
+      setSettingsFocusIndex((currentIndex) => {
+        const cols = getSettingsGridColumns();
+        const maxIndex = SETTINGS_TAB_SEQUENCE.length - 1;
+        let nextIndex = currentIndex;
+
+        if (direction === "left") {
+          nextIndex = Math.max(0, currentIndex - 1);
+        } else if (direction === "right") {
+          nextIndex = Math.min(maxIndex, currentIndex + 1);
+        } else if (direction === "up") {
+          nextIndex = Math.max(0, currentIndex - cols);
+        } else if (direction === "down") {
+          nextIndex = Math.min(maxIndex, currentIndex + cols);
+        }
+
+        setSettingsActiveTab(SETTINGS_TAB_SEQUENCE[nextIndex]);
+        return nextIndex;
+      });
+    },
+    [getSettingsGridColumns],
+  );
+
+  const settingsLayerRefs = useRef<Partial<Record<2 | 3, HTMLDivElement | null>>>(
+    {},
+  );
+  const settingsMiddleLayerRef = useRef<HTMLDivElement | null>(null);
+  const dockMeasureRafRef = useRef<number | null>(null);
+  const [settingsDockInset, setSettingsDockInset] = useState<DockInset | null>(
+    null,
+  );
+
+  const refreshSettingsDockInset = useCallback(() => {
+    const container = settingsMiddleLayerRef.current;
+    if (!container) return;
+    const rect = container.getBoundingClientRect();
+    setSettingsDockInset({
+      top: Math.max(0, rect.top),
+      right: Math.max(0, window.innerWidth - rect.right),
+      bottom: Math.max(0, window.innerHeight - rect.bottom),
+      left: Math.max(0, rect.left),
+    });
+  }, []);
+
+  const scheduleSettingsDockInsetRefresh = useCallback(() => {
+    if (dockMeasureRafRef.current !== null) return;
+    dockMeasureRafRef.current = window.requestAnimationFrame(() => {
+      dockMeasureRafRef.current = null;
+      refreshSettingsDockInset();
+    });
+  }, [refreshSettingsDockInset]);
+
+  useLayoutEffect(() => {
+    if (settingsLayer <= 1) return;
+    scheduleSettingsDockInsetRefresh();
+  }, [scheduleSettingsDockInsetRefresh, settingsLayer, settingsFullscreen]);
+
+  useEffect(() => {
+    if (settingsLayer <= 1) return;
+    const handleMeasure = () => {
+      scheduleSettingsDockInsetRefresh();
+    };
+    handleMeasure();
+    window.addEventListener("resize", handleMeasure, { passive: true });
+    window.addEventListener("scroll", handleMeasure, {
+      capture: true,
+      passive: true,
+    });
+    return () => {
+      if (dockMeasureRafRef.current !== null) {
+        window.cancelAnimationFrame(dockMeasureRafRef.current);
+        dockMeasureRafRef.current = null;
+      }
+      window.removeEventListener("resize", handleMeasure);
+      window.removeEventListener("scroll", handleMeasure, true);
+    };
+  }, [scheduleSettingsDockInsetRefresh, settingsLayer]);
+
+  const settingsOverlayDockStyle = useMemo<CSSProperties>(() => {
+    if (!settingsDockInset) {
+      return { visibility: "hidden" };
+    }
+    return {
+      "--settings-dock-top": `${settingsDockInset.top}px`,
+      "--settings-dock-right": `${settingsDockInset.right}px`,
+      "--settings-dock-bottom": `${settingsDockInset.bottom}px`,
+      "--settings-dock-left": `${settingsDockInset.left}px`,
+    } as CSSProperties;
+  }, [settingsDockInset]);
+
+  const getSettingsScrollContainer = useCallback(
+    (layer: 2 | 3): HTMLElement | null => {
+      const layerRoot = settingsLayerRefs.current[layer];
+      if (!layerRoot) return null;
+
+      if (layer === 3) {
+        const deepLayout = layerRoot.querySelector(
+          ".opta-studio-layout--deep",
+        ) as HTMLElement | null;
+        const deepContent = layerRoot.querySelector(
+          ".opta-studio-content",
+        ) as HTMLElement | null;
+        return (
+          [deepLayout, deepContent, layerRoot].find(
+            (candidate) =>
+              candidate && candidate.scrollHeight > candidate.clientHeight + 1,
+          ) ??
+          [deepLayout, deepContent, layerRoot].find(Boolean) ??
+          null
+        );
+      }
+
+      const layerGrid = layerRoot.querySelector(
+        ".settings-view-grid",
+      ) as HTMLElement | null;
+      return (
+        [layerGrid, layerRoot].find(
+          (candidate) =>
+            candidate && candidate.scrollHeight > candidate.clientHeight + 1,
+        ) ??
+        [layerGrid, layerRoot].find(Boolean) ??
+        null
+      );
+    },
+    [],
+  );
+
+  const centerSettingsTargetInView = useCallback(
+    (
+      target: HTMLElement,
+      layer: 2 | 3,
+      behavior: ScrollBehavior = "smooth",
+    ) => {
+      const container = getSettingsScrollContainer(layer);
+      if (!container) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+      const targetTop =
+        targetRect.top - containerRect.top + container.scrollTop;
+      const targetCenter = targetTop + targetRect.height / 2;
+      const maxScrollTop = Math.max(0, container.scrollHeight - container.clientHeight);
+      const topThreshold = Math.max(
+        96,
+        Math.min(320, container.clientHeight * 0.32),
+      );
+      const desired =
+        targetTop <= topThreshold
+          ? Math.max(0, targetTop - 28)
+          : targetCenter - container.clientHeight / 2;
+      const clamped = Math.min(maxScrollTop, Math.max(0, desired));
+
+      if (Math.abs(container.scrollTop - clamped) < 1) return;
+      container.scrollTo({ top: clamped, behavior });
+    },
+    [getSettingsScrollContainer],
+  );
+
+  const resolveLayer3HighlightTarget = useCallback((element: HTMLElement) => {
+    if (element instanceof HTMLInputElement) {
+      if (element.type === "checkbox" || element.type === "radio") {
+        return (
+          element.closest<HTMLElement>(".st-checkbox-label, label, .st-perm-row, .st-row, .st-fieldset-inner") ??
+          element
+        );
+      }
+      return (
+        element.closest<HTMLElement>(".st-label, .st-fieldset-inner, .opta-studio-form-group, .st-row") ??
+        element
+      );
+    }
+
+    if (element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+      return (
+        element.closest<HTMLElement>(".st-label, .st-fieldset-inner, .opta-studio-form-group, .st-row") ??
+        element
+      );
+    }
+
+    if (element instanceof HTMLButtonElement) {
+      if (element.classList.contains("st-perm-pill")) {
+        return element.closest<HTMLElement>(".st-perm-row") ?? element;
+      }
+      return element;
+    }
+
+    return (
+      element.closest<HTMLElement>(".st-fieldset-inner, .st-row, .opta-studio-card") ??
+      element
+    );
+  }, []);
+
+  const getLayer3InteractiveElements = useCallback((): HTMLElement[] => {
+    const container = settingsLayerRefs.current[3];
+    if (!container) return [];
+    const content = container.querySelector(".opta-studio-content");
+    if (!content) return [];
+    const candidates = Array.from(
+      content.querySelectorAll<HTMLElement>(
+        "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [role='button']:not([aria-disabled='true'])",
+      ),
+    );
+    return candidates.filter((element) => {
+      const style = window.getComputedStyle(element);
+      if (style.display === "none" || style.visibility === "hidden") return false;
+      const rect = element.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    });
+  }, []);
+
+  const getLayer3ChoiceButtons = useCallback(
+    (button: HTMLButtonElement): HTMLButtonElement[] => {
+      const explicitGroup = button.closest(
+        ".st-perm-pills, [role='group'], [data-opta-choice-group='true']",
+      );
+      if (explicitGroup) {
+        return Array.from(
+          explicitGroup.querySelectorAll<HTMLButtonElement>(
+            "button:not([disabled])",
+          ),
+        );
+      }
+
+      const parent = button.parentElement;
+      if (!parent) return [];
+      const siblingButtons = Array.from(
+        parent.querySelectorAll<HTMLButtonElement>(":scope > button:not([disabled])"),
+      );
+      if (
+        siblingButtons.length > 1 &&
+        siblingButtons.every((candidate) =>
+          candidate.classList.contains("st-perm-pill"),
+        )
+      ) {
+        return siblingButtons;
+      }
+
+      return [];
+    },
+    [],
+  );
+
+  const clearLayer3KeyboardMarkers = useCallback(
+    (clearEditing = true) => {
+      const layerRoot = settingsLayerRefs.current[3];
+      if (!layerRoot) return;
+      const selector = clearEditing
+        ? ".opta-setting-highlighted, .opta-setting-editing, [data-opta-nav-highlight='true'], [data-opta-nav-editing='true']"
+        : ".opta-setting-highlighted, [data-opta-nav-highlight='true']";
+      layerRoot.querySelectorAll<HTMLElement>(selector).forEach((element) => {
+        element.classList.remove("opta-setting-highlighted");
+        element.removeAttribute("data-opta-nav-highlight");
+        if (clearEditing) {
+          element.classList.remove("opta-setting-editing");
+          element.removeAttribute("data-opta-nav-editing");
+        }
+      });
+    },
+    [],
+  );
+
+  const getCurrentLayer3InteractiveTarget = useCallback((): HTMLElement | null => {
+    const elements = getLayer3InteractiveElements();
+    if (!elements.length) return null;
+    const clampedIndex = Math.min(
+      Math.max(settingsLayer3FocusIndex, 0),
+      elements.length - 1,
+    );
+    return elements[clampedIndex] ?? elements[0] ?? null;
+  }, [getLayer3InteractiveElements, settingsLayer3FocusIndex]);
+
+  const resolveLiveLayer3EditTarget = useCallback((): HTMLElement | null => {
+    const refTarget = settingsLayer3EditTargetRef.current;
+    if (refTarget && refTarget.isConnected) {
+      return refTarget;
+    }
+    const fallback = getCurrentLayer3InteractiveTarget();
+    if (fallback) {
+      settingsLayer3EditTargetRef.current = fallback;
+      return fallback;
+    }
+    return refTarget ?? null;
+  }, [getCurrentLayer3InteractiveTarget]);
+
+  const getElementValue = useCallback((element: HTMLElement) => {
+    if (element instanceof HTMLInputElement) {
+      if (element.type === "checkbox" || element.type === "radio") {
+        return element.checked;
+      }
+      return element.value;
+    }
+    if (element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+      return element.value;
+    }
+    return null;
+  }, []);
+
+  const applyElementValue = useCallback(
+    (element: HTMLElement, value: string | number | boolean | null) => {
+      if (element instanceof HTMLInputElement) {
+        if (element.type === "checkbox" || element.type === "radio") {
+          element.checked = Boolean(value);
+          element.dispatchEvent(new Event("input", { bubbles: true }));
+          element.dispatchEvent(new Event("change", { bubbles: true }));
+          return;
+        }
+        element.value = `${value ?? ""}`;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+        return;
+      }
+      if (element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement) {
+        element.value = `${value ?? ""}`;
+        element.dispatchEvent(new Event("input", { bubbles: true }));
+        element.dispatchEvent(new Event("change", { bubbles: true }));
+      }
+    },
+    [],
+  );
+
+  const moveLayer3Highlight = useCallback(
+    (direction: SpatialDirection) => {
+      const elements = getLayer3InteractiveElements();
+      if (!elements.length) return;
+
+      setSettingsLayer3FocusIndex((currentIndex) => {
+        const clampedCurrent = Math.min(
+          Math.max(currentIndex, 0),
+          elements.length - 1,
+        );
+        const current = elements[clampedCurrent] ?? elements[0];
+        const currentRect = current.getBoundingClientRect();
+        const currentX = currentRect.left + currentRect.width / 2;
+        const currentY = currentRect.top + currentRect.height / 2;
+
+        let bestIndex = -1;
+        let bestScore = Number.POSITIVE_INFINITY;
+
+        elements.forEach((candidate, index) => {
+          if (index === clampedCurrent) return;
+          const rect = candidate.getBoundingClientRect();
+          const x = rect.left + rect.width / 2;
+          const y = rect.top + rect.height / 2;
+          const dx = x - currentX;
+          const dy = y - currentY;
+
+          if (direction === "left" && dx >= -4) return;
+          if (direction === "right" && dx <= 4) return;
+          if (direction === "up" && dy >= -4) return;
+          if (direction === "down" && dy <= 4) return;
+
+          const primary = direction === "left" || direction === "right"
+            ? Math.abs(dx)
+            : Math.abs(dy);
+          const secondary = direction === "left" || direction === "right"
+            ? Math.abs(dy)
+            : Math.abs(dx);
+          const score = primary + secondary * 0.55;
+          if (score < bestScore) {
+            bestScore = score;
+            bestIndex = index;
+          }
+        });
+
+        if (bestIndex >= 0) return bestIndex;
+        if (direction === "left" || direction === "up") {
+          return (clampedCurrent - 1 + elements.length) % elements.length;
+        }
+        return (clampedCurrent + 1) % elements.length;
+      });
+    },
+    [getLayer3InteractiveElements],
+  );
+
+  const adjustLayer3SelectedSetting = useCallback(
+    (event: KeyboardEvent): boolean => {
+      const target = resolveLiveLayer3EditTarget();
+      if (!target) return false;
+
+      const key = event.key;
+      const increase =
+        key === "ArrowRight" || key === "ArrowUp" || key === "PageUp";
+      const decrease =
+        key === "ArrowLeft" || key === "ArrowDown" || key === "PageDown";
+      const toMin = key === "Home";
+      const toMax = key === "End";
+      if (!increase && !decrease && !toMin && !toMax) return false;
+
+      if (target instanceof HTMLButtonElement) {
+        const choiceButtons = getLayer3ChoiceButtons(target);
+        if (!choiceButtons.length) return false;
+
+        const currentChoiceIndex = Math.max(0, choiceButtons.indexOf(target));
+        let nextChoiceIndex = currentChoiceIndex;
+        if (toMin) {
+          nextChoiceIndex = 0;
+        } else if (toMax) {
+          nextChoiceIndex = choiceButtons.length - 1;
+        } else {
+          const delta = increase ? 1 : -1;
+          nextChoiceIndex = Math.max(
+            0,
+            Math.min(choiceButtons.length - 1, currentChoiceIndex + delta),
+          );
+        }
+        const nextTarget = choiceButtons[nextChoiceIndex];
+        if (!nextTarget) return false;
+
+        target.classList.remove("opta-setting-editing");
+        target.removeAttribute("data-opta-nav-editing");
+        nextTarget.classList.add("opta-setting-editing");
+        nextTarget.setAttribute("data-opta-nav-editing", "true");
+        settingsLayer3EditTargetRef.current = nextTarget;
+        nextTarget.focus({ preventScroll: true });
+        centerSettingsTargetInView(
+          resolveLayer3HighlightTarget(nextTarget),
+          3,
+          "smooth",
+        );
+        const interactive = getLayer3InteractiveElements();
+        const interactiveIndex = interactive.indexOf(nextTarget);
+        if (interactiveIndex >= 0) {
+          setSettingsLayer3FocusIndex(interactiveIndex);
+        }
+        return true;
+      }
+
+      if (target instanceof HTMLInputElement) {
+        if (target.type === "checkbox" || target.type === "radio") {
+          if (toMin) {
+            target.checked = false;
+          } else if (toMax) {
+            target.checked = true;
+          } else {
+            target.checked = increase;
+          }
+          target.dispatchEvent(new Event("change", { bubbles: true }));
+          return true;
+        }
+
+        if (target.type === "number" || target.type === "range") {
+          const current = Number.parseFloat(target.value || "0");
+          if (!Number.isFinite(current)) return false;
+          const rawStep = Number.parseFloat(target.step || "1");
+          const step = Number.isFinite(rawStep) && rawStep > 0 ? rawStep : 1;
+          const multiplier = event.shiftKey ? 5 : 1;
+          const pageDelta = key === "PageUp" || key === "PageDown" ? 5 : 1;
+          let next = current;
+          if (increase || decrease) {
+            next += (increase ? step : -step) * multiplier * pageDelta;
+          }
+
+          const min = Number.parseFloat(target.min);
+          const max = Number.parseFloat(target.max);
+          if (toMin && Number.isFinite(min)) {
+            next = min;
+          }
+          if (toMax && Number.isFinite(max)) {
+            next = max;
+          }
+          if (Number.isFinite(min)) next = Math.max(next, min);
+          if (Number.isFinite(max)) next = Math.min(next, max);
+
+          target.value = `${next}`;
+          target.dispatchEvent(new Event("input", { bubbles: true }));
+          target.dispatchEvent(new Event("change", { bubbles: true }));
+          return true;
+        }
+        return false;
+      }
+
+      if (target instanceof HTMLSelectElement) {
+        let nextIndex = target.selectedIndex;
+        if (toMin) {
+          nextIndex = 0;
+        } else if (toMax) {
+          nextIndex = Math.max(0, target.options.length - 1);
+        } else {
+          const delta = increase ? 1 : -1;
+          nextIndex = Math.max(
+            0,
+            Math.min(target.options.length - 1, target.selectedIndex + delta),
+          );
+        }
+        target.selectedIndex = nextIndex;
+        target.dispatchEvent(new Event("change", { bubbles: true }));
+        return true;
+      }
+
+      return false;
+    },
+    [
+      centerSettingsTargetInView,
+      getLayer3ChoiceButtons,
+      getLayer3InteractiveElements,
+      resolveLayer3HighlightTarget,
+      resolveLiveLayer3EditTarget,
+    ],
+  );
+
+  const applyLayer3HighlightState = useCallback(
+    ({
+      behavior = "smooth",
+      scroll = true,
+      editMode = settingsLayer3EditMode,
+      editTarget = settingsLayer3EditTargetRef.current,
+      respectInputMode = true,
+    }: {
+      behavior?: ScrollBehavior;
+      scroll?: boolean;
+      editMode?: boolean;
+      editTarget?: HTMLElement | null;
+      respectInputMode?: boolean;
+    } = {}): boolean => {
+      const elements = getLayer3InteractiveElements();
+      if (!elements.length) return false;
+
+      const pointerNavigationActive =
+        settingsNavigationInputModeRef.current === "pointer";
+      if (respectInputMode && pointerNavigationActive && !Boolean(editMode)) {
+        clearLayer3KeyboardMarkers(true);
+        return false;
+      }
+
+      const clampedIndex = Math.min(
+        Math.max(settingsLayer3FocusIndex, 0),
+        elements.length - 1,
+      );
+      if (clampedIndex !== settingsLayer3FocusIndex) {
+        setSettingsLayer3FocusIndex(clampedIndex);
+      }
+
+      const liveEditTarget =
+        Boolean(editMode) &&
+        editTarget &&
+        elements.includes(editTarget)
+          ? editTarget
+          : Boolean(editMode)
+            ? (elements[clampedIndex] ?? null)
+            : null;
+      if (Boolean(editMode)) {
+        settingsLayer3EditTargetRef.current = liveEditTarget;
+      }
+
+      const highlightedInteractive = elements[clampedIndex] ?? elements[0];
+      const highlightedTarget = highlightedInteractive
+        ? resolveLayer3HighlightTarget(highlightedInteractive)
+        : null;
+      const editVisualTarget = liveEditTarget
+        ? resolveLayer3HighlightTarget(liveEditTarget)
+        : null;
+
+      const visualTargets = new Set<HTMLElement>();
+      elements.forEach((element) => {
+        visualTargets.add(resolveLayer3HighlightTarget(element));
+        visualTargets.add(element);
+      });
+
+      visualTargets.forEach((element) => {
+        element.classList.remove("opta-setting-highlighted", "opta-setting-editing");
+        element.removeAttribute("data-opta-nav-highlight");
+        element.removeAttribute("data-opta-nav-editing");
+      });
+
+      if (highlightedTarget) {
+        highlightedTarget.classList.add("opta-setting-highlighted");
+        highlightedTarget.setAttribute("data-opta-nav-highlight", "true");
+      }
+
+      if (Boolean(editMode) && editVisualTarget) {
+        editVisualTarget.classList.add("opta-setting-editing");
+        editVisualTarget.setAttribute("data-opta-nav-editing", "true");
+      }
+
+      if (scroll) {
+        if (highlightedTarget) {
+          centerSettingsTargetInView(highlightedTarget, 3, behavior);
+        }
+      }
+      return true;
+    },
+    [
+      clearLayer3KeyboardMarkers,
+      centerSettingsTargetInView,
+      getLayer3InteractiveElements,
+      resolveLayer3HighlightTarget,
+      settingsLayer3EditMode,
+      settingsLayer3FocusIndex,
+    ],
+  );
+
+  const scheduleLayer3HighlightRefresh = useCallback(() => {
+    if (settingsLayer !== 3) return;
+    const applyHighlight = () =>
+      applyLayer3HighlightState({
+        behavior: "auto",
+        scroll: false,
+        editMode: false,
+        editTarget: null,
+      });
+
+    // Always run staged retries because the deep-layer content swaps with
+    // enter/exit animations and may mount after the first pass succeeds.
+    applyHighlight();
+
+    window.requestAnimationFrame(() => {
+      applyHighlight();
+    });
+    [32, 96, 180, 260, 320, 420].forEach((delay) => {
+      window.setTimeout(() => {
+        applyHighlight();
+      }, delay);
+    });
+  }, [applyLayer3HighlightState, settingsLayer]);
+  const scheduleLayer3HighlightRefreshRef = useRef(
+    scheduleLayer3HighlightRefresh,
+  );
+  scheduleLayer3HighlightRefreshRef.current = scheduleLayer3HighlightRefresh;
+
+  const restoreLayer3NavigationFocus = useCallback((force = false) => {
+    if (settingsLayer !== 3) return;
+
+    const focusLayerShell = () => {
+      const activeElement = document.activeElement;
+      const activeIsTypingControl =
+        activeElement instanceof HTMLInputElement ||
+        activeElement instanceof HTMLTextAreaElement ||
+        activeElement instanceof HTMLSelectElement ||
+        (activeElement instanceof HTMLElement && activeElement.isContentEditable);
+      if (activeIsTypingControl) {
+        activeElement.blur();
+      }
+      settingsLayerRefs.current[3]?.focus({ preventScroll: true });
+    };
+
+    const activeElement = document.activeElement;
+    const activeIsTypingControl =
+      activeElement instanceof HTMLInputElement ||
+      activeElement instanceof HTMLTextAreaElement ||
+      activeElement instanceof HTMLSelectElement ||
+      (activeElement instanceof HTMLElement && activeElement.isContentEditable);
+    if (!force && !activeIsTypingControl) {
+      return;
+    }
+
+    focusLayerShell();
+    window.requestAnimationFrame(focusLayerShell);
+    [96, 220, 420].forEach((delay) => {
+      window.setTimeout(focusLayerShell, delay);
+    });
+  }, [settingsLayer]);
+
+  const cancelLayer3SettingEdit = useCallback(() => {
+    const draftValue = settingsLayer3EditDraftRef.current;
+    const referenceTarget = settingsLayer3EditTargetRef.current;
+    const liveTarget = resolveLiveLayer3EditTarget();
+
+    const rollbackTargets = [liveTarget, referenceTarget].filter(
+      (candidate): candidate is HTMLElement => Boolean(candidate),
+    );
+    const uniqueRollbackTargets = Array.from(new Set(rollbackTargets));
+    uniqueRollbackTargets.forEach((target) => {
+      applyElementValue(target, draftValue);
+    });
+
+    const cleanupTarget = liveTarget ?? referenceTarget;
+    if (cleanupTarget) {
+      cleanupTarget.blur();
+      const visualTarget = resolveLayer3HighlightTarget(cleanupTarget);
+      visualTarget.classList.remove("opta-setting-editing");
+      visualTarget.removeAttribute("data-opta-nav-editing");
+    }
+    settingsLayer3EditTargetRef.current = null;
+    settingsLayer3PendingEditFocusRef.current = false;
+    settingsLayer3EditDraftRef.current = null;
+    setSettingsLayer3EditMode(false);
+    restoreLayer3NavigationFocus(true);
+    scheduleLayer3HighlightRefresh();
+  }, [
+    applyElementValue,
+    resolveLayer3HighlightTarget,
+    resolveLiveLayer3EditTarget,
+    restoreLayer3NavigationFocus,
+    scheduleLayer3HighlightRefresh,
+  ]);
+
+  const commitLayer3SettingEdit = useCallback(() => {
+    const target = resolveLiveLayer3EditTarget();
+    if (!target) return;
+
+    if (target instanceof HTMLButtonElement) {
+      target.click();
+    } else {
+      target.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    const scope =
+      target.closest(".st-fieldset, .opta-studio-card, .opta-studio-content") ??
+      settingsLayerRefs.current[3];
+    const saveButton = Array.from(
+      (scope ?? document).querySelectorAll<HTMLButtonElement>(
+        "button:not([disabled])",
+      ),
+    ).find((button) => /save/i.test(button.textContent ?? ""));
+    if (
+      saveButton &&
+      (!(
+        target instanceof HTMLButtonElement
+      ) ||
+        !/save/i.test(target.textContent ?? ""))
+    ) {
+      saveButton.click();
+    }
+
+    target.blur();
+    const visualTarget = resolveLayer3HighlightTarget(target);
+    visualTarget.classList.remove("opta-setting-editing");
+    visualTarget.removeAttribute("data-opta-nav-editing");
+    settingsLayer3EditTargetRef.current = null;
+    settingsLayer3PendingEditFocusRef.current = false;
+    settingsLayer3EditDraftRef.current = null;
+    setSettingsLayer3EditMode(false);
+    restoreLayer3NavigationFocus(true);
+    scheduleLayer3HighlightRefresh();
+  }, [
+    resolveLayer3HighlightTarget,
+    resolveLiveLayer3EditTarget,
+    restoreLayer3NavigationFocus,
+    scheduleLayer3HighlightRefresh,
+  ]);
+
+  const openSettings = useCallback(
+    (tab: SettingsTabId = "connection-network") => {
+      setActivePage("sessions");
+      focusSettingsTab(tab);
+      goToSettingsLayer(3);
+    },
+    [focusSettingsTab, goToSettingsLayer],
+  );
 
   const {
     activeSessionId,
@@ -190,11 +1192,6 @@ function App() {
 
   // V1: Widget layout hook
   const widgetLayout = useWidgetLayout("default");
-  const { handleAccountsLogin } = useAccountsAuthControls({
-    connection,
-    onNotice: (message) => setNotice(message),
-  });
-
   const useConnectionHealthResult = useConnectionHealth(connection, connectionState);
 
   const { status: browserLiveHostStatus, getSlotForSession } =
@@ -303,15 +1300,509 @@ function App() {
     [browserVisualBySession],
   );
 
+  const isSettingsNavigationActive = settingsLayer > 1;
+  const isSettingsFocusMode = isSettingsNavigationActive && settingsFullscreen;
+
+  useEffect(() => {
+    if (settingsLayer !== 2) return;
+    const layerRoot = settingsLayerRefs.current[2];
+    if (!layerRoot) return;
+    const activeCard = layerRoot.querySelector<HTMLElement>(
+      `.settings-view-card[data-settings-tab-id="${settingsActiveTab}"]`,
+    ) ?? layerRoot.querySelector<HTMLElement>(".settings-view-card.is-active");
+    if (!activeCard) return;
+    centerSettingsTargetInView(activeCard, 2, "smooth");
+  }, [centerSettingsTargetInView, settingsActiveTab, settingsFocusIndex, settingsLayer]);
+
+  useEffect(() => {
+    if (settingsLayer !== 3) return;
+
+    const layerContainer = settingsLayerRefs.current[3];
+    const content = layerContainer?.querySelector(
+      ".opta-studio-content",
+    ) as HTMLElement | null;
+    if (!content) return;
+
+    let rafId: number | null = null;
+    const syncHighlightMarkers = () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      rafId = window.requestAnimationFrame(() => {
+        applyLayer3HighlightState({ behavior: "auto", scroll: false });
+        rafId = null;
+      });
+    };
+
+    const observer = new MutationObserver(() => {
+      syncHighlightMarkers();
+    });
+    observer.observe(content, { childList: true, subtree: true });
+    content.addEventListener("transitionend", syncHighlightMarkers, true);
+    content.addEventListener("animationend", syncHighlightMarkers, true);
+    syncHighlightMarkers();
+
+    return () => {
+      if (rafId !== null) {
+        window.cancelAnimationFrame(rafId);
+      }
+      observer.disconnect();
+      content.removeEventListener("transitionend", syncHighlightMarkers, true);
+      content.removeEventListener("animationend", syncHighlightMarkers, true);
+    };
+  }, [applyLayer3HighlightState, settingsActiveTab, settingsLayer]);
+
+  useEffect(() => {
+    if (settingsLayer !== 3) {
+      if (settingsLayer3EditTargetRef.current) {
+        const visualTarget = resolveLayer3HighlightTarget(
+          settingsLayer3EditTargetRef.current,
+        );
+        visualTarget.classList.remove(
+          "opta-setting-editing",
+          "opta-setting-highlighted",
+        );
+        visualTarget.removeAttribute("data-opta-nav-editing");
+        visualTarget.removeAttribute("data-opta-nav-highlight");
+      }
+      settingsLayer3EditTargetRef.current = null;
+      settingsLayer3PendingEditFocusRef.current = false;
+      settingsLayer3EditDraftRef.current = null;
+      setSettingsLayer3EditMode(false);
+      return;
+    }
+
+    const elements = getLayer3InteractiveElements();
+    if (!elements.length) {
+      const timeoutA = window.setTimeout(() => {
+        applyLayer3HighlightState({ behavior: "auto", scroll: false });
+      }, 32);
+      const timeoutB = window.setTimeout(() => {
+        applyLayer3HighlightState({ behavior: "auto", scroll: false });
+      }, 128);
+      return () => {
+        window.clearTimeout(timeoutA);
+        window.clearTimeout(timeoutB);
+      };
+    }
+    applyLayer3HighlightState();
+  }, [
+    applyLayer3HighlightState,
+    getLayer3InteractiveElements,
+    resolveLayer3HighlightTarget,
+    settingsLayer,
+    settingsActiveTab,
+  ]);
+
+  // Re-apply L3 visual markers after every render so React class updates
+  // from daemon polling do not drop keyboard highlight/edit styling.
+  useEffect(() => {
+    if (settingsLayer !== 3) return;
+    if (
+      settingsNavigationInputModeRef.current === "keyboard" &&
+      !settingsLayer3EditMode
+    ) {
+      restoreLayer3NavigationFocus();
+    }
+    applyLayer3HighlightState({ behavior: "auto", scroll: false });
+  }, [
+    applyLayer3HighlightState,
+    restoreLayer3NavigationFocus,
+    settingsLayer,
+    settingsLayer3EditMode,
+    settingsLayer3FocusIndex,
+  ]);
+
+  useEffect(() => {
+    if (settingsLayer !== 3) return;
+    const layerRoot = settingsLayerRefs.current[3];
+    if (!layerRoot) return;
+
+    const interactiveSelector =
+      "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [role='button']:not([aria-disabled='true'])";
+
+    const switchToPointerMode = (target: EventTarget | null, withSelection: boolean) => {
+      if (!(target instanceof HTMLElement) || !layerRoot.contains(target)) return;
+      const interactiveTarget =
+        withSelection
+          ? target.closest<HTMLElement>(interactiveSelector)
+          : null;
+      const modeSwitchNeeded = settingsNavigationInputModeRef.current !== "pointer";
+      const editModeActive = settingsLayer3EditMode;
+      if (!modeSwitchNeeded && !editModeActive && !interactiveTarget) return;
+
+      if (modeSwitchNeeded) {
+        setSettingsNavigationInputMode("pointer");
+      }
+
+      if (editModeActive) {
+        settingsLayer3EditTargetRef.current = null;
+        settingsLayer3PendingEditFocusRef.current = false;
+        settingsLayer3EditDraftRef.current = null;
+        setSettingsLayer3EditMode(false);
+      }
+
+      if (interactiveTarget) {
+        const interactiveElements = getLayer3InteractiveElements();
+        const nextIndex = interactiveElements.indexOf(interactiveTarget);
+        if (nextIndex >= 0) {
+          setSettingsLayer3FocusIndex((current) =>
+            current === nextIndex ? current : nextIndex,
+          );
+        }
+      }
+
+      applyLayer3HighlightState({
+        behavior: "auto",
+        scroll: false,
+        editMode: false,
+        editTarget: null,
+      });
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      if (event.buttons !== 0) return;
+      switchToPointerMode(event.target, false);
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      switchToPointerMode(event.target, true);
+    };
+
+    layerRoot.addEventListener("mousemove", handleMouseMove, true);
+    layerRoot.addEventListener("pointerdown", handlePointerDown, true);
+    return () => {
+      layerRoot.removeEventListener("mousemove", handleMouseMove, true);
+      layerRoot.removeEventListener("pointerdown", handlePointerDown, true);
+    };
+  }, [
+    applyLayer3HighlightState,
+    getLayer3InteractiveElements,
+    setSettingsNavigationInputMode,
+    settingsLayer,
+    settingsLayer3EditMode,
+  ]);
+
+  useEffect(() => {
+    if (settingsLayer !== 3 || settingsLayer3EditMode) return;
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const layerRoot = settingsLayerRefs.current[3];
+      if (!layerRoot) return;
+      const target = event.target;
+      if (!(target instanceof HTMLElement) || !layerRoot.contains(target)) {
+        return;
+      }
+
+      if (settingsLayer3PendingEditFocusRef.current) {
+        settingsLayer3PendingEditFocusRef.current = false;
+        return;
+      }
+
+      if (settingsNavigationInputModeRef.current !== "keyboard") {
+        return;
+      }
+
+      const typingControl =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target.isContentEditable;
+      if (!typingControl) return;
+
+      target.blur();
+      restoreLayer3NavigationFocus(true);
+      applyLayer3HighlightState({
+        behavior: "auto",
+        scroll: false,
+        editMode: false,
+        editTarget: null,
+      });
+    };
+
+    window.addEventListener("focusin", handleFocusIn, true);
+    return () => window.removeEventListener("focusin", handleFocusIn, true);
+  }, [
+    applyLayer3HighlightState,
+    restoreLayer3NavigationFocus,
+    settingsLayer,
+    settingsLayer3EditMode,
+  ]);
+
+  useEffect(() => {
+    if (settingsLayer !== 3) {
+      layer3ResetKeyRef.current = null;
+      setSettingsNavigationInputMode("keyboard");
+      return;
+    }
+
+    const resetKey = `${settingsLayer}:${settingsActiveTab}`;
+    if (layer3ResetKeyRef.current === resetKey) return;
+    layer3ResetKeyRef.current = resetKey;
+
+    settingsLayer3EditTargetRef.current = null;
+    settingsLayer3PendingEditFocusRef.current = false;
+    settingsLayer3EditDraftRef.current = null;
+    setSettingsLayer3EditMode(false);
+    setSettingsLayer3FocusIndex(0);
+    setSettingsNavigationInputMode("keyboard");
+    scheduleLayer3HighlightRefreshRef.current();
+  }, [setSettingsNavigationInputMode, settingsActiveTab, settingsLayer]);
+
+  useEffect(() => {
+    const nextIndex = SETTINGS_TAB_SEQUENCE.indexOf(settingsActiveTab);
+    if (nextIndex >= 0 && nextIndex !== settingsFocusIndex) {
+      setSettingsFocusIndex(nextIndex);
+    }
+  }, [settingsActiveTab, settingsFocusIndex]);
+
+  useEffect(() => {
+    if (settingsLayer <= 1) return;
+    setLastSettingsLayer(settingsLayer as Exclude<SettingsLayer, 1>);
+    setLastSettingsTab(settingsActiveTab);
+  }, [settingsActiveTab, settingsLayer]);
+
+  useEffect(() => {
+    if (settingsLayer === 1 && settingsFullscreen) {
+      setSettingsFullscreen(false);
+    }
+  }, [settingsFullscreen, settingsLayer]);
+
   useEffect(() => {
     if (!notice) return;
     const timeout = window.setTimeout(() => setNotice(null), 3800);
     return () => window.clearTimeout(timeout);
   }, [notice]);
 
-  // Effect: Global Keyboard Shortcuts (e.g., Ctrl+B for browser mode)
+  // Effect: Global keyboard-first settings navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const isCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+      const isTypingTarget =
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        e.target instanceof HTMLSelectElement ||
+        (e.target instanceof HTMLElement && e.target.isContentEditable);
+
+      if (isCtrlOrMeta && key === "s" && e.shiftKey) {
+        e.preventDefault();
+        setSettingsNavigationInputMode("keyboard");
+        focusSettingsTab("connection-network");
+        goToSettingsLayer(2);
+        return;
+      }
+
+      if (isCtrlOrMeta && key === "s") {
+        e.preventDefault();
+        setSettingsNavigationInputMode("keyboard");
+        if (settingsLayer === 1) {
+          focusSettingsTab(lastSettingsTab);
+          goToSettingsLayer(lastSettingsLayer);
+          return;
+        }
+        goToSettingsLayer(1);
+        return;
+      }
+
+      const moveLeftKey = key === "a" || e.key === "ArrowLeft";
+      const moveRightKey = key === "d" || e.key === "ArrowRight";
+      const moveUpKey = key === "w" || e.key === "ArrowUp";
+      const moveDownKey = key === "s" || e.key === "ArrowDown";
+      const categoryPrev = e.shiftKey && moveLeftKey;
+      const categoryNext = e.shiftKey && moveRightKey;
+      const navigateLeft = moveLeftKey && !e.shiftKey;
+      const navigateRight = moveRightKey && !e.shiftKey;
+      const navigateUp = moveUpKey;
+      const navigateDown = moveDownKey;
+      const goUpLayerKey = e.code === "Space" && !e.shiftKey;
+      const goDownLayerKey = e.key === "Tab" || e.key === "Backspace";
+      const layer3AdjustmentKey =
+        e.key === "Home" ||
+        e.key === "End" ||
+        e.key === "PageUp" ||
+        e.key === "PageDown";
+      const settingsKeyboardIntent =
+        settingsLayer > 1 &&
+        (categoryPrev ||
+          categoryNext ||
+          navigateLeft ||
+          navigateRight ||
+          navigateUp ||
+          navigateDown ||
+          goUpLayerKey ||
+          goDownLayerKey ||
+          layer3AdjustmentKey ||
+          e.key === "Enter" ||
+          e.key === "Escape" ||
+          (e.shiftKey && e.code === "Space"));
+      if (settingsKeyboardIntent) {
+        setSettingsNavigationInputMode("keyboard");
+      }
+
+      if (settingsLayer > 1) {
+        if (e.shiftKey && e.code === "Space") {
+          e.preventDefault();
+          setSettingsFullscreen((current) => !current);
+          return;
+        }
+
+        if (settingsLayer === 3 && settingsLayer3EditMode) {
+          if (e.key === "Escape") {
+            e.preventDefault();
+            cancelLayer3SettingEdit();
+            return;
+          }
+
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitLayer3SettingEdit();
+            return;
+          }
+
+          const adjustmentKey =
+            navigateLeft ||
+            navigateRight ||
+            navigateUp ||
+            navigateDown ||
+            e.key === "Home" ||
+            e.key === "End" ||
+            e.key === "PageUp" ||
+            e.key === "PageDown";
+          // When the focused element is a native typing control (e.g. a React-controlled
+          // input[type="number"]), let the browser handle ArrowUp/Down natively.
+          // Direct target.value assignment does not trigger React's synthetic onChange,
+          // so we skip the custom adjuster and allow the event to propagate.
+          if (adjustmentKey && !isTypingTarget) {
+            const adjusted = adjustLayer3SelectedSetting(e);
+            if (adjusted) {
+              e.preventDefault();
+              return;
+            }
+          }
+
+          if (isTypingTarget) {
+            return;
+          }
+        }
+
+        if (e.key === "Escape") {
+          e.preventDefault();
+          goToSettingsLayer(settingsLayer === 3 ? 2 : 1);
+          return;
+        }
+
+        if (goDownLayerKey) {
+          e.preventDefault();
+          goToSettingsLayer(settingsLayer === 3 ? 2 : 1);
+          return;
+        }
+
+        if (goUpLayerKey) {
+          e.preventDefault();
+          if (settingsLayer === 2) {
+            goToSettingsLayer(3);
+          }
+          return;
+        }
+
+        if (categoryPrev || categoryNext) {
+          e.preventDefault();
+          cycleSettingsTab(categoryPrev ? -1 : 1);
+          if (settingsLayer === 3) {
+            setSettingsLayer3EditMode(false);
+            setSettingsLayer3FocusIndex(0);
+            scheduleLayer3HighlightRefresh();
+          }
+          return;
+        }
+
+        if (settingsLayer === 2) {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            goToSettingsLayer(3);
+            return;
+          }
+          if (navigateLeft) {
+            e.preventDefault();
+            moveSettingsGridSelection("left");
+            return;
+          }
+          if (navigateRight) {
+            e.preventDefault();
+            moveSettingsGridSelection("right");
+            return;
+          }
+          if (navigateUp) {
+            e.preventDefault();
+            moveSettingsGridSelection("up");
+            return;
+          }
+          if (navigateDown) {
+            e.preventDefault();
+            moveSettingsGridSelection("down");
+            return;
+          }
+        }
+
+        if (settingsLayer === 3) {
+          if (isTypingTarget) return;
+
+          if (e.key === "Enter") {
+            const elements = getLayer3InteractiveElements();
+            if (!elements.length) return;
+            const activeIndex = Math.min(
+              Math.max(settingsLayer3FocusIndex, 0),
+              elements.length - 1,
+            );
+            const target = elements[activeIndex] ?? elements[0];
+            if (!target) return;
+
+            e.preventDefault();
+            settingsLayer3EditTargetRef.current = target;
+            settingsLayer3PendingEditFocusRef.current = true;
+            settingsLayer3EditDraftRef.current = getElementValue(target);
+            setSettingsLayer3EditMode(true);
+            target.focus({ preventScroll: true });
+            return;
+          }
+
+          if (navigateLeft || navigateRight || navigateUp || navigateDown) {
+            e.preventDefault();
+            const direction: SpatialDirection = navigateLeft
+              ? "left"
+              : navigateRight
+                ? "right"
+                : navigateUp
+                  ? "up"
+                  : "down";
+            moveLayer3Highlight(direction);
+            return;
+          }
+        }
+
+        return;
+      }
+
+      if (settingsLayer === 1 && e.key === "Enter") {
+        e.preventDefault();
+        goToSettingsLayer(2);
+        return;
+      }
+
+      if (settingsLayer === 1 && e.shiftKey && e.code === "Space") {
+        e.preventDefault();
+        goToSettingsLayer(2);
+        setSettingsFullscreen(true);
+        return;
+      }
+
+      if (settingsLayer === 1 && goUpLayerKey) {
+        e.preventDefault();
+        goToSettingsLayer(2);
+        return;
+      }
+
       // Ignore if the user is typing in an input/textarea
       if (
         e.target instanceof HTMLInputElement ||
@@ -320,13 +1811,7 @@ function App() {
         return;
       }
 
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
-        // V1: Ctrl+S toggles in-place settings view
-        e.preventDefault();
-        setIsSettingsView((prev) => !prev);
-      } else if (e.key === "Escape" && isSettingsView) {
-        setIsSettingsView(false);
-      } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "b") {
+      if (isCtrlOrMeta && key === "b") {
         e.preventDefault();
         setBrowserViewMode((current) => {
           const next =
@@ -348,7 +1833,25 @@ function App() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isSettingsView]);
+  }, [
+    adjustLayer3SelectedSetting,
+    cancelLayer3SettingEdit,
+    commitLayer3SettingEdit,
+    cycleSettingsTab,
+    focusSettingsTab,
+    getElementValue,
+    getLayer3InteractiveElements,
+    moveSettingsGridSelection,
+    moveLayer3Highlight,
+    goToSettingsLayer,
+    lastSettingsLayer,
+    lastSettingsTab,
+    setSettingsNavigationInputMode,
+    scheduleLayer3HighlightRefresh,
+    settingsLayer,
+    settingsLayer3EditMode,
+    settingsLayer3FocusIndex,
+  ]);
 
   useEffect(() => {
     if (connectionState === "connected") setHasEverConnected(true);
@@ -469,14 +1972,14 @@ function App() {
         title: "Open models control room",
         description: "Switch to LMX model operations and memory view",
         keywords: ["models", "lmx", "memory"],
-        run: () => setActivePage("models"),
+        run: () => openSettings("lmx-models"),
       },
       {
         id: "open-settings",
         title: "Open settings",
         description: "Open Settings Studio in the connection tab",
         keywords: ["settings", "preferences", "config", "studio"],
-        run: () => openSettings("connection"),
+        run: () => openSettings("connection-network"),
       },
       {
         id: "open-sessions",
@@ -499,14 +2002,14 @@ function App() {
           "rerank",
           "diff",
         ],
-        run: () => setActivePage("tools"),
+        run: () => openSettings("tools-agents-learning"),
       },
       {
         id: "open-app-catalog",
         title: "Open app catalog",
         description: "Install and manage Opta apps through daemon-backed CLI ops",
         keywords: ["apps", "install", "uninstall", "catalog"],
-        run: () => setActivePage("apps"),
+        run: () => openSettings("apps-catalog"),
       },
       {
         id: "open-session-memory",
@@ -514,7 +2017,7 @@ function App() {
         description:
           "Search, export, and manage persisted sessions via sessions.* operations",
         keywords: ["sessions", "memory", "search", "export", "delete"],
-        run: () => setActivePage("memory"),
+        run: () => openSettings("session-memory"),
       },
       {
         id: "open-system-operations",
@@ -532,7 +2035,7 @@ function App() {
           "onboard",
           "keychain",
         ],
-        run: () => setActivePage("system"),
+        run: () => openSettings("daemon-runtime"),
       },
       {
         id: "open-cli-operations",
@@ -546,28 +2049,28 @@ function App() {
           "tui",
           "parity",
         ],
-        run: () => setActivePage("cli"),
+        run: () => openSettings("cli-system-advanced"),
       },
       {
         id: "open-env-profiles",
         title: "Open env management",
         description: "Run daemon env.* operations for profile management",
         keywords: ["env", "profiles", "environment", "vars", "secrets"],
-        run: () => setActivePage("env"),
+        run: () => openSettings("environment-profiles"),
       },
       {
         id: "open-mcp-management",
         title: "Open MCP management",
         description: "Run daemon mcp.* operations for server management",
         keywords: ["mcp", "servers", "management", "tools"],
-        run: () => setActivePage("mcp"),
+        run: () => openSettings("mcp-integrations"),
       },
       {
         id: "open-config-studio",
         title: "Open config studio",
         description: "Inspect, search, and edit daemon config values",
         keywords: ["config", "settings", "keys", "reset"],
-        run: () => setActivePage("config"),
+        run: () => openSettings("config-studio"),
       },
       {
         id: "open-account-controls",
@@ -575,21 +2078,21 @@ function App() {
         description:
           "Manage account auth and account key operations via daemon controls",
         keywords: ["account", "signup", "login", "logout", "keys", "auth"],
-        run: () => setActivePage("account"),
+        run: () => openSettings("accounts-vault"),
       },
       {
         id: "open-jobs",
         title: "Open background jobs",
         description: "View and manage daemon background processes",
         keywords: ["jobs", "background", "processes", "kill", "output"],
-        run: () => setActivePage("jobs"),
+        run: () => openSettings("background-jobs"),
       },
       {
         id: "open-logs",
         title: "Open daemon logs",
         description: "View daemon log entries in real time",
         keywords: ["logs", "daemon", "debug", "errors"],
-        run: () => setActivePage("logs"),
+        run: () => openSettings("daemon-logs"),
       },
       {
         id: "export-session",
@@ -644,14 +2147,58 @@ function App() {
   closePaletteRef.current = palette.close;
 
   useEffect(() => {
+    const root = document.documentElement;
+    const body = document.body;
+    const classes = ["platform-macos", "platform-windows", "platform-linux"];
+    root.classList.remove(...classes);
+    body.classList.remove(...classes);
+    if (!platform) {
+      root.removeAttribute("data-platform");
+      body.removeAttribute("data-platform");
+      return;
+    }
+    const className = `platform-${platform}`;
+    root.classList.add(className);
+    body.classList.add(className);
+    root.setAttribute("data-platform", platform);
+    body.setAttribute("data-platform", platform);
+  }, [platform]);
+
+  useEffect(() => {
+    const root = document.documentElement;
+    const cssSupports =
+      typeof CSS !== "undefined" && typeof CSS.supports === "function"
+        ? CSS.supports.bind(CSS)
+        : null;
+    const supportsBackdrop = Boolean(
+      cssSupports?.("backdrop-filter: blur(1px)") ||
+        cssSupports?.("-webkit-backdrop-filter: blur(1px)"),
+    );
+    root.classList.toggle("opta-backdrop-supported", supportsBackdrop);
+    root.classList.toggle("opta-backdrop-fallback", !supportsBackdrop);
+  }, []);
+
+  const supportsInert =
+    typeof HTMLElement !== "undefined" && "inert" in HTMLElement.prototype;
+
+  useEffect(() => {
     const shellBody = shellBodyRef.current;
     if (!shellBody) return;
     if (palette.isOpen) {
-      shellBody.setAttribute("inert", "");
+      if (supportsInert) {
+        shellBody.setAttribute("inert", "");
+      } else {
+        shellBody.classList.add("palette-inert-fallback");
+      }
     } else {
       shellBody.removeAttribute("inert");
+      shellBody.classList.remove("palette-inert-fallback");
     }
-  }, [palette.isOpen]);
+  }, [palette.isOpen, supportsInert]);
+
+  const toggleSidebarFromMenuButton = useCallback(() => {
+    setSidebarVisible((current) => !current);
+  }, [setSidebarVisible]);
 
   const onSubmitComposer = useCallback(
     async (overrides?: SessionTurnOverrides) => {
@@ -766,11 +2313,16 @@ function App() {
     return <div style={{ background: "#09090b", height: "100vh" }} />;
   }
   if (firstRun) {
-    return <SetupWizard onComplete={() => setFirstRun(false)} />;
+    return (
+      <Suspense fallback={<div style={{ background: "#09090b", height: "100vh" }} />}>
+        <LazySetupWizard onComplete={() => setFirstRun(false)} />
+      </Suspense>
+    );
   }
 
   const showReconnectOverlay =
     initialCheckDone && connectionState !== "connected" && hasEverConnected;
+  const platformClass = platform ? ` platform-${platform}` : "";
 
   return (
     <>
@@ -779,7 +2331,14 @@ function App() {
         <div className="v1-blob v1-blob-1" />
         <div className="v1-blob v1-blob-2" />
       </div>
-      <div className={`app-shell ${palette.isOpen ? "palette-open" : ""}`}>
+      <div
+        className={`app-shell${platformClass} ${palette.isOpen ? "palette-open" : ""}${isSettingsNavigationActive ? " settings-nav-open" : ""}${settingsLayer === 3 ? " settings-deep-open" : ""}${isSettingsFocusMode ? " settings-focus-mode" : ""}`}
+        data-settings-layer={settingsNavigationState.activeLayer}
+        data-settings-highlight={settingsNavigationState.highlightedNodeKey ?? ""}
+        data-settings-editing={settingsNavigationState.editMode ? "true" : "false"}
+        data-settings-scroll-container={settingsNavigationState.activeScrollContainerKey}
+        data-platform={platform ?? undefined}
+        >
         <div
           ref={shellBodyRef}
           className="app-shell-body"
@@ -789,65 +2348,30 @@ function App() {
           <header className="v1-topbar" data-tauri-drag-region>
             <div className="v1-top-left" data-tauri-drag-region>
               <div className="v1-logo" data-tauri-drag-region>
-                <svg width="24" height="24" viewBox="0 0 48 48" fill="none" className="v1-logo-svg" data-tauri-drag-region>
-                  <circle cx="24" cy="24" r="22" stroke="rgba(168,85,247,0.3)" strokeWidth="1.5" />
-                  <path d="M 32 14 A 14 14 0 1 0 32 34" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
-                  <line x1="16" y1="36" x2="36" y2="12" stroke="#a855f7" strokeWidth="3" strokeLinecap="round" />
-                </svg>
+                <img
+                  src="/opta-code-mark.svg"
+                  alt="Opta Code"
+                  className="v1-logo-mark"
+                  data-tauri-drag-region
+                />
                 <span className="v1-logo-text" data-tauri-drag-region>OPTA CODE</span>
               </div>
             </div>
-            {/* Design Concept: Unified Topbar (0 or 1) */}
-            {(designMode === "0" || designMode === "1") && (
-              <div className="v1-top-right">
-                <div className="v1-app-btn-group">
-                  {designMode === "1" && (
-                    <button
-                      className="v1-app-btn"
-                      type="button"
-                    >
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="16" height="16"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>
-                      <span>CUSTOMISE TILES</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    className="v1-app-btn"
-                    onClick={() => { void handleAccountsLogin(); }}
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--opta-primary-glow)" strokeWidth="2">
-                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                      <circle cx="12" cy="7" r="4" />
-                    </svg>
-                    <span>ACCOUNTS</span>
-                  </button>
-                </div>
-              </div>
-            )}
             {/* Floating Action Island — inside topbar, positioned top-right */}
             <div className="v1-action-island">
               <button
                 type="button"
-                className="v1-island-btn"
-                onClick={() => widgetLayout.toggleEditMode()}
+                className={`v1-island-btn ${sidebarVisible ? "is-active" : ""}`}
+                aria-pressed={sidebarVisible}
+                title={sidebarVisible ? "Hide sidebar" : "Show sidebar"}
+                onClick={toggleSidebarFromMenuButton}
               >
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 20h9" />
-                  <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="20" y2="12" />
+                  <line x1="4" y1="18" x2="20" y2="18" />
                 </svg>
-                Tiles
-              </button>
-              <div className="v1-island-divider" />
-              <button
-                type="button"
-                className="v1-island-btn"
-                onClick={() => { void handleAccountsLogin(); }}
-              >
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-                Accounts
+                Menu
               </button>
             </div>
           </header>
@@ -902,6 +2426,7 @@ function App() {
               }}
               deviceLabel={deviceLabel}
               onDeviceLabelChange={handleDeviceLabelChange}
+              collapsed={!sidebarVisible}
             />
 
             {/* Center: Chat or Page Content */}
@@ -915,55 +2440,125 @@ function App() {
                     </div>
                   )}
                   <div className="v1-branding">
-                    <div className="v1-brand-text">OPTA</div>
+                    <div
+                      className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
+                    >
+                      <div className="v1-brand-word" aria-label="OPTA">
+                        {["O", "P", "T", "A"].map((letter, index) => (
+                          <span
+                            key={letter}
+                            className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                          >
+                            {letter}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="v1-brand-settings">OPTA SETTINGS</div>
+                    </div>
                     <div className="v1-brand-sub">Code Environment</div>
                   </div>
                 </>
               )}
 
               {/* Middle Layer (receives Settings Overlay) */}
-              <div className="v1-middle-layer">
-                {/* Settings View (Ctrl+S overlay) */}
-                {isSettingsView && (
-                  <div className={`v1-settings-overlay dm-overlay-anim dm-overlay-${designMode}`}>
-                    <SettingsView
-                      designMode={designMode}
-                      onOpenSettingsTab={(tab) => {
-                        setIsSettingsView(false);
-                        openSettings(tab as SettingsTabId);
-                      }}
-                    />
-                  </div>
-                )}
+              <div className="v1-middle-layer" ref={settingsMiddleLayerRef}>
+                <AnimatePresence mode="wait" custom={settingsLayerTransition} initial={false}>
+                  {settingsLayer === 2 && (
+                    <motion.div
+                      key="settings-layer-2"
+                      className="v1-settings-motion-layer"
+                      custom={settingsLayerTransition}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer v1-settings-layer-2 dm-overlay-anim dm-overlay-${designMode}${settingsFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        tabIndex={-1}
+                        style={settingsOverlayDockStyle}
+                        ref={(element: HTMLDivElement | null) => {
+                          settingsLayerRefs.current[2] = element;
+                        }}
+                      >
+                        <Suspense
+                          fallback={
+                            <SettingsLayerLoadingFallback
+                              layer={2}
+                              activeTab={settingsActiveTab}
+                            />
+                          }
+                        >
+                          <LazySettingsView
+                            designMode={designMode}
+                            selectedTab={settingsActiveTab}
+                            isFullscreen={settingsFullscreen}
+                            onHighlightTab={focusSettingsTab}
+                            onOpenSettingsTab={openSettings}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
 
-                {/* Chat Pane (hidden when settings view active) */}
-                <div className={`v1-chat-pane ${isSettingsView ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
-                  {activePage === "models" ? (
-                    <ModelsPage connection={connection} onOpenSettings={() => openSettings("lmx")} />
-                  ) : activePage === "tools" ? (
-                    <ToolingOperationsPage connection={connection} />
-                  ) : activePage === "apps" ? (
-                    <AppCatalogPage connection={connection} />
-                  ) : activePage === "memory" ? (
-                    <SessionMemoryPage connection={connection} />
-                  ) : activePage === "system" ? (
-                    <SystemOperationsPage connection={connection} connectionState={connectionState} onOpenCliBridge={() => setActivePage("cli")} />
-                  ) : activePage === "cli" ? (
-                    <CliOperationsPage connection={connection} />
-                  ) : activePage === "env" ? (
-                    <EnvProfilesPage connection={connection} />
-                  ) : activePage === "mcp" ? (
-                    <McpManagementPage connection={connection} />
-                  ) : activePage === "config" ? (
-                    <ConfigStudioPage connection={connection} />
-                  ) : activePage === "account" ? (
-                    <AccountControlPage connection={connection} />
-                  ) : activePage === "jobs" ? (
-                    <BackgroundJobsPage connection={connection} defaultSessionId={activeSessionId} />
-                  ) : activePage === "logs" ? (
-                    <DaemonLogsPage />
-                  ) : (
-                    /* Default: Sessions view */
+                  {settingsLayer === 3 && (
+                    <motion.div
+                      key="settings-layer-3"
+                      className="v1-settings-motion-layer"
+                      custom={settingsLayerTransition}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer v1-settings-layer-3 dm-overlay-anim dm-overlay-${designMode}${settingsFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        tabIndex={-1}
+                        data-opta-nav-input-mode={settingsNavigationInputMode}
+                        data-opta-nav-edit-mode={settingsLayer3EditMode ? "true" : "false"}
+                        style={settingsOverlayDockStyle}
+                        ref={(element: HTMLDivElement | null) => {
+                          settingsLayerRefs.current[3] = element;
+                        }}
+                      >
+                        <Suspense
+                          fallback={
+                            <SettingsLayerLoadingFallback
+                              layer={3}
+                              activeTab={settingsActiveTab}
+                            />
+                          }
+                        >
+                          <LazySettingsModal
+                            embedded
+                            isOpen
+                            isDeepLayer
+                            isFullscreen={settingsFullscreen}
+                            activeTab={settingsActiveTab}
+                            initialTab={settingsActiveTab}
+                            isSettingEditMode={settingsLayer3EditMode}
+                            onActiveTabChange={focusSettingsTab}
+                            onBackLayer={() => goToSettingsLayer(2)}
+                            onClose={() => goToSettingsLayer(1)}
+                            connection={connection}
+                            connectionState={connectionState}
+                            defaultSessionId={activeSessionId}
+                            onManageTiles={() => widgetLayout.toggleEditMode()}
+                            onSaveConnection={(conn) => {
+                              setConnection(conn);
+                              setNotice("Daemon connection updated");
+                              void refreshNow();
+                            }}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Chat Pane (hidden when settings navigation is active) */}
+                <div className={`v1-chat-pane ${isSettingsNavigationActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
+                  {activePage === "sessions" ? (
                     <>
                       {!activeSessionId ? (
                         <div className="v1-messages">
@@ -1001,25 +2596,29 @@ function App() {
                         </div>
                       )}
                     </>
-                  )}
+                  ) : null}
                 </div>
               </div>
 
               {/* Statically positioned Composer below middle layer */}
               {activePage === "sessions" && (
-                <Composer
-                  value={composerDraft}
-                  onChange={setComposerDraft}
-                  onSubmit={onSubmitComposer}
-                  onCancel={() => void cancelActiveTurn()}
-                  onDictate={onDictate}
-                  isStreaming={isStreaming}
-                  disabled={false}
-                  mode={submissionMode}
-                  onModeChange={setSubmissionMode}
-                  timelineItems={timelineItems}
-                  onTts={onTts}
-                />
+                <div
+                  className={`v1-composer-dock ${isSettingsNavigationActive ? "v1-composer-dock--minimized" : ""}`}
+                >
+                  <Composer
+                    value={composerDraft}
+                    onChange={setComposerDraft}
+                    onSubmit={onSubmitComposer}
+                    onCancel={() => void cancelActiveTurn()}
+                    onDictate={onDictate}
+                    isStreaming={isStreaming}
+                    disabled={false}
+                    mode={submissionMode}
+                    onModeChange={setSubmissionMode}
+                    timelineItems={timelineItems}
+                    onTts={onTts}
+                  />
+                </div>
               )}
             </div>
 
@@ -1039,29 +2638,19 @@ function App() {
                 />
                 {showTerminal && (
                   <div className="v1-right-panel" style={{ width: '400px', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
-                    <LiveBrowserView
-                      connection={connection}
-                      slot={activeBrowserSlot}
-                      viewerAuthToken={activeBrowserViewerAuthToken}
-                      className="flex-1"
-                    />
+                    <Suspense fallback={<div className="flex-1" aria-hidden="true" />}>
+                      <LazyLiveBrowserView
+                        connection={connection}
+                        slot={activeBrowserSlot}
+                        viewerAuthToken={activeBrowserViewerAuthToken}
+                        className="flex-1"
+                      />
+                    </Suspense>
                   </div>
                 )}
               </>
             )}
           </div>
-
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            initialTab={settingsInitialTab}
-            connection={connection}
-            onSaveConnection={(conn) => {
-              setConnection(conn);
-              setNotice("Daemon connection updated");
-              void refreshNow();
-            }}
-          />
 
           {showReconnectOverlay ? (
             <div
@@ -1128,10 +2717,12 @@ function App() {
         />
       </div >
       {firstPendingPermission && (
-        <PermissionModal
-          request={firstPendingPermission}
-          onResolve={resolveSessionPermission}
-        />
+        <Suspense fallback={null}>
+          <LazyPermissionModal
+            request={firstPendingPermission}
+            onResolve={resolveSessionPermission}
+          />
+        </Suspense>
       )}
     </>
   );

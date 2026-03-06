@@ -11,7 +11,7 @@ export const codeDesktopMasterclass: Guide = {
   updatedAt: '2026-03-04',
   sections: [
     {
-      heading: 'Ecosystem Role',
+      heading: '[Setup] Ecosystem Role',
       body: '<a href="/guides/code-desktop" class="app-link link-general">Opta Code Desktop</a> is the canonical, high-fidelity visual interface for the Opta ecosystem. Built with Tauri v2, React 18, and Vite, it acts as a native macOS and Windows wrapper over the underlying <a href="/guides/cli" class="app-link link-cli">Opta CLI</a> daemon. It does not run inference or orchestrate agents itself; it acts purely as a stateless viewport into the daemon\'s brain.',
       visual: `<div class="visual-wrapper my-8 p-6 rounded-xl border border-white/10 bg-[#09090b] relative overflow-hidden flex items-center justify-center gap-8">
         <div class="absolute inset-0 bg-[linear-gradient(45deg,rgba(34,197,94,0.03)_25%,transparent_25%,transparent_50%,rgba(34,197,94,0.03)_50%,rgba(34,197,94,0.03)_75%,transparent_75%,transparent)] bg-[length:24px_24px]"></div>
@@ -51,7 +51,7 @@ export const codeDesktopMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'The Dynamic Composer',
+      heading: '[Configuration] The Dynamic Composer',
       body: 'The heart of the Desktop UI is the <strong>Composer</strong>. This isn\'t just a text box; it is an intelligent context router. Inline pills above the input field allow you to inject per-turn overrides. You can instantly switch a single message from the fast local <code>LMX</code> provider to a universal provider like <code>DeepSeek</code>, or toggle "Dangerous Mode" on/off for specific shell executions without altering your global config.',
       visual: `<div class="visual-wrapper my-8 p-4 rounded-xl border border-white/10 bg-[#18181b] shadow-inner max-w-lg mx-auto">
         <div class="flex gap-2 mb-3">
@@ -73,12 +73,12 @@ export const codeDesktopMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Holographic Telemetry Dashboard',
+      heading: '[Operation] Holographic Telemetry Dashboard',
       body: 'Replacing the raw terminal output, the Desktop App features a "Neon Nodes" aesthetic <strong>Telemetry Dashboard</strong>. It listens to the daemon\'s <code>v3</code> HTTP endpoints to visualize live tool progress bars, sub-agent dependency graphs, and resource usage. If <a href="/guides/lmx" class="app-link link-lmx">LMX</a> spikes your GPU VRAM, you will see it visually represented in the side-panel in real-time.',
       code: `// Daemon Emits:\n{\n  "type": "telemetry",\n  "metrics": { "vramUtilized": 28, "vramTotal": 32, "tokensPerSec": 94.2 }\n}`
     },
     {
-      heading: 'Timeline Virtualization & Hydration',
+      heading: '[Troubleshooting] Timeline Virtualization & Hydration',
       body: 'High-throughput local models can stream hundreds of tokens per second. Standard React applications crash under this DOM thrashing. Opta Code utilizes a custom <code>useStreamingMarkdown</code> hook to debounce raw markdown streams, paired with <code>react-window/virtuoso</code> to aggressively unmount off-screen chat cards. If you restart the app, it instantly hydrates its state from the persistent daemon, exactly where you left off.',
       visual: `<div class="visual-wrapper my-8 relative rounded-xl border border-white/10 bg-void p-6 flex flex-col gap-2 overflow-hidden h-48">
         <div class="absolute right-2 top-2 bottom-2 w-1.5 bg-white/5 rounded-full overflow-hidden">
@@ -103,7 +103,7 @@ export const codeDesktopMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Session Triage Workflow (First 10 Minutes)',
+      heading: '[Optimization] Session Triage Workflow (First 10 Minutes)',
       body: 'When a desktop session starts behaving strangely, operators need a deterministic triage loop instead of ad-hoc clicking. Begin by validating session identity and routing: confirm the active workspace, provider pill, and permission level in the Composer header before sending any new instruction. Next, inspect the live telemetry side panel and verify the expected model is receiving tokens, the stream rate is non-zero, and VRAM pressure is not in sustained saturation. Then review the most recent timeline cards for the exact event where latency or behavior changed: model switch, tool escalation, context injection, or daemon reconnect. If symptoms are still ambiguous, issue one minimal probe prompt and observe whether UI rendering, daemon response, and tool approval flow all complete in a single cycle. This isolates whether the fault is interaction state, orchestration state, or inference state.',
       note: '<strong>Operator checklist:</strong> 1) Confirm route + permissions, 2) verify telemetry heartbeat, 3) identify divergence point in timeline, 4) run a single probe turn, 5) classify failure domain before attempting fixes.'
     },
@@ -116,6 +116,11 @@ export const codeDesktopMasterclass: Guide = {
 3. Reconnect: restore transport first, then validate one probe turn.
 4. Replay: rerun failing prompt with reduced context to isolate root cause.
 5. Document: trigger, fix, and prevention rule for operator handoff.`
-    }
+    },
+    {
+      heading: 'Operator Consistency Patterns',
+      body: 'Teams that rely on Code Desktop for high-velocity sessions should standardize a small set of interaction patterns: consistent composer presets, shared labels for session state, and predictable handoff notes for unresolved threads. Consistency reduces cognitive switching costs and makes troubleshooting evidence reusable across operators. Define a default panel layout for incident triage, enforce one-turn probe prompts before broad retries, and keep a short capture template so every operator records equivalent diagnostics when sessions degrade.',
+      note: 'A stable operator pattern often improves reliability more than adding new UI features, because diagnosis becomes faster and less subjective.',
+    },
   ],
 };

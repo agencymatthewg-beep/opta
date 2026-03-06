@@ -1,23 +1,93 @@
 'use client'
 
-import { Settings, RefreshCw, Loader2 } from 'lucide-react'
-import { useState } from 'react'
+import { Loader2, RefreshCw, Settings } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { DashboardLayout } from '@/components/DashboardLayout'
 import { PageHeader } from '@/components/PageHeader'
+import { getInferenceKey } from '@/lib/api'
 import { useConnection } from '@/lib/connection'
+import { usePairedDevice } from '@/lib/paired-device'
 import { reloadConfig, reloadPresets } from '@/lib/mutations'
 
+const INFERENCE_KEY_STORAGE_KEY = 'opta-lmx-inference-key'
+
+function normalizeUrl(value: string): string {
+    return value.trim().replace(/\/+$/, '')
+}
+
+function normalizeKey(value: string): string | null {
+    const trimmed = value.trim()
+    return trimmed.length > 0 ? trimmed : null
+}
+
 export default function SettingsPage() {
-    const { url, setUrl, status } = useConnection()
+    const pairedDevice = usePairedDevice()
+    const {
+        url,
+        adminKey,
+        setUrl,
+        setAdminKey,
+        setInferenceApiKey,
+        status,
+    } = useConnection()
+
     const [endpoint, setEndpoint] = useState(url)
-    const [adminKey, setAdminKey] = useState('')
+    const [adminKeyInput, setAdminKeyInput] = useState(adminKey ?? '')
+    const [inferenceKeyInput, setInferenceKeyInput] = useState('')
+    const [appliedInferenceKey, setAppliedInferenceKey] = useState('')
+    const [connectionMsg, setConnectionMsg] = useState<string | null>(null)
     const [memoryLimit, setMemoryLimit] = useState(85)
     const [contextLength, setContextLength] = useState('16384')
     const [reloading, setReloading] = useState(false)
     const [reloadMsg, setReloadMsg] = useState<string | null>(null)
 
-    function handleSaveConnection() {
-        setUrl(endpoint)
+    useEffect(() => {
+        setEndpoint(url)
+    }, [url])
+
+    useEffect(() => {
+        setAdminKeyInput(adminKey ?? '')
+    }, [adminKey])
+
+    useEffect(() => {
+        const apiInferenceKey = getInferenceKey()
+        const storedInferenceKey =
+            typeof window !== 'undefined'
+                ? localStorage.getItem(INFERENCE_KEY_STORAGE_KEY)
+                : null
+        const initialInferenceKey = apiInferenceKey ?? storedInferenceKey ?? ''
+        setInferenceKeyInput(initialInferenceKey)
+        setAppliedInferenceKey(initialInferenceKey)
+    }, [])
+
+    const hasConnectionChanges = useMemo(() => {
+        const activeAdminKey = adminKey ?? ''
+        return (
+            normalizeUrl(endpoint) !== normalizeUrl(url) ||
+            adminKeyInput !== activeAdminKey ||
+            inferenceKeyInput !== appliedInferenceKey
+        )
+    }, [adminKey, adminKeyInput, appliedInferenceKey, endpoint, inferenceKeyInput, url])
+
+    function handleApplyConnection() {
+        const cleanedEndpoint = normalizeUrl(endpoint)
+        if (!cleanedEndpoint) {
+            setConnectionMsg('LMX endpoint is required.')
+            return
+        }
+
+        const normalizedAdminKey = normalizeKey(adminKeyInput)
+        const normalizedInferenceKey = normalizeKey(inferenceKeyInput)
+
+        setUrl(cleanedEndpoint)
+        setAdminKey(normalizedAdminKey)
+        setInferenceApiKey(normalizedInferenceKey)
+
+        setEndpoint(cleanedEndpoint)
+        setAdminKeyInput(normalizedAdminKey ?? '')
+        setInferenceKeyInput(normalizedInferenceKey ?? '')
+        setAppliedInferenceKey(normalizedInferenceKey ?? '')
+        setConnectionMsg('Connection settings applied.')
     }
 
     async function handleReloadConfig() {
@@ -55,12 +125,41 @@ export default function SettingsPage() {
                         <div className="config-title">Connection Parameters</div>
                         <div className="space-y-5">
                             <div>
+                                <p className="config-label">Control Mode</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-sm font-mono text-text-secondary">
+                                        {pairedDevice.mode === 'paired' ? 'paired-device' : 'direct-connect'}
+                                    </span>
+                                    {pairedDevice.mode === 'paired' ? (
+                                        <button
+                                            className="holographic-btn !py-1 !px-2 !text-[10px]"
+                                            onClick={() => pairedDevice.switchToDirectMode()}
+                                        >
+                                            Switch to Direct Fallback
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="holographic-btn !py-1 !px-2 !text-[10px]"
+                                            onClick={() => {
+                                                pairedDevice.clearPairing()
+                                                window.location.href = '/pair'
+                                            }}
+                                        >
+                                            Re-enable Pairing
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                            <div>
                                 <p className="config-label">LMX Node Endpoint</p>
                                 <input
                                     type="text"
                                     className="holographic-input"
                                     value={endpoint}
-                                    onChange={e => setEndpoint(e.target.value)}
+                                    onChange={e => {
+                                        setEndpoint(e.target.value)
+                                        setConnectionMsg(null)
+                                    }}
                                 />
                             </div>
                             <div>
@@ -68,9 +167,25 @@ export default function SettingsPage() {
                                 <input
                                     type="password"
                                     className="holographic-input"
-                                    value={adminKey}
-                                    onChange={e => setAdminKey(e.target.value)}
+                                    value={adminKeyInput}
+                                    onChange={e => {
+                                        setAdminKeyInput(e.target.value)
+                                        setConnectionMsg(null)
+                                    }}
                                     placeholder="••••••••"
+                                />
+                            </div>
+                            <div>
+                                <p className="config-label">Inference API Key (Bearer)</p>
+                                <input
+                                    type="password"
+                                    className="holographic-input"
+                                    value={inferenceKeyInput}
+                                    onChange={e => {
+                                        setInferenceKeyInput(e.target.value)
+                                        setConnectionMsg(null)
+                                    }}
+                                    placeholder="sk-..."
                                 />
                             </div>
                             <div>
@@ -83,9 +198,16 @@ export default function SettingsPage() {
                                     <span className="text-sm font-mono text-text-secondary">{status}</span>
                                 </div>
                             </div>
-                            <button onClick={handleSaveConnection} className="holographic-btn w-full">
-                                Apply Connection
+                            <button
+                                onClick={handleApplyConnection}
+                                disabled={!hasConnectionChanges}
+                                className="holographic-btn w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Apply Connection & Keys
                             </button>
+                            {connectionMsg && (
+                                <p className="text-xs font-mono text-text-muted">{connectionMsg}</p>
+                            )}
                         </div>
                     </div>
 

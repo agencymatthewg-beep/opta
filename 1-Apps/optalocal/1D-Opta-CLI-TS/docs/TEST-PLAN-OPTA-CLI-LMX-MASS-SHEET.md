@@ -79,7 +79,7 @@ suite,feature_id,app,feature_name,category,test_case_id,environment,build_sha,ru
 - safety gates (dangerous ops, policy eval, fail-open/fail-closed)
 
 ### A6. Update System
-- `opta update` target modes (`auto/local/remote/both`)
+- `opta update` target modes (`local/remote`)
 - dry-run, no-build, no-pull
 
 ---
@@ -191,4 +191,3 @@ A feature is “optimal-ready” only when:
 1. Build the initial CSV with one row per feature-case (skeleton).
 2. Run Wave 1 for all CLI + LMX feature groups.
 3. Produce first ranked optimization backlog from measured data (not assumptions).
-

@@ -13,11 +13,11 @@ Resolved decisions — do not re-open without explicit instruction.
 
 ---
 
-## D002 — Stack: Next.js 16 static export
+## D002 — Stack: Next.js 16 + Operational Health Route
 
-**Decision:** Next.js 16 App Router with `output: 'export'`. No backend, no API routes.
-**Rationale:** Same stack as init.optalocal.com. Zero runtime cost. Instant CDN serve via Vercel.
-**Date:** 2026-03-01
+**Decision:** Next.js 16 App Router with static homepage rendering and a single operational runtime endpoint: `/api/health`.
+**Rationale:** Preserve static-content performance while adding explicit health observability and dependency probing support.
+**Date:** 2026-03-05
 **Status:** Locked ✅
 
 ---

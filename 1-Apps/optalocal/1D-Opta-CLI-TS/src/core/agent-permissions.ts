@@ -68,6 +68,14 @@ function isShellBrowserAutomationCommand(value: unknown): boolean {
   );
 }
 
+function normalizeBrowserToolName(toolName: string): string {
+  const mcpPrefix = 'mcp__playwright__';
+  if (toolName.startsWith(mcpPrefix)) {
+    return toolName.slice(mcpPrefix.length);
+  }
+  return toolName;
+}
+
 function mapPolicyFailureMode(
   failureMode: OptaConfig['policy']['failureMode']
 ): PolicyConfig['failureMode'] {
@@ -269,6 +277,7 @@ export async function resolveToolDecisions(
   }
 
   for (const call of toolCalls) {
+    const normalizedBrowserToolName = normalizeBrowserToolName(call.name);
     const parsedArgs = safeParseJson<Record<string, unknown>>(call.args, { raw: call.args });
     let parsedArgsMutated = false;
     let requiresBrowserApproval = false;
@@ -280,7 +289,7 @@ export async function resolveToolDecisions(
       try {
         await appendBrowserApprovalEvent({
           cwd: sessionCtx.cwd,
-          tool: call.name,
+          tool: normalizedBrowserToolName,
           sessionId: browserSessionId,
           decision,
           risk: browserPolicyDecision?.risk,
@@ -313,10 +322,10 @@ export async function resolveToolDecisions(
       }
     }
 
-    if (isBrowserToolName(call.name)) {
+    if (isBrowserToolName(normalizedBrowserToolName)) {
       browserSessionId = extractBrowserSessionId(parsedArgs);
       let activeBrowserSessions: BrowserSessionScanResult['sessions'] = [];
-      if (config.browser.enabled && call.name !== 'browser_open') {
+      if (config.browser.enabled && normalizedBrowserToolName !== 'browser_open') {
         const scanResult = await getActiveBrowserSessionsOnce();
         if (scanResult.error) {
           decisions.push({
@@ -373,7 +382,7 @@ export async function resolveToolDecisions(
             mode: spawnMode,
             __opta_spawn_prompt: true,
             __opta_spawn_reason: 'No active Opta Browser sessions were found in the runtime scan.',
-            __opta_spawn_trigger_tool: call.name,
+            __opta_spawn_trigger_tool: normalizedBrowserToolName,
             __opta_session_scan_count: 0,
           };
           if (spawnWsEndpoint) {
@@ -458,7 +467,10 @@ export async function resolveToolDecisions(
         }
       }
 
-      if (browserSessionId && (call.name === 'browser_click' || call.name === 'browser_type')) {
+      if (
+        browserSessionId &&
+        (normalizedBrowserToolName === 'browser_click' || normalizedBrowserToolName === 'browser_type')
+      ) {
         const hasExplicitUrl =
           typeof parsedArgs['url'] === 'string' && parsedArgs['url'].trim().length > 0;
         if (!hasExplicitUrl) {
@@ -473,7 +485,7 @@ export async function resolveToolDecisions(
       }
 
       browserPolicyDecision = evaluateBrowserPolicyAction(resolveBrowserPolicyConfig(config), {
-        toolName: call.name,
+        toolName: normalizedBrowserToolName,
         args: parsedArgs,
         adaptationHint: browserAdaptationHint?.policy,
       });
@@ -482,7 +494,7 @@ export async function resolveToolDecisions(
         try {
           await appendBrowserApprovalEvent({
             cwd: sessionCtx.cwd,
-            tool: call.name,
+            tool: normalizedBrowserToolName,
             sessionId: browserSessionId,
             decision: 'denied',
             risk: browserPolicyDecision.risk,
@@ -503,7 +515,7 @@ export async function resolveToolDecisions(
           denialReason: `Denied by browser policy: ${browserPolicyDecision.reason}`,
         });
         if (!silent)
-          console.log(chalk.dim(`  \u2717 ${call.name} \u2014 denied by browser policy`));
+          console.log(chalk.dim(`  \u2717 ${normalizedBrowserToolName} \u2014 denied by browser policy`));
         continue;
       }
 
@@ -532,7 +544,10 @@ export async function resolveToolDecisions(
     }
 
     const requiresApproval = policyDecision.decision === 'gate' || requiresBrowserApproval;
-    const permission = resolvePermission(call.name, config);
+    const permissionToolName = isBrowserToolName(normalizedBrowserToolName)
+      ? normalizedBrowserToolName
+      : call.name;
+    const permission = resolvePermission(permissionToolName, config);
     let executionArgsJson = parsedArgsMutated ? JSON.stringify(parsedArgs) : call.args;
 
     if (permission === 'deny') {
@@ -557,9 +572,9 @@ export async function resolveToolDecisions(
       }
 
       if (streamCallbacks?.onPermissionRequest) {
-        const decision = await streamCallbacks.onPermissionRequest(call.name, parsedArgs);
+        const decision = await streamCallbacks.onPermissionRequest(permissionToolName, parsedArgs);
         if (decision === 'always' && permission === 'ask') {
-          await persistToolPermissionAllow(call.name, config, saveConfig, silent);
+          await persistToolPermissionAllow(permissionToolName, config, saveConfig, silent);
         } else if (decision === 'deny') {
           await logBrowserApprovalDecision('denied');
           decisions.push({ call, approved: false, denialReason: 'User declined this action.' });
@@ -567,9 +582,9 @@ export async function resolveToolDecisions(
         }
         await logBrowserApprovalDecision('approved');
       } else {
-        const response = await promptToolApproval(call.name, parsedArgs);
+        const response = await promptToolApproval(permissionToolName, parsedArgs);
         if (response === 'always' && permission === 'ask') {
-          await persistToolPermissionAllow(call.name, config, saveConfig, silent);
+          await persistToolPermissionAllow(permissionToolName, config, saveConfig, silent);
         } else if (response === 'deny') {
           await logBrowserApprovalDecision('denied');
           decisions.push({ call, approved: false, denialReason: 'User declined this action.' });

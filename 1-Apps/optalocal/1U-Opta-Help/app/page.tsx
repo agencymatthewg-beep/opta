@@ -48,15 +48,24 @@ export default function HomePage() {
                 Opta Help
               </h1>
               <p className="text-base sm:text-lg text-text-secondary max-w-2xl mx-auto mb-6 sm:mb-8">
-                Technical documentation for the Opta ecosystem.
-                Covers autonomous CEO loops, cloud provider keys, daemon setup, and the 4 core apps.
+                Operating documentation for deploying, governing, and scaling
+                Opta across local and hybrid runtime environments.
+              </p>
+              <p className="text-sm text-text-muted max-w-2xl mx-auto mb-6">
+                Canonical activation model: establish runtime policy (local LMX or cloud),
+                activate Opta AI, then execute through Opta CLI or Opta Code under
+                daemon-governed operational state.
+              </p>
+              <p className="text-xs text-text-muted max-w-2xl mx-auto mb-6">
+                Docs pages now support platform-aware rendering. Switch between macOS and Windows
+                views to see the exact commands, paths, and lifecycle controls for your environment.
               </p>
               <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-3 sm:gap-4">
                 <Link
                   href="/docs/getting-started/"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-primary hover:bg-primary/90 text-white rounded-lg font-medium transition-all"
                 >
-                  Get Started
+                  Activate Opta
                   <ArrowRight size={16} />
                 </Link>
                 <Link
@@ -72,16 +81,16 @@ export default function HomePage() {
                   User Guides ↗
                 </a>
                 <Link
-                  href="/docs/cloud-providers/"
+                  href="/docs/getting-started/lan-setup/"
                   className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-secondary hover:text-text-primary rounded-lg font-medium transition-all"
                 >
-                  Cloud Providers (OpenAI/Anthropic)
+                  Runtime + Connection Setup
                 </Link>
                 <Link
-                  href="/docs/ceo-modes/"
+                  href="/docs/cli/chat-and-do/"
                   className="inline-flex items-center gap-2 px-6 py-3 glass-subtle hover:bg-white/5 text-text-secondary hover:text-text-primary rounded-lg font-medium transition-all"
                 >
-                  Autonomous CEO Modes
+                  Chat + Autonomous Modes
                 </Link>
               </div>
             </motion.div>
@@ -100,10 +109,10 @@ export default function HomePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ ...spring, delay: i * 0.05 }}
                 >
-                  <Link
-                    href={section.items[0].href}
-                    className="block obsidian obsidian-interactive rounded-xl p-6 h-full"
-                  >
+                <Link
+                  href={section.items[0].href}
+                  className="block doc-embed-block surface-embedded-soft rounded-xl p-6 h-full transition-all hover:bg-primary/10"
+                >
                     <div className="flex items-center gap-3 mb-3">
                       <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
                         <Icon size={20} className="text-primary" />
@@ -133,31 +142,36 @@ export default function HomePage() {
           <div className="text-center mb-8">
             <h2 className="text-2xl font-bold text-moonlight mb-2">The Opta Local Stack</h2>
             <p className="text-text-secondary">
-              Four core components and one control surface form a layered local-first stack
+              Runtime strategy feeds Opta AI, then execution is orchestrated through daemon,
+              CLI, and desktop operator surfaces
             </p>
           </div>
-          <div className="glass rounded-xl p-6 font-mono text-sm space-y-3">
+          <div className="glass doc-embed-block rounded-xl p-6 font-mono text-sm space-y-3">
             <div className="text-text-secondary">
-              <span className="text-neon-cyan">opta chat</span> / <span className="text-neon-cyan">opta tui</span> / <span className="text-neon-cyan">opta do</span>
-              <span className="text-text-muted ml-4"># Opta CLI</span>
+              <span className="text-neon-blue">Cloud models</span> / <span className="text-neon-amber">Opta LMX local runtime</span>
+              <span className="text-text-muted ml-4"># Runtime source</span>
+            </div>
+            <div className="pl-8 text-text-muted">&#9474;</div>
+            <div className="text-text-secondary">
+              <span className="text-neon-purple">Opta AI</span>
+              <span className="text-text-muted ml-4"># Optimizer core</span>
             </div>
             <div className="pl-8 text-text-muted">&#9474;</div>
             <div className="text-text-secondary pl-4">
               <span className="text-neon-green">opta daemon</span>
               <span className="text-text-muted ml-2">127.0.0.1:&lt;port&gt;</span>
-              <span className="text-text-muted ml-4"># Session orchestration</span>
+              <span className="text-text-muted ml-4"># Activation + session orchestration</span>
             </div>
             <div className="pl-8 text-text-muted">&#9474; HTTP v3 REST + WebSocket streaming</div>
             <div className="text-text-secondary pl-4">
-              <span className="text-neon-amber">Opta LMX</span>
-              <span className="text-text-muted ml-2">192.168.x.x:1234</span>
-              <span className="text-text-muted ml-4"># MLX inference (LAN)</span>
+              <span className="text-neon-cyan">opta chat</span> / <span className="text-neon-cyan">opta tui</span> / <span className="text-neon-cyan">opta do</span>
+              <span className="text-text-muted ml-4"># Opta CLI surface</span>
             </div>
-            <div className="pl-8 text-text-muted">&#9474; OpenAI-compatible API</div>
+            <div className="pl-8 text-text-muted">&#9474;</div>
             <div className="text-text-secondary pl-4">
               <span className="text-neon-purple">Opta Code Desktop</span>
-              <span className="text-text-muted ml-2">Native + localhost:5173</span>
-              <span className="text-text-muted ml-4"># Connects via daemon</span>
+              <span className="text-text-muted ml-2">Tauri desktop + daemon bridge</span>
+              <span className="text-text-muted ml-4"># Opta Code surface</span>
             </div>
           </div>
         </section>

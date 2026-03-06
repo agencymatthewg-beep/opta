@@ -1,3 +1,8 @@
+import type {
+    ActivationState,
+    PairingBridgePayloadMetadata,
+} from '@opta/protocol-shared'
+
 /**
  * Opta LMX API — TypeScript type definitions.
  *
@@ -78,6 +83,67 @@ export interface DeviceIdentityResponse {
     purpose?: string
     role?: string
     os_version?: string
+}
+
+// ── Paired Device Control Plane ────────────────────────────────────────────
+
+export type PairingSessionStatus = 'pending' | 'claimed' | 'expired' | 'cancelled'
+
+export interface PairingSession {
+    id: string
+    userId: string
+    code: string
+    status: PairingSessionStatus
+    deviceId: string | null
+    deviceLabel: string | null
+    capabilityScopes: string[]
+    createdAt: string
+    expiresAt: string
+    claimedAt: string | null
+    bridgeTokenId: string | null
+}
+
+export interface BridgeTokenClaims {
+    tokenId: string
+    userId: string
+    deviceId: string
+    trustState: string | null
+    scopes: string[]
+    issuedAt: string
+    expiresAt: string
+    status: 'active' | 'revoked' | 'expired'
+}
+
+export interface DeviceRuntimeStatus {
+    status: 'offline' | 'pairing' | 'connected' | 'degraded' | 'unauthorized'
+    activationState?: ActivationState
+    reason: string | null
+    lastSeenAt: string | null
+}
+
+export interface PairingSessionEnvelope {
+    session: PairingSession
+    metadata?: PairingBridgePayloadMetadata
+}
+
+export interface BridgeTokenMintEnvelope {
+    token: string
+    claims: BridgeTokenClaims
+    metadata?: PairingBridgePayloadMetadata
+}
+
+export interface SetupCheck {
+    id: string
+    title: string
+    status: 'pending' | 'passed' | 'failed'
+    detail?: string | null
+    actionId?: string | null
+}
+
+export interface SetupFixAction {
+    id: string
+    label: string
+    operationId?: string | null
 }
 
 // ── Models ──────────────────────────────────────────────────────────────────
@@ -193,16 +259,16 @@ export interface AdminProbeRequest {
     allow_unsupported_runtime?: boolean
 }
 
+export interface AdminProbeCandidate {
+    backend: string
+    outcome: string
+    reason?: string | null
+}
+
 export interface AdminProbeResponse {
     model_id: string
-    backends: Record<
-        string,
-        {
-            supported: boolean
-            reason?: string
-            estimated_memory_gb?: number
-        }
-    >
+    recommended_backend?: string | null
+    candidates: AdminProbeCandidate[]
 }
 
 export interface AdminAutotuneRequest {
@@ -230,27 +296,38 @@ export interface AdminAutotuneResponse {
 }
 
 export interface AutotuneRecordResponse {
+    ts: number
     model_id: string
     backend: string
-    backend_version: string | null
+    backend_version: string
     profile: Record<string, unknown>
-    metrics: Record<string, number>
+    metrics: Record<string, unknown>
     score: number
-    updated_at: number
 }
 
 export interface ModelPerformanceResponse {
     model_id: string
-    backend: string
+    backend_type: string
+    loaded_at: number
+    request_count: number
+    last_used_at: number
+    memory_gb: number
+    context_length?: number | null
+    use_batching?: boolean
     performance: Record<string, unknown>
+    speculative?: Record<string, unknown>
+    readiness?: Record<string, unknown>
+    global_defaults?: Record<string, unknown>
 }
 
 export interface CompatibilityRow {
+    ts?: number
     model_id: string
     backend: string
+    backend_version?: string | null
     outcome: string
-    reason?: string
-    timestamp: number
+    reason?: string | null
+    metadata?: Record<string, unknown>
 }
 
 export interface ModelCompatibilityResponse {
@@ -309,6 +386,110 @@ export interface ChatCompletionResponse {
     model: string
     choices: ChatCompletionChoice[]
     usage: Usage
+}
+
+export interface ResponsesRequest {
+    model: string
+    input: string
+    stream?: boolean
+    temperature?: number
+    max_tokens?: number
+    max_output_tokens?: number
+    top_p?: number
+    tools?: unknown[]
+}
+
+export interface ResponsesResponse {
+    id: string
+    object: string
+    status: string
+    output_text: string
+    output: unknown[]
+}
+
+export interface LegacyCompletionRequest {
+    model: string
+    prompt: string | string[]
+    suffix?: string | null
+    max_tokens?: number | null
+    temperature?: number
+    top_p?: number
+    n?: number
+    stream?: boolean
+    logprobs?: number | null
+    echo?: boolean
+    stop?: string | string[] | null
+    presence_penalty?: number
+    frequency_penalty?: number
+    best_of?: number | null
+    user?: string | null
+    seed?: number | null
+    num_ctx?: number | null
+}
+
+export interface LegacyCompletionChoice {
+    text: string
+    index: number
+    logprobs: unknown
+    finish_reason: string | null
+}
+
+export interface LegacyCompletionResponse {
+    id: string
+    object: string
+    created: number
+    model: string
+    choices: LegacyCompletionChoice[]
+    usage: Usage
+}
+
+export interface AnthropicMessageRequest {
+    role: 'user' | 'assistant'
+    content: string
+}
+
+export interface AnthropicMessagesRequest {
+    model: string
+    messages: AnthropicMessageRequest[]
+    max_tokens?: number
+    system?: string | null
+    temperature?: number
+    top_p?: number | null
+    stream?: boolean
+    stop_sequences?: string[] | null
+}
+
+export interface AnthropicMessagesResponse {
+    id: string
+    type: string
+    role: string
+    model: string
+    content: Array<{ type: string; text: string }>
+    stop_reason: string | null
+    stop_sequence: string | null
+    usage: {
+        input_tokens: number
+        output_tokens: number
+    }
+}
+
+export interface RerankRequest {
+    model: string
+    query: string
+    documents: string[]
+    top_n?: number | null
+}
+
+export interface RerankResponse {
+    results: Array<{
+        index: number
+        relevance_score: number
+        document: { text: string }
+    }>
+    model: string
+    usage: {
+        total_tokens: number
+    }
 }
 
 /** Streaming SSE delta chunk. */
@@ -529,7 +710,13 @@ export interface HelpersHealthResponse {
 // ── Predictor ───────────────────────────────────────────────────────────────
 
 export interface PredictorStatsResponse {
-    predictions: Record<string, unknown>
+    total_accesses?: number
+    unique_models?: number
+    history_size?: number
+    top_models?: Array<[string, number]>
+    transition_count?: number
+    predicted_next?: string | null
+    [key: string]: unknown
 }
 
 // ── Error ───────────────────────────────────────────────────────────────────
@@ -667,7 +854,7 @@ export interface SkillListResponse {
 }
 
 export interface SkillExecuteRequest {
-    arguments: Record<string, unknown>
+    arguments: Record<string, unknown> | string
     approved?: boolean
     timeout_sec?: number
 }
@@ -699,7 +886,7 @@ export interface MCPToolsResponse {
 
 export interface MCPToolCallRequest {
     name: string
-    arguments?: Record<string, unknown>
+    arguments?: Record<string, unknown> | string
     approved?: boolean
 }
 
@@ -713,6 +900,73 @@ export interface MCPToolCallResponse {
     timed_out: boolean
     denied: boolean
     requires_approval: boolean
+}
+
+export interface MCPPromptArgument {
+    name: string
+    required: boolean
+}
+
+export interface MCPPrompt {
+    name: string
+    description: string
+    arguments: MCPPromptArgument[]
+}
+
+export interface MCPPromptsResponse {
+    ok: boolean
+    prompts: MCPPrompt[]
+}
+
+export interface MCPPromptGetRequest {
+    name: string
+    arguments?: Record<string, unknown>
+}
+
+export interface MCPPromptMessage {
+    role: string
+    content: Record<string, unknown>
+}
+
+export interface MCPPromptGetResponse {
+    ok: boolean
+    messages?: MCPPromptMessage[]
+    error?: string
+}
+
+export interface MCPResource {
+    uri: string
+    name: string
+    description: string
+    mimeType?: string
+    mime_type?: string
+}
+
+export interface MCPResourcesResponse {
+    ok: boolean
+    resources: MCPResource[]
+}
+
+export interface MCPResourceReadRequest {
+    uri: string
+}
+
+export interface MCPResourceContent {
+    uri: string
+    mimeType?: string
+    mime_type?: string
+    text: string
+}
+
+export interface MCPResourceReadResponse {
+    ok: boolean
+    contents?: MCPResourceContent[]
+    error?: string
+}
+
+export interface MCPCapabilitiesResponse {
+    ok: boolean
+    capabilities: Record<string, unknown>
 }
 
 // ── Agent Orchestration ───────────────────────────────────────────────────────
@@ -778,4 +1032,3 @@ export interface LogFileEntry {
     size_bytes: number
     created_at: string
 }
-

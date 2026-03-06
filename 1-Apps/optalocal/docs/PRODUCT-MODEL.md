@@ -28,6 +28,24 @@ These are **management websites**, not main local apps:
 - **status.optalocal.com** (Opta Status): health + incident visibility
 - **admin.optalocal.com** (Opta Admin): private website-management control plane (fleet ops + guide promotions)
 
+## Terminology Alignment (Home / Help / Learn / Admin)
+
+- **Opta Home**: brand + ecosystem landing (`optalocal.com`)
+- **Opta Help**: technical reference documentation (`help.optalocal.com`)
+- **Opta Learn**: guided onboarding and workflow education (`learn.optalocal.com`)
+- **Opta Admin**: private control plane for site operations and guide promotion (`admin.optalocal.com`)
+
+Source-of-truth references:
+- `docs/content-sync-map/registry/apps.yaml` (canonical app naming + role map)
+- `docs/PRODUCT-MODEL.md` (product taxonomy authority)
+- `websites.registry.json` (domain-to-surface registry consumed by website tooling)
+
+Legal/copy review checklist before publish:
+- [ ] Use canonical names exactly: "Opta Home", "Opta Help", "Opta Learn", "Opta Admin".
+- [ ] Keep Help vs Learn boundary explicit (reference docs vs guided learning).
+- [ ] Keep Admin labeled private/internal; do not present as a public end-user app.
+- [ ] Reconfirm domain/name pairing is accurate (`optalocal.com`, `help.`, `learn.`, `admin.`).
+
 ## Taxonomy Rules (Non-Negotiable)
 
 1. Do not label surface websites as core apps.

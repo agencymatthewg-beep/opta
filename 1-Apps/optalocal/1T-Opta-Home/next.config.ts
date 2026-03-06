@@ -3,35 +3,45 @@ import { fileURLToPath } from 'node:url'
 import type { NextConfig } from 'next'
 
 const staticExportEnabled = process.env['OPTA_HOME_STATIC_EXPORT'] === '1'
+const isDevelopment = process.env['NODE_ENV'] !== 'production'
 const configDir = path.dirname(fileURLToPath(import.meta.url))
-const contentSecurityPolicy = [
-  "default-src 'self'",
-  "base-uri 'self'",
-  "frame-ancestors 'none'",
-  "object-src 'none'",
-  "script-src 'self' 'unsafe-inline' https:",
-  "style-src 'self' 'unsafe-inline' https:",
-  "img-src 'self' data: blob: https:",
-  "font-src 'self' data: https:",
-  "connect-src 'self' https: wss:",
-  "frame-src 'self' https:",
-  "worker-src 'self' blob:",
-  "form-action 'self'",
-].join('; ')
 
-const securityHeaders = [
+if (staticExportEnabled) {
+  throw new Error(
+    'OPTA_HOME_STATIC_EXPORT=1 is incompatible with app/api/health. Remove the flag or remove the dynamic health route.'
+  )
+}
+const securityHeaders: { key: string; value: string }[] = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  { key: 'Content-Security-Policy', value: contentSecurityPolicy },
+  {
+    key: 'Permissions-Policy',
+    value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=()',
+  },
 ]
 
+if (!isDevelopment) {
+  securityHeaders.push({
+    key: 'Strict-Transport-Security',
+    value: 'max-age=31536000; includeSubDomains; preload',
+  })
+}
+
 const nextConfig: NextConfig = {
-  ...(staticExportEnabled ? { output: 'export' as const } : {}),
   images: {
     unoptimized: true,
   },
   outputFileTracingRoot: configDir,
+  async redirects() {
+    return [
+      {
+        source: '/api/health.json',
+        destination: '/api/health',
+        permanent: false,
+      },
+    ]
+  },
   async headers() {
     return [
       {

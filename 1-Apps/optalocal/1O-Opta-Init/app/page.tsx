@@ -10,6 +10,7 @@ import {
   DASHBOARD_URL,
   ACCOUNTS_URL,
   PLATFORM_URL,
+  INSTALL_ACTIVATION_LOG,
 } from "@/lib/constants";
 import { DOWNLOAD_TARGETS, resolveDownloadAvailability, type DownloadAvailabilityMap } from "@/lib/download-artifacts";
 import { OptaRing } from "@/components/OptaRing";
@@ -347,13 +348,15 @@ export default function Home() {
                       <span className="text-white">curl -fsSL https://init.optalocal.com/init | bash</span>
                     </p>
                     <div className="pt-4 space-y-1 opacity-70">
-                      <p className="text-neon-blue">==&gt; Starting Opta Init manager...</p>
-                      <p>==&gt; Checking hardware: <span className="text-neon-green">Apple M3 Max (128GB)</span></p>
-                      <p>==&gt; Installing Opta app manager + launcher</p>
-                      <p>==&gt; Registering installed apps and update channels</p>
-                      <p>==&gt; Verifying daemon service + auth recovery hooks</p>
-                      <p>==&gt; Syncing runtime status with Opta Local platform</p>
-                      <p className="text-neon-green mt-2">✔ Manager ready. Apps, updates, and daemon are now coordinated.</p>
+                      {INSTALL_ACTIVATION_LOG.map((entry) => (
+                        <p
+                          key={`${entry.state}:${entry.line}`}
+                          className={entry.highlight ? "text-neon-green mt-2" : undefined}
+                          data-activation-state={entry.state}
+                        >
+                          {entry.line}
+                        </p>
+                      ))}
                       <p className="text-text-muted mt-2">Run `opta init` (or `/init` shorthand when scripting) any time to launch initializer workflows.</p>
                     </div>
                   </div>

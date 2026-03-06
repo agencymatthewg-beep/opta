@@ -11,11 +11,11 @@ export function PrevNextNav({ prev, next }: PrevNextNavProps) {
   if (!prev && !next) return null;
 
   return (
-    <div className="flex items-stretch gap-4 mt-12 pt-6 border-t border-white/5">
+    <div className="flex items-stretch gap-4 mt-12 pt-4">
       {prev ? (
         <Link
           href={prev.href}
-          className="flex-1 group obsidian obsidian-interactive rounded-lg p-4"
+          className="flex-1 group doc-embed-block rounded-lg p-4 transition-all hover:bg-primary/[0.05]"
         >
           <div className="flex items-center gap-2 text-xs text-text-muted mb-1">
             <ArrowLeft size={12} />
@@ -31,7 +31,7 @@ export function PrevNextNav({ prev, next }: PrevNextNavProps) {
       {next ? (
         <Link
           href={next.href}
-          className="flex-1 group obsidian obsidian-interactive rounded-lg p-4 text-right"
+          className="flex-1 group doc-embed-block rounded-lg p-4 text-right transition-all hover:bg-primary/[0.05]"
         >
           <div className="flex items-center justify-end gap-2 text-xs text-text-muted mb-1">
             Next

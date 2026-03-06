@@ -1,17 +1,18 @@
 # Opta Home — Architecture
 
-*Last updated: 2026-03-01*
+*Last updated: 2026-03-05*
 
 ---
 
 ## Overview
 
-Pure static site. No backend. No runtime. Vercel CDN serves pre-built HTML/CSS/JS.
+Marketing site with static content plus one operational runtime endpoint (`/api/health`) for monitoring.
 
 ```
-User → Vercel Edge (optalocal.com) → out/index.html
-                                   → out/_next/static/chunks/* (JS bundles)
-                                   → out/fonts/* (JetBrains Mono woff2)
+User → Vercel Edge (optalocal.com) → prerendered page assets
+                                   → _next/static/chunks/* (JS bundles)
+                                   → fonts/* (JetBrains Mono woff2)
+                                   → /api/health (runtime health route)
 ```
 
 ---
@@ -62,7 +63,7 @@ app/page.tsx
 | Layer | Technology |
 |-------|-----------|
 | Framework | Next.js 16 (App Router) |
-| Rendering | Static export (`output: 'export'`) |
+| Rendering | Static page + runtime health route |
 | Styling | Tailwind CSS v3 + CSS custom properties |
 | Animations | Framer Motion (spring physics) |
 | Fonts | Sora (Google Fonts) + JetBrains Mono (local woff2) |
@@ -106,21 +107,10 @@ Inherits from `init.optalocal.com`:
 
 ## Build Output
 
-```
-out/
-├── index.html         (45KB — full page SSG)
-├── 404.html
-├── _next/
-│   └── static/
-│       ├── chunks/    (JS bundles)
-│       └── css/       (compiled Tailwind)
-└── fonts/
-    ├── JetBrainsMono-Regular.woff2
-    ├── JetBrainsMono-Medium.woff2
-    └── JetBrainsMono-Bold.woff2
-```
-
-Total output: ~2.2MB
+Route summary after build:
+- `○ /` static
+- `○ /_not-found` static
+- `ƒ /api/health` dynamic
 
 ---
 
@@ -132,5 +122,5 @@ Total output: ~2.2MB
 | Project ID | `prj_LUQzl1HQxbRGKaAYYdELDOp0kqjc` |
 | Domain | `optalocal.com` |
 | Root Directory | `1-Apps/optalocal/1T-Opta-Home` |
-| Framework | Next.js (static export) |
+| Framework | Next.js |
 | Node | 24.x |

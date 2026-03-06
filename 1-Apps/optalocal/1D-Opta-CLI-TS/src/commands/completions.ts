@@ -90,7 +90,7 @@ _opta_completions() {
   COMPREPLY=()
   cur="\${COMP_WORDS[COMP_CWORD]}"
   prev="\${COMP_WORDS[COMP_CWORD-1]}"
-  commands="chat tui do embed rerank benchmark onboard setup init doctor status models env config account key keychain sessions mcp diff server daemon serve update version completions"
+  commands="chat tui do embed rerank benchmark onboard setup init doctor health settings status models env config account key keychain sessions mcp diff server daemon serve update version completions"
 
   case "\${prev}" in
     opta)
@@ -118,7 +118,7 @@ _opta_completions() {
       return 0
       ;;
     config)
-      COMPREPLY=( $(compgen -W "list get set reset menu --json --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "list get set reset menu settings --json --help" -- "\${cur}") )
       return 0
       ;;
     sessions)
@@ -134,7 +134,15 @@ _opta_completions() {
       return 0
       ;;
     doctor)
-      COMPREPLY=( $(compgen -W "--json --format --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "--json --format --fix --help" -- "\${cur}") )
+      return 0
+      ;;
+    health)
+      COMPREPLY=( $(compgen -W "--json --help" -- "\${cur}") )
+      return 0
+      ;;
+    settings)
+      COMPREPLY=( $(compgen -W "--help" -- "\${cur}") )
       return 0
       ;;
     diff)
@@ -154,7 +162,7 @@ _opta_completions() {
       return 0
       ;;
     update)
-      COMPREPLY=( $(compgen -W "--components --target --remote-host --remote-user --identity-file --local-root --remote-root --dry-run --no-build --no-pull --json --help" -- "\${cur}") )
+      COMPREPLY=( $(compgen -W "--components --target --remote-host --remote-all --remote-hosts --remote-user --identity-file --local-root --remote-root --dry-run --no-build --no-pull --json --help" -- "\${cur}") )
       return 0
       ;;
     chat)
@@ -213,6 +221,8 @@ _opta() {
     'onboard:Run guided setup wizard'
     'init:Initialize OPIS project intelligence docs'
     'doctor:Check environment health and diagnose issues'
+    'health:Quick health check for Opta CLI + daemon'
+    'settings:Open interactive settings menu'
     'status:Check Opta LMX server health and loaded models'
     'models:List and manage loaded models'
     'env:Manage named environment profiles'
@@ -226,7 +236,7 @@ _opta() {
     'server:Start an HTTP API server for non-interactive use'
     'daemon:Manage Opta Level 3 daemon runtime'
     'serve:Manage the remote Opta LMX inference server'
-    'update:Update Opta components on local/remote targets'
+    'update:Update Opta CLI + daemon on local/remote targets'
     'version:Show version with optional update check'
     'completions:Generate shell completions'
   )
@@ -299,7 +309,7 @@ _opta() {
             '--json[machine-readable output]'
           ;;
         config)
-          _arguments '1:action:(list get set reset menu)' '--json[machine-readable output]'
+          _arguments '1:action:(list get set reset menu settings)' '--json[machine-readable output]'
           ;;
         sessions)
           _arguments '1:action:(list resume delete export search)' '--json[machine-readable output]'
@@ -314,7 +324,15 @@ _opta() {
           ;;
         doctor)
           _arguments \\
+            '--json[machine-readable output]' \\
+            '--fix[auto-fix issues where possible]'
+          ;;
+        health)
+          _arguments \\
             '--json[machine-readable output]'
+          ;;
+        settings)
+          _arguments
           ;;
         diff)
           _arguments \\
@@ -339,9 +357,11 @@ _opta() {
           ;;
         update)
           _arguments \\
-            '--components[comma-separated components]:components:(cli lmx plus web)' \\
-            '--target[target mode]:target:(auto local remote both)' \\
+            '--components[comma-separated components]:components:(cli daemon)' \\
+            '--target[target mode]:target:(local remote)' \\
             '--remote-host[override remote host]:host:' \\
+            '--remote-all[roll out to all reachable remote hosts]' \\
+            '--remote-hosts[comma-separated remote hosts]:hosts:' \\
             '--remote-user[override SSH user]:user:' \\
             '--identity-file[override SSH identity file]:file:_files' \\
             '--local-root[override local apps root]:dir:_files -/' \\
@@ -417,6 +437,8 @@ complete -c opta -n '__fish_use_subcommand' -a benchmark -d 'Generate benchmark 
 complete -c opta -n '__fish_use_subcommand' -a onboard -d 'Run guided setup wizard'
 complete -c opta -n '__fish_use_subcommand' -a init -d 'Initialize OPIS project intelligence docs'
 complete -c opta -n '__fish_use_subcommand' -a doctor -d 'Check environment health and diagnose issues'
+complete -c opta -n '__fish_use_subcommand' -a health -d 'Quick health check for Opta CLI + daemon'
+complete -c opta -n '__fish_use_subcommand' -a settings -d 'Open interactive settings menu'
 complete -c opta -n '__fish_use_subcommand' -a status -d 'Check Opta LMX server health'
 complete -c opta -n '__fish_use_subcommand' -a models -d 'List and manage loaded models'
 complete -c opta -n '__fish_use_subcommand' -a env -d 'Manage named environment profiles'
@@ -430,7 +452,7 @@ complete -c opta -n '__fish_use_subcommand' -a serve -d 'Manage remote Opta LMX 
 complete -c opta -n '__fish_use_subcommand' -a account -d 'Manage Opta account auth'
 complete -c opta -n '__fish_use_subcommand' -a key -d 'Manage inference API keys'
 complete -c opta -n '__fish_use_subcommand' -a keychain -d 'Manage OS keychain API keys'
-complete -c opta -n '__fish_use_subcommand' -a update -d 'Update Opta components locally/remotely'
+complete -c opta -n '__fish_use_subcommand' -a update -d 'Update Opta CLI + daemon locally/remotely'
 complete -c opta -n '__fish_use_subcommand' -a version -d 'Show version with update check'
 complete -c opta -n '__fish_use_subcommand' -a completions -d 'Generate shell completions'
 
@@ -503,7 +525,7 @@ complete -c opta -n '__fish_seen_subcommand_from env' -l mode -d 'Default mode f
 complete -c opta -n '__fish_seen_subcommand_from env' -l json -d 'Machine-readable output'
 
 # config subcommands and flags
-complete -c opta -n '__fish_seen_subcommand_from config' -a 'list get set reset menu' -d 'Action'
+complete -c opta -n '__fish_seen_subcommand_from config' -a 'list get set reset menu settings' -d 'Action'
 complete -c opta -n '__fish_seen_subcommand_from config' -l json -d 'Machine-readable output'
 
 # sessions subcommands and flags
@@ -520,6 +542,10 @@ complete -c opta -n '__fish_seen_subcommand_from init' -l force -d 'Overwrite ex
 
 # doctor flags
 complete -c opta -n '__fish_seen_subcommand_from doctor' -l json -d 'Machine-readable output'
+complete -c opta -n '__fish_seen_subcommand_from doctor' -l fix -d 'Auto-fix issues where possible'
+
+# health flags
+complete -c opta -n '__fish_seen_subcommand_from health' -l json -d 'Machine-readable output'
 
 # diff flags
 complete -c opta -n '__fish_seen_subcommand_from diff' -l session -s s -d 'Session to diff' -x
@@ -542,9 +568,11 @@ complete -c opta -n '__fish_seen_subcommand_from serve' -a 'start stop restart l
 complete -c opta -n '__fish_seen_subcommand_from serve' -l json -d 'Machine-readable output'
 
 # update flags
-complete -c opta -n '__fish_seen_subcommand_from update' -l components -s c -d 'Components: cli,lmx,plus,web' -x -a 'cli lmx plus web'
-complete -c opta -n '__fish_seen_subcommand_from update' -l target -s t -d 'Target: auto|local|remote|both' -x -a 'auto local remote both'
+complete -c opta -n '__fish_seen_subcommand_from update' -l components -s c -d 'Components: cli,daemon' -x -a 'cli daemon'
+complete -c opta -n '__fish_seen_subcommand_from update' -l target -s t -d 'Target: local|remote' -x -a 'local remote'
 complete -c opta -n '__fish_seen_subcommand_from update' -l remote-host -d 'Override remote host' -x
+complete -c opta -n '__fish_seen_subcommand_from update' -l remote-all -d 'Roll out to all reachable remote hosts'
+complete -c opta -n '__fish_seen_subcommand_from update' -l remote-hosts -d 'Comma-separated remote hosts' -x
 complete -c opta -n '__fish_seen_subcommand_from update' -l remote-user -d 'Override SSH user' -x
 complete -c opta -n '__fish_seen_subcommand_from update' -l identity-file -d 'Override SSH identity file' -r
 complete -c opta -n '__fish_seen_subcommand_from update' -l local-root -d 'Override local apps root' -r

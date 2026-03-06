@@ -135,6 +135,13 @@ beforeEach(() => {
   delete process.env['OPENCODE_ZEN_API_KEY'];
   delete process.env['OPENCODEZ_API_KEY'];
   delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
+  delete process.env['OPTA_GEMINI_AUTH_MODE'];
+  delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
+  delete process.env['GOOGLE_CLOUD_PROJECT'];
+  delete process.env['GOOGLE_CLOUD_LOCATION'];
+  delete process.env['GCLOUD_PROJECT'];
+  delete process.env['GCP_PROJECT'];
+  delete process.env['CUSTOM_ANTHRO_KEY'];
 });
 
 afterEach(() => {
@@ -149,6 +156,13 @@ afterEach(() => {
   delete process.env['OPENCODE_ZEN_API_KEY'];
   delete process.env['OPENCODEZ_API_KEY'];
   delete process.env['OPTA_CLOUD_FALLBACK_ORDER'];
+  delete process.env['OPTA_GEMINI_AUTH_MODE'];
+  delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
+  delete process.env['GOOGLE_CLOUD_PROJECT'];
+  delete process.env['GOOGLE_CLOUD_LOCATION'];
+  delete process.env['GCLOUD_PROJECT'];
+  delete process.env['GCP_PROJECT'];
+  delete process.env['CUSTOM_ANTHRO_KEY'];
 });
 
 describe('getProvider — provider selection', () => {
@@ -170,6 +184,27 @@ describe('getProvider — provider selection', () => {
     // Build a config where provider.active gets the schema default ('lmx')
     const provider = await getProvider(DEFAULT_CONFIG);
     expect(provider.name).toBe('lmx');
+  });
+
+  it('honours anthropic-compatible custom providers', async () => {
+    process.env['CUSTOM_ANTHRO_KEY'] = 'sk-ant-custom';
+    const config = makeConfig({
+      provider: {
+        ...DEFAULT_CONFIG.provider,
+        active: 'custom-anthro',
+        customProviders: [
+          {
+            id: 'custom-anthro',
+            protocol: 'anthropic-compatible',
+            baseURL: 'https://gateway.example.com/v1',
+            apiKeyEnvVar: 'CUSTOM_ANTHRO_KEY',
+          },
+        ],
+      },
+    });
+    const provider = await getProvider(config);
+    expect(provider.name).toBe('anthropic');
+    delete process.env['CUSTOM_ANTHRO_KEY'];
   });
 
   it('returns FallbackProvider (lmx+fallback) when fallbackOnFailure is true', async () => {
@@ -432,6 +467,19 @@ describe('probeProvider — LMX unreachable + cloud fallback order', () => {
 
     expect(provider.name).toBe('openai');
   });
+
+  it('treats Gemini Vertex OAuth as a valid fallback credential path', async () => {
+    process.env['GOOGLE_GENAI_USE_VERTEXAI'] = 'true';
+    process.env['GOOGLE_CLOUD_PROJECT'] = 'opta-test-project';
+    process.env['GOOGLE_CLOUD_LOCATION'] = 'us-central1';
+    const probeMock = await getProbeMock();
+    probeMock.mockResolvedValueOnce({ state: 'disconnected', latencyMs: 2000, reason: 'ECONNREFUSED' });
+
+    const config = makeConfig({ provider: { ...DEFAULT_CONFIG.provider, active: 'lmx' } });
+    const provider = await probeProvider(config);
+
+    expect(provider.name).toBe('gemini');
+  });
 });
 
 describe('probeProvider — explicit Anthropic config skips LMX probe', () => {
@@ -444,6 +492,31 @@ describe('probeProvider — explicit Anthropic config skips LMX probe', () => {
     expect(provider.name).toBe('anthropic');
     // Must NOT probe LMX — user already chose Anthropic.
     expect(probeMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('probeProvider — custom provider config skips LMX probe', () => {
+  it('returns anthropic provider for anthropic-compatible custom provider without probing LMX', async () => {
+    process.env['CUSTOM_ANTHRO_KEY'] = 'sk-ant-custom';
+    const probeMock = await getProbeMock();
+    const config = makeConfig({
+      provider: {
+        ...DEFAULT_CONFIG.provider,
+        active: 'custom-anthro',
+        customProviders: [
+          {
+            id: 'custom-anthro',
+            protocol: 'anthropic-compatible',
+            baseURL: 'https://gateway.example.com/v1',
+            apiKeyEnvVar: 'CUSTOM_ANTHRO_KEY',
+          },
+        ],
+      },
+    });
+    const provider = await probeProvider(config);
+    expect(provider.name).toBe('anthropic');
+    expect(probeMock).not.toHaveBeenCalled();
+    delete process.env['CUSTOM_ANTHRO_KEY'];
   });
 });
 

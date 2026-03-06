@@ -28,6 +28,7 @@ Set the following environment variables for admin access control:
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `OPTA_ADMIN_ALLOWED_EMAILS` (comma-separated emails, e.g. `admin1@example.com,admin2@example.com`)
 - `NEXT_PUBLIC_ACCOUNTS_SIGN_IN_URL` (optional, defaults to `https://accounts.optalocal.com/login`)
+- `PROMOTION_ALLOWED_SLUGS` (optional allowlist, comma-separated slugs or `*`/`all`; defaults to all slugs for authenticated admins)
 
 Auth behavior:
 

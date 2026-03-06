@@ -6,10 +6,16 @@ import { useAccountsAuthControls } from "../useAccountsAuthControls";
 vi.mock("../../lib/runtime/index", () => ({
   runAccountBrowserLogin: vi.fn(),
   fetchAccountStatus: vi.fn(),
+  isNativeDesktop: vi.fn(() => false),
 }));
 
 vi.mock("../../lib/runtime/deepLinks", () => ({
   useAuthDeepLinkListener: vi.fn(),
+}));
+
+vi.mock("../../lib/auth", () => ({
+  exchangeNativeAuthCode: vi.fn(),
+  onNativeAuthStateChange: vi.fn(() => () => {}),
 }));
 
 const mockedRuntime = await vi.importMock<
@@ -22,7 +28,8 @@ const mockedDeepLinks = await vi.importMock<
 const connection: DaemonConnectionOptions = {
   host: "127.0.0.1",
   port: 11434,
-  scheme: "http",
+  protocol: "http",
+  token: "opta-test-token",
 };
 
 describe("useAccountsAuthControls", () => {
@@ -51,7 +58,9 @@ describe("useAccountsAuthControls", () => {
     expect(mockedRuntime.runAccountBrowserLogin).toHaveBeenCalledWith(
       connection,
     );
-    expect(notices.some((msg) => msg.includes("Complete login"))).toBe(true);
+    expect(
+      notices.some((msg) => msg.includes("Login complete. Account status refreshed.")),
+    ).toBe(true);
   });
 
   it("reports failure notice when login throws", async () => {

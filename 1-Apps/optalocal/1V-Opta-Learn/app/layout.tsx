@@ -15,8 +15,8 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: 'Opta Local — Learn',
-  description: 'Guides, docs, and help for every Opta Local app and feature.',
+  title: 'Opta Learn — Guides for Opta AI Activation and Execution',
+  description: 'Guides for Opta, where Opta Local is the first public release. Learn how local LMX or cloud models power Opta AI across CLI and Code workflows.',
   icons: {
     icon: '/favicon.svg',
   },

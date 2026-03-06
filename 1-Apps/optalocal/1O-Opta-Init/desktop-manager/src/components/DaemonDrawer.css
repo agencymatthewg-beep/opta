@@ -70,6 +70,12 @@
     gap: 32px;
 }
 
+.job-empty {
+    color: var(--text-muted, #a1a1aa);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+}
+
 .job-node {
     display: flex;
     gap: 16px;
@@ -168,4 +174,10 @@
     font-size: 9px;
     color: var(--text-main, #ffffff);
     text-decoration: none !important;
+}
+
+.job-stopped-note {
+    color: var(--text-muted, #a1a1aa);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
 }

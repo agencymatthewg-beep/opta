@@ -38,8 +38,9 @@ export default function DaemonTroubleshootingPage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>Troubleshooting</h1>
           <p className="lead">
-            Common daemon issues and their solutions. If you encounter a problem not listed here,
-            check the daemon logs with <code>opta daemon logs</code> for detailed error messages.
+            Resolve the highest-frequency daemon failure patterns with deterministic
+            recovery steps. For incidents outside this guide, inspect
+            <code> opta daemon logs</code> first and escalate with the exact error trace.
           </p>
 
           <h2 id="daemon-exits-immediately">Daemon Exits Immediately</h2>
@@ -54,7 +55,10 @@ export default function DaemonTroubleshootingPage() {
             through 10020. If all ports are occupied, the daemon fails to start.
           </p>
           <CommandBlock
-            command="lsof -i :9999"
+            platformCommands={{
+              macos: "lsof -i :9999",
+              windows: "netstat -ano | findstr 9999",
+            }}
             description="Check what is using port 9999"
             output={`COMMAND   PID  USER   FD   TYPE DEVICE SIZE/OFF NODE NAME
 node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
@@ -64,8 +68,11 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
             a different port range:
           </p>
           <CommandBlock
-            command="kill 12345 && opta daemon start"
-            description="Kill the conflicting process and restart"
+            platformCommands={{
+              macos: "kill 12345 && opta daemon start",
+              windows: "taskkill /PID 12345 /F && opta daemon start",
+            }}
+            description="Stop the conflicting process and restart daemon"
           />
           <Callout variant="warning" title="Multiple daemon instances">
             Never run two daemon instances. If you see a daemon already listening, use{" "}
@@ -100,7 +107,10 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
                 title: "Check network connectivity",
                 content: (
                   <CommandBlock
-                    command="ping -c 3 lmx-host.local"
+                    platformCommands={{
+                      macos: "ping -c 3 lmx-host.local",
+                      windows: "ping -n 3 lmx-host.local",
+                    }}
                     description="Verify LAN connection to dedicated Apple Silicon host"
                   />
                 ),
@@ -116,9 +126,9 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
               },
             ]}
           />
-          <Callout variant="danger" title="Never use Tailscale">
-            Always connect to the dedicated Apple Silicon host over LAN (<code>lmx-host.local</code>). Tailscale adds
-            latency and is not supported for LMX connections.
+          <Callout variant="warning" title="Network routing guidance">
+            Prefer direct LAN routing to the LMX host for lowest latency and fewer connection edge
+            cases. Overlay networks can work, but usually increase jitter and troubleshooting complexity.
           </Callout>
 
           <h2 id="permission-requests-hang">Permission Requests Hang</h2>
@@ -165,13 +175,17 @@ node    12345  matt   22u  IPv4  0x...  0t0  TCP localhost:9999 (LISTEN)`}
             Fix: delete the state file and restart the daemon.
           </p>
           <CommandBlock
-            command="rm ~/.config/opta/daemon/state.json && opta daemon start"
-            description="Remove corrupt state and restart"
+            platformCommands={{
+              macos: "rm ~/.config/opta/daemon/state.json && opta daemon start",
+              windows: 'del %APPDATA%\\opta\\daemon\\state.json && opta daemon start',
+            }}
+            description="Remove corrupt daemon state and restart"
           />
           <Callout variant="warning" title="Session data is safe">
             Deleting <code>state.json</code> only removes the daemon process metadata (PID, token,
             port). Your session history is stored separately in{" "}
-            <code>~/.config/opta/daemon/sessions/</code> and will not be affected.
+            <code>~/.config/opta/sessions/</code> (or <code>%APPDATA%\\opta\\sessions\\</code> on
+            Windows) and will not be affected.
           </Callout>
 
           <h2 id="crash-recovery">Crash Recovery</h2>
@@ -240,24 +254,29 @@ All checks passed.`}
 
           <h2 id="reset-everything">Reset Everything</h2>
           <p>
-            As a last resort, you can perform a full daemon reset. This stops the daemon, removes all
-            state files, and starts fresh. Session history is preserved.
+            If targeted remediation fails, run a controlled full daemon reset. This
+            sequence stops the daemon, clears daemon state artifacts, and starts a clean
+            process while preserving session history.
           </p>
           <CommandBlock
             command="opta daemon stop"
             description="Step 1: Stop the daemon"
           />
           <CommandBlock
-            command="rm ~/.config/opta/daemon/state.json ~/.config/opta/daemon/daemon.log"
-            description="Step 2: Remove state and logs"
+            platformCommands={{
+              macos: "rm ~/.config/opta/daemon/state.json ~/.config/opta/daemon/daemon.log",
+              windows: 'del %APPDATA%\\opta\\daemon\\state.json && del %APPDATA%\\opta\\daemon\\daemon.log',
+            }}
+            description="Step 2: Remove daemon state and logs"
           />
           <CommandBlock
             command="opta daemon start"
             description="Step 3: Start fresh"
           />
           <Callout variant="danger" title="Do not delete the sessions directory">
-            The <code>~/.config/opta/daemon/sessions/</code> directory contains all your persisted
-            session data. Deleting it will permanently erase your conversation history.
+            The <code>~/.config/opta/sessions/</code> directory (or{" "}
+            <code>%APPDATA%\\opta\\sessions\\</code> on Windows) contains all persisted session
+            data. Deleting it permanently erases conversation history.
           </Callout>
 
           <PrevNextNav prev={prev} next={next} />

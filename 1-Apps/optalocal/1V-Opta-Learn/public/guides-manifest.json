@@ -1,35 +1,70 @@
 {
-  "generatedAt": "2026-03-04T02:57:06.015Z",
+  "generatedAt": "2026-03-06T02:32:10.591Z",
   "root": "content/guides",
   "counts": {
-    "published": 1,
-    "draft": 9,
+    "published": 8,
+    "draft": 3,
     "orphan": 0
   },
   "published": [
-    {
-      "slug": "cli",
-      "title": "CLI Masterclass",
-      "file": "content/guides/cli-masterclass.ts",
-      "exportName": "cliMasterclass",
-      "status": "verified"
-    }
-  ],
-  "draft": [
     {
       "slug": "opta-local-intro",
       "title": "Introduction to Local",
       "file": "content/guides/opta-local-intro.ts",
       "exportName": "optaLocalIntro",
-      "status": "draft"
+      "status": "verified"
     },
     {
       "slug": "lmx",
       "title": "Getting Started with LMX",
       "file": "content/guides/lmx-overview.ts",
       "exportName": "lmxOverview",
-      "status": "draft"
+      "status": "verified"
     },
+    {
+      "slug": "cli",
+      "title": "CLI Masterclass",
+      "file": "content/guides/cli-masterclass.ts",
+      "exportName": "cliMasterclass",
+      "status": "verified"
+    },
+    {
+      "slug": "code-desktop",
+      "title": "Code Desktop Overview",
+      "file": "content/guides/code-desktop-overview.ts",
+      "exportName": "codeDesktopOverview",
+      "status": "verified"
+    },
+    {
+      "slug": "accounts",
+      "title": "Accounts Local Sync",
+      "file": "content/guides/accounts-sync.ts",
+      "exportName": "accountsSync",
+      "status": "verified"
+    },
+    {
+      "slug": "lmx-masterclass",
+      "title": "LMX Masterclass",
+      "file": "content/guides/lmx-masterclass.ts",
+      "exportName": "lmxMasterclass",
+      "status": "verified"
+    },
+    {
+      "slug": "code-desktop-masterclass",
+      "title": "Code Desktop Masterclass",
+      "file": "content/guides/code-desktop-masterclass.ts",
+      "exportName": "codeDesktopMasterclass",
+      "status": "verified"
+    },
+    {
+      "slug": "accounts-masterclass",
+      "title": "Accounts Masterclass",
+      "file": "content/guides/accounts-masterclass.ts",
+      "exportName": "accountsMasterclass",
+      "status": "verified"
+    }
+  ],
+  "draft": [
     {
       "slug": "browser-automation",
       "title": "Browser Automation Deep Dive",
@@ -38,45 +73,17 @@
       "status": "draft"
     },
     {
-      "slug": "code-desktop",
-      "title": "Code Desktop Overview",
-      "file": "content/guides/code-desktop-overview.ts",
-      "exportName": "codeDesktopOverview",
+      "slug": "audio-voice",
+      "title": "Audio & Voice with Opta LMX",
+      "file": "content/guides/audio-voice.ts",
+      "exportName": "audioVoiceGuide",
       "status": "draft"
     },
     {
-      "slug": "accounts",
-      "title": "Accounts Local Sync",
-      "file": "content/guides/accounts-sync.ts",
-      "exportName": "accountsSync",
-      "status": "draft"
-    },
-    {
-      "slug": "feature-name",
-      "title": "Feature Name Masterclass",
-      "file": "content/guides/template-deep-dive.ts",
-      "exportName": "deepDiveTemplate",
-      "status": "draft"
-    },
-    {
-      "slug": "lmx-masterclass",
-      "title": "LMX Masterclass",
-      "file": "content/guides/lmx-masterclass.ts",
-      "exportName": "lmxMasterclass",
-      "status": "draft"
-    },
-    {
-      "slug": "code-desktop-masterclass",
-      "title": "Code Desktop Masterclass",
-      "file": "content/guides/code-desktop-masterclass.ts",
-      "exportName": "codeDesktopMasterclass",
-      "status": "draft"
-    },
-    {
-      "slug": "accounts-masterclass",
-      "title": "Accounts Masterclass",
-      "file": "content/guides/accounts-masterclass.ts",
-      "exportName": "accountsMasterclass",
+      "slug": "rag-workflow",
+      "title": "Building a Knowledge Base with RAG",
+      "file": "content/guides/rag-workflow.ts",
+      "exportName": "ragWorkflowGuide",
       "status": "draft"
     }
   ],

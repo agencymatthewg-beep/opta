@@ -603,7 +603,9 @@ export async function collectStream(
 }> {
   let text = '';
   const toolCallMap = new Map<number, ToolCallAccum>();
-  const thinkingRenderer = new ThinkingRenderer();
+  const thinkingRenderer = new ThinkingRenderer({
+    enableTerminalOutput: !onStream,
+  });
   let usage: StreamUsage | null = null;
   let finishReason: string | null = null;
 

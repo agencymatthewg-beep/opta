@@ -4,7 +4,6 @@ import { TableOfContents } from "@/components/docs/TableOfContents";
 import { Callout } from "@/components/docs/Callout";
 import { CommandBlock } from "@/components/docs/CommandBlock";
 import { StepList } from "@/components/docs/StepList";
-import { CodeBlock } from "@/components/docs/CodeBlock";
 import { getPrevNext } from "@/lib/content";
 
 const tocItems = [
@@ -32,9 +31,13 @@ export default function InstallationPage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>Installation</h1>
           <p>
-            Install the Opta CLI globally via npm. The CLI is the primary entry point
-            to the entire Opta Local stack -- it manages the daemon, connects to LMX,
-            and provides the chat and task execution interfaces.
+            Install Opta CLI globally via npm to activate the full local execution
+            control plane. The CLI orchestrates daemon lifecycle, runtime routing,
+            and every interactive or autonomous execution surface.
+          </p>
+          <p>
+            Use the platform selector at the top of the docs to render commands for
+            macOS or Windows before running installation and validation steps.
           </p>
 
           <h2 id="prerequisites">Prerequisites</h2>
@@ -59,8 +62,8 @@ export default function InstallationPage() {
                 </tr>
                 <tr>
                   <td><strong>Operating System</strong></td>
-                  <td>macOS 14+ or Linux (x64/arm64)</td>
-                  <td>macOS 15 (Sequoia)</td>
+                  <td>macOS 14+, Linux (x64/arm64), Windows 11+</td>
+                  <td>macOS 15 / Ubuntu 24.04 / Windows 11</td>
                 </tr>
                 <tr>
                   <td><strong>npm</strong></td>
@@ -93,7 +96,7 @@ export default function InstallationPage() {
                 description:
                   "This installs the opta command globally so it is available from any directory.",
                 content: (
-                  <CommandBlock command="npm install -g @opta/cli" />
+                  <CommandBlock command="npm install -g @opta/opta-cli" />
                 ),
               },
               {
@@ -102,8 +105,14 @@ export default function InstallationPage() {
                   "The opta command should now be accessible from your terminal.",
                 content: (
                   <CommandBlock
-                    command="which opta"
-                    output="/usr/local/bin/opta"
+                    platformCommands={{
+                      macos: "which opta",
+                      windows: "where opta",
+                    }}
+                    platformOutputs={{
+                      macos: "/usr/local/bin/opta",
+                      windows: "C:\\Users\\matt\\AppData\\Roaming\\npm\\opta.cmd",
+                    }}
                   />
                 ),
               },
@@ -112,7 +121,10 @@ export default function InstallationPage() {
                 content: (
                   <CommandBlock
                     command="opta --version"
-                    output="opta/1.0.0 darwin-arm64 node-v22.12.0"
+                    versionOutputs={{
+                      latest: "opta/1.1.0 darwin-arm64 node-v22.12.0",
+                      v1_0: "opta/1.0.0 darwin-arm64 node-v22.12.0",
+                    }}
                   />
                 ),
               },
@@ -133,13 +145,22 @@ export default function InstallationPage() {
 
           <CommandBlock
             command="opta doctor"
-            output={`Opta Doctor
+            platformOutputs={{
+              macos: `Opta Doctor
 -----------
   Node.js     v22.12.0       ok
   npm         10.9.0         ok
   Config dir  ~/.config/opta ok
   Daemon      not running    (start with: opta daemon start)
-  LMX host    not configured (set with: opta config set connection.host <ip>)`}
+  LMX host    not configured (set with: opta config set connection.host <ip>)`,
+              windows: `Opta Doctor
+-----------
+  Node.js     v22.12.0               ok
+  npm         10.9.0                 ok
+  Config dir  %APPDATA%\\opta         ok
+  Daemon      not running            (start with: opta daemon start)
+  LMX host    not configured         (set with: opta config set connection.host <ip>)`,
+            }}
             description="Run diagnostics to verify your environment"
           />
 
@@ -150,7 +171,7 @@ export default function InstallationPage() {
 
           <h2 id="smoke-test">Smoke Test</h2>
           <p>
-            Run a quick smoke test to confirm the CLI loads and responds correctly:
+            Run a validation check to confirm the CLI initializes and responds as expected:
           </p>
 
           <StepList
@@ -162,9 +183,14 @@ export default function InstallationPage() {
                 content: (
                   <CommandBlock
                     command="opta status"
-                    output={`CLI:    v1.0.0
+                    versionOutputs={{
+                      latest: `CLI:    v1.1.0
 Daemon: stopped
-LMX:    not configured`}
+LMX:    not configured`,
+                      v1_0: `CLI:    v1.0.0
+Daemon: stopped
+LMX:    not configured`,
+                    }}
                   />
                 ),
               },
@@ -205,7 +231,7 @@ daemon.port         9999`}
             To update to the latest version, re-run the global install command:
           </p>
           <CommandBlock
-            command="npm install -g @opta/cli@latest"
+            command="npm install -g @opta/opta-cli@latest"
             description="Update to the latest release"
           />
 
@@ -213,24 +239,27 @@ daemon.port         9999`}
             You can also check if an update is available without installing:
           </p>
           <CommandBlock
-            command="opta update --check"
-            output="Current: 1.0.0  Latest: 1.1.0  (update available)"
+            command="opta version --check"
+            versionOutputs={{
+              latest: "Current: 1.1.0  Latest: 1.1.0  (up to date)",
+              v1_0: "Current: 1.0.0  Latest: 1.1.0  (update available)",
+            }}
           />
 
           <h2 id="uninstalling">Uninstalling</h2>
           <p>
-            To remove the CLI and its configuration:
+            To remove the CLI from your workstation and optionally clear local Opta state:
           </p>
-
-          <CodeBlock
-            language="bash"
-            filename="Uninstall steps"
-            code={`# Remove the global package
-npm uninstall -g @opta/cli
-
-# Optionally remove config and data
-rm -rf ~/.config/opta
-rm -rf ~/.local/share/opta`}
+          <CommandBlock
+            command="npm uninstall -g @opta/opta-cli"
+            description="Remove the globally installed CLI package"
+          />
+          <CommandBlock
+            platformCommands={{
+              macos: "rm -rf ~/.config/opta ~/.local/share/opta",
+              windows: 'Remove-Item -Recurse -Force "$env:APPDATA\\opta"',
+            }}
+            description="Optional: remove local configuration and cached local state"
           />
 
           <PrevNextNav prev={prev} next={next} />

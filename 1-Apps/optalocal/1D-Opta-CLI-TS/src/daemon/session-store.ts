@@ -1,6 +1,7 @@
 import { mkdir, readFile, writeFile, appendFile, stat, readdir } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { getDaemonDir } from '../platform/paths.js';
+import { isPathWithinBase } from '../platform/path-safety.js';
 import type { AgentMessage } from '../core/agent.js';
 import type { V3Envelope } from '../protocol/v3/types.js';
 
@@ -34,7 +35,7 @@ function assertSafeSessionId(sessionId: string): void {
   // Secondary guard: resolved path must remain within sessionsDir.
   const base = sessionsDir();
   const resolved = resolve(base, sessionId);
-  if (!resolved.startsWith(base + '/') && resolved !== base) {
+  if (!isPathWithinBase(resolved, base)) {
     throw new Error(`Session path escapes sessions directory: "${sessionId}"`);
   }
 }
@@ -119,7 +120,7 @@ export async function appendSessionEvent(sessionId: string, event: V3Envelope): 
 export async function readSessionEventsAfter(sessionId: string, afterSeq: number): Promise<V3Envelope[]> {
   try {
     const raw = await readFile(eventLogPath(sessionId), 'utf-8');
-    const lines = raw.split('\n').filter(Boolean);
+    const lines = raw.split(/\r?\n/).filter(Boolean);
     const events = lines
       .map((line) => {
         try {

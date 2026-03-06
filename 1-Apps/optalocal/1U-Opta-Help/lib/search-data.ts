@@ -16,7 +16,7 @@ const sectionKeywords: Record<string, string[]> = {
   daemon: ["daemon", "background", "orchestration", "http", "api", "websocket", "ws", "events"],
   lmx: ["lmx", "inference", "mlx", "apple silicon", "openai", "vram", "models", "health"],
   "local-web": ["web", "dashboard", "browser", "chat", "remote", "cloudflare", "tunnel"],
-  "code-desktop": ["desktop", "electron", "vite", "monitor", "sessions", "timeline"],
+  "code-desktop": ["desktop", "tauri", "native", "vite", "monitor", "sessions", "timeline"],
   "browser-automation": ["browser", "playwright", "automation", "recording", "visual", "diff"],
   status: ["status", "incident", "uptime", "release notes", "service cards", "feature registry", "health"],
   security: ["security", "permissions", "privacy", "guardrails", "safety", "rules"],

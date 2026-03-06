@@ -18,6 +18,9 @@ export function OptaRing({ size = 24, className }: OptaRingProps) {
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
       className={cn("inline-block flex-shrink-0", className)}
+      aria-hidden="true"
+      focusable="false"
+      role="presentation"
     >
       <defs>
         <linearGradient id="olg" x1="0%" y1="0%" x2="100%" y2="100%">

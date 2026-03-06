@@ -1,4 +1,44 @@
-/* Opta Settings Studio Styles */
+/* Opta Settings Studio — Premium Glass Redesign */
+
+:root {
+  --studio-atmo-0: #040b18;
+  --studio-atmo-1: #091327;
+  --studio-atmo-2: #10203b;
+  --studio-atmo-3: #1a2d4f;
+  --studio-ice: rgba(197, 223, 255, 0.38);
+  --studio-lilac: rgba(171, 126, 255, 0.42);
+  --studio-cyan: rgba(102, 226, 255, 0.46);
+  --studio-surface: linear-gradient(140deg,
+      rgba(18, 34, 60, 0.72) 0%,
+      rgba(12, 24, 43, 0.56) 45%,
+      rgba(8, 16, 30, 0.64) 100%);
+  --studio-surface-soft: linear-gradient(150deg,
+      rgba(16, 31, 54, 0.62) 0%,
+      rgba(11, 21, 38, 0.48) 100%);
+  --studio-border: rgba(167, 204, 255, 0.24);
+  --studio-border-strong: rgba(203, 226, 255, 0.34);
+  --studio-border-accent: rgba(167, 124, 255, 0.45);
+  --studio-text: #eef4ff;
+  --studio-text-soft: #b5c6e7;
+  --studio-text-muted: #8b9bbc;
+  --studio-radius-xs: 8px;
+  --studio-radius-sm: 12px;
+  --studio-radius-md: 18px;
+  --studio-radius-lg: 24px;
+  --studio-blur-sm: blur(10px) saturate(140%);
+  --studio-blur-md: blur(18px) saturate(155%);
+  --studio-blur-lg: blur(28px) saturate(165%);
+  --studio-shadow-sm: 0 8px 22px rgba(3, 7, 19, 0.45);
+  --studio-shadow-md: 0 18px 48px rgba(3, 8, 22, 0.52);
+  --studio-shadow-lg: 0 26px 80px rgba(2, 6, 18, 0.58);
+  --studio-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --opta-transition-logo-duration: 340ms;
+  --opta-transition-logo-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --opta-transition-overlay-duration: 320ms;
+  --opta-transition-overlay-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --opta-transition-layer-duration: 220ms;
+  --opta-transition-layer-ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 .opta-studio-backdrop {
   position: fixed;
@@ -7,23 +47,27 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(9, 9, 11, 0.85);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  animation: fadeIn 0.2s ease-out;
+  background:
+    radial-gradient(1200px 700px at 82% 14%, rgba(136, 88, 255, 0.23), transparent 62%),
+    radial-gradient(900px 620px at 12% 78%, rgba(55, 179, 255, 0.16), transparent 58%),
+    linear-gradient(155deg, rgba(6, 12, 24, 0.84), rgba(6, 10, 18, 0.75));
+  -webkit-backdrop-filter: var(--studio-blur-sm);
+  backdrop-filter: var(--studio-blur-sm);
+  animation: fadeIn 220ms var(--studio-ease);
 }
 
 .opta-studio-shell {
-  width: min(900px, 95vw);
-  height: min(700px, 90vh);
-  background: rgba(24, 24, 27, 0.72);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  width: min(940px, 95vw);
+  height: min(730px, 92vh);
+  background: var(--studio-surface);
+  -webkit-backdrop-filter: var(--studio-blur-md);
+  backdrop-filter: var(--studio-blur-md);
+  border: 1px solid var(--studio-border);
+  border-radius: var(--studio-radius-lg);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    var(--studio-shadow-lg),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(130, 169, 255, 0.22);
   position: relative;
   overflow: hidden;
   display: flex;
@@ -33,175 +77,1202 @@
 .opta-studio-shell::before {
   content: "";
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg,
-      transparent,
-      rgba(139, 92, 246, 0.5),
-      transparent);
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(700px 280px at 18% 0%, rgba(122, 83, 255, 0.24), transparent 70%),
+    radial-gradient(640px 260px at 92% 100%, rgba(89, 214, 255, 0.16), transparent 72%);
+  opacity: 0.95;
 }
 
-.opta-studio-header {
+.opta-studio-shell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle at 1px 1px, rgba(255, 255, 255, 0.08) 1px, transparent 0);
+  background-size: 32px 32px;
+  mix-blend-mode: soft-light;
+  opacity: 0.18;
+}
+
+.opta-studio-embedded {
+  position: absolute;
+  inset: 0;
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-  background: rgba(9, 9, 11, 0.3);
+  min-height: 0;
 }
 
-.opta-studio-header h2 {
+.opta-studio-embedded--deep {
+  padding: 0.75rem;
+}
+
+.opta-studio-embedded--fullscreen {
+  padding: 0.7rem 0.8rem 0.85rem;
+}
+
+.opta-studio-shell--embedded {
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border-radius: 20px;
+  background: linear-gradient(145deg,
+      rgba(20, 37, 64, 0.72) 0%,
+      rgba(11, 22, 38, 0.58) 100%);
+}
+
+.opta-studio-shell--deep {
+  border-color: var(--studio-border-accent);
+  box-shadow:
+    0 32px 90px rgba(2, 6, 18, 0.64),
+    0 0 0 1px rgba(160, 199, 255, 0.17),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 0 80px rgba(133, 98, 255, 0.12);
+}
+
+.opta-studio-shell--fullscreen {
+  width: 100%;
+  height: 100%;
+  border-radius: 24px;
+  border-color: rgba(178, 214, 255, 0.34);
+  box-shadow:
+    0 34px 100px rgba(2, 6, 18, 0.7),
+    0 0 0 1px rgba(177, 136, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -1px 0 rgba(133, 170, 255, 0.22);
+}
+
+.opta-studio-logo-reserve {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  justify-content: center;
+  overflow: hidden;
+  max-height: 0;
+  padding: 0 1.4rem;
+  opacity: 0;
+  transform: translateY(-18px) scale(0.94);
+  border-bottom: 1px solid transparent;
+  pointer-events: none;
+  transition:
+    max-height var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    padding var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    opacity 240ms var(--opta-transition-overlay-ease),
+    transform var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    border-color 300ms var(--opta-transition-overlay-ease);
+}
+
+.opta-studio-logo-reserve.is-active {
+  max-height: 220px;
+  padding: 1.06rem 1.6rem 0.68rem;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  border-bottom-color: transparent;
+}
+
+.opta-studio-logo-reserve.is-docked {
+  max-height: 118px;
+  padding: 0.58rem 1.4rem 0.38rem;
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  border-bottom-color: transparent;
+}
+
+.opta-studio-logo-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.opta-studio-logo-word {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.44rem;
+}
+
+.opta-studio-logo-letter {
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-size: 2.64rem;
+  line-height: 1;
+  color: var(--opta-primary-glow, #a855f7);
+  text-transform: uppercase;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-smooth: never;
+  text-shadow:
+    2px 2px 0 #09090b,
+    3px 3px 0 #09090b,
+    4px 4px 0 var(--opta-primary-glow, #a855f7),
+    5px 5px 0 var(--opta-primary-glow, #a855f7),
+    7px 7px 0 #09090b,
+    8px 8px 0 #09090b,
+    9px 9px 0 var(--opta-primary-glow, #a855f7);
+  filter: drop-shadow(0 0 20px rgba(168, 85, 247, 0.32));
+  transform-origin: center bottom;
+  will-change: transform, font-size, filter;
+  transition:
+    transform var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    filter var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    text-shadow var(--opta-transition-logo-duration) var(--opta-transition-logo-ease),
+    font-size var(--opta-transition-logo-duration) var(--opta-transition-logo-ease);
+}
+
+.opta-studio-logo-letter-1 {
+  transform: translateY(-2px) scale(0.9);
+  transition-delay: 0ms;
+}
+
+.opta-studio-logo-letter-2 {
+  transform: translateY(-1px) scale(0.88);
+  transition-delay: 26ms;
+}
+
+.opta-studio-logo-letter-3 {
+  transform: translateY(-1px) scale(0.865);
+  transition-delay: 52ms;
+}
+
+.opta-studio-logo-letter-4 {
+  transform: translateY(-1px) scale(0.875);
+  transition-delay: 78ms;
+}
+
+.opta-studio-logo-settings {
+  font-family: "Press Start 2P", monospace;
+  font-weight: 400;
+  font-size: 1.1rem;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  color: var(--opta-primary-glow, #a855f7);
+  text-transform: uppercase;
+  -webkit-font-smoothing: none;
+  -moz-osx-font-smoothing: auto;
+  font-smooth: never;
+  text-shadow:
+    1px 1px 0 #09090b,
+    2px 2px 0 #09090b,
+    3px 3px 0 var(--opta-primary-glow, #a855f7);
+  filter: drop-shadow(0 0 14px rgba(168, 85, 247, 0.24));
+  opacity: 0;
+  transform: translateY(-12px) scale(0.92);
+  transition:
+    opacity var(--opta-transition-overlay-duration) var(--opta-transition-overlay-ease),
+    transform var(--opta-transition-overlay-duration) var(--opta-transition-overlay-ease);
+}
+
+.opta-studio-logo-sub {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.7rem;
+  color: #9fb2d6;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition:
+    opacity 260ms var(--opta-transition-overlay-ease),
+    transform 260ms var(--opta-transition-overlay-ease);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter {
+  font-size: 3.7rem;
+  filter: drop-shadow(0 0 28px rgba(168, 85, 247, 0.34));
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-1 {
+  transform: translateY(0) scale(1);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-2 {
+  transform: translateY(0) scale(0.98);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-3 {
+  transform: translateY(0) scale(0.965);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-letter-4 {
+  transform: translateY(0) scale(0.97);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-settings {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.opta-studio-logo-reserve.is-active .opta-studio-logo-sub {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.opta-studio-logo-reserve.is-docked .opta-studio-logo-settings,
+.opta-studio-logo-reserve.is-docked .opta-studio-logo-sub {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.opta-studio-top-chrome {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(52px, 1fr);
+  align-items: start;
+  gap: 0.7rem;
+  padding: 0.45rem 1.3rem 0.2rem;
+  text-align: left;
+}
+
+.opta-studio-top-chrome-left {
+  justify-self: start;
+  min-width: 0;
+}
+
+.opta-studio-top-chrome-center {
+  justify-self: center;
+}
+
+.opta-studio-top-chrome-right {
+  justify-self: end;
+  display: inline-flex;
+  align-items: flex-start;
+}
+
+.opta-studio-shortcut-panel {
+  max-width: min(44ch, 100%);
+  width: min(100%, 460px);
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  align-items: flex-start;
+  justify-content: flex-start;
+  text-align: left;
+}
+
+.opta-studio-shortcut-title {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #dbeaff;
+}
+
+.opta-studio-shortcut-copy {
+  margin: 0;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.63rem;
+  color: var(--studio-text-muted);
+  letter-spacing: 0.01em;
+  line-height: 1.45;
+}
+
+.opta-studio-command-row {
+  width: auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.62rem;
+  flex-wrap: wrap;
+}
+
+.opta-studio-command-row h2 {
   margin: 0;
   font-family: "Sora", sans-serif;
-  font-size: 1.1rem;
+  font-size: 1.04rem;
   font-weight: 600;
-  color: #fafafa;
+  letter-spacing: 0.01em;
+  color: var(--studio-text);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.68rem;
+  min-width: 0;
 }
 
-.opta-studio-header .moonlight {
-  background: linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #818cf8 100%);
+.opta-studio-panel-title {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.opta-studio-panel-eyebrow {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #d6e6ff;
+}
+
+.opta-studio-current-category-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  padding: 0.18rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid rgba(182, 210, 255, 0.34);
+  background: rgba(42, 60, 98, 0.5);
+  color: #eaf5ff;
+  font-family: "Sora", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.opta-studio-current-category-inline strong {
+  font-weight: 600;
+}
+
+.opta-studio-top-chrome .moonlight {
+  background: linear-gradient(120deg, #f5f9ff 0%, #b7d6ff 40%, #c39dff 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
+.opta-studio-layer-badge {
+  margin-left: 0.2rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.67rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--studio-text-soft);
+  border: 1px solid rgba(171, 210, 255, 0.24);
+  background: rgba(30, 52, 85, 0.38);
+  border-radius: 999px;
+  padding: 0.24rem 0.62rem;
+  white-space: nowrap;
+}
+
+.opta-studio-close-btn--floating {
+  display: none;
+}
+
+.opta-studio-layout--deep .st-header {
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+}
+
+.opta-studio-layout--deep .st-header-actions {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.opta-studio-layout--deep .st-row {
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.opta-studio-layout--deep .st-row > * {
+  max-width: min(560px, 100%);
+}
+
+.opta-studio-header-btn {
+  padding: 0.46rem 0.72rem;
+  font-size: 0.74rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.opta-studio-category-banner-shell {
+  position: relative;
+  z-index: 2;
+  padding: 0.72rem 1.3rem 0.24rem;
+  display: flex;
+  justify-content: center;
+}
+
+.opta-studio-category-wheel-shell {
+  position: relative;
+  z-index: 2;
+  padding: 0.74rem 1.3rem 0.28rem;
+  display: flex;
+  justify-content: center;
+}
+
+.opta-studio-category-wheel {
+  --settings-accent: #a78bfa;
+  display: grid;
+  grid-template-columns: minmax(24px, auto) minmax(120px, auto) minmax(220px, auto) minmax(120px, auto) minmax(24px, auto);
+  align-items: center;
+  gap: 0.85rem;
+  width: min(860px, 100%);
+}
+
+.opta-studio-category-wheel-item {
+  min-height: 30px;
+  color: #b9cbee;
+  font-family: "Sora", sans-serif;
+  font-size: 0.77rem;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition:
+    transform 180ms var(--studio-ease),
+    opacity 180ms var(--studio-ease);
+}
+
+.opta-studio-category-wheel-item.icon-only {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.52;
+  color: #c0d5ff;
+}
+
+.opta-studio-category-wheel-item.slot-far-left,
+.opta-studio-category-wheel-item.slot-far-right {
+  transform: scale(0.86);
+}
+
+.opta-studio-category-wheel-item.text-only {
+  opacity: 0.72;
+  text-align: center;
+}
+
+.opta-studio-category-wheel-item.slot-left {
+  justify-self: end;
+}
+
+.opta-studio-category-wheel-item.slot-right {
+  justify-self: start;
+}
+
+.opta-studio-category-wheel-item.current {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.66rem;
+}
+
+.opta-studio-category-banner {
+  --settings-accent: #a78bfa;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.72rem;
+  border-radius: 12px;
+  border: 1px solid rgba(177, 211, 255, 0.38);
+  background: linear-gradient(
+    120deg,
+    rgba(74, 72, 133, 0.54),
+    rgba(17, 33, 56, 0.5)
+  );
+  box-shadow:
+    0 12px 24px rgba(5, 10, 24, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  padding: 0.48rem 0.72rem;
+}
+
+.opta-studio-category-logo {
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #ecf6ff;
+  border: 1px solid rgba(183, 216, 255, 0.34);
+  background: rgba(55, 71, 110, 0.56);
+}
+
+.opta-studio-category-copy {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  gap: 0.18rem;
+}
+
+.opta-studio-category-copy span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.62rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--studio-text-muted);
+}
+
+.opta-studio-category-copy strong {
+  font-family: "Sora", sans-serif;
+  font-size: 0.83rem;
+  font-weight: 600;
+  color: #edf6ff;
+}
+
 .opta-studio-layout {
+  position: relative;
+  z-index: 2;
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
+.opta-studio-layout--deep {
+  display: block;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  text-align: center;
+}
+
+.opta-studio-layout--fullscreen {
+  min-height: 0;
+}
+
+.opta-studio-layout--deep .opta-studio-content {
+  width: min(980px, 100%);
+  margin-inline: auto;
+}
+
+.opta-studio-layout--fullscreen.opta-studio-layout--deep .opta-studio-content {
+  width: min(1280px, 100%);
+  padding: 1.3rem 1.8rem 1.9rem;
+}
+
+.opta-studio-layout--deep .opta-studio-section-title,
+.opta-studio-layout--deep p,
+.opta-studio-layout--deep .st-desc {
+  text-align: center;
+  margin-inline: auto;
+}
+
+.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 {
+  width: 100%;
+  max-width: min(1100px, 100%);
+  margin-inline: auto;
+  align-items: center;
+}
+
+.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 > * {
+  width: 100%;
+}
+
+.opta-studio-layout--deep .st-header,
+.opta-studio-layout--deep .st-fieldset,
+.opta-studio-layout--deep .st-fieldset-inner,
+.opta-studio-layout--deep .st-status-banner,
+.opta-studio-layout--deep .st-code {
+  width: 100%;
+  margin-inline: auto;
+}
+
+.opta-studio-layout--deep .st-legend {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+.opta-studio-layout--deep .st-label {
+  align-items: center;
+  text-align: center;
+}
+
+.opta-studio-layout--deep .st-checkbox-label {
+  justify-content: center;
+  text-align: left;
+}
+
+.opta-studio-layout--deep .st-perm-grid {
+  width: 100%;
+}
+
+.opta-studio-layout--deep .st-perm-row {
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.72rem;
+}
+
+.opta-studio-layout--deep .st-perm-name {
+  text-align: center;
+}
+
 .opta-studio-sidebar {
-  width: 240px;
-  background: rgba(9, 9, 11, 0.4);
-  border-right: 1px solid rgba(255, 255, 255, 0.05);
-  padding: 1rem 0;
+  width: 250px;
+  background: linear-gradient(170deg,
+      rgba(21, 36, 59, 0.58) 0%,
+      rgba(12, 24, 42, 0.45) 100%);
+  border-right: 1px solid rgba(171, 208, 255, 0.14);
+  padding: 0.9rem 0.62rem;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.32rem;
   overflow-y: auto;
+  scroll-behavior: smooth;
+}
+
+.opta-studio-tab-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(173, 208, 255, 0.2), transparent);
+  margin: 0.52rem 0.5rem;
 }
 
 .opta-studio-tab {
+  --settings-accent: #a78bfa;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
+  gap: 0.72rem;
+  padding: 0.68rem 0.78rem;
   font-family: "Sora", sans-serif;
-  font-size: 0.85rem;
-  color: #a1a1aa;
+  font-size: 0.82rem;
+  color: var(--studio-text-soft);
   cursor: pointer;
-  transition: all 0.2s;
-  background: transparent;
-  border: none;
+  transition: all 160ms var(--studio-ease);
+  background: rgba(17, 30, 51, 0.18);
+  border: 1px solid rgba(157, 198, 255, 0.08);
   width: 100%;
   text-align: left;
+  border-radius: var(--studio-radius-sm);
   position: relative;
+  overflow: hidden;
+  scroll-margin-block: 0.55rem;
+}
+
+.opta-studio-tab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    120deg,
+    rgba(151, 137, 235, 0.28),
+    transparent 55%
+  );
+  opacity: 0;
+  transition: opacity 160ms var(--studio-ease);
 }
 
 .opta-studio-tab:hover {
-  color: #fafafa;
-  background: rgba(255, 255, 255, 0.03);
+  color: var(--studio-text);
+  border-color: rgba(187, 215, 255, 0.4);
+  transform: translateX(2px);
+}
+
+.opta-studio-tab:hover::after {
+  opacity: 0.88;
 }
 
 .opta-studio-tab.active {
-  color: #fafafa;
-  background: rgba(139, 92, 246, 0.1);
-  font-weight: 500;
+  color: var(--studio-text);
+  border-color: rgba(189, 169, 255, 0.58);
+  background: linear-gradient(
+    120deg,
+    rgba(92, 86, 156, 0.58),
+    rgba(29, 50, 84, 0.42)
+  );
+  box-shadow:
+    0 8px 22px rgba(16, 8, 37, 0.45),
+    inset 0 1px 0 rgba(194, 188, 246, 0.32);
 }
 
 .opta-studio-tab.active::before {
   content: "";
   position: absolute;
   left: 0;
-  top: 0;
-  bottom: 0;
+  top: 20%;
+  bottom: 20%;
   width: 3px;
-  background: #8b5cf6;
-  border-radius: 0 4px 4px 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    #d2e8ff,
+    var(--settings-accent)
+  );
+  box-shadow: 0 0 12px rgba(168, 137, 255, 0.5);
 }
 
 .opta-studio-content {
   flex: 1;
-  padding: 2rem;
+  padding: 1.45rem 1.55rem 1.6rem;
   overflow-y: auto;
   position: relative;
-  background-image: radial-gradient(circle at 2px 2px,
-      rgba(255, 255, 255, 0.02) 1px,
-      transparent 0);
-  background-size: 32px 32px;
+  scroll-behavior: smooth;
+}
+
+.opta-studio-module-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.opta-studio-module-card {
+  border: 1px solid rgba(166, 205, 255, 0.18);
+  border-radius: 14px;
+  background: linear-gradient(
+    145deg,
+    rgba(17, 31, 55, 0.48),
+    rgba(10, 20, 36, 0.36)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 10px 24px rgba(4, 9, 22, 0.25);
+  padding: 0.95rem 1rem;
+}
+
+.opta-studio-layout--deep .opta-studio-module-card > :is(
+    .operations-page,
+    .config-studio-page,
+    .daemon-logs-page,
+    .background-jobs-page,
+    .account-control-page,
+    .system-operations-page,
+    .cli-bridge-page
+  ) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  gap: 0.95rem;
+}
+
+.opta-studio-layout--deep :is(
+    .operations-page-header,
+    .config-studio-header,
+    .logs-page-header,
+    .jobs-page-header,
+    .account-control-header,
+    .system-operations-header
+  ) {
+  border: 1px solid rgba(166, 205, 255, 0.22);
+  border-radius: 12px;
+  background: linear-gradient(148deg, rgba(18, 34, 58, 0.56), rgba(10, 20, 36, 0.42));
+  padding: 0.92rem 1rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.opta-studio-layout--deep :is(
+    .operations-page-header h2,
+    .config-studio-header h2,
+    .logs-page-header h2,
+    .jobs-page-header h2,
+    .account-control-header h2,
+    .system-operations-header h2
+  ) {
+  margin: 0 0 0.22rem;
+  font-size: clamp(1.18rem, 1.28vw, 1.52rem);
+  color: var(--studio-text);
+}
+
+.opta-studio-layout--deep :is(
+    .operations-page-header p,
+    .config-studio-header p,
+    .logs-page-header p,
+    .jobs-page-header p,
+    .account-control-header p,
+    .system-operations-header p
+  ) {
+  margin: 0;
+  color: var(--studio-text-soft);
+}
+
+.opta-studio-layout--deep .refresh-btn {
+  border: 1px solid rgba(166, 205, 255, 0.32);
+  background: linear-gradient(138deg, rgba(27, 52, 87, 0.62), rgba(16, 33, 58, 0.46));
+  color: var(--studio-text-soft);
+}
+
+.opta-studio-layout--deep .refresh-btn:hover:not(:disabled) {
+  border-color: rgba(194, 222, 255, 0.5);
+  color: var(--studio-text);
+}
+
+.opta-studio-layout--deep :is(.operations-error, .logs-error, .jobs-error) {
+  border-radius: 10px;
+  border: 1px solid rgba(255, 146, 165, 0.44);
+  background: linear-gradient(140deg, rgba(111, 33, 50, 0.3), rgba(35, 18, 34, 0.35));
+  color: #ffb7c4;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.opta-studio-layout--deep :is(.operations-error, .logs-error, .jobs-error) button {
+  border: 1px solid rgba(255, 177, 193, 0.34);
+  border-radius: 8px;
+  background: rgba(22, 16, 30, 0.68);
+  color: #eed8ff;
+}
+
+.opta-studio-layout--deep :is(
+    .operations-page,
+    .config-studio-page,
+    .background-jobs-page,
+    .daemon-logs-page,
+    .account-control-page,
+    .system-operations-page,
+    .cli-bridge-page
+  ) {
+  gap: 0.95rem;
+}
+
+.opta-studio-layout--deep :is(
+    .operations-layout,
+    .config-studio-layout,
+    .jobs-layout
+  ) {
+  width: 100%;
+  gap: 0.95rem;
+  min-height: 340px;
+}
+
+.opta-studio-layout--deep :is(
+    .operations-catalog,
+    .config-key-catalog,
+    .jobs-list
+  ) {
+  border: 1px solid rgba(166, 205, 255, 0.2);
+  border-radius: 11px;
+  background: linear-gradient(148deg, rgba(16, 31, 53, 0.52), rgba(10, 19, 35, 0.42));
+  padding: 0.72rem;
+}
+
+.opta-studio-layout--deep :is(
+    .operations-detail,
+    .config-editor-panel,
+    .job-output-panel,
+    .logs-table-container
+  ) {
+  border: 1px solid rgba(166, 205, 255, 0.2);
+  border-radius: 11px;
+  background: linear-gradient(150deg, rgba(13, 27, 47, 0.52), rgba(8, 17, 31, 0.44));
+}
+
+.opta-studio-layout--deep :is(
+    .operation-input-label input,
+    .start-shell-input,
+    .logs-filter-input,
+    .config-editor-label textarea
+  ) {
+  border-color: rgba(166, 205, 255, 0.24);
+  color: var(--studio-text);
+}
+
+.opta-studio-layout--deep :is(
+    .operation-input-label input,
+    .start-shell-input,
+    .logs-filter-input,
+    .config-editor-label textarea
+  ):focus {
+  border-color: rgba(191, 223, 255, 0.48);
+  box-shadow: 0 0 0 3px rgba(124, 87, 235, 0.2);
+}
+
+.opta-studio-layout--deep :is(
+    .op-entry,
+    .config-key-row,
+    .job-row
+  ) {
+  border-color: rgba(166, 205, 255, 0.2);
+  border-radius: 9px;
+}
+
+@media (max-width: 1160px) {
+  .opta-studio-layout--deep :is(
+      .operations-layout,
+      .config-studio-layout,
+      .jobs-layout
+    ) {
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .opta-studio-layout--deep :is(
+      .operations-catalog,
+      .config-key-catalog,
+      .jobs-list
+    ) {
+    max-height: 270px;
+    padding: 0.64rem;
+  }
+}
+
+.opta-studio-tile-layout-module .st-row {
+  justify-content: flex-start;
+}
+
+.opta-studio-layout--fullscreen .opta-studio-content > * {
+  width: 100%;
+  max-width: min(1240px, 100%);
+  margin-inline: auto;
+}
+
+.opta-studio-layout--fullscreen .opta-studio-content .flex.flex-col.gap-6 {
+  min-height: 100%;
+}
+
+.opta-studio-layout--fullscreen .opta-studio-content .flex.flex-col.gap-6 > .st-fieldset:last-child {
+  flex: 1 1 auto;
+  min-height: clamp(240px, 34vh, 420px);
+}
+
+.opta-studio-layout--fullscreen.opta-studio-layout--deep .opta-studio-content > .flex.flex-col.gap-6 {
+  max-width: min(1260px, 100%);
+}
+
+.opta-studio-content code {
+  color: #ecf6ff;
+  background: rgba(32, 52, 82, 0.56);
+  border: 1px solid rgba(169, 210, 255, 0.25);
+  border-radius: 7px;
+  padding: 0.08rem 0.34rem;
+}
+
+.settings-view-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  align-items: center;
+  text-align: center;
+}
+
+.settings-view-subtitle {
+  margin: 0;
+  color: var(--studio-text-soft);
+  font-family: "Sora", sans-serif;
+  font-size: 0.77rem;
+  line-height: 1.45;
+  max-width: 46ch;
+  margin-inline: auto;
+}
+
+.settings-card-meta {
+  margin-top: auto;
+  z-index: 1;
+  align-self: center;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--studio-text-soft);
+  border: 1px solid rgba(187, 211, 255, 0.34);
+  background: rgba(63, 78, 116, 0.44);
+  border-radius: 999px;
+  padding: 0.18rem 0.5rem;
+}
+
+.settings-view--fullscreen {
+  max-width: 1320px;
+}
+
+.settings-view--fullscreen .settings-view-header {
+  margin-bottom: 2rem;
+  gap: 1.15rem;
+}
+
+.settings-view--fullscreen .settings-view-title {
+  font-size: 1.56rem;
+  gap: 0.78rem;
+}
+
+.settings-view--fullscreen .settings-view-subtitle {
+  max-width: 64ch;
+  font-size: 0.86rem;
+}
+
+.settings-view-grid--fullscreen {
+  width: min(1280px, 100%);
+  max-width: 1280px;
+  gap: 1.2rem;
+}
+
+.settings-view--fullscreen .settings-view-card {
+  min-height: 212px;
+  padding: 1.28rem 1.2rem 1.22rem;
+}
+
+.settings-view--fullscreen .settings-card-icon-wrap {
+  width: 48px;
+  height: 48px;
+}
+
+.settings-view--fullscreen .settings-card-title {
+  font-size: 1rem;
+}
+
+.settings-view--fullscreen .settings-card-desc {
+  font-size: 0.78rem;
+}
+
+.settings-view--fullscreen .settings-card-meta {
+  font-size: 0.67rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-top-chrome {
+  padding: 0.58rem 1.6rem 0.3rem;
+  gap: 0.75rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-shortcut-title {
+  font-size: 0.67rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-shortcut-copy {
+  font-size: 0.66rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-panel-eyebrow {
+  font-size: 0.84rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-layer-badge {
+  font-size: 0.7rem;
+  padding: 0.25rem 0.65rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-wheel-shell {
+  padding: 0.58rem 1.6rem 0.4rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-wheel {
+  width: min(1040px, 100%);
+  grid-template-columns: minmax(28px, auto) minmax(150px, auto) minmax(320px, auto) minmax(150px, auto) minmax(28px, auto);
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-wheel-item {
+  min-height: 36px;
+  font-size: 0.82rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-logo {
+  width: 32px;
+  height: 32px;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-copy span {
+  font-size: 0.64rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-category-copy strong {
+  font-size: 0.92rem;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-section-title {
+  font-size: 1.28rem;
+  margin-bottom: 1rem;
+}
+
+.opta-studio-shell--fullscreen .st-desc,
+.opta-studio-shell--fullscreen .opta-studio-layout--deep p {
+  font-size: 0.88rem;
+  line-height: 1.56;
+  max-width: 84ch;
+}
+
+.opta-studio-shell--fullscreen .st-header {
+  align-items: center;
+}
+
+.opta-studio-shell--fullscreen .st-fieldset {
+  padding: 1.15rem 1.2rem;
+  border-radius: 14px;
+}
+
+.opta-studio-shell--fullscreen .st-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.opta-studio-shell--fullscreen .opta-studio-input,
+.opta-studio-shell--fullscreen .opta-studio-select,
+.opta-studio-shell--fullscreen .st-input,
+.opta-studio-shell--fullscreen .st-select {
+  min-height: 42px;
+  font-size: 0.83rem;
+}
+
+.opta-studio-shell--fullscreen .st-perm-pill {
+  font-size: 0.68rem;
+  padding: 0.24rem 0.56rem;
+}
+
+.opta-studio-shell--fullscreen .st-code {
+  min-height: clamp(220px, 30vh, 420px);
+}
+
+.opta-studio-deep-header {
+  --settings-accent: #a78bfa;
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+  margin-bottom: 1.1rem;
+  padding: 0.78rem 0.96rem;
+  border: 1px solid rgba(188, 166, 255, 0.58);
+  border-radius: 12px;
+  background: linear-gradient(
+    140deg,
+    rgba(121, 100, 208, 0.52) 0%,
+    rgba(27, 49, 82, 0.36) 100%
+  );
+  color: #c8dbff;
+}
+
+.opta-studio-deep-header strong {
+  font-family: "Sora", sans-serif;
+  font-size: 0.84rem;
+  color: var(--studio-text);
+}
+
+.opta-studio-deep-header span {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  color: var(--studio-text-soft);
+}
+
+.opta-studio-deep-header kbd {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.68rem;
+  border: 1px solid rgba(181, 214, 255, 0.28);
+  border-radius: 4px;
+  padding: 0 0.28rem;
+  background: rgba(17, 31, 56, 0.6);
 }
 
 .opta-studio-section-title {
   font-family: "Sora", sans-serif;
-  font-size: 1.25rem;
-  font-weight: 500;
-  color: #fafafa;
-  margin: 0 0 1.5rem 0;
+  font-size: 1.16rem;
+  font-weight: 600;
+  color: var(--studio-text);
+  margin: 0 0 1.35rem 0;
 }
 
 .opta-studio-form-group {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .opta-studio-form-group label {
   font-family: "Sora", sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.79rem;
+  letter-spacing: 0.01em;
   font-weight: 500;
-  color: #a1a1aa;
+  color: var(--studio-text-soft);
 }
 
-.opta-studio-input {
-  background: rgba(9, 9, 11, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.85rem;
-  color: #fafafa;
-  transition: all 0.2s;
-  width: 100%;
-}
-
-.opta-studio-input:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
-}
-
-.opta-studio-select {
-  background: rgba(9, 9, 11, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  font-family: "Sora", sans-serif;
-  font-size: 0.85rem;
-  color: #fafafa;
-  width: 100%;
-  cursor: pointer;
-  appearance: none;
+.opta-studio-slider-container,
+.opta-studio-card,
+.st-fieldset,
+.st-fieldset-inner {
+  background: var(--studio-surface-soft);
+  border: 1px solid rgba(171, 205, 255, 0.14);
+  border-radius: var(--studio-radius-sm);
+  box-shadow: var(--studio-shadow-sm), inset 0 1px 0 rgba(255, 255, 255, 0.13);
 }
 
 .opta-studio-slider-container {
   padding: 1rem;
-  background: rgba(18, 18, 20, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
 }
 
 .opta-studio-slider {
   -webkit-appearance: none;
   width: 100%;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  height: 6px;
+  background: linear-gradient(90deg, rgba(126, 174, 255, 0.2), rgba(171, 126, 255, 0.3));
+  border-radius: 999px;
   outline: none;
   margin: 1rem 0;
 }
@@ -209,75 +1280,74 @@
 .opta-studio-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  background: #8b5cf6;
+  border: 1px solid rgba(216, 237, 255, 0.92);
+  background: radial-gradient(circle at 30% 25%, #eef7ff, #8d63ff 60%, #5e7dff 100%);
   cursor: pointer;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 4px rgba(127, 91, 239, 0.28), 0 0 18px rgba(132, 99, 255, 0.44);
 }
 
 .opta-studio-action-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 0.85rem;
 }
 
 .opta-studio-card {
-  background: rgba(18, 18, 20, 0.55);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 12px;
-  padding: 1.25rem;
+  padding: 1.15rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 230ms var(--studio-ease);
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.45rem;
 }
 
 .opta-studio-card:hover {
-  background: rgba(39, 39, 42, 0.85);
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: rgba(170, 208, 255, 0.28);
   transform: translateY(-2px);
+  box-shadow: var(--studio-shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.17);
 }
 
 .opta-studio-card h4 {
   margin: 0;
   font-family: "Sora", sans-serif;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: #fafafa;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--studio-text);
 }
 
 .opta-studio-card p {
   margin: 0;
   font-family: "Sora", sans-serif;
   font-size: 0.75rem;
-  color: #a1a1aa;
-  line-height: 1.4;
+  color: var(--studio-text-soft);
+  line-height: 1.45;
 }
 
 .opta-studio-status-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
+  gap: 0.45rem;
+  padding: 0.22rem 0.7rem;
+  border-radius: 999px;
   font-family: "JetBrains Mono", monospace;
-  font-size: 0.75rem;
-  font-weight: 500;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .opta-studio-status-badge.connected {
-  background: rgba(34, 197, 94, 0.1);
-  color: #22c55e;
-  border: 1px solid rgba(34, 197, 94, 0.2);
+  background: rgba(90, 234, 172, 0.16);
+  color: #84f5cc;
+  border: 1px solid rgba(94, 238, 184, 0.32);
 }
 
 .opta-studio-status-badge.disconnected {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.2);
+  background: rgba(255, 115, 125, 0.13);
+  color: #ffadb4;
+  border: 1px solid rgba(255, 140, 150, 0.28);
 }
 
 .opta-studio-dot {
@@ -287,42 +1357,518 @@
 }
 
 .opta-studio-dot.connected {
-  background: #22c55e;
-  box-shadow: 0 0 8px #22c55e;
+  background: #76f4c8;
+  box-shadow: 0 0 8px #76f4c8;
 }
 
 .opta-studio-dot.disconnected {
-  background: #ef4444;
-  box-shadow: 0 0 8px #ef4444;
+  background: #ff9ca4;
+  box-shadow: 0 0 8px #ff9ca4;
 }
 
-.opta-studio-btn {
-  background: #fafafa;
-  color: #09090b;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
+.opta-studio-btn,
+.opta-studio-btn-secondary,
+.st-save-btn,
+.st-reset-btn,
+.opta-studio-close-btn,
+.opta-studio-header-btn {
+  border-radius: 10px;
   font-family: "Sora", sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 180ms var(--studio-ease),
+    box-shadow 180ms var(--studio-ease),
+    border-color 180ms var(--studio-ease),
+    background 180ms var(--studio-ease),
+    color 180ms var(--studio-ease);
 }
 
-.opta-studio-btn:hover {
-  background: #ffffff;
-  box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+.opta-studio-btn,
+.st-save-btn {
+  background: linear-gradient(130deg, rgba(143, 104, 255, 0.84), rgba(93, 196, 255, 0.62));
+  color: #f5fbff;
+  border: 1px solid rgba(213, 233, 255, 0.44);
+  box-shadow: 0 8px 24px rgba(71, 68, 158, 0.44);
+  padding: 0.62rem 1.08rem;
 }
 
-.opta-studio-btn-secondary {
-  background: rgba(255, 255, 255, 0.05);
-  color: #fafafa;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.opta-studio-btn:hover,
+.st-save-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 34px rgba(71, 68, 158, 0.56);
 }
 
-.opta-studio-btn-secondary:hover {
-  background: rgba(255, 255, 255, 0.1);
+.opta-studio-btn:disabled,
+.st-save-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
   box-shadow: none;
+}
+
+.opta-studio-btn-secondary,
+.st-reset-btn,
+.opta-studio-header-btn {
+  background: linear-gradient(140deg, rgba(31, 55, 91, 0.52), rgba(17, 33, 57, 0.38));
+  border: 1px solid rgba(166, 204, 255, 0.3);
+  color: var(--studio-text-soft);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  padding: 0.58rem 0.92rem;
+}
+
+.opta-studio-btn-secondary:hover,
+.st-reset-btn:hover,
+.opta-studio-header-btn:hover {
+  color: var(--studio-text);
+  border-color: rgba(185, 217, 255, 0.44);
+  background: linear-gradient(140deg, rgba(49, 73, 116, 0.58), rgba(24, 42, 72, 0.5));
+  transform: translateY(-1px);
+}
+
+.opta-studio-close-btn {
+  padding: 0.5rem;
+  border: 1px solid rgba(173, 210, 255, 0.24);
+  color: var(--studio-text-soft);
+  background: rgba(18, 31, 54, 0.5);
+}
+
+.opta-studio-close-btn:hover {
+  color: #ffffff;
+  border-color: rgba(192, 223, 255, 0.42);
+  box-shadow: 0 0 0 3px rgba(128, 92, 255, 0.16);
+}
+
+.opta-setting-highlighted,
+[data-opta-nav-highlight="true"],
+[data-opta-highlighted="true"] {
+  border-color: rgba(199, 228, 255, 0.78) !important;
+  box-shadow:
+    0 0 0 2px rgba(132, 188, 255, 0.56),
+    0 0 0 6px rgba(92, 142, 255, 0.2),
+    0 10px 28px rgba(8, 14, 28, 0.44) !important;
+  transform: translateY(-1px) scale(1.002);
+  transition:
+    box-shadow 150ms var(--studio-ease),
+    border-color 150ms var(--studio-ease),
+    transform 150ms var(--studio-ease);
+}
+
+.opta-setting-editing,
+[data-opta-nav-editing="true"],
+[data-opta-editing="true"] {
+  border-color: rgba(199, 181, 255, 0.82) !important;
+  box-shadow:
+    0 0 0 2px rgba(176, 159, 255, 0.72),
+    0 0 0 7px rgba(133, 177, 255, 0.34),
+    0 0 24px rgba(144, 130, 255, 0.48) !important;
+}
+
+.v1-settings-layer-3[data-opta-nav-input-mode="keyboard"][data-opta-nav-edit-mode="false"] .opta-studio-content :is(
+    input,
+    select,
+    textarea,
+    button,
+    [role="button"]
+  ):focus {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+@supports (color: color-mix(in srgb, #fff 50%, #000)) {
+  .opta-studio-current-category-inline {
+    border: 1px solid color-mix(in srgb, var(--settings-accent, #a78bfa) 44%, rgba(175, 212, 255, 0.28));
+    background: color-mix(in srgb, var(--settings-accent, #a78bfa) 20%, rgba(22, 38, 64, 0.56));
+  }
+
+  .opta-studio-category-wheel-item.icon-only {
+    color: color-mix(in srgb, var(--settings-accent) 58%, #bdd8ff);
+  }
+
+  .opta-studio-category-banner {
+    border: 1px solid color-mix(in srgb, var(--settings-accent) 56%, rgba(171, 208, 255, 0.2));
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--settings-accent) 24%, rgba(22, 40, 68, 0.7)),
+      rgba(17, 33, 56, 0.5)
+    );
+  }
+
+  .opta-studio-category-logo {
+    color: color-mix(in srgb, var(--settings-accent) 72%, #f1f8ff);
+    border: 1px solid color-mix(in srgb, var(--settings-accent) 42%, rgba(178, 215, 255, 0.24));
+    background: color-mix(in srgb, var(--settings-accent) 25%, rgba(19, 34, 57, 0.62));
+  }
+
+  .opta-studio-tab::after {
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--settings-accent) 28%, transparent),
+      transparent 55%
+    );
+  }
+
+  .opta-studio-tab:hover {
+    border-color: color-mix(in srgb, var(--settings-accent) 40%, rgba(177, 213, 255, 0.25));
+  }
+
+  .opta-studio-tab.active {
+    border-color: color-mix(in srgb, var(--settings-accent) 58%, rgba(177, 143, 255, 0.42));
+    background: linear-gradient(
+      120deg,
+      color-mix(in srgb, var(--settings-accent) 34%, rgba(29, 50, 84, 0.42)),
+      rgba(29, 50, 84, 0.42)
+    );
+    box-shadow:
+      0 8px 22px rgba(16, 8, 37, 0.45),
+      inset 0 1px 0 color-mix(in srgb, var(--settings-accent) 18%, rgba(245, 251, 255, 0.22));
+  }
+
+  .opta-studio-tab.active::before {
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--settings-accent) 70%, #d2e8ff),
+      var(--settings-accent)
+    );
+    box-shadow: 0 0 12px color-mix(in srgb, var(--settings-accent) 70%, transparent);
+  }
+
+  .settings-card-meta {
+    border: 1px solid color-mix(in srgb, var(--settings-accent, #a78bfa) 42%, rgba(170, 207, 255, 0.24));
+    background: color-mix(in srgb, var(--settings-accent, #a78bfa) 22%, rgba(27, 46, 77, 0.38));
+  }
+
+  .opta-studio-deep-header {
+    border: 1px solid color-mix(in srgb, var(--settings-accent) 56%, rgba(172, 137, 255, 0.36));
+    background: linear-gradient(
+      140deg,
+      color-mix(in srgb, var(--settings-accent) 30%, rgba(106, 72, 214, 0.28)) 0%,
+      rgba(27, 49, 82, 0.36) 100%
+    );
+  }
+
+  .opta-setting-editing,
+  [data-opta-nav-editing="true"],
+  [data-opta-editing="true"] {
+    border-color: color-mix(in srgb, var(--settings-accent, #a78bfa) 66%, rgba(186, 221, 255, 0.5)) !important;
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--settings-accent, #a78bfa) 54%, rgba(148, 186, 255, 0.44)),
+      0 0 0 7px color-mix(in srgb, var(--settings-accent, #a78bfa) 28%, rgba(113, 192, 255, 0.24)),
+      0 0 24px color-mix(in srgb, var(--settings-accent, #a78bfa) 44%, rgba(113, 192, 255, 0.36)) !important;
+  }
+}
+
+.opta-studio-input,
+.opta-studio-select,
+.st-input,
+.st-select {
+  background: linear-gradient(145deg, rgba(20, 37, 63, 0.62), rgba(12, 23, 40, 0.55));
+  border: 1px solid rgba(166, 202, 255, 0.23);
+  border-radius: 10px;
+  padding: 0.62rem 0.78rem;
+  color: var(--studio-text);
+  transition: border-color 180ms var(--studio-ease),
+    box-shadow 180ms var(--studio-ease),
+    background 180ms var(--studio-ease);
+  width: 100%;
+}
+
+.opta-studio-input,
+.st-input {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.79rem;
+}
+
+.opta-studio-select,
+.st-select {
+  font-family: "Sora", sans-serif;
+  font-size: 0.79rem;
+  cursor: pointer;
+  appearance: none;
+}
+
+.opta-studio-input:focus,
+.opta-studio-select:focus,
+.st-input:focus,
+.st-select:focus {
+  outline: none;
+  border-color: rgba(191, 223, 255, 0.48);
+  box-shadow:
+    0 0 0 3px rgba(124, 87, 235, 0.22),
+    0 0 16px rgba(93, 184, 255, 0.2);
+  background: linear-gradient(145deg, rgba(24, 42, 70, 0.7), rgba(15, 27, 48, 0.62));
+}
+
+.opta-studio-input::placeholder,
+.st-input::placeholder {
+  color: rgba(175, 194, 223, 0.55);
+}
+
+.opta-studio-input:-webkit-autofill,
+.opta-studio-input:-webkit-autofill:hover,
+.opta-studio-input:-webkit-autofill:focus,
+.st-input:-webkit-autofill,
+.st-input:-webkit-autofill:hover,
+.st-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--studio-text);
+  caret-color: var(--studio-text);
+  box-shadow: 0 0 0 1000px rgba(18, 31, 52, 0.82) inset;
+  border: 1px solid rgba(166, 202, 255, 0.23);
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+.st-input.st-secret {
+  letter-spacing: 0.1em;
+}
+
+.st-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1.25rem;
+  gap: 1rem;
+}
+
+.st-header-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.st-desc {
+  color: var(--studio-text-soft);
+  font-size: 0.82rem;
+  line-height: 1.5;
+  margin: 0.2rem 0 0;
+}
+
+.st-fieldset {
+  padding: 1rem 1.12rem;
+  margin: 0 0 0.92rem 0;
+}
+
+.st-fieldset-inner {
+  padding: 0.72rem 0.9rem;
+  margin: 0.48rem 0 0;
+}
+
+.st-legend {
+  font-family: "Sora", sans-serif;
+  font-size: 0.79rem;
+  font-weight: 600;
+  color: #d7e6ff;
+  padding: 0 0.45rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.st-legend-inner {
+  font-family: "Sora", sans-serif;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: var(--studio-text-soft);
+  padding: 0 0.35rem;
+}
+
+.st-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: "Sora", sans-serif;
+  font-size: 0.77rem;
+  color: var(--studio-text-soft);
+  margin-bottom: 0.58rem;
+  flex: 1;
+}
+
+.st-label .st-hint {
+  font-size: 0.69rem;
+  opacity: 0.72;
+  color: var(--studio-text-muted);
+}
+
+.st-checkbox-label {
+  display: flex;
+  flex-direction: row !important;
+  align-items: flex-start;
+  gap: 0.62rem !important;
+  width: 100%;
+  margin: 0;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid rgba(166, 205, 255, 0.2);
+  border-radius: 9px;
+  background: linear-gradient(145deg, rgba(16, 30, 52, 0.5), rgba(11, 21, 38, 0.36));
+  font-family: "Sora", sans-serif;
+  line-height: 1.45;
+  transition:
+    border-color 160ms var(--studio-ease),
+    box-shadow 160ms var(--studio-ease),
+    background 160ms var(--studio-ease);
+}
+
+.st-checkbox-label:hover {
+  border-color: rgba(185, 216, 255, 0.3);
+}
+
+.st-checkbox-label:focus-within {
+  border-color: rgba(191, 223, 255, 0.48);
+  box-shadow: 0 0 0 3px rgba(124, 87, 235, 0.16);
+}
+
+.st-checkbox-label > span {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.st-checkbox-label + .st-checkbox-label {
+  margin-top: 0.58rem;
+}
+
+.st-checkbox-label input[type="checkbox"] {
+  accent-color: #95d0ff;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+}
+
+.st-checkbox-label input[type="checkbox"]:focus,
+.st-checkbox-label input[type="checkbox"]:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.st-row {
+  display: flex;
+  gap: 0.85rem;
+  align-items: flex-start;
+}
+
+.st-perm-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.38rem;
+}
+
+.st-perm-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.36rem 0.52rem;
+  border-radius: 8px;
+  transition: background 150ms var(--studio-ease);
+}
+
+.st-perm-row:hover {
+  background: rgba(139, 174, 230, 0.1);
+}
+
+.st-perm-name {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.74rem;
+  color: #e3eefe;
+}
+
+.st-perm-pills {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.st-perm-pill {
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  border: 1px solid rgba(172, 208, 255, 0.16);
+  transition: all 160ms var(--studio-ease);
+  background: rgba(15, 28, 47, 0.52);
+  color: #8f9db8;
+}
+
+.st-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 10px;
+  border: 1px solid rgba(171, 205, 255, 0.18);
+  padding: 0.58rem 0.72rem;
+  font-size: 0.78rem;
+  font-family: "Sora", sans-serif;
+}
+
+.st-status-banner-success {
+  border-color: rgba(94, 238, 184, 0.35);
+  color: #8df4ca;
+  background: rgba(16, 185, 129, 0.12);
+}
+
+.st-status-banner-error {
+  border-color: rgba(255, 156, 169, 0.35);
+  color: #ffb8c0;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+.st-code {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  border-radius: 10px;
+  border: 1px solid rgba(171, 205, 255, 0.16);
+  background: rgba(11, 21, 37, 0.52);
+  padding: 0.75rem 0.82rem;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+.st-code-ok {
+  color: #d4c6ff;
+}
+
+.st-code-error {
+  color: #ffb8c0;
+  border-color: rgba(255, 156, 169, 0.28);
+  background: rgba(78, 22, 35, 0.22);
+}
+
+.st-perm-pill:hover {
+  color: #ebf4ff;
+  border-color: rgba(180, 215, 255, 0.34);
+}
+
+.st-perm-allow.st-perm-active {
+  background: rgba(81, 233, 175, 0.18);
+  color: #8df4ca;
+  border-color: rgba(94, 238, 184, 0.35);
+}
+
+.st-perm-ask.st-perm-active {
+  background: rgba(255, 215, 125, 0.18);
+  color: #ffd998;
+  border-color: rgba(255, 215, 125, 0.36);
+}
+
+.st-perm-deny.st-perm-active {
+  background: rgba(255, 143, 157, 0.16);
+  color: #ffb8c0;
+  border-color: rgba(255, 156, 169, 0.35);
+}
+
+.settings-tab-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 220px;
+  color: var(--studio-text-soft);
+  font-family: "Sora", sans-serif;
+  font-size: 0.88rem;
 }
 
 @keyframes fadeIn {
@@ -335,264 +1881,139 @@
   }
 }
 
-/* ── Tab divider between groups ──────────────────────────────── */
-.opta-studio-tab-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.06);
-  margin: 0.5rem 1rem;
+@media (max-width: 980px) {
+  .opta-studio-shell {
+    width: min(96vw, 940px);
+    height: min(92vh, 760px);
+  }
+
+  .opta-studio-logo-reserve.is-active {
+    max-height: 172px;
+    padding: 0.88rem 1rem 0.56rem;
+  }
+
+  .opta-studio-logo-reserve.is-docked {
+    max-height: 96px;
+    padding: 0.5rem 1rem 0.32rem;
+  }
+
+  .opta-studio-logo-reserve.is-active .opta-studio-logo-letter {
+    font-size: 2.52rem;
+  }
+
+  .opta-studio-logo-settings {
+    font-size: 0.8rem;
+  }
+
+  .opta-studio-top-chrome {
+    grid-template-columns: minmax(180px, 1fr) auto minmax(44px, auto);
+    row-gap: 0.52rem;
+    padding: 0.56rem 1.05rem 0.28rem;
+  }
+
+  .opta-studio-shortcut-panel {
+    max-width: min(42ch, 100%);
+    text-align: left;
+    align-items: flex-start;
+  }
+
+  .opta-studio-sidebar {
+    width: 220px;
+  }
+
+  .opta-studio-content {
+    padding: 1.1rem 1.15rem 1.25rem;
+  }
+
+  .settings-view-grid--fullscreen {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
-/* ── Loading state ──────────────────────────────────────────── */
-.settings-tab-loading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 200px;
-  color: #a1a1aa;
-  font-family: "Sora", sans-serif;
-  font-size: 0.9rem;
-}
+@media (max-width: 760px) {
+  .opta-studio-logo-reserve.is-active {
+    max-height: 138px;
+    padding: 0.72rem 0.8rem 0.46rem;
+  }
 
-/* ── Shared settings tab classes (st- prefix) ────────────── */
-.st-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 1.5rem;
-  gap: 1rem;
-}
+  .opta-studio-logo-reserve.is-docked {
+    max-height: 84px;
+    padding: 0.44rem 0.72rem 0.26rem;
+  }
 
-.st-header-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-shrink: 0;
-}
+  .opta-studio-logo-word {
+    gap: 0.28rem;
+  }
 
-.st-desc {
-  color: #a1a1aa;
-  font-size: 0.85rem;
-  line-height: 1.5;
-  margin: 0.25rem 0 0;
-}
+  .opta-studio-logo-reserve.is-active .opta-studio-logo-letter {
+    font-size: 1.86rem;
+  }
 
-.st-save-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  border: none;
-  background: #8b5cf6;
-  color: #fafafa;
-  font-family: "Sora", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  flex-shrink: 0;
-}
+  .opta-studio-logo-settings {
+    font-size: 0.64rem;
+    letter-spacing: 0.08em;
+  }
 
-.st-save-btn:hover {
-  background: #7c3aed;
-}
+  .opta-studio-logo-sub {
+    font-size: 0.56rem;
+    letter-spacing: 0.26em;
+  }
 
-.st-save-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+  .opta-studio-layout {
+    flex-direction: column;
+  }
 
-.st-reset-btn {
-  padding: 0.5rem 0.8rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: transparent;
-  color: #a1a1aa;
-  font-family: "Sora", sans-serif;
-  font-size: 0.75rem;
-  cursor: pointer;
-  transition: all 0.2s;
-}
+  .opta-studio-top-chrome {
+    grid-template-columns: 1fr;
+    padding: 0.52rem 0.78rem 0.24rem;
+    gap: 0.48rem;
+  }
 
-.st-reset-btn:hover {
-  color: #fafafa;
-  border-color: rgba(255, 255, 255, 0.2);
-}
+  .opta-studio-top-chrome-left,
+  .opta-studio-top-chrome-center,
+  .opta-studio-top-chrome-right {
+    justify-self: stretch;
+  }
 
-.st-fieldset {
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  margin: 0 0 1rem 0;
-  background: rgba(18, 18, 20, 0.35);
-}
+  .opta-studio-top-chrome-right {
+    justify-content: flex-end;
+  }
 
-.st-fieldset-inner {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 8px;
-  padding: 0.75rem 1rem;
-  margin: 0.5rem 0 0;
-  background: rgba(9, 9, 11, 0.3);
-}
+  .opta-studio-shortcut-title {
+    font-size: 0.56rem;
+  }
 
-.st-legend {
-  font-family: "Sora", sans-serif;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: #c4b5fd;
-  padding: 0 0.5rem;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-}
+  .opta-studio-shortcut-copy {
+    font-size: 0.55rem;
+    line-height: 1.35;
+  }
 
-.st-legend-inner {
-  font-family: "Sora", sans-serif;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: #a1a1aa;
-  padding: 0 0.35rem;
-}
+  .opta-studio-command-row {
+    gap: 0.48rem;
+  }
 
-.st-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  font-family: "Sora", sans-serif;
-  font-size: 0.8rem;
-  color: #a1a1aa;
-  margin-bottom: 0.6rem;
-  flex: 1;
-}
+  .opta-studio-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid rgba(171, 208, 255, 0.14);
+    padding: 0.72rem;
+    max-height: 210px;
+  }
 
-.st-label .st-hint {
-  font-size: 0.7rem;
-  opacity: 0.6;
-}
+  .opta-studio-tab {
+    padding: 0.6rem 0.66rem;
+  }
 
-.st-checkbox-label {
-  flex-direction: row !important;
-  align-items: center;
-  gap: 0.6rem !important;
-}
+  .st-row {
+    flex-direction: column;
+    gap: 0.55rem;
+  }
 
-.st-checkbox-label input[type="checkbox"] {
-  accent-color: #8b5cf6;
-  width: 16px;
-  height: 16px;
-  cursor: pointer;
-}
+  .settings-view-grid--fullscreen {
+    grid-template-columns: 1fr;
+  }
 
-.st-input {
-  background: rgba(9, 9, 11, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.55rem 0.75rem;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.8rem;
-  color: #fafafa;
-  transition: all 0.2s;
-  width: 100%;
-}
-
-.st-input:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.1);
-}
-
-.st-input.st-secret {
-  letter-spacing: 0.1em;
-}
-
-.st-select {
-  background: rgba(9, 9, 11, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 0.55rem 0.75rem;
-  font-family: "Sora", sans-serif;
-  font-size: 0.8rem;
-  color: #fafafa;
-  width: 100%;
-  cursor: pointer;
-  appearance: none;
-}
-
-.st-select:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
-}
-
-.st-row {
-  display: flex;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-/* ── Permissions Grid ──────────────────────────────────────── */
-.st-perm-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-}
-
-.st-perm-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.3rem 0.5rem;
-  border-radius: 6px;
-  transition: background 0.15s;
-}
-
-.st-perm-row:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.st-perm-name {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.75rem;
-  color: #e4e4e7;
-}
-
-.st-perm-pills {
-  display: flex;
-  gap: 0.25rem;
-}
-
-.st-perm-pill {
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.65rem;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  cursor: pointer;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-  background: rgba(255, 255, 255, 0.03);
-  color: #71717a;
-}
-
-.st-perm-pill:hover {
-  color: #fafafa;
-}
-
-.st-perm-allow.st-perm-active {
-  background: rgba(34, 197, 94, 0.15);
-  color: #22c55e;
-  border-color: rgba(34, 197, 94, 0.3);
-}
-
-.st-perm-ask.st-perm-active {
-  background: rgba(234, 179, 8, 0.15);
-  color: #eab308;
-  border-color: rgba(234, 179, 8, 0.3);
-}
-
-.st-perm-deny.st-perm-active {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.3);
+  .opta-studio-action-grid {
+    grid-template-columns: 1fr;
+  }
 }

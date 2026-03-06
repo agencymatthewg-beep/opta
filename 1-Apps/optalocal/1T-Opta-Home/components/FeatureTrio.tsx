@@ -7,27 +7,27 @@ import { Briefcase, Cloud, Plug, Mic } from "lucide-react";
 const features = [
   {
     icon: Briefcase,
-    title: "Autonomous CEO Modes",
+    title: "Closed-Loop Optimization",
     description:
-      "Explain your business idea and let the AI take over. Opta runs continuous, long-running agentic loops to build, manage, and execute money-making workflows while you sleep.",
+      "Opta AI keeps architecture, tooling, and execution decisions aligned from setup through delivery, reducing system-level entropy.",
   },
   {
     icon: Cloud,
-    title: "Mass Cloud Support + Local Guardrails",
+    title: "Elastic Runtime Governance",
     description:
-      "Don't have a Mac Studio? No problem. Hook up your OpenAI or Anthropic API keys for cloud-backed autonomy, or run 100% private locally via Opta LMX on Apple Silicon.",
+      "Switch between private local inference and cloud capacity without reworking orchestration, policy, or operator workflow.",
   },
   {
     icon: Plug,
-    title: "Frictionless Integration",
+    title: "Surface Parity",
     description:
-      "Drop-in OpenAI-compatible REST API. Point your existing LangChain, LlamaIndex, or custom scripts to localhost and our routing handles whether it hits the cloud or your local hardware.",
+      "Execute through Opta CLI or Opta Code under the same optimizer context, so teams can change interface without process loss.",
   },
   {
     icon: Mic,
-    title: "Voice-Native AI",
+    title: "Multimodal Operations",
     description:
-      "Pitch ideas using built-in TTS and speech transcription — speak to your AI and hear responses. Works seamlessly across both cloud services and local mlx-whisper processing.",
+      "Voice and text interaction run through the same stack, enabling hands-free control without introducing a parallel architecture.",
   },
 ];
 
@@ -40,15 +40,16 @@ export function FeatureTrio() {
       <div className="max-w-6xl mx-auto">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Intelligence that works for you.
+            Designed for disciplined production execution.
           </h2>
           <p className="text-xl text-text-secondary max-w-xl mx-auto">
-            From quick tasks to managing an entire digital business autonomously.
+            Runtime, optimizer, identity, and interface layers remain coherent as
+            workload complexity and team size scale.
           </p>
         </motion.div>
 
@@ -57,7 +58,7 @@ export function FeatureTrio() {
             <motion.div
               key={feature.title}
               className="obsidian-interactive rounded-2xl p-8"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: 0.1 + i * 0.1, ease: [0.16, 1, 0.3, 1] }}
             >

@@ -2,6 +2,22 @@
   "name": "optalocal-workspace",
   "private": true,
   "version": "0.1.0",
+  "workspaces": [
+    "1D-Opta-CLI-TS",
+    "1L-Opta-LMX-Dashboard",
+    "1O-Opta-Init",
+    "1P-Opta-Code-Universal",
+    "1R-Opta-Accounts",
+    "1S-Opta-Status",
+    "1T-Opta-Home",
+    "1U-Opta-Help",
+    "1V-Opta-Learn",
+    "1X-Opta-Admin",
+    "1O-Opta-Init/desktop-manager"
+  ],
+  "devDependencies": {
+    "next": "^16.1.6"
+  },
   "scripts": {
     "apps:list": "node scripts/opta-local-workspace.mjs list",
     "apps:verify": "node scripts/opta-local-workspace.mjs verify",
@@ -12,7 +28,14 @@
     "clean:local:deep": "node scripts/clean-local-artifacts.mjs --deep",
     "docs:check": "node scripts/docs/docs-health-check.mjs",
     "monitor:synthetic": "node scripts/synthetic-web-health.mjs",
-    "check:all": "node scripts/opta-local-workspace.mjs run all check --continue-on-error",
+    "csp:sync:scripts": "node scripts/sync-vercel-csp-hashes.mjs",
+    "check:csp:script-src": "node scripts/check-csp-script-src.mjs",
+    "check:sso:contracts": "node scripts/ops/check-sso-contracts.mjs",
+    "check:accounts:health:contract": "node scripts/ops/check-accounts-health-contract.mjs",
+    "check:perf:budgets": "npx -y @lhci/cli autorun --config=lighthouserc.opta-web.json",
+    "gates:deterministic": "node scripts/ops/run-deterministic-gates.mjs --apps all",
+    "gates:phased": "node scripts/ops/run-phased-release-gates.mjs",
+    "check:all": "npm run check:csp:script-src && npm run check:sso:contracts && node scripts/opta-local-workspace.mjs run all check --continue-on-error",
     "build:all": "node scripts/opta-local-workspace.mjs run all build --continue-on-error",
     "dev:1d": "node scripts/opta-local-workspace.mjs run 1d dev",
     "dev:1m": "node scripts/opta-local-workspace.mjs run 1m dev",

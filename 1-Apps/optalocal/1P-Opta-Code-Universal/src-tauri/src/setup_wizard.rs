@@ -224,33 +224,13 @@ pub fn get_platform() -> &'static str {
 /// Return the platform-appropriate Opta config *directory* for display.
 #[tauri::command]
 pub fn get_config_dir() -> Result<String, String> {
-    get_opta_config_dir().map(|p| p.to_string_lossy().into_owned())
+    crate::config_paths::opta_config_dir().map(|p| p.to_string_lossy().into_owned())
 }
 
 fn get_opta_config_path() -> Result<PathBuf, String> {
-    get_opta_config_dir().map(|dir| dir.join("config.json"))
+    crate::config_paths::opta_config_dir().map(|dir| dir.join("config.json"))
 }
 
 fn get_onboard_marker_path() -> Result<PathBuf, String> {
-    get_opta_config_dir().map(|dir| dir.join(".onboarded"))
-}
-
-fn get_opta_config_dir() -> Result<PathBuf, String> {
-    #[cfg(target_os = "macos")]
-    {
-        let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
-        Ok(PathBuf::from(home).join(".config").join("opta"))
-    }
-    #[cfg(target_os = "windows")]
-    {
-        let appdata = std::env::var("APPDATA").map_err(|_| "APPDATA not set".to_string())?;
-        Ok(PathBuf::from(appdata).join("opta"))
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
-    {
-        let home = std::env::var("HOME").map_err(|_| "HOME not set".to_string())?;
-        let xdg = std::env::var("XDG_CONFIG_HOME")
-            .unwrap_or_else(|_| format!("{}/.config", home));
-        Ok(PathBuf::from(xdg).join("opta"))
-    }
+    crate::config_paths::opta_config_dir().map(|dir| dir.join(".onboarded"))
 }

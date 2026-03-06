@@ -10,7 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useConnection } from '@/lib/connection'
-import { HudRing } from './HudRing'
+import { resolveConnectRoute, shouldCompleteConnect } from '@/lib/connect-hints'
 
 interface ConnectAutoSetupProps {
     host: string
@@ -20,16 +20,19 @@ interface ConnectAutoSetupProps {
 }
 
 export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetupProps) {
-    const { setUrl, status } = useConnection()
+    const { setUrl, status, url } = useConnection()
     const router = useRouter()
     const [phase, setPhase] = useState<'connecting' | 'success' | 'failed'>('connecting')
     const [elapsed, setElapsed] = useState(0)
     const didInit = useRef(false)
 
-    // Build the target URL from params
-    const targetUrl = via === 'wan' && tunnelUrl
-        ? tunnelUrl.replace(/\/+$/, '')
-        : `http://${host}:${port}`
+    // Build connection routing from params
+    const { targetUrl, routeLabel, routeWarning } = resolveConnectRoute({
+        host,
+        port,
+        via,
+        tunnelUrl,
+    })
 
     // One-shot connection hydration
     useEffect(() => {
@@ -40,13 +43,20 @@ export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetu
 
     // Watch connection status
     useEffect(() => {
-        if (status === 'connected') {
+        if (
+            shouldCompleteConnect({
+                initialized: didInit.current,
+                status,
+                currentUrl: url,
+                targetUrl,
+            })
+        ) {
             setPhase('success')
             // Brief success flash then redirect
             const t = setTimeout(() => router.replace('/'), 1200)
             return () => clearTimeout(t)
         }
-    }, [status, router])
+    }, [status, router, url, targetUrl])
 
     // Timeout after 12s
     useEffect(() => {
@@ -110,9 +120,14 @@ export function ConnectAutoSetup({ host, port, via, tunnelUrl }: ConnectAutoSetu
                         <p className="text-xl text-text-primary font-semibold mb-2">Connecting to LMX</p>
                         <p className="text-xs text-primary/80 font-mono bg-primary/10 px-3 py-1.5 rounded-md border border-primary/20">{targetUrl}</p>
                         <div className="mt-4 flex items-center justify-between w-full pt-4 border-t border-[rgba(168,85,247,0.15)] text-[10px] font-mono uppercase tracking-widest text-text-muted">
-                            <span>{via === 'wan' ? 'Via Cloudflare Tunnel' : 'Via Local Network'}</span>
+                            <span>{routeLabel}</span>
                             <span className="tabular-nums">T+00:{elapsed.toString().padStart(2, '0')}</span>
                         </div>
+                        {routeWarning && (
+                            <p className="mt-3 text-[11px] text-[var(--opta-neon-amber)] font-mono bg-[var(--opta-neon-amber)]/10 border border-[var(--opta-neon-amber)]/20 px-3 py-2 rounded-md">
+                                {routeWarning}
+                            </p>
+                        )}
                     </div>
                 )}
 

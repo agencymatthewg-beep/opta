@@ -36,11 +36,26 @@ export async function status(opts: StatusOptions): Promise<void> {
 
   try {
     const health = await client.health(reqOpts);
-    const lmxStatus = await client.status(reqOpts);
     const activeHost = client.getActiveHost();
-    const deviceIdentity = await client.device(reqOpts).catch(() => null);
-    const available = opts.full ? await client.available(reqOpts).catch(() => null) : null;
-    const memory = opts.full ? await client.memory(reqOpts).catch(() => null) : null;
+    let lmxStatus: Awaited<ReturnType<LmxClient['status']>> | null = null;
+    let deviceIdentity: Awaited<ReturnType<LmxClient['device']>> | null = null;
+    let available: Awaited<ReturnType<LmxClient['available']>> | null = null;
+    let memory: Awaited<ReturnType<LmxClient['memory']>> | null = null;
+    let adminAccessError: string | null = null;
+
+    try {
+      lmxStatus = await client.status(reqOpts);
+      deviceIdentity = await client.device(reqOpts).catch(() => null);
+      available = opts.full ? await client.available(reqOpts).catch(() => null) : null;
+      memory = opts.full ? await client.memory(reqOpts).catch(() => null) : null;
+    } catch (err) {
+      const isUnauthorized = err instanceof LmxApiError
+        && (err.code === 'unauthorized' || err.status === 401 || err.status === 403);
+      if (!isUnauthorized) {
+        throw err;
+      }
+      adminAccessError = errorMessage(err);
+    }
 
     spinner?.succeed(`Opta LMX is ${health.status} at ${activeHost}:${port}`);
 
@@ -62,6 +77,10 @@ export async function status(opts: StatusOptions): Promise<void> {
           executionContext,
           currentDevice,
         },
+        adminAccess: {
+          ok: adminAccessError === null,
+          ...(adminAccessError ? { error: adminAccessError } : {}),
+        },
         deviceIdentity,
         availableModelsCount: available?.length,
         memoryDetails: memory,
@@ -82,6 +101,21 @@ export async function status(opts: StatusOptions): Promise<void> {
       );
     }
 
+    if (adminAccessError) {
+      console.log(
+        chalk.yellow('!') +
+          ` Admin endpoints unavailable at ${activeHost}:${port} (${adminAccessError}).`
+      );
+      console.log(
+        chalk.dim(
+          '  Inference connectivity is healthy. Configure an admin key to view loaded models and hardware diagnostics.',
+        ),
+      );
+      console.log(chalk.dim('  Check admin key: opta config get connection.adminKey'));
+      console.log(chalk.dim('  Check host-key map: opta config get connection.adminKeysByHost'));
+      return;
+    }
+
     // Device identity
     if (deviceIdentity?.hardware?.chip_name) {
       const hw = deviceIdentity.hardware;
@@ -99,15 +133,15 @@ export async function status(opts: StatusOptions): Promise<void> {
     }
 
     // Version & uptime
-    if (lmxStatus.version) {
+    if (lmxStatus?.version) {
       console.log(chalk.dim(`  Version: ${lmxStatus.version}`));
     }
-    if (lmxStatus.uptime_seconds != null) {
+    if (lmxStatus?.uptime_seconds != null) {
       console.log(chalk.dim(`  Uptime:  ${formatUptime(lmxStatus.uptime_seconds)}`));
     }
 
     // Memory
-    if (lmxStatus.memory) {
+    if (lmxStatus?.memory) {
       const usedGB = (lmxStatus.memory.used_bytes / 1e9).toFixed(1);
       const totalGB = (lmxStatus.memory.total_bytes / 1e9).toFixed(1);
       const pct = ((lmxStatus.memory.used_bytes / lmxStatus.memory.total_bytes) * 100).toFixed(0);
@@ -126,9 +160,10 @@ export async function status(opts: StatusOptions): Promise<void> {
     }
 
     // Loaded models
-    if (lmxStatus.models.length > 0) {
+    const loadedModels = lmxStatus?.models ?? [];
+    if (loadedModels.length > 0) {
       console.log('\n' + chalk.bold('Loaded models:'));
-      for (const model of lmxStatus.models) {
+      for (const model of loadedModels) {
         const ctx = model.context_length ?? lookupContextLimit(model.model_id);
         const ctxStr = chalk.dim(` (${(ctx / 1000).toFixed(0)}K context)`);
         const def = model.is_default ? chalk.green(' ★') : '';

@@ -13,11 +13,11 @@ opis_mode: ecosystem-add
 ---
 
 <!-- AI-SUMMARY (50 words max)
-Opta Home is the brand homepage for optalocal.com — the root domain entry point for the entire Opta Local ecosystem. It orients new and returning users, communicates the stack's value, and routes them to the correct sub-app (init, lmx, accounts, CLI). Static, no backend. -->
+Opta Home is the root brand homepage for Opta and Opta Local. It explains what Opta is, introduces Opta AI as the optimizer users interact with, positions Opta Local as the first public release, and routes users into activation flows via init, lmx, accounts, CLI, and Code. -->
 
 # Opta Home — APP.md
 
-> Private AI infrastructure for Apple Silicon. Your compute, your control.
+> Opta is the Optimiser. Opta Local is the first public way to run Opta AI.
 
 ---
 
@@ -27,9 +27,9 @@ Opta Home is the brand homepage for optalocal.com — the root domain entry poin
 |-------|-------|
 | **Name** | Opta Home |
 | **Full Name** | optalocal.com Brand Homepage |
-| **Tagline** | Private AI infrastructure for Apple Silicon |
-| **Type** | Static Marketing / Brand Homepage |
-| **Platform** | Web (Next.js 16, static export) |
+| **Tagline** | Opta is the Optimiser. Opta Local is the first public way to run Opta AI |
+| **Type** | Marketing / Brand Homepage |
+| **Platform** | Web (Next.js 16 App Router on Vercel) |
 | **Language** | TypeScript |
 | **Status** | v1.0 Live — deployed to optalocal.com (2026-03-01) |
 | **Owner** | Matthew Byrden / Opta Operations |
@@ -42,19 +42,19 @@ Opta Home is the brand homepage for optalocal.com — the root domain entry poin
 ## 2. Purpose
 
 ### What It Does
-optalocal.com is the canonical brand entry point for the Opta Local stack. It communicates what the ecosystem is, who it's for, and routes visitors to the right app for their intent. It's the authoritative answer to "what is optalocal.com?"
+optalocal.com is the canonical brand entry point for Opta and the Opta Local ecosystem. It explains what Opta is, introduces Opta AI, frames Opta Local as the first public release, and routes visitors to the right app for their intent.
 
 ### What Problem It Solves
-The optalocal.com root domain currently serves the Opta Local dashboard — wrong first impression for anyone who doesn't already have LMX running. New and returning visitors need a brand homepage that explains the ecosystem and navigates them correctly.
+Without explicit brand framing, visitors confuse Opta Local for the entire company/product and miss the actual value model. The homepage must explain the Opta platform, where Opta AI fits, and how users activate Opta AI in CLI/Code with either LMX (local) or cloud models.
 
 ### What Makes It Different
-- Not a dashboard (that's lmx.optalocal.com)
-- Not an onboarding guide (that's init.optalocal.com)
-- The ecosystem overview — the "why" before the "how"
-- Single source of truth for what optalocal.com means
+- Explains Opta (company/platform) and Opta Local (first release) in one coherent model
+- Explicitly defines Opta AI as the user-facing optimizer personality
+- Shows activation flow: runtime source (LMX or cloud) powers Opta AI for CLI/Code
+- Keeps ecosystem routing clear without collapsing into a dashboard or docs portal
 
 ### What It Does NOT Do
-- Does not run any backend logic
+- Does not run product backend logic (only operational health endpoint)
 - Does not duplicate init.optalocal.com's setup guide
 - Does not replace lmx.optalocal.com's dashboard
 - Does not manage auth or accounts
@@ -83,12 +83,13 @@ The optalocal.com root domain currently serves the Opta Local dashboard — wron
 
 | # | Capability | Why |
 |---|-----------|-----|
-| 1 | Single primary CTA: download Opta Init Desktop Manager | One canonical install path |
-| 2 | Hero section with core value prop | First impression |
-| 3 | Ecosystem bento grid (core apps + management websites split) | Orientation |
-| 4 | Static export (no backend) | Performance + reliability |
-| 5 | Mobile responsive | Basics |
-| 6 | Init design system parity | Brand cohesion |
+| 1 | Hero copy that explains Opta and Opta Local together | Correct top-level positioning |
+| 2 | Dedicated "What is Opta?" + "What is Opta AI?" sections | Removes brand/product ambiguity |
+| 3 | Activation flow section: `LMX or Cloud → Opta AI → CLI/Code` | Explains how coding workflow actually works |
+| 4 | Ecosystem bento grid (core apps + management websites split) | Orientation |
+| 5 | Runtime health endpoint (`/api/health`) + hardened headers | Operational reliability |
+| 6 | Mobile responsive | Basics |
+| 7 | Init design system parity | Brand cohesion |
 
 ---
 
@@ -109,10 +110,12 @@ Inherits canonical Opta design system — identical to init.optalocal.com:
 ## 6. Architecture
 
 ```
-optalocal.com (Vercel CDN, static export)
+optalocal.com (Vercel CDN + Next.js runtime)
 └── Next.js 16 App Router
     ├── Nav (sticky glass + OptaRing logo)
-    ├── Hero (split layout — headline + technical flow diagram, Client→LMX→Apps)
+    ├── Hero (Opta-level positioning + Opta Local first-release framing)
+    ├── Opta Explainer (What Opta is, What Opta AI is)
+    ├── Activation Flow (Model Source→Opta AI→CLI/Code)
     ├── Benchmark Strip (full-width: 512GB · 22.2 tok/s · 836GB · 0 cloud · <200ms)
     ├── Ecosystem (split view: Main Local Apps + Management Websites)
     ├── Arch Diagram (Local active vs Cloud crossed out, side-by-side)
@@ -123,10 +126,11 @@ optalocal.com (Vercel CDN, static export)
     └── Footer
 ```
 
-No API routes. No server components requiring runtime. No authentication.
+Single operational API route: `/api/health`. No auth/account flows on this site.
 
 ### Design Philosophy (v1.0)
 - **Non-AI design patterns** — precision grid, not organic blobs; real data as visual texture
+- **Opta-first messaging** — company and optimizer identity explained before component routing
 - **Technical credibility** — real benchmarks, model specs, architecture diagrams front and center
 - **Violet used sparingly** — CTAs, active states, key data points only (not decorative splashes)
 - **Terminal DNA** — JetBrains Mono for all stats and technical content
@@ -146,20 +150,29 @@ optalocal.com          ← THIS SITE (brand home, routing hub)
 init.optalocal.com     ← Onboarding + downloads
 lmx.optalocal.com      ← LMX dashboard
 accounts.optalocal.com ← SSO portal
+CLI + Code             ← Opta AI execution surfaces once activated
 ```
 
 Also connects to:
 - `optamize.biz` (sister ecosystem — personal apps)
 
+### Activation Relationship (Canonical)
+- Opta AI is the optimizer users interact with.
+- Opta AI runs inside CLI and Code experiences.
+- Opta AI is powered by either:
+  - Opta LMX local model runtime
+  - Cloud model runtime
+- Homepage must make this relationship explicit, not implied.
+
 ---
 
 ## 9. Development Rules
 
-- Framework: Next.js 16, App Router, `output: 'export'`
+- Framework: Next.js 16, App Router
 - Styling: Tailwind CSS v3 with CSS custom properties
 - Fonts: Sora (Google Fonts) + JetBrains Mono (local woff2)
 - Animations: Framer Motion only — no CSS transitions for interactive elements
-- No JS required for core content (graceful degradation)
+- No JS required for core content semantics (animations enhance, not block)
 - Lint: ESLint config-next
 - Deploy: Vercel → optalocal.com (replace current lmx dashboard at root)
 
@@ -171,6 +184,8 @@ Also connects to:
 
 **Design direction locked:**
 - Technical diagram hero (not blob animations)
+- Explicit Opta/Opta AI/Opta Local relationship messaging
+- Explicit activation flow (`LMX or Cloud → Opta AI → CLI/Code`)
 - Real benchmark data as visual texture (not decorative stats)
 - Model compatibility table included (Kimi K2.5, MiniMax, Qwen, Llama, DeepSeek)
 - Local vs Cloud architecture diagram (not generic privacy copy)

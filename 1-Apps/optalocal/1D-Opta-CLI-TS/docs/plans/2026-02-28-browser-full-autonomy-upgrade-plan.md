@@ -1149,14 +1149,14 @@ All checks must pass before marking the upgrade complete.
 
 ## Checklist
 
-- [ ] Task 1: Extend `classifyAction` for MCP-only tools (browser_evaluate, browser_file_upload, etc.)
+- [x] Task 1: Extend `classifyAction` for MCP-only tools (browser_evaluate, browser_file_upload, etc.)
 - [ ] Task 2: Build `BrowserMcpInterceptor` (policy/approval/artifact pipeline)
-- [ ] Task 3: Wire interceptor into registry execute path for @playwright/mcp
-- [ ] Task 4: Build `BrowserSubAgentDelegator` (autonomous browser goal delegation)
+- [x] Task 3: Wire interceptor into registry execute path for @playwright/mcp
+- [x] Task 4: Build `BrowserSubAgentDelegator` (autonomous browser goal delegation)
 - [ ] Task 5: Wire delegator into agent loop + port integration test
-- [ ] Task 6: Remove legacy browser tool schemas from `schemas.ts`
+- [x] Task 6: Remove legacy browser tool schemas from `schemas.ts`
 - [ ] Task 7: Remove legacy browser executors from `executors.ts`
-- [ ] Task 8: Remove legacy browser permissions + full suite gate (go/no-go)
-- [ ] Task 9: Add expanded capability tests (scroll, hover, evaluate)
-- [ ] Task 10: Extend run-corpus adaptation for MCP tool names
-- [ ] Task 11: Update CLAUDE.md + DECISIONS.md
+- [x] Task 8: Remove legacy browser permissions + full suite gate (go/no-go)
+- [x] Task 9: Add expanded capability tests (scroll, hover, evaluate)
+- [x] Task 10: Extend run-corpus adaptation for MCP tool names
+- [x] Task 11: Update CLAUDE.md + DECISIONS.md

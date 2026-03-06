@@ -38,8 +38,9 @@ const freshnessRequired = new Set([
 ]);
 
 const legacyAliases = [
-  '1L-Opta-LMX-Dashboard',
-  '1P-Opta-Code-Universal',
+  '1L-Opta-Local',
+  '1N-Opta-Cloud-Accounts',
+  '1P-Opta-Code-Desktop',
 ];
 
 const errors = [];

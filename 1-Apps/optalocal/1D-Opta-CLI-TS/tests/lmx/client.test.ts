@@ -330,7 +330,12 @@ describe('LmxClient', () => {
     await client.skillMcpTools();
     await client.skillExecute('skill/a', { arguments: { foo: 'bar' }, approved: true, timeoutSec: 45 });
     await client.skillMcpCall({ name: 'tool-a', arguments: { q: 1 }, approved: true });
-    await client.skillOpenClawInvoke({ name: 'tool-a', arguments: { q: 2 }, timeoutSec: 30 });
+    await client.skillOpenClawInvoke({
+      name: 'tool-a',
+      arguments: { q: 2 },
+      timeoutSec: 30,
+      openclawAgentId: 'opta-bridge-123',
+    });
     await client.ragCollections();
     await client.ragDeleteCollection('docs');
     await client.ragQuery({
@@ -387,6 +392,10 @@ describe('LmxClient', () => {
     });
     expect(String(fetchMock.mock.calls[8]?.[0])).toBe('http://localhost:1234/v1/skills/mcp/call');
     expect(String(fetchMock.mock.calls[9]?.[0])).toBe('http://localhost:1234/v1/skills/openclaw/invoke');
+    expect((fetchMock.mock.calls[9]?.[1] as RequestInit).headers).toMatchObject({
+      'X-OpenClaw-Agent-ID': 'opta-bridge-123',
+      'X-Client-ID': 'opta-bridge-123',
+    });
     expect(String(fetchMock.mock.calls[10]?.[0])).toBe('http://localhost:1234/v1/rag/collections');
     expect(String(fetchMock.mock.calls[11]?.[0])).toBe('http://localhost:1234/v1/rag/collections/docs');
     expect((fetchMock.mock.calls[11]?.[1] as RequestInit).method).toBe('DELETE');

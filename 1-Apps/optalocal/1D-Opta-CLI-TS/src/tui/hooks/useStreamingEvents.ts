@@ -19,6 +19,8 @@ import {
 } from '../response-intent.js';
 import type { DEFAULT_CONFIG } from '../../core/config.js';
 
+const THINKING_FLUSH_MS = 40;
+
 /** Helper to normalize error events consistently across structured and string forms. */
 function parseStructuredTurnError(message: string): { code?: string; message: string } {
   const match = message.match(/^\[([a-z0-9-]+)\]\s+([\s\S]*)$/i);
@@ -240,6 +242,25 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
     // Track whether first token has been received this turn (for phase transition)
     let firstTokenReceived = false;
     let thinkingAnnounced = false;
+    let thinkingFlushTimer: ReturnType<typeof setTimeout> | null = null;
+
+    const flushThinkingTextNow = () => {
+      if (thinkingFlushTimer) {
+        clearTimeout(thinkingFlushTimer);
+        thinkingFlushTimer = null;
+      }
+      const next = thinkingTextRef.current;
+      setLiveThinkingText((prev) => (prev === next ? prev : next));
+    };
+
+    const scheduleThinkingFlush = () => {
+      if (thinkingFlushTimer) return;
+      thinkingFlushTimer = setTimeout(() => {
+        thinkingFlushTimer = null;
+        const next = thinkingTextRef.current;
+        setLiveThinkingText((prev) => (prev === next ? prev : next));
+      }, THINKING_FLUSH_MS);
+    };
 
     const onToken = (text: string) => {
       const safeText = sanitizeTerminalTokenChunk(text);
@@ -322,11 +343,10 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
       const safeText = sanitizeTerminalTokenChunk(text);
       if (!safeText) return;
       thinkingTextRef.current += safeText;
-      const nextThinking = thinkingTextRef.current;
-      setLiveThinkingText((prev) => (prev === nextThinking ? prev : nextThinking));
-      setStreamingLabel('thinking deeply');
+      scheduleThinkingFlush();
       if (!thinkingAnnounced) {
         thinkingAnnounced = true;
+        setStreamingLabel('thinking deeply');
         appendAction({
           kind: 'thinking',
           status: 'running',
@@ -345,6 +365,10 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
       setLiveStreamingText('');
       thinkingTextRef.current = '';
       setLiveThinkingText('');
+      if (thinkingFlushTimer) {
+        clearTimeout(thinkingFlushTimer);
+        thinkingFlushTimer = null;
+      }
       firstTokenReceived = false;
       tokenRateWindowRef.current = { startedAt: Date.now(), chars: 0 };
       if (tokenFlushTimerRef.current) {
@@ -373,6 +397,11 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
       setTurnPhase('done');
       setTimeout(() => setTurnPhase('idle'), 2000);
 
+      if (thinkingFlushTimer) {
+        clearTimeout(thinkingFlushTimer);
+        thinkingFlushTimer = null;
+      }
+      flushThinkingTextNow();
       flushStreamingTextNow();
 
       const finalText = currentStreamingTextRef.current;
@@ -670,6 +699,10 @@ export function useStreamingEvents(options: UseStreamingEventsOptions): void {
     emitter.on('subagent:done', onSubAgentDone);
 
     return () => {
+      if (thinkingFlushTimer) {
+        clearTimeout(thinkingFlushTimer);
+        thinkingFlushTimer = null;
+      }
       emitter.off('token', onToken);
       emitter.off('tool:start', onToolStart);
       emitter.off('tool:end', onToolEnd);

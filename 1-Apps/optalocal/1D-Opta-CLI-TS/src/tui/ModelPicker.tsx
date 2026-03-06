@@ -27,6 +27,7 @@ export interface ModelPickerProps {
   connectionFallbackHosts?: string[];
   connectionPort: number;
   connectionAdminKey?: string;
+  connectionAdminKeysByHost?: Record<string, string>;
   onSelect: (selection: ModelSelection) => void | Promise<void>;
   onClose: () => void;
 }
@@ -127,6 +128,7 @@ export function ModelPicker({
   connectionFallbackHosts,
   connectionPort,
   connectionAdminKey,
+  connectionAdminKeysByHost,
   onSelect,
   onClose,
 }: ModelPickerProps) {
@@ -168,6 +170,7 @@ export function ModelPicker({
           fallbackHosts,
           port: connectionPort,
           adminKey: connectionAdminKey,
+          adminKeysByHost: connectionAdminKeysByHost,
           timeoutMs: MODEL_INVENTORY_TIMEOUT_MS,
           maxRetries: 0,
         });
@@ -201,10 +204,6 @@ export function ModelPicker({
 
         let entries = [...loadedEntries, ...onDiskEntries];
 
-        if (loadedResult.status === 'rejected' && availableResult.status === 'rejected') {
-          throw loadedResult.reason;
-        }
-
         // Fallback to OpenAI-compatible /v1/models listing when admin inventory is unavailable.
         if (entries.length === 0) {
           const catalogHosts = listCandidateHosts(client.getActiveHost(), fallbackHosts);
@@ -230,8 +229,10 @@ export function ModelPicker({
               lastCatalogError = err;
             }
           }
-          if (entries.length === 0 && lastCatalogError) {
-            throw lastCatalogError;
+          if (entries.length === 0) {
+            if (lastCatalogError) throw lastCatalogError;
+            if (loadedResult.status === 'rejected') throw loadedResult.reason;
+            if (availableResult.status === 'rejected') throw availableResult.reason;
           }
         }
 
@@ -259,7 +260,15 @@ export function ModelPicker({
     return () => {
       cancelled = true;
     };
-  }, [connectionAdminKey, connectionHost, fallbackHosts, connectionPort, currentModel, reloadNonce]);
+  }, [
+    connectionAdminKey,
+    connectionAdminKeysByHost,
+    connectionHost,
+    fallbackHosts,
+    connectionPort,
+    currentModel,
+    reloadNonce,
+  ]);
 
   useEffect(() => {
     setSelectedIdx((prev) => {

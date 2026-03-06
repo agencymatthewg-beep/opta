@@ -8,6 +8,7 @@ import type { ReactNode } from 'react'
 import { SWRConfig } from 'swr'
 
 import { ConnectionProvider } from './connection'
+import { PairedDeviceProvider } from './paired-device'
 import { LmxError } from './api'
 
 export function Providers({ children }: { children: ReactNode }) {
@@ -28,7 +29,9 @@ export function Providers({ children }: { children: ReactNode }) {
                 dedupingInterval: 2_000,
             }}
         >
-            <ConnectionProvider>{children}</ConnectionProvider>
+            <PairedDeviceProvider>
+                <ConnectionProvider>{children}</ConnectionProvider>
+            </PairedDeviceProvider>
         </SWRConfig>
     )
 }

@@ -4,7 +4,7 @@ Canonical path: `1-Apps/optalocal/1V-Opta-Learn`
 
 ## Purpose
 
-Guides, workflows, and learning hub for Opta Local.
+Guides, workflows, and learning hub for Opta Local as the first public Opta release, including canonical Opta AI activation patterns across local LMX and cloud runtimes.
 
 ## Local Development
 

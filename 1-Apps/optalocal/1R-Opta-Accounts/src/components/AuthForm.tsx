@@ -15,6 +15,7 @@ interface AuthFormProps {
     state: string;
     returnTo?: string;
     handoff?: string;
+    proof?: string;
   };
 }
 
@@ -30,6 +31,9 @@ export function AuthForm({ mode, redirectAfter, cliMode }: AuthFormProps) {
     }
     if (cliMode.handoff) {
       callbackParams.set("handoff", cliMode.handoff);
+    }
+    if (cliMode.proof) {
+      callbackParams.set("proof", cliMode.proof);
     }
     return `/cli/callback?${callbackParams.toString()}`;
   })();

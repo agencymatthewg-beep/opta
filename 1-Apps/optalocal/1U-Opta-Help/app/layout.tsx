@@ -33,19 +33,19 @@ const jetbrains = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: 'Opta Help — Documentation for the Opta Local stack',
+    default: 'Opta Help — Activation and Operations Docs for Opta AI',
     template: '%s | Opta Help',
   },
-  description: 'Comprehensive documentation for the Opta Local private AI stack — CLI, Daemon, LMX, Local Web, Code Desktop, and more.',
-  keywords: 'Opta, documentation, help, CLI, daemon, LMX, local AI, Apple Silicon, MLX',
+  description: 'Technical documentation for Opta, where Opta Local is the first public release. Learn how to activate Opta AI with Opta LMX or cloud models and run through CLI and Code.',
+  keywords: 'Opta, Opta AI, Opta Local, documentation, activation, CLI, Code, daemon, LMX, cloud models',
   icons: {
     icon: '/favicon.svg',
-    shortcut: '/favicon.ico',
+    shortcut: '/favicon.svg',
     apple: '/favicon.svg',
   },
   openGraph: {
-    title: 'Opta Help — Documentation for the Opta Local stack',
-    description: 'Comprehensive documentation for the Opta Local private AI stack.',
+    title: 'Opta Help — Activation and Operations Docs for Opta AI',
+    description: 'Technical docs for activating and operating Opta AI via local LMX or cloud runtimes across CLI and Code.',
     url: 'https://help.optalocal.com',
     siteName: 'Opta Help',
     locale: 'en_US',

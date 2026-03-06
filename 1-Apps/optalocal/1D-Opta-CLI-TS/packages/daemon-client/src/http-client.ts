@@ -26,8 +26,14 @@ import type {
   DaemonBackgroundOutputResponse,
   DaemonBackgroundStartRequest,
   DaemonBackgroundStatusResponse,
+  DaemonBridgeConnectRequest,
+  DaemonBridgeDisconnectRequest,
+  DaemonBridgeMutationResponse,
+  DaemonBridgeStatusResponse,
   DaemonCancelResponse,
   DaemonConnectionOptions,
+  DaemonDeviceBootstrapRequest,
+  DaemonDeviceExecuteRequest,
   DaemonEventsResponse,
   DaemonHealthResponse,
   DaemonHttpApi,
@@ -172,6 +178,40 @@ export class DaemonHttpClient implements DaemonHttpApi {
 
   metrics(): Promise<DaemonMetricsResponse> {
     return this.request('/v3/metrics');
+  }
+
+  bridgeStatus(): Promise<DaemonBridgeStatusResponse> {
+    return this.request('/v3/bridge/status');
+  }
+
+  bridgeConnect(payload: DaemonBridgeConnectRequest): Promise<DaemonBridgeMutationResponse> {
+    return this.request('/v3/bridge/connect', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  bridgeDisconnect(payload: DaemonBridgeDisconnectRequest = {}): Promise<DaemonBridgeMutationResponse> {
+    return this.request('/v3/bridge/disconnect', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  deviceBootstrap(payload: DaemonDeviceBootstrapRequest = {}): Promise<Record<string, unknown>> {
+    return this.request('/v3/device/bootstrap', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  deviceExecute<TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
+    payload: DaemonDeviceExecuteRequest<TPayload>
+  ): Promise<DaemonRunOperationResponse<TResult>> {
+    return this.request('/v3/device/execute', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
   }
 
   createSession(req: CreateSessionRequest): Promise<SessionSnapshot> {

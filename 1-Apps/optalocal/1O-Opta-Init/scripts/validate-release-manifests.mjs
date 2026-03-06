@@ -18,6 +18,14 @@ const semverRegex = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
 const sha256Regex = /^[A-Fa-f0-9]{64}$/;
 const httpsRegex = /^https:\/\//;
+const packageTypeUrlPatterns = new Map([
+  ['pkg', /\.pkg(?:[?#].*)?$/i],
+  ['dmg', /\.dmg(?:[?#].*)?$/i],
+  ['zip', /\.zip(?:[?#].*)?$/i],
+  ['tar.gz', /\.(?:tar\.gz|tgz)(?:[?#].*)?$/i],
+  ['msi', /\.msi(?:[?#].*)?$/i],
+  ['exe', /\.exe(?:[?#].*)?$/i],
+]);
 
 function usage() {
   console.log(
@@ -45,6 +53,14 @@ function isObject(value) {
 
 function isIsoDate(value) {
   return typeof value === 'string' && isoDateRegex.test(value) && !Number.isNaN(Date.parse(value));
+}
+
+function packageTypeMatchesUrl(packageType, url) {
+  const pattern = packageTypeUrlPatterns.get(packageType);
+  if (!pattern) {
+    return true;
+  }
+  return pattern.test(url);
 }
 
 function validateRollout(rollout, location, errors, allowedStrategies) {
@@ -98,6 +114,12 @@ function validateArtifact(artifact, location, expectedPlatform, errors, allowedP
   }
   if (typeof artifact.url !== 'string' || !httpsRegex.test(artifact.url)) {
     errors.push(`${location}.url must be an https URL`);
+  } else if (
+    typeof artifact.packageType === 'string' &&
+    allowedPackageTypes.has(artifact.packageType) &&
+    !packageTypeMatchesUrl(artifact.packageType, artifact.url)
+  ) {
+    errors.push(`${location}.url must match packageType "${artifact.packageType}"`);
   }
   if (artifact.sizeBytes !== undefined && (!Number.isInteger(artifact.sizeBytes) || artifact.sizeBytes < 1)) {
     errors.push(`${location}.sizeBytes must be a positive integer when provided`);

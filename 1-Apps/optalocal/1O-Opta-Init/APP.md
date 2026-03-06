@@ -4,7 +4,7 @@ type: web-app
 platforms: [web]
 language: typescript
 status: live
-version: 1.1.0
+version: 1.1.2
 depends_on: [opta-cli-ts, opta-lmx, opta-local]
 depended_on_by: [opta-local]
 port: 3005
@@ -28,7 +28,7 @@ opis_mode: ecosystem
 | **Type**            | Static onboarding website + release metadata portal              |
 | **Platform**        | Web (Next.js, statically exported)                             |
 | **Language**        | TypeScript                                                     |
-| **Status**          | v1.1 active — https://init.optalocal.com                      |
+| **Status**          | v1.1.2 active — https://init.optalocal.com                    |
 | **Owner**           | Matthew Byrden / Opta Operations                               |
 | **Domain**          | init.optalocal.com                                              |
 | **Parent Platform** | optalocal.com (multi-app LLM platform)                         |
@@ -92,6 +92,9 @@ and future apps through signed manifests.
 - Runs as a native Tauri app
 - Fetches manifests
 - Installs/updates/launches managed applications
+- First-run setup wizard persists local manager config
+- Auto-discovers Opta LMX on LAN via `_opta-lmx._tcp.local.`
+- Persists LMX connection state to shared Opta config files
 
 No backend. No user DB. No auth.
 
@@ -102,11 +105,12 @@ Distribution invariant: Opta Init (the **Opta Initializer**, short: **Opta Init*
 ## 6. Current Phase
 
 - v1.1 active: App manager + signed release control plane is in motion and being documented.
+- v1.2 alignment: setup-gated onboarding, daemon drawer wiring, and native mDNS discovery are active in desktop manager.
 - v1.x direction: keep install surface singular; keep managed-app changes in manifests and workflows.
+- Priority directive (2026-03-06): treat complete Windows development for Opta Code and Opta Daemon as P0 and ship ASAP.
 
 ---
 
 ## 7. Open Questions
 
-- When should Windows stable be promoted to parity with macOS?
 - Should beta channel be user-visible by default or hidden until stability checks pass?

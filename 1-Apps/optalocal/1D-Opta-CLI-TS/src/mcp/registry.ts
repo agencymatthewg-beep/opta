@@ -340,6 +340,11 @@ export async function buildToolRegistry(
           const { interceptBrowserMcpCall, BrowserPolicyDeniedError } = await import('../browser/mcp-interceptor.js');
           const { resolveBrowserPolicyConfig } = await import('../core/browser-policy-config.js');
           const onBrowserEvent = subAgentCallbacks.onBrowserEvent;
+          const interceptedSessionId =
+            asOptionalString(args['session_id']) ??
+            asOptionalString(args['sessionId']) ??
+            parentCtx?.parentSessionId ??
+            'registry';
 
           // Signal the overlay that a tool is about to execute
           dispatchOverlayEvent(mcpConn, 'opta:state', { state: 'executing' });
@@ -350,7 +355,7 @@ export async function buildToolRegistry(
               args,
               {
                 policyConfig: resolveBrowserPolicyConfig(config),
-                sessionId: parentCtx?.parentSessionId ?? 'registry',
+                sessionId: interceptedSessionId,
                 // Auto-approve gate decisions so all Playwright tools are usable.
                 // The policy engine still blocks denied tools; only gated tools get through.
                 onGate: (_toolName, _decision) => Promise.resolve('approved'),
@@ -360,9 +365,14 @@ export async function buildToolRegistry(
                 maxRetries: 2,
                 retryBackoffMs: 500,
                 executeEvaluate: (expression: string) => mcpConn.call('browser_evaluate', { expression }),
+                artifactPersistence: {
+                  enabled: config.browser.artifacts?.enabled ?? true,
+                  cwd: process.cwd(),
+                  runId: interceptedSessionId,
+                },
                 onBrowserEvent: onBrowserEvent
                   ? (toolName, _args, _result) =>
-                    onBrowserEvent(toolName, parentCtx?.parentSessionId ?? 'registry')
+                    onBrowserEvent(toolName, interceptedSessionId)
                   : undefined,
               },
               () => mcpConn.call(originalName, args),

@@ -49,26 +49,13 @@ export function DaemonDrawer({ isOpen, onClose }: DaemonDrawerProps) {
     }, [isOpen, onClose]);
 
     const handleKill = async (id: string) => {
-        setJobs(jobs.map(j => j.id === id ? { ...j, status: 'stopped' } : j));
+        setJobs(prev => prev.map(j => j.id === id ? { ...j, status: 'stopped' } : j));
         try {
             await invoke('kill_daemon_job', { jobId: id });
             const fresh = await invoke<DaemonJob[]>('fetch_daemon_jobs');
             setJobs(fresh);
         } catch (e) {
             console.error("Failed to kill job", e);
-        }
-    };
-
-    const handleRestart = async (id: string) => {
-        // Optimistic UI fallback
-        setJobs(jobs.map(j => j.id === id ? { ...j, status: 'running', uptime: '0s', exitCode: undefined } : j));
-        try {
-            await invoke('restart_daemon_job', { jobId: id });
-            const fresh = await invoke<DaemonJob[]>('fetch_daemon_jobs');
-            setJobs(fresh);
-        } catch (e) {
-            console.error("Failed to restart job", e);
-            alert("Error: " + e);
         }
     };
 
@@ -85,6 +72,9 @@ export function DaemonDrawer({ isOpen, onClose }: DaemonDrawerProps) {
                 </div>
 
                 <div className="job-track">
+                    {jobs.length === 0 && (
+                        <div className="job-empty">No daemon jobs reported.</div>
+                    )}
                     {jobs.map(job => (
                         <div key={job.id} className="job-node">
                             <div className={`status-ring ${job.status}`}></div>
@@ -96,11 +86,13 @@ export function DaemonDrawer({ isOpen, onClose }: DaemonDrawerProps) {
                                     PID: {job.pid || 'N/A'} &middot; {job.status === 'running' ? (job.uptime || 'active') : `EXIT: ${job.exitCode || 0}`}
                                 </div>
                                 <div className="action-overlay">
-                                    <button className="a-btn">Logs <span className="kb">L</span></button>
+                                    <button className="a-btn" disabled title="Daemon log streaming is not yet available in this view.">
+                                        Logs
+                                    </button>
                                     {job.status === 'running' ? (
                                         <button className="a-btn danger" onClick={() => handleKill(job.id)}>Kill <span className="kb">K</span></button>
                                     ) : (
-                                        <button className="a-btn" style={{ color: 'var(--text-main, #ffffff)' }} onClick={() => handleRestart(job.id)}>Restart <span className="kb">R</span></button>
+                                        <span className="job-stopped-note">Stopped</span>
                                     )}
                                 </div>
                             </div>

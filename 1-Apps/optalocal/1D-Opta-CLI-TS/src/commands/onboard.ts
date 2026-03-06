@@ -559,10 +559,18 @@ export async function runOnboarding(): Promise<void> {
         provider === 'anthropic'
           ? 'Anthropic'
           : provider === 'gemini'
-            ? 'Gemini'
+            ? 'Gemini (optional if using Vertex OAuth)'
             : provider === 'openai'
               ? 'OpenAI/Codex'
               : 'Opencode Zen';
+
+      if (provider === 'gemini') {
+        console.log(chalk.dim('  Tip: Leave API key blank to use Vertex OAuth (no Gemini API key needed).'));
+        console.log(chalk.dim('    export GOOGLE_GENAI_USE_VERTEXAI=true'));
+        console.log(chalk.dim('    export GOOGLE_CLOUD_PROJECT=<your-project-id>'));
+        console.log(chalk.dim('    gcloud auth application-default login'));
+        console.log('');
+      }
 
       const keyPrompt = await promptProviderApiKey(rl, provider, cloudPromptLabel, existingCloudKey);
       cloudKey = keyPrompt.keyInput;

@@ -42,6 +42,11 @@ export function setInferenceKey(key: string | null) {
     _inferenceKey = key
 }
 
+/** Get the current inference API key. */
+export function getInferenceKey(): string | null {
+    return _inferenceKey
+}
+
 // ── Error Class ─────────────────────────────────────────────────────────────
 
 export class LmxError extends Error {
@@ -356,7 +361,7 @@ export interface WebSocketChatOptions {
  * Returns send/close functions.
  */
 export function lmxWebSocket(options: WebSocketChatOptions) {
-    const wsUrl = _baseUrl.replace(/^http/, 'ws') + '/ws/chat'
+    const wsUrl = _baseUrl.replace(/^http/, 'ws') + '/v1/chat/stream'
     const ws = new WebSocket(wsUrl)
 
     ws.onopen = () => options.onOpen?.()

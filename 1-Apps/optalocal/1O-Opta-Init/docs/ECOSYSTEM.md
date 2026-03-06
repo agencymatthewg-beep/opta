@@ -23,7 +23,7 @@ optalocal.com (platform root)
 |-----|------|------|
 | Opta CLI | 1D-Opta-CLI-TS | Agentic coding CLI |
 | Opta LMX | 1M-Opta-LMX | Local inference daemon |
-| Opta Code | TBD | Desktop coding surface |
+| Opta Code | 1P-Opta-Code-Universal | Desktop coding surface |
 | Opta Daemon | core service | Runtime orchestration daemon |
 
 ## App This Site Links To (Dashboard CTA)
@@ -40,9 +40,13 @@ optalocal.com (platform root)
 
 ## Data Contracts
 
-No runtime data contracts. All relationships are:
+Runtime relationships are contract-driven:
 - Static links (download URLs pointing to GitHub Releases)
 - Static links (dashboard CTA to lmx.optalocal.com)
+- mDNS network-discovery contract:
+  - Service type: `_opta-lmx._tcp.local.`
+  - Shared connection store: `~/.config/opta/lmx-connections.json`
+  - Reference: `docs/NETWORK-DISCOVERY.md`
 
 ## What Opta Init Does NOT Overlap With
 

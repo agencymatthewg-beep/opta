@@ -15,8 +15,8 @@ Hard rules. These are non-negotiable without explicit Matthew override.
 
 ## Architecture
 
-- **Never** add API routes — this is a static site, full stop
-- **Never** add server-side rendering — `output: 'export'` is locked
+- **Never** add product/business API routes — only `/api/health` is allowed for operations
+- **Never** enable static export while `/api/health` is present (`OPTA_HOME_STATIC_EXPORT=1` is blocked)
 - **Never** fetch external data at runtime — all content is static strings
 - **Never** add user auth or accounts flows — that's accounts.optalocal.com
 

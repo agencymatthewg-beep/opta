@@ -387,6 +387,8 @@ describe('startChat startup handling', () => {
 
     await mocks.startChat({ tui: true });
 
+    expect(mocks.lmxModels).not.toHaveBeenCalled();
+    expect(mocks.ensureModelLoaded).not.toHaveBeenCalled();
     expect(mocks.renderTUI).toHaveBeenCalledTimes(1);
     const renderOpts = mocks.renderTUI.mock.calls[0]?.[0];
     expect(renderOpts.startupConnectionNotice).toBeDefined();

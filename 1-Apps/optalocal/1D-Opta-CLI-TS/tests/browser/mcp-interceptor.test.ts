@@ -12,7 +12,39 @@ vi.mock('../../src/browser/approval-log.js', () => ({
   appendBrowserApprovalEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
+// Mock artifact persistence pipeline
+vi.mock('../../src/browser/artifacts.js', () => ({
+  appendBrowserSessionStep: vi.fn().mockResolvedValue(undefined),
+  appendBrowserVisualDiffManifestEntry: vi.fn().mockResolvedValue(undefined),
+  appendBrowserVisualDiffResultEntry: vi.fn().mockResolvedValue(undefined),
+  writeBrowserArtifact: vi.fn().mockImplementation(async (input: {
+    cwd: string;
+    sessionId: string;
+    actionId: string;
+    kind: string;
+    extension: string;
+    mimeType: string;
+    createdAt: string;
+  }) => ({
+    id: `${input.sessionId}:${input.actionId}:${input.kind}`,
+    sessionId: input.sessionId,
+    actionId: input.actionId,
+    kind: input.kind,
+    createdAt: input.createdAt,
+    relativePath: `.opta/browser/${input.sessionId}/${input.actionId}.${input.extension}`,
+    absolutePath: `${input.cwd}/.opta/browser/${input.sessionId}/${input.actionId}.${input.extension}`,
+    mimeType: input.mimeType,
+    sizeBytes: 3,
+  })),
+}));
+
 import { evaluateBrowserPolicyAction } from '../../src/browser/policy-engine.js';
+import {
+  appendBrowserSessionStep,
+  appendBrowserVisualDiffManifestEntry,
+  appendBrowserVisualDiffResultEntry,
+  writeBrowserArtifact,
+} from '../../src/browser/artifacts.js';
 
 const baseConfig: BrowserMcpInterceptorConfig = {
   policyConfig: {
@@ -138,6 +170,24 @@ describe('BrowserMcpInterceptor', () => {
 
     expect(execute).toHaveBeenCalledOnce();
     expect(result).toBe('hovered');
+  });
+
+  it('allows browser_select_option as medium-risk interaction tool', async () => {
+    vi.mocked(evaluateBrowserPolicyAction).mockReturnValue({
+      decision: 'allow', risk: 'medium', actionKey: 'select', reason: 'selection allowed',
+      riskEvidence: { classifier: 'static', matchedSignals: ['tool:browser_select_option'] },
+    });
+
+    const execute = vi.fn().mockResolvedValue('selected');
+    const result = await interceptBrowserMcpCall(
+      'browser_select_option',
+      { selector: '#country', value: 'AU' },
+      baseConfig,
+      execute,
+    );
+
+    expect(execute).toHaveBeenCalledOnce();
+    expect(result).toBe('selected');
   });
 
   it('gates browser_evaluate with arbitrary JS expression and logs approval event', async () => {
@@ -280,6 +330,50 @@ describe('BrowserMcpInterceptor', () => {
       ).rejects.toThrow('ECONNREFUSED');
 
       expect(onSelectorFail).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('artifact persistence', () => {
+    beforeEach(() => {
+      vi.mocked(evaluateBrowserPolicyAction).mockReturnValue({
+        decision: 'allow',
+        risk: 'low',
+        actionKey: 'observe',
+        reason: 'ok',
+        riskEvidence: { classifier: 'static', matchedSignals: [] },
+      });
+    });
+
+    it('writes session step + visual diff entries when persistence is enabled', async () => {
+      const execute = vi
+        .fn()
+        .mockResolvedValueOnce('data:image/png;base64,YWJj')
+        .mockResolvedValueOnce('data:image/png;base64,ZGVm');
+
+      const persistenceConfig: BrowserMcpInterceptorConfig = {
+        ...baseConfig,
+        artifactPersistence: {
+          enabled: true,
+          cwd: '/tmp/opta-browser-interceptor',
+          runId: 'run-01',
+        },
+      };
+
+      await interceptBrowserMcpCall('browser_screenshot', {}, persistenceConfig, execute);
+      await interceptBrowserMcpCall('browser_screenshot', {}, persistenceConfig, execute);
+
+      expect(writeBrowserArtifact).toHaveBeenCalledTimes(2);
+      expect(appendBrowserSessionStep).toHaveBeenCalledTimes(2);
+      expect(appendBrowserVisualDiffManifestEntry).toHaveBeenCalledTimes(2);
+      expect(appendBrowserVisualDiffResultEntry).toHaveBeenCalledTimes(1);
+      expect(appendBrowserVisualDiffResultEntry).toHaveBeenCalledWith(
+        '/tmp/opta-browser-interceptor',
+        expect.objectContaining({
+          sessionId: 'test-sess-01',
+          runId: 'run-01',
+          status: expect.stringMatching(/changed|unchanged|missing/),
+        }),
+      );
     });
   });
 });

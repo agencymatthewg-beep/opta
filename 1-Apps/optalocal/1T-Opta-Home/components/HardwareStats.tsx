@@ -4,10 +4,10 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
 const stats = [
-  { value: "512", label: "GB", sub: "Maximum Unified Memory" },
-  { value: "22.2", label: "tok/s", sub: "Inference speed" },
-  { value: "836", label: "GB", sub: "Largest model" },
-  { value: "0", label: "ms", sub: "Cloud latency" },
+  { value: "512", label: "GB", sub: "Unified memory (reference node)" },
+  { value: "22.2", label: "tok/s", sub: "Observed throughput (reference run)" },
+  { value: "836", label: "GB", sub: "Model footprint tested" },
+  { value: "0", label: "", sub: "Required cloud calls (local mode)" },
 ];
 
 export function HardwareStats() {
@@ -19,12 +19,12 @@ export function HardwareStats() {
       <div className="max-w-6xl mx-auto">
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6 }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Built for autonomous scale workloads.
+            Reference local performance envelope.
           </h2>
         </motion.div>
 
@@ -33,7 +33,7 @@ export function HardwareStats() {
             <motion.div
               key={stat.sub}
               className="text-center"
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 1, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.6, delay: i * 0.1 }}
             >
@@ -50,11 +50,13 @@ export function HardwareStats() {
 
         <motion.p
           className="text-center text-xl text-text-secondary max-w-2xl mx-auto"
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={isInView ? { opacity: 1 } : {}}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          From stack boot to continuous agentic workflow, choose between mass-scale cloud intelligence or 100% local privacy.
+          Metrics shown are from an internal Apple Silicon validation setup and
+          are provided for planning context. Real-world results vary by model,
+          quantization, prompt profile, and hardware.
         </motion.p>
       </div>
     </section>

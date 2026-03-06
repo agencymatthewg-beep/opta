@@ -26,7 +26,7 @@ defaults:
     working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal
 
 jobs:
-  # Unit + vitest tests (Linux, fast)
+  # Unit + vitest tests + Rust check (Linux, fast)
   unit-tests:
     name: Unit tests (Linux)
     runs-on: ubuntu-latest
@@ -35,6 +35,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri -> target"
+      - name: Cargo check (fast compile validation)
+        working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri
+        run: cargo check
+      - name: Cargo test (logic-only modules, no OS keyring deps)
+        working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri
+        run: cargo test lmx_mdns config_paths
       - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install --ignore-scripts

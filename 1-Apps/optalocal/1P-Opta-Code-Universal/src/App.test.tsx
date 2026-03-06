@@ -54,7 +54,41 @@ vi.mock("./components/LiveBrowserView", () => ({
 }));
 
 vi.mock("./components/SettingsModal", () => ({
-  SettingsModal: () => null,
+  SettingsModal: ({
+    isOpen,
+    activeTab,
+    isDeepLayer,
+    isFullscreen,
+  }: {
+    isOpen: boolean;
+    activeTab?: string;
+    isDeepLayer?: boolean;
+    isFullscreen?: boolean;
+  }) =>
+    isOpen ? (
+      <div data-testid="settings-modal-mock">
+        <div>SettingsModalMock</div>
+        <div>{`activeTab:${activeTab ?? "none"}`}</div>
+        <div>{`layer:${isDeepLayer ? "3" : "2"}`}</div>
+        <div>{`fullscreen:${isFullscreen ? "1" : "0"}`}</div>
+      </div>
+    ) : null,
+}));
+
+vi.mock("./components/SettingsView", () => ({
+  SettingsView: ({
+    selectedTab,
+    isFullscreen,
+  }: {
+    selectedTab?: string;
+    isFullscreen?: boolean;
+  }) => (
+    <div data-testid="settings-view-mock">
+      <div>SettingsViewMock</div>
+      <div>{`selectedTab:${selectedTab ?? "none"}`}</div>
+      <div>{`fullscreen:${isFullscreen ? "1" : "0"}`}</div>
+    </div>
+  ),
 }));
 
 vi.mock("./components/SetupWizard", () => ({
@@ -109,7 +143,7 @@ vi.mock("./pages/DaemonLogsPage", () => ({
   DaemonLogsPage: () => <div>DaemonLogsPageMock</div>,
 }));
 
-describe("App account controls wiring", () => {
+describe("App settings studio routing", () => {
   const makeDaemonState = (
     overrides: Partial<ReturnType<typeof useDaemonSessions>>,
   ) =>
@@ -185,43 +219,96 @@ describe("App account controls wiring", () => {
     );
   };
 
-  it("renders topbar accounts button", async () => {
+  it("removes separate topbar accounts entry and keeps menu entry", async () => {
     render(<App />);
 
-    const accountsButton = await screen.findByRole("button", {
-      name: /accounts/i,
-    });
-    expect(accountsButton).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /accounts/i }),
+    ).not.toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /menu/i }),
+    ).toBeInTheDocument();
   });
 
-  it("opens account controls via command palette command", async () => {
+  it("opens account controls inside settings studio via command palette command", async () => {
     render(<App />);
     await runPaletteCommand("account controls", /open account controls/i);
 
     await waitFor(() => {
-      expect(screen.getByText("AccountControlPageMock")).toBeInTheDocument();
+      expect(screen.getByText("SettingsModalMock")).toBeInTheDocument();
+      expect(screen.getByText("activeTab:accounts-vault")).toBeInTheDocument();
+      expect(screen.getByText("layer:3")).toBeInTheDocument();
     });
   });
 
-  it("opens CLI bridge, env management, and MCP via command palette", async () => {
+  it("uses top-right menu button as a sidebar toggle without opening a popover menu", async () => {
+    const { container } = render(<App />);
+
+    const projectPane = container.querySelector(".project-pane");
+    expect(projectPane).not.toBeNull();
+    expect(projectPane).not.toHaveClass("collapsed");
+
+    const menuButton = await screen.findByRole("button", { name: /menu/i });
+    fireEvent.click(menuButton);
+    expect(projectPane).toHaveClass("collapsed");
+    expect(
+      screen.queryByRole("menu", { name: /opta functionality menu/i }),
+    ).not.toBeInTheDocument();
+
+    fireEvent.click(menuButton);
+    expect(projectPane).not.toHaveClass("collapsed");
+  });
+
+  it("routes model and app-catalog palette commands into settings studio categories", async () => {
+    render(<App />);
+
+    await runPaletteCommand("models control room", /open models control room/i);
+    expect(screen.getByText("activeTab:lmx-models")).toBeInTheDocument();
+    expect(screen.getByText("layer:3")).toBeInTheDocument();
+
+    await runPaletteCommand("app catalog", /open app catalog/i);
+    expect(screen.getByText("activeTab:apps-catalog")).toBeInTheDocument();
+  });
+
+  it("does not emit the ref special-prop warning during settings transitions", async () => {
+    const consoleErrorSpy = vi
+      .spyOn(console, "error")
+      .mockImplementation(() => undefined);
+    try {
+      render(<App />);
+      await runPaletteCommand("account controls", /open account controls/i);
+
+      const output = consoleErrorSpy.mock.calls
+        .flat()
+        .map((entry) => String(entry))
+        .join("\n");
+      expect(output).not.toMatch(/`ref` is not a prop/i);
+    } finally {
+      consoleErrorSpy.mockRestore();
+    }
+  });
+
+  it("routes CLI bridge, env management, and MCP commands into settings studio tabs", async () => {
     render(<App />);
 
     await runPaletteCommand("cli bridge", /open cli bridge/i);
-    expect(screen.getByText("CliOperationsPageMock")).toBeInTheDocument();
+    expect(screen.getByText("activeTab:cli-system-advanced")).toBeInTheDocument();
+    expect(screen.getByText("layer:3")).toBeInTheDocument();
 
     await runPaletteCommand("env management", /open env management/i);
-    expect(screen.getByText("EnvProfilesPageMock")).toBeInTheDocument();
+    expect(screen.getByText("activeTab:environment-profiles")).toBeInTheDocument();
 
     await runPaletteCommand("mcp management", /open mcp management/i);
-    expect(screen.getByText("McpManagementPageMock")).toBeInTheDocument();
+    expect(screen.getByText("activeTab:mcp-integrations")).toBeInTheDocument();
   });
 
-  it("opens system control plane via command palette", async () => {
+  it("opens system control plane in daemon runtime tab via command palette", async () => {
     render(<App />);
 
     await runPaletteCommand("system control", /open system control plane/i);
 
-    expect(screen.getByText("SystemOperationsPageMock")).toBeInTheDocument();
+    expect(screen.getByText("SettingsModalMock")).toBeInTheDocument();
+    expect(screen.getByText("activeTab:daemon-runtime")).toBeInTheDocument();
   });
 
   it("shows reconnect overlay after losing connection from a previously connected state", async () => {

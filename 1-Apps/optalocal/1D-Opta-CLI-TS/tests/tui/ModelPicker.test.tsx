@@ -171,4 +171,46 @@ describe('ModelPicker', () => {
     expect(frame).toContain('Configured endpoint: 127.0.0.1:1234');
     unmount();
   });
+
+  it('falls back to /v1/models when admin inventory endpoints are unauthorized', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: string | URL) => {
+      const url = String(input);
+      if (url.endsWith('/admin/models') || url.endsWith('/admin/models/available')) {
+        throw new Error('401 unauthorized');
+      }
+      if (url.endsWith('/v1/models')) {
+        return {
+          ok: true,
+          json: async () => ({
+            data: [
+              { id: 'catalog/model-1' },
+              { id: 'catalog/model-2' },
+            ],
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({ data: [] }) };
+    }));
+
+    const { lastFrame, unmount } = render(
+      <ModelPicker
+        currentModel="catalog/model-1"
+        connectionHost="127.0.0.1"
+        connectionPort={1234}
+        onSelect={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+
+    for (let i = 0; i < 30; i++) {
+      const frame = lastFrame();
+      if (frame.includes('catalog/model-1') || frame.includes('Failed to load models:')) break;
+      await flush();
+    }
+
+    const frame = lastFrame();
+    expect(frame).toContain('catalog/model-1');
+    expect(frame).not.toContain('Failed to load models:');
+    unmount();
+  });
 });

@@ -91,11 +91,11 @@ export function SettingsTabSecrets({
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-start mb-2">
         <div>
-          <h3 className="text-xl font-semibold text-white mb-2 flex items-center gap-2">
-            <Shield size={20} className="text-purple-500" />
+          <h3 className="opta-studio-section-title flex items-center gap-2" style={{ marginBottom: "0.45rem" }}>
+            <Shield size={20} />
             Secrets & Vault
           </h3>
-          <p className="text-sm text-gray-400 m-0">
+          <p className="st-desc">
             Manage your API keys securely. Keys are stored in the local daemon
             keychain.
           </p>
@@ -104,7 +104,7 @@ export function SettingsTabSecrets({
           type="button"
           onClick={() => void handleSyncVault()}
           disabled={running}
-          className="flex items-center gap-2 px-3 py-1.5 bg-gray-800 text-white rounded-md text-sm border border-white/10 hover:bg-gray-700 disabled:opacity-50 transition-colors"
+          className="opta-studio-btn-secondary flex items-center gap-2"
         >
           <RefreshCw size={14} className={running ? "animate-spin" : ""} />
           Sync Vault
@@ -113,10 +113,10 @@ export function SettingsTabSecrets({
 
       {statusMsg && (
         <div
-          className={`p-3 rounded-lg border text-sm flex items-center gap-2 ${
+          className={`st-status-banner ${
             statusMsg.type === "success"
-              ? "bg-green-500/10 border-green-500/30 text-green-400"
-              : "bg-red-500/10 border-red-500/30 text-red-400"
+              ? "st-status-banner-success"
+              : "st-status-banner-error"
           }`}
         >
           {statusMsg.type === "success" ? (
@@ -130,15 +130,15 @@ export function SettingsTabSecrets({
 
       <div className="flex flex-col gap-4">
         {PROVIDERS.map((provider) => (
-          <div key={provider.id} className="bg-black/20 border border-white/10 rounded-lg p-4">
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              {provider.label}
-            </label>
+          <div key={provider.id} className="st-fieldset">
             <div className="flex gap-2">
               <div className="relative flex-1">
+                <label className="st-label">
+                  {provider.label}
+                </label>
                 <Key
                   size={16}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500"
+                  className="absolute left-3 top-[70%] -translate-y-1/2 opacity-60"
                 />
                 <input
                   type="password"
@@ -147,14 +147,16 @@ export function SettingsTabSecrets({
                     setKeys((prev) => ({ ...prev, [provider.id]: e.target.value }))
                   }
                   placeholder={provider.placeholder}
-                  className="w-full bg-black/50 border border-white/10 rounded-md py-2 pl-10 pr-4 text-sm text-white focus:outline-none focus:border-purple-500"
+                  className="st-input st-secret"
+                  style={{ paddingLeft: "2.2rem", marginTop: "0.2rem" }}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => void handleSaveKey(provider.id, keys[provider.id] || "")}
                 disabled={!(keys[provider.id] || "").trim() || running}
-                className="px-4 py-2 bg-purple-600 text-white rounded-md text-sm font-medium hover:bg-purple-500 disabled:opacity-50 transition-colors"
+                className="opta-studio-btn"
+                style={{ alignSelf: "flex-end" }}
               >
                 Save
               </button>

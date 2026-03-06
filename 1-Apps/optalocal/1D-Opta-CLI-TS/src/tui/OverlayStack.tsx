@@ -77,6 +77,7 @@ export interface OverlayStackProps {
   connectionFallbackHosts: string[];
   connectionPort: number;
   connectionAdminKey: string | undefined;
+  connectionAdminKeysByHost: Record<string, string>;
   handleModelPickerSelect: (selection: ModelSelection) => Promise<void>;
 
   // --- CommandBrowser ---
@@ -181,6 +182,7 @@ export function OverlayStack(props: OverlayStackProps): React.ReactElement | nul
             connectionFallbackHosts={props.connectionFallbackHosts}
             connectionPort={props.connectionPort}
             connectionAdminKey={props.connectionAdminKey}
+            connectionAdminKeysByHost={props.connectionAdminKeysByHost}
             onSelect={props.handleModelPickerSelect}
             onClose={props.closeOverlay}
           />

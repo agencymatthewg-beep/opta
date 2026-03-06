@@ -69,7 +69,7 @@ export async function daemonLogs(opts: DaemonCmdOptions): Promise<void> {
   const path = daemonLogsPath();
   try {
     const raw = await readFile(path, 'utf-8');
-    const lines = raw.trim().split('\n').filter(Boolean);
+    const lines = raw.trim().split(/\r?\n/).filter(Boolean);
     const tail = lines.slice(-200);
     if (opts.json) {
       const parsed = tail.map((line) => {

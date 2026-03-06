@@ -1,5 +1,6 @@
 use reqwest::Url;
 use semver::Version;
+use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::HashSet, fs, path::PathBuf, process::Stdio, time::Duration};
@@ -8,6 +9,9 @@ use thiserror::Error;
 use tokio::{io::AsyncReadExt, process::Command, time::timeout};
 use tauri::Emitter;
 use tokio::io::AsyncBufReadExt;
+
+mod lmx_mdns;
+use lmx_mdns::LmxMdnsCandidate;
 
 const CLI_COMMAND_TIMEOUT_SECS: u64 = 20;
 const CLI_DISCOVERY_TIMEOUT_SECS: u64 = 5;
@@ -2187,13 +2191,6 @@ async fn kill_daemon_job(job_id: String) -> Result<CommandOutcome, String> {
 }
 
 #[tauri::command]
-async fn restart_daemon_job(job_id: String) -> Result<CommandOutcome, String> {
-    // Restart is generally not supported as a native API unless we recreate it. For now, killing it and letting the user start a new one is standard. 
-    // Opta CLI daemon doesn't have a /v3/background/:processId/restart.
-    Err("API does not support native restart. Please kill the job and start anew.".to_string())
-}
-
-#[tauri::command]
 async fn open_url(url: String) -> Result<(), String> {
     open_http_url(&url).map_err(|error| error.to_string())
 }
@@ -2451,7 +2448,7 @@ async fn open_app_folder(app_id: String) -> Result<CommandOutcome, String> {
     Err(format!("App {} not found or not installed", app_id))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase")]
 struct OptaEnvironmentConfig {
     profile: String,
@@ -2459,11 +2456,59 @@ struct OptaEnvironmentConfig {
     docs_path: String,
 }
 
+fn opta_config_dir() -> Result<PathBuf, String> {
+    let home_dir = dirs::home_dir().ok_or_else(|| "Failed to resolve home directory".to_string())?;
+    Ok(home_dir.join(".config").join("opta"))
+}
+
+fn ensure_opta_config_dir() -> Result<PathBuf, String> {
+    let path = opta_config_dir()?;
+    fs::create_dir_all(&path).map_err(|e| format!("Failed to create config directory: {}", e))?;
+    Ok(path)
+}
+
+fn opta_init_config_path() -> Result<PathBuf, String> {
+    Ok(ensure_opta_config_dir()?.join("opta-init-config.json"))
+}
+
+fn lmx_connections_path() -> Result<PathBuf, String> {
+    Ok(ensure_opta_config_dir()?.join("lmx-connections.json"))
+}
+
+fn write_json_file<T: Serialize>(path: &PathBuf, value: &T) -> Result<(), String> {
+    let serialized = serde_json::to_string_pretty(value)
+        .map_err(|e| format!("Failed to serialize JSON: {}", e))?;
+    fs::write(path, serialized).map_err(|e| format!("Failed to write {}: {}", path.display(), e))
+}
+
+fn read_json_file_or_default<T: DeserializeOwned + Default>(path: &PathBuf) -> Result<T, String> {
+    if !path.exists() {
+        return Ok(T::default());
+    }
+    let content =
+        fs::read_to_string(path).map_err(|e| format!("Failed to read {}: {}", path.display(), e))?;
+    serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", path.display(), e))
+}
+
 #[tauri::command]
 async fn save_opta_config(config: OptaEnvironmentConfig) -> Result<(), String> {
-    println!("Saving Opta Config: {:?}", config);
-    // In a real implementation this would write to ~/.optalocal/config.json
-    Ok(())
+    let file_path = opta_init_config_path()?;
+    write_json_file(&file_path, &config)
+}
+
+#[tauri::command]
+async fn get_opta_config() -> Result<Option<OptaEnvironmentConfig>, String> {
+    let file_path = opta_init_config_path()?;
+    if !file_path.exists() {
+        return Ok(None);
+    }
+
+    let content = fs::read_to_string(&file_path)
+        .map_err(|e| format!("Failed to read {}: {}", file_path.display(), e))?;
+    let parsed: OptaEnvironmentConfig = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse {}: {}", file_path.display(), e))?;
+    Ok(Some(parsed))
 }
 
 #[tauri::command]
@@ -3161,13 +3206,168 @@ struct LmxConnectionEntry {
     label: String,
     host: String,
     port: u16,
+    #[serde(alias = "tunnel_url")]
     tunnel_url: Option<String>,
+    #[serde(alias = "last_connected_via")]
     last_connected_via: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Default)]
+#[serde(default)]
 struct LmxConnectionsFile {
     entries: Vec<LmxConnectionEntry>,
+}
+
+fn normalize_connection_source(source: &str) -> String {
+    match source.trim().to_ascii_lowercase().as_str() {
+        "mdns" => "mdns".to_string(),
+        "manual" => "manual".to_string(),
+        _ => "lan".to_string(),
+    }
+}
+
+fn upsert_lmx_connection_entry(
+    entries: &mut Vec<LmxConnectionEntry>,
+    host: String,
+    port: u16,
+    source: &str,
+    tunnel_url: Option<String>,
+) {
+    let normalized_source = normalize_connection_source(source);
+    if let Some(existing_index) = entries.iter().position(|entry| {
+        entry.host.eq_ignore_ascii_case(&host) && entry.port == port
+    })
+    {
+        let mut existing = entries.remove(existing_index);
+        existing.last_connected_via = Some(normalized_source);
+        if let Some(url) = tunnel_url {
+            existing.tunnel_url = Some(url);
+        }
+        entries.insert(0, existing);
+        return;
+    }
+
+    entries.insert(
+        0,
+        LmxConnectionEntry {
+            id: format!("{}:{}", host, port),
+            label: format!("LMX @ {}:{}", host, port),
+            host,
+            port,
+            tunnel_url,
+            last_connected_via: Some(normalized_source),
+        },
+    );
+}
+
+fn read_lmx_connections_store() -> Result<LmxConnectionsFile, String> {
+    let file_path = lmx_connections_path()?;
+    read_json_file_or_default::<LmxConnectionsFile>(&file_path)
+}
+
+fn write_lmx_connections_store(store: &LmxConnectionsFile) -> Result<(), String> {
+    let file_path = lmx_connections_path()?;
+    write_json_file(&file_path, store)
+}
+
+fn persist_lmx_connection(
+    host: String,
+    port: u16,
+    source: &str,
+    tunnel_url: Option<String>,
+) -> Result<(), String> {
+    let mut store = read_lmx_connections_store()?;
+    upsert_lmx_connection_entry(&mut store.entries, host, port, source, tunnel_url);
+    write_lmx_connections_store(&store)
+}
+
+fn is_loopback_host(host: &str) -> bool {
+    if let Ok(ip_addr) = host.parse::<std::net::IpAddr>() {
+        return ip_addr.is_loopback();
+    }
+    let normalized = host.trim().to_ascii_lowercase();
+    normalized == "localhost"
+        || normalized == "::1"
+        || normalized.starts_with("127.")
+}
+
+fn is_ipv4_host(host: &str) -> bool {
+    host.parse::<std::net::Ipv4Addr>().is_ok()
+}
+
+fn candidate_sort_rank(candidate: &LmxMdnsCandidate) -> (u8, u8, String, u16) {
+    (
+        if is_loopback_host(&candidate.host) { 1 } else { 0 },
+        if is_ipv4_host(&candidate.host) { 0 } else { 1 },
+        candidate.host.clone(),
+        candidate.port,
+    )
+}
+
+async fn probe_lmx_endpoint(host: &str, port: u16) -> bool {
+    let client = match reqwest::Client::builder()
+        .timeout(Duration::from_millis(1500))
+        .build()
+    {
+        Ok(client) => client,
+        Err(_) => return false,
+    };
+
+    let base = format!("http://{}:{}", host, port);
+    for endpoint in ["/v1/models", "/health", "/"] {
+        let url = format!("{}{}", base, endpoint);
+        if let Ok(response) = client.get(&url).send().await {
+            if response.status().is_success() {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+async fn select_best_lmx_candidate(
+    candidates: Vec<LmxMdnsCandidate>,
+) -> Option<LmxMdnsCandidate> {
+    if candidates.is_empty() {
+        return None;
+    }
+
+    let mut ordered = candidates;
+    ordered.sort_by_key(candidate_sort_rank);
+
+    for candidate in &ordered {
+        if probe_lmx_endpoint(&candidate.host, candidate.port).await {
+            return Some(candidate.clone());
+        }
+    }
+
+    ordered.into_iter().next()
+}
+
+#[tauri::command]
+async fn discover_lmx_mdns() -> Result<Vec<LmxMdnsCandidate>, String> {
+    match tauri::async_runtime::spawn_blocking(lmx_mdns::discover_lmx_mdns_blocking).await {
+        Ok(candidates) => Ok(candidates),
+        Err(_) => Ok(Vec::new()),
+    }
+}
+
+#[tauri::command]
+async fn discover_and_store_lmx_connection() -> Result<serde_json::Value, String> {
+    let discovered = discover_lmx_mdns().await?;
+    let selected = select_best_lmx_candidate(discovered)
+        .await
+        .ok_or_else(|| "No LMX mDNS candidates discovered.".to_string())?;
+
+    persist_lmx_connection(selected.host.clone(), selected.port, "mdns", None)?;
+
+    Ok(serde_json::json!({
+        "host": selected.host,
+        "port": selected.port,
+        "source": "mdns",
+        "stored": true
+    }))
 }
 
 /// Write or update the tunnel URL for an LMX entry in the shared connection store.
@@ -3178,64 +3378,13 @@ async fn write_tunnel_to_address_book(
     lmx_port: u16,
     tunnel_url: String,
 ) -> Result<(), String> {
-    let config_dir = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("~"))
-        .join(".config")
-        .join("opta");
-
-    std::fs::create_dir_all(&config_dir)
-        .map_err(|e| format!("Failed to create config dir: {}", e))?;
-
-    let file_path = config_dir.join("lmx-connections.json");
-
-    let mut store: LmxConnectionsFile = if file_path.exists() {
-        let content = std::fs::read_to_string(&file_path)
-            .map_err(|e| format!("Failed to read connections file: {}", e))?;
-        serde_json::from_str(&content).unwrap_or(LmxConnectionsFile { entries: vec![] })
-    } else {
-        LmxConnectionsFile { entries: vec![] }
-    };
-
-    let entry_id = format!("{}:{}", lmx_host, lmx_port);
-
-    if let Some(existing) = store.entries.iter_mut().find(|e| e.host == lmx_host && e.port == lmx_port) {
-        existing.tunnel_url = Some(tunnel_url);
-        existing.last_connected_via = Some("lan".to_string());
-    } else {
-        store.entries.push(LmxConnectionEntry {
-            id: entry_id,
-            label: format!("LMX @ {}:{}", lmx_host, lmx_port),
-            host: lmx_host,
-            port: lmx_port,
-            tunnel_url: Some(tunnel_url),
-            last_connected_via: Some("lan".to_string()),
-        });
-    }
-
-    let json = serde_json::to_string_pretty(&store)
-        .map_err(|e| format!("Failed to serialize connections: {}", e))?;
-    std::fs::write(&file_path, json)
-        .map_err(|e| format!("Failed to write connections file: {}", e))?;
-
-    Ok(())
+    persist_lmx_connection(lmx_host, lmx_port, "lan", Some(tunnel_url))
 }
 
 /// Return the stored LMX host/port from shared config (if set by the wizard).
 #[tauri::command]
 async fn get_lmx_connection() -> Result<serde_json::Value, String> {
-    let file_path = dirs::home_dir()
-        .unwrap_or_else(|| std::path::PathBuf::from("~"))
-        .join(".config")
-        .join("opta")
-        .join("lmx-connections.json");
-
-    if !file_path.exists() {
-        return Ok(serde_json::json!({}));
-    }
-
-    let content = std::fs::read_to_string(&file_path).map_err(|e| e.to_string())?;
-    let store: LmxConnectionsFile = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-
+    let store = read_lmx_connections_store()?;
     if let Some(entry) = store.entries.first() {
         Ok(serde_json::json!({ "host": entry.host, "port": entry.port, "tunnelUrl": entry.tunnel_url }))
     } else {
@@ -4883,6 +5032,66 @@ async fn install_local_ai_brain(
     }))
 }
 
+#[cfg(test)]
+mod tests {
+    use super::{upsert_lmx_connection_entry, LmxConnectionEntry};
+
+    #[test]
+    fn upsert_lmx_connection_inserts_at_front_with_source() {
+        let mut entries = vec![];
+        upsert_lmx_connection_entry(
+            &mut entries,
+            "192.168.1.50".to_string(),
+            1234,
+            "mdns",
+            None,
+        );
+
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].host, "192.168.1.50");
+        assert_eq!(entries[0].port, 1234);
+        assert_eq!(entries[0].last_connected_via.as_deref(), Some("mdns"));
+    }
+
+    #[test]
+    fn upsert_lmx_connection_updates_existing_and_preserves_tunnel_when_none() {
+        let mut entries = vec![
+            LmxConnectionEntry {
+                id: "10.0.0.8:1234".to_string(),
+                label: "LMX @ 10.0.0.8:1234".to_string(),
+                host: "10.0.0.8".to_string(),
+                port: 1234,
+                tunnel_url: Some("https://example.trycloudflare.com".to_string()),
+                last_connected_via: Some("manual".to_string()),
+            },
+            LmxConnectionEntry {
+                id: "10.0.0.9:1234".to_string(),
+                label: "LMX @ 10.0.0.9:1234".to_string(),
+                host: "10.0.0.9".to_string(),
+                port: 1234,
+                tunnel_url: None,
+                last_connected_via: Some("lan".to_string()),
+            },
+        ];
+
+        upsert_lmx_connection_entry(
+            &mut entries,
+            "10.0.0.8".to_string(),
+            1234,
+            "mdns",
+            None,
+        );
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].host, "10.0.0.8");
+        assert_eq!(
+            entries[0].tunnel_url.as_deref(),
+            Some("https://example.trycloudflare.com")
+        );
+        assert_eq!(entries[0].last_connected_via.as_deref(), Some("mdns"));
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 fn main() {
     tauri::Builder::default()
@@ -4902,13 +5111,13 @@ fn main() {
             daemon_stop,
             fetch_daemon_jobs,
             kill_daemon_job,
-            restart_daemon_job,
             open_url,
             check_manager_update,
             install_manager_update,
             check_dependency_status,
             install_dependency,
             save_opta_config,
+            get_opta_config,
             get_account_status,
             trigger_login,
             trigger_logout,
@@ -4917,6 +5126,8 @@ fn main() {
             provision_cloudflared_tunnel,
             write_tunnel_to_address_book,
             get_lmx_connection,
+            discover_lmx_mdns,
+            discover_and_store_lmx_connection,
             bootstrap_zero_touch_install,
             enable_opta_anywhere,
             detect_brain_eligibility,

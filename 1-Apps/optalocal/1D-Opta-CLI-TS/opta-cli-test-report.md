@@ -1,4 +1,54 @@
 
+## Session — 2026-03-06 (04:00 AEST) Overnight Opta CLI Debug Session
+
+### Executive Summary
+- Removed TUI-side stdout thinking writes to eliminate cursor shake/ANSI churn while streaming.
+- Throttled live thinking updates (40ms flush) and fixed offline startup gating so slash diagnostics remain available while normal prompts are blocked.
+- Confirmed LMX model load and benchmarked MiniMax M2.5 4b (Avg 39.0 tok/s, 830ms TTFT).
+- Tool-calling end-to-end verified via `opta do` run_command (pwd); local agent loop succeeded but CLI process lingered after completion (manual terminate).
+- Opus TUI launch attempted; failed due to HF auth/invalid repo_id (`opus`) and triggered max update depth warning (needs follow-up).
+
+### Changes Made
+1. **Thinking stream stability**
+   - Files: `src/ui/thinking.ts`, `src/core/agent-streaming.ts`
+   - Added `enableTerminalOutput` to suppress stdout writes when TUI streaming callbacks are active.
+   - Impact: eliminates cursor shake in TUI mode.
+
+2. **TUI responsiveness + offline gating**
+   - Files: `src/tui/hooks/useStreamingEvents.ts`, `src/tui/App.tsx`, `src/tui/hooks/useSubmitHandler.ts`
+   - Throttled thinking text updates (40ms flush) to reduce re-render jitter.
+   - Offline startup notice persists until connection recovery.
+   - Offline prompts blocked in submit handler while keeping `/` commands + shell available.
+   - Impact: smoother streaming and offline diagnostics remain usable.
+
+### Tests Run (This Session)
+- `npm run test:tui` ✅ 396/396
+
+### LMX / Opus / Tooling Validation
+- `opta status` ✅ (LMX OK)
+- `opta models list` ✅
+- `opta models load mlx-community/MiniMax-M2.5-4bit` ✅ (already loaded)
+- `opta models benchmark mlx-community/MiniMax-M2.5-4bit` ✅
+  - Avg tok/s 39.0 · Avg TTFT 830ms · Backend mlx
+- Tool calling: `opta do "Use run_command to execute: pwd..." --device Mono512.local:1234 --dangerous`
+  - `run_command` executed, returned OK. Process did not exit cleanly after completion (manual terminate).
+- Response completeness: `opta do "Write exactly 60 words..." --device Mono512.local:1234`
+  - Full response returned, no truncation warning; LMX reconnect warnings observed; process lingered (manual terminate).
+- Opus TUI launch: `opta tui --model opus` ❌
+  - HF 401 / repo not found for `opus` + admin key rejection.
+  - Repeated "Maximum update depth exceeded" warning in TUI render loop.
+
+### Blockers / Risks
+- `opta do` processes linger after completion when using local agent loop (needs investigation).
+- Opus model ID invalid for LMX download; requires correct repo_id + auth.
+
+### Files Modified This Session
+- `src/ui/thinking.ts`
+- `src/core/agent-streaming.ts`
+- `src/tui/hooks/useStreamingEvents.ts`
+- `src/tui/App.tsx`
+- `src/tui/hooks/useSubmitHandler.ts`
+
 ## Session — 2026-03-04 (04:00 AEST) Overnight Debug Continuation
 
 ### Executive Summary

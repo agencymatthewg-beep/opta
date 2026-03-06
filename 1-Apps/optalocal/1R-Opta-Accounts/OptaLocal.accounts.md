@@ -22,7 +22,8 @@ Purpose: simple integration source-of-truth for `accounts.optalocal.com`.
   - Redirect allowlist (`src/lib/allowed-redirects.ts`)
   - Middleware session refresh (`middleware.ts`)
   - OAuth callback exchange (`/auth/callback`)
-  - CLI token relay (`/cli/callback` to `127.0.0.1:<port>`)
+  - CLI token relay (`/cli/callback` issues short-lived `exchange_code`, then CLI calls `/api/cli/exchange`)
+  - Durable replay nonce store (`accounts_cli_replay_nonces`) for one-time handoff + exchange enforcement across instances
 
 ### Canonical Auth Spec
 - App/spec: `1N-Opta-Cloud-Accounts` (non-buildable, canonical contracts)
@@ -85,6 +86,7 @@ Can use more (recommended):
 ## E. Opta CLI Integration
 - [ ] CLI sign-in flow opens Accounts portal
 - [ ] CLI callback state verification active
+- [ ] CLI exchange-code flow active (`/cli/callback` -> `/api/cli/exchange`)
 - [ ] Account session stored securely (keychain/local secure storage)
 - [ ] Account -> CLI settings sync (model/fallback/autonomy profile)
 
@@ -104,6 +106,7 @@ Can use more (recommended):
 - [ ] Typecheck + lint + build pass for 1P
 - [ ] Auth callback smoke test (OAuth + password)
 - [ ] CLI callback test (valid/invalid state, valid/invalid port)
+- [ ] Durable replay table exists (`accounts_cli_replay_nonces`) and strict mode path verified
 - [ ] Cross-subdomain SSO smoke test
 - [ ] Logout smoke test across apps
 
@@ -136,6 +139,11 @@ Policy:
 Owner: Matthew + Opta
 Status: In progress
 
+### CLI Replay Hardening Knobs
+- `OPTA_CLI_REQUIRE_DURABLE_REPLAY=1`: requires durable nonce writes during handoff/exchange consume paths.
+- `OPTA_CLI_REPLAY_PRUNE_INTERVAL_MS`: optional durable replay cleanup cadence (default 300000 ms).
+- Durable mode requires service-role DB credentials (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` or `SUPABASE_SERVICE_ROLE_KEY`).
+
 ---
 
 ## 6) Supabase Health Gate (must pass)
@@ -146,7 +154,12 @@ Run and verify:
   - `services.rest.ok = true`
   - `services.storage.ok = true`
   - `schemaReady = true`
-  - tables present: `accounts_*`, `api_keys`, `credentials`
+  - tables present: legacy account tables + control-plane tables (`accounts_pairing_sessions`, `accounts_bridge_tokens`, `accounts_device_commands`, `accounts_cli_replay_nonces`) plus `api_keys` and `credentials`
+  - `controlPlane.ready = true`
+  - `controlPlane.views.accounts_device_command_queue_health.present = true`
+  - `controlPlane.functions.cleanup_control_plane_data.present = true`
+  - `controlPlane.functions.claim_device_commands_for_delivery.present = true`
+  - optional extension objects (for example `pg_cron` schedules) are not required for readiness
 - Release log references `docs/operations/SUPABASE-AUTOMATION.md` before any production deploy
 
 If `schemaReady=false`:

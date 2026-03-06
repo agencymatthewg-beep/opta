@@ -20,13 +20,23 @@ export class AnthropicProvider implements ProviderClient {
   readonly name = 'anthropic';
   private client: import('openai').default | null = null;
   private config: OptaConfig;
+  private customOpts?: { baseURL?: string; apiKey?: string };
 
-  constructor(config: OptaConfig) {
+  constructor(config: OptaConfig, customOpts?: { baseURL?: string; apiKey?: string }) {
     this.config = config;
+    this.customOpts = customOpts;
   }
 
   private async resolveApiKey(): Promise<{ apiKey: string; source: ProviderKeySource }> {
+    if (this.customOpts?.apiKey?.trim()) {
+      return { apiKey: this.customOpts.apiKey.trim(), source: 'env' };
+    }
     return resolveProviderApiKey(this.config, 'anthropic');
+  }
+
+  private allowsMissingApiKey(): boolean {
+    const baseUrl = this.customOpts?.baseURL?.toLowerCase() ?? '';
+    return baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
   }
 
   async getClient(): Promise<import('openai').default> {
@@ -35,7 +45,7 @@ export class AnthropicProvider implements ProviderClient {
     const { default: OpenAI } = await import('openai');
     const { apiKey } = await this.resolveApiKey();
 
-    if (!apiKey) {
+    if (!apiKey && !this.allowsMissingApiKey()) {
       const envHints = providerEnvVarNames('anthropic')
         .map((envVar) => `export ${envVar}=sk-ant-...`)
         .join('\n  or ');
@@ -49,10 +59,12 @@ export class AnthropicProvider implements ProviderClient {
       );
     }
 
+    const baseURL = this.customOpts?.baseURL?.trim() || 'https://api.anthropic.com/v1/';
+
     // Use Anthropic's OpenAI-compatible endpoint
     this.client = instantiateOrInvoke<import('openai').default>(OpenAI, {
-      baseURL: 'https://api.anthropic.com/v1/',
-      apiKey,
+      baseURL,
+      apiKey: apiKey || 'dummy-key-for-local',
       defaultHeaders: {
         'anthropic-version': '2023-06-01',
       },
@@ -73,7 +85,7 @@ export class AnthropicProvider implements ProviderClient {
     const start = Date.now();
     const { apiKey, source } = await this.resolveApiKey();
 
-    if (!apiKey) {
+    if (!apiKey && !this.allowsMissingApiKey()) {
       return {
         ok: false,
         latencyMs: Date.now() - start,
@@ -82,7 +94,7 @@ export class AnthropicProvider implements ProviderClient {
       };
     }
 
-    if (!apiKey.startsWith('sk-ant-') && !apiKey.startsWith('sk-')) {
+    if (apiKey && !apiKey.startsWith('sk-ant-') && !apiKey.startsWith('sk-')) {
       const sourceLabel = source === 'none' ? 'resolved key' : `${source} key`;
       return {
         ok: false,
@@ -92,12 +104,13 @@ export class AnthropicProvider implements ProviderClient {
     }
 
     try {
+      const baseUrl = (this.customOpts?.baseURL?.trim() || 'https://api.anthropic.com/v1/').replace(/\/+$/, '');
       // Use GET /v1/models — lightweight connectivity + auth check with zero token spend.
       // (The previous POST to /v1/messages cost tokens on every health probe.)
-      const res = await fetch('https://api.anthropic.com/v1/models', {
+      const res = await fetch(`${baseUrl}/models`, {
         method: 'GET',
         headers: {
-          'x-api-key': apiKey,
+          ...(apiKey ? { 'x-api-key': apiKey } : {}),
           'anthropic-version': '2023-06-01',
         },
         signal: AbortSignal.timeout(10000),

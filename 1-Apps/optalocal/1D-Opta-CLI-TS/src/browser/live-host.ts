@@ -15,6 +15,7 @@ import {
   peekabooClickLabel,
   peekabooPressKey,
   peekabooTypeText,
+  redactPeekabooSensitiveText,
 } from './peekaboo.js';
 
 const LOCALHOST_BIND = '127.0.0.1';
@@ -27,6 +28,8 @@ const DEFAULT_REQUIRED_PORT_COUNT = 6;
 const DEFAULT_MAX_SESSION_SLOTS = 5;
 const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 const PEEKABOO_FRAME_CACHE_MS = 500;
+const PEEKABOO_TELEMETRY_PREFIX = '[peekaboo.telemetry]';
+const PEEKABOO_MAX_LOG_TEXT_CHARS = 600;
 const LOOPBACK_HOSTS = new Set(['127.0.0.1', '::1', 'localhost']);
 
 export interface BrowserLiveHostStartOptions {
@@ -54,6 +57,27 @@ export interface BrowserLiveHostSlotStatus {
   updatedAt?: string;
 }
 
+export interface PeekabooActionMetricCounters {
+  total: number;
+  clickLabel: number;
+  type: number;
+  key: number;
+}
+
+export interface PeekabooTelemetryMetrics {
+  queueDepth: number;
+  maxQueueDepth: number;
+  jobsEnqueued: number;
+  jobsCompleted: number;
+  jobsFailed: number;
+  frameRequests: number;
+  frameCacheHits: number;
+  frameCaptureFailures: number;
+  actionRequests: PeekabooActionMetricCounters;
+  actionFailures: PeekabooActionMetricCounters;
+  lastFailureAt?: string;
+}
+
 export interface BrowserLiveHostStatus {
   running: boolean;
   host: string;
@@ -68,6 +92,7 @@ export interface BrowserLiveHostStatus {
   screenActionsEnabled: boolean;
   openSessionCount: number;
   slots: BrowserLiveHostSlotStatus[];
+  peekabooMetrics: PeekabooTelemetryMetrics;
 }
 
 interface BrowserLiveHostRuntime {
@@ -86,6 +111,7 @@ interface BrowserLiveHostRuntime {
   slotServers: HttpServer[];
   screenAuthToken?: string;
   peekabooJobChain: Promise<void>;
+  peekabooMetrics: PeekabooTelemetryMetrics;
   peekabooFrameCache?: {
     capturedAtMs: number;
     image: Buffer;
@@ -96,6 +122,15 @@ interface ScreenActionBody {
   label?: string;
   text?: string;
   key?: string;
+}
+
+type ScreenActionName = 'click-label' | 'type' | 'key';
+
+interface PeekabooJobTelemetry {
+  job: string;
+  category: 'action' | 'frame';
+  action?: ScreenActionName;
+  context?: Record<string, unknown>;
 }
 
 let sharedLiveHost: BrowserLiveHostRuntime | null = null;
@@ -130,6 +165,121 @@ function toSafeString(value: unknown): string {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean') return String(value);
   return '';
+}
+
+function createActionCounters(): PeekabooActionMetricCounters {
+  return {
+    total: 0,
+    clickLabel: 0,
+    type: 0,
+    key: 0,
+  };
+}
+
+function createPeekabooMetrics(): PeekabooTelemetryMetrics {
+  return {
+    queueDepth: 0,
+    maxQueueDepth: 0,
+    jobsEnqueued: 0,
+    jobsCompleted: 0,
+    jobsFailed: 0,
+    frameRequests: 0,
+    frameCacheHits: 0,
+    frameCaptureFailures: 0,
+    actionRequests: createActionCounters(),
+    actionFailures: createActionCounters(),
+  };
+}
+
+function clonePeekabooMetrics(metrics: PeekabooTelemetryMetrics): PeekabooTelemetryMetrics {
+  return {
+    queueDepth: metrics.queueDepth,
+    maxQueueDepth: metrics.maxQueueDepth,
+    jobsEnqueued: metrics.jobsEnqueued,
+    jobsCompleted: metrics.jobsCompleted,
+    jobsFailed: metrics.jobsFailed,
+    frameRequests: metrics.frameRequests,
+    frameCacheHits: metrics.frameCacheHits,
+    frameCaptureFailures: metrics.frameCaptureFailures,
+    actionRequests: { ...metrics.actionRequests },
+    actionFailures: { ...metrics.actionFailures },
+    lastFailureAt: metrics.lastFailureAt,
+  };
+}
+
+function counterKeyForAction(action: ScreenActionName): keyof Omit<PeekabooActionMetricCounters, 'total'> {
+  if (action === 'click-label') return 'clickLabel';
+  return action;
+}
+
+function incrementActionCounter(counters: PeekabooActionMetricCounters, action: ScreenActionName): void {
+  counters.total += 1;
+  counters[counterKeyForAction(action)] += 1;
+}
+
+function sanitizeTelemetryText(value: string): string {
+  const redacted = redactPeekabooSensitiveText(value);
+  if (redacted.length <= PEEKABOO_MAX_LOG_TEXT_CHARS) {
+    return redacted;
+  }
+  return `${redacted.slice(0, PEEKABOO_MAX_LOG_TEXT_CHARS)}…`;
+}
+
+function sanitizeTelemetryValue(value: unknown, depth = 0): unknown {
+  if (depth > 4) return '[TRUNCATED]';
+  if (typeof value === 'string') return sanitizeTelemetryText(value);
+  if (typeof value === 'number' || typeof value === 'boolean' || value === null || value === undefined) {
+    return value;
+  }
+  if (value instanceof Error) {
+    const maybeRecord = value as Error & Record<string, unknown>;
+    return {
+      name: value.name,
+      message: sanitizeTelemetryText(value.message),
+      stdout: sanitizeTelemetryValue(maybeRecord['stdout'], depth + 1),
+      stderr: sanitizeTelemetryValue(maybeRecord['stderr'], depth + 1),
+      exitCode: sanitizeTelemetryValue(maybeRecord['exitCode'], depth + 1),
+      signal: sanitizeTelemetryValue(maybeRecord['signal'], depth + 1),
+      timedOut: sanitizeTelemetryValue(maybeRecord['timedOut'], depth + 1),
+    };
+  }
+  if (Array.isArray(value)) {
+    return value.slice(0, 20).map((item) => sanitizeTelemetryValue(item, depth + 1));
+  }
+  if (typeof value === 'object') {
+    const entries = Object.entries(value as Record<string, unknown>).slice(0, 30);
+    const result: Record<string, unknown> = {};
+    for (const [key, entryValue] of entries) {
+      result[key] = sanitizeTelemetryValue(entryValue, depth + 1);
+    }
+    return result;
+  }
+  return sanitizeTelemetryText(String(value));
+}
+
+type PeekabooLogLevel = 'info' | 'warn' | 'error';
+
+function logPeekabooTelemetry(
+  level: PeekabooLogLevel,
+  event: string,
+  payload: Record<string, unknown>,
+): void {
+  const sanitizedPayload = sanitizeTelemetryValue(payload);
+  const record = {
+    ts: new Date().toISOString(),
+    event,
+    ...(typeof sanitizedPayload === 'object' && sanitizedPayload ? sanitizedPayload : {}),
+  };
+  const line = `${PEEKABOO_TELEMETRY_PREFIX} ${JSON.stringify(record)}`;
+  if (level === 'error') {
+    console.error(line);
+    return;
+  }
+  if (level === 'warn') {
+    console.warn(line);
+    return;
+  }
+  console.info(line);
 }
 
 function htmlEscape(value: string): string {
@@ -382,6 +532,7 @@ async function buildRuntimeStatus(runtime: BrowserLiveHostRuntime): Promise<Brow
     screenActionsEnabled: areScreenActionsEnabled(runtime.config),
     openSessionCount: sortedOpenSessions(health).length,
     slots: resolveSlots(runtime, health),
+    peekabooMetrics: clonePeekabooMetrics(runtime.peekabooMetrics),
   };
 }
 
@@ -666,42 +817,158 @@ async function handleScreenAction(
   runtime: BrowserLiveHostRuntime,
   req: IncomingMessage,
   res: ServerResponse,
-  action: 'click-label' | 'type' | 'key',
+  action: ScreenActionName,
 ): Promise<void> {
-  const body = await readJsonBody(req) as ScreenActionBody;
-  if (action === 'click-label') {
-    const label = toSafeString(body.label).trim();
-    if (!label) {
-      throw new HttpError(422, 'label must be non-empty.');
-    }
-    await enqueuePeekabooJob(runtime, () => peekabooClickLabel(label));
-    writeJson(res, 200, { ok: true, action, label });
-    return;
-  }
+  const startedAtMs = Date.now();
+  incrementActionCounter(runtime.peekabooMetrics.actionRequests, action);
 
-  if (action === 'type') {
-    const text = toSafeString(body.text);
-    if (!text.trim()) {
-      throw new HttpError(422, 'text must be non-empty.');
+  try {
+    const body = await readJsonBody(req) as ScreenActionBody;
+    if (action === 'click-label') {
+      const label = toSafeString(body.label).trim();
+      if (!label) {
+        throw new HttpError(422, 'label must be non-empty.');
+      }
+      await enqueuePeekabooJob(
+        runtime,
+        {
+          job: 'screen.action.click-label',
+          category: 'action',
+          action,
+          context: { labelLength: label.length },
+        },
+        () => peekabooClickLabel(label),
+      );
+      writeJson(res, 200, { ok: true, action, label });
+      logPeekabooTelemetry('info', 'peekaboo.screen_action.succeeded', {
+        action,
+        durationMs: Date.now() - startedAtMs,
+      });
+      return;
     }
-    await enqueuePeekabooJob(runtime, () => peekabooTypeText(text));
-    writeJson(res, 200, { ok: true, action, chars: text.length });
-    return;
-  }
 
-  const key = toSafeString(body.key).trim();
-  if (!key) {
-    throw new HttpError(422, 'key must be non-empty.');
+    if (action === 'type') {
+      const text = toSafeString(body.text);
+      if (!text.trim()) {
+        throw new HttpError(422, 'text must be non-empty.');
+      }
+      await enqueuePeekabooJob(
+        runtime,
+        {
+          job: 'screen.action.type',
+          category: 'action',
+          action,
+          context: { chars: text.length },
+        },
+        () => peekabooTypeText(text),
+      );
+      writeJson(res, 200, { ok: true, action, chars: text.length });
+      logPeekabooTelemetry('info', 'peekaboo.screen_action.succeeded', {
+        action,
+        durationMs: Date.now() - startedAtMs,
+      });
+      return;
+    }
+
+    const key = toSafeString(body.key).trim();
+    if (!key) {
+      throw new HttpError(422, 'key must be non-empty.');
+    }
+    await enqueuePeekabooJob(
+      runtime,
+      {
+        job: 'screen.action.key',
+        category: 'action',
+        action,
+        context: { keyLength: key.length },
+      },
+      () => peekabooPressKey(key),
+    );
+    writeJson(res, 200, { ok: true, action, key });
+    logPeekabooTelemetry('info', 'peekaboo.screen_action.succeeded', {
+      action,
+      durationMs: Date.now() - startedAtMs,
+    });
+  } catch (error) {
+    incrementActionCounter(runtime.peekabooMetrics.actionFailures, action);
+    runtime.peekabooMetrics.lastFailureAt = new Date().toISOString();
+    logPeekabooTelemetry(error instanceof HttpError ? 'warn' : 'error', 'peekaboo.screen_action.failed', {
+      action,
+      durationMs: Date.now() - startedAtMs,
+      error,
+    });
+    throw error;
   }
-  await enqueuePeekabooJob(runtime, () => peekabooPressKey(key));
-  writeJson(res, 200, { ok: true, action, key });
 }
 
 async function enqueuePeekabooJob<T>(
   runtime: BrowserLiveHostRuntime,
+  telemetry: PeekabooJobTelemetry,
   task: () => Promise<T>,
 ): Promise<T> {
-  const runTask = async (): Promise<T> => task();
+  const metrics = runtime.peekabooMetrics;
+  const enqueuedAtMs = Date.now();
+  metrics.jobsEnqueued += 1;
+  metrics.queueDepth += 1;
+  metrics.maxQueueDepth = Math.max(metrics.maxQueueDepth, metrics.queueDepth);
+
+  const queueDepthAtEnqueue = metrics.queueDepth;
+  logPeekabooTelemetry(
+    queueDepthAtEnqueue > 1 ? 'warn' : 'info',
+    'peekaboo.queue.enqueued',
+    {
+      job: telemetry.job,
+      category: telemetry.category,
+      action: telemetry.action,
+      queueDepth: queueDepthAtEnqueue,
+      maxQueueDepth: metrics.maxQueueDepth,
+      context: telemetry.context ?? {},
+    },
+  );
+
+  const runTask = async (): Promise<T> => {
+    const waitMs = Date.now() - enqueuedAtMs;
+    const startedAtMs = Date.now();
+    logPeekabooTelemetry('info', 'peekaboo.queue.started', {
+      job: telemetry.job,
+      category: telemetry.category,
+      action: telemetry.action,
+      queueDepth: metrics.queueDepth,
+      waitMs,
+    });
+
+    try {
+      const result = await task();
+      metrics.jobsCompleted += 1;
+      logPeekabooTelemetry('info', 'peekaboo.queue.completed', {
+        job: telemetry.job,
+        category: telemetry.category,
+        action: telemetry.action,
+        waitMs,
+        durationMs: Date.now() - startedAtMs,
+      });
+      return result;
+    } catch (error) {
+      metrics.jobsFailed += 1;
+      metrics.lastFailureAt = new Date().toISOString();
+      logPeekabooTelemetry('error', 'peekaboo.queue.failed', {
+        job: telemetry.job,
+        category: telemetry.category,
+        action: telemetry.action,
+        waitMs,
+        durationMs: Date.now() - startedAtMs,
+        error,
+      });
+      throw error;
+    } finally {
+      metrics.queueDepth = Math.max(0, metrics.queueDepth - 1);
+      logPeekabooTelemetry('info', 'peekaboo.queue.depth', {
+        queueDepth: metrics.queueDepth,
+        maxQueueDepth: metrics.maxQueueDepth,
+      });
+    }
+  };
+
   const resultPromise = runtime.peekabooJobChain.then(runTask, runTask);
   runtime.peekabooJobChain = resultPromise.then(
     () => undefined,
@@ -711,9 +978,14 @@ async function enqueuePeekabooJob<T>(
 }
 
 async function getPeekabooFrame(runtime: BrowserLiveHostRuntime): Promise<Buffer> {
+  runtime.peekabooMetrics.frameRequests += 1;
   const now = Date.now();
   const cached = runtime.peekabooFrameCache;
   if (cached && now - cached.capturedAtMs < PEEKABOO_FRAME_CACHE_MS) {
+    runtime.peekabooMetrics.frameCacheHits += 1;
+    logPeekabooTelemetry('info', 'peekaboo.frame.cache_hit', {
+      ageMs: now - cached.capturedAtMs,
+    });
     return cached.image;
   }
 
@@ -722,12 +994,31 @@ async function getPeekabooFrame(runtime: BrowserLiveHostRuntime): Promise<Buffer
   const appName = runtime.config.computerControl.foreground.enabled
     ? PLAYWRIGHT_BROWSER_APP_NAME
     : undefined;
-  const image = await enqueuePeekabooJob(runtime, () => capturePeekabooScreenPng(appName));
-  runtime.peekabooFrameCache = {
-    capturedAtMs: now,
-    image,
-  };
-  return image;
+
+  try {
+    const image = await enqueuePeekabooJob(
+      runtime,
+      {
+        job: 'screen.frame.capture',
+        category: 'frame',
+        context: { appName: appName ?? 'all-windows' },
+      },
+      () => capturePeekabooScreenPng(appName),
+    );
+    runtime.peekabooFrameCache = {
+      capturedAtMs: now,
+      image,
+    };
+    return image;
+  } catch (error) {
+    runtime.peekabooMetrics.frameCaptureFailures += 1;
+    runtime.peekabooMetrics.lastFailureAt = new Date().toISOString();
+    logPeekabooTelemetry('error', 'peekaboo.frame.capture_failed', {
+      appName: appName ?? 'all-windows',
+      error,
+    });
+    throw error;
+  }
 }
 
 function createSlotServer(runtime: BrowserLiveHostRuntime, slotIndex: number): HttpServer {
@@ -783,9 +1074,9 @@ function createSlotServer(runtime: BrowserLiveHostRuntime, slotIndex: number): H
 function createControlServer(runtime: BrowserLiveHostRuntime): HttpServer {
   return createHttpServer((req, res) => {
     void (async (): Promise<void> => {
+      let path = '/';
       try {
-        const path = urlPath(req);
-
+        path = urlPath(req);
         if (path === '/api/status') {
           writeJson(res, 200, await buildRuntimeStatus(runtime));
           return;
@@ -840,11 +1131,26 @@ function createControlServer(runtime: BrowserLiveHostRuntime): HttpServer {
         writeHtml(res, renderControlHtml(await buildRuntimeStatus(runtime)));
       } catch (error) {
         if (error instanceof HttpError) {
+          if (path.startsWith('/api/screen')) {
+            logPeekabooTelemetry('warn', 'peekaboo.screen_request.http_error', {
+              method: req.method ?? 'UNKNOWN',
+              path,
+              statusCode: error.statusCode,
+              message: error.message,
+            });
+          }
           writeJson(res, error.statusCode, {
             ok: false,
             error: error.message,
           });
           return;
+        }
+        if (path.startsWith('/api/screen')) {
+          logPeekabooTelemetry('error', 'peekaboo.screen_request.unhandled_error', {
+            method: req.method ?? 'UNKNOWN',
+            path,
+            error,
+          });
         }
         writeJson(res, 500, {
           ok: false,
@@ -866,6 +1172,9 @@ async function listenServer(server: HttpServer, host: string, port: number): Pro
 }
 
 function makeStoppedStatus(runtime?: BrowserLiveHostRuntime): BrowserLiveHostStatus {
+  const metrics = runtime ? clonePeekabooMetrics(runtime.peekabooMetrics) : createPeekabooMetrics();
+  metrics.queueDepth = 0;
+
   return {
     running: false,
     host: runtime?.host ?? LOCALHOST_BIND,
@@ -883,6 +1192,7 @@ function makeStoppedStatus(runtime?: BrowserLiveHostRuntime): BrowserLiveHostSta
         port,
       }))
       : [],
+    peekabooMetrics: metrics,
   };
 }
 
@@ -1006,6 +1316,7 @@ export async function startBrowserLiveHost(
       slotServers: [],
       screenAuthToken: randomBytes(24).toString('hex'),
       peekabooJobChain: Promise.resolve(),
+      peekabooMetrics: createPeekabooMetrics(),
     };
 
     runtime.controlServer = createControlServer(runtime);

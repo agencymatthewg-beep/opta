@@ -1,11 +1,15 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
+import type { GetOptaConfigResult, OptaConfig } from '../types';
 import './SetupWizard.css';
 
 export interface SetupWizardProps {
     onComplete: () => void;
 }
+
+const SETUP_COMPLETE_KEY = 'init_setup_complete';
+const SETUP_CONFIG_CACHE_KEY = 'opta_init_setup_config_v1';
 
 type WizardPlatform = 'windows' | 'macos' | 'linux';
 
@@ -30,6 +34,32 @@ function defaultPaths(platform: WizardPlatform): { installPath: string; docsPath
     };
 }
 
+function normalizeProfile(profile: unknown): 'workstation' | 'host' {
+    return profile === 'host' ? 'host' : 'workstation';
+}
+
+function parseCachedConfig(): OptaConfig | null {
+    if (typeof window === 'undefined') return null;
+    const raw = window.localStorage.getItem(SETUP_CONFIG_CACHE_KEY);
+    if (!raw) return null;
+    try {
+        const parsed = JSON.parse(raw) as OptaConfig;
+        return parsed && typeof parsed === 'object' ? parsed : null;
+    } catch {
+        return null;
+    }
+}
+
+function normalizeOptaConfig(payload: unknown): OptaConfig | null {
+    if (!payload || typeof payload !== 'object') return null;
+    const value = payload as Record<string, unknown>;
+    const nested = value.config;
+    if (nested && typeof nested === 'object') {
+        return nested as OptaConfig;
+    }
+    return value as OptaConfig;
+}
+
 export function SetupWizard({ onComplete }: SetupWizardProps) {
     const platform = detectPlatform();
     const defaults = defaultPaths(platform);
@@ -50,6 +80,43 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
         lmx: { installed: false, installing: false },
         code: { installed: false, installing: false }
     });
+
+    useEffect(() => {
+        const applyConfig = (config: OptaConfig) => {
+            if (!config) return;
+            if (typeof config.profile === 'string') {
+                setProfile(normalizeProfile(config.profile));
+            }
+            if (typeof config.installPath === 'string' && config.installPath.trim().length > 0) {
+                setInstallPath(config.installPath);
+            }
+            if (typeof config.docsPath === 'string' && config.docsPath.trim().length > 0) {
+                setDocsPath(config.docsPath);
+            }
+        };
+
+        const cachedConfig = parseCachedConfig();
+        if (cachedConfig) {
+            applyConfig(cachedConfig);
+        }
+
+        let cancelled = false;
+        const loadFromBackend = async () => {
+            try {
+                const result = await invoke<GetOptaConfigResult | OptaConfig>('get_opta_config');
+                if (cancelled) return;
+                const normalized = normalizeOptaConfig(result);
+                if (normalized) {
+                    applyConfig(normalized);
+                }
+            } catch {
+                // Command may not exist yet; keep cached/default values.
+            }
+        };
+
+        void loadFromBackend();
+        return () => { cancelled = true; };
+    }, []);
 
     useEffect(() => {
         const unlisten = listen("cmd-progress", (event) => {
@@ -84,16 +151,30 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
     const handleComplete = async () => {
+        const configPayload = {
+            profile,
+            installPath,
+            docsPath,
+            setupComplete: true,
+            completed: true,
+        };
+
+        const persistLocalCompletion = () => {
+            if (typeof window === 'undefined') return;
+            window.localStorage.setItem(SETUP_COMPLETE_KEY, 'true');
+            window.localStorage.setItem(SETUP_CONFIG_CACHE_KEY, JSON.stringify(configPayload));
+        };
+
         try {
             await invoke("save_opta_config", {
                 config: { profile, installPath, docsPath }
             });
-            localStorage.setItem('init_setup_complete', 'true');
+            persistLocalCompletion();
             onComplete();
         } catch (e) {
             console.error("Failed to save config:", e);
-            // Fallback
-            localStorage.setItem('init_setup_complete', 'true');
+            // Fallback to local persistence so first-run flow cannot get stuck.
+            persistLocalCompletion();
             onComplete();
         }
     };

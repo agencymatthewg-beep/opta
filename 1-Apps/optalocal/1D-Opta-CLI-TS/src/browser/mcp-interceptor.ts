@@ -8,6 +8,24 @@ import { appendBrowserApprovalEvent } from './approval-log.js';
 import type { BrowserPolicyAdaptationHint } from './adaptation.js';
 import { classifyBrowserRetryTaxonomy } from './retry-taxonomy.js';
 import { isScreenshotResult, compressBrowserScreenshot, type ScreenshotCompressOptions } from './screenshot-compress.js';
+import {
+  appendBrowserSessionStep,
+  appendBrowserVisualDiffManifestEntry,
+  appendBrowserVisualDiffResultEntry,
+  writeBrowserArtifact,
+} from './artifacts.js';
+import {
+  assessVisualDiffPair,
+  inferVisualDiffRegression,
+  inferVisualDiffSeverity,
+} from './visual-diff.js';
+import type {
+  BrowserActionType,
+  BrowserSessionStepRecord,
+  BrowserVisualDiffRegressionSignal,
+  BrowserVisualDiffSeverity,
+} from './types.js';
+import { readFile } from 'node:fs/promises';
 
 type TextContentBlock = { type: string; text?: string };
 
@@ -86,6 +104,249 @@ export interface BrowserMcpInterceptorConfig {
    * Useful for emitting real-time browser events to the WS event bus.
    */
   onBrowserEvent?: (toolName: string, args: Record<string, unknown>, result: unknown) => void;
+  /**
+   * Optional persistence mode that records interceptor browser actions into the
+   * same artifacts/visual-diff pipeline used by native browser sessions.
+   */
+  artifactPersistence?: {
+    enabled?: boolean;
+    cwd?: string;
+    runId?: string;
+  };
+}
+
+interface InterceptorStepState {
+  sequence: number;
+  actionId: string;
+  actionType: BrowserActionType;
+  screenshotPath?: string;
+  screenshotAbsolutePath?: string;
+}
+
+interface InterceptorTimelineState {
+  lastSequence: number;
+  lastStep?: InterceptorStepState;
+}
+
+const interceptorTimelineBySessionId = new Map<string, InterceptorTimelineState>();
+const SCREENSHOT_DATA_URL_RE = /data:image\/([a-zA-Z0-9+.-]+);base64,([A-Za-z0-9+/]+=*)/;
+
+function mapToolNameToActionType(toolName: string): BrowserActionType | null {
+  switch (toolName) {
+    case 'browser_open':
+      return 'openSession';
+    case 'browser_close':
+      return 'closeSession';
+    case 'browser_navigate':
+    case 'browser_go_back':
+    case 'browser_go_forward':
+    case 'browser_reload':
+    case 'browser_tab_new':
+    case 'browser_tab_switch':
+    case 'browser_tab_close':
+      return 'navigate';
+    case 'browser_click':
+    case 'browser_drag':
+    case 'browser_handle_dialog':
+      return 'click';
+    case 'browser_type':
+    case 'browser_fill_form':
+    case 'browser_press_key':
+    case 'browser_keyboard_type':
+    case 'browser_select_option':
+      return 'type';
+    case 'browser_snapshot':
+      return 'snapshot';
+    case 'browser_screenshot':
+      return 'screenshot';
+    default:
+      return null;
+  }
+}
+
+function isPersistenceEnabled(
+  config: BrowserMcpInterceptorConfig,
+): config is BrowserMcpInterceptorConfig & {
+  artifactPersistence: {
+    enabled?: boolean;
+    cwd?: string;
+    runId?: string;
+  };
+} {
+  return Boolean(config.artifactPersistence?.enabled);
+}
+
+function parseScreenshotResult(
+  result: unknown,
+): { bytes: Uint8Array; extension: string; mimeType: string } | null {
+  if (typeof result !== 'string') return null;
+  const match = SCREENSHOT_DATA_URL_RE.exec(result);
+  if (!match) return null;
+
+  const subtypeRaw = (match[1] ?? 'png').toLowerCase();
+  const subtype = subtypeRaw === 'jpg' ? 'jpeg' : subtypeRaw;
+  const extension = subtype === 'jpeg' ? 'jpg' : subtype;
+  const b64 = match[2] ?? '';
+  const bytes = Buffer.from(b64, 'base64');
+  return {
+    bytes: new Uint8Array(bytes),
+    extension,
+    mimeType: `image/${subtype}`,
+  };
+}
+
+async function computeVisualDiffFromScreenshotPaths(
+  previousScreenshotAbsolutePath: string | undefined,
+  currentScreenshotAbsolutePath: string | undefined,
+): Promise<{
+  status: 'changed' | 'unchanged' | 'missing';
+  changedByteRatio?: number;
+  perceptualDiffScore?: number;
+  severity: BrowserVisualDiffSeverity;
+  regressionScore: number;
+  regressionSignal: BrowserVisualDiffRegressionSignal;
+}> {
+  if (!previousScreenshotAbsolutePath || !currentScreenshotAbsolutePath) {
+    const status = 'missing';
+    const severity = inferVisualDiffSeverity(status);
+    const regression = inferVisualDiffRegression(status, severity);
+    return {
+      status,
+      severity,
+      ...regression,
+    };
+  }
+
+  try {
+    const [previousBytes, currentBytes] = await Promise.all([
+      readFile(previousScreenshotAbsolutePath),
+      readFile(currentScreenshotAbsolutePath),
+    ]);
+    const assessment = assessVisualDiffPair(previousBytes, currentBytes);
+    return {
+      status: assessment.status,
+      changedByteRatio: assessment.changedByteRatio,
+      perceptualDiffScore: assessment.perceptualDiffScore,
+      severity: assessment.severity,
+      regressionScore: assessment.regressionScore,
+      regressionSignal: assessment.regressionSignal,
+    };
+  } catch {
+    const status = 'missing';
+    const severity = inferVisualDiffSeverity(status);
+    const regression = inferVisualDiffRegression(status, severity);
+    return {
+      status,
+      severity,
+      ...regression,
+    };
+  }
+}
+
+async function persistBrowserInterceptorAction(
+  toolName: string,
+  result: unknown,
+  config: BrowserMcpInterceptorConfig,
+): Promise<void> {
+  if (!isPersistenceEnabled(config)) return;
+  const actionType = mapToolNameToActionType(toolName);
+  if (!actionType) return;
+
+  const cwd = config.artifactPersistence.cwd ?? process.cwd();
+  const runId = config.artifactPersistence.runId;
+  const sessionId = config.sessionId;
+  const timestamp = new Date().toISOString();
+  const timelineState = interceptorTimelineBySessionId.get(sessionId) ?? { lastSequence: 0 };
+  const sequence = timelineState.lastSequence + 1;
+  const actionId = `mcp-action-${String(sequence).padStart(6, '0')}`;
+  const artifactIds: string[] = [];
+  const artifactPaths: string[] = [];
+  let screenshotRelativePath: string | undefined;
+  let screenshotAbsolutePath: string | undefined;
+
+  const screenshotData = parseScreenshotResult(result);
+  if (screenshotData) {
+    const screenshotArtifact = await writeBrowserArtifact({
+      cwd,
+      sessionId,
+      actionId,
+      sequence,
+      kind: 'screenshot',
+      extension: screenshotData.extension,
+      mimeType: screenshotData.mimeType,
+      content: screenshotData.bytes,
+      createdAt: timestamp,
+    });
+    artifactIds.push(screenshotArtifact.id);
+    artifactPaths.push(screenshotArtifact.relativePath);
+    screenshotRelativePath = screenshotArtifact.relativePath;
+    screenshotAbsolutePath = screenshotArtifact.absolutePath;
+  }
+
+  const stepRecord: BrowserSessionStepRecord = {
+    sequence,
+    sessionId,
+    runId,
+    actionId,
+    actionType,
+    timestamp,
+    ok: true,
+    artifactIds: [...artifactIds],
+    artifactPaths: [...artifactPaths],
+  };
+
+  await appendBrowserSessionStep(cwd, stepRecord);
+  await appendBrowserVisualDiffManifestEntry(cwd, {
+    schemaVersion: 1,
+    sessionId,
+    runId,
+    sequence,
+    actionId,
+    actionType,
+    timestamp,
+    status: 'pending',
+    artifactIds: [...artifactIds],
+    artifactPaths: [...artifactPaths],
+  });
+
+  const previousStep = timelineState.lastStep;
+  if (previousStep) {
+    const diffStatus = await computeVisualDiffFromScreenshotPaths(
+      previousStep.screenshotAbsolutePath,
+      screenshotAbsolutePath,
+    );
+    await appendBrowserVisualDiffResultEntry(cwd, {
+      schemaVersion: 1,
+      sessionId,
+      runId,
+      index: sequence - 2,
+      fromSequence: previousStep.sequence,
+      fromActionId: previousStep.actionId,
+      fromActionType: previousStep.actionType,
+      toSequence: sequence,
+      toActionId: actionId,
+      toActionType: actionType,
+      fromScreenshotPath: previousStep.screenshotPath,
+      toScreenshotPath: screenshotRelativePath,
+      status: diffStatus.status,
+      changedByteRatio: diffStatus.changedByteRatio,
+      perceptualDiffScore: diffStatus.perceptualDiffScore,
+      severity: diffStatus.severity,
+      regressionScore: diffStatus.regressionScore,
+      regressionSignal: diffStatus.regressionSignal,
+    });
+  }
+
+  interceptorTimelineBySessionId.set(sessionId, {
+    lastSequence: sequence,
+    lastStep: {
+      sequence,
+      actionId,
+      actionType,
+      screenshotPath: screenshotRelativePath,
+      screenshotAbsolutePath,
+    },
+  });
 }
 
 /**
@@ -260,6 +521,9 @@ export async function interceptBrowserMcpCall(
 
       // Notify observers of successful browser action
       config.onBrowserEvent?.(toolName, args, result);
+
+      // Persist successful interceptor actions into browser artifact/diff streams when enabled.
+      await persistBrowserInterceptorAction(toolName, result, config).catch(() => undefined);
 
       // Phase 4: Implicit State Verification
       // After a mutable action, wait for stabilization and return the new state

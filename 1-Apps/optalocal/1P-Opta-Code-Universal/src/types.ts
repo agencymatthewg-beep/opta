@@ -1,3 +1,5 @@
+import type { ActivationState } from "@opta/protocol-shared";
+
 export type {
   DaemonBackgroundListResponse,
   DaemonBackgroundOutputOptions,
@@ -67,6 +69,7 @@ export interface RuntimeSnapshot {
   activeTurnCount: number;
   queuedTurnCount: number;
   subscriberCount: number;
+  activationState?: ActivationState;
 }
 
 export type SessionSubmitMode = "chat" | "do" | "plan" | "review" | "research";

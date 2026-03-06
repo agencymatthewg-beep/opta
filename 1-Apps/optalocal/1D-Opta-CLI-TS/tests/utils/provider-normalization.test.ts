@@ -1,11 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
+  hasProviderApiKey,
   normalizeProviderName,
   parseCloudFallbackOrder,
   parseProviderName,
   providerOptionHelp,
+  resolveGeminiRuntimeAuth,
   toCloudProviderName,
 } from '../../src/utils/provider-normalization.js';
+import { DEFAULT_CONFIG } from '../../src/core/config.js';
 
 describe('provider-normalization', () => {
   it('normalizes common aliases to canonical providers', () => {
@@ -46,5 +49,23 @@ describe('provider-normalization', () => {
   it('maps to cloud provider names and excludes lmx', () => {
     expect(toCloudProviderName('claude')).toBe('anthropic');
     expect(toCloudProviderName('lmx')).toBeNull();
+  });
+
+  it('supports Gemini Vertex auth mode via environment flags', async () => {
+    process.env['GOOGLE_GENAI_USE_VERTEXAI'] = 'true';
+    process.env['GOOGLE_CLOUD_PROJECT'] = 'opta-test-project';
+    process.env['GOOGLE_CLOUD_LOCATION'] = 'australia-southeast1';
+    try {
+      const auth = resolveGeminiRuntimeAuth();
+
+      expect(auth.mode).toBe('vertex');
+      expect(auth.project).toBe('opta-test-project');
+      expect(auth.location).toBe('australia-southeast1');
+      await expect(hasProviderApiKey(DEFAULT_CONFIG, 'gemini')).resolves.toBe(true);
+    } finally {
+      delete process.env['GOOGLE_GENAI_USE_VERTEXAI'];
+      delete process.env['GOOGLE_CLOUD_PROJECT'];
+      delete process.env['GOOGLE_CLOUD_LOCATION'];
+    }
   });
 });

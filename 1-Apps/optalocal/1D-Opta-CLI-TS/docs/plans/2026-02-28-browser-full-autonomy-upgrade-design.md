@@ -10,20 +10,20 @@ Status: APPROVED — ready for implementation
 
 ## Implementation Checklist
 
-- [ ] Phase 1: Register `@playwright/mcp` in MCP registry
+- [x] Phase 1: Register `@playwright/mcp` in MCP registry
 - [ ] Phase 1: Build `BrowserMcpInterceptor` with policy + visual-diff + artifacts wiring
-- [ ] Phase 1: Extend `classifyAction` in policy-engine for new MCP tool risk tiers
-- [ ] Phase 1: Port `tests/browser/policy-engine.test.ts` to MCP tool names
-- [ ] Phase 2: Build `BrowserSubAgentDelegator` using orchestrator sub-agent machinery
+- [x] Phase 1: Extend `classifyAction` in policy-engine for new MCP tool risk tiers
+- [x] Phase 1: Port `tests/browser/policy-engine.test.ts` to MCP tool names
+- [x] Phase 2: Build `BrowserSubAgentDelegator` using orchestrator sub-agent machinery
 - [ ] Phase 2: Wire delegator into main agent loop (replace auto-open-session path)
 - [ ] Phase 2: Port `tests/integration/browser-autonomous-flow.test.ts` to delegation model
-- [ ] Phase 3: Remove 7 legacy `browser_*` schemas from `schemas.ts`
+- [x] Phase 3: Remove 7 legacy `browser_*` schemas from `schemas.ts`
 - [ ] Phase 3: Remove legacy browser executors from `executors.ts`
-- [ ] Phase 3: Remove legacy browser permissions from `permissions.ts`
-- [ ] Phase 3: `npm test` full suite pass — go/no-go gate
+- [x] Phase 3: Remove legacy browser permissions from `permissions.ts`
+- [x] Phase 3: `npm test` full suite pass — go/no-go gate
 - [ ] Phase 4: Add tests for scroll, select_option, hover, evaluate via interceptor
-- [ ] Phase 4: Extend run-corpus adaptation for MCP tool names
-- [ ] Phase 4: Update docs (CLAUDE.md, DECISIONS.md, buildBrowserAvailabilityInstruction)
+- [x] Phase 4: Extend run-corpus adaptation for MCP tool names
+- [x] Phase 4: Update docs (CLAUDE.md, DECISIONS.md, buildBrowserAvailabilityInstruction)
 
 ---
 

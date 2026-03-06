@@ -90,7 +90,7 @@ jobs:
       #   3. Store PFX passphrase as repository secret WINDOWS_CERTIFICATE_PASSWORD
       # The step imports the PFX and patches tauri.conf.json with the thumbprint.
       - name: Configure Authenticode signing
-        if: env.SIGNING_ENABLED == 'true'
+        if: ${{ secrets.WINDOWS_CERTIFICATE != '' && secrets.WINDOWS_CERTIFICATE_PASSWORD != '' }}
         env:
           SIGNING_ENABLED: ${{ secrets.WINDOWS_CERTIFICATE != '' && secrets.WINDOWS_CERTIFICATE_PASSWORD != '' }}
           WINDOWS_CERTIFICATE: ${{ secrets.WINDOWS_CERTIFICATE }}
@@ -112,6 +112,12 @@ jobs:
           $conf.bundle.windows.timestampUrl = "http://timestamp.digicert.com"
           $conf | ConvertTo-Json -Depth 20 | Set-Content $confPath
           Write-Host "Code signing configured (thumbprint: $thumbprint)"
+
+      - name: Run secure-store bridge tests
+        shell: pwsh
+        run: |
+          cd src-tauri
+          cargo test connection_secrets -- --nocapture
 
       - name: Build Vite frontend
         run: npm run build

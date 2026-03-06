@@ -4,6 +4,7 @@
 
 All published guides on learn.optalocal.com must match the CLI masterclass quality baseline:
 - Dense explanatory depth (architecture + operation + failure modes)
+- Full lifecycle flow coverage from setup to optimization
 - At least one integrated visual block per guide section set (template-enforced)
 - Cross-guide linking where relevant (`/guides/cli`, `/guides/lmx`, `/guides/accounts`, `/guides/code-desktop`)
 - Practical operational commands and verification paths
@@ -76,43 +77,76 @@ Every new guide must use one and only one approved template ID:
 2. `feature-deep-dive` — **L3 Deep-Dive extent**
 3. `process-workflow` — **L2 Operational extent**
 4. `setting-configuration` — **L1 Reference extent** (narrowest and most precise)
+5. `visual-interactive-journey` — **L3 Visual-first interactive extent**
 
-These four templates are the only approved structures for preserving Opta Learn aesthetic, format, and rendering behavior.
+These five templates are the only approved structures for preserving Opta Learn aesthetic, format, and rendering behavior.
+
+### 4.2 Lifecycle Stage Standard (Mandatory for all templates)
+
+All guides must cover this complete flow in canonical order using heading markers or equivalent heading language:
+1. `[Setup]`
+2. `[Configuration]`
+3. `[Operation]`
+4. `[Troubleshooting]`
+5. `[Optimization]`
+
+For app-focused guides (`app !== 'general'`), settings/configuration coverage is mandatory and must include concrete surfaces such as CLI flags, env vars, profile keys, or UI settings.
 
 ### A. Holistic Whole App Guide
 **Purpose:** An extensive, masterclass-level deep dive into a primary application (e.g., LMX Masterclass). Guides are automatically injected into an interactive sticky TOC.
 **Tone:** Educational, multi-tiered, deeply visual via code blocks and structural formatting.
-**Required Sections:**
-1. **Ecosystem Role / Overview:** How it fits into the Opta stack (with `app-link` cross-references).
-2. **Architecture:** How it works under the hood (memory tiers, daemons, etc).
-3. **Feature Deep-Dive:** Comprehensive breakdowns of individual capabilities.
-4. **Integrated Workflows:** How to use the app in conjunction with the rest of the stack.
+**Minimum Requirements:**
+1. **7+ sections**
+2. **360+ words**
+3. **2+ visuals**
+4. **2+ code blocks**
+5. **All lifecycle stages covered**
+6. **At least two sections beyond the five lifecycle stages** for architecture/deployment depth
 
 ### B. Feature Guide
 **Purpose:** Deep dive into a specific capability within an app (e.g., Accounts Local Sync).
 **Tone:** Focused, practical, illuminating.
-**Required Sections:**
-1. **What is [Feature]?:** Clear definition.
-2. **Use Cases:** Why a user would enable or interact with this.
-3. **Under the Hood:** Brief technical explanation of how it works locally.
-4. **Usage / Configuration:** How to turn it on or use it.
+**Minimum Requirements:**
+1. **5+ sections**
+2. **220+ words**
+3. **1+ visual block**
+4. **1+ code block**
+5. **1+ note/callout block**
+6. **All lifecycle stages covered**
 
 ### C. Process / Workflow Guide
 **Purpose:** Step-by-step instructions to achieve a specific goal (e.g., CLI Setup, Importing a GGUF).
 **Tone:** Direct, instructional, precise. Heavy use of `code` blocks.
-**Required Sections:**
-1. **Prerequisites:** What is needed before starting.
-2. **Step-by-Step Execution:** Sequential headings (Step 1, Step 2, etc.) using `body` and `code` fields.
-3. **Verification:** How the user knows the process was successful (e.g., terminal output).
+**Minimum Requirements:**
+1. **5+ sections**
+2. **240+ words**
+3. **1+ visual block**
+4. **1+ code block**
+5. **All lifecycle stages covered**
+6. **Deterministic verification and recovery loop**
 
 ### D. Setting / Configuration Guide
 **Purpose:** Detail a specific configuration flag, environment variable, or system setting.
 **Tone:** Terse, factual, reference-like.
-**Required Sections:**
-1. **Definition:** What the setting does and its default value.
-2. **Impact:** Security, performance, or UI implications of changing it.
-3. **Examples:** Valid and invalid states using the `code` field.
-4. **Warnings:** Use the `note` field for destructive or high-impact changes.
+**Minimum Requirements:**
+1. **5+ sections**
+2. **220+ words**
+3. **1+ visual block**
+4. **1+ code block**
+5. **1+ note/callout block**
+6. **All lifecycle stages covered**
+7. **Explicit config/default/rollback coverage**
+
+### E. Visual Interactive Journey Guide
+**Purpose:** Visual-first end-to-end guide where interaction blocks carry most explanatory weight.
+**Tone:** Minimal prose, high clarity, operationally grounded.
+**Minimum Requirements:**
+1. **5+ sections in canonical lifecycle order**
+2. **120–420 words total**
+3. **4+ visual blocks**
+4. **Visual coverage ratio >= 0.8**
+5. **Max 45 words per section body**
+6. **App-focused guides include concrete config surfaces**
 
 ## 5. Execution Workflow
 
@@ -129,12 +163,21 @@ When instructed to create a new guide:
    - Create the new file in `1V-Opta-Learn/content/guides/<slug>.ts`.
    - Update `1V-Opta-Learn/content/guides/index.ts` to import the new guide and add it to the `allGuides` array.
    - Preferred: use the enforced scaffolder so template structure and registration are generated automatically:
-     - `npm run guide:new -- --slug <slug> --title "<title>" --app <lmx|cli|accounts|init|general> --category <getting-started|feature|troubleshooting|reference> --template <holistic-whole-app|feature-deep-dive|process-workflow|setting-configuration>`
+     - `npm run guide:new -- --slug <slug> --title "<title>" --app <lmx|cli|accounts|init|general> --category <getting-started|feature|troubleshooting|reference> --template <holistic-whole-app|feature-deep-dive|process-workflow|setting-configuration|visual-interactive-journey>`
 6. **Verify:** 
-   - Run `npm run guides:validate` to enforce template structure, explanation extent constraints, and internal guide-link integrity.
+   - Run `npm run guides:validate` to enforce template structure, lifecycle-stage coverage, config coverage, visual/content block thresholds, and internal guide-link integrity.
    - Run `npm run lint` and ensure it passes.
    - Run `npm run build` and ensure static generation succeeds.
    - Check that no forbidden visual descriptors or generic AI language were used in the content strings.
+
+## 6. Author Checklist (Before Marking Verified)
+
+- [ ] Heading flow covers `[Setup]`, `[Configuration]`, `[Operation]`, `[Troubleshooting]`, `[Optimization]`.
+- [ ] Guide meets template minimum section and word thresholds.
+- [ ] Rich blocks are present (`code`, `note`, `visual`) per template.
+- [ ] App-focused guides include concrete settings/configuration surfaces.
+- [ ] Internal app links use `/guides/<slug>` anchors only.
+- [ ] Validation succeeds: `npm run guides:validate` and `npm run check`.
 
 ## 6.1 CI Enforcement
 

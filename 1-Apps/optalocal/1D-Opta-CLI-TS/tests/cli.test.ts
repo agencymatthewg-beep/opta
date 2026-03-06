@@ -38,7 +38,7 @@ describe('opta CLI', () => {
 
   it('lists all expected commands in help', async () => {
     const result = await run(['--help']);
-    const commands = ['do', 'benchmark', 'status', 'models', 'env', 'config', 'sessions', 'mcp', 'init', 'diff', 'completions', 'daemon', 'update'];
+    const commands = ['do', 'benchmark', 'status', 'models', 'env', 'config', 'sessions', 'mcp', 'init', 'diff', 'completions', 'daemon', 'update', 'health', 'settings'];
     for (const cmd of commands) {
       expect(result.stdout).toContain(cmd);
     }

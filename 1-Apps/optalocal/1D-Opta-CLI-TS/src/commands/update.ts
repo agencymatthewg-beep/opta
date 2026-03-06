@@ -1,4 +1,5 @@
-import { existsSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { dirname, join, basename, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
@@ -10,9 +11,9 @@ import { colorizeOptaWord } from '../ui/brand.js';
 import { writeUpdateLog } from '../journal/update-log.js';
 import { homedir, isWindows } from '../platform/index.js';
 
-export type UpdateComponent = 'cli' | 'lmx' | 'plus' | 'web';
+export type UpdateComponent = 'cli' | 'daemon';
 export type UpdateTarget = 'local' | 'remote';
-export type UpdateTargetMode = 'auto' | 'local' | 'remote' | 'both';
+export type UpdateTargetMode = UpdateTarget;
 
 type StepStatus = 'ok' | 'skip' | 'fail';
 
@@ -68,6 +69,11 @@ interface CommandResult {
   stderr: string;
 }
 
+interface LocalCliPackArtifact {
+  tarballPath: string;
+  tempDir: string;
+}
+
 export interface RemoteHostProbe {
   host: string;
   exitCode: number;
@@ -90,17 +96,7 @@ interface DiscoveredRemoteHostCandidate {
 }
 
 export const CLI_UPDATE_BUILD_SCRIPT =
-  'npm run -s typecheck && (npm run -s build || (npm install --no-fund --no-audit && npm run -s typecheck && npm run -s build))';
-export const CANONICAL_WEB_APP_DIRS = [
-  '1L-Opta-LMX-Dashboard',
-  '1O-Opta-Init',
-  '1R-Opta-Accounts',
-  '1S-Opta-Status',
-  '1T-Opta-Home',
-  '1U-Opta-Help',
-  '1V-Opta-Learn',
-  '1X-Opta-Admin',
-] as const;
+  '((npm run -s typecheck && npm run -s build) || (npm install --no-fund --no-audit && npm run -s typecheck && npm run -s build)) && (npm link --force || npm link)';
 
 const REQUIRED_OPTA_COMMANDS = [
   'chat',
@@ -115,6 +111,8 @@ const REQUIRED_OPTA_COMMANDS = [
   'serve',
   'server',
   'daemon',
+  'health',
+  'settings',
   'update',
   'doctor',
   'completions',
@@ -126,6 +124,31 @@ export function missingOptaCommands(helpOutput: string): string[] {
     const pattern = new RegExp(`(^|\\s)${command}(\\s|$)`, 'm');
     return !pattern.test(lines);
   });
+}
+
+function parseMissingCommandList(raw: string): string[] {
+  return raw
+    .split(/\s+/)
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+export function summarizeMissingCommandSurface(
+  rawMissing: string,
+  scope: 'local' | 'remote'
+): string {
+  const missing = parseMissingCommandList(rawMissing);
+  const missingLabel = missing.length > 0 ? missing.join(' ') : 'unknown';
+  const prefix = `missing command entries in ${scope} opta --help: ${missingLabel}`;
+  const modernSurface = new Set(['health', 'settings', 'update', 'doctor']);
+  const isLikelyStaleSurface = missing.some((command) => modernSurface.has(command));
+  if (!isLikelyStaleSurface) return prefix;
+
+  const hint =
+    scope === 'remote'
+      ? 'remote CLI appears older than this workspace; update that host from latest source, then rerun opta update --target remote'
+      : 'local CLI appears older than this workspace; run npm run -s build && npm link in 1D-Opta-CLI-TS';
+  return `${prefix} (${hint})`;
 }
 
 function quoteSh(input: string): string {
@@ -143,39 +166,37 @@ function isLocalHost(host: string): boolean {
 }
 
 export function parseComponentList(raw?: string): UpdateComponent[] {
-  // Default update scope intentionally excludes web to keep the primary
-  // desktop/local runtime path fast (CLI + LMX + Plus).
-  if (!raw || raw.trim() === '') return ['cli', 'lmx', 'plus'];
+  // Canonical order keeps dependency flow deterministic:
+  // CLI build/verify first, then daemon restart/verification.
+  const componentOrder: UpdateComponent[] = ['cli', 'daemon'];
+  if (!raw || raw.trim() === '') return [...componentOrder];
   const parts = raw
     .split(',')
     .map((p) => p.trim().toLowerCase())
     .filter(Boolean);
 
-  const allowed: UpdateComponent[] = ['cli', 'lmx', 'plus', 'web'];
+  const allowed: UpdateComponent[] = ['cli', 'daemon'];
   const invalid = parts.filter((p) => !allowed.includes(p as UpdateComponent));
   if (invalid.length > 0) {
-    throw new Error(`Invalid components: ${invalid.join(', ')}. Use: cli,lmx,plus,web`);
+    throw new Error(`Invalid components: ${invalid.join(', ')}. Use: cli,daemon`);
   }
 
-  return [...new Set(parts as UpdateComponent[])];
+  const selected = new Set(parts as UpdateComponent[]);
+  return componentOrder.filter((component) => selected.has(component));
 }
 
-export function resolveTargets(mode: UpdateTargetMode, remoteHost: string): UpdateTarget[] {
-  switch (mode) {
-    case 'local':
-      return ['local'];
-    case 'remote':
-      return ['remote'];
-    case 'both':
-      return ['local', 'remote'];
-    case 'auto':
-    default:
-      return isLocalHost(remoteHost) ? ['local'] : ['local', 'remote'];
-  }
+export function parseTargetMode(raw?: string): UpdateTargetMode {
+  const value = (raw ?? '').trim().toLowerCase();
+  if (value === 'local' || value === 'remote') return value;
+  throw new Error(`Invalid target mode: ${raw ?? ''}. Use: local,remote`);
 }
 
-export function remoteConnectFailureStatus(mode: UpdateTargetMode): StepStatus {
-  return mode === 'auto' ? 'skip' : 'fail';
+export function resolveTargets(mode: UpdateTargetMode): UpdateTarget[] {
+  return [mode];
+}
+
+export function remoteConnectFailureStatus(): StepStatus {
+  return 'fail';
 }
 
 export function resolveRemoteHostCandidates(
@@ -318,7 +339,7 @@ async function promptForRemoteHostSelection(
 
   const { select } = await import('@inquirer/prompts');
   const chosen = (await select({
-    message: 'Multiple reachable remote devices found. Select one to update',
+    message: 'Select a reachable remote device to update',
     choices: reachableHosts.map((host) => {
       const discovered = discoveredByHost.get(host.toLowerCase());
       const sourceLabel = discovered ? (discovered.source === 'mdns' ? 'LAN mDNS' : 'LAN sweep') : 'configured';
@@ -331,6 +352,28 @@ async function promptForRemoteHostSelection(
   })) as string;
 
   return chosen;
+}
+
+function canPromptForTargetSelection(opts: Pick<UpdateOptions, 'json'>): boolean {
+  return canPromptForRemoteHostSelection(opts);
+}
+
+async function promptForUpdateTarget(): Promise<UpdateTarget> {
+  const { select } = await import('@inquirer/prompts');
+  const choice = (await select({
+    message: 'Where should Opta update run?',
+    choices: [
+      {
+        name: 'Local (this device)',
+        value: 'local',
+      },
+      {
+        name: 'Remote (choose a reachable device)',
+        value: 'remote',
+      },
+    ],
+  })) as UpdateTarget;
+  return choice;
 }
 
 function detectAppsRoot(startCwd: string): string | null {
@@ -377,39 +420,89 @@ function deriveRemoteAppsRootFromLmxPath(lmxPath: string): string | null {
   return null;
 }
 
+function dedupePaths(paths: readonly (string | null | undefined)[]): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const path of paths) {
+    if (!path) continue;
+    const trimmed = path.trim();
+    if (!trimmed) continue;
+    const key = trimmed.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(trimmed);
+  }
+  return result;
+}
+
+function buildRemoteAppsRootCandidates(params: {
+  explicitRoot?: string;
+  derivedRoot?: string | null;
+  localAppsRoot?: string | null;
+  remoteUser: string;
+}): string[] {
+  const localUser = basename(homedir());
+  const derivedOptalocal =
+    params.derivedRoot && basename(params.derivedRoot).toLowerCase() !== 'optalocal'
+      ? join(params.derivedRoot, 'optalocal')
+      : null;
+
+  return dedupePaths([
+    params.explicitRoot,
+    params.derivedRoot,
+    derivedOptalocal,
+    params.localAppsRoot,
+    `/Users/${params.remoteUser}/Synced/Opta/1-Apps/optalocal`,
+    `/Users/${params.remoteUser}/Synced/Opta/1-Apps`,
+    `/Users/${params.remoteUser}/Opta/1-Apps/optalocal`,
+    `/Users/${params.remoteUser}/Opta/1-Apps`,
+    `/home/${params.remoteUser}/Synced/Opta/1-Apps/optalocal`,
+    `/home/${params.remoteUser}/Synced/Opta/1-Apps`,
+    `/home/${params.remoteUser}/Opta/1-Apps/optalocal`,
+    `/home/${params.remoteUser}/Opta/1-Apps`,
+    `/Users/${localUser}/Synced/Opta/1-Apps/optalocal`,
+    `/Users/${localUser}/Synced/Opta/1-Apps`,
+    '/Users/Shared/312/Opta/1-Apps/optalocal',
+    '/Users/Shared/312/Opta/1-Apps',
+  ]);
+}
+
+async function resolveRemoteAppsRootOnHost(
+  ssh: SshConfig,
+  candidates: readonly string[],
+  dryRun: boolean
+): Promise<{ root: string | null; tried: string[] }> {
+  if (candidates.length === 0) {
+    return { root: null, tried: [] };
+  }
+  if (dryRun) {
+    return { root: candidates[0] ?? null, tried: [...candidates] };
+  }
+
+  const checks = candidates.map(
+    (candidate) =>
+      `if [ -d ${quoteSh(join(candidate, '1D-Opta-CLI-TS'))} ]; then echo "__APPS_ROOT__:${candidate}"; exit 0; fi`
+  );
+  const probeCommand = `${checks.join('; ')}; exit 24`;
+  const result = await runRemoteCommand(ssh, probeCommand, false);
+  if (result.exitCode !== 0) {
+    return { root: null, tried: [...candidates] };
+  }
+
+  const marker = result.stdout
+    .split('\n')
+    .map((line) => line.trim())
+    .find((line) => line.startsWith('__APPS_ROOT__:'));
+  const resolvedRoot = marker?.replace('__APPS_ROOT__:', '').trim() ?? null;
+  return { root: resolvedRoot, tried: [...candidates] };
+}
+
 function componentRepoPath(component: UpdateComponent, appsRoot: string): string {
   switch (component) {
     case 'cli':
+    case 'daemon':
       return join(appsRoot, '1D-Opta-CLI-TS');
-    case 'lmx':
-      return join(appsRoot, '1M-Opta-LMX');
-    case 'plus':
-      return join(appsRoot, '1I-OptaPlus');
-    case 'web':
-      if (existsSync(join(appsRoot, '1X-Opta-Admin'))) {
-        return appsRoot;
-      }
-      const nestedOptalocalRoot = join(appsRoot, 'optalocal');
-      if (existsSync(join(nestedOptalocalRoot, '1X-Opta-Admin'))) {
-        return nestedOptalocalRoot;
-      }
-      return appsRoot;
   }
-}
-
-export function canonicalWebBuildScript(webAppDirs: readonly string[] = CANONICAL_WEB_APP_DIRS): string {
-  const commands: string[] = [];
-
-  for (const appDir of webAppDirs) {
-    const quotedDir = quoteSh(appDir);
-    commands.push(
-      `if [ ! -d ${quotedDir} ]; then echo "__WEB_APP_MISSING__:${appDir}"; exit 64; fi`,
-      `npm --prefix ${quotedDir} run -s typecheck`,
-      `(npm --prefix ${quotedDir} run -s build || (npm --prefix ${quotedDir} install --no-fund --no-audit && npm --prefix ${quotedDir} run -s typecheck && npm --prefix ${quotedDir} run -s build))`
-    );
-  }
-
-  return commands.join(' && ');
 }
 
 async function runLocalCommand(
@@ -466,6 +559,141 @@ async function runRemoteCommand(
   };
 }
 
+async function runScpUpload(
+  ssh: SshConfig,
+  localPath: string,
+  remotePath: string,
+  dryRun = false
+): Promise<CommandResult> {
+  if (dryRun) {
+    return { exitCode: 0, stdout: `[dry-run][${ssh.host}] scp ${localPath} ${remotePath}`, stderr: '' };
+  }
+
+  const args: string[] = [
+    '-o',
+    'BatchMode=yes',
+    '-o',
+    `ConnectTimeout=${SSH_CONNECT_TIMEOUT_SECONDS}`,
+    '-o',
+    'ServerAliveInterval=5',
+    '-o',
+    'ServerAliveCountMax=2',
+  ];
+  if (ssh.identityFile) {
+    args.push('-i', ssh.identityFile);
+  }
+  args.push(localPath, `${ssh.user}@${ssh.host}:${remotePath}`);
+
+  const result = await execa('scp', args, { reject: false });
+  return {
+    exitCode: result.exitCode ?? 1,
+    stdout: result.stdout,
+    stderr: result.stderr,
+  };
+}
+
+async function createLocalCliPackArtifact(localCliRepoPath: string): Promise<{
+  status: StepStatus;
+  message: string;
+  artifact?: LocalCliPackArtifact;
+}> {
+  if (!existsSync(localCliRepoPath)) {
+    return { status: 'fail', message: `local CLI repo missing: ${localCliRepoPath}` };
+  }
+
+  const tempDir = mkdtempSync(join(tmpdir(), 'opta-cli-pack-'));
+  const packResult = await runLocalCommand(
+    `npm pack --silent --pack-destination ${quoteSh(tempDir)}`,
+    localCliRepoPath,
+    false
+  );
+  if (packResult.exitCode !== 0) {
+    rmSync(tempDir, { recursive: true, force: true });
+    return {
+      status: 'fail',
+      message: `npm pack failed: ${summarizeOutput(packResult.stderr || packResult.stdout)}`,
+    };
+  }
+
+  const tarballName =
+    packResult.stdout
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .at(-1) ?? '';
+  const tarballPath = join(tempDir, tarballName);
+  if (!tarballName || !existsSync(tarballPath)) {
+    rmSync(tempDir, { recursive: true, force: true });
+    return {
+      status: 'fail',
+      message: 'npm pack did not produce a tarball',
+    };
+  }
+
+  return {
+    status: 'ok',
+    message: `packed CLI artifact ${tarballName}`,
+    artifact: { tarballPath, tempDir },
+  };
+}
+
+function cleanupLocalCliPackArtifact(artifact: LocalCliPackArtifact | null): void {
+  if (!artifact) return;
+  rmSync(artifact.tempDir, { recursive: true, force: true });
+}
+
+async function installLocalCliPackOnRemote(
+  ssh: SshConfig,
+  artifact: LocalCliPackArtifact,
+  dryRun: boolean
+): Promise<{ status: StepStatus; message: string }> {
+  const remoteTarballPath = `/tmp/opta-cli-update-${Date.now()}.tgz`;
+  const upload = await runScpUpload(ssh, artifact.tarballPath, remoteTarballPath, dryRun);
+  if (upload.exitCode !== 0) {
+    return {
+      status: 'fail',
+      message: `failed to upload CLI package: ${summarizeOutput(upload.stderr || upload.stdout)}`,
+    };
+  }
+
+  if (dryRun) {
+    return { status: 'ok', message: 'dry-run packaged CLI upload + install' };
+  }
+
+  const install = await runRemoteCommand(
+    ssh,
+    [
+      'if ! command -v npm >/dev/null 2>&1; then echo "__ERR__:missing-npm"; exit 44; fi',
+      `npm install -g ${quoteSh(remoteTarballPath)} --no-fund --no-audit`,
+      'rc=$?',
+      `rm -f ${quoteSh(remoteTarballPath)}`,
+      'exit "$rc"',
+    ].join('; '),
+    false
+  );
+
+  if (install.exitCode === 44) {
+    return {
+      status: 'fail',
+      message: 'npm is not installed on remote host (cannot install packaged CLI)',
+    };
+  }
+  if (install.exitCode !== 0) {
+    const detail = summarizeOutput(install.stderr || install.stdout);
+    if (detail.toLowerCase().includes('eacces')) {
+      return {
+        status: 'fail',
+        message: `packaged CLI install failed due permissions (${detail})`,
+      };
+    }
+    return {
+      status: 'fail',
+      message: `packaged CLI install failed: ${detail}`,
+    };
+  }
+  return { status: 'ok', message: 'installed packaged CLI from local workspace' };
+}
+
 async function verifyRemoteCliCommands(
   ssh: SshConfig,
   dryRun: boolean
@@ -478,7 +706,7 @@ async function verifyRemoteCliCommands(
   const script = [
     'if ! command -v node >/dev/null 2>&1; then echo "__ERR__:missing-node"; exit 40; fi',
     'if ! command -v opta >/dev/null 2>&1; then echo "__ERR__:missing-opta"; exit 41; fi',
-    'help="$(opta --help 2>/dev/null)" || { echo "__ERR__:help-failed"; exit 42; }',
+    'help="$(opta --help 2>&1)" || { echo "__ERR__:help-failed"; echo "$help"; exit 42; }',
     `missing=""; for c in ${commandList}; do echo "$help" | grep -Eq "(^|[[:space:]])$c([[:space:]]|$)" || missing="$missing $c"; done`,
     'if [ -n "$missing" ]; then echo "__MISSING__:$missing"; exit 43; fi',
     'version="$(opta --version 2>/dev/null || true)"',
@@ -497,17 +725,80 @@ async function verifyRemoteCliCommands(
     return { status: 'fail', message: 'opta command not found in PATH on remote host' };
   }
   if (result.exitCode === 42) {
-    return { status: 'fail', message: 'opta --help failed on remote host' };
+    return {
+      status: 'fail',
+      message: `opta --help failed on remote host: ${summarizeOutput(result.stdout || result.stderr)}`,
+    };
   }
   if (result.exitCode === 43) {
     const marker = result.stdout.split('\n').find((line) => line.startsWith('__MISSING__:'));
     const missing = marker?.replace('__MISSING__:', '').trim() ?? 'unknown';
-    return { status: 'fail', message: `missing command entries in remote opta --help: ${missing}` };
+    return { status: 'fail', message: summarizeMissingCommandSurface(missing, 'remote') };
   }
   if (result.exitCode !== 0) {
     return {
       status: 'fail',
       message: result.stderr || result.stdout || 'remote command verification failed',
+    };
+  }
+
+  const versionMarker = result.stdout.split('\n').find((line) => line.startsWith('__VERSION__:'));
+  const version = versionMarker?.replace('__VERSION__:', '').trim() || 'unknown';
+  return { status: 'ok', message: `opta command available (${version})` };
+}
+
+function formatLocalCliHelpFailure(raw: string): string {
+  const lower = raw.toLowerCase();
+  if (lower.includes('cannot find module') && lower.includes('dist/index.js')) {
+    return (
+      'opta command points to a missing dist/index.js (likely linked local install). ' +
+      'run npm run build && npm link, or reinstall globally with npm i -g @opta/opta-cli'
+    );
+  }
+  return summarizeOutput(raw);
+}
+
+async function verifyLocalCliCommands(dryRun: boolean): Promise<{ status: StepStatus; message: string }> {
+  if (dryRun) {
+    return { status: 'ok', message: 'dry-run local command verification' };
+  }
+
+  const commandList = REQUIRED_OPTA_COMMANDS.join(' ');
+  const script = [
+    'if ! command -v node >/dev/null 2>&1; then echo "__ERR__:missing-node"; exit 40; fi',
+    'if ! command -v opta >/dev/null 2>&1; then echo "__ERR__:missing-opta"; exit 41; fi',
+    'help="$(opta --help 2>&1)" || { echo "__ERR__:help-failed"; echo "$help"; exit 42; }',
+    `missing=""; for c in ${commandList}; do echo "$help" | grep -Eq "(^|[[:space:]])$c([[:space:]]|$)" || missing="$missing $c"; done`,
+    'if [ -n "$missing" ]; then echo "__MISSING__:$missing"; exit 43; fi',
+    'version="$(opta --version 2>/dev/null || true)"',
+    'echo "__VERSION__:$version"',
+  ].join('; ');
+
+  const result = await runLocalCommand(script, undefined, false);
+  if (result.exitCode === 40) {
+    return {
+      status: 'fail',
+      message: 'node runtime missing locally (install Node.js so opta can run)',
+    };
+  }
+  if (result.exitCode === 41) {
+    return { status: 'fail', message: 'opta command not found in PATH locally' };
+  }
+  if (result.exitCode === 42) {
+    return {
+      status: 'fail',
+      message: `opta --help failed locally: ${formatLocalCliHelpFailure(result.stdout || result.stderr)}`,
+    };
+  }
+  if (result.exitCode === 43) {
+    const marker = result.stdout.split('\n').find((line) => line.startsWith('__MISSING__:'));
+    const missing = marker?.replace('__MISSING__:', '').trim() ?? 'unknown';
+    return { status: 'fail', message: summarizeMissingCommandSurface(missing, 'local') };
+  }
+  if (result.exitCode !== 0) {
+    return {
+      status: 'fail',
+      message: result.stderr || result.stdout || 'local command verification failed',
     };
   }
 
@@ -556,8 +847,7 @@ function delayMs(ms: number): Promise<void> {
 
 async function runRemoteLanStabilityGuard(
   ssh: SshConfig,
-  dryRun: boolean,
-  mode: UpdateTargetMode
+  dryRun: boolean
 ): Promise<RemoteLanGuardResult> {
   if (dryRun) {
     return {
@@ -650,13 +940,10 @@ async function runRemoteLanStabilityGuard(
     };
   }
 
-  const failureStatus = remoteConnectFailureStatus(mode);
+  const failureStatus = remoteConnectFailureStatus();
   const fixDetail = summarizeOutput(fix.stderr || fix.stdout);
   const verifyDetail = summarizeOutput(verify.stderr || verify.stdout);
-  const modeHint =
-    mode === 'auto'
-      ? 'auto mode skipped remote updates; use --target remote once SSH is stable'
-      : 'fix network path and rerun update';
+  const modeHint = 'fix network path and rerun update';
 
   return {
     status: failureStatus,
@@ -786,8 +1073,7 @@ async function updateGitRemote(
 async function runComponentBuildLocal(
   component: UpdateComponent,
   repoPath: string,
-  dryRun: boolean,
-  lmxPort: number
+  dryRun: boolean
 ): Promise<{ status: StepStatus; message: string }> {
   switch (component) {
     case 'cli': {
@@ -799,58 +1085,33 @@ async function runComponentBuildLocal(
         message: dryRun ? 'dry-run typecheck + build' : 'npm typecheck + build complete',
       };
     }
-    case 'lmx': {
-      const installCmd = [
-        `if [ -x ${quoteSh(join(repoPath, '.venv/bin/python'))} ]; then PIPY=${quoteSh(join(repoPath, '.venv/bin/python'))};`,
-        'else PIPY=python3; fi;',
-        `"$PIPY" -m pip install -e ${quoteSh(repoPath)} --no-deps || "$PIPY" -m pip install ${quoteSh(repoPath)} --no-deps`,
-      ].join(' ');
-
-      const install = await runLocalCommand(installCmd, repoPath, dryRun);
-      if (install.exitCode !== 0)
-        return { status: 'fail', message: install.stderr || install.stdout };
-
-      const restartCmd = [
-        'pkill -f "python -m opta_lmx.main" >/dev/null 2>&1 || true;',
-        'pkill -f "python -m opta_lmx" >/dev/null 2>&1 || true;',
-        `if [ -x ${quoteSh(join(repoPath, '.venv/bin/python'))} ]; then PY=${quoteSh(join(repoPath, '.venv/bin/python'))};`,
-        'else PY=python3; fi;',
-        `nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m opta_lmx.main --host 127.0.0.1 --port ${lmxPort} >/tmp/opta-lmx.log 2>&1 &`,
-        'ok=0;',
-        `for i in $(seq 1 45); do code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:${lmxPort}/healthz || true);`,
-        'if [ "$code" = "200" ] || [ "$code" = "401" ] || [ "$code" = "403" ]; then ok=1; break; fi;',
-        'sleep 1;',
-        'done;',
-        'if [ "$ok" = "1" ]; then true; else pgrep -f "python -m opta_lmx.main" >/dev/null 2>&1 || pgrep -f "python -m opta_lmx" >/dev/null 2>&1; fi',
-      ].join(' ');
-
-      const restart = await runLocalCommand(restartCmd, repoPath, dryRun);
-      if (restart.exitCode !== 0) {
+    case 'daemon': {
+      const cmd = [
+        'if ! command -v opta >/dev/null 2>&1; then echo "__ERR__:missing-opta"; exit 41; fi',
+        'opta daemon stop >/dev/null 2>&1 || true',
+        'opta daemon start --json >/dev/null 2>&1 || opta daemon start >/dev/null 2>&1',
+        'status_json="$(opta daemon status --json 2>/dev/null || true)"',
+        'echo "$status_json"',
+        'echo "$status_json" | grep -Eq \'"running"[[:space:]]*:[[:space:]]*true\' || exit 42',
+      ].join('; ');
+      const result = await runLocalCommand(cmd, repoPath, dryRun);
+      if (result.exitCode === 41) {
         return {
           status: 'fail',
-          message: `install ok, restart/health failed: ${restart.stderr || restart.stdout}`,
+          message: 'opta command not found in PATH locally (cannot manage daemon)',
         };
       }
-
-      return {
-        status: 'ok',
-        message: dryRun ? 'dry-run install/restart' : 'install + restart + health check complete',
-      };
-    }
-    case 'plus': {
-      const result = await runLocalCommand('swift build', repoPath, dryRun);
-      if (result.exitCode !== 0) return { status: 'fail', message: result.stderr || result.stdout };
-      return { status: 'ok', message: dryRun ? 'dry-run swift build' : 'swift build complete' };
-    }
-    case 'web': {
-      const result = await runLocalCommand(canonicalWebBuildScript(), repoPath, dryRun);
-      if (result.exitCode === 64) {
-        const missing = result.stdout.split('\n').find((line) => line.startsWith('__WEB_APP_MISSING__:'));
-        const appDir = missing?.replace('__WEB_APP_MISSING__:', '').trim() || 'unknown';
-        return { status: 'fail', message: `missing web app directory: ${appDir}` };
+      if (result.exitCode === 42) {
+        return {
+          status: 'fail',
+          message: 'daemon did not report healthy status after restart',
+        };
       }
       if (result.exitCode !== 0) return { status: 'fail', message: result.stderr || result.stdout };
-      return { status: 'ok', message: dryRun ? 'dry-run web workspace build' : 'web workspace build complete' };
+      return {
+        status: 'ok',
+        message: dryRun ? 'dry-run daemon restart' : 'daemon restart + health check complete',
+      };
     }
   }
 }
@@ -859,9 +1120,7 @@ async function runComponentBuildRemote(
   component: UpdateComponent,
   repoPath: string,
   dryRun: boolean,
-  ssh: SshConfig,
-  lmxPort: number,
-  lmxPythonPath: string
+  ssh: SshConfig
 ): Promise<{ status: StepStatus; message: string }> {
   let command: string;
 
@@ -869,58 +1128,43 @@ async function runComponentBuildRemote(
     case 'cli':
       command = `cd ${quoteSh(repoPath)} && (${CLI_UPDATE_BUILD_SCRIPT})`;
       break;
-    case 'lmx':
+    case 'daemon':
       command = [
-        `cd ${quoteSh(repoPath)}`,
-        '&& {',
-        `if [ -x ${quoteSh(join(repoPath, '.venv/bin/python'))} ]; then PIPY=${quoteSh(join(repoPath, '.venv/bin/python'))};`,
-        'else PIPY=python3; fi;',
-        `"$PIPY" -m pip install -e ${quoteSh(repoPath)} --no-deps || "$PIPY" -m pip install ${quoteSh(repoPath)} --no-deps;`,
-        `pkill -f "python -m opta_lmx.main" >/dev/null 2>&1 || true;`,
-        `pkill -f "python -m opta_lmx" >/dev/null 2>&1 || true;`,
-        `if [ -x ${quoteSh(lmxPythonPath)} ] && ${quoteSh(lmxPythonPath)} -c "import opta_lmx" >/dev/null 2>&1; then PY=${quoteSh(lmxPythonPath)};`,
-        'elif command -v "$PIPY" >/dev/null 2>&1; then PY="$PIPY";',
-        'else PY=python3; fi;',
-        `nohup env LMX_LOGGING__FILE=/tmp/opta-lmx.log "$PY" -m opta_lmx.main --host 127.0.0.1 --port ${lmxPort} >/tmp/opta-lmx.log 2>&1 &`,
-        'ok=0;',
-        `for i in $(seq 1 45); do code=$(curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:${lmxPort}/healthz || true);`,
-        'if [ "$code" = "200" ] || [ "$code" = "401" ] || [ "$code" = "403" ]; then ok=1; break; fi;',
-        'sleep 1;',
-        'done;',
-        'if [ "$ok" = "1" ]; then true; else pgrep -f "python -m opta_lmx.main" >/dev/null 2>&1 || pgrep -f "python -m opta_lmx" >/dev/null 2>&1; fi;',
-        '}',
-      ].join(' ');
-      break;
-    case 'plus':
-      command = `cd ${quoteSh(repoPath)} && swift build`;
-      break;
-    case 'web':
-      command = `cd ${quoteSh(repoPath)} && (${canonicalWebBuildScript()})`;
+        'if ! command -v opta >/dev/null 2>&1; then echo "__ERR__:missing-opta"; exit 41; fi',
+        'opta daemon stop >/dev/null 2>&1 || true',
+        'opta daemon start --json >/dev/null 2>&1 || opta daemon start >/dev/null 2>&1',
+        'status_json="$(opta daemon status --json 2>/dev/null || true)"',
+        'echo "$status_json"',
+        'echo "$status_json" | grep -Eq \'"running"[[:space:]]*:[[:space:]]*true\' || exit 42',
+      ].join('; ');
       break;
   }
 
   const result = await runRemoteCommand(ssh, command, dryRun);
-  if (component === 'web' && result.exitCode === 64) {
-    const missing = result.stdout.split('\n').find((line) => line.startsWith('__WEB_APP_MISSING__:'));
-    const appDir = missing?.replace('__WEB_APP_MISSING__:', '').trim() || 'unknown';
-    return { status: 'fail', message: `missing web app directory: ${appDir}` };
+  if (component === 'daemon' && result.exitCode === 41) {
+    return {
+      status: 'fail',
+      message: 'opta command not found in PATH on remote host (cannot manage daemon)',
+    };
+  }
+  if (component === 'daemon' && result.exitCode === 42) {
+    return {
+      status: 'fail',
+      message: 'remote daemon did not report healthy status after restart',
+    };
   }
   if (result.exitCode !== 0) {
     return { status: 'fail', message: result.stderr || result.stdout || 'remote command failed' };
   }
 
   const okMessage =
-    component === 'lmx'
+    component === 'daemon'
       ? dryRun
-        ? 'dry-run install/restart'
-        : 'install + restart + health check complete'
-      : component === 'cli'
-        ? dryRun
-          ? 'dry-run typecheck + build'
-          : 'typecheck + build complete'
-        : dryRun
-          ? 'dry-run build'
-          : 'build complete';
+        ? 'dry-run daemon restart'
+        : 'daemon restart + health check complete'
+      : dryRun
+        ? 'dry-run typecheck + build'
+        : 'typecheck + build complete';
   return { status: 'ok', message: okMessage };
 }
 
@@ -978,15 +1222,28 @@ function canProceedToBuild(gitResult: { status: StepStatus; message: string }): 
 export async function updateCommand(opts: UpdateOptions): Promise<void> {
   const config = await loadConfig();
   const components = parseComponentList(opts.components);
-  const mode = opts.target ?? 'auto';
+  const mode = opts.target
+    ? parseTargetMode(opts.target)
+    : canPromptForTargetSelection(opts)
+      ? await promptForUpdateTarget()
+      : 'local';
   const remoteHost = opts.remoteHost ?? config.connection.host;
-  const targets = resolveTargets(mode, remoteHost);
+  const configFallbackHosts = Array.isArray(config.connection.fallbackHosts)
+    ? config.connection.fallbackHosts
+    : [];
+  const targets = resolveTargets(mode);
 
   // Windows can run local updates but not SSH-based remote updates.
-  if (isWindows && targets.includes('remote') && !isLocalHost(remoteHost)) {
+  if (isWindows && targets.includes('remote')) {
     throw new (await import('../core/errors.js')).OptaError(
       'Remote updates via SSH are not supported on Windows.\n\n' +
         'Use --target local to update local components, or run remote updates from a macOS/Linux host.'
+    );
+  }
+  if (isWindows && targets.includes('local')) {
+    throw new (await import('../core/errors.js')).OptaError(
+      'Local updates currently require a POSIX shell.\n\n' +
+        'Run local updates from macOS/Linux (or WSL), or install/update manually on Windows.'
     );
   }
   let remoteHostUsed: string | null = null;
@@ -1000,29 +1257,31 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
 
   const localAppsRoot = opts.localRoot ? expandHome(opts.localRoot) : detectAppsRoot(process.cwd());
 
-  const remoteAppsRoot = opts.remoteRoot
+  const remoteAppsRootHint = opts.remoteRoot
     ? expandHome(opts.remoteRoot)
     : deriveRemoteAppsRootFromLmxPath(config.connection.ssh.lmxPath);
 
-  const verifyStepCount =
-    targets.includes('remote') && components.includes('cli') && !isLocalHost(remoteHost) ? 1 : 0;
-  const remoteGuardStepCount = targets.includes('remote') && !isLocalHost(remoteHost) ? 1 : 0;
-  const expectedRemoteHosts = isLocalHost(remoteHost)
-    ? 1
-    : explicitRolloutHosts.length > 0
+  const verifyStepCount = targets.includes('remote') && components.includes('cli') ? 1 : 0;
+  const remoteGuardStepCount = targets.includes('remote') ? 1 : 0;
+  const configuredRemoteHosts = resolveRemoteHostCandidates(
+    isLocalHost(remoteHost) ? '' : remoteHost,
+    [...explicitRolloutHosts, ...configFallbackHosts].filter((host) => !isLocalHost(host))
+  );
+  const expectedRemoteHosts =
+    explicitRolloutHosts.length > 0
       ? explicitRolloutHosts.length
       : rolloutAllReachable
-        ? Math.max(1, 1 + config.connection.fallbackHosts.length)
+        ? Math.max(1, configuredRemoteHosts.length)
         : 1;
+  const localCliVerifySteps =
+    targets.includes('local') && components.includes('cli') && !noBuild ? 1 : 0;
   const localStepCount = targets.includes('local')
     ? localAppsRoot
-      ? components.length * 2
+      ? components.length * 2 + localCliVerifySteps
       : 1
     : 0;
   const remoteStepCount = targets.includes('remote')
-    ? isLocalHost(remoteHost)
-      ? components.length
-      : (components.length * 2 + verifyStepCount + remoteGuardStepCount) * expectedRemoteHosts
+    ? (components.length * 2 + verifyStepCount + remoteGuardStepCount) * expectedRemoteHosts
     : 0;
   const progress = createSegmentedStepProgressTracker(
     [
@@ -1075,233 +1334,185 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
         const buildResult = await runComponentBuildLocal(
           component,
           repoPath,
-          dryRun,
-          config.connection.port
+          dryRun
         );
         pushResult(componentStep('local', component, 'build', buildResult));
+
+        if (component === 'cli' && buildResult.status === 'ok') {
+          const verify = await verifyLocalCliCommands(dryRun);
+          pushResult(componentStep('local', component, 'verify', verify));
+        }
       }
     }
   }
 
   if (targets.includes('remote')) {
-    if (isLocalHost(remoteHost)) {
-      remoteHostUsed = remoteHost;
+    const baseSshConfig: SshConfig = {
+      host: remoteHost,
+      user: opts.remoteUser ?? config.connection.ssh.user,
+      identityFile: expandHome(opts.identityFile ?? config.connection.ssh.identityFile),
+    };
+
+    let discoveredRemoteHosts: DiscoveredRemoteHostCandidate[] = [];
+    const shouldDiscoverRemoteHosts =
+      !opts.remoteHost && (explicitRolloutHosts.length === 0 || config.connection.autoDiscover);
+    if (shouldDiscoverRemoteHosts) {
+      try {
+        const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
+        const discovered = await discoverLmxHosts(2_500);
+        const byHost = new Map<string, DiscoveredRemoteHostCandidate>();
+        for (const entry of discovered) {
+          const host = entry.host.trim();
+          if (!host || isLocalHost(host)) continue;
+          const key = host.toLowerCase();
+          if (byHost.has(key)) continue;
+          byHost.set(key, {
+            host,
+            source: entry.source,
+            latencyMs: entry.latencyMs,
+          });
+        }
+        discoveredRemoteHosts = Array.from(byHost.values());
+      } catch {
+        // Discovery is best-effort and should never block updates.
+      }
+    }
+
+    const explicitRemoteHosts = explicitRolloutHosts.filter((host) => !isLocalHost(host));
+    const configuredFallbackHosts = configFallbackHosts.filter((host) => !isLocalHost(host));
+    const remoteCandidates = resolveRemoteHostCandidates(
+      isLocalHost(remoteHost) ? '' : remoteHost,
+      [...explicitRemoteHosts, ...configuredFallbackHosts],
+      discoveredRemoteHosts.map((entry) => entry.host)
+    );
+    const selection = await selectReachableRemoteHost(
+      remoteCandidates,
+      (candidateHost) =>
+        runRemoteCommand(
+          {
+            ...baseSshConfig,
+            host: candidateHost,
+          },
+          'echo connected',
+          dryRun
+        ),
+      { parallel: true }
+    );
+    const reachableHosts = extractReachableRemoteHosts(selection.probes);
+    let selectedRemoteHost = selection.selectedHost;
+    if (
+      reachableHosts.length > 0 &&
+      explicitRemoteHosts.length === 0 &&
+      !rolloutAllReachable &&
+      !opts.remoteHost &&
+      canPromptForRemoteHostSelection(opts)
+    ) {
+      selectedRemoteHost = await promptForRemoteHostSelection(reachableHosts, discoveredRemoteHosts);
+    }
+    const rolloutHosts = resolveRolloutHosts(
+      reachableHosts,
+      selectedRemoteHost,
+      rolloutAllReachable,
+      explicitRemoteHosts
+    );
+
+    if (rolloutHosts.length === 0) {
+      const connectStatus = remoteConnectFailureStatus();
+      const attemptDetail =
+        selection.probes.length > 0
+          ? selection.probes
+              .map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`)
+              .join('; ')
+          : 'ssh failed';
+      const attemptedHosts = remoteCandidates.length > 0 ? remoteCandidates.join(', ') : '(none)';
+      const explicitHostHint =
+        explicitRolloutHosts.length > 0
+          ? `; requested hosts=${explicitRolloutHosts.join(', ')}`
+          : '';
+      const connectDetail =
+        remoteCandidates.length === 0
+          ? 'no remote hosts resolved (set --remote-host/--remote-hosts or enable auto-discovery)'
+          : `ssh failed for hosts (${attemptedHosts}) — ${attemptDetail}`;
+      const connectMessage = `${connectDetail}${explicitHostHint}`;
       for (const component of components) {
         pushResult({
           target: 'remote',
           component,
           step: 'connect',
-          status: 'skip',
-          message: `remote host ${remoteHost} resolves to local; skipped`,
+          status: connectStatus,
+          message: connectMessage,
           host: remoteHost,
         });
       }
     } else {
-      const baseSshConfig: SshConfig = {
-        host: remoteHost,
-        user: opts.remoteUser ?? config.connection.ssh.user,
-        identityFile: expandHome(opts.identityFile ?? config.connection.ssh.identityFile),
-      };
+      remoteHostUsed = rolloutHosts.join(',');
 
-      let discoveredRemoteHosts: DiscoveredRemoteHostCandidate[] = [];
-      const shouldDiscoverRemoteHosts = config.connection.autoDiscover && !opts.remoteHost;
-      if (shouldDiscoverRemoteHosts) {
-        try {
-          const { discoverLmxHosts } = await import('../lmx/mdns-discovery.js');
-          const discovered = await discoverLmxHosts(2_500);
-          const byHost = new Map<string, DiscoveredRemoteHostCandidate>();
-          for (const entry of discovered) {
-            const host = entry.host.trim();
-            if (!host) continue;
-            const key = host.toLowerCase();
-            if (byHost.has(key)) continue;
-            byHost.set(key, {
-              host,
-              source: entry.source,
-              latencyMs: entry.latencyMs,
-            });
-          }
-          discoveredRemoteHosts = Array.from(byHost.values());
-        } catch {
-          // Discovery is best-effort and should never block updates.
-        }
+      const reachableHostKeySet = new Set(reachableHosts.map((host) => host.toLowerCase()));
+      const unreachableExplicitHosts = explicitRemoteHosts.filter(
+        (host) => !reachableHostKeySet.has(host.toLowerCase())
+      );
+      for (const missingHost of unreachableExplicitHosts) {
+        pushResult({
+          target: 'remote',
+          component: components[0] ?? 'cli',
+          step: 'connect',
+          status: remoteConnectFailureStatus(),
+          message: `requested remote host not reachable: ${missingHost}`,
+          host: missingHost,
+        });
       }
 
-      const remoteCandidates = resolveRemoteHostCandidates(
-        remoteHost,
-        [...explicitRolloutHosts, ...config.connection.fallbackHosts],
-        discoveredRemoteHosts.map((entry) => entry.host)
-      );
-      const selection = await selectReachableRemoteHost(
-        remoteCandidates,
-        (candidateHost) =>
-          runRemoteCommand(
+      const localOnlyExplicitHosts = explicitRolloutHosts.filter((host) => isLocalHost(host));
+      for (const skippedHost of localOnlyExplicitHosts) {
+        pushResult({
+          target: 'remote',
+          component: components[0] ?? 'cli',
+          step: 'connect',
+          status: remoteConnectFailureStatus(),
+          message: `requested remote host resolves local and was ignored: ${skippedHost}`,
+          host: skippedHost,
+        });
+      }
+
+      const remoteAppsRootCandidates = buildRemoteAppsRootCandidates({
+        explicitRoot: opts.remoteRoot ? expandHome(opts.remoteRoot) : undefined,
+        derivedRoot: remoteAppsRootHint,
+        localAppsRoot,
+        remoteUser: baseSshConfig.user,
+      });
+
+      for (const rolloutHost of rolloutHosts) {
+        const sshConfig: SshConfig = {
+          ...baseSshConfig,
+          host: rolloutHost,
+        };
+
+        const guardComponent = components[0] ?? 'cli';
+        const guard = await runRemoteLanStabilityGuard(sshConfig, dryRun);
+        pushResult(
+          componentStep(
+            'remote',
+            guardComponent,
+            'network',
             {
-              ...baseSshConfig,
-              host: candidateHost,
+              status: guard.status,
+              message: guard.message,
             },
-            'echo connected',
-            dryRun
-          ),
-        { parallel: true }
-      );
-      const reachableHosts = extractReachableRemoteHosts(selection.probes);
-      let selectedRemoteHost = selection.selectedHost;
-      if (
-        reachableHosts.length > 1 &&
-        explicitRolloutHosts.length === 0 &&
-        !rolloutAllReachable &&
-        canPromptForRemoteHostSelection(opts)
-      ) {
-        selectedRemoteHost = await promptForRemoteHostSelection(reachableHosts, discoveredRemoteHosts);
-      }
-      const rolloutHosts = resolveRolloutHosts(
-        reachableHosts,
-        selectedRemoteHost,
-        rolloutAllReachable,
-        explicitRolloutHosts
-      );
-
-      if (rolloutHosts.length === 0) {
-        const connectStatus = remoteConnectFailureStatus(mode);
-        const attemptDetail =
-          selection.probes.length > 0
-            ? selection.probes
-                .map((probe) => `${probe.host}: ${summarizeOutput(probe.detail)}`)
-                .join('; ')
-            : 'ssh failed';
-        const attemptedHosts =
-          remoteCandidates.length > 0 ? remoteCandidates.join(', ') : remoteHost;
-        const explicitHostHint =
-          explicitRolloutHosts.length > 0
-            ? `; requested hosts=${explicitRolloutHosts.join(', ')}`
-            : '';
-        const connectDetail = `ssh failed for hosts (${attemptedHosts}) — ${attemptDetail}`;
-        const connectMessage =
-          mode === 'auto'
-            ? `${connectDetail}${explicitHostHint} (auto mode skipped remote updates; use --target remote once SSH is reachable)`
-            : `${connectDetail}${explicitHostHint}`;
-        for (const component of components) {
-          pushResult({
-            target: 'remote',
-            component,
-            step: 'connect',
-            status: connectStatus,
-            message: connectMessage,
-            host: remoteHost,
-          });
-        }
-      } else {
-        remoteHostUsed = rolloutHosts.join(',');
-
-        const reachableHostKeySet = new Set(reachableHosts.map((host) => host.toLowerCase()));
-        const unreachableExplicitHosts = explicitRolloutHosts.filter(
-          (host) => !reachableHostKeySet.has(host.toLowerCase())
+            sshConfig.host
+          )
         );
-        for (const missingHost of unreachableExplicitHosts) {
-          pushResult({
-            target: 'remote',
-            component: components[0] ?? 'cli',
-            step: 'connect',
-            status: remoteConnectFailureStatus(mode),
-            message: `requested remote host not reachable: ${missingHost}`,
-            host: missingHost,
-          });
-        }
 
-        for (const rolloutHost of rolloutHosts) {
-          const sshConfig: SshConfig = {
-            ...baseSshConfig,
-            host: rolloutHost,
-          };
-
-          const guardComponent = components[0] ?? 'cli';
-          const guard = await runRemoteLanStabilityGuard(sshConfig, dryRun, mode);
-          pushResult(
-            componentStep(
-              'remote',
-              guardComponent,
-              'network',
-              {
-                status: guard.status,
-                message: guard.message,
-              },
-              sshConfig.host
-            )
-          );
-
-          if (!guard.canProceed) {
-            const gatedMessage = 'skipped due LAN guard failure';
-            for (const component of components) {
-              pushResult({
-                target: 'remote',
-                component,
-                step: 'git',
-                status: 'skip',
-                message: gatedMessage,
-                host: sshConfig.host,
-              });
-
-              if (noBuild) {
-                pushResult({
-                  target: 'remote',
-                  component,
-                  step: 'build',
-                  status: 'skip',
-                  message: 'skipped (--no-build)',
-                  host: sshConfig.host,
-                });
-              } else {
-                pushResult({
-                  target: 'remote',
-                  component,
-                  step: 'build',
-                  status: 'skip',
-                  message: gatedMessage,
-                  host: sshConfig.host,
-                });
-              }
-
-              if (component === 'cli') {
-                pushResult({
-                  target: 'remote',
-                  component,
-                  step: 'verify',
-                  status: 'skip',
-                  message: gatedMessage,
-                  host: sshConfig.host,
-                });
-              }
-            }
-            continue;
-          }
-
+        if (!guard.canProceed) {
+          const gatedMessage = 'skipped due LAN guard failure';
           for (const component of components) {
-            const repoPath =
-              component === 'lmx'
-                ? config.connection.ssh.lmxPath
-                : remoteAppsRoot
-                  ? componentRepoPath(component, remoteAppsRoot)
-                  : '';
-
-            if (!repoPath) {
-              pushResult({
-                target: 'remote',
-                component,
-                step: 'discover-root',
-                status: 'skip',
-                message: 'remote path unavailable; set --remote-root for cli/plus/web',
-                host: sshConfig.host,
-              });
-              continue;
-            }
-
-            const gitResult = await updateGitRemote(repoPath, noPull, sshConfig, dryRun);
-            pushResult(componentStep('remote', component, 'git', gitResult, sshConfig.host));
-
-            if (!canProceedToBuild(gitResult)) {
-              continue;
-            }
+            pushResult({
+              target: 'remote',
+              component,
+              step: 'git',
+              status: 'skip',
+              message: gatedMessage,
+              host: sshConfig.host,
+            });
 
             if (noBuild) {
               pushResult({
@@ -1313,21 +1524,172 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
                 host: sshConfig.host,
               });
             } else {
-              const buildResult = await runComponentBuildRemote(
+              pushResult({
+                target: 'remote',
                 component,
-                repoPath,
-                dryRun,
-                sshConfig,
-                config.connection.port,
-                config.connection.ssh.pythonPath
-              );
-              pushResult(componentStep('remote', component, 'build', buildResult, sshConfig.host));
+                step: 'build',
+                status: 'skip',
+                message: gatedMessage,
+                host: sshConfig.host,
+              });
             }
 
             if (component === 'cli') {
-              const verify = await verifyRemoteCliCommands(sshConfig, dryRun);
-              pushResult(componentStep('remote', component, 'verify', verify, sshConfig.host));
+              pushResult({
+                target: 'remote',
+                component,
+                step: 'verify',
+                status: 'skip',
+                message: gatedMessage,
+                host: sshConfig.host,
+              });
             }
+          }
+          continue;
+        }
+
+        const remoteRootResolution = await resolveRemoteAppsRootOnHost(
+          sshConfig,
+          remoteAppsRootCandidates,
+          dryRun
+        );
+        const resolvedRemoteAppsRoot = remoteRootResolution.root;
+        if (!resolvedRemoteAppsRoot) {
+          const discoveryMessage =
+            remoteRootResolution.tried.length === 0
+              ? 'remote path unavailable; set --remote-root for cli/daemon'
+              : `remote path unavailable; tried ${remoteRootResolution.tried.join(', ')} (set --remote-root for cli/daemon)`;
+          for (const component of components) {
+            pushResult({
+              target: 'remote',
+              component,
+              step: 'discover-root',
+              status: remoteConnectFailureStatus(),
+              message: discoveryMessage,
+              host: sshConfig.host,
+            });
+          }
+          continue;
+        }
+
+        for (const component of components) {
+          const repoPath = componentRepoPath(component, resolvedRemoteAppsRoot);
+
+          const gitResult = await updateGitRemote(repoPath, noPull, sshConfig, dryRun);
+          pushResult(componentStep('remote', component, 'git', gitResult, sshConfig.host));
+
+          if (!canProceedToBuild(gitResult)) {
+            pushResult({
+              target: 'remote',
+              component,
+              step: 'build',
+              status: 'skip',
+              message: `skipped due git step (${gitResult.message})`,
+              host: sshConfig.host,
+            });
+            if (component === 'cli') {
+              pushResult({
+                target: 'remote',
+                component,
+                step: 'verify',
+                status: 'skip',
+                message: 'skipped because CLI build did not run',
+                host: sshConfig.host,
+              });
+            }
+            continue;
+          }
+
+          let buildStatus: StepStatus = 'skip';
+          if (noBuild) {
+            pushResult({
+              target: 'remote',
+              component,
+              step: 'build',
+              status: 'skip',
+              message: 'skipped (--no-build)',
+              host: sshConfig.host,
+            });
+            buildStatus = 'skip';
+          } else {
+            const buildResult = await runComponentBuildRemote(
+              component,
+              repoPath,
+              dryRun,
+              sshConfig
+            );
+            pushResult(componentStep('remote', component, 'build', buildResult, sshConfig.host));
+            buildStatus = buildResult.status;
+          }
+
+          if (component === 'cli') {
+            if (noBuild) {
+              pushResult({
+                target: 'remote',
+                component,
+                step: 'verify',
+                status: 'skip',
+                message: 'skipped (--no-build)',
+                host: sshConfig.host,
+              });
+              continue;
+            }
+            if (buildStatus !== 'ok') {
+              pushResult({
+                target: 'remote',
+                component,
+                step: 'verify',
+                status: 'skip',
+                message: 'skipped because CLI build failed',
+                host: sshConfig.host,
+              });
+              continue;
+            }
+            let verify = await verifyRemoteCliCommands(sshConfig, dryRun);
+            const shouldFallbackPack =
+              !dryRun &&
+              verify.status === 'fail' &&
+              verify.message.includes('missing command entries in remote opta --help') &&
+              Boolean(localAppsRoot);
+
+            if (shouldFallbackPack && localAppsRoot) {
+              const localCliRepoPath = componentRepoPath('cli', localAppsRoot);
+              let artifact: LocalCliPackArtifact | null = null;
+              try {
+                const pack = await createLocalCliPackArtifact(localCliRepoPath);
+                if (pack.status !== 'ok' || !pack.artifact) {
+                  verify = {
+                    status: 'fail',
+                    message: `${verify.message}; packaged CLI fallback unavailable: ${pack.message}`,
+                  };
+                } else {
+                  artifact = pack.artifact;
+                  const install = await installLocalCliPackOnRemote(sshConfig, artifact, false);
+                  if (install.status !== 'ok') {
+                    verify = {
+                      status: 'fail',
+                      message: `${verify.message}; packaged CLI fallback failed: ${install.message}`,
+                    };
+                  } else {
+                    const reverify = await verifyRemoteCliCommands(sshConfig, false);
+                    verify =
+                      reverify.status === 'ok'
+                        ? {
+                            status: 'ok',
+                            message: `${reverify.message}; recovered via packaged CLI fallback`,
+                          }
+                        : {
+                            status: 'fail',
+                            message: `${verify.message}; packaged CLI fallback installed but verify still failed: ${reverify.message}`,
+                          };
+                  }
+                }
+              } finally {
+                cleanupLocalCliPackArtifact(artifact);
+              }
+            }
+
+            pushResult(componentStep('remote', component, 'verify', verify, sshConfig.host));
           }
         }
       }
@@ -1351,7 +1713,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           localAppsRoot,
           remoteHost,
           remoteHostUsed,
-          remoteAppsRoot,
+          remoteAppsRoot: remoteAppsRootHint,
           results,
         },
         null,
@@ -1380,7 +1742,7 @@ export async function updateCommand(opts: UpdateOptions): Promise<void> {
           localAppsRoot: localAppsRoot ?? '(auto-detect failed)',
           remoteHost,
           remoteHostUsed: remoteHostUsed ?? '(none)',
-          remoteAppsRoot: remoteAppsRoot ?? '(auto)',
+          remoteAppsRoot: remoteAppsRootHint ?? '(auto)',
           json: Boolean(opts.json),
         },
         steps: results.map((result) => ({

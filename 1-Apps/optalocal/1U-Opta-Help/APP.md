@@ -1,6 +1,6 @@
 # Opta Help
 
-User-facing documentation website for the Opta Local private AI stack.
+User-facing documentation website for Opta, with operational documentation centered on Opta Local as the first public release.
 
 ## Identity
 
@@ -13,6 +13,7 @@ User-facing documentation website for the Opta Local private AI stack.
 ## Scope
 
 Comprehensive user guides for:
+- Opta brand and Opta AI activation model (runtime source -> Opta AI -> CLI/Code)
 - Ecosystem & Synergies (runtime layer vs web surfaces, change-impact workflow)
 - Opta Accounts (auth, SSO, sync, troubleshooting)
 - Opta Status (service cards, release notes, feature-state interpretation)
@@ -24,6 +25,13 @@ Comprehensive user guides for:
 - Browser Automation (tools, recording, guardrails)
 - Security & Permissions (policy engine, approval workflow)
 - Developer Guide (MCP integration, API reference)
+
+## Canonical Narrative
+
+- **Opta:** the optimisation business/platform.
+- **Opta AI:** the optimizer users interact with.
+- **Opta Local:** first public release for activating and running Opta AI.
+- **Activation path:** local Opta LMX runtime or cloud model runtime powers Opta AI, then execution occurs in Opta CLI and Opta Code.
 
 ## Build
 

@@ -33,9 +33,9 @@ export default function LanSetupPage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>LAN Setup</h1>
           <p>
-            Connect your CLI to the LMX inference server running on your local network.
-            This page walks you through configuring the host address, setting up API
-            keys, and verifying the connection.
+            Bind your CLI to the LMX inference endpoint on your local network.
+            This guide covers host routing, credential handling, failover policy,
+            and end-to-end connectivity validation.
           </p>
 
           <h2 id="overview">Overview</h2>
@@ -128,8 +128,8 @@ opta_key_a1b2c3d4   lmx-host.local:1234     2026-03-01`}
           />
 
           <Callout variant="tip" title="Keychain storage">
-            API keys are stored in your system keychain (macOS Keychain or
-            libsecret on Linux), not in plain text config files. This keeps your
+            API keys are stored in your system credential store (macOS Keychain or
+            Windows Credential Manager), not in plain text config files. This keeps your
             credentials secure even if your config directory is synced or backed up.
           </Callout>
 
@@ -257,7 +257,7 @@ LMX:    connected (lmx-host.local:1234)
             If <code>opta status</code> shows &quot;connection refused&quot;, verify that:
           </p>
           <ul>
-            <li>LMX is running on the target host (<code>systemctl status opta-lmx</code> or check the process)</li>
+            <li>LMX is running on the target host (<code>launchctl list | grep opta.lmx</code> or <code>systemctl status opta-lmx</code>)</li>
             <li>The IP address and port are correct (<code>opta config get connection</code>)</li>
             <li>No firewall is blocking port 1234 on the LMX host</li>
             <li>Both machines are on the same LAN subnet</li>
@@ -274,9 +274,9 @@ LMX:    connected (lmx-host.local:1234)
 
           <h3>DNS resolution issues</h3>
           <p>
-            Always use IP addresses rather than hostnames for LMX connections. mDNS
-            hostname resolution can be unreliable across different macOS versions and
-            network configurations.
+            Prefer mDNS hostnames (for example <code>lmx-host.local</code>) when available,
+            then keep a fixed IP fallback configured for constrained network environments.
+            Opta components support both patterns.
           </p>
 
           <PrevNextNav prev={prev} next={next} />

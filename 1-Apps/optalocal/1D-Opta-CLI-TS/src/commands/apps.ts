@@ -1,6 +1,10 @@
 import chalk from 'chalk';
 import { checkbox } from '@inquirer/prompts';
-import { installDaemonService, uninstallDaemonService } from '../daemon/installer.js';
+import {
+  getDaemonServiceStatus,
+  installDaemonService,
+  uninstallDaemonService,
+} from '../daemon/installer.js';
 
 const AVAILABLE_APPS = [
   { value: 'opta-cli', name: 'Opta CLI (Core command line interface)' },
@@ -9,13 +13,33 @@ const AVAILABLE_APPS = [
   { value: 'opta-daemon', name: 'Opta Daemon Service (Background orchestrator)' },
 ];
 
-export function appsList(opts: { json?: boolean }) {
-  // In a full implementation, this dynamically checks macOS /Applications and Windows Registry.
-  // For now, we mock the core discovery to satisfy the Init Desktop Manager's JSON schema expectations.
-  const installed = [
+function assertSupportedManagedApp(id: string): void {
+  if (id === 'opta-daemon') return;
+  throw new Error(
+    `${id} install/uninstall is not implemented yet. Supported app id: opta-daemon`
+  );
+}
+
+async function discoverInstalledApps() {
+  const installed: Array<Record<string, string>> = [
     { id: 'opta-cli', name: 'Opta CLI', version: '0.5.0-alpha', path: process.execPath },
-    { id: 'opta-daemon', name: 'Opta Daemon Service', version: '0.4.1', path: 'system-service' }
   ];
+
+  const daemonStatus = await getDaemonServiceStatus();
+  if (daemonStatus !== 'not-installed') {
+    installed.push({
+      id: 'opta-daemon',
+      name: 'Opta Daemon Service',
+      version: '0.4.1',
+      path: `system-service:${daemonStatus}`,
+    });
+  }
+
+  return installed;
+}
+
+export async function appsList(opts: { json?: boolean }) {
+  const installed = await discoverInstalledApps();
 
   if (opts.json) {
     console.log(JSON.stringify(installed, null, 2));
@@ -51,12 +75,8 @@ export async function appsInstall(appIds?: string[]) {
   for (const id of selected) {
     console.log(chalk.blue('▶') + ` Installing ${chalk.bold(id)}...`);
     try {
-      if (id === 'opta-daemon') {
-        await installDaemonService();
-      } else {
-        // Placeholder for downloading/extracting binaries for other apps (Code, LMX) across Windows/macOS
-        await new Promise(r => setTimeout(r, 1000)); 
-      }
+      assertSupportedManagedApp(id);
+      await installDaemonService();
       console.log(`  ${chalk.green('✓')} Successfully installed ${id}
 `);
     } catch (err) {
@@ -85,12 +105,8 @@ export async function appsUninstall(appIds?: string[]) {
   for (const id of selected) {
     console.log(chalk.yellow('▶') + ` Uninstalling ${chalk.bold(id)}...`);
     try {
-      if (id === 'opta-daemon') {
-        await uninstallDaemonService();
-      } else {
-        // Placeholder for cleanup logic across Windows/macOS
-        await new Promise(r => setTimeout(r, 1000));
-      }
+      assertSupportedManagedApp(id);
+      await uninstallDaemonService();
       console.log(`  ${chalk.green('✓')} Successfully uninstalled ${id}
 `);
     } catch (err) {

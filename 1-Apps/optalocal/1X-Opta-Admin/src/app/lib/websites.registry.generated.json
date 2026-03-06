@@ -85,7 +85,6 @@
   "syntheticStatusProbeServiceIds": [
     "admin",
     "lmx",
-    "lmx-site",
     "daemon"
   ]
 }

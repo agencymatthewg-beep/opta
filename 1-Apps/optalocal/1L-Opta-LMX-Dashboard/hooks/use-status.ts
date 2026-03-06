@@ -8,6 +8,7 @@ import type {
     AdminStatusResponse,
     DeviceIdentityResponse,
     MemoryStatusResponse,
+    PredictorStatsResponse,
     StackStatusResponse,
 } from '@/lib/types'
 
@@ -53,4 +54,15 @@ export function useStack() {
         { refreshInterval: 15_000 }
     )
     return { stack: data, error, isLoading, refresh: mutate }
+}
+
+/** Poll /admin/predictor every 10s for usage predictor stats. */
+export function usePredictor() {
+    const { isConnected } = useConnection()
+    const { data, error, isLoading, mutate } = useSWR<PredictorStatsResponse>(
+        isConnected ? '/admin/predictor' : null,
+        lmxFetcher,
+        { refreshInterval: 10_000 }
+    )
+    return { predictor: data, error, isLoading, refresh: mutate }
 }

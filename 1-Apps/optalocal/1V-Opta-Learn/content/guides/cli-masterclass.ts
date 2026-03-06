@@ -11,7 +11,7 @@ export const cliMasterclass: Guide = {
   updatedAt: '2026-03-02',
   sections: [
     {
-      heading: 'Ecosystem Role',
+      heading: '[Setup] Ecosystem Role',
       body: 'The <a href="/guides/cli" class="app-link link-cli">Opta CLI</a> is your primary interface to the Opta Local stack. It provides interactive AI chat, autonomous task execution, model management, session control, and daemon lifecycle commands. It seamlessly connects to the local daemon, which orchestrates sessions and proxies requests to <a href="/guides/lmx" class="app-link link-lmx">Opta LMX</a> for inference.',
       visual: `<div class="visual-wrapper my-6 p-6 rounded-xl border border-white/10 bg-[#0a0a0f] relative overflow-hidden group">
         <div class="absolute inset-0 bg-gradient-to-br from-[#22c55e]/10 to-transparent opacity-50"></div>
@@ -36,11 +36,11 @@ export const cliMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Architecture & The Daemon',
+      heading: '[Configuration] Architecture & The Daemon',
       body: 'Under the hood, the CLI doesn\'t perform inference itself. Instead, it connects to the Opta Daemon (running in the background), which manages long-lived sessions, tool permissions, and communication with the <a href="/guides/lmx" class="app-link link-lmx">LMX</a> server. You can control the daemon directly using commands like <code>opta daemon start</code> or view its health via <code>opta status</code>.'
     },
     {
-      heading: 'Two Modes of Operation: Chat vs. Do',
+      heading: '[Operation] Two Modes of Operation: Chat vs. Do',
       body: 'The CLI operates in two fundamental modes designed for different workflows. <strong>Chat Mode</strong> is an interactive conversation session. You type messages, the model streams back responses token-by-token in real time, and you manually approve tool executions. <strong>Do Mode</strong> runs an autonomous agent loop. It takes a natural-language task, creates a plan, and automatically executes safe tools until the task is complete.',
       note: 'Use <code>opta chat</code> to explore and steer the conversation manually. Use <code>opta do "task"</code> when you have a well-defined goal and want the AI to execute it with minimal interruption.',
       visual: `<div class="visual-wrapper my-6 grid grid-cols-2 gap-4">
@@ -73,7 +73,7 @@ export const cliMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Working with Tools',
+      heading: '[Troubleshooting] Working with Tools',
       body: 'Both chat and do modes have access to the same powerful toolset. Read-only tools like <code>read_file</code> and <code>search_files</code> are auto-approved by default. Destructive tools like <code>write_file</code> or <code>run_command</code> trigger a Permission Prompt where you can approve, deny, or auto-approve for the remainder of the session.',
       code: `Tool: write_file\nPath: src/auth/validate.ts\nContent: (47 lines)\n\n[A]pprove  [D]eny  [A]ll for this tool  [Q]uit`,
       visual: `<div class="visual-wrapper my-8 border border-[#f59e0b]/30 bg-[rgba(245,158,11,0.05)] rounded-xl p-6 relative shadow-[0_0_30px_rgba(245,158,11,0.05)]">
@@ -93,7 +93,7 @@ export const cliMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Context Constellations',
+      heading: '[Optimization] Context Constellations',
       body: 'Understanding what the AI "sees" is critical. Use <code>opta context map</code> to generate a live Context Constellation. This visualizes exactly which files, terminal buffers, and API documentation are currently loaded into the AI\'s active memory, along with their associated token weight. It helps you trim unnecessary context to improve latency.',
       visual: `<div class="visual-wrapper my-8 relative rounded-xl border border-white/10 bg-[#0a0a0f] overflow-hidden p-8 shadow-2xl">
         <div class="absolute inset-0 opacity-[0.03]" style="background-image: radial-gradient(circle at 2px 2px, white 1px, transparent 0); background-size: 32px 32px;"></div>

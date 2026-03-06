@@ -42,8 +42,8 @@ describe('writeUpdateLog', () => {
     const baseDir = await createTempDir('opta-update-log-');
 
     const first = await writeUpdateLog({
-      summary: 'Promotion sync for CLI and LMX',
-      commandInputs: { target: 'both', dryRun: false },
+      summary: 'Promotion sync for CLI and daemon',
+      commandInputs: { target: 'local', dryRun: false },
       steps: [{ target: 'local', component: 'cli', step: 'git', status: 'ok', message: 'git sync complete' }],
       cwd: baseDir,
       logsDir: 'updates',
@@ -57,9 +57,9 @@ describe('writeUpdateLog', () => {
     });
 
     const second = await writeUpdateLog({
-      summary: 'Second promotion sync',
+      summary: 'Second promotion sync (remote daemon)',
       commandInputs: { target: 'remote' },
-      steps: [{ target: 'remote', component: 'lmx', step: 'build', status: 'skip', message: 'skipped' }],
+      steps: [{ target: 'remote', component: 'daemon', step: 'build', status: 'skip', message: 'skipped' }],
       cwd: baseDir,
       logsDir: 'updates',
       rangeStart: 200,

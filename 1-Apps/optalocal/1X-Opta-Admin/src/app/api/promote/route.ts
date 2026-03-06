@@ -18,7 +18,9 @@ const OPTA_LEARN_DIR = path.resolve(process.cwd(), '../1V-Opta-Learn');
 const GUIDES_INDEX_PATH = path.join(OPTA_LEARN_DIR, 'content/guides/index.ts');
 const MANIFEST_PATH = path.join(OPTA_LEARN_DIR, 'public/guides-manifest.json');
 const LEARN_MANIFEST_URL = 'https://learn.optalocal.com/api/guides-manifest';
-const DEFAULT_PROMOTION_ALLOWED_SLUGS = ['cli'];
+// Default-open for authenticated admins so newly generated guide slugs can be
+// promoted without config churn. Restrict via PROMOTION_ALLOWED_SLUGS if needed.
+const DEFAULT_PROMOTION_ALLOWED_SLUGS: string[] = [];
 
 interface PromotePayload {
   slug?: unknown;
@@ -59,7 +61,7 @@ function normalizeSlug(value: unknown): string {
 function parsePromotionPolicy(rawValue: string | undefined): PromotionPolicy {
   const raw = (rawValue ?? '').trim();
   if (!raw) {
-    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+    return { allowAll: true, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
   }
 
   const seen = new Set<string>();
@@ -75,7 +77,7 @@ function parsePromotionPolicy(rawValue: string | undefined): PromotionPolicy {
   }
 
   if (!allowAll && seen.size === 0) {
-    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+    return { allowAll: true, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
   }
   return { allowAll, allowedSlugs: Array.from(seen) };
 }

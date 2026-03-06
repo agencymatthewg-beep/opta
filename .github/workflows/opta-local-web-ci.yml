@@ -6,6 +6,9 @@ on:
       - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
       - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client/**"
       - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/protocol-shared/**"
+      - "1-Apps/optalocal/scripts/**"
+      - "1-Apps/optalocal/package.json"
+      - "1-Apps/optalocal/package-lock.json"
       - ".github/workflows/opta-local-web-ci.yml"
   push:
     branches: [main]
@@ -13,6 +16,9 @@ on:
       - "1-Apps/optalocal/1P-Opta-Code-Universal/**"
       - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client/**"
       - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/protocol-shared/**"
+      - "1-Apps/optalocal/scripts/**"
+      - "1-Apps/optalocal/package.json"
+      - "1-Apps/optalocal/package-lock.json"
       - ".github/workflows/opta-local-web-ci.yml"
   workflow_dispatch:
     inputs:
@@ -21,8 +27,74 @@ on:
         required: false
         type: boolean
         default: false
+      run_phased:
+        description: "Run phased release gate checks"
+        required: false
+        type: boolean
+        default: false
 
 jobs:
+  workspace-gates:
+    name: Workspace Gates (Deterministic)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/package-lock.json"
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Check CSP script-src contracts
+        run: npm run check:csp:script-src
+
+      - name: Check SSO contracts
+        run: npm run check:sso:contracts
+
+      - name: Check Accounts deep health contract
+        run: npm run check:accounts:health:contract
+
+      - name: Run deterministic gates
+        run: npm run gates:deterministic
+
+  workspace-gates-phased:
+    name: Workspace Gates (Phased)
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_phased }}
+    needs: workspace-gates
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: 1-Apps/optalocal
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: "1-Apps/optalocal/package-lock.json"
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Run phased release gates
+        run: npm run gates:phased
+
   web-quality:
     name: Lint, Typecheck, Unit, Build
     runs-on: ubuntu-latest

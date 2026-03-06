@@ -39,24 +39,21 @@ import { cliMasterclass } from './cli-masterclass';
 import { accountsSync } from './accounts-sync';
 import { browserAutomationGuide } from './browser-automation';
 import { codeDesktopOverview } from './code-desktop-overview';
-import { deepDiveTemplate } from './template-deep-dive';
-
 import { lmxMasterclass } from './lmx-masterclass';
 import { codeDesktopMasterclass } from './code-desktop-masterclass';
 import { accountsMasterclass } from './accounts-masterclass';
 import { audioVoiceGuide } from './audio-voice';
 import { ragWorkflowGuide } from './rag-workflow';
 export const allGuides: RegisteredGuide[] = [
-  { ...optaLocalIntro, status: 'draft' },
-  { ...lmxOverview, status: 'draft' },
+  { ...optaLocalIntro, status: 'verified' },
+  { ...lmxOverview, status: 'verified' },
   { ...cliMasterclass, status: 'verified' },
   { ...browserAutomationGuide, status: 'draft' },
-  { ...codeDesktopOverview, status: 'draft' },
-  { ...accountsSync, status: 'draft' },
-  { ...deepDiveTemplate, status: 'draft' },
-  { ...lmxMasterclass, status: 'draft' },
-  { ...codeDesktopMasterclass, status: 'draft' },
-  { ...accountsMasterclass, status: 'draft' },
+  { ...codeDesktopOverview, status: 'verified' },
+  { ...accountsSync, status: 'verified' },
+  { ...lmxMasterclass, status: 'verified' },
+  { ...codeDesktopMasterclass, status: 'verified' },
+  { ...accountsMasterclass, status: 'verified' },
   { ...audioVoiceGuide, status: 'draft' },
   { ...ragWorkflowGuide, status: 'draft' },
 ];
@@ -114,6 +111,26 @@ export function getGuide(slug: string): RegisteredGuide | undefined {
 
 export function getPublishedGuides(): RegisteredGuide[] {
   return allGuides.filter((g) => g.status === 'verified');
+}
+
+export type GuideSearchEntry = Pick<
+  RegisteredGuide,
+  'slug' | 'title' | 'app' | 'category' | 'summary' | 'tags' | 'updatedAt'
+> & {
+  sectionHeadings: string[];
+};
+
+export function getPublishedGuideSearchEntries(): GuideSearchEntry[] {
+  return getPublishedGuides().map((guide) => ({
+    slug: guide.slug,
+    title: guide.title,
+    app: guide.app,
+    category: guide.category,
+    summary: guide.summary,
+    tags: guide.tags,
+    updatedAt: guide.updatedAt,
+    sectionHeadings: guide.sections.map((section) => section.heading),
+  }));
 }
 
 export function getExplanationExtent(guide: Guide): ExplanationExtent {

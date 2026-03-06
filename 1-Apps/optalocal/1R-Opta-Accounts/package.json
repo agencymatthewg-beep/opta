@@ -10,7 +10,10 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "node --test --experimental-strip-types \"src/tests/**/*.test.ts\"",
-    "check": "npm run typecheck && npm run lint && npm run test && npm run build"
+    "verify:control-plane:schema": "node scripts/verify-control-plane-schema.mjs",
+    "smoke:api:control-plane": "node scripts/smoke-control-plane-api.mjs",
+    "check:control-plane": "npm run verify:control-plane:schema -- --optional && npm run smoke:api:control-plane -- --optional",
+    "check": "npm run typecheck && npm run lint && npm run test && npm run build && npm run check:control-plane"
   },
   "dependencies": {
     "@supabase/ssr": "^0.6.1",

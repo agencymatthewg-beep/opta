@@ -15,6 +15,7 @@ interface ProjectPaneProps {
     onCreateSession: () => void;
     deviceLabel?: string;
     onDeviceLabelChange?: (label: string) => void;
+    collapsed?: boolean;
 }
 
 function deriveAgentItems(
@@ -59,6 +60,7 @@ export function ProjectPane({
     onCreateSession,
     deviceLabel,
     onDeviceLabelChange,
+    collapsed = false,
 }: ProjectPaneProps) {
     const agentItems = deriveAgentItems(
         sessions,
@@ -77,7 +79,10 @@ export function ProjectPane({
     }
 
     return (
-        <aside className="project-pane">
+        <aside
+            className={`project-pane${collapsed ? " collapsed" : ""}`}
+            aria-hidden={collapsed ? "true" : undefined}
+        >
             {/* Projects Section */}
             <div className="pp-header">
                 <span className="pp-title">Projects</span>

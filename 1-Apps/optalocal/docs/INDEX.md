@@ -22,6 +22,8 @@ last_updated: 2026-03-04
 - `docs/KNOWLEDGE.md`
 - `docs/WORKFLOWS.md`
 - `docs/WEBSITE-HEALTH-SLO-RUNBOOK.md`
+- `docs/ops/rollback-by-surface-runbook.md`
+- `docs/ops/fast-diagnosis-matrix.md`
 - `docs/DECISIONS.md`
 - `docs/ROADMAP.md`
 
@@ -29,6 +31,7 @@ last_updated: 2026-03-04
 
 - `docs/README.md` - doc tiering + maintenance workflow
 - `docs/standards/DOCUMENTATION-SYSTEM.md` - quality gates for canonical docs
+- `docs/standards/LEGAL-CONTENT-GOVERNANCE.md` - copyright/trademark controls + copy publication checklist
 - `docs/content-sync-map/README.md` - ripple-effect mapping for cross-app content changes
 
 ## App-Level Docs

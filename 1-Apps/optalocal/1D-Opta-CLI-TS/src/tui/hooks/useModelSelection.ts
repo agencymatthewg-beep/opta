@@ -41,6 +41,7 @@ export interface UseModelSelectionOptions {
   connectionFallbackHosts: string[];
   connectionPort: number;
   connectionAdminKey: string | undefined;
+  connectionAdminKeysByHost: Record<string, string>;
   appendAction: (action: AppendActionEvent) => void;
   setActiveOverlay: (v: 'none' | 'model-picker' | 'help-browser') => void;
   setMessages: React.Dispatch<React.SetStateAction<TuiMessage[]>>;
@@ -68,6 +69,7 @@ export function useModelSelection({
   connectionFallbackHosts,
   connectionPort,
   connectionAdminKey,
+  connectionAdminKeysByHost,
   appendAction,
   setMessages,
   permissionPending,
@@ -120,6 +122,7 @@ export function useModelSelection({
           fallbackHosts: connectionFallbackHosts,
           port: connectionPort,
           adminKey: connectionAdminKey,
+          adminKeysByHost: connectionAdminKeysByHost,
           timeoutMs: MODEL_PICKER_CLIENT_TIMEOUT_MS,
         });
 
@@ -206,6 +209,7 @@ export function useModelSelection({
     [
       appendAction,
       connectionAdminKey,
+      connectionAdminKeysByHost,
       connectionFallbackHosts,
       connectionHost,
       connectionPort,

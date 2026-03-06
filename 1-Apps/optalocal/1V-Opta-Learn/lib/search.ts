@@ -1,14 +1,15 @@
 import Fuse from 'fuse.js';
-import type { Guide } from '@/content/guides';
+import type { GuideSearchEntry } from '@/content/guides';
 
-export function createSearchIndex(guides: Guide[]) {
+export function createSearchIndex(guides: GuideSearchEntry[]) {
   return new Fuse(guides, {
     keys: [
       { name: 'title', weight: 3 },
       { name: 'summary', weight: 2 },
       { name: 'tags', weight: 1.5 },
-      { name: 'sections.heading', weight: 1 },
-      { name: 'sections.body', weight: 0.5 },
+      { name: 'sectionHeadings', weight: 1 },
+      { name: 'app', weight: 0.25 },
+      { name: 'category', weight: 0.25 },
     ],
     threshold: 0.35,
     includeScore: true,
@@ -16,7 +17,7 @@ export function createSearchIndex(guides: Guide[]) {
   });
 }
 
-export function searchGuides(fuse: Fuse<Guide>, query: string): Guide[] {
+export function searchGuides(fuse: Fuse<GuideSearchEntry>, query: string): GuideSearchEntry[] {
   if (!query.trim()) return [];
   return fuse.search(query).map((r) => r.item);
 }

@@ -25,24 +25,27 @@ export default function GettingStartedIntroPage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>Introduction to Opta Local</h1>
           <p>
-            Opta Local is a private, local-first AI stack for developers who want to run
-            large language models on their own Apple Silicon hardware. No cloud dependency,
-            no data leaving your network, no subscription fees for inference.
+            Opta Local is a local-first AI operating stack for engineering teams that
+            require private inference on Apple Silicon, with governed cloud fallback
+            only when it is explicitly enabled.
+          </p>
+          <p>
+            Use the platform selector at the top of docs pages to switch between macOS
+            and Windows views. Commands, file paths, and service instructions adapt to
+            the selected operating system.
           </p>
 
           <h2 id="what-is-opta-local">What is Opta Local?</h2>
           <p>
-            Opta Local is a vertically integrated system that connects a command-line
-            interface, a local inference server, and a web dashboard into a single
-            cohesive developer experience. It lets you chat with AI models, run autonomous
-            coding tasks, manage sessions, and monitor your hardware -- all from your
-            local network.
+            Opta Local is a vertically integrated execution system that unifies a
+            command-line interface, a local inference runtime, and operator surfaces
+            into one coherent contract. It supports interactive chat, autonomous coding
+            workflows, session governance, and runtime observability.
           </p>
           <p>
-            Unlike cloud-only AI tools, Opta Local runs entirely on your LAN. Your
-            prompts, responses, and session data never leave your machines. The stack is
-            designed for Apple Silicon Macs with large unified memory pools (64GB+),
-            where local models can run at speeds competitive with cloud APIs.
+            Unlike cloud-only tooling, Opta Local defaults to local execution.
+            Prompts and session data remain on your infrastructure unless cloud providers
+            are intentionally configured for fallback or burst capacity.
           </p>
 
           <h2 id="the-three-core-apps">The Three Core Apps</h2>
@@ -75,11 +78,11 @@ export default function GettingStartedIntroPage() {
                   <td>dedicated Apple Silicon host (high-memory host)</td>
                 </tr>
                 <tr>
-                  <td><strong>Opta Code Desktop (macOS + Windows)</strong></td>
+                  <td><strong>Opta Code Desktop (macOS + Windows + Linux)</strong></td>
                   <td>
-                    Desktop application surface for Opta workflows on macOS and Windows.
+                    Native desktop execution surface for Opta workflows, backed by the daemon.
                   </td>
-                  <td>macOS + Windows workstations</td>
+                  <td>macOS + Windows + Linux workstations</td>
                 </tr>
               </tbody>
             </table>
@@ -100,7 +103,8 @@ export default function GettingStartedIntroPage() {
 
           <h2 id="who-is-it-for">Who is it For?</h2>
           <p>
-            Opta Local is built for a specific audience:
+            Opta Local is optimized for operators who prioritize control, privacy, and
+            predictable execution:
           </p>
           <ul>
             <li>
@@ -185,8 +189,8 @@ Opta Local Web  localhost:3004         Browser dashboard + chat UI`}
 
           <h2 id="next-steps">Next Steps</h2>
           <p>
-            Ready to get started? The next page walks you through installing the CLI and
-            verifying your setup.
+            Proceed to installation to provision the CLI runtime and verify host
+            readiness before connecting to inference.
           </p>
 
           <PrevNextNav prev={prev} next={next} />

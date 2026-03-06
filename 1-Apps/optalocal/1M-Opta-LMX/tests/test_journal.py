@@ -164,7 +164,7 @@ async def test_lifespan_journaling_smoke(tmp_path: Path) -> None:
     session_files = sorted((tmp_path / "12-Session-Logs").glob("*.md"))
     assert len(session_files) == 1
     content = session_files[0].read_text(encoding="utf-8")
-    assert "| model_loaded | 1 |" in content or "| model_unloaded | 1 |" in content
+    assert "| model_loaded | 1 |" in content
 
     jsonl_files = sorted((tmp_path / "12-Session-Logs").glob("*.jsonl"))
     assert len(jsonl_files) == 1

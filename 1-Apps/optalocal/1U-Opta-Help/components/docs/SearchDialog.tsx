@@ -71,7 +71,7 @@ export function SearchDialog({ open, onClose }: SearchDialogProps) {
       <div className="fixed inset-0 bg-void/80 backdrop-blur-sm" />
       <div className="fixed top-[15%] left-1/2 -translate-x-1/2 w-full max-w-lg" onClick={(e) => e.stopPropagation()}>
         <div className="glass-strong rounded-xl overflow-hidden shadow-2xl">
-          <div className="flex items-center gap-3 px-4 py-3 border-b border-white/5">
+          <div className="flex items-center gap-3 px-4 py-3">
             <Search size={18} className="text-text-muted shrink-0" />
             <input
               type="text"

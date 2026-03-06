@@ -52,6 +52,11 @@ const REQUIRED_CLI_OPERATION_SCOPES = [
   "keychain.*",
 ];
 
+const ALLOWED_NON_CLI_OPERATION_IDS = new Set([
+  "audio.transcribe",
+  "audio.tts",
+]);
+
 const COMMAND_STATUS_MAP = {
   chat: { status: "covered", required: true, rationale: "Main session runtime in desktop timeline." },
   tui: {
@@ -263,6 +268,12 @@ function main() {
     cliSurface.operations.ids ?? [],
     cliOperationScopes,
   );
+  const toleratedUnmatchedOperations = operationScopeCoverage.unmatched.filter((id) =>
+    ALLOWED_NON_CLI_OPERATION_IDS.has(id),
+  );
+  const unexpectedUnmatchedOperations = operationScopeCoverage.unmatched.filter(
+    (id) => !ALLOWED_NON_CLI_OPERATION_IDS.has(id),
+  );
 
   const missingRequiredSessionModes = REQUIRED_SESSION_MODES.filter((mode) => !sessionModes.includes(mode));
   const missingRequiredOverrideKeys = REQUIRED_SESSION_OVERRIDE_KEYS.filter(
@@ -300,6 +311,8 @@ function main() {
       commandCoverage,
       commandStatusCounts: summarizeStatuses(commandCoverage),
       operationScopeCoverage,
+      toleratedUnmatchedOperations,
+      unexpectedUnmatchedOperations,
     },
     checks: {
       requiredSessionModes: REQUIRED_SESSION_MODES,
@@ -329,7 +342,7 @@ function main() {
     missingRequiredOverrideKeys: missingRequiredOverrideKeys.length,
     missingRequiredScopes: missingRequiredScopes.length,
     missingRequiredCommands: missingRequiredCommands.length,
-    unmatchedOperationsOutsideCliScope: operationScopeCoverage.unmatched.length,
+    unmatchedOperationsOutsideCliScope: unexpectedUnmatchedOperations.length,
   };
 
   process.stdout.write(
@@ -342,9 +355,15 @@ function main() {
 
   if ((summary.unmatchedOperationsOutsideCliScope ?? 0) > 0) {
     process.stderr.write(
-      `WARN unmatched operations outside scoped CLI operations: ${operationScopeCoverage.unmatched.join(
+      `WARN unmatched operations outside scoped CLI operations: ${unexpectedUnmatchedOperations.join(
         ", ",
       )}\n`,
+    );
+  }
+
+  if (toleratedUnmatchedOperations.length > 0) {
+    process.stdout.write(
+      `NOTE tolerated non-CLI operations: ${toleratedUnmatchedOperations.join(", ")}\n`,
     );
   }
 

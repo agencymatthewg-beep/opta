@@ -37,7 +37,7 @@ opta onboard
 
 Expected flow:
 1. LAN discovery: scans for Opta-LMX at `lmx-host.local:1234` (or times out gracefully)
-2. Provider selection: offers Local LMX or Anthropic Cloud
+2. Provider selection: offers Local LMX plus cloud providers (Anthropic, Gemini, OpenAI, OpenCode Zen)
 3. Preference prompts: autonomy level, TUI default
 4. Summary + confirmation
 5. Creates `~/.config/opta/config.json`
@@ -45,6 +45,7 @@ Expected flow:
 Pass criteria:
 - [ ] If LMX reachable: auto-discovers and confirms connection
 - [ ] If LMX NOT reachable: shows clear warning, allows manual entry or Anthropic fallback, does not hard-fail
+- [ ] Gemini onboarding accepts either API key or blank key for Vertex OAuth mode (`GOOGLE_GENAI_USE_VERTEXAI=true` + `GOOGLE_CLOUD_PROJECT`)
 - [ ] Config file created at `~/.config/opta/config.json`
 - [ ] `opta config get connection.host` shows configured host
 
@@ -86,6 +87,9 @@ opta chat "say hello"
 
 # Anthropic path (if LMX unavailable)
 ANTHROPIC_API_KEY=<key> opta chat "say hello"
+
+# Gemini Vertex OAuth path (no GEMINI_API_KEY)
+GOOGLE_GENAI_USE_VERTEXAI=true GOOGLE_CLOUD_PROJECT=<project> opta chat "say hello"
 ```
 
 Pass criteria:
@@ -139,15 +143,19 @@ Pass criteria:
 ## Step 9 — Account flow (if Supabase configured)
 
 ```bash
-opta account login
+opta account login --oauth --timeout 300
 opta account status
 opta account keys list
 ```
 
 Pass criteria:
 - [ ] Login URL opens in browser
+- [ ] Browser callback returns to CLI without timeout
+- [ ] No `replay_store_unavailable` exchange error (or if strict replay is enabled, verify durable replay table + credentials are present)
 - [ ] After auth: status shows user email
 - [ ] `keys list` shows cloud-synced keys (or "none" if empty)
+
+If callback never returns, follow `docs/OPERATOR-RUNBOOK.md` Section 15.
 
 ---
 

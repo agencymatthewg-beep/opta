@@ -24,6 +24,12 @@
         "paths": {
             "@/*": [
                 "./*"
+            ],
+            "@opta/protocol-shared": [
+                "../1D-Opta-CLI-TS/packages/protocol-shared/src/index.ts"
+            ],
+            "@opta/protocol-shared/*": [
+                "../1D-Opta-CLI-TS/packages/protocol-shared/src/*"
             ]
         },
         "target": "ES2017"

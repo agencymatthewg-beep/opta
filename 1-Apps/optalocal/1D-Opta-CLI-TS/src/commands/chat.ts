@@ -408,6 +408,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
   await runChatDiskPreflight(config, jsonMode);
   const shouldRenderTui = opts.tui || config.tui.default;
   let startupConnectionNotice: StartupConnectionNotice | undefined;
+  let skipLmxStartupPreflight = false;
 
   // First-run onboarding + project scaffold.
   if (!jsonMode) {
@@ -467,6 +468,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
           probeFailures?: string[];
           noCloudFallbackConfigured?: boolean;
           attemptedEndpoints?: string[];
+          cloudFallbackEnvVar?: string[];
         };
         if (
           parsed.code === 'lmx_unreachable' &&
@@ -474,6 +476,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         ) {
           if (!jsonMode && shouldRenderTui) {
             startupConnectionNotice = buildProbeStartupNotice(parsed, config);
+            skipLmxStartupPreflight = true;
             handledOffline = true;
           } else {
             const causes: string[] = [];
@@ -485,6 +488,10 @@ export async function startChat(opts: ChatOptions): Promise<void> {
                 `Probe failures: ${parsed.probeFailures.slice(0, 3).join(' | ')}`
               );
             }
+            const fallbackEnvHint = Array.isArray(parsed.cloudFallbackEnvVar) &&
+              parsed.cloudFallbackEnvVar.length > 0
+              ? `Set cloud fallback key: ${parsed.cloudFallbackEnvVar.join(' or ')}`
+              : 'Set cloud fallback key: ANTHROPIC_API_KEY';
             throw new OptaError(NO_MODEL_ERROR, EXIT.NO_CONNECTION, causes, [
               'Load directly: opta models load <model-id>',
               'Set default: opta config set model.default <model-name>',
@@ -492,7 +499,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
               'Run onboarding: opta onboard',
               'Check connection: opta status',
               'Run diagnostics: opta doctor',
-              'Set cloud fallback key: ANTHROPIC_API_KEY',
+              fallbackEnvHint,
             ]);
           }
         }
@@ -634,11 +641,17 @@ export async function startChat(opts: ChatOptions): Promise<void> {
         throw new ExitError(EXIT.NOT_FOUND);
       }
     }
-    const startupPreflight = await ensureModelLoadedOnLmxStartup(
-      config,
-      session.model,
-      await probeModelPreflight(config, session.model),
-    );
+    const startupPreflight = skipLmxStartupPreflight
+      ? {
+          modelLoaded: false,
+          loadedModelIds: [],
+          error: 'LMX unavailable at startup. Reconnect LMX and retry model operations.',
+        }
+      : await ensureModelLoadedOnLmxStartup(
+          config,
+          session.model,
+          await probeModelPreflight(config, session.model),
+        );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
     if (
@@ -674,11 +687,17 @@ export async function startChat(opts: ChatOptions): Promise<void> {
     session.messages = [{ role: 'system', content: systemPrompt }];
     await saveSession(session);
 
-    const startupPreflight = await ensureModelLoadedOnLmxStartup(
-      config,
-      session.model,
-      await probeModelPreflight(config, session.model),
-    );
+    const startupPreflight = skipLmxStartupPreflight
+      ? {
+          modelLoaded: false,
+          loadedModelIds: [],
+          error: 'LMX unavailable at startup. Reconnect LMX and retry model operations.',
+        }
+      : await ensureModelLoadedOnLmxStartup(
+          config,
+          session.model,
+          await probeModelPreflight(config, session.model),
+        );
     startupModelLoaded = startupPreflight.modelLoaded;
     startupPreflightError = startupPreflight.error;
     if (

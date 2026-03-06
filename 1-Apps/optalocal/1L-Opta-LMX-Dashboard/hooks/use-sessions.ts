@@ -18,7 +18,7 @@ export interface UseSessionsOptions {
     since?: string
 }
 
-/** Poll /sessions with pagination and filters. */
+/** Poll /admin/sessions with pagination and filters. */
 export function useSessions(opts?: UseSessionsOptions) {
     const { isConnected } = useConnection()
     const params = new URLSearchParams()
@@ -28,7 +28,7 @@ export function useSessions(opts?: UseSessionsOptions) {
     if (opts?.tag) params.set('tag', opts.tag)
     if (opts?.since) params.set('since', opts.since)
     const qs = params.toString()
-    const key = isConnected ? `/sessions${qs ? `?${qs}` : ''}` : null
+    const key = isConnected ? `/admin/sessions${qs ? `?${qs}` : ''}` : null
     const { data, error, isLoading, mutate } = useSWR<SessionListResponse>(
         key,
         lmxFetcher,
@@ -50,7 +50,9 @@ export function useSessionSearch(query: string | null, limit?: number) {
     if (query) params.set('q', query)
     if (limit) params.set('limit', String(limit))
     const key =
-        isConnected && query ? `/sessions/search?${params.toString()}` : null
+        isConnected && query
+            ? `/admin/sessions/search?${params.toString()}`
+            : null
     const { data, error, isLoading, mutate } = useSWR<SessionSummary[]>(
         key,
         lmxFetcher
@@ -61,7 +63,10 @@ export function useSessionSearch(query: string | null, limit?: number) {
 /** Fetch a full session by ID. */
 export function useSession(sessionId: string | null) {
     const { isConnected } = useConnection()
-    const key = isConnected && sessionId ? `/sessions/${sessionId}` : null
+    const key =
+        isConnected && sessionId
+            ? `/admin/sessions/${encodeURIComponent(sessionId)}`
+            : null
     const { data, error, isLoading, mutate } = useSWR<SessionFull>(
         key,
         lmxFetcher

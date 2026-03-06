@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
+import { join } from 'node:path';
 
 // Re-import after each env override to get fresh resolution
 async function freshImport() {
@@ -21,22 +22,22 @@ describe('platform/paths', () => {
 
   it('getSessionsDir returns <configDir>/sessions', async () => {
     const { getConfigDir, getSessionsDir } = await freshImport();
-    expect(getSessionsDir()).toBe(`${getConfigDir()}/sessions`);
+    expect(getSessionsDir()).toBe(join(getConfigDir(), 'sessions'));
   });
 
   it('getDaemonDir returns <configDir>/daemon', async () => {
     const { getConfigDir, getDaemonDir } = await freshImport();
-    expect(getDaemonDir()).toBe(`${getConfigDir()}/daemon`);
+    expect(getDaemonDir()).toBe(join(getConfigDir(), 'daemon'));
   });
 
   it('getThemesDir returns <configDir>/themes', async () => {
     const { getConfigDir, getThemesDir } = await freshImport();
-    expect(getThemesDir()).toBe(`${getConfigDir()}/themes`);
+    expect(getThemesDir()).toBe(join(getConfigDir(), 'themes'));
   });
 
   it('respects XDG_CONFIG_HOME when set', async () => {
     vi.stubEnv('XDG_CONFIG_HOME', '/custom/config');
     const { getConfigDir } = await freshImport();
-    expect(getConfigDir()).toBe('/custom/config/opta');
+    expect(getConfigDir()).toBe(join('/custom/config', 'opta'));
   });
 });

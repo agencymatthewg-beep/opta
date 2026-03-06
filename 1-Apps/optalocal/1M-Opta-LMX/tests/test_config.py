@@ -13,7 +13,7 @@ def test_default_config() -> None:
     """Default config has sensible values."""
     config = LMXConfig()
     assert config.server.port == 1234
-    assert config.server.host == "127.0.0.1"
+    assert config.server.host == "0.0.0.0"
     assert config.memory.max_memory_percent == 90
     assert config.models.use_batching is True
 

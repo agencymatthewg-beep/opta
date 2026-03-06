@@ -6,7 +6,19 @@ import { tmpdir } from 'node:os';
 // --- Mocks ---
 
 const MOCK_CONFIG = {
-  connection: { host: '192.168.188.11', port: 1234, protocol: 'http' },
+  connection: {
+    host: '192.168.188.11',
+    port: 1234,
+    protocol: 'http',
+    fallbackHosts: [],
+    ssh: {
+      user: 'opta',
+      identityFile: '~/.ssh/id_ed25519',
+      connectTimeoutSec: 20,
+      lmxPath: '/Users/Shared/312/Opta/1-Apps/1M-Opta-LMX',
+      pythonPath: '/Users/opta/.mlx-env/bin/python',
+    },
+  },
   model: { default: 'test-model', contextLimit: 32768 },
   defaultMode: 'safe',
   permissions: { read_file: 'allow', edit_file: 'ask' },

@@ -6,11 +6,12 @@
   "license": "MIT",
   "type": "module",
   "bin": {
-    "opta": "./dist/index.js"
+    "opta": "./bin/opta.js"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "files": [
+    "bin",
     "dist",
     "README.md"
   ],
@@ -76,6 +77,7 @@
     "execa": "^9.0.0",
     "fast-glob": "^3.3.3",
     "fastify": "^5.7.4",
+    "google-auth-library": "^10.5.0",
     "ink": "^5.2.1",
     "ink-text-input": "^6.0.0",
     "marked": "^15.0.0",

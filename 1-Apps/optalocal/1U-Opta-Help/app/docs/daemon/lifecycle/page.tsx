@@ -20,6 +20,7 @@ const tocItems = [
   { id: "auto-start-on-boot", title: "Auto-Start on Boot", level: 2 as const },
   { id: "launchd-macos", title: "launchd (macOS)", level: 3 as const },
   { id: "systemd-linux", title: "systemd (Linux)", level: 3 as const },
+  { id: "schtasks-windows", title: "schtasks (Windows)", level: 3 as const },
   { id: "uninstalling", title: "Uninstalling", level: 2 as const },
   { id: "crash-recovery", title: "Crash Recovery", level: 2 as const },
 ];
@@ -40,20 +41,26 @@ export default function DaemonLifecyclePage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>Daemon Lifecycle</h1>
           <p className="lead">
-            The daemon is managed through the <code>opta daemon</code> subcommand. This page covers
-            starting, stopping, monitoring, and installing the daemon as a system service.
+            Manage the daemon through <code>opta daemon</code>. This guide covers
+            lifecycle control, health instrumentation, and platform-native service
+            registration for resilient startup behavior.
           </p>
 
           <h2 id="starting-the-daemon">Starting the Daemon</h2>
           <p>
             The <code>opta daemon start</code> command launches the daemon as a background process.
-            It writes its PID, port, and authentication token to the state file at{" "}
-            <code>~/.config/opta/daemon/state.json</code>.
+            It writes its PID, port, and authentication token to the daemon state file under
+            the Opta config root (macOS/Linux: <code>~/.config/opta/daemon/state.json</code>,
+            Windows: <code>%APPDATA%\\opta\\daemon\\state.json</code>).
           </p>
           <CommandBlock
             command="opta daemon start"
-            output={`Daemon started (pid 12345, port 9999)
-Token written to ~/.config/opta/daemon/state.json`}
+            platformOutputs={{
+              macos: `Daemon started (pid 12345, port 9999)
+Token written to ~/.config/opta/daemon/state.json`,
+              windows: `Daemon started (pid 12345, port 9999)
+Token written to %APPDATA%\\opta\\daemon\\state.json`,
+            }}
           />
           <p>
             If the daemon is already running, the command will report the existing process and exit
@@ -84,8 +91,10 @@ Token written to ~/.config/opta/daemon/state.json`}
 
           <h2 id="viewing-logs">Viewing Logs</h2>
           <p>
-            The daemon writes structured logs to <code>~/.config/opta/daemon/daemon.log</code>. Use
-            the <code>logs</code> subcommand to tail the log file:
+            The daemon writes structured logs to the daemon log path
+            (<code>~/.config/opta/daemon/daemon.log</code> on macOS/Linux and{" "}
+            <code>%APPDATA%\\opta\\daemon\\daemon.log</code> on Windows). Use
+            the <code>logs</code> subcommand to tail the file:
           </p>
           <CommandBlock
             command="opta daemon logs"
@@ -103,11 +112,14 @@ Token written to ~/.config/opta/daemon/state.json`}
 
           <h2 id="restarting">Restarting</h2>
           <p>
-            The <code>opta daemon restart</code> command performs a clean stop followed by a fresh
-            start. On restart, a new authentication token is generated and written to the state file.
+            The daemon CLI currently exposes explicit <code>stop</code> and <code>start</code>
+            commands. For a clean restart, run stop then start.
           </p>
           <CommandBlock
-            command="opta daemon restart"
+            platformCommands={{
+              macos: "opta daemon stop && opta daemon start",
+              windows: "opta daemon stop; opta daemon start",
+            }}
             output={`Stopping daemon (pid 12345)...
 Daemon stopped.
 Daemon started (pid 12350, port 9999)
@@ -121,9 +133,9 @@ Token rotated.`}
 
           <h2 id="stopping">Stopping</h2>
           <p>
-            The <code>opta daemon stop</code> command sends a <code>SIGTERM</code> to the daemon
-            process and waits for it to exit cleanly. Active sessions are preserved on disk and can
-            be resumed after the daemon is restarted.
+            <code>opta daemon stop</code> sends a graceful shutdown signal, waits for
+            clean termination, and force-stops only when necessary. Active sessions
+            remain preserved on disk and can be resumed after restart.
           </p>
           <CommandBlock
             command="opta daemon stop"
@@ -186,8 +198,7 @@ Daemon will start automatically on login.`}
   <array>
     <string>/usr/local/bin/opta</string>
     <string>daemon</string>
-    <string>start</string>
-    <string>--foreground</string>
+    <string>run</string>
   </array>
   <key>RunAtLoad</key>
   <true/>
@@ -208,6 +219,17 @@ Daemon will start automatically on login.`}
 Run: systemctl --user enable --now opta-daemon`}
           />
 
+          <h3 id="schtasks-windows">schtasks (Windows)</h3>
+          <p>
+            On Windows, the install command registers a Scheduled Task that launches the daemon
+            at user logon.
+          </p>
+          <CommandBlock
+            command="opta daemon install"
+            output={`Installed Windows scheduled task: OptaDaemon
+Daemon will start automatically at user logon.`}
+          />
+
           <h2 id="uninstalling">Uninstalling</h2>
           <p>
             The <code>opta daemon uninstall</code> command removes the system service registration
@@ -215,8 +237,12 @@ Run: systemctl --user enable --now opta-daemon`}
           </p>
           <CommandBlock
             command="opta daemon uninstall"
-            output={`Removed launchd service: com.opta.daemon
-Daemon stopped.`}
+            platformOutputs={{
+              macos: `Removed launchd service: com.opta.daemon
+Daemon stopped.`,
+              windows: `Removed Windows scheduled task: OptaDaemon
+Daemon stopped.`,
+            }}
           />
 
           <h2 id="crash-recovery">Crash Recovery</h2>

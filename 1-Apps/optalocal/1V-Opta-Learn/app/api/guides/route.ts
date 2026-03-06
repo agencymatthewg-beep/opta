@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import fs from 'node:fs';
 import path from 'node:path';
-import { allGuides } from '@/content/guides';
+import { allGuides, getPublishedGuides } from '@/content/guides';
 
 type ManifestEntry = {
   slug?: unknown;
@@ -10,7 +10,13 @@ type ManifestEntry = {
 
 const MANIFEST_PATH = path.join(process.cwd(), 'public', 'guides-manifest.json');
 
-function readFileBySlug(): Map<string, string> {
+function shouldIncludeDrafts(request: Request): boolean {
+  const url = new URL(request.url);
+  const includeDrafts = url.searchParams.get('includeDrafts') === '1';
+  return includeDrafts && process.env.NODE_ENV !== 'production';
+}
+
+function readFileBySlug(includeDrafts: boolean): Map<string, string> {
   try {
     const raw = fs.readFileSync(MANIFEST_PATH, 'utf-8');
     const parsed = JSON.parse(raw) as {
@@ -20,7 +26,7 @@ function readFileBySlug(): Map<string, string> {
 
     const entries = [
       ...(Array.isArray(parsed.published) ? parsed.published : []),
-      ...(Array.isArray(parsed.draft) ? parsed.draft : []),
+      ...(includeDrafts && Array.isArray(parsed.draft) ? parsed.draft : []),
     ];
 
     const fileBySlug = new Map<string, string>();
@@ -36,12 +42,17 @@ function readFileBySlug(): Map<string, string> {
   }
 }
 
-export async function GET() {
-  const fileBySlug = readFileBySlug();
-  const guides = allGuides.map((guide) => ({
+export async function GET(request: Request) {
+  const includeDrafts = shouldIncludeDrafts(request);
+  const source = includeDrafts ? allGuides : getPublishedGuides();
+  const fileBySlug = readFileBySlug(includeDrafts);
+  const guides = source.map((guide) => ({
     ...guide,
     file: fileBySlug.get(guide.slug) ?? `content/guides/${guide.slug}.ts`,
   }));
 
-  return NextResponse.json({ guides });
+  return NextResponse.json({
+    guides,
+    includesDrafts: includeDrafts,
+  });
 }

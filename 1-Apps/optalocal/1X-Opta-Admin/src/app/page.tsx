@@ -19,7 +19,9 @@ const GUIDES_DIR = path.join(OPTA_LEARN_DIR, 'content/guides');
 const MANIFEST_PATH = path.join(OPTA_LEARN_DIR, 'public/guides-manifest.json');
 const LEARN_MANIFEST_URL = 'https://learn.optalocal.com/api/guides-manifest';
 const LEARN_GUIDES_URL = 'https://learn.optalocal.com/api/guides';
-const DEFAULT_PROMOTION_ALLOWED_SLUGS = ['cli'];
+// Default-open for authenticated admins so new nightly guide slugs are promotable
+// without a redeploy. Restrict via PROMOTION_ALLOWED_SLUGS when needed.
+const DEFAULT_PROMOTION_ALLOWED_SLUGS: string[] = [];
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -103,7 +105,7 @@ function toGuideStatus(value: unknown): GuideRecord['status'] {
 function parsePromotionPolicy(rawValue: string | undefined): PromotionPolicy {
   const raw = (rawValue ?? '').trim();
   if (!raw) {
-    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+    return { allowAll: true, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
   }
 
   const allowed = new Set<string>();
@@ -119,7 +121,7 @@ function parsePromotionPolicy(rawValue: string | undefined): PromotionPolicy {
   }
 
   if (!allowAll && allowed.size === 0) {
-    return { allowAll: false, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
+    return { allowAll: true, allowedSlugs: [...DEFAULT_PROMOTION_ALLOWED_SLUGS] };
   }
   return { allowAll, allowedSlugs: Array.from(allowed) };
 }

@@ -10,28 +10,28 @@ interface ApiEndpointProps {
 }
 
 const methodColors: Record<string, string> = {
-  GET: "bg-neon-green/10 text-neon-green border-neon-green/20",
-  POST: "bg-neon-blue/10 text-neon-blue border-neon-blue/20",
-  PUT: "bg-neon-amber/10 text-neon-amber border-neon-amber/20",
-  DELETE: "bg-neon-red/10 text-neon-red border-neon-red/20",
-  WS: "bg-neon-purple/10 text-neon-purple border-neon-purple/20",
+  GET: "bg-neon-green/10 text-neon-green shadow-[inset_0_0_0_1px_rgba(34,197,94,0.25)]",
+  POST: "bg-neon-blue/10 text-neon-blue shadow-[inset_0_0_0_1px_rgba(59,130,246,0.25)]",
+  PUT: "bg-neon-amber/10 text-neon-amber shadow-[inset_0_0_0_1px_rgba(245,158,11,0.25)]",
+  DELETE: "bg-neon-red/10 text-neon-red shadow-[inset_0_0_0_1px_rgba(239,68,68,0.25)]",
+  WS: "bg-neon-purple/10 text-neon-purple shadow-[inset_0_0_0_1px_rgba(139,92,246,0.25)]",
 };
 
 export function ApiEndpoint({ method, path, description, auth, params, response }: ApiEndpointProps) {
   return (
-    <div className="rounded-lg border border-white/5 overflow-hidden mb-4">
-      <div className="flex items-center gap-3 px-4 py-3 bg-surface">
-        <span className={cn("px-2 py-0.5 rounded text-xs font-bold font-mono border", methodColors[method])}>
+    <div className="rounded-lg doc-embed-block overflow-hidden mb-5">
+      <div className="flex items-center gap-3 px-4 py-3.5 bg-transparent">
+        <span className={cn("px-2 py-0.5 rounded text-xs font-bold font-mono", methodColors[method])}>
           {method}
         </span>
         <code className="text-sm text-text-primary font-mono">{path}</code>
         {auth && (
-          <span className="ml-auto text-xs text-text-muted bg-elevated px-2 py-0.5 rounded">
+          <span className="ml-auto text-xs text-text-muted bg-white/5 px-2 py-0.5 rounded-md">
             Auth required
           </span>
         )}
       </div>
-      <div className="px-4 py-3 border-t border-white/5">
+      <div className="px-4 py-3 bg-transparent">
         <p className="text-sm text-text-secondary">{description}</p>
         {params && params.length > 0 && (
           <div className="mt-3">
@@ -51,7 +51,7 @@ export function ApiEndpoint({ method, path, description, auth, params, response 
         {response && (
           <div className="mt-3">
             <h4 className="text-xs font-semibold uppercase text-text-muted mb-1">Response</h4>
-            <pre className="text-xs text-text-muted font-mono bg-[var(--color-code-bg)] rounded p-2 overflow-x-auto">{response}</pre>
+            <pre className="text-xs text-text-muted font-mono surface-embedded-code bg-transparent rounded-md p-2 overflow-x-auto">{response}</pre>
           </div>
         )}
       </div>

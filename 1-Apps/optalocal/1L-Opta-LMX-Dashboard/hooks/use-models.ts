@@ -13,15 +13,75 @@ import type {
     ModelsListResponse,
 } from '@/lib/types'
 
+type LoadedModelPayload =
+    | LoadedModel[]
+    | {
+        loaded?: Array<Record<string, unknown>>
+    }
+
+function normalizeLoadedModels(payload?: LoadedModelPayload): LoadedModel[] {
+    if (!payload) return []
+    if (Array.isArray(payload)) return payload
+
+    const rows = Array.isArray(payload.loaded) ? payload.loaded : []
+    return rows.map((row) => {
+        const statsRaw = (row.stats as Record<string, unknown> | undefined) ?? {}
+        const totalRequests =
+            typeof row.request_count === 'number'
+                ? row.request_count
+                : typeof statsRaw.total_requests === 'number'
+                    ? statsRaw.total_requests
+                    : 0
+        const lastUsedAt =
+            typeof row.last_used_at === 'number'
+                ? row.last_used_at
+                : typeof statsRaw.last_used_at === 'number'
+                    ? statsRaw.last_used_at
+                    : null
+
+        return {
+            model_id: String(row.model_id ?? row.id ?? ''),
+            backend: String(row.backend ?? row.backend_type ?? 'unknown'),
+            memory_used_gb:
+                typeof row.memory_used_gb === 'number'
+                    ? row.memory_used_gb
+                    : typeof row.memory_gb === 'number'
+                        ? row.memory_gb
+                        : 0,
+            loaded_at: typeof row.loaded_at === 'number' ? row.loaded_at : 0,
+            keep_alive_sec:
+                typeof row.keep_alive_sec === 'number'
+                    ? row.keep_alive_sec
+                    : null,
+            performance_overrides:
+                (row.performance_overrides as Record<string, unknown> | null | undefined)
+                ?? (row.performance as Record<string, unknown> | null | undefined)
+                ?? null,
+            stats: {
+                total_requests: totalRequests,
+                total_tokens_generated:
+                    typeof statsRaw.total_tokens_generated === 'number'
+                        ? statsRaw.total_tokens_generated
+                        : 0,
+                avg_tokens_per_second:
+                    typeof statsRaw.avg_tokens_per_second === 'number'
+                        ? statsRaw.avg_tokens_per_second
+                        : 0,
+                last_used_at: lastUsedAt,
+            },
+        }
+    })
+}
+
 /** Poll /admin/models every 5s — loaded models with stats. */
 export function useLoadedModels() {
     const { isConnected } = useConnection()
-    const { data, error, isLoading, mutate } = useSWR<LoadedModel[]>(
+    const { data, error, isLoading, mutate } = useSWR<LoadedModelPayload>(
         isConnected ? '/admin/models' : null,
         lmxFetcher,
         { refreshInterval: 5_000 }
     )
-    return { models: data, error, isLoading, refresh: mutate }
+    return { models: normalizeLoadedModels(data), error, isLoading, refresh: mutate }
 }
 
 /** Poll /admin/models/available every 30s — models on disk. */

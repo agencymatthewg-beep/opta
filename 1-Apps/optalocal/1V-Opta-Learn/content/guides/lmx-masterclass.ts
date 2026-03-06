@@ -11,7 +11,7 @@ export const lmxMasterclass: Guide = {
   updatedAt: '2026-03-04',
   sections: [
     {
-      heading: 'Ecosystem Role',
+      heading: '[Setup] Ecosystem Role',
       body: '<a href="/guides/lmx" class="app-link link-lmx">Opta LMX</a> is the foundational AI engine of the Opta ecosystem. It acts as a hyper-optimized, local inference server specifically engineered for Apple Silicon (M1/M2/M3/M4). Rather than the <a href="/guides/cli" class="app-link link-cli">Opta CLI</a> communicating with a cloud API, it streams requests via localhost to LMX, which computes the responses using your machine\'s native unified memory.',
       visual: `<div class="visual-wrapper my-8 relative flex items-center justify-between p-8 rounded-xl border border-white/10 bg-[#080510] overflow-hidden shadow-2xl">
         <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(168,85,247,0.05)_0%,transparent_70%)] pointer-events-none"></div>
@@ -37,7 +37,7 @@ export const lmxMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Native MLX Architecture',
+      heading: '[Configuration] Native MLX Architecture',
       body: 'Unlike legacy wrappers that rely on llama.cpp or PyTorch (which often suffer from CPU bottlenecks or translation overhead), Opta LMX is built natively on top of Apple\'s <strong>MLX framework</strong>. MLX is designed from the ground up for Apple\'s Unified Memory Architecture (UMA). This allows LMX to stream tensor data directly between the CPU and the Metal GPU without costly memory copies across a PCIe bus.',
       visual: `<div class="visual-wrapper my-8 grid grid-cols-2 gap-6 font-mono text-sm">
         <div class="p-5 border border-white/10 rounded-xl bg-[rgba(239,68,68,0.05)] flex flex-col items-center text-center opacity-80">
@@ -64,12 +64,12 @@ export const lmxMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'VRAM & Model Paging',
+      heading: '[Operation] VRAM & Model Paging',
       body: 'Running large models locally requires strict memory discipline. LMX utilizes <strong>Dynamic Model Paging</strong>. If you load an 8B model (approx 5GB VRAM) and a 32B model (approx 20GB VRAM) on a 32GB Mac, LMX will proactively offload inactive model weights to high-speed NVMe swap space when the Context KV Cache expands, preventing OOM (Out of Memory) crashes without killing the daemon.',
       code: `opta serve logs\n\n[LMX-Core] VRAM threshold (85%) breached.\n[LMX-Core] Paging deepseek-r1-8b weights to NVMe (1.2GB/s)...\n[LMX-Core] Reserving 8GB for context KV cache.`
     },
     {
-      heading: 'Context Routing & The KV Cache',
+      heading: '[Troubleshooting] Context Routing & The KV Cache',
       body: 'When you are chatting in the <a href="/guides/code-desktop" class="app-link link-general">Opta Code Desktop</a>, your conversation history constantly grows. Re-evaluating the entire history for every new message is inefficient. LMX implements a persistent <strong>Key-Value (KV) Cache</strong> mapped to session IDs. When you send a new message, LMX only computes the new tokens and appends them to the pre-computed mathematical state of the previous conversation.',
       visual: `<div class="visual-wrapper my-8 p-6 rounded-xl border border-white/10 bg-void relative overflow-hidden">
         <div class="flex flex-col gap-4 max-w-md mx-auto">
@@ -92,7 +92,7 @@ export const lmxMasterclass: Guide = {
       </div>`
     },
     {
-      heading: 'Reliability Playbooks & SLO Guardrails',
+      heading: '[Optimization] Reliability Playbooks & SLO Guardrails',
       body: 'Local-first does not mean reliability-light. In production teams, LMX should be operated with explicit SLOs such as p95 Time to First Token, token throughput, error budget burn, and cold-start recovery windows. A practical baseline is to define thresholds for GPU saturation, unified memory pressure, and queue depth, then trigger progressive remediation before user-facing failure. The first stage is backpressure: rate-limit new sessions while preserving in-flight chats. The second stage is controlled model shedding: unload low-priority models and preserve the primary serving path. The final stage is daemon restart with session-aware drain and warmup. LMX logs are structured so operators can correlate KV cache misses, paging events, and latency spikes to a single incident timeline. This makes postmortems actionable instead of anecdotal.',
       code: `# Observe health + saturation
 opta serve status
@@ -115,6 +115,11 @@ opta serve switch --from 3456 --to 4456 --graceful
 # Failure-mode signal (example log)
 [LMX-Guard] Thermal throttle detected (GPU freq drop 21%).
 [LMX-Guard] Applying safe mode: max_context_tokens=64000`
-    }
+    },
+    {
+      heading: 'Capacity Planning and Upgrade Strategy',
+      body: 'Mature LMX operation depends on explicit capacity planning instead of ad-hoc model swaps. Track sustained memory pressure, cache hit ratio, and queue depth over real project cycles, then set profile tiers (interactive coding, batch summarization, long-context analysis) with known model envelopes. Upgrades should follow a staged policy: benchmark candidate model builds, run side-by-side soak tests against production prompts, then promote only when latency and stability remain inside target bounds. This keeps performance gains predictable and reduces regression risk.',
+      note: 'Treat model upgrades like dependency upgrades: benchmark first, compare against baseline prompts, then promote with rollback ready.',
+    },
   ],
 };

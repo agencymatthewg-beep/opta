@@ -102,7 +102,8 @@ export default function SecurityPrivacyPage() {
             All session data -- conversation history, tool call records,
             model responses, browser automation recordings -- is stored on
             your local filesystem. The daemon writes session data to{" "}
-            <code>~/.config/opta/daemon/sessions/</code> as JSON files.
+            <code>~/.config/opta/sessions/</code> (or{" "}
+            <code>%APPDATA%\\opta\\sessions\\</code> on Windows) as JSONL files.
           </p>
           <p>
             You have full control over this data:

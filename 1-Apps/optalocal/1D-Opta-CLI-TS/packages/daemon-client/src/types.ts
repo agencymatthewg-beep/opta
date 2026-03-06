@@ -1,4 +1,5 @@
 import type {
+  ActivationState,
   BackgroundOutputSlice,
   BackgroundProcessSnapshot,
   BackgroundSignal,
@@ -90,6 +91,62 @@ export interface DaemonBackgroundOutputOptions {
 export interface DaemonBackgroundKillResponse {
   killed: boolean;
   process: BackgroundProcessSnapshot;
+}
+
+export type DaemonBridgeLifecycleStatus =
+  | 'offline'
+  | 'pairing'
+  | 'connected'
+  | 'degraded'
+  | 'unauthorized';
+
+export interface DaemonBridgeState {
+  status: DaemonBridgeLifecycleStatus;
+  activationState: ActivationState;
+  deviceId: string | null;
+  sessionId: string | null;
+  bridgeTokenPresent: boolean;
+  connectedAt: string | null;
+  updatedAt: string;
+  lastError: string | null;
+}
+
+export interface DaemonBridgeStatusResponse {
+  daemonId?: string;
+  bridge: DaemonBridgeState;
+}
+
+export interface DaemonBridgeConnectRequest {
+  deviceId: string;
+  sessionId?: string;
+  bridgeToken?: string;
+  force?: boolean;
+}
+
+export interface DaemonBridgeDisconnectRequest {
+  reason?: string;
+}
+
+export interface DaemonBridgeMutationResponse {
+  ok: boolean;
+  bridge: DaemonBridgeState;
+}
+
+export interface DaemonDeviceBootstrapRequest {
+  includeAccount?: boolean;
+  includeConnection?: boolean;
+  includeRuntime?: boolean;
+}
+
+export interface DaemonDeviceExecuteRequest<TPayload extends DaemonOperationPayload = DaemonOperationPayload> {
+  operationId: string;
+  input?: TPayload;
+  confirmDangerous?: boolean;
+  bridgeMetadata?: {
+    commandId?: string;
+    actor?: string;
+    issuedAt?: string;
+  };
 }
 
 export interface DaemonLmxModelDetail {
@@ -279,6 +336,13 @@ export type DaemonRunOperationResponse<TResult = unknown> =
 export interface DaemonHttpApi {
   health(): Promise<DaemonHealthResponse>;
   metrics(): Promise<DaemonMetricsResponse>;
+  bridgeStatus?: () => Promise<DaemonBridgeStatusResponse>;
+  bridgeConnect?: (payload: DaemonBridgeConnectRequest) => Promise<DaemonBridgeMutationResponse>;
+  bridgeDisconnect?: (payload?: DaemonBridgeDisconnectRequest) => Promise<DaemonBridgeMutationResponse>;
+  deviceBootstrap?: (payload?: DaemonDeviceBootstrapRequest) => Promise<Record<string, unknown>>;
+  deviceExecute?: <TPayload extends DaemonOperationPayload = DaemonOperationPayload, TResult = unknown>(
+    payload: DaemonDeviceExecuteRequest<TPayload>
+  ) => Promise<DaemonRunOperationResponse<TResult>>;
   createSession(req: CreateSessionRequest): Promise<SessionSnapshot>;
   getSession(sessionId: string): Promise<DaemonSessionDetail>;
   submitTurn(sessionId: string, payload: ClientSubmitTurn): Promise<DaemonSubmitTurnResponse>;

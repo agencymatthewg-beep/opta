@@ -46,6 +46,7 @@ export interface UseSubmitHandlerOptions {
   onSlashCommand?: (input: string) => Promise<SlashCommandResult>;
   onSubmit?: (text: string) => void;
   requireLoadedModel: boolean;
+  offlineMode: boolean;
   setWorkflowMode: React.Dispatch<React.SetStateAction<WorkflowMode>>;
   skillRuntimeSettings: SkillRuntimeSettings;
   triggerDefinitions: TriggerModeDefinition[];
@@ -81,6 +82,7 @@ export function useSubmitHandler(options: UseSubmitHandlerOptions): UseSubmitHan
     onSlashCommand,
     onSubmit,
     requireLoadedModel,
+    offlineMode,
     setWorkflowMode,
     skillRuntimeSettings,
     triggerDefinitions,
@@ -260,8 +262,28 @@ export function useSubmitHandler(options: UseSubmitHandlerOptions): UseSubmitHan
       }
     }
 
+    if (offlineMode && !(requireLoadedModel && !modelLoaded)) {
+      const note =
+        'Offline - Opta LMX unreachable. Try /debug, /doctor, /lmx status --full, or /server status.';
+      setMessages(prev => [...prev, { role: 'error', content: note, createdAt: Date.now() }]);
+      appendAction({
+        kind: 'error',
+        status: 'error',
+        icon: '\u26A0\uFE0F',
+        label: 'Blocked prompt',
+        detail: 'offline',
+      });
+      return {
+        ok: false,
+        kind: 'prompt',
+        summary: 'Prompt blocked: offline',
+        error: note,
+      };
+    }
+
     if (requireLoadedModel && !modelLoaded) {
-      const note = 'No Model Loaded - Use Opta Menu to begin (Shift+Space \u2192 Model Manager).';
+      const note =
+        'No Model Loaded - Use Opta Menu to begin (Shift+Space \u2192 Model Manager), or run /debug, /doctor, or /lmx status --full.';
       setMessages(prev => [...prev, { role: 'error', content: note, createdAt: Date.now() }]);
       appendAction({
         kind: 'error',
@@ -489,6 +511,7 @@ export function useSubmitHandler(options: UseSubmitHandlerOptions): UseSubmitHan
     onSlashCommand,
     onSubmit,
     requireLoadedModel,
+    offlineMode,
     setWorkflowMode,
     skillRuntimeSettings,
     triggerDefinitions,

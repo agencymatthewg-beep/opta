@@ -4,10 +4,10 @@
 # Quick start:
 #   mkdir -p ~/.opta-lmx
 #   cp config.yaml.template ~/.opta-lmx/config.yaml
-#   opta-lmx          # starts on localhost:1234
+#   opta-lmx          # starts on 0.0.0.0:1234 (reachable from localhost + LAN)
 
 server:
-  host: "127.0.0.1"   # Use "0.0.0.0" to expose on LAN
+  host: "0.0.0.0"   # Set "127.0.0.1" for local-only
   port: 1234           # Drop-in replacement for LM Studio
   workers: 1
   timeout_sec: 300

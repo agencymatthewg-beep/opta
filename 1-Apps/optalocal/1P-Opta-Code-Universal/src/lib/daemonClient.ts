@@ -22,12 +22,20 @@ import type {
   SessionTurnOverrides,
 } from "../types";
 import { sanitizeDaemonConnection } from "./daemonConnectionGuard";
+import {
+  bootstrapDaemonConnection,
+  isSecureConnectionStoreAvailable,
+  loadToken,
+} from "./secureConnectionStore";
 
 export type V3Envelope = SharedV3Envelope;
 
 const GB_TO_BYTES = 1024 * 1024 * 1024;
 const LMX_READ_TIMEOUT_MS = 30_000;
 const LMX_MUTATION_TIMEOUT_MS = 120_000;
+const DAEMON_AUTH_REPAIR_COOLDOWN_MS = 15_000;
+const repairedTokenCache = new Map<string, string>();
+const authRepairAttemptByEndpoint = new Map<string, number>();
 
 interface SessionSnapshot {
   sessionId: string;
@@ -109,6 +117,50 @@ function baseUrl(connection: DaemonConnectionOptions): string {
   return `${protocol}://${guarded.host}:${guarded.port}`;
 }
 
+function endpointKey(host: string, port: number): string {
+  return `${host.trim().toLowerCase()}:${port}`;
+}
+
+function isLocalDaemonHost(host: string): boolean {
+  const normalized = host.trim().toLowerCase();
+  return (
+    normalized === "127.0.0.1" ||
+    normalized === "localhost" ||
+    normalized === "::1" ||
+    normalized === "[::1]" ||
+    normalized === "0.0.0.0"
+  );
+}
+
+async function tryRepairDaemonAuthToken(
+  guarded: ReturnType<typeof sanitizeDaemonConnection>["connection"],
+  attemptedToken: string,
+): Promise<string | null> {
+  if (!isSecureConnectionStoreAvailable()) return null;
+  if (!isLocalDaemonHost(guarded.host)) return null;
+
+  const key = endpointKey(guarded.host, guarded.port);
+  const now = Date.now();
+  const lastAttempt = authRepairAttemptByEndpoint.get(key) ?? 0;
+  if (now - lastAttempt >= DAEMON_AUTH_REPAIR_COOLDOWN_MS) {
+    authRepairAttemptByEndpoint.set(key, now);
+    try {
+      await bootstrapDaemonConnection(true);
+    } catch {
+      // Best-effort daemon bootstrap. Token load below is still attempted.
+    }
+  }
+
+  try {
+    const repaired = (await loadToken(guarded.host, guarded.port)).trim();
+    if (!repaired || repaired === attemptedToken) return null;
+    repairedTokenCache.set(key, repaired);
+    return repaired;
+  } catch {
+    return null;
+  }
+}
+
 async function daemonRequest<T>(
   connection: DaemonConnectionOptions,
   path: string,
@@ -116,20 +168,33 @@ async function daemonRequest<T>(
   timeoutMs = LMX_READ_TIMEOUT_MS,
 ): Promise<T> {
   const guarded = sanitizeDaemonConnection(connection).connection;
-  const headers = new Headers(init.headers);
-  headers.set("Authorization", `Bearer ${guarded.token}`);
-  if (init.body && !headers.has("Content-Type")) {
-    headers.set("Content-Type", "application/json");
-  }
+  const endpoint = endpointKey(guarded.host, guarded.port);
+  const initialToken = repairedTokenCache.get(endpoint) ?? guarded.token;
 
   const controller = new AbortController();
   const timeoutId = globalThis.setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const response = await fetch(`${baseUrl(connection)}${path}`, {
-      ...init,
-      headers,
-      signal: controller.signal,
-    });
+    const sendWithToken = async (token: string) => {
+      const headers = new Headers(init.headers);
+      headers.set("Authorization", `Bearer ${token}`);
+      if (init.body && !headers.has("Content-Type")) {
+        headers.set("Content-Type", "application/json");
+      }
+      return fetch(`${baseUrl(connection)}${path}`, {
+        ...init,
+        headers,
+        signal: controller.signal,
+      });
+    };
+
+    let response = await sendWithToken(initialToken);
+    if (response.status === 401 || response.status === 403) {
+      const repairedToken = await tryRepairDaemonAuthToken(guarded, initialToken);
+      if (repairedToken) {
+        response = await sendWithToken(repairedToken);
+      }
+    }
+
     if (!response.ok) {
       const message = await response.text().catch(() => "");
       throw new Error(
@@ -143,7 +208,7 @@ async function daemonRequest<T>(
     }
     if (err instanceof TypeError && err.message.includes("fetch failed")) {
       throw new Error(
-        `Connection refused: Cannot reach daemon at ${guarded.host}:${guarded.port}. Ensure 'opta daemon run' is active.`,
+        `Connection refused: Cannot reach daemon at ${guarded.host}:${guarded.port}. Run 'opta daemon start' and check with 'opta daemon status'.`,
       );
     }
     throw err;
@@ -394,8 +459,31 @@ function parseEndpointCandidate(
   }
 }
 
+function withPreferredToken(
+  connection: DaemonConnectionOptions,
+): DaemonConnectionOptions {
+  const guarded = sanitizeDaemonConnection(connection).connection;
+  const cachedToken = repairedTokenCache.get(
+    endpointKey(guarded.host, guarded.port),
+  );
+  return {
+    ...guarded,
+    token: cachedToken ?? guarded.token,
+  };
+}
+
+function isUnauthorizedDaemonError(error: unknown): boolean {
+  if (!(error instanceof Error)) return false;
+  const message = error.message.toLowerCase();
+  return (
+    message.includes("401") ||
+    message.includes("403") ||
+    message.includes("unauthorized")
+  );
+}
+
 function httpClient(connection: DaemonConnectionOptions): DaemonHttpClient {
-  return new DaemonHttpClient(sanitizeDaemonConnection(connection).connection);
+  return new DaemonHttpClient(withPreferredToken(connection));
 }
 
 export const daemonClient = {
@@ -555,7 +643,21 @@ export const daemonClient = {
     id: string,
     payload?: Record<string, unknown>,
   ): Promise<DaemonRunOperationResponse> {
-    return httpClient(connection).runOperation(id, payload);
+    const preferred = withPreferredToken(connection);
+    try {
+      return await httpClient(preferred).runOperation(id, payload);
+    } catch (error) {
+      if (!isUnauthorizedDaemonError(error)) throw error;
+      const repairedToken = await tryRepairDaemonAuthToken(
+        preferred,
+        preferred.token,
+      );
+      if (!repairedToken) throw error;
+      return httpClient({ ...preferred, token: repairedToken }).runOperation(
+        id,
+        payload,
+      );
+    }
   },
 
   async configGet(

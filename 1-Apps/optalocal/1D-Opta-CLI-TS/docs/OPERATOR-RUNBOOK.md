@@ -427,3 +427,53 @@ Opta Code and Opta Init now ship an **Accounts** button that mirrors the CLI log
   are safe.
 - When the CLI shows the Offline startup notice at the same time, fix LMX first (Section 13) so the
   refreshed Supabase token can be used immediately.
+
+---
+
+## 15. CLI OAuth Callback + Exchange Troubleshooting
+
+Use this when `opta account login --oauth` opens a browser but never completes, or when the callback
+completes and then fails with exchange errors.
+
+### A. Browser opens, terminal waits until timeout
+
+1. Retry with a longer timeout:
+   ```bash
+   opta account login --oauth --timeout 300
+   ```
+2. Validate local loopback is reachable (VPN/proxy/firewall can block `127.0.0.1` callback hops).
+3. If launch is blocked on headless hosts, copy the URL printed by the CLI and open it manually.
+4. Confirm resulting auth state:
+   ```bash
+   opta account status --json
+   ```
+
+### B. Callback reaches localhost, but exchange fails (`exchange_not_found`)
+
+This usually indicates Accounts callback and exchange landed on different backend instances.
+
+- Configure Accounts relay signing secret:
+  - `OPTA_CLI_TOKEN_RELAY_SECRET` (preferred), or
+  - `OPTA_ACCOUNTS_CLI_TOKEN_RELAY_SECRET`.
+- This enables stateless signed relay fallback across instances.
+- If you intentionally require strict single-instance one-time memory flow, set:
+  - `OPTA_CLI_TOKEN_RELAY_DISABLE_STATELESS=1`
+
+### C. Exchange fails with `replay_store_unavailable`
+
+Accounts is enforcing durable replay protection, but the replay backend is unavailable.
+
+- In Accounts, configure service-role DB credentials:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_KEY` (or `SUPABASE_SERVICE_ROLE_KEY`)
+- Ensure schema contains `accounts_cli_replay_nonces`.
+- Retry:
+  ```bash
+  opta account login --oauth --timeout 300
+  ```
+
+### D. Strict mode behavior
+
+- `OPTA_OAUTH_STRICT_CODE_CALLBACK=1` forces callback payloads to include
+  `exchange_code` or `code` (legacy token query callbacks are rejected).
+- `OPTA_OAUTH_OPTA_SESSION_STRICT_CODE_ONLY=1` enforces strict mode for Opta-session browser mode.

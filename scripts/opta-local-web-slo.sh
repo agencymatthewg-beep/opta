@@ -23,7 +23,8 @@ expected_codes() {
     accounts.optalocal.com)
       echo "200,307" ;;
     admin.optalocal.com)
-      echo "200,401" ;;
+      # Unauthenticated browser access is expected to redirect to /unauthorized.
+      echo "200,401,307" ;;
     *)
       echo "200" ;;
   esac

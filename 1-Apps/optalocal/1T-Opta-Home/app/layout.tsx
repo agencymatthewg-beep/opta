@@ -1,5 +1,5 @@
 import './globals.css'
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { Sora } from 'next/font/google'
 import localFont from 'next/font/local'
 
@@ -32,16 +32,21 @@ const jetbrains = localFont({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://optalocal.com'),
   icons: {
     icon: '/favicon.svg',
     apple: '/favicon.svg',
   },
-  title: 'Opta Local — The complete local AI stack for developers',
-  description: 'A unified ecosystem to serve, manage, and code with open-weight models. Drop-in OpenAI API compatibility, entirely on your own hardware.',
-  keywords: 'local AI, LLM, inference, open-weight models, Opta LMX, Opta CLI, Opta Code, private AI, no cloud',
+  title: 'Opta Local | Production Control Plane for Opta AI',
+  description: 'Opta Local operationalizes Opta AI with governed runtime selection, unified activation, and execution across Opta CLI and Opta Code.',
+  keywords: 'Opta Local, Opta AI, Opta, Opta LMX, Opta CLI, Opta Code, local AI runtime, cloud AI runtime',
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
-    title: 'Opta Local — The complete local AI stack for developers',
-    description: 'A unified ecosystem to serve, manage, and code with open-weight models. Drop-in OpenAI API compatibility, entirely on your own hardware.',
+    title: 'Opta Local | Production Control Plane for Opta AI',
+    description: 'Unify runtime strategy, optimizer activation, and execution through Opta CLI and Opta Code with a production-grade operating model.',
     url: 'https://optalocal.com',
     siteName: 'Opta Local',
     locale: 'en_US',
@@ -49,12 +54,17 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary',
-    title: 'Opta Local — The complete local AI stack for developers',
-    description: 'A unified ecosystem to serve, manage, and code with open-weight models.',
+    title: 'Opta Local | Production Control Plane for Opta AI',
+    description: 'Run Opta AI through a governed workflow model across local or cloud runtimes, CLI, and Code.',
   },
   alternates: {
     canonical: 'https://optalocal.com',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#09090b',
+  colorScheme: 'dark',
 }
 
 export default function RootLayout({

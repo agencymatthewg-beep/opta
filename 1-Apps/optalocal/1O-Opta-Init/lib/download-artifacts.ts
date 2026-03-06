@@ -12,8 +12,8 @@ type ProductTarget = {
   platforms: Record<Platform, ReleaseTarget | null>;
 };
 
-// Latest Opta Init Manager — stable v0.7.0 (2026-03-05)
-const INIT_VERSION = "0.7.0";
+// Latest Opta Init Manager — stable v0.7.2 (2026-03-05)
+const INIT_VERSION = "0.7.2";
 const INIT_MACOS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-mac.dmg";
 const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-windows-x64.exe";
 

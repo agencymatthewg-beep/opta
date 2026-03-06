@@ -56,11 +56,23 @@ The Desktop Manager is the actual runtime engine users install via `opta init` t
 - **Manifest Fetching**: Pulls down `.json` release manifests from `init.optalocal.com/desktop/*`.
 - **Command Orchestration**: Executes native OS commands (`open`, `explorer`, `xdg-open`) and `opta` CLI commands to launch, update, install, and verify Opta apps.
 - **Daemon Control**: Manages the local `opta daemon` lifecycle (start/stop/status).
+- **Setup Persistence**: Stores first-run manager setup at `~/.config/opta/opta-init-config.json`.
+- **Network Discovery**: Discovers `_opta-lmx._tcp.local.` endpoints via mDNS and persists selected targets in `~/.config/opta/lmx-connections.json`.
 
 ### Frontend (React / Vite)
 - **App App.tsx**: The core interface containing the circular app cluster.
 - **Interactivity**: Hover-based tooltips and global keyboard shortcuts (`s` for scan, `l` for launch, `u` for update, `d` for download, `v` for verify, `f` for folder).
 - **Settings Modal**: Displays account linking status and exact installation paths/versions for all local apps.
+- **First-Run Gating**: Setup wizard blocks one-launch auto-install until setup completion is persisted.
+- **Daemon Drawer**: Mounted operational drawer for daemon jobs with kill-only controls.
+
+### Network Discovery Resolution Order
+
+```text
+1) Stored connection: ~/.config/opta/lmx-connections.json
+2) mDNS auto-discovery: _opta-lmx._tcp.local.
+3) Fallback: localhost:1234
+```
 
 ### Build Pipeline
 

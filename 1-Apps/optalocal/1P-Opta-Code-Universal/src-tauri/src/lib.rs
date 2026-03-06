@@ -4,9 +4,11 @@
 // web frontend.  Add Tauri commands here if native OS access is needed
 // in the future (file system, system tray, OS notifications, etc.).
 
+mod config_paths;
 mod connection_secrets;
 mod daemon_ops;
 mod folder_picker;
+mod lmx_mdns;
 mod setup_wizard;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -23,6 +25,7 @@ pub fn run() {
             setup_wizard::save_setup_config,
             setup_wizard::test_lmx_connection,
             setup_wizard::probe_lmx_server,
+            lmx_mdns::discover_lmx_mdns,
             setup_wizard::get_config_dir,
             setup_wizard::get_platform,
             folder_picker::pick_folder,

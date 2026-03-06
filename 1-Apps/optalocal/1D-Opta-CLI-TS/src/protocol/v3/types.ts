@@ -2,6 +2,31 @@ import { z } from 'zod';
 
 export const V3_VERSION = '3' as const;
 
+/**
+ * Canonical cross-surface activation contract for Opta account/runtime handoff.
+ */
+export const ActivationStateSchema = z.enum([
+  'runtime_unavailable',
+  'runtime_ready',
+  'accounts_authenticated',
+  'pairing_pending',
+  'pairing_claimed',
+  'bridge_connected',
+  'code_ready',
+]);
+export type ActivationState = z.infer<typeof ActivationStateSchema>;
+
+export const ActivationScopeStatusSchema = z.enum(['pending', 'satisfied', 'insufficient']);
+export type ActivationScopeStatus = z.infer<typeof ActivationScopeStatusSchema>;
+
+export const PairingBridgePayloadMetadataSchema = z.object({
+  state: ActivationStateSchema,
+  expiresAt: z.string().nullable(),
+  recoveryAction: z.string().nullable(),
+  scopeStatus: ActivationScopeStatusSchema,
+});
+export type PairingBridgePayloadMetadata = z.infer<typeof PairingBridgePayloadMetadataSchema>;
+
 export const SessionModeSchema = z.enum(['chat', 'do', 'plan', 'review', 'research']);
 export type SessionMode = z.infer<typeof SessionModeSchema>;
 export const TurnOutputFormatSchema = z.enum(['markdown', 'text', 'json']);

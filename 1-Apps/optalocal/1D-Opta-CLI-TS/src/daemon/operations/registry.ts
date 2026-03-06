@@ -627,9 +627,11 @@ export const operationRegistry = {
   ),
   'update.run': defineOperation('update.run', async (input) =>
     runCommandForJson('update.run', async () => {
+      const normalizedTarget =
+        input.target === 'local' || input.target === 'remote' ? input.target : undefined;
       await updateCommand({
         components: input.components,
-        target: input.target,
+        target: normalizedTarget,
         remoteHost: input.remoteHost,
         remoteUser: input.remoteUser,
         identityFile: input.identityFile,
@@ -810,7 +812,7 @@ export const operationRegistry = {
   ),
   'models.skills': defineOperation('models.skills', async (input) =>
     runCommandForJson('models.skills', async () => {
-      await models('skills', input.args, undefined, { json: true });
+      await models('skills', input.args, undefined, { json: true, openclawScope: input.scope });
     })
   ),
   'models.rag': defineOperation('models.rag', async (input) =>

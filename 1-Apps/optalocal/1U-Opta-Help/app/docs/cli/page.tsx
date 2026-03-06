@@ -48,6 +48,12 @@ export default function CliOverviewPage() {
             sessions, or fully autonomous multi-step tasks.
           </p>
 
+          <Callout variant="info" title="Version-aware examples">
+            CLI examples in this documentation can adapt to your selected installed
+            version context from the docs control bar. Use that selector when
+            validating behavior on older deployments.
+          </Callout>
+
           <CommandBlock
             command="opta --help"
             output={`Usage: opta [command] [options]
@@ -61,6 +67,15 @@ Commands:
   sessions      List and manage sessions
   status        Show stack health
   doctor        Diagnose and fix issues`}
+          />
+
+          <CommandBlock
+            command="opta --version"
+            versionOutputs={{
+              latest: "opta/1.1.0 darwin-arm64 node-v22.12.0",
+              v1_0: "opta/1.0.0 darwin-arm64 node-v22.12.0",
+            }}
+            description="Resolve your current CLI version against this documentation profile"
           />
 
           <h2 id="core-commands">Core Commands</h2>
@@ -84,7 +99,7 @@ Commands:
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="px-4 py-2.5 font-mono text-neon-cyan text-xs">opta daemon</td>
-                  <td className="px-4 py-2.5">Start, stop, restart, or install the background daemon</td>
+                  <td className="px-4 py-2.5">Start, stop, inspect, or install the background daemon runtime</td>
                 </tr>
                 <tr className="border-b border-white/5">
                   <td className="px-4 py-2.5 font-mono text-neon-cyan text-xs">opta config</td>
@@ -153,10 +168,11 @@ Commands:
             title="Platform Compatibility"
             features={[
               { feature: "macOS (Apple Silicon)", status: "done", description: "Primary platform, full feature support" },
-              { feature: "macOS (Intel)", status: "done", description: "CLI + daemon, no local inference" },
-              { feature: "Linux (x86_64)", status: "done", description: "CLI + daemon, LMX requires Apple Silicon" },
-              { feature: "Windows (WSL2)", status: "partial", description: "CLI works under WSL2, native support planned" },
-              { feature: "Windows (native)", status: "planned", description: "Planned for future release" },
+              { feature: "macOS (Intel)", status: "done", description: "CLI + daemon + cloud providers (no local LMX lifecycle)" },
+              { feature: "Linux (x86_64)", status: "done", description: "CLI + daemon + cloud providers; LMX local runtime requires Apple Silicon host" },
+              { feature: "Windows (native)", status: "done", description: "CLI + daemon + TUI + file tools (LMX local runtime commands out of scope)" },
+              { feature: "Windows (WSL2)", status: "done", description: "Supported as an alternative Windows workflow" },
+              { feature: "opta serve / opta update", status: "partial", description: "Supported on macOS/Linux; not supported on native Windows" },
             ]}
           />
 

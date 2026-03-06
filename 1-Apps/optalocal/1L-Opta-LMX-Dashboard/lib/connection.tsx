@@ -26,6 +26,7 @@ import {
     setLmxUrl,
 } from './api'
 import type { ConnectionStatus } from './types'
+import { usePairedDevice } from './paired-device'
 
 // ── Storage Keys ────────────────────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ const POLL_INTERVAL_DISCONNECTED = 3_000
 const MAX_BACKOFF = 30_000
 
 export function ConnectionProvider({ children }: { children: ReactNode }) {
+    const pairedDevice = usePairedDevice()
     const [status, setStatus] = useState<ConnectionStatus>('connecting')
     const [version, setVersion] = useState<string | null>(null)
     const [url, _setUrl] = useState<string>(() => {
@@ -82,6 +84,17 @@ export function ConnectionProvider({ children }: { children: ReactNode }) {
                 : null
         if (storedInferenceKey) setInferenceKey(storedInferenceKey)
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+    useEffect(() => {
+        if (pairedDevice.mode !== 'paired') return
+        if (!pairedDevice.endpointUrl) return
+        const cleaned = pairedDevice.endpointUrl.replace(/\/+$/, '')
+        if (!cleaned || cleaned === url) return
+        _setUrl(cleaned)
+        setLmxUrl(cleaned)
+        failCountRef.current = 0
+        setStatus('connecting')
+    }, [pairedDevice.mode, pairedDevice.endpointUrl, url])
 
     const doCheck = useCallback(async () => {
         const result = await checkConnection()

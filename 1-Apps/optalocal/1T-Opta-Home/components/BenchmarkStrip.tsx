@@ -4,11 +4,11 @@ import { motion, useInView } from "framer-motion";
 import { useRef } from "react";
 
 const stats = [
-  { value: "0",    unit: "",    label: "Cloud Calls"       },
-  { value: "100%", unit: "",    label: "OpenAI Compatible" },
-  { value: "∞",    unit: "",    label: "Unmetered Tokens"  },
-  { value: "4",    unit: "",    label: "Core Apps"         },
-  { value: "<1s",  unit: "",    label: "Stack Boot Time"   },
+  { value: "4", unit: "", label: "Core Local Apps" },
+  { value: "2", unit: "", label: "Runtime Paths" },
+  { value: "1", unit: "", label: "Activation Flow" },
+  { value: "0", unit: "", label: "Mandatory Cloud Calls (Local Mode)" },
+  { value: "100%", unit: "", label: "Local-Only Option" },
 ];
 
 export function BenchmarkStrip() {
@@ -23,7 +23,7 @@ export function BenchmarkStrip() {
             <motion.div
               key={stat.label}
               className="text-center"
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 1, y: 10 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
               transition={{ duration: 0.5, delay: i * 0.08, ease: [0.16, 1, 0.3, 1] }}
             >

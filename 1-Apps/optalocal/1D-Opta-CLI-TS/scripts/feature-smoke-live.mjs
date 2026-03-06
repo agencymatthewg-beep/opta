@@ -72,13 +72,24 @@ function summarizeOutput(stdout, stderr) {
   return merged.replace(/\s+/g, ' ').replace(/\t/g, ' ').slice(0, 240);
 }
 
+function spawnSmokeProcess(command) {
+  const invocation = `node dist/index.js ${command}`;
+  const commonOptions = {
+    cwd: REPO_ROOT,
+    env: process.env,
+    stdio: ['ignore', 'pipe', 'pipe'],
+  };
+
+  if (process.platform === 'win32') {
+    return spawn(process.env.ComSpec || 'cmd.exe', ['/d', '/s', '/c', invocation], commonOptions);
+  }
+
+  return spawn('/bin/sh', ['-lc', invocation], commonOptions);
+}
+
 function runSmokeCommand(command, timeoutMs) {
   return new Promise((resolveResult) => {
-    const child = spawn('/bin/zsh', ['-lc', `node dist/index.js ${command}`], {
-      cwd: REPO_ROOT,
-      env: process.env,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
+    const child = spawnSmokeProcess(command);
 
     let stdout = '';
     let stderr = '';
@@ -94,6 +105,10 @@ function runSmokeCommand(command, timeoutMs) {
 
     const timeoutId = setTimeout(() => {
       timedOut = true;
+      if (process.platform === 'win32') {
+        child.kill();
+        return;
+      }
       child.kill('SIGTERM');
       setTimeout(() => child.kill('SIGKILL'), 500).unref();
     }, timeoutMs);

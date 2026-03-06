@@ -8,8 +8,11 @@ import {
   BackgroundOutputQuerySchema,
   BackgroundProcessParamsSchema,
   BackgroundStartHttpSchema,
+  BridgeConnectHttpSchema,
   BackgroundStatusQuerySchema,
   CreateSessionHttpSchema,
+  DeviceBootstrapHttpSchema,
+  DeviceExecuteHttpSchema,
   EventsQuerySchema,
   PermissionDecisionHttpSchema,
   PermissionParamsSchema,
@@ -31,6 +34,8 @@ import { loadConfig } from '../core/config.js';
 import { LmxClient } from '../lmx/client.js';
 import { LmxApiError, type LmxLoadModelOptions } from '../lmx/types.js';
 import { executeDaemonOperation, listDaemonOperationsResponse } from './operations/execute.js';
+import { connectBridge, disconnectBridge, getBridgeState, markBridgeDegraded } from './bridge-state.js';
+import { BridgeOutboundWorker } from './bridge-worker.js';
 
 export interface HttpServerOptions {
   daemonId: string;
@@ -155,7 +160,11 @@ function parseBooleanQueryValue(raw: unknown): boolean | undefined {
   return undefined;
 }
 
-function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void {
+function registerHttpRoutes(
+  app: FastifyInstance,
+  opts: HttpServerOptions,
+  bridgeWorker: BridgeOutboundWorker
+): void {
   app.get('/health', () => ({
     status: 'ok',
     version: VERSION,
@@ -174,10 +183,14 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       const authConfig = resolveSupabaseAuthConfig(process.env, { cwd: process.cwd() });
       if (!authConfig) throw new Error('Supabase configuration missing');
 
-      // Note: State parameter usually contains the code verifier from the CLI initiator
-      // For now, if missing, we assume a flow that doesn't strictly need the local PKCE verification 
-      // or we decode it from the state. 
-      const codeVerifier = query.state || 'local-daemon-verifier'; 
+      // Require explicit verifier/state from the initiating flow; never use a
+      // static fallback verifier for auth-code exchange.
+      const codeVerifier = query.state?.trim() ?? '';
+      if (!/^[A-Za-z0-9._~-]{16,256}$/.test(codeVerifier)) {
+        return reply
+          .type('text/html')
+          .send('<h1>Auth Error</h1><p>Missing or invalid callback state.</p>');
+      }
 
       const result = await exchangeAuthCodeForSession(authConfig, query.code, codeVerifier);
       
@@ -261,6 +274,121 @@ function registerHttpRoutes(app: FastifyInstance, opts: HttpServerOptions): void
       runtime,
       ts: new Date().toISOString(),
     };
+  });
+
+  app.get('/v3/bridge/status', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    return {
+      daemonId: opts.daemonId,
+      bridge: getBridgeState(),
+    };
+  });
+
+  app.post('/v3/bridge/connect', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const parsed = BridgeConnectHttpSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+
+    const bridge = connectBridge({
+      deviceId: parsed.data.deviceId,
+      sessionId: parsed.data.sessionId,
+      bridgeToken: parsed.data.bridgeToken,
+      force: parsed.data.force,
+    });
+    bridgeWorker.start();
+    return {
+      ok: true,
+      bridge,
+    };
+  });
+
+  app.post('/v3/bridge/disconnect', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const body = req.body as { reason?: string } | undefined;
+    const reason = typeof body?.reason === 'string' ? body.reason : undefined;
+    bridgeWorker.stop();
+    const bridge = disconnectBridge(reason);
+    return {
+      ok: true,
+      bridge,
+    };
+  });
+
+  app.post('/v3/device/bootstrap', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const parsed = DeviceBootstrapHttpSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+
+    const payload: Record<string, unknown> = {
+      daemonId: opts.daemonId,
+      version: VERSION,
+      ts: new Date().toISOString(),
+      bridge: getBridgeState(),
+    };
+
+    if (parsed.data.includeConnection) {
+      const config = await loadConfig();
+      payload.connection = {
+        host: config.connection.host,
+        fallbackHosts: config.connection.fallbackHosts,
+        port: config.connection.port,
+      };
+    }
+
+    if (parsed.data.includeAccount) {
+      const account = await loadAccountState();
+      payload.account = account
+        ? {
+            project: account.project,
+            user: account.user
+              ? {
+                  id: account.user.id,
+                  email: account.user.email,
+                  name: account.user.name,
+                }
+              : null,
+            updatedAt: account.updatedAt,
+          }
+        : null;
+    }
+
+    if (parsed.data.includeRuntime) {
+      payload.runtime = opts.sessionManager.getRuntimeStats();
+    }
+
+    return payload;
+  });
+
+  app.post('/v3/device/execute', async (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const parsed = DeviceExecuteHttpSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      return reply.status(400).send({ error: 'Invalid request body', details: parsed.error.issues });
+    }
+
+    const result = await executeDaemonOperation({
+      id: parsed.data.operationId as never,
+      input: parsed.data.input,
+      confirmDangerous: parsed.data.confirmDangerous,
+    });
+
+    if (result.statusCode >= 500) {
+      markBridgeDegraded(`device_execute:${parsed.data.operationId}`);
+    }
+
+    return reply.status(result.statusCode).send({
+      ...result.body,
+      bridge: getBridgeState(),
+      metadata: {
+        commandId: parsed.data.bridgeMetadata?.commandId ?? null,
+        actor: parsed.data.bridgeMetadata?.actor ?? null,
+        issuedAt: parsed.data.bridgeMetadata?.issuedAt ?? null,
+      },
+    });
   });
 
   app.get('/v3/operations', async (req, reply) => {
@@ -861,6 +989,7 @@ async function listenWithPortFallback(
 }
 
 export async function startHttpServer(opts: HttpServerOptions): Promise<RunningHttpServer> {
+  const bridgeWorker = new BridgeOutboundWorker();
   const app = Fastify({
     logger: false,
     bodyLimit: 10 * 1024 * 1024,
@@ -876,7 +1005,7 @@ export async function startHttpServer(opts: HttpServerOptions): Promise<RunningH
   });
 
   await app.register(websocket);
-  registerHttpRoutes(app, opts);
+  registerHttpRoutes(app, opts, bridgeWorker);
   registerWsServer(app, {
     sessionManager: opts.sessionManager,
     token: opts.token,
@@ -907,6 +1036,7 @@ export async function startHttpServer(opts: HttpServerOptions): Promise<RunningH
     host: opts.host,
     port: boundPort,
     close: async () => {
+      await bridgeWorker.close();
       await app.close();
     },
   };

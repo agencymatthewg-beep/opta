@@ -29,8 +29,8 @@ function MobileSidebar({ onNavigate }: { onNavigate: () => void }) {
                     className={cn(
                       "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
                       isActive
-                        ? "bg-primary/10 text-primary font-medium border-l-2 border-primary"
-                        : "text-text-secondary hover:text-text-primary hover:bg-white/5"
+                        ? "text-primary font-medium shadow-[inset_2px_0_0_rgba(168,85,247,0.85)] bg-transparent"
+                        : "text-text-secondary hover:text-text-primary hover:bg-white/[0.03]"
                     )}
                   >
                     {isActive && <ChevronRight size={12} className="shrink-0" />}
@@ -65,7 +65,7 @@ export function Nav() {
 
   return (
     <>
-      <nav className="fixed top-0 inset-x-0 z-50 glass-subtle border-b border-white/5">
+      <nav className="fixed top-0 inset-x-0 z-50 glass-subtle doc-embed-block">
         <div className="max-w-[90rem] mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <button
@@ -101,11 +101,11 @@ export function Nav() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSearchOpen(true)}
-              className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text-secondary glass-subtle rounded-lg transition-colors"
+              className="flex items-center gap-2 px-3 py-1.5 text-sm text-text-muted hover:text-text-secondary doc-embed-block rounded-lg transition-colors"
             >
               <Search size={14} />
               <span className="hidden sm:inline">Search</span>
-              <kbd className="hidden sm:inline text-xs text-text-muted bg-elevated px-1.5 py-0.5 rounded border border-white/5">
+              <kbd className="hidden sm:inline text-xs text-text-muted bg-white/5 px-1.5 py-0.5 rounded">
                 ⌘K
               </kbd>
             </button>
@@ -130,9 +130,9 @@ export function Nav() {
       {/* Mobile navigation overlay */}
       {mobileMenuOpen && (
         <div className="fixed inset-0 z-40 lg:hidden" onClick={() => setMobileMenuOpen(false)}>
-          <div className="fixed inset-0 bg-void/80 backdrop-blur-sm" />
+          <div className="fixed inset-0 bg-void/70 backdrop-blur-sm" />
           <div
-            className="fixed top-16 left-0 bottom-0 w-[280px] bg-surface border-r border-white/5 overflow-y-auto p-4"
+            className="fixed top-16 left-0 bottom-0 w-[280px] bg-[linear-gradient(165deg,rgba(15,10,22,0.85),rgba(9,9,14,0.65))] overflow-y-auto p-4 shadow-[16px_0_28px_rgba(0,0,0,0.25)]"
             onClick={(e) => e.stopPropagation()}
           >
             <MobileSidebar onNavigate={() => setMobileMenuOpen(false)} />

@@ -5,6 +5,10 @@ const COOKIE_DOMAIN =
   process.env.NODE_ENV === 'production' ? '.optalocal.com' : undefined;
 const ADMIN_ALLOWLIST_ENV = 'OPTA_ADMIN_ALLOWED_EMAILS';
 
+type UpdateSessionOptions = {
+  requestHeaders?: Headers;
+};
+
 function parseAllowedAdminEmails(raw: string | undefined): Set<string> {
   if (!raw) return new Set();
 
@@ -28,8 +32,19 @@ function unauthorizedResponse(request: NextRequest) {
   return NextResponse.redirect(redirect);
 }
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+export async function updateSession(
+  request: NextRequest,
+  options: UpdateSessionOptions = {},
+) {
+  const passthroughHeaders = options.requestHeaders ?? request.headers;
+  const passthrough = () =>
+    NextResponse.next({
+      request: {
+        headers: passthroughHeaders,
+      },
+    });
+
+  let supabaseResponse = passthrough();
 
   const path = request.nextUrl.pathname;
   const isHealthEndpoint = path === '/api/health';
@@ -74,7 +89,7 @@ export async function updateSession(request: NextRequest) {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value),
         );
-        supabaseResponse = NextResponse.next({ request });
+        supabaseResponse = passthrough();
         cookiesToSet.forEach(({ name, value, options }) =>
           supabaseResponse.cookies.set(name, value, {
             ...options,

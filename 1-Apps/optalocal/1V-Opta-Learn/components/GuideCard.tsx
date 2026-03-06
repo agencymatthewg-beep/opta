@@ -3,11 +3,11 @@
 import { motion } from 'framer-motion';
 import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import type { Guide } from '@/content/guides';
+import type { GuideSearchEntry } from '@/content/guides';
 import { appColors, appLabels } from '@/content/guides';
 
 interface GuideCardProps {
-  guide: Guide;
+  guide: GuideSearchEntry;
   compact?: boolean;
 }
 

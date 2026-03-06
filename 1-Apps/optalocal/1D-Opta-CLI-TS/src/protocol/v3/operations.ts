@@ -291,7 +291,7 @@ export const OperationInputSchemaById = {
   'update.run': z
     .object({
       components: z.string().min(1).optional(),
-      target: z.enum(['auto', 'local', 'remote', 'both']).optional(),
+      target: z.enum(['local', 'remote']).optional(),
       remoteHost: z.string().min(1).optional(),
       remoteUser: z.string().min(1).optional(),
       identityFile: z.string().min(1).optional(),
@@ -431,6 +431,7 @@ export const OperationInputSchemaById = {
   'models.skills': z
     .object({
       args: z.string().min(1).optional(),
+      scope: z.string().min(1).optional(),
     })
     .strict(),
   'models.rag': z

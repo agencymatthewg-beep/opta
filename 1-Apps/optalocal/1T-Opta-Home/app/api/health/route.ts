@@ -113,7 +113,7 @@ export async function GET(): Promise<NextResponse> {
   }
 
   return NextResponse.json(payload, {
-    status: 200,
+    status: dependenciesOk ? 200 : 503,
     headers: {
       'Cache-Control': 'no-store, max-age=0',
     },

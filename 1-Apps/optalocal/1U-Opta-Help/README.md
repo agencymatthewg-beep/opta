@@ -4,7 +4,7 @@ Canonical path: `1-Apps/optalocal/1U-Opta-Help`
 
 ## Purpose
 
-Documentation and support center for Opta Local.
+Documentation and support center for Opta Local, with canonical guidance on activating Opta AI through local LMX or cloud runtimes into CLI/Code workflows.
 
 ## Local Development
 
@@ -19,6 +19,19 @@ npm run dev
 ```bash
 npm run check
 ```
+
+## Adding Learn Links
+
+1. Add or update route mappings in `lib/learn-route-guide-map.json` (`docsPrefix` -> `guides[]` slugs).
+2. Keep local fallback summaries/app tags in `lib/learn-about.ts` for any new slug used in Help.
+3. Sync the Learn manifest and validate mappings:
+
+```bash
+npm run sync:learn-guides
+npm run validate:learn-links
+```
+
+The validator fails if any mapped slug is missing from the synced Learn manifest (`lib/generated/learn-guides-manifest.json`).
 
 ## Build and Start
 

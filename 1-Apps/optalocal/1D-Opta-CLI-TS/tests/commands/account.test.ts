@@ -22,6 +22,7 @@ const originalOptaSupabaseAnonKey = process.env['OPTA_SUPABASE_ANON_KEY'];
 const originalPublicSupabaseUrl = process.env['NEXT_PUBLIC_SUPABASE_URL'];
 const originalPublicSupabaseAnonKey = process.env['NEXT_PUBLIC_SUPABASE_ANON_KEY'];
 const originalOptaPassword = process.env['OPTA_PASSWORD'];
+const originalStrictCodeCallback = process.env['OPTA_OAUTH_STRICT_CODE_CALLBACK'];
 
 function jsonResponse(status: number, payload: unknown): Response {
   return new Response(JSON.stringify(payload), {
@@ -91,6 +92,9 @@ afterEach(() => {
 
   if (originalOptaPassword === undefined) delete process.env['OPTA_PASSWORD'];
   else process.env['OPTA_PASSWORD'] = originalOptaPassword;
+
+  if (originalStrictCodeCallback === undefined) delete process.env['OPTA_OAUTH_STRICT_CODE_CALLBACK'];
+  else process.env['OPTA_OAUTH_STRICT_CODE_CALLBACK'] = originalStrictCodeCallback;
 });
 
 describe('account command', () => {
@@ -269,17 +273,19 @@ describe('account command', () => {
   });
 
   it('runOAuthLoginFlow exchanges auth code via PKCE callback and persists state', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
-      access_token: 'pkce-access',
-      refresh_token: 'pkce-refresh',
-      token_type: 'bearer',
-      expires_in: 3600,
-      expires_at: 1_900_000_000,
-      user: {
-        id: 'user_pkce',
-        email: 'pkce@example.com',
-      },
-    }));
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true, proof: 'handoff-proof-token' }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        access_token: 'pkce-access',
+        refresh_token: 'pkce-refresh',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: 1_900_000_000,
+        user: {
+          id: 'user_pkce',
+          email: 'pkce@example.com',
+        },
+      }));
 
     let capturedSignInUrl: string | null = null;
 
@@ -311,8 +317,13 @@ describe('account command', () => {
 
     const result = await resultPromise;
     expect(capturedSignInUrl).toContain('/sign-in?');
+    expect(capturedSignInUrl).toContain('proof=handoff-proof-token');
     expect(result.user?.email).toBe('pkce@example.com');
     expect(result.session.access_token).toBe('pkce-access');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://accounts.optalocal.com/api/cli/handoff',
+      expect.objectContaining({ method: 'POST' }),
+    );
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://proj-ref.supabase.co/auth/v1/token?grant_type=pkce',
@@ -328,18 +339,108 @@ describe('account command', () => {
     );
   });
 
-  it('runOAuthLoginFlow supports opta-session mode with strict handoff token + auth code', async () => {
-    fetchMock.mockResolvedValueOnce(jsonResponse(200, {
-      access_token: 'opta-access',
-      refresh_token: 'opta-refresh',
-      token_type: 'bearer',
-      expires_in: 3600,
-      expires_at: 1_900_000_000,
-      user: {
-        id: 'user_opta',
-        email: 'opta@example.com',
+  it('runOAuthLoginFlow exchanges one-time relay code with Accounts endpoint', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true, proof: 'handoff-proof-token' }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        ok: true,
+        access_token: 'relay-access',
+        refresh_token: 'relay-refresh',
+        token_type: 'bearer',
+        expires_in: 1234,
+        expires_at: 1_900_000_000,
+        provider_token: 'provider-token',
+        provider_refresh_token: 'provider-refresh-token',
+      }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        id: 'user_relay',
+        email: 'relay@example.com',
+      }));
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const result = await runOAuthLoginFlow({
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        const handoff = parsed.searchParams.get('handoff');
+        expect(port).toBeTruthy();
+        expect(state).toBeTruthy();
+
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        if (handoff) callbackUrl.searchParams.set('handoff', handoff);
+        callbackUrl.searchParams.set('exchange_code', 'relay_code_abcdefghijklmnopqrstuvwxyz');
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
       },
-    }));
+    });
+
+    expect(result.session.access_token).toBe('relay-access');
+    expect(result.session.refresh_token).toBe('relay-refresh');
+    expect(result.session.token_type).toBe('bearer');
+    expect(result.session.expires_in).toBe(1234);
+    expect(result.session.provider_token).toBe('provider-token');
+    expect(result.session.provider_refresh_token).toBe('provider-refresh-token');
+    expect(result.user?.email).toBe('relay@example.com');
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://accounts.optalocal.com/api/cli/exchange',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetchMock).not.toHaveBeenCalledWith(
+      'https://proj-ref.supabase.co/auth/v1/token?grant_type=pkce',
+      expect.anything(),
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://proj-ref.supabase.co/auth/v1/user',
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('runOAuthLoginFlow surfaces replay-store guidance when Accounts exchange returns replay_store_unavailable', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true, proof: 'handoff-proof-token' }))
+      .mockResolvedValueOnce(jsonResponse(503, {
+        ok: false,
+        error: 'replay_store_unavailable',
+      }));
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    await expect(
+      runOAuthLoginFlow({
+        browserOpener: (url) => {
+          const parsed = new URL(url);
+          const port = parsed.searchParams.get('port');
+          const state = parsed.searchParams.get('state');
+          const handoff = parsed.searchParams.get('handoff');
+          const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+          callbackUrl.searchParams.set('state', state ?? '');
+          if (handoff) callbackUrl.searchParams.set('handoff', handoff);
+          callbackUrl.searchParams.set('exchange_code', 'relay_code_abcdefghijklmnopqrstuvwxyz');
+          setTimeout(() => {
+            void requestCallback(callbackUrl.toString());
+          }, 0);
+        },
+      }),
+    ).rejects.toThrow(/replay-protection store is unavailable/i);
+  });
+
+  it('runOAuthLoginFlow supports opta-session mode with strict handoff token + auth code', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        access_token: 'opta-access',
+        refresh_token: 'opta-refresh',
+        token_type: 'bearer',
+        expires_in: 3600,
+        expires_at: 1_900_000_000,
+        user: {
+          id: 'user_opta',
+          email: 'opta@example.com',
+        },
+      }));
 
     const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
     const result = await runOAuthLoginFlow({
@@ -370,10 +471,11 @@ describe('account command', () => {
     );
   });
 
-  it('runOAuthLoginFlow rejects legacy token callback in opta-session mode', async () => {
-    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+  it('runOAuthLoginFlow accepts legacy token callback in opta-session mode for compatibility', async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true }));
 
-    await expect(runOAuthLoginFlow({
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const result = await runOAuthLoginFlow({
       browserMode: 'opta-session',
       browserOpener: (url) => {
         const parsed = new URL(url);
@@ -390,13 +492,16 @@ describe('account command', () => {
           void requestCallback(callbackUrl.toString());
         }, 0);
       },
-    })).rejects.toThrowError(/Missing auth code in callback/);
+    });
 
-    expect(saveAccountStateMock).toHaveBeenCalledTimes(0);
+    expect(result.session.access_token).toBe('legacy-access');
+    expect(result.session.refresh_token).toBe('legacy-refresh');
+    expect(saveAccountStateMock).toHaveBeenCalledTimes(1);
   });
 
   it('runOAuthLoginFlow supports legacy token callback for compatibility', async () => {
     fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }))
       .mockResolvedValueOnce(jsonResponse(200, {
         id: 'legacy-user',
         email: 'legacy@example.com',
@@ -429,5 +534,60 @@ describe('account command', () => {
       expect.objectContaining({ method: 'GET' }),
     );
     expect(saveAccountStateMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('runOAuthLoginFlow rejects legacy token callback when strict mode is enabled globally', async () => {
+    process.env['OPTA_OAUTH_STRICT_CODE_CALLBACK'] = '1';
+    fetchMock.mockResolvedValueOnce(jsonResponse(200, { ok: true }));
+
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    await expect(
+      runOAuthLoginFlow({
+        browserOpener: (url) => {
+          const parsed = new URL(url);
+          const port = parsed.searchParams.get('port');
+          const state = parsed.searchParams.get('state');
+          const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+          callbackUrl.searchParams.set('state', state ?? '');
+          callbackUrl.searchParams.set('access_token', 'legacy-access');
+          callbackUrl.searchParams.set('refresh_token', 'legacy-refresh');
+          setTimeout(() => {
+            void requestCallback(callbackUrl.toString());
+          }, 0);
+        },
+      }),
+    ).rejects.toThrow(/Strict callback mode rejected legacy token callback/);
+  });
+
+  it('runOAuthLoginFlow emits browser-launch warning and still succeeds in system-browser mode', async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse(200, { ok: true }))
+      .mockResolvedValueOnce(jsonResponse(200, {
+        id: 'legacy-user',
+        email: 'legacy@example.com',
+      }));
+
+    const launchWarning = vi.fn();
+    const { runOAuthLoginFlow } = await import('../../src/commands/account.js');
+    const result = await runOAuthLoginFlow({
+      onBrowserLaunchWarning: launchWarning,
+      browserOpener: (url) => {
+        const parsed = new URL(url);
+        const port = parsed.searchParams.get('port');
+        const state = parsed.searchParams.get('state');
+        const callbackUrl = new URL(`http://127.0.0.1:${port}/callback`);
+        callbackUrl.searchParams.set('state', state ?? '');
+        callbackUrl.searchParams.set('access_token', 'legacy-access');
+        callbackUrl.searchParams.set('refresh_token', 'legacy-refresh');
+        setTimeout(() => {
+          void requestCallback(callbackUrl.toString());
+        }, 0);
+        throw new Error('browser launch blocked');
+      },
+    });
+
+    expect(launchWarning).toHaveBeenCalledTimes(1);
+    expect(result.session.access_token).toBe('legacy-access');
+    expect(result.user?.email).toBe('legacy@example.com');
   });
 });

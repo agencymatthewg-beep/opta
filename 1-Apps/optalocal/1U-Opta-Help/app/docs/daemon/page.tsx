@@ -144,6 +144,10 @@ export default function DaemonOverviewPage() {
           <p>
             The daemon writes its runtime state — including the auth token, PID, and port — to:
           </p>
+          <p>
+            macOS/Linux path: <code>~/.config/opta/daemon/state.json</code>. Windows path:
+            <code>%APPDATA%\\opta\\daemon\\state.json</code>.
+          </p>
           <CodeBlock
             filename="~/.config/opta/daemon/state.json"
             code={`{

@@ -13,15 +13,16 @@ export function ArchDiagram() {
       <div className="max-w-6xl mx-auto">
         <motion.div
           className="text-center mb-20"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Flexible execution paths.
+            Two runtime paths, one Opta AI workflow.
           </h2>
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            Run privately on Apple Silicon, or connect cloud models for mass scale.
+            Keep the same activation model whether you run locally on Apple
+            Silicon or through external model providers.
           </p>
         </motion.div>
 
@@ -29,7 +30,7 @@ export function ArchDiagram() {
           {/* Local Architecture (ENABLED) */}
           <motion.div
             className="relative"
-            initial={{ opacity: 0, x: -20 }}
+            initial={{ opacity: 1, x: -20 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
@@ -85,7 +86,7 @@ export function ArchDiagram() {
           {/* Cloud Architecture (SUPPORTED) */}
           <motion.div
             className="relative"
-            initial={{ opacity: 0, x: 20 }}
+            initial={{ opacity: 1, x: 20 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ duration: 0.6, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
           >
@@ -93,7 +94,7 @@ export function ArchDiagram() {
               <h3 className="text-2xl font-bold text-white mb-2">Cloud AI Services</h3>
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neon-cyan/10 border border-neon-cyan/30 text-neon-cyan text-sm font-medium">
                 <Cloud className="w-3.5 h-3.5" />
-                Supported Fallback
+                Optional Mode
               </span>
             </div>
 
@@ -129,7 +130,7 @@ export function ArchDiagram() {
                 <div className="text-center">
                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
                     <Lock className="w-4 h-4 text-text-muted" />
-                    <span className="text-sm font-medium text-text-muted">Data leaves device</span>
+                    <span className="text-sm font-medium text-text-muted">Provider-bound processing path</span>
                   </div>
                 </div>
               </div>

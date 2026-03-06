@@ -1,27 +1,18 @@
-import { useState, useEffect, useCallback } from "react";
 import {
+  Suspense,
+  useState,
+  useEffect,
+  useCallback,
+  useRef,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
+import {
+  ArrowUp,
   X,
-  Network,
-  Cpu,
-  ShieldAlert,
-  Webhook,
-  Terminal,
   RefreshCw,
   RotateCcw,
   Lightbulb,
-  Copy,
-  CheckCircle,
-  Layers,
-  Shield,
-  AlertTriangle,
-  Globe,
-  BookOpen,
-  Wrench,
-  Brain,
-  FileCheck,
-  Activity,
-  Server,
-  Key,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonConnectionOptions } from "../types";
@@ -42,17 +33,43 @@ import { SettingsTabPolicy } from "./settings/SettingsTabPolicy";
 import { SettingsTabMcp } from "./settings/SettingsTabMcp";
 import { SettingsTabFleet } from "./settings/SettingsTabFleet";
 import { SettingsTabSecrets } from "./settings/SettingsTabSecrets";
+import { ErrorBoundary } from "./ErrorBoundary";
+import {
+  LazyAccountControlPage,
+  LazyAppCatalogPage,
+  LazyBackgroundJobsPage,
+  LazyCliOperationsPage,
+  LazyConfigStudioPage,
+  LazyDaemonLogsPage,
+  LazyEnvProfilesPage,
+  LazyMcpManagementPage,
+  LazySessionMemoryPage,
+  LazySystemOperationsPage,
+  preloadSettingsModalLazyTab,
+} from "./settingsModalLazyPages";
+import {
+  SETTINGS_CATEGORIES,
+  normalizeSettingsTabId,
+  type SettingsTabId,
+} from "./settingsStudioConfig";
 
 interface SettingsModalProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose?: () => void;
   initialTab?: SettingsTabId;
   connection: DaemonConnectionOptions;
   onSaveConnection: (conn: DaemonConnectionOptions) => void;
+  embedded?: boolean;
+  onBackLayer?: () => void;
+  isDeepLayer?: boolean;
+  isFullscreen?: boolean;
+  activeTab?: SettingsTabId;
+  isSettingEditMode?: boolean;
+  onActiveTabChange?: (tab: SettingsTabId) => void;
+  connectionState?: "connected" | "connecting" | "disconnected";
+  defaultSessionId?: string | null;
+  onManageTiles?: () => void;
 }
-
-export type SettingsTabId = "connection" | "lmx" | "autonomy" | "genui" | "daemon"
-  | "model-provider" | "fleet" | "permissions" | "safety" | "browser" | "research" | "tools-agents" | "learning" | "policy" | "mcp" | "secrets";
 
 const DEFAULT_CONNECTION_FORM = {
   host: "127.0.0.1",
@@ -69,6 +86,85 @@ const DEFAULT_LMX = {
   adminKey: "",
   adminKeysByHost: "{}",
 };
+
+const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
+
+function SettingsLazyChunkFallback({ label }: { label: string }) {
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      style={{
+        minHeight: "160px",
+        display: "flex",
+        flexDirection: "column",
+        justifyContent: "center",
+        gap: "0.5rem",
+        color: "var(--opta-text)",
+      }}
+    >
+      <strong style={{ fontSize: "0.88rem", fontFamily: "Sora" }}>
+        Loading {label}
+      </strong>
+      <p
+        style={{
+          margin: 0,
+          fontSize: "0.8rem",
+          color: "#a1a1aa",
+        }}
+      >
+        This section is loaded on demand to reduce initial Settings Studio
+        bundle cost.
+      </p>
+    </div>
+  );
+}
+
+function SettingsLazyChunkError({
+  label,
+  error,
+}: {
+  label: string;
+  error: Error;
+}) {
+  return (
+    <div
+      role="alert"
+      aria-live="assertive"
+      style={{
+        border: "1px solid rgba(248,113,113,0.45)",
+        borderRadius: "10px",
+        padding: "0.9rem",
+        background: "rgba(127,29,29,0.18)",
+        color: "rgba(254,226,226,0.95)",
+        display: "grid",
+        gap: "0.45rem",
+      }}
+    >
+      <strong style={{ fontSize: "0.88rem", fontFamily: "Sora" }}>
+        {label} failed to load
+      </strong>
+      <p style={{ margin: 0, fontSize: "0.78rem", color: "rgba(254,202,202,0.94)" }}>
+        Switch tabs and return to retry this chunk load. If it keeps failing,
+        refresh the app.
+      </p>
+      <code
+        style={{
+          display: "block",
+          fontSize: "0.72rem",
+          borderRadius: "8px",
+          padding: "0.55rem",
+          overflowX: "auto",
+          background: "rgba(0,0,0,0.3)",
+          border: "1px solid rgba(248,113,113,0.3)",
+          color: "rgba(254,202,202,0.95)",
+        }}
+      >
+        {error.message}
+      </code>
+    </div>
+  );
+}
 
 function parseHostList(raw: string): string[] {
   return raw
@@ -121,14 +217,70 @@ function formatAdminKeysByHost(raw: unknown): string {
   return JSON.stringify(map, null, 2);
 }
 
+function readBooleanSetting(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") return value;
+  if (typeof value === "string") {
+    if (value === "true") return true;
+    if (value === "false") return false;
+  }
+  if (typeof value === "number") return value > 0;
+  return fallback;
+}
+
+function readStringSetting(value: unknown, fallback: string): string {
+  if (typeof value !== "string") return fallback;
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+}
+
+function readPositiveInteger(value: unknown, fallback: number): number {
+  const parsed =
+    typeof value === "number"
+      ? value
+      : typeof value === "string"
+        ? Number.parseInt(value, 10)
+        : Number.NaN;
+  if (!Number.isFinite(parsed) || parsed <= 0) return fallback;
+  return Math.round(parsed);
+}
+
 export function SettingsModal({
   isOpen,
   onClose,
   initialTab,
   connection,
   onSaveConnection,
+  embedded = false,
+  onBackLayer,
+  isDeepLayer = false,
+  isFullscreen = false,
+  activeTab: controlledActiveTab,
+  isSettingEditMode = false,
+  onActiveTabChange,
+  connectionState = "disconnected",
+  defaultSessionId,
+  onManageTiles,
 }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<SettingsTabId>("connection");
+  const sidebarTabRefs =
+    useRef<Partial<Record<SettingsTabId, HTMLButtonElement | null>>>({});
+  const contentRef = useRef<HTMLElement | null>(null);
+  const [internalActiveTab, setInternalActiveTab] =
+    useState<SettingsTabId>("connection-network");
+  const activeTab = normalizeSettingsTabId(
+    controlledActiveTab ?? internalActiveTab,
+  );
+  const isTabControlled = controlledActiveTab !== undefined;
+
+  const setActiveTab = useCallback(
+    (tab: SettingsTabId) => {
+      const normalizedTab = normalizeSettingsTabId(tab);
+      if (!isTabControlled) {
+        setInternalActiveTab(normalizedTab);
+      }
+      onActiveTabChange?.(normalizedTab);
+    },
+    [isTabControlled, onActiveTabChange],
+  );
 
   // --- Connection State ---
   const [connForm, setConnForm] = useState({
@@ -174,6 +326,41 @@ export function SettingsModal({
   const [genuiEnabled, setGenuiEnabled] = useState(true);
   const [genuiAutoOpen, setGenuiAutoOpen] = useState(true);
 
+  // --- Unified Studio Category State ---
+  const [runtimeAutoRestart, setRuntimeAutoRestart] = useState(true);
+  const [runtimeMaxWorkers, setRuntimeMaxWorkers] = useState("4");
+  const [runtimeHealthIntervalSec, setRuntimeHealthIntervalSec] = useState("12");
+
+  const [mcpAutoSync, setMcpAutoSync] = useState(true);
+  const [mcpRequireSigned, setMcpRequireSigned] = useState(false);
+  const [mcpIsolationMode, setMcpIsolationMode] =
+    useState<"workspace" | "profile" | "strict">("workspace");
+
+  const [defaultProfileId, setDefaultProfileId] = useState("default");
+  const [profileSwitchConfirm, setProfileSwitchConfirm] = useState(true);
+
+  const [accountsDangerousAuthRequired, setAccountsDangerousAuthRequired] =
+    useState(true);
+  const [vaultAutoLockMinutes, setVaultAutoLockMinutes] = useState("15");
+
+  const [tilesAutoDock, setTilesAutoDock] = useState(true);
+  const [tilesShowTelemetry, setTilesShowTelemetry] = useState(true);
+  const [tilesDensity, setTilesDensity] =
+    useState<"compact" | "comfortable" | "cinema">("comfortable");
+
+  const [appsInstallPolicy, setAppsInstallPolicy] =
+    useState<"allowlisted" | "moderated" | "open">("moderated");
+  const [appsAutoUpdate, setAppsAutoUpdate] = useState(true);
+
+  const [memoryRetentionDays, setMemoryRetentionDays] = useState("30");
+  const [memorySemanticRecall, setMemorySemanticRecall] = useState(true);
+  const [memoryAutoSummaries, setMemoryAutoSummaries] = useState(true);
+
+  const [cliConfirmDestructive, setCliConfirmDestructive] = useState(true);
+  const [cliDefaultShell, setCliDefaultShell] =
+    useState<"zsh" | "bash" | "pwsh">("zsh");
+  const [cliVerboseDiagnostics, setCliVerboseDiagnostics] = useState(false);
+
   useEffect(() => {
     setConnForm({
       host: connection.host,
@@ -187,19 +374,66 @@ export function SettingsModal({
 
   useEffect(() => {
     if (!isOpen) return;
-    setActiveTab(initialTab ?? "connection");
-  }, [isOpen, initialTab]);
+    if (!isTabControlled) {
+      setInternalActiveTab(normalizeSettingsTabId(initialTab));
+      return;
+    }
+    if (initialTab) {
+      onActiveTabChange?.(normalizeSettingsTabId(initialTab));
+    }
+  }, [isOpen, initialTab, isTabControlled, onActiveTabChange]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !onClose) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented) return;
+      if (embedded) return;
       if (e.key === "Escape") {
         onClose();
       }
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [embedded, isOpen, onClose]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const sidebarTab = sidebarTabRefs.current[activeTab];
+    sidebarTab?.scrollIntoView({
+      block: "nearest",
+      behavior: "smooth",
+    });
+    const deepLayout = contentRef.current?.closest(
+      ".opta-studio-layout--deep",
+    ) as HTMLElement | null;
+    const scrollTarget =
+      (deepLayout && deepLayout.scrollHeight > deepLayout.clientHeight + 1
+        ? deepLayout
+        : contentRef.current) ?? null;
+    if (!scrollTarget) return;
+
+    const resetScroll = () => {
+      scrollTarget.scrollTo({
+        top: 0,
+        behavior: "auto",
+      });
+    };
+
+    resetScroll();
+    const rafId = window.requestAnimationFrame(resetScroll);
+    const timeoutA = window.setTimeout(resetScroll, 80);
+    const timeoutB = window.setTimeout(resetScroll, 180);
+    return () => {
+      window.cancelAnimationFrame(rafId);
+      window.clearTimeout(timeoutA);
+      window.clearTimeout(timeoutB);
+    };
+  }, [activeTab, isOpen, isDeepLayer]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    preloadSettingsModalLazyTab(activeTab);
+  }, [activeTab, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -221,6 +455,27 @@ export function SettingsModal({
           autoModeRaw,
           genuiEnRaw,
           genuiAutoRaw,
+          runtimeAutoRestartRaw,
+          runtimeMaxWorkersRaw,
+          runtimeHealthIntervalRaw,
+          mcpAutoSyncRaw,
+          mcpRequireSignedRaw,
+          mcpIsolationModeRaw,
+          defaultProfileRaw,
+          profileSwitchConfirmRaw,
+          accountsDangerousAuthRequiredRaw,
+          vaultAutoLockMinutesRaw,
+          tilesAutoDockRaw,
+          tilesShowTelemetryRaw,
+          tilesDensityRaw,
+          appsInstallPolicyRaw,
+          appsAutoUpdateRaw,
+          memoryRetentionDaysRaw,
+          memorySemanticRecallRaw,
+          memoryAutoSummariesRaw,
+          cliConfirmDestructiveRaw,
+          cliDefaultShellRaw,
+          cliVerboseDiagnosticsRaw,
         ] = await Promise.all([
           daemonClient
             .configGet(connection, "connection.host")
@@ -249,6 +504,69 @@ export function SettingsModal({
           daemonClient
             .configGet(connection, "genui.autoOpenBrowser")
             .catch(() => true),
+          daemonClient
+            .configGet(connection, "runtime.autoRestart")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "runtime.maxWorkers")
+            .catch(() => 4),
+          daemonClient
+            .configGet(connection, "runtime.healthIntervalSec")
+            .catch(() => 12),
+          daemonClient
+            .configGet(connection, "mcp.autoSync")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "mcp.requireSignedRegistries")
+            .catch(() => false),
+          daemonClient
+            .configGet(connection, "mcp.isolationMode")
+            .catch(() => "workspace"),
+          daemonClient
+            .configGet(connection, "profiles.default")
+            .catch(() => "default"),
+          daemonClient
+            .configGet(connection, "profiles.confirmSwitch")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "accounts.requireDangerousAuth")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "vault.autoLockMinutes")
+            .catch(() => 15),
+          daemonClient
+            .configGet(connection, "workspace.tiles.autoDock")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "workspace.tiles.showTelemetry")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "workspace.tiles.density")
+            .catch(() => "comfortable"),
+          daemonClient
+            .configGet(connection, "apps.installPolicy")
+            .catch(() => "moderated"),
+          daemonClient
+            .configGet(connection, "apps.autoUpdate")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "memory.retentionDays")
+            .catch(() => 30),
+          daemonClient
+            .configGet(connection, "memory.semanticRecall")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "memory.autoSummaries")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "cli.confirmDestructive")
+            .catch(() => true),
+          daemonClient
+            .configGet(connection, "cli.defaultShell")
+            .catch(() => "zsh"),
+          daemonClient
+            .configGet(connection, "cli.verboseDiagnostics")
+            .catch(() => false),
         ]);
 
         if (cancelled) return;
@@ -270,6 +588,66 @@ export function SettingsModal({
 
         setGenuiEnabled(genuiEnRaw === true || genuiEnRaw === "true");
         setGenuiAutoOpen(genuiAutoRaw === true || genuiAutoRaw === "true");
+
+        setRuntimeAutoRestart(readBooleanSetting(runtimeAutoRestartRaw, true));
+        setRuntimeMaxWorkers(
+          String(readPositiveInteger(runtimeMaxWorkersRaw, 4)),
+        );
+        setRuntimeHealthIntervalSec(
+          String(readPositiveInteger(runtimeHealthIntervalRaw, 12)),
+        );
+
+        setMcpAutoSync(readBooleanSetting(mcpAutoSyncRaw, true));
+        setMcpRequireSigned(readBooleanSetting(mcpRequireSignedRaw, false));
+        setMcpIsolationMode(
+          mcpIsolationModeRaw === "profile" || mcpIsolationModeRaw === "strict"
+            ? mcpIsolationModeRaw
+            : "workspace",
+        );
+
+        setDefaultProfileId(readStringSetting(defaultProfileRaw, "default"));
+        setProfileSwitchConfirm(readBooleanSetting(profileSwitchConfirmRaw, true));
+
+        setAccountsDangerousAuthRequired(
+          readBooleanSetting(accountsDangerousAuthRequiredRaw, true),
+        );
+        setVaultAutoLockMinutes(
+          String(readPositiveInteger(vaultAutoLockMinutesRaw, 15)),
+        );
+
+        setTilesAutoDock(readBooleanSetting(tilesAutoDockRaw, true));
+        setTilesShowTelemetry(readBooleanSetting(tilesShowTelemetryRaw, true));
+        setTilesDensity(
+          tilesDensityRaw === "compact" || tilesDensityRaw === "cinema"
+            ? tilesDensityRaw
+            : "comfortable",
+        );
+
+        setAppsInstallPolicy(
+          appsInstallPolicyRaw === "allowlisted" ||
+            appsInstallPolicyRaw === "open"
+            ? appsInstallPolicyRaw
+            : "moderated",
+        );
+        setAppsAutoUpdate(readBooleanSetting(appsAutoUpdateRaw, true));
+
+        setMemoryRetentionDays(
+          String(readPositiveInteger(memoryRetentionDaysRaw, 30)),
+        );
+        setMemorySemanticRecall(readBooleanSetting(memorySemanticRecallRaw, true));
+        setMemoryAutoSummaries(readBooleanSetting(memoryAutoSummariesRaw, true));
+
+        setCliConfirmDestructive(
+          readBooleanSetting(cliConfirmDestructiveRaw, true),
+        );
+        setCliDefaultShell(
+          cliDefaultShellRaw === "bash" || cliDefaultShellRaw === "pwsh"
+            ? cliDefaultShellRaw
+            : "zsh",
+        );
+        setCliVerboseDiagnostics(
+          readBooleanSetting(cliVerboseDiagnosticsRaw, false),
+        );
       } catch (error) {
         if (!cancelled)
           console.error("Failed to load settings from daemon", error);
@@ -420,774 +798,1454 @@ export function SettingsModal({
   if (!isOpen) return null;
 
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case "connection":
-        return (
-          <motion.div
-            key="connection"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
+  const renderConnectionModule = () => (
+    <>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          marginBottom: "1.5rem",
+        }}
+      >
+        <div>
+          <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+            Client Connection
+          </h3>
+          <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
+            Manage saved daemon targets and discover new ones on your local network.
+            Port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>{" "}
+            is reserved for LMX inference, not daemon{" "}
+            <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>/v3</code>{" "}
+            traffic.
+          </p>
+        </div>
+      </div>
+      <ConnectionAddressBook
+        activeConnection={connection}
+        onConnectionChange={onSaveConnection}
+      />
+    </>
+  );
+
+  const renderAutonomyModule = () => (
+    <>
+      <h3 className="opta-studio-section-title">ATPO Autonomy</h3>
+      <p
+        style={{
+          color: "#a1a1aa",
+          fontSize: "0.85rem",
+          marginBottom: "1.5rem",
+          lineHeight: 1.5,
+        }}
+      >
+        Configure the default Agentic Task Planning & Orchestration profile. Higher
+        levels allow the AI to execute more tools autonomously without asking for
+        permission.
+      </p>
+
+      <div className="opta-studio-slider-container">
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            marginBottom: "0.5rem",
+          }}
+        >
+          <span style={{ color: "#fafafa", fontFamily: "Sora", fontWeight: 500 }}>
+            Autonomy Level {autonomyLevel}
+          </span>
+          <span style={{ color: "#a855f7", fontFamily: "JetBrains Mono", fontSize: "0.8rem" }}>
+            {autonomyLevel === 5 ? "MAX" : "SAFE"}
+          </span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="5"
+          value={autonomyLevel}
+          className="opta-studio-slider"
+          onChange={(e) => {
+            const val = parseInt(e.target.value, 10);
+            setAutonomyLevel(val);
+            void saveRemoteSettings("autonomy.level", val);
+          }}
+        />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            color: "#a1a1aa",
+            fontSize: "0.75rem",
+            fontFamily: "Sora",
+          }}
+        >
+          <span>L1: Supervised</span>
+          <span>L3: Balanced</span>
+          <span>L5: CEO (Unattended)</span>
+        </div>
+      </div>
+
+      <div style={{ marginTop: "2rem" }}>
+        <div className="opta-studio-form-group">
+          <label>Operating Mode</label>
+          <select
+            className="opta-studio-select"
+            value={autonomyMode}
+            onChange={(e) => {
+              setAutonomyMode(e.target.value);
+              void saveRemoteSettings("autonomy.mode", e.target.value);
+            }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <div>
-                <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Client Connection</h3>
-                <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
-                  Manage saved daemon targets and discover new ones on your local network. Note: port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code> is reserved for LMX inference, not daemon <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>/v3</code> traffic. Opta auto-falls back to <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>127.0.0.1:9999</code> if misconfigured.
-                </p>
-              </div>
+            <option value="execution">Execution (Fast, Action-Biased)</option>
+            <option value="ceo">CEO (Deliberative, Multi-Stage ATPO)</option>
+          </select>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderGenUiModule = () => (
+    <>
+      <h3 className="opta-studio-section-title">Generative UI</h3>
+      <p
+        style={{
+          color: "#a1a1aa",
+          fontSize: "0.85rem",
+          marginBottom: "1.5rem",
+          lineHeight: 1.5,
+        }}
+      >
+        Enable rich HTML artifact generation and auto-browser launching.
+      </p>
+
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: "1rem",
+          marginBottom: "2rem",
+        }}
+      >
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={genuiEnabled}
+            style={{
+              width: "18px",
+              height: "18px",
+              accentColor: "#8b5cf6",
+            }}
+            onChange={(e) => {
+              setGenuiEnabled(e.target.checked);
+              void saveRemoteSettings("genui.enabled", e.target.checked);
+            }}
+          />
+          <span style={{ fontFamily: "Sora", color: "#fafafa", fontSize: "0.9rem" }}>
+            Enable GenUI Artifacts
+          </span>
+        </label>
+
+        <label
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "1rem",
+            cursor: "pointer",
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={genuiAutoOpen}
+            style={{
+              width: "18px",
+              height: "18px",
+              accentColor: "#8b5cf6",
+            }}
+            onChange={(e) => {
+              setGenuiAutoOpen(e.target.checked);
+              void saveRemoteSettings("genui.autoOpenBrowser", e.target.checked);
+            }}
+          />
+          <span style={{ fontFamily: "Sora", color: "#fafafa", fontSize: "0.9rem" }}>
+            Automatically Open in Browser
+          </span>
+        </label>
+      </div>
+
+      <h4
+        style={{
+          color: "#fafafa",
+          fontFamily: "Sora",
+          fontSize: "0.95rem",
+          marginBottom: "1rem",
+        }}
+      >
+        Available GenUI Actions
+      </h4>
+      <div className="opta-studio-action-grid">
+        <div className="opta-studio-card">
+          <h4>Generate UI</h4>
+          <p>Prompt the agent to scaffold a production-ready HTML view (/gu).</p>
+        </div>
+        <div className="opta-studio-card">
+          <h4>Improve</h4>
+          <p>Iterate on existing UI to fix layouts and hierarchy (/improve).</p>
+        </div>
+        <div className="opta-studio-card">
+          <h4>ATPO Dashboard</h4>
+          <p>Generate a visual dashboard of the current planning state (/atpo).</p>
+        </div>
+        <div className="opta-studio-card">
+          <h4>Code Review</h4>
+          <p>Generate an interactive HTML security and review report (/codereview).</p>
+        </div>
+      </div>
+    </>
+  );
+
+  const renderLmxModule = () => (
+    <>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+        <div>
+          <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>LMX Inference Routing</h3>
+          <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
+            Where the daemon routes inference requests. Point this to your LMX host.
+          </p>
+        </div>
+        <button
+          type="button"
+          className="opta-studio-btn-secondary"
+          style={{ whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem" }}
+          onClick={() => {
+            setLmxHost(DEFAULT_LMX.host);
+            setLmxPort(DEFAULT_LMX.port);
+            setLmxFallbackHosts(DEFAULT_LMX.fallbackHosts);
+            setLmxAutoDiscover(DEFAULT_LMX.autoDiscover);
+            setLmxAdminKey(DEFAULT_LMX.adminKey);
+            setLmxAdminKeysByHost(DEFAULT_LMX.adminKeysByHost);
+          }}
+        >
+          <RotateCcw size={13} /> Restore Defaults
+        </button>
+      </div>
+
+      <div
+        style={{
+          padding: "10px 14px",
+          borderRadius: "8px",
+          border: "1px solid rgba(139,92,246,0.3)",
+          background: "rgba(139,92,246,0.08)",
+          marginBottom: "1.5rem",
+          display: "flex",
+          gap: "0.5rem",
+          alignItems: "flex-start",
+        }}
+      >
+        <Lightbulb size={14} style={{ color: "#a855f7", marginTop: "2px", flexShrink: 0 }} />
+        <p style={{ margin: 0, fontSize: "0.79rem", color: "#c4b5fd", lineHeight: 1.5 }}>
+          Use <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>localhost</code>{" "}
+          for local LMX or <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>lmx-host.local</code>{" "}
+          for LAN discovery, usually on port{" "}
+          <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>.
+        </p>
+      </div>
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "3fr 1fr",
+          gap: "1rem",
+        }}
+      >
+        <div className="opta-studio-form-group">
+          <label>LMX Host</label>
+          <input
+            className="opta-studio-input"
+            value={lmxHost}
+            onChange={(e) => setLmxHost(e.target.value)}
+          />
+        </div>
+        <div className="opta-studio-form-group">
+          <label>Port</label>
+          <input
+            className="opta-studio-input"
+            value={lmxPort}
+            onChange={(e) => setLmxPort(e.target.value)}
+          />
+        </div>
+      </div>
+
+      <div className="opta-studio-form-group">
+        <label>Fallback Hosts (Comma separated)</label>
+        <input
+          className="opta-studio-input"
+          value={lmxFallbackHosts}
+          onChange={(e) => setLmxFallbackHosts(e.target.value)}
+        />
+      </div>
+
+      <label
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "0.6rem",
+          marginBottom: "1rem",
+          cursor: "pointer",
+        }}
+      >
+        <input
+          type="checkbox"
+          checked={lmxAutoDiscover}
+          style={{
+            width: "16px",
+            height: "16px",
+            accentColor: "#8b5cf6",
+          }}
+          onChange={(e) => setLmxAutoDiscover(e.target.checked)}
+        />
+        <span
+          style={{
+            color: "#fafafa",
+            fontFamily: "Sora",
+            fontSize: "0.86rem",
+          }}
+        >
+          Auto-discover LAN LMX endpoints
+        </span>
+      </label>
+
+      <div className="opta-studio-form-group">
+        <label>Default Admin Key</label>
+        <input
+          className="opta-studio-input"
+          type="password"
+          value={lmxAdminKey}
+          onChange={(e) => setLmxAdminKey(e.target.value)}
+          placeholder="Optional global admin key"
+        />
+      </div>
+
+      <div className="opta-studio-form-group">
+        <label>Admin Keys by Host (JSON)</label>
+        <textarea
+          className="opta-studio-input"
+          value={lmxAdminKeysByHost}
+          onChange={(e) => setLmxAdminKeysByHost(e.target.value)}
+          rows={6}
+          spellCheck={false}
+          placeholder='{"localhost":"keyA","lmx-host.local":"keyB"}'
+        />
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginTop: "1rem",
+        }}
+      >
+        <button
+          className="opta-studio-btn-secondary"
+          disabled={lmxTesting}
+          onClick={() => {
+            void runLmxAccessProbe();
+          }}
+          style={{ marginRight: "0.75rem" }}
+        >
+          {lmxTesting ? "Testing..." : "Test LMX Access"}
+        </button>
+        <button
+          className="opta-studio-btn"
+          disabled={lmxSaving}
+          onClick={async () => {
+            setLmxSaving(true);
+            const nextPort = Number.parseInt(lmxPort, 10);
+            if (
+              !Number.isFinite(nextPort) ||
+              nextPort <= 0 ||
+              nextPort > 65_535
+            ) {
+              setLmxNotice("Port must be a valid number between 1 and 65535.");
+              setLmxSaving(false);
+              return;
+            }
+
+            let adminMap: Record<string, string>;
+            try {
+              adminMap = parseAdminKeysByHostInput(lmxAdminKeysByHost);
+            } catch (err) {
+              setLmxNotice(err instanceof Error ? err.message : String(err));
+              setLmxSaving(false);
+              return;
+            }
+
+            try {
+              await Promise.all([
+                daemonClient.configSet(
+                  connection,
+                  "connection.host",
+                  lmxHost.trim(),
+                ),
+                daemonClient.configSet(
+                  connection,
+                  "connection.port",
+                  nextPort,
+                ),
+                daemonClient.configSet(
+                  connection,
+                  "connection.fallbackHosts",
+                  parseHostList(lmxFallbackHosts),
+                ),
+                daemonClient.configSet(
+                  connection,
+                  "connection.autoDiscover",
+                  lmxAutoDiscover,
+                ),
+                daemonClient.configSet(
+                  connection,
+                  "connection.adminKey",
+                  lmxAdminKey.trim(),
+                ),
+                daemonClient.configSet(
+                  connection,
+                  "connection.adminKeysByHost",
+                  adminMap,
+                ),
+              ]);
+              setLmxNotice("LMX routing + admin auth settings saved.");
+            } catch (err) {
+              setLmxNotice(
+                `Failed to save LMX settings: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            }
+            setLmxSaving(false);
+          }}
+        >
+          {lmxSaving ? "Saving..." : "Save Routing"}
+        </button>
+      </div>
+      {lmxNotice ? (
+        <p
+          style={{
+            marginTop: "0.75rem",
+            color: "#a1a1aa",
+            fontSize: "0.8rem",
+          }}
+        >
+          {lmxNotice}
+        </p>
+      ) : null}
+    </>
+  );
+
+  const renderDaemonModule = () => (
+    <>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Daemon Control Centre</h3>
+      <p style={{ color: "#a1a1aa", fontSize: "0.85rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
+        Start, stop, or restart the Opta daemon process. The daemon must be running for all Opta Code features to work.
+      </p>
+
+      <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
+        <button
+          type="button"
+          className="opta-studio-btn-secondary"
+          disabled={daemonStatusLoading}
+          onClick={() => void checkDaemonHealth()}
+          style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
+        >
+          <RefreshCw size={14} style={daemonStatusLoading ? { animation: "spin 1s linear infinite" } : {}} />
+          {daemonStatusLoading ? "Checking..." : "Check Health"}
+        </button>
+        <button
+          type="button"
+          className="opta-studio-btn"
+          disabled={daemonOpRunning}
+          onClick={() => void runDaemonOp("daemon.start")}
+        >
+          Start Daemon
+        </button>
+        <button
+          type="button"
+          className="opta-studio-btn-secondary"
+          disabled={daemonOpRunning}
+          onClick={() => void runDaemonOp("daemon.stop")}
+          style={{ borderColor: "rgba(239,68,68,0.4)", color: "#fca5a5" }}
+        >
+          Stop Daemon
+        </button>
+      </div>
+
+      {daemonStatus && (
+        <div style={{
+          padding: "10px 14px",
+          borderRadius: "8px",
+          border: `1px solid ${daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
+          background: daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+          marginBottom: "1rem",
+          fontSize: "0.8rem",
+          color: daemonStatus.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
+          fontFamily: "JetBrains Mono",
+        }}>
+          {daemonStatus}
+        </div>
+      )}
+
+      {daemonOpResult && (
+        <div style={{
+          padding: "10px 14px",
+          borderRadius: "8px",
+          border: `1px solid ${daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
+          background: daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
+          marginBottom: "1rem",
+          fontSize: "0.8rem",
+          color: daemonOpResult.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
+          fontFamily: "JetBrains Mono",
+        }}>
+          {daemonOpResult}
+        </div>
+      )}
+
+      <div
+        style={{
+          padding: "12px 16px",
+          borderRadius: "8px",
+          border: "1px solid var(--opta-border)",
+          background: "rgba(0,0,0,0.2)",
+        }}
+      >
+        <h4 style={{ margin: "0 0 8px", fontSize: "0.85rem", color: "#fafafa", fontFamily: "Sora" }}>Quick Reference</h4>
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          {[
+            ["Start daemon", "opta daemon start"],
+            ["Stop daemon", "opta daemon stop"],
+            ["Check status", "opta daemon status"],
+            ["View logs", "opta daemon logs"],
+            ["Get admin key", "opta config get connection.adminKey"],
+          ].map(([label, cmd]) => (
+            <div key={cmd} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
+              <span style={{ fontSize: "0.78rem", color: "#a1a1aa" }}>{label}</span>
+              <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.74rem", color: "#c4b5fd", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "4px", padding: "2px 6px" }}>{cmd}</code>
             </div>
-            <ConnectionAddressBook
-              activeConnection={connection}
-              onConnectionChange={onSaveConnection}
+          ))}
+        </div>
+      </div>
+    </>
+  );
+
+  const renderDaemonRuntimePolicyModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Runtime Policy
+      </h3>
+      <p className="st-desc">
+        Stabilize runtime behavior in one place so daemon controls, background jobs,
+        and keyboard navigation stay coherent in both fullscreen and docked modes.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Execution Controls</legend>
+        <label className="st-checkbox-label">
+          <input
+            type="checkbox"
+            checked={runtimeAutoRestart}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setRuntimeAutoRestart(next);
+              void saveRemoteSettings("runtime.autoRestart", next);
+            }}
+          />
+          <span>Auto-restart daemon when runtime exits unexpectedly</span>
+        </label>
+        <div className="st-row" style={{ marginTop: "0.75rem" }}>
+          <label className="st-label">
+            Max concurrent workers
+            <input
+              className="st-input"
+              inputMode="numeric"
+              value={runtimeMaxWorkers}
+              onChange={(event) => setRuntimeMaxWorkers(event.target.value)}
+              onBlur={(event) => {
+                const normalized = readPositiveInteger(event.target.value, 4);
+                setRuntimeMaxWorkers(String(normalized));
+                void saveRemoteSettings("runtime.maxWorkers", normalized);
+              }}
             />
-          </motion.div>
-        );
-      case "autonomy":
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            <span className="st-hint">
+              Caps simultaneous background operation workers.
+            </span>
+          </label>
+          <label className="st-label">
+            Health check interval (seconds)
+            <input
+              className="st-input"
+              inputMode="numeric"
+              value={runtimeHealthIntervalSec}
+              onChange={(event) => setRuntimeHealthIntervalSec(event.target.value)}
+              onBlur={(event) => {
+                const normalized = readPositiveInteger(event.target.value, 12);
+                setRuntimeHealthIntervalSec(String(normalized));
+                void saveRemoteSettings("runtime.healthIntervalSec", normalized);
+              }}
+            />
+            <span className="st-hint">
+              Lower values detect failures faster; higher values reduce polling load.
+            </span>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+  );
+
+  const renderMcpIntegrationsStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Integration Posture
+      </h3>
+      <p className="st-desc">
+        Define default MCP onboarding behavior so every server follows the same trust,
+        sync, and isolation posture before module-specific overrides are applied.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Registry Controls</legend>
+        <label className="st-checkbox-label">
+          <input
+            type="checkbox"
+            checked={mcpAutoSync}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setMcpAutoSync(next);
+              void saveRemoteSettings("mcp.autoSync", next);
+            }}
+          />
+          <span>Auto-sync approved MCP server manifests</span>
+        </label>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={mcpRequireSigned}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setMcpRequireSigned(next);
+              void saveRemoteSettings("mcp.requireSignedRegistries", next);
+            }}
+          />
+          <span>Require signed registry entries before activation</span>
+        </label>
+        <label className="st-label" style={{ marginTop: "0.75rem" }}>
+          Default isolation mode
+          <select
+            className="st-select"
+            value={mcpIsolationMode}
+            onChange={(event) => {
+              const next =
+                event.target.value === "profile" || event.target.value === "strict"
+                  ? event.target.value
+                  : "workspace";
+              setMcpIsolationMode(next);
+              void saveRemoteSettings("mcp.isolationMode", next);
+            }}
           >
-            <h3 className="opta-studio-section-title">ATPO Autonomy</h3>
-            <p
-              style={{
-                color: "#a1a1aa",
-                fontSize: "0.85rem",
-                marginBottom: "1.5rem",
-                lineHeight: 1.5,
+            <option value="workspace">Workspace isolation</option>
+            <option value="profile">Profile isolation</option>
+            <option value="strict">Strict sandbox</option>
+          </select>
+        </label>
+      </fieldset>
+    </div>
+  );
+
+  const renderEnvironmentProfilesStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Profile Routing
+      </h3>
+      <p className="st-desc">
+        Route every settings surface through explicit environment profiles so local,
+        LAN, and cloud contexts stay deterministic across sessions.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Defaults</legend>
+        <div className="st-row">
+          <label className="st-label">
+            Default profile ID
+            <input
+              className="st-input"
+              value={defaultProfileId}
+              onChange={(event) => setDefaultProfileId(event.target.value)}
+              onBlur={(event) => {
+                const next = readStringSetting(event.target.value, "default");
+                setDefaultProfileId(next);
+                void saveRemoteSettings("profiles.default", next);
               }}
-            >
-              Configure the default Agentic Task Planning & Orchestration (ATPO)
-              profile. Higher levels allow the AI to execute more tools
-              autonomously without asking for permission.
-            </p>
+            />
+          </label>
+        </div>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={profileSwitchConfirm}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setProfileSwitchConfirm(next);
+              void saveRemoteSettings("profiles.confirmSwitch", next);
+            }}
+          />
+          <span>Require confirmation before switching active profile</span>
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div className="opta-studio-slider-container">
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  marginBottom: "0.5rem",
-                }}
-              >
-                <span
-                  style={{
-                    color: "#fafafa",
-                    fontFamily: "Sora",
-                    fontWeight: 500,
-                  }}
-                >
-                  Autonomy Level {autonomyLevel}
-                </span>
-                <span
-                  style={{
-                    color: "#a855f7",
-                    fontFamily: "JetBrains Mono",
-                    fontSize: "0.8rem",
-                  }}
-                >
-                  {autonomyLevel === 5 ? "MAX" : "SAFE"}
-                </span>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="5"
-                value={autonomyLevel}
-                className="opta-studio-slider"
-                onChange={(e) => {
-                  const val = parseInt(e.target.value, 10);
-                  setAutonomyLevel(val);
-                  void saveRemoteSettings("autonomy.level", val);
-                }}
-              />
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  color: "#a1a1aa",
-                  fontSize: "0.75rem",
-                  fontFamily: "Sora",
-                }}
-              >
-                <span>L1: Supervised</span>
-                <span>L3: Balanced</span>
-                <span>L5: CEO (Unattended)</span>
-              </div>
-            </div>
+  const renderAccountsVaultStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Access & Vault Policy
+      </h3>
+      <p className="st-desc">
+        Keep account controls and secret handling in one hardened lane with explicit
+        authentication and vault lock rules.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Auth Guardrails</legend>
+        <label className="st-checkbox-label">
+          <input
+            type="checkbox"
+            checked={accountsDangerousAuthRequired}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setAccountsDangerousAuthRequired(next);
+              void saveRemoteSettings("accounts.requireDangerousAuth", next);
+            }}
+          />
+          <span>Require account auth before dangerous operations</span>
+        </label>
+        <label className="st-label" style={{ marginTop: "0.75rem" }}>
+          Vault auto-lock (minutes)
+          <input
+            className="st-input"
+            inputMode="numeric"
+            value={vaultAutoLockMinutes}
+            onChange={(event) => setVaultAutoLockMinutes(event.target.value)}
+            onBlur={(event) => {
+              const normalized = readPositiveInteger(event.target.value, 15);
+              setVaultAutoLockMinutes(String(normalized));
+              void saveRemoteSettings("vault.autoLockMinutes", normalized);
+            }}
+          />
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div style={{ marginTop: "2rem" }}>
-              <div className="opta-studio-form-group">
-                <label>Operating Mode</label>
-                <select
-                  className="opta-studio-select"
-                  value={autonomyMode}
-                  onChange={(e) => {
-                    setAutonomyMode(e.target.value);
-                    void saveRemoteSettings("autonomy.mode", e.target.value);
-                  }}
-                >
-                  <option value="execution">
-                    Execution (Fast, Action-Biased)
-                  </option>
-                  <option value="ceo">
-                    CEO (Deliberative, Multi-Stage ATPO)
-                  </option>
-                </select>
-              </div>
-            </div>
-          </motion.div>
-        );
-      case "genui":
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+  const renderTilesWorkspaceModule = () => (
+    <div className="opta-studio-tile-layout-module">
+      <h3 className="opta-studio-section-title">Tiles & Workspace Layout</h3>
+      <p className="st-desc">
+        Workspace tile controls are now consolidated into Settings Studio.
+        Use these actions to enter layout mode and manage visual arrangement from one place.
+      </p>
+      <div className="st-row" style={{ marginTop: "1rem" }}>
+        <button
+          type="button"
+          className="opta-studio-btn"
+          onClick={() => onManageTiles?.()}
+        >
+          Open Tile Layout Mode
+        </button>
+        <button
+          type="button"
+          className="opta-studio-btn-secondary"
+          onClick={() => window.dispatchEvent(new CustomEvent("opta:workspace:recenter"))}
+        >
+          Recenter Workspace
+        </button>
+      </div>
+      <div className="st-fieldset" style={{ marginTop: "1rem" }}>
+        <legend>Keyboard Use</legend>
+        <p className="st-desc">
+          Navigate cards with W/A/S/D or arrows, Enter to edit, Enter again to save,
+          Esc to cancel, Shift+Space to toggle fullscreen.
+        </p>
+      </div>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Tile System Controls</legend>
+        <label className="st-checkbox-label">
+          <input
+            type="checkbox"
+            checked={tilesAutoDock}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setTilesAutoDock(next);
+              void saveRemoteSettings("workspace.tiles.autoDock", next);
+            }}
+          />
+          <span>Auto-dock tile clusters to the nearest lane</span>
+        </label>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={tilesShowTelemetry}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setTilesShowTelemetry(next);
+              void saveRemoteSettings("workspace.tiles.showTelemetry", next);
+            }}
+          />
+          <span>Show live telemetry widgets in workspace side rail</span>
+        </label>
+        <label className="st-label" style={{ marginTop: "0.75rem" }}>
+          Density profile
+          <select
+            className="st-select"
+            value={tilesDensity}
+            onChange={(event) => {
+              const next =
+                event.target.value === "compact" || event.target.value === "cinema"
+                  ? event.target.value
+                  : "comfortable";
+              setTilesDensity(next);
+              void saveRemoteSettings("workspace.tiles.density", next);
+            }}
           >
-            <h3 className="opta-studio-section-title">Generative UI</h3>
-            <p
-              style={{
-                color: "#a1a1aa",
-                fontSize: "0.85rem",
-                marginBottom: "1.5rem",
-                lineHeight: 1.5,
-              }}
-            >
-              Enable rich HTML artifact generation and auto-browser launching.
-              When enabled, the local LMX model will stream fully styled, Opta
-              Aesthetic interfaces.
-            </p>
+            <option value="compact">Compact</option>
+            <option value="comfortable">Comfortable</option>
+            <option value="cinema">Cinema</option>
+          </select>
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                gap: "1rem",
-                marginBottom: "2rem",
-              }}
-            >
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={genuiEnabled}
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    accentColor: "#8b5cf6",
-                  }}
-                  onChange={(e) => {
-                    setGenuiEnabled(e.target.checked);
-                    void saveRemoteSettings("genui.enabled", e.target.checked);
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: "Sora",
-                    color: "#fafafa",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Enable GenUI Artifacts
-                </span>
-              </label>
-
-              <label
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "1rem",
-                  cursor: "pointer",
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={genuiAutoOpen}
-                  style={{
-                    width: "18px",
-                    height: "18px",
-                    accentColor: "#8b5cf6",
-                  }}
-                  onChange={(e) => {
-                    setGenuiAutoOpen(e.target.checked);
-                    void saveRemoteSettings(
-                      "genui.autoOpenBrowser",
-                      e.target.checked,
-                    );
-                  }}
-                />
-                <span
-                  style={{
-                    fontFamily: "Sora",
-                    color: "#fafafa",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  Automatically Open in Browser
-                </span>
-              </label>
-            </div>
-
-            <h4
-              style={{
-                color: "#fafafa",
-                fontFamily: "Sora",
-                fontSize: "0.95rem",
-                marginBottom: "1rem",
-              }}
-            >
-              Available GenUI Actions
-            </h4>
-            <div className="opta-studio-action-grid">
-              <div className="opta-studio-card">
-                <h4>Generate UI</h4>
-                <p>
-                  Prompt the agent to scaffold a production-ready HTML view
-                  (/gu).
-                </p>
-              </div>
-              <div className="opta-studio-card">
-                <h4>Improve</h4>
-                <p>
-                  Iterate on existing UI to fix layouts and hierarchy
-                  (/improve).
-                </p>
-              </div>
-              <div className="opta-studio-card">
-                <h4>ATPO Dashboard</h4>
-                <p>
-                  Generate a visual dashboard of the current agent planning
-                  state (/atpo).
-                </p>
-              </div>
-              <div className="opta-studio-card">
-                <h4>Code Review</h4>
-                <p>
-                  Generate an interactive HTML security and review report
-                  (/codereview).
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        );
-      case "lmx":
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+  const renderAppsCatalogStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Catalog Governance
+      </h3>
+      <p className="st-desc">
+        Control how app modules are admitted into the workspace while keeping
+        install/update flows consistent with the new Studio layout.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Admission Policy</legend>
+        <label className="st-label">
+          Install policy
+          <select
+            className="st-select"
+            value={appsInstallPolicy}
+            onChange={(event) => {
+              const next =
+                event.target.value === "allowlisted" || event.target.value === "open"
+                  ? event.target.value
+                  : "moderated";
+              setAppsInstallPolicy(next);
+              void saveRemoteSettings("apps.installPolicy", next);
+            }}
           >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
-              <div>
-                <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>LMX Inference Routing</h3>
-                <p style={{ color: "#a1a1aa", fontSize: "0.85rem", lineHeight: 1.5, margin: 0 }}>
-                  Where the daemon routes inference requests. Point this to your LMX host.
-                </p>
-              </div>
-              <button
-                type="button"
-                className="opta-studio-btn-secondary"
-                style={{ whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.78rem" }}
-                onClick={() => {
-                  setLmxHost(DEFAULT_LMX.host);
-                  setLmxPort(DEFAULT_LMX.port);
-                  setLmxFallbackHosts(DEFAULT_LMX.fallbackHosts);
-                  setLmxAutoDiscover(DEFAULT_LMX.autoDiscover);
-                  setLmxAdminKey(DEFAULT_LMX.adminKey);
-                  setLmxAdminKeysByHost(DEFAULT_LMX.adminKeysByHost);
-                }}
-              >
-                <RotateCcw size={13} /> Restore Defaults
-              </button>
-            </div>
+            <option value="allowlisted">Allowlisted only</option>
+            <option value="moderated">Moderated</option>
+            <option value="open">Open catalog</option>
+          </select>
+        </label>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={appsAutoUpdate}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setAppsAutoUpdate(next);
+              void saveRemoteSettings("apps.autoUpdate", next);
+            }}
+          />
+          <span>Auto-update installed apps on trusted channels</span>
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div
-              style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: "1px solid rgba(139,92,246,0.3)",
-                background: "rgba(139,92,246,0.08)",
-                marginBottom: "1.5rem",
-                display: "flex",
-                gap: "0.5rem",
-                alignItems: "flex-start",
+  const renderSessionMemoryStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        Memory Lifecycle
+      </h3>
+      <p className="st-desc">
+        Tune retention, semantic recall, and summarization so long-running sessions
+        remain fast without losing strategic context.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Retention</legend>
+        <div className="st-row">
+          <label className="st-label">
+            Retention window (days)
+            <input
+              className="st-input"
+              inputMode="numeric"
+              value={memoryRetentionDays}
+              onChange={(event) => setMemoryRetentionDays(event.target.value)}
+              onBlur={(event) => {
+                const normalized = readPositiveInteger(event.target.value, 30);
+                setMemoryRetentionDays(String(normalized));
+                void saveRemoteSettings("memory.retentionDays", normalized);
               }}
-            >
-              <Lightbulb size={14} style={{ color: "#a855f7", marginTop: "2px", flexShrink: 0 }} />
-              <p style={{ margin: 0, fontSize: "0.79rem", color: "#c4b5fd", lineHeight: 1.5 }}>
-                Use <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>localhost</code> for local LMX or <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>lmx-host.local</code> for LAN discovery, usually on port <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>1234</code>. Get the LMX admin key by running <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.78rem" }}>opta config get connection.adminKey</code> on that host.
-              </p>
-            </div>
+            />
+          </label>
+        </div>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={memorySemanticRecall}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setMemorySemanticRecall(next);
+              void saveRemoteSettings("memory.semanticRecall", next);
+            }}
+          />
+          <span>Enable semantic recall across sessions</span>
+        </label>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={memoryAutoSummaries}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setMemoryAutoSummaries(next);
+              void saveRemoteSettings("memory.autoSummaries", next);
+            }}
+          />
+          <span>Auto-summarize long sessions after completion</span>
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "3fr 1fr",
-                gap: "1rem",
-              }}
-            >
-              <div className="opta-studio-form-group">
-                <label>LMX Host</label>
-                <input
-                  className="opta-studio-input"
-                  value={lmxHost}
-                  onChange={(e) => setLmxHost(e.target.value)}
-                />
-              </div>
-              <div className="opta-studio-form-group">
-                <label>Port</label>
-                <input
-                  className="opta-studio-input"
-                  value={lmxPort}
-                  onChange={(e) => setLmxPort(e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="opta-studio-form-group">
-              <label>Fallback Hosts (Comma separated)</label>
-              <input
-                className="opta-studio-input"
-                value={lmxFallbackHosts}
-                onChange={(e) => setLmxFallbackHosts(e.target.value)}
-              />
-            </div>
-
-            <label
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "0.6rem",
-                marginBottom: "1rem",
-                cursor: "pointer",
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={lmxAutoDiscover}
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  accentColor: "#8b5cf6",
-                }}
-                onChange={(e) => setLmxAutoDiscover(e.target.checked)}
-              />
-              <span
-                style={{
-                  color: "#fafafa",
-                  fontFamily: "Sora",
-                  fontSize: "0.86rem",
-                }}
-              >
-                Auto-discover LAN LMX endpoints
-              </span>
-            </label>
-
-            <div className="opta-studio-form-group">
-              <label>Default Admin Key</label>
-              <input
-                className="opta-studio-input"
-                type="password"
-                value={lmxAdminKey}
-                onChange={(e) => setLmxAdminKey(e.target.value)}
-                placeholder="Optional global admin key"
-              />
-            </div>
-
-            <div className="opta-studio-form-group">
-              <label>Admin Keys by Host (JSON)</label>
-              <textarea
-                className="opta-studio-input"
-                value={lmxAdminKeysByHost}
-                onChange={(e) => setLmxAdminKeysByHost(e.target.value)}
-                rows={6}
-                spellCheck={false}
-                placeholder='{"localhost":"keyA","lmx-host.local":"keyB"}'
-              />
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                marginTop: "1rem",
-              }}
-            >
-              <button
-                className="opta-studio-btn-secondary"
-                disabled={lmxTesting}
-                onClick={() => {
-                  void runLmxAccessProbe();
-                }}
-                style={{ marginRight: "0.75rem" }}
-              >
-                {lmxTesting ? "Testing..." : "Test LMX Access"}
-              </button>
-              <button
-                className="opta-studio-btn"
-                disabled={lmxSaving}
-                onClick={async () => {
-                  setLmxSaving(true);
-                  const nextPort = Number.parseInt(lmxPort, 10);
-                  if (
-                    !Number.isFinite(nextPort) ||
-                    nextPort <= 0 ||
-                    nextPort > 65_535
-                  ) {
-                    setLmxNotice(
-                      "Port must be a valid number between 1 and 65535.",
-                    );
-                    setLmxSaving(false);
-                    return;
-                  }
-
-                  let adminMap: Record<string, string>;
-                  try {
-                    adminMap = parseAdminKeysByHostInput(lmxAdminKeysByHost);
-                  } catch (err) {
-                    setLmxNotice(
-                      err instanceof Error ? err.message : String(err),
-                    );
-                    setLmxSaving(false);
-                    return;
-                  }
-
-                  try {
-                    await Promise.all([
-                      daemonClient.configSet(
-                        connection,
-                        "connection.host",
-                        lmxHost.trim(),
-                      ),
-                      daemonClient.configSet(
-                        connection,
-                        "connection.port",
-                        nextPort,
-                      ),
-                      daemonClient.configSet(
-                        connection,
-                        "connection.fallbackHosts",
-                        parseHostList(lmxFallbackHosts),
-                      ),
-                      daemonClient.configSet(
-                        connection,
-                        "connection.autoDiscover",
-                        lmxAutoDiscover,
-                      ),
-                      daemonClient.configSet(
-                        connection,
-                        "connection.adminKey",
-                        lmxAdminKey.trim(),
-                      ),
-                      daemonClient.configSet(
-                        connection,
-                        "connection.adminKeysByHost",
-                        adminMap,
-                      ),
-                    ]);
-                    setLmxNotice("LMX routing + admin auth settings saved.");
-                  } catch (err) {
-                    setLmxNotice(
-                      `Failed to save LMX settings: ${err instanceof Error ? err.message : String(err)}`,
-                    );
-                  }
-                  setLmxSaving(false);
-                }}
-              >
-                {lmxSaving ? "Saving..." : "Save Routing"}
-              </button>
-            </div>
-            {lmxNotice ? (
-              <p
-                style={{
-                  marginTop: "0.75rem",
-                  color: "#a1a1aa",
-                  fontSize: "0.8rem",
-                }}
-              >
-                {lmxNotice}
-              </p>
-            ) : null}
-          </motion.div>
-        );
-      case "daemon":
-        return (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+  const renderCliAdvancedStudioModule = () => (
+    <div>
+      <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>
+        CLI/System Guardrails
+      </h3>
+      <p className="st-desc">
+        Align advanced CLI and system operations with explicit confirmations and
+        shell defaults so parity tools stay safe under keyboard-only workflows.
+      </p>
+      <fieldset className="st-fieldset" style={{ marginTop: "0.95rem" }}>
+        <legend className="st-legend">Execution Defaults</legend>
+        <label className="st-checkbox-label">
+          <input
+            type="checkbox"
+            checked={cliConfirmDestructive}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setCliConfirmDestructive(next);
+              void saveRemoteSettings("cli.confirmDestructive", next);
+            }}
+          />
+          <span>Require explicit confirmation for destructive commands</span>
+        </label>
+        <label className="st-checkbox-label" style={{ marginTop: "0.55rem" }}>
+          <input
+            type="checkbox"
+            checked={cliVerboseDiagnostics}
+            onChange={(event) => {
+              const next = event.target.checked;
+              setCliVerboseDiagnostics(next);
+              void saveRemoteSettings("cli.verboseDiagnostics", next);
+            }}
+          />
+          <span>Enable verbose diagnostics in advanced command output</span>
+        </label>
+        <label className="st-label" style={{ marginTop: "0.75rem" }}>
+          Default shell
+          <select
+            className="st-select"
+            value={cliDefaultShell}
+            onChange={(event) => {
+              const next =
+                event.target.value === "bash" || event.target.value === "pwsh"
+                  ? event.target.value
+                  : "zsh";
+              setCliDefaultShell(next);
+              void saveRemoteSettings("cli.defaultShell", next);
+            }}
           >
-            <h3 className="opta-studio-section-title" style={{ marginBottom: "0.4rem" }}>Daemon Control Centre</h3>
-            <p style={{ color: "#a1a1aa", fontSize: "0.85rem", marginBottom: "1.5rem", lineHeight: 1.5 }}>
-              Start, stop, or restart the Opta daemon process. The daemon must be running for all Opta Code features to work.
-            </p>
+            <option value="zsh">zsh</option>
+            <option value="bash">bash</option>
+            <option value="pwsh">PowerShell</option>
+          </select>
+        </label>
+      </fieldset>
+    </div>
+  );
 
-            <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1rem", flexWrap: "wrap" }}>
-              <button
-                type="button"
-                className="opta-studio-btn-secondary"
-                disabled={daemonStatusLoading}
-                onClick={() => void checkDaemonHealth()}
-                style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}
-              >
-                <RefreshCw size={14} style={daemonStatusLoading ? { animation: "spin 1s linear infinite" } : {}} />
-                {daemonStatusLoading ? "Checking..." : "Check Health"}
-              </button>
-              <button
-                type="button"
-                className="opta-studio-btn"
-                disabled={daemonOpRunning}
-                onClick={() => void runDaemonOp("daemon.start")}
-              >
-                Start Daemon
-              </button>
-              <button
-                type="button"
-                className="opta-studio-btn-secondary"
-                disabled={daemonOpRunning}
-                onClick={() => void runDaemonOp("daemon.stop")}
-                style={{ borderColor: "rgba(239,68,68,0.4)", color: "#fca5a5" }}
-              >
-                Stop Daemon
-              </button>
-            </div>
+  const renderTabContent = () => {
+    const wrap = (key: string, content: ReactNode) => (
+      <motion.div
+        key={key}
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+      >
+        {content}
+      </motion.div>
+    );
 
-            {daemonStatus && (
-              <div style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: `1px solid ${daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
-                background: daemonStatus.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
-                marginBottom: "1rem",
-                fontSize: "0.8rem",
-                color: daemonStatus.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
-                fontFamily: "JetBrains Mono",
-              }}>
-                {daemonStatus}
-              </div>
+    const renderLazyModule = (label: string, module: ReactNode) => (
+      <ErrorBoundary
+        fallback={(error) => (
+          <SettingsLazyChunkError label={label} error={error} />
+        )}
+      >
+        <Suspense fallback={<SettingsLazyChunkFallback label={label} />}>
+          {module}
+        </Suspense>
+      </ErrorBoundary>
+    );
+
+    switch (activeTab) {
+      case "connection-network":
+        return wrap("connection-network", renderConnectionModule());
+      case "lmx-models":
+        return wrap(
+          "lmx-models",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">{renderLmxModule()}</section>
+            <section className="opta-studio-module-card">
+              <SettingsTabModelProvider connection={connection} />
+            </section>
+          </div>,
+        );
+      case "daemon-runtime":
+        return wrap(
+          "daemon-runtime",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">{renderDaemonModule()}</section>
+            <section className="opta-studio-module-card">
+              {renderDaemonRuntimePolicyModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabFleet connection={connection} />
+            </section>
+          </div>,
+        );
+      case "autonomy-policies":
+        return wrap(
+          "autonomy-policies",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">{renderAutonomyModule()}</section>
+            <section className="opta-studio-module-card">{renderGenUiModule()}</section>
+            <section className="opta-studio-module-card">
+              <SettingsTabPolicy connection={connection} />
+            </section>
+          </div>,
+        );
+      case "permissions-safety":
+        return wrap(
+          "permissions-safety",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              <SettingsTabPermissions connection={connection} />
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabSafety connection={connection} />
+            </section>
+          </div>,
+        );
+      case "browser-research":
+        return wrap(
+          "browser-research",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              <SettingsTabBrowser connection={connection} />
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabResearch connection={connection} />
+            </section>
+          </div>,
+        );
+      case "tools-agents-learning":
+        return wrap(
+          "tools-agents-learning",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              <SettingsTabToolsAgents connection={connection} />
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabLearning connection={connection} />
+            </section>
+          </div>,
+        );
+      case "mcp-integrations":
+        return wrap(
+          "mcp-integrations",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderMcpIntegrationsStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabMcp connection={connection} />
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "MCP Management",
+                <LazyMcpManagementPage connection={connection} />,
+              )}
+            </section>
+          </div>,
+        );
+      case "environment-profiles":
+        return wrap(
+          "environment-profiles",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderEnvironmentProfilesStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Environment Profiles",
+                <LazyEnvProfilesPage connection={connection} />,
+              )}
+            </section>
+          </div>,
+        );
+      case "config-studio":
+        return wrap(
+          "config-studio",
+          <section className="opta-studio-module-card">
+            {renderLazyModule(
+              "Config Studio",
+              <LazyConfigStudioPage connection={connection} />,
             )}
-
-            {daemonOpResult && (
-              <div style={{
-                padding: "10px 14px",
-                borderRadius: "8px",
-                border: `1px solid ${daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.35)" : "rgba(239,68,68,0.35)"}`,
-                background: daemonOpResult.startsWith("✓") ? "rgba(16,185,129,0.08)" : "rgba(239,68,68,0.08)",
-                marginBottom: "1rem",
-                fontSize: "0.8rem",
-                color: daemonOpResult.startsWith("✓") ? "rgba(110,231,183,0.95)" : "rgba(252,165,165,0.95)",
-                fontFamily: "JetBrains Mono",
-              }}>
-                {daemonOpResult}
-              </div>
+          </section>,
+        );
+      case "accounts-vault":
+        return wrap(
+          "accounts-vault",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderAccountsVaultStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Account Control",
+                <LazyAccountControlPage connection={connection} />,
+              )}
+            </section>
+            <section className="opta-studio-module-card">
+              <SettingsTabSecrets connection={connection} />
+            </section>
+          </div>,
+        );
+      case "tiles-workspace-layout":
+        return wrap(
+          "tiles-workspace-layout",
+          <section className="opta-studio-module-card">{renderTilesWorkspaceModule()}</section>,
+        );
+      case "apps-catalog":
+        return wrap(
+          "apps-catalog",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderAppsCatalogStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Apps Catalog",
+                <LazyAppCatalogPage connection={connection} />,
+              )}
+            </section>
+          </div>,
+        );
+      case "session-memory":
+        return wrap(
+          "session-memory",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderSessionMemoryStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "Session Memory",
+                <LazySessionMemoryPage connection={connection} />,
+              )}
+            </section>
+          </div>,
+        );
+      case "background-jobs":
+        return wrap(
+          "background-jobs",
+          <section className="opta-studio-module-card">
+            {renderLazyModule(
+              "Background Jobs",
+              <LazyBackgroundJobsPage
+                connection={connection}
+                defaultSessionId={defaultSessionId}
+              />,
             )}
-
-            <div
-              style={{
-                padding: "12px 16px",
-                borderRadius: "8px",
-                border: "1px solid var(--opta-border)",
-                background: "rgba(0,0,0,0.2)",
-              }}
-            >
-              <h4 style={{ margin: "0 0 8px", fontSize: "0.85rem", color: "#fafafa", fontFamily: "Sora" }}>Quick Reference</h4>
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                {[
-                  ["Start daemon", "opta daemon start"],
-                  ["Stop daemon", "opta daemon stop"],
-                  ["Check status", "opta daemon status"],
-                  ["View logs", "opta daemon logs"],
-                  ["Get admin key", "opta config get connection.adminKey"],
-                ].map(([label, cmd]) => (
-                  <div key={cmd} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem" }}>
-                    <span style={{ fontSize: "0.78rem", color: "#a1a1aa" }}>{label}</span>
-                    <code style={{ fontFamily: "JetBrains Mono", fontSize: "0.74rem", color: "#c4b5fd", background: "rgba(139,92,246,0.1)", border: "1px solid rgba(139,92,246,0.2)", borderRadius: "4px", padding: "2px 6px" }}>{cmd}</code>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </motion.div>
+          </section>,
         );
-      case "model-provider":
-        return <SettingsTabModelProvider connection={connection} />;
-      case "fleet":
-        return (
-          <motion.div
-            key="fleet"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <SettingsTabFleet connection={connection} />
-          </motion.div>
+      case "daemon-logs":
+        return wrap(
+          "daemon-logs",
+          <section className="opta-studio-module-card">
+            {renderLazyModule("Daemon Logs", <LazyDaemonLogsPage />)}
+          </section>,
         );
-      case "permissions":
-        return <SettingsTabPermissions connection={connection} />;
-      case "safety":
-        return <SettingsTabSafety connection={connection} />;
-      case "browser":
-        return <SettingsTabBrowser connection={connection} />;
-      case "research":
-        return <SettingsTabResearch connection={connection} />;
-      case "tools-agents":
-        return <SettingsTabToolsAgents connection={connection} />;
-      case "learning":
-        return <SettingsTabLearning connection={connection} />;
-      case "policy":
-        return <SettingsTabPolicy connection={connection} />;
-      case "mcp":
-        return <SettingsTabMcp connection={connection} />;
-      case "secrets":
-        return (
-          <motion.div
-            key="secrets"
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <SettingsTabSecrets connection={connection} />
-          </motion.div>
+      case "cli-system-advanced":
+        return wrap(
+          "cli-system-advanced",
+          <div className="opta-studio-module-stack">
+            <section className="opta-studio-module-card">
+              {renderCliAdvancedStudioModule()}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "System Operations",
+                <LazySystemOperationsPage
+                  connection={connection}
+                  connectionState={connectionState}
+                />,
+              )}
+            </section>
+            <section className="opta-studio-module-card">
+              {renderLazyModule(
+                "CLI Operations",
+                <LazyCliOperationsPage connection={connection} />,
+              )}
+            </section>
+          </div>,
         );
       default:
         return null;
     }
   };
 
-  return (
-    <div className="opta-studio-backdrop" onClick={onClose}>
-      <div className="opta-studio-shell" onClick={(e) => e.stopPropagation()}>
-        <header className="opta-studio-header">
-          <h2>
-            <span className="moonlight">Opta</span> Settings Studio
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            style={{
-              background: "transparent",
-              border: "none",
-              color: "#a1a1aa",
-              cursor: "pointer",
-            }}
-          >
-            <X size={20} />
-          </button>
-        </header>
+  const activeCategory = SETTINGS_CATEGORIES.find(
+    (category) => category.id === activeTab,
+  );
+  const activeCategoryIndex = SETTINGS_CATEGORIES.findIndex(
+    (category) => category.id === activeTab,
+  );
+  const activeAccentColor = activeCategory?.accentColor ?? "#a78bfa";
+  const ActiveCategoryIcon = activeCategory?.icon;
+  const [categoryWheelDirection, setCategoryWheelDirection] = useState<
+    "left" | "right"
+  >("right");
+  const prevCategoryIndexRef = useRef(activeCategoryIndex);
 
-        <div className="opta-studio-layout">
-          <aside className="opta-studio-sidebar">
-            <button
-              className={`opta-studio-tab ${activeTab === "connection" ? "active" : ""}`}
-              onClick={() => setActiveTab("connection")}
-            >
-              <Network size={16} /> Client Connection
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "lmx" ? "active" : ""}`}
-              onClick={() => setActiveTab("lmx")}
-            >
-              <Cpu size={16} /> LMX Routing
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "autonomy" ? "active" : ""}`}
-              onClick={() => setActiveTab("autonomy")}
-            >
-              <ShieldAlert size={16} /> ATPO Autonomy
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "genui" ? "active" : ""}`}
-              onClick={() => setActiveTab("genui")}
-            >
-              <Webhook size={16} /> Generative UI
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "daemon" ? "active" : ""}`}
-              onClick={() => setActiveTab("daemon")}
-            >
-              <Terminal size={16} /> Daemon Controls
-            </button>
+  useEffect(() => {
+    if (activeCategoryIndex < 0) return;
+    const previous = prevCategoryIndexRef.current;
+    if (previous === activeCategoryIndex) return;
+    const length = SETTINGS_CATEGORIES.length;
+    const forward = (activeCategoryIndex - previous + length) % length;
+    const backward = (previous - activeCategoryIndex + length) % length;
+    setCategoryWheelDirection(forward <= backward ? "right" : "left");
+    prevCategoryIndexRef.current = activeCategoryIndex;
+  }, [activeCategoryIndex]);
 
-            <div className="opta-studio-tab-divider" />
+  const getRelativeCategory = useCallback(
+    (offset: number) => {
+      if (activeCategoryIndex < 0) return null;
+      const length = SETTINGS_CATEGORIES.length;
+      return SETTINGS_CATEGORIES[(activeCategoryIndex + offset + length) % length] ?? null;
+    },
+    [activeCategoryIndex],
+  );
 
-            <button
-              className={`opta-studio-tab ${activeTab === "model-provider" ? "active" : ""}`}
-              onClick={() => setActiveTab("model-provider")}
-            >
-              <Layers size={16} /> Model &amp; Provider
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "fleet" ? "active" : ""}`}
-              onClick={() => setActiveTab("fleet")}
-            >
-              <Server size={16} /> Fleet Health
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "secrets" ? "active" : ""}`}
-              onClick={() => setActiveTab("secrets")}
-            >
-              <Key size={16} /> Secrets
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "permissions" ? "active" : ""}`}
-              onClick={() => setActiveTab("permissions")}
-            >
-              <Shield size={16} /> Permissions
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "safety" ? "active" : ""}`}
-              onClick={() => setActiveTab("safety")}
-            >
-              <AlertTriangle size={16} /> Safety &amp; Limits
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "browser" ? "active" : ""}`}
-              onClick={() => setActiveTab("browser")}
-            >
-              <Globe size={16} /> Browser
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "research" ? "active" : ""}`}
-              onClick={() => setActiveTab("research")}
-            >
-              <BookOpen size={16} /> Research
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "tools-agents" ? "active" : ""}`}
-              onClick={() => setActiveTab("tools-agents")}
-            >
-              <Wrench size={16} /> Tools &amp; Agents
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "mcp" ? "active" : ""}`}
-              onClick={() => setActiveTab("mcp")}
-            >
-              <Activity size={16} /> MCP Integrations
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "learning" ? "active" : ""}`}
-              onClick={() => setActiveTab("learning")}
-            >
-              <Brain size={16} /> Learning &amp; Journal
-            </button>
-            <button
-              className={`opta-studio-tab ${activeTab === "policy" ? "active" : ""}`}
-              onClick={() => setActiveTab("policy")}
-            >
-              <FileCheck size={16} /> Policy &amp; Audit
-            </button>
-          </aside>
+  const keyboardHint = isDeepLayer
+    ? isSettingEditMode
+      ? "Edit mode · ←↑↓→ or W/A/S/D adjust · Enter apply + save · Esc cancel · Shift+←/→ category · Tab/Backspace down layer · Space up layer · Shift+Space fullscreen"
+      : "Navigate mode · ←↑↓→ or W/A/S/D highlight · Enter select/edit · Shift+←/→ category · Tab/Backspace down layer · Space up layer · Shift+Space fullscreen"
+    : "Layer 2 · ←↑↓→ or W/A/S/D highlight · Enter open category · Shift+←/→ switch category · Tab/Backspace down layer · Space up layer";
 
-          <main className="opta-studio-content">
-            <AnimatePresence mode="wait">{renderTabContent()}</AnimatePresence>
-          </main>
+  const shell = (
+    <div
+      className={`opta-studio-shell ${embedded ? "opta-studio-shell--embedded" : ""} ${isDeepLayer ? "opta-studio-shell--deep" : ""} ${isFullscreen ? "opta-studio-shell--fullscreen" : ""}`}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div
+        className={`opta-studio-logo-reserve ${isDeepLayer ? "is-docked" : ""} ${isFullscreen ? "is-active" : ""}`}
+        aria-hidden="true"
+      >
+        <div className="opta-studio-logo-stack">
+          <div className="opta-studio-logo-word" aria-label="OPTA">
+            {OPTA_LOGO_LETTERS.map((letter, index) => (
+              <span
+                key={`settings-logo-letter-${letter}`}
+                className={`opta-studio-logo-letter opta-studio-logo-letter-${index + 1}`}
+              >
+                {letter}
+              </span>
+            ))}
+          </div>
+          <div className="opta-studio-logo-settings">OPTA SETTINGS</div>
+          <div className="opta-studio-logo-sub">Code Environment</div>
         </div>
       </div>
+
+      <div className="opta-studio-top-chrome">
+        <div className="opta-studio-top-chrome-left">
+          <div className="opta-studio-shortcut-panel">
+            <span className="opta-studio-shortcut-title">Keyboard Layout</span>
+            <span className="opta-studio-shortcut-copy">{keyboardHint}</span>
+          </div>
+        </div>
+        <div className="opta-studio-top-chrome-center">
+          <div className="opta-studio-command-row">
+            {onBackLayer ? (
+              <button
+                type="button"
+                className="opta-studio-btn-secondary opta-studio-header-btn"
+                onClick={onBackLayer}
+              >
+                <ArrowUp size={14} /> Back Layer
+              </button>
+            ) : null}
+            <h2 className="opta-studio-panel-title">
+              <span className="opta-studio-panel-eyebrow">Category Configuration</span>
+              <span className="opta-studio-layer-badge">
+                {isDeepLayer ? "Layer 3 · Category Configuration" : "Layer 2 · Category Selection"}
+              </span>
+            </h2>
+          </div>
+        </div>
+        <div className="opta-studio-top-chrome-right">
+          {onClose ? (
+            <button
+              type="button"
+              onClick={onClose}
+              className="opta-studio-close-btn"
+              aria-label="Close settings"
+            >
+              <X size={20} />
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      {isDeepLayer && activeCategory ? (
+        <div className="opta-studio-category-wheel-shell">
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={activeCategory.id}
+              className="opta-studio-category-wheel"
+              style={
+                {
+                  "--settings-accent": activeAccentColor,
+                } as CSSProperties
+              }
+              initial={{
+                opacity: 0,
+                x: categoryWheelDirection === "right" ? 22 : -22,
+                scale: 0.985,
+              }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              exit={{
+                opacity: 0,
+                x: categoryWheelDirection === "right" ? -18 : 18,
+                scale: 0.985,
+              }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <div className="opta-studio-category-wheel-item slot-far-left icon-only">
+                {(() => {
+                  const category = getRelativeCategory(-2);
+                  if (!category) return null;
+                  const Icon = category.icon;
+                  return <Icon size={14} />;
+                })()}
+              </div>
+
+              <div className="opta-studio-category-wheel-item slot-left text-only">
+                <span>{getRelativeCategory(-1)?.title ?? ""}</span>
+              </div>
+
+              <div className="opta-studio-category-wheel-item slot-center current">
+                <div className="opta-studio-category-logo">
+                  {ActiveCategoryIcon ? <ActiveCategoryIcon size={16} /> : null}
+                </div>
+                <div className="opta-studio-category-copy">
+                  <span>Active Category</span>
+                  <strong>{activeCategory.title}</strong>
+                </div>
+              </div>
+
+              <div className="opta-studio-category-wheel-item slot-right text-only">
+                <span>{getRelativeCategory(1)?.title ?? ""}</span>
+              </div>
+
+              <div className="opta-studio-category-wheel-item slot-far-right icon-only">
+                {(() => {
+                  const category = getRelativeCategory(2);
+                  if (!category) return null;
+                  const Icon = category.icon;
+                  return <Icon size={14} />;
+                })()}
+              </div>
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      ) : null}
+
+      <div className={`opta-studio-layout ${isDeepLayer ? "opta-studio-layout--deep" : ""} ${isFullscreen ? "opta-studio-layout--fullscreen" : ""}`}>
+        {!isDeepLayer ? (
+          <aside className="opta-studio-sidebar">
+            {SETTINGS_CATEGORIES.map((category, index) => {
+              const Icon = category.icon;
+              const showDivider = index === 5;
+              return (
+                <div key={category.id}>
+                  {showDivider ? <div className="opta-studio-tab-divider" /> : null}
+                  <button
+                    className={`opta-studio-tab ${activeTab === category.id ? "active" : ""}`}
+                    onClick={() => setActiveTab(category.id)}
+                    onMouseEnter={() => preloadSettingsModalLazyTab(category.id)}
+                    onFocus={() => preloadSettingsModalLazyTab(category.id)}
+                    ref={(element) => {
+                      sidebarTabRefs.current[category.id] = element;
+                    }}
+                    style={
+                      {
+                        "--settings-accent": category.accentColor,
+                      } as CSSProperties
+                    }
+                  >
+                    <Icon size={16} /> {category.title}
+                  </button>
+                </div>
+              );
+            })}
+          </aside>
+        ) : null}
+
+        <main className="opta-studio-content" ref={contentRef}>
+          <AnimatePresence mode="wait">{renderTabContent()}</AnimatePresence>
+        </main>
+      </div>
+    </div>
+  );
+
+  if (embedded) {
+    return (
+      <div className={`opta-studio-embedded ${isDeepLayer ? "opta-studio-embedded--deep" : ""} ${isFullscreen ? "opta-studio-embedded--fullscreen" : ""}`}>
+        {shell}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="opta-studio-backdrop"
+      onClick={() => onClose?.()}
+      role="dialog"
+      aria-modal="true"
+    >
+      {shell}
     </div>
   );
 }

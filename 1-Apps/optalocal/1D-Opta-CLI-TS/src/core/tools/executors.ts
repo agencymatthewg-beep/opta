@@ -10,6 +10,7 @@ import { resolveWritableMemoryPath } from '../../context/memory.js';
 import { ProcessManager, type ProcessStatus } from '../background.js';
 import { DEFAULT_IGNORE_DIRS } from '../../utils/ignore.js';
 import { shellArgs } from '../../platform/index.js';
+import { isPathWithinBase } from '../../platform/path-safety.js';
 import { resetSharedBrowserRuntimeDaemonForTests } from '../../browser/runtime-daemon.js';
 import { appendLedgerEntry, learningLedgerPath, readLedgerEntries } from '../../learning/ledger.js';
 import { retrieveTopLedgerEntries } from '../../learning/retrieval.js';
@@ -287,35 +288,6 @@ export async function executeTool(name: string, argsJson: string, signal?: Abort
         return execBgOutput(args);
       case 'bg_kill':
         return await execBgKill(args);
-      case 'browser_open': {
-        const { loadConfig } = await import('../config.js');
-        const runtimeConfig = await loadConfig();
-        if (!runtimeConfig.browser?.enabled) {
-          return JSON.stringify({ ok: false, code: 'BROWSER_DISABLED', message: 'Browser automation is not enabled (browser.enabled = false).' });
-        }
-        const sessionId = args['session_id'] ? String(args['session_id']) : undefined;
-        const useAttach = runtimeConfig.browser.attach?.enabled ?? false;
-        const mode = useAttach ? 'attach' : (runtimeConfig.browser.mode ?? 'isolated');
-        const wsEndpoint = String(runtimeConfig.browser.attach?.wsEndpoint ?? '').trim();
-        if (mode === 'attach' && !wsEndpoint) {
-          return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: 'Attach mode requires ws_endpoint — set browser.attach.wsEndpoint in config.' });
-        }
-        try {
-          const { getSharedBrowserRuntimeDaemon } = await import('../../browser/runtime-daemon.js');
-          const daemon = await getSharedBrowserRuntimeDaemon({ cwd: process.cwd() });
-          const result = await daemon.openSession({
-            sessionId,
-            mode: mode,
-            wsEndpoint: mode === 'attach' ? wsEndpoint : undefined,
-          });
-          if (!result.ok) {
-            return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: result.error?.message ?? 'Failed to open browser session.' });
-          }
-          return JSON.stringify({ ok: true, sessionId: result.data?.id });
-        } catch (err) {
-          return JSON.stringify({ ok: false, code: 'OPEN_SESSION_FAILED', message: errorMessage(err) });
-        }
-      }
       default:
         return `Error: Unknown tool "${name}"`;
     }
@@ -339,7 +311,7 @@ export function assertWithinCwd(resolvedPath: string): void {
     // Resolve without symlink expansion but normalize cwd-relative.
     normalized = resolve(cwd, resolvedPath);
   }
-  if (!normalized.startsWith(cwd + '/') && normalized !== cwd) {
+  if (!isPathWithinBase(normalized, cwd)) {
     throw new Error(
       `Path traversal blocked: "${normalized}" is outside working directory "${cwd}"`
     );

@@ -27,7 +27,7 @@ Framer Motion ^12
 Lucide React (icons)
 ```
 
-No `output: 'export'` — Vercel builds natively. No API routes. No server actions.
+No `output: 'export'` — Vercel builds natively. Single operational API route allowed: `/api/health`.
 
 ---
 
@@ -116,7 +116,7 @@ cd /Users/Shared/312/Opta/1-Apps/optalocal/1T-Opta-Home
 vercel deploy --prod --token "$VERCEL_TOKEN"
 ```
 
-Build must pass TypeScript checks with 0 errors. All components are `"use client"` (Framer Motion).
+Build must pass TypeScript checks with 0 errors. Motion-heavy sections are `"use client"` components.
 
 ---
 

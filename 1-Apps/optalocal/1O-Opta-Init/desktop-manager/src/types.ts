@@ -126,3 +126,58 @@ export interface AccountProfile {
   avatar?: string;
   activeRole?: string;
 }
+
+export interface OptaEnvironmentConfig {
+  profile: 'workstation' | 'host';
+  installPath: string;
+  docsPath: string;
+}
+
+export interface LmxMdnsCandidate {
+  host: string;
+  port: number;
+  hostname: string;
+  serviceName: string;
+  addresses: string[];
+  source: 'mdns' | 'lan' | 'manual' | string;
+}
+
+export interface DiscoverAndStoreLmxConnectionResult {
+  host: string;
+  port: number;
+  source: 'mdns' | 'lan' | 'manual' | string;
+  stored: boolean;
+}
+
+export interface OptaConfig {
+  profile?: string;
+  installPath?: string;
+  docsPath?: string;
+  setupComplete?: boolean;
+  completed?: boolean;
+  [key: string]: unknown;
+}
+
+export interface GetOptaConfigResult {
+  config?: OptaConfig;
+  profile?: string;
+  installPath?: string;
+  docsPath?: string;
+  setupComplete?: boolean;
+  completed?: boolean;
+  [key: string]: unknown;
+}
+
+export interface LmxConnectionResult {
+  host?: string;
+  port?: number;
+  tunnelUrl?: string | null;
+}
+
+export interface MdnsDiscoveryCommandResult {
+  host?: string;
+  port?: number;
+  source?: 'mdns' | 'lan' | 'manual' | string;
+  stored?: boolean;
+  [key: string]: unknown;
+}

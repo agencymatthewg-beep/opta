@@ -18,7 +18,7 @@
 | **Location** | `~/Synced/Opta/1-Apps/optalocal/1L-Opta-LMX-Dashboard/` |
 | **Domain** | `lmx.optalocal.com` |
 | **Port** | 3003 (dev) |
-| **Status** | Active — v0.1.0 (scaffold) |
+| **Status** | Active — v0.1.1 (production hardening pass) |
 
 ---
 
@@ -75,6 +75,21 @@ Based on the LMX API surface, the dashboard targets these page groups:
 ---
 
 ## 4. Architecture
+
+### Connection Bootstrap & First-Run Resilience (v0.1.1)
+
+- `/connect` now resolves a deterministic route strategy:
+  - WAN + tunnel URL → use tunnel
+  - WAN without tunnel URL → explicit direct-host fallback with warning
+  - LAN → direct host/port
+- Magic-link success is now gated by both:
+  - `status === connected`
+  - active connection URL exactly matching the requested target URL
+  (prevents false-positive success when a stale previous connection is still alive)
+- First-run/offline landing now surfaces actionable onboarding:
+  - human-readable `connect_error` message when bootstrap params are invalid
+  - direct CTA into `/settings` for endpoint recovery
+
 
 ### API Client
 

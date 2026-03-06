@@ -154,7 +154,7 @@ function StartupNoticeBanner({ notice }: { notice: StartupConnectionNotice }) {
         </Text>
       ))}
       <Text color={TUI_COLORS.dim}>Attempted: {attempted}</Text>
-      <Text color={TUI_COLORS.prompt}>Try: /server status · opta status · opta doctor</Text>
+      <Text color={TUI_COLORS.prompt}>Try: /debug · /doctor · /lmx status --full · /server status</Text>
     </Box>
   );
 }
@@ -244,6 +244,7 @@ function AppInner({
   const isStreamingMode = !!emitter;
 
   const effectiveConnectionState: ConnectionState = modelLoaded ? connectionState : 'error';
+  const connectionStateRef = useRef<ConnectionState>(effectiveConnectionState);
   const persistenceEnabled = process.env['VITEST'] !== 'true' && process.env['NODE_ENV'] !== 'test';
 
   // --- 1. useAppConfig: connection, account, keybindings, heartbeat ---
@@ -288,7 +289,9 @@ function AppInner({
 
   useEffect(() => {
     if (!persistedStartupNotice) return;
-    if (effectiveConnectionState === 'connected') {
+    const previousState = connectionStateRef.current;
+    connectionStateRef.current = effectiveConnectionState;
+    if (effectiveConnectionState === 'connected' && previousState !== 'connected') {
       setStartupConnectionNotice(null);
     }
   }, [effectiveConnectionState, persistedStartupNotice, setStartupConnectionNotice]);
@@ -298,10 +301,7 @@ function AppInner({
     [triggerDefinitions],
   );
   const offlineNotice = persistedStartupNotice;
-  const composerDisabled = Boolean(offlineNotice);
-  const composerDisabledReason = offlineNotice
-    ? 'Input disabled while offline. Run /server status or opta status.'
-    : undefined;
+  const offlineMode = Boolean(offlineNotice);
 
   // --- 2. useAppActions: action history, status bar, token flushing, refs ---
   const appActions = useAppActions({
@@ -445,6 +445,7 @@ function AppInner({
     connectionFallbackHosts,
     connectionPort,
     connectionAdminKey,
+    connectionAdminKeysByHost,
     appendAction,
     setActiveOverlay,
     setMessages,
@@ -535,6 +536,7 @@ function AppInner({
     onSlashCommand,
     onSubmit,
     requireLoadedModel,
+    offlineMode,
     setWorkflowMode,
     skillRuntimeSettings,
     triggerDefinitions,
@@ -778,6 +780,7 @@ function AppInner({
             connectionFallbackHosts={connectionFallbackHosts}
             connectionPort={connectionPort}
             connectionAdminKey={connectionAdminKey}
+            connectionAdminKeysByHost={connectionAdminKeysByHost}
             handleModelPickerSelect={handleModelPickerSelect}
             handleSubmit={handleSubmit}
             keybindings={keybindings}
@@ -857,8 +860,6 @@ function AppInner({
               safeMode={safeMode}
               triggerWords={triggerWords}
               isLoading={isLoading || !!permissionPending || overlayActive}
-              disabled={composerDisabled}
-              disabledReason={composerDisabledReason}
             />
           </Box>
         )
@@ -977,7 +978,7 @@ function AppInner({
         activeHost={connectionHost}
         primaryHost={connectionHost}
         onReconnect={reconnectLmx}
-        offlineMode={composerDisabled}
+        offlineMode={offlineMode}
       />
     </Box>
   );

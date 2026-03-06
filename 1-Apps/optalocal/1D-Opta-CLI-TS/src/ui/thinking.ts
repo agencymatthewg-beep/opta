@@ -14,12 +14,21 @@ import { estimateTokens } from '../utils/tokens.js';
  * content to know thinking is over. This avoids showing thinking as normal text
  * then trying to retract it.
  */
+export interface ThinkingRendererOptions {
+  enableTerminalOutput?: boolean;
+}
+
 export class ThinkingRenderer {
   private buffer = '';
   private thinkingDone = false;
   private thinkText = '';
   private headerPrinted = false;
   private thinkingDisplayed = false;
+  private enableTerminalOutput: boolean;
+
+  constructor(options: ThinkingRendererOptions = {}) {
+    this.enableTerminalOutput = options.enableTerminalOutput ?? true;
+  }
 
   /**
    * Process a streaming chunk. Returns visible (non-thinking) content.
@@ -63,7 +72,7 @@ export class ThinkingRenderer {
 
     // Still buffering — show thinking indicator once if we have content
     // Don't stream every chunk - that causes shaking
-    if (this.buffer.length > 100 && !this.headerPrinted && isTTY) {
+    if (this.buffer.length > 100 && !this.headerPrinted && isTTY && this.enableTerminalOutput) {
       process.stdout.write(chalk.dim('\n  ⚙ thinking...\n'));
       this.headerPrinted = true;
       this.thinkingDisplayed = true;
@@ -91,7 +100,7 @@ export class ThinkingRenderer {
   }
 
   private displayThinking(text: string): void {
-    if (!isTTY) return;
+    if (!isTTY || !this.enableTerminalOutput) return;
 
     const tokens = estimateTokens(text);
 

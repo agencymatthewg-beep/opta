@@ -2,7 +2,12 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
-import { buildSystemPrompt, shouldForceFinalReassessmentPass } from '../../src/core/agent.js';
+import {
+  buildSystemPrompt,
+  shouldForceFinalReassessmentPass,
+  sanitizeToolProtocolMessages,
+} from '../../src/core/agent.js';
+import type { AgentMessage } from '../../src/core/agent.js';
 import { resolveToolDecisions } from '../../src/core/agent-permissions.js';
 import { filterToolsForMode } from '../../src/core/agent-profiles.js';
 import { DEFAULT_CONFIG } from '../../src/core/config.js';
@@ -210,6 +215,98 @@ describe('final reassessment gate helper', () => {
       objectiveReassessmentEnabled: true,
       alreadyForcedFinalPass: true,
     })).toBe(false);
+  });
+});
+
+describe('tool protocol sanitization', () => {
+  it('drops orphan tool messages without a matching assistant tool-call block', () => {
+    const messages: AgentMessage[] = [
+      { role: 'system', content: 'sys' },
+      { role: 'user', content: 'task' },
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'tc-1',
+            type: 'function',
+            function: { name: 'read_file', arguments: '{"path":"README.md"}' },
+          },
+        ],
+      },
+      { role: 'tool', content: 'README', tool_call_id: 'tc-1' },
+      { role: 'assistant', content: 'done' },
+      { role: 'tool', content: 'orphan', tool_call_id: 'missing' },
+    ];
+
+    const sanitized = sanitizeToolProtocolMessages(messages);
+
+    expect(sanitized.changed).toBe(true);
+    expect(sanitized.droppedToolMessages).toBe(1);
+    expect(
+      sanitized.messages.some((m) => m.role === 'tool' && m.tool_call_id === 'missing')
+    ).toBe(false);
+  });
+
+  it('repairs partially preserved tool-call blocks by trimming missing call ids', () => {
+    const messages: AgentMessage[] = [
+      { role: 'system', content: 'sys' },
+      { role: 'user', content: 'task' },
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'tc-1',
+            type: 'function',
+            function: { name: 'read_file', arguments: '{"path":"a.ts"}' },
+          },
+          {
+            id: 'tc-2',
+            type: 'function',
+            function: { name: 'read_file', arguments: '{"path":"b.ts"}' },
+          },
+        ],
+      },
+      { role: 'tool', content: 'B', tool_call_id: 'tc-2' },
+      { role: 'assistant', content: 'next turn' },
+    ];
+
+    const sanitized = sanitizeToolProtocolMessages(messages);
+
+    expect(sanitized.changed).toBe(true);
+    expect(sanitized.repairedAssistantMessages).toBe(1);
+    const assistant = sanitized.messages.find(
+      (m) => m.role === 'assistant' && Array.isArray(m.tool_calls)
+    );
+    expect(assistant?.tool_calls?.map((tc) => tc.id)).toEqual(['tc-2']);
+  });
+
+  it('removes empty dangling assistant tool-call blocks with null content', () => {
+    const messages: AgentMessage[] = [
+      { role: 'system', content: 'sys' },
+      { role: 'user', content: 'task' },
+      {
+        role: 'assistant',
+        content: null,
+        tool_calls: [
+          {
+            id: 'tc-1',
+            type: 'function',
+            function: { name: 'read_file', arguments: '{"path":"a.ts"}' },
+          },
+        ],
+      },
+      { role: 'user', content: 'follow-up' },
+    ];
+
+    const sanitized = sanitizeToolProtocolMessages(messages);
+
+    expect(sanitized.changed).toBe(true);
+    expect(sanitized.removedAssistantMessages).toBe(1);
+    expect(
+      sanitized.messages.some((m) => m.role === 'assistant' && Array.isArray(m.tool_calls))
+    ).toBe(false);
   });
 });
 

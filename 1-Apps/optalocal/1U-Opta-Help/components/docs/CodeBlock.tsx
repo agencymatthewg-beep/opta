@@ -23,9 +23,9 @@ export function CodeBlock({ code, language, filename, className }: CodeBlockProp
   };
 
   return (
-    <div className={cn("relative group rounded-lg overflow-hidden border border-white/5 mb-4", className)}>
+    <div className={cn("relative group rounded-lg overflow-hidden doc-embed-block mb-5", className)}>
       {(filename || language) && (
-        <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-white/5">
+        <div className="flex items-center justify-between px-4 py-2.5 bg-transparent">
           <span className="text-xs text-text-muted font-mono">
             {filename || language}
           </span>
@@ -39,7 +39,7 @@ export function CodeBlock({ code, language, filename, className }: CodeBlockProp
         </div>
       )}
       <div className="relative">
-        <pre className="p-4 overflow-x-auto text-sm leading-relaxed bg-[var(--color-code-bg)]">
+        <pre className="p-4 overflow-x-auto text-sm leading-relaxed surface-embedded-code bg-transparent rounded-md">
           <code className="text-text-secondary">{code}</code>
         </pre>
         {!filename && !language && (

@@ -31,6 +31,7 @@ import {
 } from '../accounts/cloud.js';
 import { storeGithubKey } from '../keychain/api-keys.js';
 import { EXIT, type ExitCode, ExitError } from '../core/errors.js';
+import { errorMessage } from '../utils/errors.js';
 
 interface AccountAuthOptions {
   identifier?: string;
@@ -50,6 +51,7 @@ interface AccountCommandOptions {
 }
 
 interface BrowserAuthCallbackResult {
+  exchangeCode: string | null;
   authCode: string | null;
   accessToken: string | null;
   refreshToken: string | null;
@@ -68,6 +70,7 @@ export interface OAuthLoginFlowOptions {
   optaCookieJar?: string;
   optaHeadless?: boolean;
   onSignInUrl?: (url: string) => void;
+  onBrowserLaunchWarning?: (error: unknown, url: string) => void;
 }
 
 export interface OAuthLoginFlowResult {
@@ -80,6 +83,13 @@ export interface OAuthLoginFlowResult {
   user: SupabaseUser | null;
   session: SupabaseSession;
   signInUrl: string;
+}
+
+interface PortalCliHandoffRegistration {
+  state: string;
+  port: number;
+  handoff?: string;
+  returnTo?: string;
 }
 
 const DEFAULT_ACCOUNTS_URL = 'https://accounts.optalocal.com';
@@ -427,12 +437,204 @@ function normalizeCallbackReturnTo(raw: string | null): string | null {
   }
 }
 
+function isValidCallbackExchangeCode(raw: string | null | undefined): raw is string {
+  if (!raw) return false;
+  return /^[A-Za-z0-9_-]{24,256}$/.test(raw);
+}
+
 function parseOAuthTimeoutMs(raw: string): number {
   const seconds = Number.parseInt(raw, 10);
   if (!Number.isFinite(seconds) || seconds < 30 || seconds > 1800) {
     throw new Error('OAuth timeout must be an integer between 30 and 1800 seconds.');
   }
   return seconds * 1000;
+}
+
+function isTruthyEnvFlag(raw: string | undefined): boolean {
+  if (!raw) return false;
+  const normalized = raw.trim().toLowerCase();
+  return normalized === '1' || normalized === 'true' || normalized === 'yes' || normalized === 'on';
+}
+
+function shouldAllowLegacyTokenCallback(
+  browserMode: OAuthBrowserMode,
+  env: NodeJS.ProcessEnv,
+): boolean {
+  // Global strict mode applies to all browser modes.
+  if (isTruthyEnvFlag(env['OPTA_OAUTH_STRICT_CODE_CALLBACK'])) return false;
+
+  // Opta-session specific strict mode remains available for granular rollouts.
+  if (browserMode === 'opta-session' && isTruthyEnvFlag(env['OPTA_OAUTH_OPTA_SESSION_STRICT_CODE_ONLY'])) {
+    return false;
+  }
+
+  // Compatibility default: accept legacy token relay callbacks for portals that
+  // have not yet switched to exchange_code or auth-code relay.
+  return true;
+}
+
+async function registerPortalCliHandoff(
+  accountsBaseUrl: string,
+  registration: PortalCliHandoffRegistration,
+  env: NodeJS.ProcessEnv,
+): Promise<string | null> {
+  if (isTruthyEnvFlag(env['OPTA_OAUTH_SKIP_PORTAL_HANDSHAKE'])) {
+    return null;
+  }
+
+  const endpoint = new URL('/api/cli/handoff', accountsBaseUrl);
+  const allowUnverified = isTruthyEnvFlag(env['OPTA_OAUTH_ALLOW_UNVERIFIED_CALLBACK']);
+
+  const body: Record<string, string | number> = {
+    state: registration.state,
+    port: registration.port,
+  };
+  if (registration.handoff) body['handoff'] = registration.handoff;
+  if (registration.returnTo) body['return_to'] = registration.returnTo;
+
+  try {
+    const response = await fetch(endpoint.toString(), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    if (response.ok) {
+      try {
+        const payload = (await response.json()) as { proof?: unknown };
+        return typeof payload.proof === 'string' && payload.proof.trim().length > 0
+          ? payload.proof.trim()
+          : null;
+      } catch {
+        return null;
+      }
+    }
+    if (allowUnverified) return null;
+
+    let detail = `${response.status} ${response.statusText}`.trim();
+    try {
+      const payload = (await response.json()) as { error?: unknown };
+      if (typeof payload.error === 'string' && payload.error.trim().length > 0) {
+        detail = `${detail}: ${payload.error.trim()}`;
+      }
+    } catch {
+      const text = (await response.text()).trim();
+      if (text.length > 0) {
+        detail = `${detail}: ${text.slice(0, 240)}`;
+      }
+    }
+
+    throw new Error(`Accounts portal rejected CLI handoff registration (${detail}).`);
+  } catch (err) {
+    if (allowUnverified) return null;
+    throw new Error(
+      `Secure callback registration failed at ${endpoint.origin}: ${errorMessage(err)}. ` +
+        'Set OPTA_OAUTH_ALLOW_UNVERIFIED_CALLBACK=1 only as a temporary compatibility fallback.',
+    );
+  }
+}
+
+async function exchangePortalCliRelayCode(
+  accountsBaseUrl: string,
+  input: {
+    code: string;
+    state: string;
+    port: number;
+    handoff?: string;
+  },
+): Promise<{
+  accessToken: string;
+  refreshToken: string;
+  tokenType: string | null;
+  expiresIn: number | null;
+  expiresAt: number | null;
+  providerToken: string | null;
+  providerRefreshToken: string | null;
+}> {
+  const endpoint = new URL('/api/cli/exchange', accountsBaseUrl);
+  const body: Record<string, string | number> = {
+    code: input.code,
+    state: input.state,
+    port: input.port,
+  };
+  if (input.handoff) body['handoff'] = input.handoff;
+
+  const response = await fetch(endpoint.toString(), {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  let payload: Record<string, unknown> | null = null;
+  try {
+    payload = (await response.json()) as Record<string, unknown>;
+  } catch {
+    payload = null;
+  }
+
+  if (!response.ok) {
+    const detail =
+      payload && typeof payload.error === 'string' && payload.error.trim().length > 0
+        ? payload.error.trim()
+        : `${response.status} ${response.statusText}`.trim();
+    if (detail.toLowerCase() === 'replay_store_unavailable') {
+      throw new Error(
+        'Accounts exchange failed (replay_store_unavailable). ' +
+          'The Accounts replay-protection store is unavailable. ' +
+          'Retry in a moment; if this persists, ask an operator to configure ' +
+          'SUPABASE service-role credentials and apply the accounts_cli_replay_nonces schema.',
+      );
+    }
+    throw new Error(`Accounts exchange failed (${detail}).`);
+  }
+
+  const accessToken =
+    payload && typeof payload.access_token === 'string' ? payload.access_token.trim() : '';
+  const refreshToken =
+    payload && typeof payload.refresh_token === 'string' ? payload.refresh_token.trim() : '';
+  const tokenTypeRaw = payload?.token_type;
+  const tokenType =
+    typeof tokenTypeRaw === 'string' && tokenTypeRaw.trim().length > 0
+      ? tokenTypeRaw.trim()
+      : null;
+  const expiresInRaw = payload?.expires_in;
+  const expiresIn =
+    typeof expiresInRaw === 'number' && Number.isFinite(expiresInRaw)
+      ? expiresInRaw
+      : typeof expiresInRaw === 'string' && /^\d+$/.test(expiresInRaw)
+        ? Number.parseInt(expiresInRaw, 10)
+        : null;
+  const expiresAtRaw = payload?.expires_at;
+  const expiresAt =
+    typeof expiresAtRaw === 'number' && Number.isFinite(expiresAtRaw)
+      ? expiresAtRaw
+      : typeof expiresAtRaw === 'string' && /^\d+$/.test(expiresAtRaw)
+        ? Number.parseInt(expiresAtRaw, 10)
+        : null;
+  const providerTokenRaw = payload?.provider_token;
+  const providerToken =
+    typeof providerTokenRaw === 'string' && providerTokenRaw.trim().length > 0
+      ? providerTokenRaw.trim()
+      : null;
+  const providerRefreshTokenRaw = payload?.provider_refresh_token;
+  const providerRefreshToken =
+    typeof providerRefreshTokenRaw === 'string' && providerRefreshTokenRaw.trim().length > 0
+      ? providerRefreshTokenRaw.trim()
+      : null;
+
+  if (!accessToken || !refreshToken) {
+    throw new Error('Accounts exchange succeeded but no tokens were returned.');
+  }
+
+  return {
+    accessToken,
+    refreshToken,
+    tokenType,
+    expiresIn,
+    expiresAt,
+    providerToken,
+    providerRefreshToken,
+  };
 }
 
 function resolveAccountsBaseUrlRaw(
@@ -601,6 +803,34 @@ async function startBrowserAuthCallbackServer(
       return;
     }
 
+    const exchangeCodeRaw = requestUrl.searchParams.get('exchange_code')?.trim() ?? '';
+    if (isValidCallbackExchangeCode(exchangeCodeRaw)) {
+      response.statusCode = 200;
+      response.setHeader('content-type', 'text/html; charset=utf-8');
+      response.end(
+        callbackPageHtml(
+          'Opta Sign-In Complete',
+          'Authentication succeeded. Returning to Opta now.',
+          { autoClose: true, returnTo: callbackReturnTo },
+        ),
+      );
+
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeoutId);
+        server.close(() =>
+          settleSuccess({
+            exchangeCode: exchangeCodeRaw,
+            authCode: null,
+            accessToken: null,
+            refreshToken: null,
+            expiresAt: null,
+          }),
+        );
+      }
+      return;
+    }
+
     const authCode = requestUrl.searchParams.get('code')?.trim() ?? '';
     if (authCode) {
       response.statusCode = 200;
@@ -618,6 +848,7 @@ async function startBrowserAuthCallbackServer(
         clearTimeout(timeoutId);
         server.close(() =>
           settleSuccess({
+            exchangeCode: null,
             authCode,
             accessToken: null,
             refreshToken: null,
@@ -634,13 +865,17 @@ async function startBrowserAuthCallbackServer(
       response.end(
         callbackPageHtml(
           'Opta Sign-In Failed',
-          'Callback did not include an auth code. Retry sign-in and complete the full redirect flow.',
+          'Strict callback mode is enabled. Callback must include <code>exchange_code</code> or <code>code</code>.',
         ),
       );
       if (!settled) {
         settled = true;
         clearTimeout(timeoutId);
-        server.close(() => settleFailure(new Error('Missing auth code in callback.')));
+        server.close(() =>
+          settleFailure(
+            new Error('Strict callback mode rejected legacy token callback (missing exchange_code/code).'),
+          ),
+        );
       }
       return;
     }
@@ -685,6 +920,7 @@ async function startBrowserAuthCallbackServer(
       clearTimeout(timeoutId);
       server.close(() =>
         settleSuccess({
+          exchangeCode: null,
           authCode: null,
           accessToken,
           refreshToken,
@@ -753,13 +989,27 @@ export async function runOAuthLoginFlow(
   const handoffToken = browserMode === 'opta-session'
     ? randomBytes(16).toString('hex')
     : undefined;
-  const allowLegacyTokenCallback = browserMode !== 'opta-session';
+  const allowLegacyTokenCallback = shouldAllowLegacyTokenCallback(browserMode, env);
 
   const callbackHandle = await startBrowserAuthCallbackServer({
     expectedState: stateToken,
     expectedHandoffToken: handoffToken,
     allowLegacyTokenCallback,
     timeoutMs,
+  });
+  const handoffProof = await registerPortalCliHandoff(
+    accountsBaseUrl,
+    {
+      state: stateToken,
+      port: callbackHandle.port,
+      handoff: handoffToken,
+      returnTo: returnTo ?? undefined,
+    },
+    env,
+  ).catch((error: unknown) => {
+    callbackHandle.cancel('Secure callback registration failed.');
+    void callbackHandle.waitForResult.catch(() => {});
+    throw error;
   });
 
   const signInUrl = new URL('/sign-in', accountsBaseUrl);
@@ -775,6 +1025,9 @@ export async function runOAuthLoginFlow(
   if (handoffToken) {
     signInUrl.searchParams.set('handoff', handoffToken);
   }
+  if (handoffProof) {
+    signInUrl.searchParams.set('proof', handoffProof);
+  }
   const signInUrlString = signInUrl.toString();
   options.onSignInUrl?.(signInUrlString);
 
@@ -788,6 +1041,7 @@ export async function runOAuthLoginFlow(
       throw formatBrowserLaunchFailure('Opta browser OAuth launch failed', error);
     }
     // System-browser mode remains best effort; caller can still open URL manually.
+    options.onBrowserLaunchWarning?.(error, signInUrlString);
   }
 
   const callback = await callbackHandle.waitForResult;
@@ -795,7 +1049,29 @@ export async function runOAuthLoginFlow(
   let user: SupabaseUser | null = null;
 
   try {
-    if (callback.authCode) {
+    if (callback.exchangeCode) {
+      const exchange = await exchangePortalCliRelayCode(accountsBaseUrl, {
+        code: callback.exchangeCode,
+        state: stateToken,
+        port: callbackHandle.port,
+        handoff: handoffToken,
+      });
+      const expiresAt = exchange.expiresAt ?? undefined;
+      const nowEpoch = Math.floor(Date.now() / 1000);
+      const expiresIn = exchange.expiresIn ?? (expiresAt ? Math.max(1, expiresAt - nowEpoch) : 3600);
+      session = {
+        access_token: exchange.accessToken,
+        refresh_token: exchange.refreshToken,
+        token_type: exchange.tokenType ?? 'bearer',
+        expires_in: expiresIn,
+        ...(expiresAt ? { expires_at: expiresAt } : {}),
+        ...(exchange.providerToken ? { provider_token: exchange.providerToken } : {}),
+        ...(exchange.providerRefreshToken
+          ? { provider_refresh_token: exchange.providerRefreshToken }
+          : {}),
+      };
+      user = await fetchUserWithAccessToken(config, exchange.accessToken).catch(() => null);
+    } else if (callback.authCode) {
       const exchange = await exchangeAuthCodeForSession(config, callback.authCode, pkce.codeVerifier);
       session = exchange.session;
       user = exchange.user;
@@ -821,7 +1097,7 @@ export async function runOAuthLoginFlow(
         // Non-fatal: session has already been established.
       }
     } else {
-      throw new Error('OAuth callback did not return an auth code or session tokens.');
+      throw new Error('OAuth callback did not return an exchange code, auth code, or session tokens.');
     }
   } finally {
     await launcher.close().catch(() => { });
@@ -848,15 +1124,25 @@ async function accountLoginOAuth(opts: AccountAuthOptions): Promise<void> {
     browserMode,
     optaCookieJar: opts.oauthCookieJar,
     optaHeadless: opts.oauthHeadless,
-    onSignInUrl: opts.json
-      ? undefined
-      : (url) => {
-        const target = browserMode === 'opta-session'
-          ? 'Opening Opta browser session for accounts sign-in'
-          : 'Opening system browser for accounts sign-in';
-        console.log(chalk.dim(`${target} (${new URL(url).origin})...`));
-        console.log(chalk.dim(`If browser launch is blocked, open:\n  ${url}`));
-      },
+    onSignInUrl: (url) => {
+      if (opts.json) {
+        console.error(`[opta] open sign-in URL: ${url}`);
+        return;
+      }
+      const target = browserMode === 'opta-session'
+        ? 'Opening Opta browser session for accounts sign-in'
+        : 'Opening system browser for accounts sign-in';
+      console.log(chalk.dim(`${target} (${new URL(url).origin})...`));
+      console.log(chalk.dim(`If browser launch is blocked, open:\n  ${url}`));
+    },
+    onBrowserLaunchWarning: (error, url) => {
+      if (opts.json) {
+        console.error(`[opta] browser launch warning: ${errorMessage(error)}; open manually: ${url}`);
+        return;
+      }
+      console.error(chalk.yellow('!') + ` Browser launch warning: ${errorMessage(error)}`);
+      console.error(chalk.dim(`  Open manually:\n  ${url}`));
+    },
   });
 
   if (result.session.provider_token) {
@@ -869,6 +1155,7 @@ async function accountLoginOAuth(opts: AccountAuthOptions): Promise<void> {
     mode: browserMode === 'opta-session' ? 'oauth-opta-browser' : 'oauth',
     project: result.config.project,
     authenticated: true,
+    signInUrl: result.signInUrl,
     user: summarizeUser(result.user),
     session: {
       tokenType: result.session.token_type,

@@ -93,9 +93,10 @@ function printMcpUsage(): void {
 
 function printUpdateUsage(): void {
   console.log(chalk.dim('  Usage: /update [options]'));
-  console.log(chalk.dim('    --components|-c cli,lmx,plus,web'));
-  console.log(chalk.dim('    --target|-t auto|local|remote|both'));
+  console.log(chalk.dim('    --components|-c cli,daemon'));
+  console.log(chalk.dim('    --target|-t local|remote'));
   console.log(chalk.dim('    --remote-host <host> --remote-user <user> --identity-file <path>'));
+  console.log(chalk.dim('    --remote-all --remote-hosts <hostA,hostB> (advanced)'));
   console.log(chalk.dim('    --local-root <path> --remote-root <path>'));
   console.log(chalk.dim('    --dry-run --no-build --no-pull --json'));
 }
@@ -690,6 +691,19 @@ const updateHandler = async (args: string, _ctx: SlashContext): Promise<SlashRes
     }
     if (token.startsWith('--remote-host=')) {
       opts.remoteHost = token.slice('--remote-host='.length);
+      continue;
+    }
+    if (token === '--remote-all') {
+      opts.remoteAll = true;
+      continue;
+    }
+    if (token === '--remote-hosts') {
+      opts.remoteHosts = tokens[i + 1];
+      i += 1;
+      continue;
+    }
+    if (token.startsWith('--remote-hosts=')) {
+      opts.remoteHosts = token.slice('--remote-hosts='.length);
       continue;
     }
     if (token === '--remote-user') {
@@ -1291,11 +1305,11 @@ export const manageCommands: SlashCommandDef[] = [
   },
   {
     command: 'update',
-    description: 'Update Opta components (cli/lmx/plus/web)',
+    description: 'Update Opta CLI + daemon',
     handler: updateHandler,
     category: 'tools',
     usage: '/update [--components ...] [--target ...] [--dry-run] [--no-build] [--no-pull]',
-    examples: ['/update --dry-run', '/update --components web --target local'],
+    examples: ['/update --dry-run', '/update --components daemon --target local'],
   },
   {
     command: 'server',

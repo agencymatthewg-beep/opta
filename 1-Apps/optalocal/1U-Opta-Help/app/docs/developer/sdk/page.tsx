@@ -69,8 +69,9 @@ console.log(health.status);  // "ok"`}
           <p>
             The token is read from the daemon&apos;s <code>state.json</code>{" "}
             file at <code>~/.config/opta/daemon/state.json</code>. In
-            browser environments, Code Desktop stores the token in{" "}
-            <code>localStorage</code> after initial authentication.
+            native desktop runtime, Code Desktop persists connection secrets
+            in OS keyring-backed storage; in browser/dev runtime,{" "}
+            <code>localStorage</code> is used as a compatibility fallback.
           </p>
 
           <h2 id="session-lifecycle">Session Lifecycle</h2>

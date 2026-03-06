@@ -27,15 +27,15 @@ export function FeatureTable({ title, features }: FeatureTableProps) {
   const hasDescriptions = features.some(f => f.description);
 
   return (
-    <div className="rounded-lg border border-white/5 overflow-hidden mb-4">
+    <div className="rounded-lg doc-embed-block overflow-hidden mb-5">
       {title && (
-        <div className="px-4 py-3 bg-surface border-b border-white/5">
+        <div className="px-4 py-3.5 bg-transparent">
           <h4 className="text-sm font-semibold text-text-primary">{title}</h4>
         </div>
       )}
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-white/5">
+          <tr>
             <th className="text-left px-4 py-2 text-text-muted font-medium text-xs uppercase">Feature</th>
             <th className="text-left px-4 py-2 text-text-muted font-medium text-xs uppercase">Status</th>
             {hasDescriptions && (
@@ -45,7 +45,7 @@ export function FeatureTable({ title, features }: FeatureTableProps) {
         </thead>
         <tbody>
           {features.map((f) => (
-            <tr key={f.feature} className="border-b border-white/5 last:border-0">
+            <tr key={f.feature}>
               <td className="px-4 py-2.5 text-text-primary">{f.feature}</td>
               <td className="px-4 py-2.5">
                 <span className="inline-flex items-center gap-1.5">

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { debug } from '../core/debug.js';
 import { daemonLogsPath } from './telemetry.js';
 import { diskHeadroomMbToBytes, ensureDiskHeadroom } from '../utils/disk.js';
-import { restrictFileToCurrentUser } from '../platform/index.js';
+import { isWindows, restrictFileToCurrentUser } from '../platform/index.js';
 
 export interface DaemonState {
   pid: number;
@@ -191,6 +191,7 @@ export async function startDaemonDetached(opts?: {
   const child = spawn(process.execPath, nodeArgs, {
     detached: true,
     stdio: 'ignore',
+    windowsHide: true,
     env: {
       ...process.env,
       OPTA_DAEMON_PROCESS: '1',
@@ -244,7 +245,12 @@ export async function stopDaemon(): Promise<boolean> {
     return true;
   }
 
-  process.kill(state.pid, 'SIGTERM');
+  try {
+    process.kill(state.pid, 'SIGTERM');
+  } catch {
+    await clearDaemonState();
+    return true;
+  }
   const start = Date.now();
   while (Date.now() - start < 4000) {
     if (!isProcessRunning(state.pid)) {
@@ -255,7 +261,11 @@ export async function stopDaemon(): Promise<boolean> {
   }
 
   // Last resort
-  process.kill(state.pid, 'SIGKILL');
+  try {
+    process.kill(state.pid, isWindows ? 'SIGTERM' : 'SIGKILL');
+  } catch {
+    // Ignore kill race; state cleanup still applies.
+  }
   await clearDaemonState();
   return true;
 }

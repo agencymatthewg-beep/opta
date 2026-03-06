@@ -19,7 +19,7 @@ export function useAccountsAuthControls({
     try {
       onNotice?.("Opening Opta Accounts in your browser…");
       await runAccountBrowserLogin(connection);
-      onNotice?.("Complete login in your browser to finish linking.");
+      onNotice?.("Login complete. Account status refreshed.");
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Unknown error during login.";

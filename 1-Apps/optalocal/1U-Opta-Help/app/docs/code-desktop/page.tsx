@@ -26,9 +26,9 @@ export default function CodeDesktopOverviewPage() {
         <div className="flex-1 min-w-0 prose-opta">
           <h1>Code Desktop</h1>
           <p className="lead">
-            Opta Code Desktop is a visual Vite + React application that
-            provides a graphical interface for monitoring daemon activity,
-            managing sessions, and controlling the daemon lifecycle.
+            Opta Code Desktop is a native desktop application built with a
+            Tauri v2 shell and a Vite + React UI, providing graphical control
+            for daemon-connected coding workflows.
           </p>
 
           <h2 id="what-is-code-desktop">What is Code Desktop?</h2>
@@ -48,21 +48,22 @@ export default function CodeDesktopOverviewPage() {
 
           <h2 id="architecture">Architecture</h2>
           <p>
-            Code Desktop is a pure Vite + React web application served from
-            the browser. It does not use Electron or Tauri -- it is a
-            standard single-page application that communicates with the
-            daemon over localhost.
+            Code Desktop runs as a native Tauri desktop app. The Rust shell
+            handles native capabilities and secure storage; the React UI handles
+            interaction and streaming presentation. In browser/dev mode, the same
+            UI can run without the native shell.
           </p>
 
           <CodeBlock
             language="text"
             filename="Code Desktop Architecture"
-            code={`Code Desktop (Vite + React)
+            code={`Code Desktop (Tauri v2 shell + React UI)
     |
-    |  HTTP REST   → session management, daemon control
-    |  WebSocket   → real-time event streaming
+    |  Tauri commands → bootstrap metadata, secure token storage
+    |  HTTP REST      → session + operation control
+    |  WebSocket      → real-time event streaming
     v
-Opta Daemon  127.0.0.1:9999
+Opta Daemon  (bootstrapped host/port)
     |
     |  Proxied inference requests
     v
@@ -90,24 +91,22 @@ Opta LMX  lmx-host.local:1234`}
             <li><strong>Turn Statistics</strong> -- token count, generation speed (tok/s), elapsed time, and tool call count for each completed turn</li>
             <li><strong>Tool Cards</strong> -- collapsible panels showing tool name, arguments, and results for each tool invocation</li>
             <li><strong>Session Export</strong> -- export conversations as JSON or Markdown for archival or sharing</li>
-            <li><strong>Daemon Panel</strong> -- start, stop, restart the daemon and view real-time logs</li>
+            <li><strong>Daemon Panel</strong> -- restart/stop daemon controls, status, uptime, and CLI ops handoff</li>
             <li><strong>Chat / Do Mode Toggle</strong> -- switch between interactive chat and autonomous do mode from the composer</li>
           </ul>
 
           <h2 id="connection-model">Connection Model</h2>
           <p>
-            Code Desktop connects to the daemon on <code>127.0.0.1:9999</code>{" "}
-            by default. Authentication uses a Bearer token read from the
-            daemon&apos;s <code>state.json</code> file. For WebSocket connections,
-            the token is passed as a query parameter.
+            Code Desktop resolves daemon connection details from runtime bootstrap metadata
+            and stored connection settings, with <code>127.0.0.1:9999</code> as a safe fallback
+            in browser/dev mode. For WebSocket connections, the daemon token is passed as a
+            query parameter.
           </p>
 
           <Callout variant="info" title="Token persistence">
-            The daemon connection token is stored in{" "}
-            <code>localStorage</code> under the key{" "}
-            <code>opta:daemon-connection</code>. This survives page reloads
-            so you do not need to re-authenticate after refreshing the
-            browser.
+            In native desktop runtime, daemon tokens are persisted via OS keyring-backed secure
+            storage. In browser/dev mode, <code>localStorage</code> remains the compatibility
+            fallback.
           </Callout>
 
           <p>

@@ -69,12 +69,7 @@ export async function config(
       break;
 
     case 'settings':
-      console.log('To open settings:');
-      console.log('  1. Run: opta');
-      console.log('  2. Press Ctrl+S to open Opta Menu');
-      console.log('  3. Select Settings from the Operations page');
-      console.log('');
-      console.log('Or press Ctrl+Shift+S directly to open settings.');
+      await configMenu();
       break;
 
     default:

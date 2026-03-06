@@ -9,6 +9,7 @@
 Research and investigation materials, including deep dives, analysis, and exploration.
 
 ## Contents
+- 2026-03-06-mono512-autonomous-benchmark-prep.md
 - best-practices.md
 - cursor-continue-features.md
 - aider-features.md

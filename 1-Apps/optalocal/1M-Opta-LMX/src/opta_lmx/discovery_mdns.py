@@ -11,6 +11,8 @@ from typing import Any
 logger = logging.getLogger(__name__)
 
 _WILDCARD_HOSTS = {"0.0.0.0", "::", "[::]"}
+_DEFAULT_MDNS_SERVICE_LABEL = "_opta-lmx"
+_DEFAULT_MDNS_TRANSPORT_LABEL = "_tcp"
 
 
 def _iter_local_ipv4_addresses() -> list[str]:
@@ -30,27 +32,93 @@ def _iter_local_ipv4_addresses() -> list[str]:
             if candidate not in addresses:
                 addresses.append(candidate)
     except Exception:
-        return []
+        pass
+
+    # Fallback: enumerate network interfaces directly.
+    try:
+        import psutil
+
+        for iface_addrs in psutil.net_if_addrs().values():
+            for entry in iface_addrs:
+                if entry.family != socket.AF_INET:
+                    continue
+                candidate = str(entry.address)
+                try:
+                    ip = ipaddress.ip_address(candidate)
+                except ValueError:
+                    continue
+                if not isinstance(ip, ipaddress.IPv4Address):
+                    continue
+                if ip.is_loopback:
+                    continue
+                if candidate not in addresses:
+                    addresses.append(candidate)
+    except Exception:
+        pass
     return addresses
 
 
 def _resolve_advertise_host(host: str) -> str:
-    normalized = host.strip().lower()
+    raw_host = host.strip().strip("[]")
+    normalized = raw_host.lower()
     if normalized in _WILDCARD_HOSTS or normalized in {"localhost", "::1", "127.0.0.1"}:
         candidates = _iter_local_ipv4_addresses()
         if candidates:
             return candidates[0]
-        return "127.0.0.1"
-    return host
+        raise RuntimeError("No non-loopback IPv4 address available for mDNS advertisement.")
+
+    # Keep explicit IPv4 literals untouched.
+    try:
+        parsed = ipaddress.ip_address(raw_host)
+        if isinstance(parsed, ipaddress.IPv4Address):
+            return str(parsed)
+    except ValueError:
+        pass
+
+    # Resolve hostname/alias binds to an IPv4 address accepted by zeroconf.
+    try:
+        _name, _aliases, candidates = socket.gethostbyname_ex(raw_host)
+        for candidate in candidates:
+            try:
+                ip = ipaddress.ip_address(candidate)
+            except ValueError:
+                continue
+            if isinstance(ip, ipaddress.IPv4Address) and not ip.is_loopback:
+                return candidate
+        for candidate in candidates:
+            try:
+                ip = ipaddress.ip_address(candidate)
+            except ValueError:
+                continue
+            if isinstance(ip, ipaddress.IPv4Address):
+                return candidate
+    except Exception:
+        pass
+
+    local_candidates = _iter_local_ipv4_addresses()
+    if local_candidates:
+        return local_candidates[0]
+
+    raise RuntimeError(
+        f"Unable to resolve advertise host '{host}' to non-loopback IPv4 address."
+    )
 
 
 def _normalize_service_type(service_name: str) -> str:
-    service_type = service_name.strip().rstrip(".")
-    if not service_type:
-        service_type = "_opta-lmx._tcp.local"
-    if not service_type.endswith(".local"):
-        service_type = f"{service_type}.local"
-    return f"{service_type}."
+    raw_value = service_name.strip().rstrip(".").lower()
+    if not raw_value:
+        return f"{_DEFAULT_MDNS_SERVICE_LABEL}.{_DEFAULT_MDNS_TRANSPORT_LABEL}.local."
+
+    labels = [label for label in raw_value.split(".") if label]
+    if labels and labels[-1] == "local":
+        labels = labels[:-1]
+
+    service_label = labels[0] if labels else _DEFAULT_MDNS_SERVICE_LABEL
+    transport_label = labels[1] if len(labels) > 1 else _DEFAULT_MDNS_TRANSPORT_LABEL
+
+    service_label = f"_{service_label.lstrip('_')}" or _DEFAULT_MDNS_SERVICE_LABEL
+    transport_label = f"_{transport_label.lstrip('_')}" or _DEFAULT_MDNS_TRANSPORT_LABEL
+    return f"{service_label}.{transport_label}.local."
 
 
 @dataclass

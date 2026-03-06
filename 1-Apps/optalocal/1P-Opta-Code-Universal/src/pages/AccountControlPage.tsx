@@ -1016,7 +1016,7 @@ export function AccountControlPage({ connection }: AccountControlPageProps) {
                 // call the /api/sync/keys endpoint directly.
                 const doSync = async () => {
                   try {
-                    const result = await daemonClient.runOperation(connection, "account.vault.pull", {});
+                    const result = await daemonClient.runOperation(connection, "vault.pull", {});
                     if (result.ok && result.result) {
                       const r = result.result as {
                         synced?: number;

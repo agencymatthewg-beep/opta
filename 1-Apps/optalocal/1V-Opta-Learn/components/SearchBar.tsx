@@ -3,17 +3,17 @@
 import { motion } from 'framer-motion';
 import { Search, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import type { Guide } from '@/content/guides';
+import type { GuideSearchEntry } from '@/content/guides';
 import { createSearchIndex, searchGuides } from '@/lib/search';
 import { GuideCard } from './GuideCard';
 
 interface SearchBarProps {
-  guides: Guide[];
+  guides: GuideSearchEntry[];
 }
 
 export function SearchBar({ guides }: SearchBarProps) {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<Guide[]>([]);
+  const [results, setResults] = useState<GuideSearchEntry[]>([]);
 
   const fuse = useMemo(() => createSearchIndex(guides), [guides]);
 

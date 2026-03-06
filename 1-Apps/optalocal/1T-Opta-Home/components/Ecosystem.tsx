@@ -7,35 +7,35 @@ import { ArrowRight } from "lucide-react";
 const coreApps = [
   {
     name: "Opta Init",
-    role: "Distribution + lifecycle",
+    role: "Activation + lifecycle",
     description:
-      "Single canonical onboarding surface and desktop manager lifecycle for the full stack. Install once, then onboard CLI, LMX, and Code through signed manifests.",
+      "Canonical onboarding and lifecycle manager. Install once, then activate and update the Opta Local stack through one controlled path.",
     icon: "/logos/opta-init-mark.svg",
     href: "https://init.optalocal.com",
   },
   {
     name: "Opta LMX",
-    role: "Local Inference Engine",
+    role: "Local Model Runtime",
     description:
-      "Your private inference daemon for Apple Silicon. Provides a local, offline OpenAI-compatible API to fall back on when Cloud Models aren't needed.",
+      "Local model runtime for Apple Silicon. Power Opta AI privately when local execution is the preferred operating mode.",
     icon: "/logos/opta-lmx-mark.svg",
     href: "https://lmx.optalocal.com",
   },
   {
     name: "Opta CLI",
-    role: "Control plane",
+    role: "Opta AI terminal surface",
     description:
-      "Terminal-first control for the stack. Connects your local or cloud models to your projects for long-running 'CEO Mode' autonomous workflows.",
+      "Terminal-first control surface for coding and operations with policy-consistent execution from your shell.",
     icon: "/logos/opta-cli-mark.svg",
     href: "https://help.optalocal.com/docs/cli",
   },
   {
     name: "Opta Code",
-    role: "Desktop IDE",
+    role: "Opta AI desktop surface",
     description:
-      "Daemon-powered desktop workflow for session telemetry, multi-mode interaction, and local context execution at visual speed.",
+      "Desktop execution surface for Opta AI with richer interaction patterns and project-level workflow control.",
     icon: "/logos/opta-code-mark.svg",
-    href: "https://help.optalocal.com/docs/opta-code",
+    href: "https://help.optalocal.com/docs/code-desktop",
   },
 ];
 
@@ -58,15 +58,16 @@ export function Ecosystem() {
         {/* Header */}
         <motion.div
           className="text-center mb-16"
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 1, y: 20 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
         >
           <h2 className="text-4xl md:text-5xl font-bold mb-4 text-moonlight">
-            Four local apps. One architecture.
+            Opta Local product map.
           </h2>
           <p className="text-xl text-text-secondary max-w-2xl mx-auto">
-            The stack is separated by role, not hype: one installer, one inference core, one control surface, and one desktop workflow.
+            Four core local apps for activation and execution, supported by a
+            dedicated identity, documentation, and operations web layer.
           </p>
         </motion.div>
 
@@ -76,20 +77,26 @@ export function Ecosystem() {
             <motion.a
               key={app.name}
               href={app.href}
-              className="obsidian-interactive rounded-2xl p-8 group cursor-pointer border border-white/5"
-              initial={{ opacity: 0, y: 20 }}
+              className="obsidian-interactive rounded-2xl p-8 group cursor-pointer"
+              initial={{ opacity: 1, y: 20 }}
               animate={i % 2 === 0 ? (isInView ? { opacity: 1, y: 0 } : {}) : (isInView ? { opacity: 1, y: 0 } : {})}
               transition={{ duration: 0.6, delay: 0.1 + (i * 0.1), ease: [0.16, 1, 0.3, 1] }}
             >
               <div className="flex items-start justify-between mb-6">
-                <div className="w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={app.icon} alt={app.name} className="w-9 h-9" />
-                </div>
-                <ArrowRight className="w-5 h-5 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-all" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={app.icon}
+                  alt={app.name}
+                  className="w-10 h-10 drop-shadow-[0_0_14px_rgba(168,85,247,0.4)]"
+                  width={40}
+                  height={40}
+                  loading="lazy"
+                  decoding="async"
+                />
+                <ArrowRight className="w-5 h-5 text-text-muted group-hover:text-primary group-hover:translate-x-1 transition-[color,transform]" />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">{app.name}</h3>
-              <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium font-mono mb-4">
+              <span className="inline-block px-3 py-1 rounded-full bg-primary/12 text-primary text-xs font-medium font-mono mb-4">
                 {app.role}
               </span>
               <p className="text-text-secondary leading-relaxed text-sm">{app.description}</p>
@@ -99,8 +106,8 @@ export function Ecosystem() {
 
         {/* Management layer strip */}
         <motion.div
-          className="rounded-xl border border-white/5 bg-[#0e0e14] px-8 py-6"
-          initial={{ opacity: 0, y: 10 }}
+          className="rounded-xl bg-[#0e0e14] px-8 py-6"
+          initial={{ opacity: 1, y: 10 }}
           animate={isInView ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.5, delay: 0.45, ease: [0.16, 1, 0.3, 1] }}
         >

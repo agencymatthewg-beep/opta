@@ -48,11 +48,105 @@ interface BootstrapMetadata {
   port?: number;
 }
 
+interface LmxProbeResult {
+  reachable?: boolean;
+}
+
+interface ParsedConnectionCandidate {
+  host: string;
+  port: number;
+}
+
+interface NativeMdnsCandidate extends ParsedConnectionCandidate {
+  hostname: string;
+  serviceInstance: string;
+}
+
+interface ParsedDiscoveryConnection extends ParsedConnectionCandidate {
+  resolved: boolean;
+}
+
+const NATIVE_MDNS_DISCOVERY_COMMAND = "discover_lmx_mdns";
+const LMX_DEFAULT_PORT = 1234;
+
+function asRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+function parseNativeMdnsCandidates(raw: unknown): NativeMdnsCandidate[] {
+  const root = asRecord(raw);
+  const entries = Array.isArray(raw)
+    ? raw
+    : Array.isArray(root?.candidates)
+      ? root.candidates
+      : [];
+
+  const parsed: NativeMdnsCandidate[] = [];
+  for (const entry of entries) {
+    const candidate = asRecord(entry);
+    if (!candidate) continue;
+    const hostRaw = candidate.host;
+    const portRaw = candidate.port;
+    const host = typeof hostRaw === "string" ? hostRaw.trim() : "";
+    const port = Math.trunc(Number(portRaw));
+    if (!host || !Number.isFinite(port) || port <= 0 || port > 65_535) {
+      continue;
+    }
+
+    const hostname =
+      typeof candidate.hostname === "string"
+        ? candidate.hostname.toLowerCase()
+        : "";
+    const serviceInstanceRaw =
+      typeof candidate.serviceInstance === "string"
+        ? candidate.serviceInstance
+        : candidate.service_instance;
+    const serviceInstance =
+      typeof serviceInstanceRaw === "string"
+        ? serviceInstanceRaw.toLowerCase()
+        : "";
+
+    parsed.push({ host, port, hostname, serviceInstance });
+  }
+
+  return parsed;
+}
+
+function pickBestNativeMdnsCandidate(
+  raw: unknown,
+): ParsedConnectionCandidate | null {
+  const candidates = parseNativeMdnsCandidates(raw);
+  if (candidates.length === 0) return null;
+
+  candidates.sort((a, b) => {
+    const preferredPortCmp =
+      Number(a.port !== LMX_DEFAULT_PORT) - Number(b.port !== LMX_DEFAULT_PORT);
+    if (preferredPortCmp !== 0) return preferredPortCmp;
+
+    const hostCmp = a.host.localeCompare(b.host);
+    if (hostCmp !== 0) return hostCmp;
+
+    const portCmp = a.port - b.port;
+    if (portCmp !== 0) return portCmp;
+
+    const hostNameCmp = a.hostname.localeCompare(b.hostname);
+    if (hostNameCmp !== 0) return hostNameCmp;
+
+    return a.serviceInstance.localeCompare(b.serviceInstance);
+  });
+
+  const best = candidates[0];
+  if (!best) return null;
+  return { host: best.host, port: best.port };
+}
+
 function parseDiscoveryConnection(
   discovery: unknown,
   fallbackHost: string,
   fallbackPort: number,
-): { host: string; port: number } {
+): ParsedDiscoveryConnection {
   const endpoints =
     typeof discovery === "object" &&
     discovery !== null &&
@@ -85,13 +179,23 @@ function parseDiscoveryConnection(
             ? 443
             : 80;
       if (!Number.isFinite(port) || port <= 0 || port > 65_535) continue;
-      return { host: parsedHost, port };
+      return { host: parsedHost, port, resolved: true };
     } catch {
       // Ignore malformed discovery URL entries.
     }
   }
 
-  return { host: fallbackHost, port: fallbackPort };
+  return { host: fallbackHost, port: fallbackPort, resolved: false };
+}
+
+async function probeLmxReachability(
+  candidate: ParsedConnectionCandidate,
+): Promise<boolean> {
+  const probe = await wizardInvoke<LmxProbeResult>("probe_lmx_server", {
+    host: candidate.host,
+    port: candidate.port,
+  }).catch(() => null);
+  return probe?.reachable === true;
 }
 
 export function SetupWizard({ onComplete }: SetupWizardProps) {
@@ -123,35 +227,90 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
     const prefillFromDiscovery = async () => {
       try {
+        let connection: DaemonConnectionOptions | null = null;
+        let effective: ParsedDiscoveryConnection = {
+          host: DEFAULT_FORM.lmxHost,
+          port: DEFAULT_FORM.lmxPort,
+          resolved: false,
+        };
+        let validated = false;
+
+        const nativeResolved = await wizardInvoke<unknown>(
+          NATIVE_MDNS_DISCOVERY_COMMAND,
+        )
+          .then((payload) => pickBestNativeMdnsCandidate(payload))
+          .catch(() => null);
+
+        if (nativeResolved) {
+          const nativeCandidate = { ...nativeResolved, resolved: true };
+          if (await probeLmxReachability(nativeCandidate)) {
+            effective = nativeCandidate;
+            validated = true;
+          }
+        }
+
         const bootstrap = await wizardInvoke<BootstrapMetadata>(
           "bootstrap_daemon_connection",
           { startIfNeeded: true },
-        );
-        const host = bootstrap?.host?.trim();
-        const port = Math.trunc(Number(bootstrap?.port));
-        if (!host || !Number.isFinite(port) || port <= 0 || port > 65_535) {
-          return;
+        ).catch(() => null);
+        const bootstrapHost = bootstrap?.host?.trim() ?? "";
+        const bootstrapPort = Math.trunc(Number(bootstrap?.port));
+        const hasBootstrap =
+          bootstrapHost.length > 0
+          && Number.isFinite(bootstrapPort)
+          && bootstrapPort > 0
+          && bootstrapPort <= 65_535;
+
+        if (hasBootstrap) {
+          const token = await wizardInvoke<string>("get_connection_secret", {
+            host: bootstrapHost,
+            port: bootstrapPort,
+          }).catch(() => "");
+          connection = {
+            host: bootstrapHost,
+            port: bootstrapPort,
+            token: typeof token === "string" ? token : "",
+          };
+          if (!validated) {
+            effective = { host: bootstrapHost, port: bootstrapPort, resolved: false };
+          }
         }
 
-        const token = await wizardInvoke<string>("get_connection_secret", {
-          host,
-          port,
-        }).catch(() => "");
-        const connection: DaemonConnectionOptions = {
-          host,
-          port,
-          token: typeof token === "string" ? token : "",
-        };
-        const discovery = await daemonClient.lmxDiscovery(connection);
-        const resolved = parseDiscoveryConnection(discovery, host, port);
+        if (!validated && connection) {
+          const daemonResolved = await daemonClient
+            .lmxDiscovery(connection)
+            .then((discovery) =>
+              parseDiscoveryConnection(discovery, effective.host, effective.port))
+            .catch(() => ({ host: effective.host, port: effective.port, resolved: false }));
+          if (
+            daemonResolved.resolved &&
+            (await probeLmxReachability(daemonResolved))
+          ) {
+            effective = daemonResolved;
+            validated = true;
+          }
+        }
 
         if (cancelled) return;
         setConnection(connection);
         setForm((prev) => ({
           ...prev,
-          lmxHost: resolved.host,
-          lmxPort: resolved.port,
+          lmxHost: effective.host,
+          lmxPort: effective.port,
         }));
+
+        if (!validated || !connection) return;
+        const writeResults = await Promise.allSettled([
+          daemonClient
+            .configSet(connection, "connection.host", effective.host),
+          daemonClient
+            .configSet(connection, "connection.port", effective.port),
+          daemonClient
+            .configSet(connection, "connection.autoDiscover", true),
+        ]);
+        if (writeResults.some((result) => result.status === "rejected")) {
+          console.warn("Auto-discovery config write had one or more failures.");
+        }
       } catch {
         // Discovery prefill is best-effort; keep local defaults otherwise.
       }

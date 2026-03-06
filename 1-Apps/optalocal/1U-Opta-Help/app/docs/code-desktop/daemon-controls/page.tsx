@@ -31,8 +31,8 @@ export default function CodeDesktopDaemonControlsPage() {
           <h1>Daemon Controls</h1>
           <p className="lead">
             Code Desktop includes a dedicated daemon panel for managing the
-            Opta daemon lifecycle, viewing real-time logs, and monitoring
-            connection health -- all from the graphical interface.
+            Opta daemon lifecycle, handing off deeper operations to CLI mode,
+            and monitoring connection health -- all from the graphical interface.
           </p>
 
           <h2 id="daemon-panel">Daemon Panel</h2>
@@ -51,31 +51,27 @@ export default function CodeDesktopDaemonControlsPage() {
 
           <h2 id="lifecycle-controls">Lifecycle Controls</h2>
           <p>
-            The daemon panel provides three primary lifecycle actions:
+            The daemon panel provides the following lifecycle actions:
           </p>
           <ul>
             <li>
-              <strong>Start</strong> -- launches the daemon if it is not
-              running. The panel polls the daemon health endpoint until
-              it responds, then transitions to the connected state.
-            </li>
-            <li>
               <strong>Stop</strong> -- sends a graceful shutdown signal
-              to the daemon. Active sessions are preserved on disk before
-              the process exits.
+              to the daemon. Active sessions remain persisted on disk.
             </li>
             <li>
-              <strong>Restart</strong> -- performs a stop followed by a
-              start. The WebSocket connection automatically reconnects
-              after the daemon comes back online.
+              <strong>Restart</strong> -- performs a stop/start cycle and
+              triggers automatic reconnect once the daemon returns.
+            </li>
+            <li>
+              <strong>CLI Ops</strong> -- opens the daemon operations view
+              for command-first lifecycle and diagnostics workflows.
             </li>
           </ul>
 
           <Callout variant="warning" title="Token rotation">
             When the daemon restarts, it generates a new authentication
-            token. Code Desktop detects this and updates the stored token
-            in <code>localStorage</code> automatically. If you see
-            authentication errors after a restart, try refreshing the page.
+            token. Native desktop updates secure token storage automatically;
+            browser/dev runtime updates local storage fallback.
           </Callout>
 
           <h2 id="log-viewer">Log Viewer</h2>
@@ -139,17 +135,14 @@ export default function CodeDesktopDaemonControlsPage() {
 
           <h2 id="auto-discovery">Auto-Discovery</h2>
           <p>
-            Code Desktop automatically discovers the daemon running on
-            localhost. On startup, it checks the default daemon address
-            (<code>127.0.0.1:9999</code>) and establishes a connection if the
-            daemon is running. If the daemon is not running, it displays
-            the disconnected state with a &quot;Start Daemon&quot; button.
+            On startup, Code Desktop bootstraps daemon metadata (host/port/token)
+            in native runtime and probes configured endpoints in web/dev mode.
+            It then binds the UI connection model to the resolved daemon endpoint.
           </p>
           <p>
-            The daemon configuration path is XDG-aware, matching the CLI&apos;s
-            behavior. On macOS, the daemon state file is read from{" "}
-            <code>~/.config/opta/daemon/state.json</code>, which contains
-            the authentication token and port number.
+            The daemon configuration root follows the same cross-platform convention
+            as Opta CLI: <code>~/.config/opta</code> on macOS/Linux and{" "}
+            <code>%APPDATA%\\opta</code> on Windows.
           </p>
 
           <Callout variant="tip" title="Background daemon">

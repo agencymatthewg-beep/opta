@@ -123,6 +123,134 @@ export function shouldForceFinalReassessmentPass(input: FinalReassessmentDecisio
   );
 }
 
+export interface ToolProtocolSanitizationResult {
+  messages: AgentMessage[];
+  changed: boolean;
+  droppedToolMessages: number;
+  repairedAssistantMessages: number;
+  removedAssistantMessages: number;
+}
+
+/**
+ * Repair message ordering invariants required by tool-call providers:
+ * - A `tool` message must correspond to the most-recent assistant `tool_calls` block.
+ * - If compaction/history transforms leave partial tool-call blocks, trim dangling ids.
+ * - If a dangling assistant tool-call block has no surviving tool responses and no text,
+ *   drop it entirely to avoid sending invalid null assistant turns.
+ */
+export function sanitizeToolProtocolMessages(
+  messages: AgentMessage[]
+): ToolProtocolSanitizationResult {
+  const normalized: AgentMessage[] = [];
+  let droppedToolMessages = 0;
+  let repairedAssistantMessages = 0;
+  let removedAssistantMessages = 0;
+
+  let pending:
+    | {
+        assistantIndex: number;
+        outstandingToolIds: Set<string>;
+        matchedToolIds: Set<string>;
+      }
+    | null = null;
+
+  const finalizePending = (): void => {
+    if (!pending) return;
+    if (pending.outstandingToolIds.size === 0) {
+      pending = null;
+      return;
+    }
+
+    const assistantMsg = normalized[pending.assistantIndex];
+    if (!assistantMsg || assistantMsg.role !== 'assistant' || !assistantMsg.tool_calls) {
+      pending = null;
+      return;
+    }
+
+    const matchedToolCalls = assistantMsg.tool_calls.filter((tc) =>
+      pending?.matchedToolIds.has(tc.id)
+    );
+
+    if (matchedToolCalls.length > 0) {
+      assistantMsg.tool_calls = matchedToolCalls;
+      repairedAssistantMessages += 1;
+      pending = null;
+      return;
+    }
+
+    delete assistantMsg.tool_calls;
+    if (assistantMsg.content == null) {
+      normalized.splice(pending.assistantIndex, 1);
+      removedAssistantMessages += 1;
+    } else {
+      repairedAssistantMessages += 1;
+    }
+    pending = null;
+  };
+
+  for (const message of messages) {
+    const hasToolCalls =
+      message.role === 'assistant' && Array.isArray(message.tool_calls) && message.tool_calls.length > 0;
+
+    if (hasToolCalls) {
+      finalizePending();
+      const clonedAssistant: AgentMessage = {
+        ...message,
+        tool_calls: message.tool_calls?.map((tc) => ({
+          id: tc.id,
+          type: tc.type,
+          function: {
+            name: tc.function.name,
+            arguments: tc.function.arguments,
+          },
+        })),
+      };
+      normalized.push(clonedAssistant);
+      pending = {
+        assistantIndex: normalized.length - 1,
+        outstandingToolIds: new Set(clonedAssistant.tool_calls?.map((tc) => tc.id)),
+        matchedToolIds: new Set<string>(),
+      };
+      continue;
+    }
+
+    if (message.role === 'tool') {
+      if (
+        !pending ||
+        !message.tool_call_id ||
+        !pending.outstandingToolIds.has(message.tool_call_id)
+      ) {
+        droppedToolMessages += 1;
+        continue;
+      }
+
+      normalized.push(message);
+      pending.outstandingToolIds.delete(message.tool_call_id);
+      pending.matchedToolIds.add(message.tool_call_id);
+      if (pending.outstandingToolIds.size === 0) {
+        pending = null;
+      }
+      continue;
+    }
+
+    finalizePending();
+    normalized.push(message);
+  }
+
+  finalizePending();
+
+  const changed =
+    droppedToolMessages > 0 || repairedAssistantMessages > 0 || removedAssistantMessages > 0;
+
+  return {
+    messages: normalized,
+    changed,
+    droppedToolMessages,
+    repairedAssistantMessages,
+    removedAssistantMessages,
+  };
+}
+
 function makeAbortError(message = 'Turn cancelled'): Error {
   const err = new Error(message);
   err.name = 'AbortError';
@@ -431,6 +559,74 @@ export async function agentLoop(
     }
   }
 
+  let browserDelegationResponse: string | null = null;
+  if (
+    !isSubAgent &&
+    effectiveConfig.browser.enabled &&
+    (effectiveConfig.browser.mcp?.enabled ?? false) &&
+    effectiveConfig.browser.autoInvoke
+  ) {
+    const { routeBrowserIntent } = await import('../browser/intent-router.js');
+    const { loadBrowserRunCorpusAdaptationHint } = await import('../browser/adaptation.js');
+    const { delegateToBrowserSubAgent } = await import('../browser/sub-agent-delegator.js');
+
+    let intentAdaptationHint: Awaited<
+      ReturnType<typeof loadBrowserRunCorpusAdaptationHint>
+    >['intent'] | undefined;
+    if (effectiveConfig.browser.adaptation.enabled) {
+      try {
+        const adaptationHint = await loadBrowserRunCorpusAdaptationHint(
+          process.cwd(),
+          effectiveConfig.browser.adaptation,
+        );
+        intentAdaptationHint = adaptationHint.intent;
+      } catch {
+        // Adaptation hints are best-effort only.
+      }
+    }
+
+    const routeDecision = routeBrowserIntent(task, {
+      adaptationHint: intentAdaptationHint,
+    });
+    if (routeDecision.shouldRoute) {
+      if (!silent) {
+        const confidenceLabel = routeDecision.confidenceScore !== undefined
+          ? `${routeDecision.confidence} (${routeDecision.confidenceScore.toFixed(2)})`
+          : routeDecision.confidence;
+        console.log(
+          chalk.dim(`  Browser auto-route matched (${confidenceLabel}) — delegating to browser specialist.`),
+        );
+      }
+
+      const delegationResult = await delegateToBrowserSubAgent({
+        goal: task,
+        config: effectiveConfig,
+        preferredSessionId: sessionId,
+      });
+
+      if (delegationResult.ok) {
+        browserDelegationResponse = delegationResult.summary;
+        completionStatus = 'completed';
+      } else {
+        const delegationFailureReason =
+          delegationResult.error ?? delegationResult.summary ?? 'unknown error';
+        if (!silent) {
+          console.log(
+            chalk.yellow(
+              `  Browser delegation failed; falling back to main agent loop: ${delegationFailureReason}`,
+            ),
+          );
+        }
+        messages.push({
+          role: 'system',
+          content:
+            `Browser delegation failed and fallback to the standard agent loop is active. ` +
+            `Reason: ${delegationFailureReason}.`,
+        });
+      }
+    }
+  }
+
   // Initialize hook manager (no-op when no hooks configured)
   const hooks = createHookManager(effectiveConfig);
   const sessionCtx: SessionContext = {
@@ -499,7 +695,14 @@ export async function agentLoop(
   });
 
   try {
-    while (true) {
+    if (browserDelegationResponse !== null) {
+      messages.push({
+        role: 'assistant',
+        content: browserDelegationResponse,
+      });
+      statusBar?.clear();
+    } else {
+      while (true) {
       if (options?.signal?.aborted) {
         throw makeAbortError();
       }
@@ -583,6 +786,14 @@ export async function agentLoop(
       }
       pendingFinalReassessmentPass = false;
       autonomyTurnCount += 1;
+
+      const sanitization = sanitizeToolProtocolMessages(messages);
+      if (sanitization.changed) {
+        messages.splice(0, messages.length, ...sanitization.messages);
+        debug(
+          `Sanitized tool protocol history: dropped ${sanitization.droppedToolMessages} orphan tool message(s), repaired ${sanitization.repairedAssistantMessages} assistant tool-call block(s), removed ${sanitization.removedAssistantMessages} empty assistant tool-call block(s).`
+        );
+      }
 
       // 2. Call Opta LMX
       insightEngine?.turnStart();
@@ -949,6 +1160,7 @@ export async function agentLoop(
         const { writeRecoveryCheckpoint } = await import('../memory/recovery.js');
         void writeRecoveryCheckpoint(sessionId, messages, toolCallCount).catch(() => {});
       }
+    }
     }
   } catch (err) {
     // Fire the error hook so lifecycle hooks can observe failures

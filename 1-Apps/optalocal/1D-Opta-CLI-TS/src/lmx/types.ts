@@ -512,6 +512,7 @@ export interface LmxSkillOpenClawInvokeRequest {
   params?: Record<string, unknown> | string;
   approved?: boolean;
   timeoutSec?: number;
+  openclawAgentId?: string;
 }
 
 export interface LmxSkillOpenClawInvokeResponse {
