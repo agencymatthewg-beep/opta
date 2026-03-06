@@ -40,6 +40,7 @@ import {
   LazyBrowserStudio,
   LazyLiveBrowserView,
   LazyModelsStudio,
+  LazyProjectsStudio,
   LazyPermissionModal,
   LazySettingsModal,
   LazySettingsView,
@@ -48,7 +49,7 @@ import {
   preloadSettingsView,
 } from "./lazyAppModules";
 
-type FeatureStudioId = "browser" | "models" | "atpo" | "live";
+type FeatureStudioId = "browser" | "models" | "atpo" | "live" | "projects";
 import type {
   PaletteCommand,
   SessionSubmitMode,
@@ -1630,11 +1631,12 @@ function App() {
         return;
       }
 
-      // Feature Studio keybindings (Ctrl+B/M/A) — mutually exclusive with Settings
-      if (isCtrlOrMeta && (key === "b" || key === "m" || key === "a") && !e.shiftKey) {
+      // --- FEATURE STUDIO TOGGLES ---
+      // Ctrl+B (Browser), Ctrl+M (Models), Ctrl+A (ATPO), Ctrl+P (Projects)
+      if (isCtrlOrMeta && (key === "b" || key === "m" || key === "a" || key === "p") && !e.shiftKey) {
         e.preventDefault();
         const studioId: FeatureStudioId =
-          key === "b" ? "browser" : key === "m" ? "models" : "atpo";
+          key === "b" ? "browser" : key === "m" ? "models" : key === "p" ? "projects" : "atpo";
         // Close settings if open
         if (settingsLayer > 1) {
           goToSettingsLayer(1);
@@ -2261,6 +2263,17 @@ function App() {
         },
       },
       {
+        id: "studio-projects",
+        title: "Open Projects Studio",
+        description: "Manage projects, workspaces, and sessions (Ctrl+P)",
+        keywords: ["projects", "workspaces", "sessions", "create", "delete", "manage"],
+        run: () => {
+          goToSettingsLayer(1);
+          setActiveStudio((current) => current === "projects" ? null : "projects");
+          setStudioFullscreen(false);
+        },
+      },
+      {
         id: "export-session",
         title: "Export active session as Markdown",
         description: "Download the active session timeline as a .md file",
@@ -2619,9 +2632,10 @@ function App() {
                         const word =
                           activeStudio === "browser" ? "BROWSER" :
                             activeStudio === "models" ? "MODELS" :
-                              activeStudio === "atpo" ? "ATPO" :
-                                activeStudio === "live" ? "LIVE" :
-                                  isLiveViewOpen ? "LIVE" : "OPTA";
+                              activeStudio === "projects" ? "PROJECTS" :
+                                activeStudio === "atpo" ? "ATPO" :
+                                  activeStudio === "live" ? "LIVE" :
+                                    isLiveViewOpen ? "LIVE" : "OPTA";
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
                           <div className={`v1-brand-word${wordClass}`} aria-label={word}>
@@ -2763,6 +2777,46 @@ function App() {
                             isFullscreen={studioFullscreen}
                             onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
                             connection={connection}
+                          />
+                        </Suspense>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {settingsLayer === 1 && activeStudio === "projects" && (
+                    <motion.div
+                      key="studio-projects"
+                      className="v1-settings-motion-layer"
+                      custom={{ direction: "deeper", motion: studioSwitchingRef.current ? "switch" : "root" }}
+                      variants={settingsLayerVariants}
+                      initial="enter"
+                      animate="center"
+                      exit="exit"
+                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                    >
+                      <div
+                        className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
+                        style={settingsOverlayDockStyle}
+                      >
+                        <Suspense fallback={null}>
+                          <LazyProjectsStudio
+                            isFullscreen={studioFullscreen}
+                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
+                            sessions={sessions}
+                            activeSessionId={activeSessionId}
+                            onSelectSession={(sid) => {
+                              setActiveSessionId(sid);
+                              setActivePage("sessions");
+                            }}
+                            onCreateSession={async (workspace) => {
+                              setActiveStudio(null);
+                              setStudioFullscreen(false);
+                              const ws = workspace === "all" ? "default" : workspace;
+                              const sessionId = await createSession({ workspace: ws });
+                              setActiveSessionId(sessionId);
+                              setActivePage("sessions");
+                            }}
+                            connectionState={connectionState}
                           />
                         </Suspense>
                       </div>
@@ -3031,7 +3085,7 @@ function App() {
               </div>
             </div>
           ) : null}
-        </div>
+        </div >
 
         <CommandPalette
           open={palette.isOpen}
@@ -3051,7 +3105,8 @@ function App() {
             onResolve={resolveSessionPermission}
           />
         </Suspense>
-      )}
+      )
+      }
     </>
   );
 }

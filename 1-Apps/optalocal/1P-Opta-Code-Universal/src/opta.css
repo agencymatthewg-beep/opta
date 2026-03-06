@@ -249,7 +249,6 @@ html.opta-backdrop-fallback .app-shell.settings-fullscreen .v1-right-panel {
 }
 
 .app-shell.settings-deep-open:not(.settings-focus-mode) .v1-branding {
-  filter: blur(6px) brightness(0.7) saturate(0.8);
   opacity: 0.24;
   transition:
     filter 240ms cubic-bezier(0.22, 1, 0.36, 1),

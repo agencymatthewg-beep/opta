@@ -72,6 +72,10 @@ const loadAtpoStudio = async () => ({
   default: (await import("./components/AtpoStudio")).AtpoStudio,
 });
 
+const loadProjectsStudio = async () => ({
+  default: (await import("./components/ProjectsStudio")).ProjectsStudio,
+});
+
 export const preloadSettingsModal = async () => {
   await loadSettingsModal();
 };
@@ -88,3 +92,4 @@ export const LazyLiveBrowserView = lazy(loadLiveBrowserView);
 export const LazyBrowserStudio = lazy(loadBrowserStudio);
 export const LazyModelsStudio = lazy(loadModelsStudio);
 export const LazyAtpoStudio = lazy(loadAtpoStudio);
+export const LazyProjectsStudio = lazy(loadProjectsStudio);
