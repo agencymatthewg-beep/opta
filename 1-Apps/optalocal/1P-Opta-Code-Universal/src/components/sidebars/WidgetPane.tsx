@@ -9,6 +9,7 @@ import { WidgetContextBar } from "../widgets/WidgetContextBar";
 import { WidgetActiveTool } from "../widgets/WidgetActiveTool";
 import { WidgetSessionMemory } from "../widgets/WidgetSessionMemory";
 import { WidgetModelSwitcher } from "../widgets/WidgetModelSwitcher";
+import { WidgetLatencySparkline } from "../widgets/WidgetLatencySparkline";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -51,6 +52,8 @@ export function WidgetContent(props: {
             return <WidgetSessionMemory timelineItems={timelineItems} />;
         case "model-switcher":
             return <WidgetModelSwitcher connection={connection ?? null} />;
+        case "latency-sparkline":
+            return <WidgetLatencySparkline timelineItems={timelineItems} />;
         default:
             return (
                 <div className="widget-placeholder">
