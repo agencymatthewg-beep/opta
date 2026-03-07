@@ -1136,15 +1136,15 @@ export class LmxClient {
     request: LmxSkillOpenClawInvokeRequest,
     opts?: LmxRequestOptions
   ): Promise<LmxSkillOpenClawInvokeResponse> {
-    const openclawAgentId = request.openclawAgentId?.trim();
+    const bridgeAgentId = request.bridgeAgentId?.trim();
     return this.fetch<LmxSkillOpenClawInvokeResponse>(
       '/v1/skills/openclaw/invoke',
       {
         method: 'POST',
-        headers: openclawAgentId
+        headers: bridgeAgentId
           ? {
-              'X-Opta-Bridge-ID': openclawAgentId,
-              'X-Client-ID': openclawAgentId,
+              'X-Opta-Bridge-ID': bridgeAgentId,
+              'X-Client-ID': bridgeAgentId,
             }
           : undefined,
         body: JSON.stringify({

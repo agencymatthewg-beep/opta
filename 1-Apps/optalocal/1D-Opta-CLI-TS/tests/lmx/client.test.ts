@@ -334,7 +334,7 @@ describe('LmxClient', () => {
       name: 'tool-a',
       arguments: { q: 2 },
       timeoutSec: 30,
-      openclawAgentId: 'opta-bridge-123',
+      bridgeAgentId: 'opta-bridge-123',
     });
     await client.ragCollections();
     await client.ragDeleteCollection('docs');

@@ -983,7 +983,7 @@ export async function runSkillsCommand(
         arguments: argumentsPayload,
         approved,
         timeoutSec,
-        openclawAgentId: bridgeAgentId,
+        bridgeAgentId,
       },
       {
         timeoutMs: Math.max(10_000, timeoutSec ? Math.round(timeoutSec * 1000) : 30_000),

@@ -29,7 +29,7 @@ describe('models skills openclaw scope forwarding', () => {
       expect.objectContaining({
         name: 'planner',
         arguments: { goal: 'ship' },
-        openclawAgentId: deriveBridgeAgentId('telegram:dm:peer-42'),
+        bridgeAgentId: deriveBridgeAgentId('telegram:dm:peer-42'),
       }),
       expect.any(Object)
     );
