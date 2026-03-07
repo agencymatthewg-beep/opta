@@ -4,6 +4,7 @@ import { WIDGET_REGISTRY } from "../widgets/WIDGET_REGISTRY";
 import { WidgetAtpo } from "../widgets/WidgetAtpo";
 import { WidgetCliStream } from "../widgets/WidgetCliStream";
 import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
+import { WidgetLmxStatus } from "../widgets/WidgetLmxStatus";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -36,6 +37,8 @@ export function WidgetContent(props: {
             return <WidgetCliStream rawEvents={rawEvents} designMode={designMode} />;
         case "git-diff":
             return <WidgetGitDiff connection={connection} sessionId={sessionId} />;
+        case "lmx-status":
+            return <WidgetLmxStatus connection={connection ?? null} />;
         default:
             return (
                 <div className="widget-placeholder">
