@@ -50,6 +50,19 @@ import {
   preloadSettingsModal,
   preloadSettingsView,
 } from "./lazyAppModules";
+import { DeferredMount } from "./components/DeferredMount";
+
+declare global {
+  interface Window {
+    __optaDeferredLayer2?: boolean;
+    __optaDeferredLayer3?: boolean;
+    __optaDeferredBrowser?: boolean;
+    __optaDeferredModels?: boolean;
+    __optaDeferredAtpo?: boolean;
+    __optaDeferredProjects?: boolean;
+    __optaDeferredLive?: boolean;
+  }
+}
 
 type FeatureStudioId = "browser" | "models" | "atpo" | "live" | "projects";
 import type {
@@ -2620,10 +2633,10 @@ function App() {
                         const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
                         return (
                           <div className={`v1-brand-word${wordClass}`} aria-label={word} style={{ perspective: "1000px" }}>
-                            <AnimatePresence mode="popLayout">
+                            <AnimatePresence mode="wait">
                               {word.split("").map((letter, index) => {
                                 if (letter === " ") {
-                                  return <span key={`${word}-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
+                                  return <span key={`${word}-space-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
                                 }
                                 return (
                                   <motion.span
@@ -2631,32 +2644,34 @@ function App() {
                                     className={`v1-brand-letter v1-brand-letter-${index + 1}`}
                                     custom={index}
                                     variants={{
-                                      initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                                      initial: { opacity: 0, rotateX: 90, scale: 0.95, filter: "blur(2px)" },
                                       animate: (i: number) => ({
                                         opacity: 1,
                                         rotateX: 0,
+                                        scale: 1,
                                         filter: "blur(0px)",
                                         transition: {
                                           type: "spring",
                                           stiffness: 150,
                                           damping: 15,
-                                          delay: i * 0.05
+                                          delay: i * 0.03
                                         }
                                       }),
                                       exit: (i: number) => ({
                                         opacity: 0,
                                         rotateX: -90,
-                                        filter: "blur(4px)",
+                                        scale: 0.95,
+                                        filter: "blur(2px)",
                                         transition: {
-                                          duration: 0.2,
-                                          delay: i * 0.03
+                                          duration: 0.15,
+                                          delay: i * 0.02
                                         }
                                       })
                                     }}
                                     initial="initial"
                                     animate="animate"
                                     exit="exit"
-                                    style={{ display: "inline-block", transformOrigin: "center center" }}
+                                    style={{ display: "inline-block", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
                                   >
                                     {letter}
                                   </motion.span>
@@ -2670,24 +2685,26 @@ function App() {
                                   className="v1-brand-letter ml-4"
                                   custom={word.length}
                                   variants={{
-                                    initial: { opacity: 0, rotateX: 90, filter: "blur(4px)" },
+                                    initial: { opacity: 0, rotateX: 90, scale: 0.95, filter: "blur(2px)" },
                                     animate: (i: number) => ({
                                       opacity: 1,
                                       rotateX: 0,
+                                      scale: 1,
                                       filter: "blur(0px)",
-                                      transition: { type: "spring", stiffness: 150, damping: 15, delay: i * 0.05 }
+                                      transition: { type: "spring", stiffness: 150, damping: 15, delay: i * 0.03 }
                                     }),
                                     exit: (i: number) => ({
                                       opacity: 0,
                                       rotateX: -90,
-                                      filter: "blur(4px)",
-                                      transition: { duration: 0.2, delay: i * 0.03 }
+                                      scale: 0.95,
+                                      filter: "blur(2px)",
+                                      transition: { duration: 0.15, delay: i * 0.02 }
                                     })
                                   }}
                                   initial="initial"
                                   animate="animate"
                                   exit="exit"
-                                  style={{ display: "inline-flex", alignItems: "center", transformOrigin: "center center" }}
+                                  style={{ display: "inline-flex", alignItems: "center", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
                                 >
                                   <span className="pulse-dot bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)] !w-5 !h-5 !m-0" style={{ animationDuration: '1s' }} />
                                 </motion.span>
@@ -2714,6 +2731,13 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
+                      onAnimationComplete={() => {
+                        // The PRO FIX: Trigger heavyweight render ONLY after animation finishes
+                        if (!window.__optaDeferredLayer2) {
+                          window.__optaDeferredLayer2 = true;
+                          window.dispatchEvent(new Event('opta-layer-2-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer v1-settings-layer-2 dm-overlay-anim dm-overlay-${designMode}${settingsFullscreen ? " v1-settings-overlay-expanded" : ""}`}
@@ -2731,19 +2755,21 @@ function App() {
                             />
                           }
                         >
-                          <LazySettingsView
-                            designMode={designMode}
-                            selectedTab={settingsActiveTab}
-                            isFullscreen={settingsFullscreen}
-                            onHighlightTab={focusSettingsTab}
-                            onOpenSettingsTab={openSettings}
-                            navigationInputMode={settingsNavigationInputMode}
-                            onPointerActivity={() => {
-                              if (settingsNavigationInputModeRef.current !== "pointer") {
-                                setSettingsNavigationInputMode("pointer");
-                              }
-                            }}
-                          />
+                          <DeferredMount triggerEvent="opta-layer-2-ready">
+                            <LazySettingsView
+                              designMode={designMode}
+                              selectedTab={settingsActiveTab}
+                              isFullscreen={settingsFullscreen}
+                              onHighlightTab={focusSettingsTab}
+                              onOpenSettingsTab={openSettings}
+                              navigationInputMode={settingsNavigationInputMode}
+                              onPointerActivity={() => {
+                                if (settingsNavigationInputModeRef.current !== "pointer") {
+                                  setSettingsNavigationInputMode("pointer");
+                                }
+                              }}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2759,19 +2785,27 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                      onAnimationComplete={() => {
+                        studioSwitchingRef.current = false;
+                        if (!window.__optaDeferredBrowser) {
+                          window.__optaDeferredBrowser = true;
+                          window.dispatchEvent(new Event('opta-browser-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
                         <Suspense fallback={null}>
-                          <LazyBrowserStudio
-                            isFullscreen={studioFullscreen}
-                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            liveHostStatus={browserLiveHostStatus}
-                            onRefreshLiveHost={refreshLiveHost}
-                          />
+                          <DeferredMount triggerEvent="opta-browser-ready">
+                            <LazyBrowserStudio
+                              isFullscreen={studioFullscreen}
+                              onClose={() => { setActiveStudio(null); setStudioFullscreen(false); window.__optaDeferredBrowser = false; }}
+                              liveHostStatus={browserLiveHostStatus}
+                              onRefreshLiveHost={refreshLiveHost}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2786,18 +2820,26 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                      onAnimationComplete={() => {
+                        studioSwitchingRef.current = false;
+                        if (!window.__optaDeferredModels) {
+                          window.__optaDeferredModels = true;
+                          window.dispatchEvent(new Event('opta-models-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
                         <Suspense fallback={null}>
-                          <LazyModelsStudio
-                            isFullscreen={studioFullscreen}
-                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            connection={connection}
-                          />
+                          <DeferredMount triggerEvent="opta-models-ready">
+                            <LazyModelsStudio
+                              isFullscreen={studioFullscreen}
+                              onClose={() => { setActiveStudio(null); setStudioFullscreen(false); window.__optaDeferredModels = false; }}
+                              connection={connection}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2812,18 +2854,26 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                      onAnimationComplete={() => {
+                        studioSwitchingRef.current = false;
+                        if (!window.__optaDeferredAtpo) {
+                          window.__optaDeferredAtpo = true;
+                          window.dispatchEvent(new Event('opta-atpo-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
                         <Suspense fallback={null}>
-                          <LazyAtpoStudio
-                            isFullscreen={studioFullscreen}
-                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            connection={connection}
-                          />
+                          <DeferredMount triggerEvent="opta-atpo-ready">
+                            <LazyAtpoStudio
+                              isFullscreen={studioFullscreen}
+                              onClose={() => { setActiveStudio(null); setStudioFullscreen(false); window.__optaDeferredAtpo = false; }}
+                              connection={connection}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2838,32 +2888,40 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                      onAnimationComplete={() => {
+                        studioSwitchingRef.current = false;
+                        if (!window.__optaDeferredProjects) {
+                          window.__optaDeferredProjects = true;
+                          window.dispatchEvent(new Event('opta-projects-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
                         <Suspense fallback={null}>
-                          <LazyProjectsStudio
-                            isFullscreen={studioFullscreen}
-                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            sessions={sessions}
-                            activeSessionId={activeSessionId}
-                            onSelectSession={(sid) => {
-                              setActiveSessionId(sid);
-                              setActivePage("sessions");
-                            }}
-                            onCreateSession={async (workspace) => {
-                              setActiveStudio(null);
-                              setStudioFullscreen(false);
-                              const ws = workspace === "all" ? "default" : workspace;
-                              const sessionId = await createSession({ workspace: ws });
-                              setActiveSessionId(sessionId);
-                              setActivePage("sessions");
-                            }}
-                            connectionState={connectionState}
-                          />
+                          <DeferredMount triggerEvent="opta-projects-ready">
+                            <LazyProjectsStudio
+                              isFullscreen={studioFullscreen}
+                              onClose={() => { setActiveStudio(null); setStudioFullscreen(false); window.__optaDeferredProjects = false; }}
+                              sessions={sessions}
+                              activeSessionId={activeSessionId}
+                              onSelectSession={(sid) => {
+                                setActiveSessionId(sid);
+                                setActivePage("sessions");
+                              }}
+                              onCreateSession={async (workspace) => {
+                                setActiveStudio(null);
+                                setStudioFullscreen(false);
+                                const ws = workspace === "all" ? "default" : workspace;
+                                const sessionId = await createSession({ workspace: ws });
+                                setActiveSessionId(sessionId);
+                                setActivePage("sessions");
+                              }}
+                              connectionState={connectionState}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2879,21 +2937,29 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
-                      onAnimationComplete={() => { studioSwitchingRef.current = false; }}
+                      onAnimationComplete={() => {
+                        studioSwitchingRef.current = false;
+                        if (!window.__optaDeferredLive) {
+                          window.__optaDeferredLive = true;
+                          window.dispatchEvent(new Event('opta-live-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer v1-settings-overlay--live${studioFullscreen ? " v1-settings-overlay-expanded" : ""}`}
                         style={settingsOverlayDockStyle}
                       >
                         <Suspense fallback={<div className="feature-studio-loading-placeholder" />}>
-                          <LazyLiveStudio
-                            connection={connection}
-                            slot={activeBrowserSlot}
-                            viewerAuthToken={activeBrowserViewerAuthToken}
-                            isFullscreen={studioFullscreen}
-                            onClose={() => { setActiveStudio(null); setStudioFullscreen(false); }}
-                            onToggleFullscreen={() => setStudioFullscreen(!studioFullscreen)}
-                          />
+                          <DeferredMount triggerEvent="opta-live-ready">
+                            <LazyLiveStudio
+                              connection={connection}
+                              slot={activeBrowserSlot}
+                              viewerAuthToken={activeBrowserViewerAuthToken}
+                              isFullscreen={studioFullscreen}
+                              onClose={() => { setActiveStudio(null); setStudioFullscreen(false); window.__optaDeferredLive = false; }}
+                              onToggleFullscreen={() => setStudioFullscreen(!studioFullscreen)}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
@@ -2908,6 +2974,12 @@ function App() {
                       initial="enter"
                       animate="center"
                       exit="exit"
+                      onAnimationComplete={() => {
+                        if (!window.__optaDeferredLayer3) {
+                          window.__optaDeferredLayer3 = true;
+                          window.dispatchEvent(new Event('opta-layer-3-ready'));
+                        }
+                      }}
                     >
                       <div
                         className={`v1-settings-overlay v1-settings-layer v1-settings-layer-3 dm-overlay-anim dm-overlay-${designMode}${settingsFullscreen ? " v1-settings-overlay-expanded" : ""}`}
@@ -2927,27 +2999,29 @@ function App() {
                             />
                           }
                         >
-                          <LazySettingsModal
-                            embedded
-                            isOpen
-                            isDeepLayer
-                            isFullscreen={settingsFullscreen}
-                            activeTab={settingsActiveTab}
-                            initialTab={settingsActiveTab}
-                            isSettingEditMode={settingsLayer3EditMode}
-                            onActiveTabChange={focusSettingsTab}
-                            onBackLayer={() => goToSettingsLayer(2)}
-                            onClose={() => goToSettingsLayer(1)}
-                            connection={connection}
-                            connectionState={connectionState}
-                            defaultSessionId={activeSessionId}
-                            onManageTiles={() => widgetLayout.toggleEditMode()}
-                            onSaveConnection={(conn) => {
-                              setConnection(conn);
-                              setNotice("Daemon connection updated");
-                              void refreshNow();
-                            }}
-                          />
+                          <DeferredMount triggerEvent="opta-layer-3-ready">
+                            <LazySettingsModal
+                              embedded
+                              isOpen
+                              isDeepLayer
+                              isFullscreen={settingsFullscreen}
+                              activeTab={settingsActiveTab}
+                              initialTab={settingsActiveTab}
+                              isSettingEditMode={settingsLayer3EditMode}
+                              onActiveTabChange={focusSettingsTab}
+                              onBackLayer={() => goToSettingsLayer(2)}
+                              onClose={() => goToSettingsLayer(1)}
+                              connection={connection}
+                              connectionState={connectionState}
+                              defaultSessionId={activeSessionId}
+                              onManageTiles={() => widgetLayout.toggleEditMode()}
+                              onSaveConnection={(conn) => {
+                                setConnection(conn);
+                                setNotice("Daemon connection updated");
+                                void refreshNow();
+                              }}
+                            />
+                          </DeferredMount>
                         </Suspense>
                       </div>
                     </motion.div>
