@@ -6818,30 +6818,39 @@ button.active,
   color: var(--opta-text-secondary);
 }
 
-.pp-workspace-header {
+.pp-workspace-group {
+  margin-bottom: 0.5rem;
+}
+
+.pp-workspace-label-btn {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0.4rem 1rem;
+  gap: 0.4rem;
+  padding: 0.35rem 1rem 0.35rem 1.25rem;
+  width: 100%;
+  background: transparent;
+  border: none;
   cursor: pointer;
-}
-
-.pp-ws-left {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.pp-ws-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
-.pp-ws-name {
-  font-size: 0.8rem;
+  text-align: left;
+  border-radius: 6px;
+  color: var(--opta-text-secondary);
+  font-family: "Sora", sans-serif;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: var(--opta-text-primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.2s ease;
+}
+
+.pp-workspace-label-text {
+  flex: 1;
+}
+
+.pp-workspace-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 0.25rem;
 }
 
 .pp-session {
