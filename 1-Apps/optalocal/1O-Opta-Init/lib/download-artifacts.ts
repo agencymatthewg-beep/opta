@@ -21,10 +21,10 @@ const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-w
 const CLI_VERSION = "0.5.0-alpha.15";
 const CLI_INSTALLER_ENDPOINT = "/downloads/opta-cli/latest";
 
-// Latest Opta Code Desktop — v0.2.1 (2026-03-07)
-const CODE_VERSION = "0.2.1";
-const CODE_MACOS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_aarch64.dmg";
-const CODE_WINDOWS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_x64-setup.exe";
+// Latest Opta Code Desktop — v0.2.2 (2026-03-07)
+const CODE_VERSION = "0.2.2";
+const CODE_MACOS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.2/Opta.Code.Desktop.Universal_0.2.2_aarch64.dmg";
+const CODE_WINDOWS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.2/Opta.Code.Desktop.Universal_0.2.2_x64-setup.exe";
 
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
   init: {
