@@ -2,6 +2,7 @@ import type { LmxConnectionState } from './connection.js';
 import { probeLmxConnection } from './connection.js';
 import { discoverLmxHosts } from './mdns-discovery.js';
 import { prioritizeHostsByProfile, recordEndpointProbeOutcome } from './endpoint-profile.js';
+import { canAttempt, recordFailure, recordSuccess } from './circuit-breaker.js';
 import type { AdminKeysByHost } from './admin-keys.js';
 
 export interface LmxEndpointConfig {
@@ -331,11 +332,27 @@ export async function resolveLmxEndpoint(
 
     for (const [index, host] of candidates.entries()) {
       const source = host.toLowerCase() === primaryHost.toLowerCase() ? 'primary' : 'fallback';
+      if (!canAttempt(host, config.port)) {
+        // Circuit open — fast-fail without waiting for probe timeout
+        handleOutcome({
+          host,
+          index,
+          source,
+          state: 'disconnected',
+          completionOrder: completionOrder++,
+        });
+        continue;
+      }
       void probeLmxConnection(host, config.port, {
         timeoutMs,
         adminKey: config.adminKey,
         adminKeysByHost: config.adminKeysByHost,
       }).then((probe) => {
+        if (probe.state === 'disconnected') {
+          recordFailure(host, config.port);
+        } else {
+          recordSuccess(host, config.port);
+        }
         handleOutcome({
           host,
           index,
@@ -345,6 +362,7 @@ export async function resolveLmxEndpoint(
           wsUrl: probe.discovery?.endpoints?.websocket_url,
         });
       }).catch(() => {
+        recordFailure(host, config.port);
         handleOutcome({
           host,
           index,

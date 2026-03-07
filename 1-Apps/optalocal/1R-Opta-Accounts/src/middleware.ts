@@ -42,7 +42,7 @@ function createNonce(): string {
   return btoa(binary);
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const nonce = createNonce();
   const contentSecurityPolicy = buildContentSecurityPolicy(nonce);
 

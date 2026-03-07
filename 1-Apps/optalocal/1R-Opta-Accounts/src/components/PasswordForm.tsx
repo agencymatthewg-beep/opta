@@ -40,8 +40,13 @@ export function PasswordForm({ mode, redirectAfter }: PasswordFormProps) {
           setSuccess(true);
           return;
         }
-        router.push(redirectAfter ?? '/profile');
-        router.refresh();
+        const target = redirectAfter ?? '/profile';
+        if (target.startsWith('/cli/callback')) {
+          window.location.href = target;
+        } else {
+          router.push(target);
+          router.refresh();
+        }
       } else {
         setError(result.error ?? 'Something went wrong.');
       }
