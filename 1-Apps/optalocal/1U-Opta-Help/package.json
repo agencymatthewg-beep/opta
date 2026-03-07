@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3006",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "npx serve out -l 3006",
     "sync:learn-guides": "node scripts/sync-learn-guides-manifest.mjs",
     "validate:learn-links": "node scripts/validate-learn-links.mjs",

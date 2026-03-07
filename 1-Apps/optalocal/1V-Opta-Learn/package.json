@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev -p 3007",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "next start --port 3007",
     "guide:new": "node ./scripts/new-guide.mjs",
     "guides:inventory": "node ./scripts/guides-inventory.mjs",

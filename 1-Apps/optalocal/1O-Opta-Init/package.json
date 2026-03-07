@@ -26,7 +26,7 @@
     "validate:release-contract:strict": "npm run validate:release-manifests && npm run validate:manager-update-metadata:strict && npm run validate:manager-update-links:strict && npm run validate:manifest-links && npm run validate:public-contract",
     "check:release:published": "npm run validate:release-contract",
     "prebuild": "npm run validate:release-manifests && npm run validate:manager-update-metadata && npm run sync:desktop-manifests && npm run sync:manager-updates && npm run sync:vercel-redirects && npm run generate:rss",
-    "build": "next build --webpack",
+    "build": "next build",
     "start": "node scripts/start-static.mjs --port 3001",
     "lint": "eslint .",
     "test:smoke": "node --test tests/smoke.test.mjs",
