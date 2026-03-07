@@ -93,7 +93,8 @@ export async function buildSystemPrompt(
   config: OptaConfig,
   cwd?: string,
   mode?: string,
-  runtime?: CapabilityManifestRuntimeContext
+  runtime?: CapabilityManifestRuntimeContext,
+  extraDirs?: string[]
 ): Promise<string> {
   const workingDir = cwd ?? process.cwd();
 
@@ -110,6 +111,34 @@ Rules:
 - When the task is complete, respond with a final summary (no tool calls)
 
 Working directory: ${workingDir}`;
+
+  // Embed top-level structure for each extra directory (--add-dir)
+  if (extraDirs && extraDirs.length > 0) {
+    const { readdir } = await import('fs/promises');
+    const { resolve } = await import('path');
+    const extraBlocks: string[] = [];
+
+    for (const dir of extraDirs) {
+      const absDir = resolve(dir);
+      try {
+        const entries = await readdir(absDir, { withFileTypes: true });
+        const lines = entries
+          .sort((a, b) => {
+            // Directories first, then files
+            if (a.isDirectory() !== b.isDirectory()) return a.isDirectory() ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          })
+          .map((e) => `  ${e.isDirectory() ? '[dir]' : '[file]'} ${e.name}`);
+        extraBlocks.push(`Additional directory: ${absDir}\n${lines.join('\n')}`);
+      } catch {
+        extraBlocks.push(`Additional directory: ${absDir} (could not be read)`);
+      }
+    }
+
+    if (extraBlocks.length > 0) {
+      prompt += `\n\n${extraBlocks.join('\n\n')}`;
+    }
+  }
 
   if (config.autonomy.level > 1 || config.autonomy.mode === 'ceo') {
     prompt += `\n\n${buildAutonomyPromptBlock(config)}`;

@@ -449,6 +449,7 @@ export const OptaConfigSchema = z.object({
         event: z.enum([
           'session.start',
           'session.end',
+          'turn.done',
           'tool.pre',
           'tool.post',
           'compact',

@@ -85,6 +85,7 @@ program
   .option('-a, --auto', 'auto-accept file edits without prompting')
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
+  .option('--add-dir <path>', 'add an extra directory to context (repeatable)', (v, acc: string[] = []) => [...acc, v], [])
   .hook('preAction', (thisCommand) => {
     const opts = thisCommand.opts<{ verbose?: boolean; debug?: boolean }>();
     if (opts.verbose) setVerbose(true);
@@ -123,6 +124,7 @@ program
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
   .option('--tui', 'launch full-screen terminal UI (Ink)')
+  .option('--add-dir <path>', 'add an extra directory to context (repeatable)', (v, acc: string[] = []) => [...acc, v], [])
   .action(async (opts: ChatCommandOptions) => {
     await applyDeviceOption(opts);
     await runChat(opts);
@@ -144,6 +146,7 @@ program
   .option('-a, --auto', 'auto-accept file edits without prompting')
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
+  .option('--add-dir <path>', 'add an extra directory to context (repeatable)', (v, acc: string[] = []) => [...acc, v], [])
   .action(async (opts: ChatCommandOptions) => {
     await applyDeviceOption(opts);
     await runChat({ ...opts, tui: true });
@@ -191,6 +194,7 @@ type ChatCommandOptions = {
   dangerous?: boolean;
   yolo?: boolean;
   tui?: boolean;
+  addDir?: string[];
 };
 
 async function runChat(opts: ChatCommandOptions): Promise<void> {
@@ -213,6 +217,7 @@ interface DoCommandOptions extends DeviceOption {
   auto?: boolean;
   dangerous?: boolean;
   yolo?: boolean;
+  addDir?: string[];
 }
 
 interface EmbedCommandOptions extends DeviceOption {
@@ -456,6 +461,7 @@ program
   .option('-a, --auto', 'auto-accept file edits without prompting')
   .option('--dangerous', 'bypass all permission prompts')
   .option('--yolo', 'alias for --dangerous')
+  .option('--add-dir <path>', 'add an extra directory to context (repeatable)', (v, acc: string[] = []) => [...acc, v], [])
   .addHelpText(
     'after',
     `

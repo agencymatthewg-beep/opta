@@ -58,6 +58,7 @@ vi.mock('../../src/hooks/integration.js', () => ({
   createHookManager: vi.fn(() => ({})),
   fireSessionStart: vi.fn(async () => undefined),
   fireSessionEnd: vi.fn(async () => undefined),
+  fireTurnDone: vi.fn(async () => undefined),
   fireCompact: vi.fn(async () => undefined),
   fireError: vi.fn(async () => undefined),
 }));

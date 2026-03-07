@@ -58,6 +58,7 @@ interface ChatOptions {
   dangerous?: boolean;
   yolo?: boolean;
   tui?: boolean;
+  addDir?: string[];
 }
 
 export type OptaMode = 'normal' | 'plan' | 'review' | 'research' | 'auto-accept';
@@ -1270,6 +1271,7 @@ export async function startChat(opts: ChatOptions): Promise<void> {
           images.length > 0
             ? images.map((img) => ({ base64: img.base64, mimeType: img.mimeType, name: img.name }))
             : undefined,
+        extraDirs: opts.addDir && opts.addDir.length > 0 ? opts.addDir : undefined,
       });
 
       session.messages = result.messages;

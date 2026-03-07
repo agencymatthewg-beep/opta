@@ -13,6 +13,7 @@ import { execa } from 'execa';
 export type HookEvent =
   | 'session.start'
   | 'session.end'
+  | 'turn.done'
   | 'tool.pre'
   | 'tool.post'
   | 'compact'
@@ -35,6 +36,7 @@ export interface HookContext {
   tool_result?: string;
   error_message?: string;
   model?: string;
+  turn_index?: number;
 }
 
 export interface HookResult {
@@ -186,6 +188,7 @@ export class HookManager {
     if (context.tool_args) env['OPTA_TOOL_ARGS'] = context.tool_args;
     if (context.tool_result) env['OPTA_TOOL_RESULT'] = context.tool_result.slice(0, 2048);
     if (context.error_message) env['OPTA_ERROR'] = context.error_message;
+    if (context.turn_index !== undefined) env['OPTA_TURN_INDEX'] = String(context.turn_index);
 
     return env;
   }

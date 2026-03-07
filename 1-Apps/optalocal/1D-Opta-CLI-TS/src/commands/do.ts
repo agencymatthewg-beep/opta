@@ -35,6 +35,7 @@ interface DoOptions {
   dangerous?: boolean;
   yolo?: boolean;
   mode?: string;
+  addDir?: string[];
 }
 
 type DaemonSessionMode = ClientSubmitTurn['mode'];
@@ -208,7 +209,11 @@ export async function executeTask(task: string[], opts: DoOptions): Promise<void
         console.error(chalk.yellow(`⚠ daemon path unavailable: ${reason}`));
         console.error(chalk.dim('  Falling back to local agent loop for this run.'));
       }
-      const result = await agentLoop(activeTaskStr, config, { silent, mode: opts.mode });
+      const result = await agentLoop(activeTaskStr, config, {
+        silent,
+        mode: opts.mode,
+        extraDirs: opts.addDir && opts.addDir.length > 0 ? opts.addDir : undefined,
+      });
       const assistantMsgs = result.messages.filter((m) => m.role === 'assistant');
       const finalMsg = assistantMsgs[assistantMsgs.length - 1];
       doResult = {

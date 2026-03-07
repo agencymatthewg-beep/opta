@@ -22,6 +22,7 @@ import {
   createHookManager,
   fireSessionStart,
   fireSessionEnd,
+  fireTurnDone,
   fireCompact,
   fireError,
   type SessionContext,
@@ -101,6 +102,12 @@ export interface AgentLoopOptions {
   onSubAgentDone?: (agentId: string, result: string) => void;
   /** Called after each successfully executed browser MCP action. Used to stream events to the TUI. */
   onBrowserEvent?: (toolName: string, sessionId: string) => void;
+  /**
+   * Extra directories to include in the agent's context (analogous to --add-dir in Claude Code).
+   * Each directory's top-level structure is listed in the system prompt so the model is
+   * aware of files and structure outside the primary working directory.
+   */
+  extraDirs?: string[];
 }
 
 export interface AgentLoopResult {
@@ -383,7 +390,7 @@ export async function agentLoop(
     const maxToolCalls = options?.subAgentContext?.budget.maxToolCalls ?? 15;
     systemPrompt = buildSubAgentPrompt(task, cwd, maxToolCalls);
   } else {
-    systemPrompt = await buildSystemPrompt(effectiveConfig, undefined, options?.mode);
+    systemPrompt = await buildSystemPrompt(effectiveConfig, undefined, options?.mode, undefined, options?.extraDirs);
   }
 
   // If an agent profile is active, append its system prompt suffix
@@ -1008,6 +1015,7 @@ export async function agentLoop(
         }
 
         statusBar?.clear();
+        await fireTurnDone(hooks, sessionCtx, autonomyTurnCount).catch(() => {});
         break;
       }
 

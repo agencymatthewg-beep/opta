@@ -104,6 +104,17 @@ export async function fireToolPost(
   });
 }
 
+export async function fireTurnDone(
+  mgr: HookManager,
+  session: SessionContext,
+  turnIndex: number,
+): Promise<HookResult> {
+  return mgr.fire('turn.done', {
+    ...baseContext(session, 'turn.done'),
+    turn_index: turnIndex,
+  });
+}
+
 export async function fireCompact(
   mgr: HookManager,
   session: SessionContext,
