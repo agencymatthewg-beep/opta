@@ -10,7 +10,6 @@ const nextConfig: NextConfig = {
   images: {
     unoptimized: true,
   },
-  outputFileTracingRoot: path.join(configDir, '../../..'),
 }
 
 export default nextConfig
