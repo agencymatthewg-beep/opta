@@ -30,11 +30,11 @@ import {
 import {
     scanLanSubnet,
     deriveSubnetBase,
-    discoverLmxViaMdnsHints,
     type LanScanResult,
     type LanScanProgress,
     type LmxDiscoveryInfo,
 } from "../../lib/lanScanner";
+import { discoverLmxCandidates } from "../../lib/discovery";
 import type { DaemonConnectionOptions } from "../../types";
 import {
     LMX_DEFAULT_PORT,
@@ -192,7 +192,8 @@ export function ConnectionAddressBook({
         scanAbortRef.current = abortCtrl;
 
         // Phase 1: mDNS hints (instant — probes .local hostnames via OS Bonjour)
-        const lmxFound = await discoverLmxViaMdnsHints(
+        const lmxFound = await discoverLmxCandidates(
+            activeConnection,
             [],
             (info) => setMdnsResults((prev) => [...prev, info]),
         );
@@ -396,11 +397,11 @@ export function ConnectionAddressBook({
                     </div>
                 </div>
 
-                {/* mDNS instant results (LMX instances) */}
+                {/* Instant LMX discovery results */}
                 {mdnsResults.length > 0 && (
                     <div style={{ marginBottom: "0.75rem", border: "1px solid rgba(16,185,129,0.3)", borderRadius: "8px", overflow: "hidden" }}>
                         <div style={{ padding: "6px 10px", background: "rgba(16,185,129,0.08)", fontSize: "0.73rem", color: "#10b981", borderBottom: "1px solid rgba(16,185,129,0.15)", display: "flex", alignItems: "center", gap: "0.4rem" }}>
-                            <Wifi size={12} /> Discovered via mDNS (Bonjour) — {mdnsResults.length} LMX server{mdnsResults.length !== 1 ? "s" : ""}
+                            <Wifi size={12} /> Discovered LMX endpoints — {mdnsResults.length} server{mdnsResults.length !== 1 ? "s" : ""}
                         </div>
                         {mdnsResults.map((r) => {
                             const alreadySaved = entries.some((e) => e.host === r.host && e.port === r.port);
@@ -414,6 +415,9 @@ export function ConnectionAddressBook({
                                             {r.machineName ?? r.host}:{r.port}
                                         </span>
                                         <span style={{ fontSize: "0.73rem", color: "#10b981", marginLeft: "0.5rem" }}>{r.latencyMs}ms</span>
+                                        <span style={{ fontSize: "0.72rem", color: "#a1a1aa", marginLeft: "0.5rem" }}>
+                                            {r.via === "daemon" ? "via daemon" : "via Bonjour"}
+                                        </span>
                                         {r.loadedModelCount != null && (
                                             <span style={{ fontSize: "0.72rem", color: "#a1a1aa", marginLeft: "0.5rem" }}>{r.loadedModelCount} model{r.loadedModelCount !== 1 ? "s" : ""} loaded</span>
                                         )}

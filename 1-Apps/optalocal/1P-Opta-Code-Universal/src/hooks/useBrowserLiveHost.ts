@@ -48,10 +48,9 @@ export function useBrowserLiveHost(connection?: DaemonConnectionOptions) {
     if (inFlightRef.current) return;
     inFlightRef.current = true;
     try {
-      const daemonStatus = connection
+      const activeStatus = connection
         ? await fetchStatusFromDaemon(connection)
-        : null;
-      const activeStatus = daemonStatus ?? (await fetchBrowserLiveHostStatus());
+        : await fetchBrowserLiveHostStatus();
       setStatus(activeStatus);
       nextPollDelayRef.current = activeStatus?.running
         ? FAST_POLL_INTERVAL_MS

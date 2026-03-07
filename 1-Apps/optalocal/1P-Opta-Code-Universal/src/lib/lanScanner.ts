@@ -23,7 +23,7 @@ export interface LmxDiscoveryInfo {
     loadedModelCount?: number;
     adminKeyRequired?: boolean;
     preferredBaseUrl?: string;
-    via: "mdns-hint" | "subnet-scan";
+    via: "daemon" | "mdns-hint" | "subnet-scan";
 }
 
 export interface LanScanResult {

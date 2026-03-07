@@ -82,6 +82,30 @@ function parseBoolean(raw: unknown, fallback: boolean): boolean {
   return fallback;
 }
 
+function normalizeDiscoveryTarget(
+  discovery: DaemonLmxDiscoveryResponse | null,
+  connection: DaemonConnectionOptions,
+): LmxTargetConfig {
+  const candidate = discovery?.target;
+  if (!candidate) {
+    return {
+      host: connection.host,
+      port: connection.port,
+      fallbackHosts: [],
+      autoDiscover: true,
+    };
+  }
+  return {
+    host:
+      typeof candidate.host === "string" && candidate.host.trim().length > 0
+        ? candidate.host.trim()
+        : connection.host,
+    port: parsePort(candidate.port, connection.port),
+    fallbackHosts: parseHostList(candidate.fallbackHosts),
+    autoDiscover: parseBoolean(candidate.autoDiscover, true),
+  };
+}
+
 export interface UseModelsResult {
   lmxStatus: DaemonLmxStatusResponse | null;
   lmxDiscovery: DaemonLmxDiscoveryResponse | null;
@@ -159,24 +183,12 @@ export function useModels(
         modelsRes,
         memoryRes,
         availableRes,
-        hostRaw,
-        portRaw,
-        fallbackHostsRaw,
-        autoDiscoverRaw,
       ] = await Promise.all([
         daemonClient.lmxStatus(connection).catch(() => null),
         daemonClient.lmxDiscovery(connection).catch(() => null),
         daemonClient.lmxModels(connection).catch(() => null),
         daemonClient.lmxMemory(connection).catch(() => null),
         daemonClient.lmxAvailable(connection).catch(() => null),
-        daemonClient.configGet(connection, "connection.host").catch(() => null),
-        daemonClient.configGet(connection, "connection.port").catch(() => null),
-        daemonClient
-          .configGet(connection, "connection.fallbackHosts")
-          .catch(() => []),
-        daemonClient
-          .configGet(connection, "connection.autoDiscover")
-          .catch(() => true),
       ]);
 
       if (!mountedRef.current || epoch !== refreshEpochRef.current) {
@@ -201,16 +213,7 @@ export function useModels(
         setLmxDiscovery(null);
         setLmxEndpointCandidates([]);
       }
-      const nextTarget: LmxTargetConfig = {
-        host:
-          typeof hostRaw === "string" && hostRaw.trim().length > 0
-            ? hostRaw.trim()
-            : connection.host,
-        port: parsePort(portRaw, connection.port),
-        fallbackHosts: parseHostList(fallbackHostsRaw),
-        autoDiscover: parseBoolean(autoDiscoverRaw, true),
-      };
-      setLmxTarget(nextTarget);
+      setLmxTarget(normalizeDiscoveryTarget(discoveryRes, connection));
       setLmxReachable(anyReachable);
       if (!anyReachable) {
         setError("LMX server unreachable");
