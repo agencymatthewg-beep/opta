@@ -146,7 +146,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           projectPath: 1-Apps/optalocal/1P-Opta-Code-Universal
-          tauriScript: npx tauri
+          tauriScript: pnpm exec tauri
       - name: Upload Windows installer artifact
         uses: actions/upload-artifact@v4
         with:
