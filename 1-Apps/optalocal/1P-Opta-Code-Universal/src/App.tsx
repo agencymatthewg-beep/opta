@@ -11,7 +11,7 @@ import {
 import { useLocalStorage } from "./hooks/useLocalStorage";
 import { CommandPalette } from "./components/CommandPalette";
 import { Composer } from "./components/Composer";
-import { Download } from "lucide-react";
+import { Download, ChevronRight } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { TimelineCards } from "./components/TimelineCards";
 import { ProjectPane } from "./components/sidebars/ProjectPane";
@@ -2619,30 +2619,98 @@ function App() {
                       <b>Ctrl+S</b> Settings · <b>Ctrl+B</b> Browser · <b>Ctrl+L</b> Live · <b>Ctrl+M</b> Models · <b>Ctrl+A</b> Atpo
                     </div>
                   )}
-                  <div className="v1-branding">
-                    <div
-                      className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
-                    >
-                      {(() => {
-                        const word =
-                          activeStudio === "browser" ? "BROWSER" :
-                            activeStudio === "models" ? "MODELS" :
-                              activeStudio === "projects" ? "PROJECT MANAGER" :
-                                activeStudio === "atpo" ? "ATPO" :
-                                  activeStudio === "live" ? "LIVE" : "OPTA";
-                        const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
-                        return (
-                          <div className={`v1-brand-word${wordClass}`} aria-label={word} style={{ perspective: "1000px" }}>
-                            <AnimatePresence mode="wait">
-                              {word.split("").map((letter, index) => {
-                                if (letter === " ") {
-                                  return <span key={`${word}-space-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
-                                }
-                                return (
+                  {connectionState !== "connected" ? (
+                    <div className="v1-offline-state">
+                      <motion.div
+                        className="opta-diagnostic-grid"
+                        initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                      >
+                        <div className="grid-header">
+                          <span className="sys-status">SYS_STATUS</span>
+                          <div className="status-badge"><div className="status-dot"></div> AWAITING_CONNECTION</div>
+                        </div>
+                        <div className="grid-content">
+                          Unable to establish WebSocket IPC with local Opta Daemon. All cognitive functions and tool delegates are suspended.
+                        </div>
+                        <div className="error-log">
+                          &gt; Attempting {connection.host}:{connection.port}... [ERR_CONNECTION_REFUSED]<br />
+                          &gt; Polling network interfaces... [NO_RESPONSE]<br />
+                          &gt; Local environment isolated.
+                        </div>
+                        <div className="action-row">
+                          <button className="action-btn primary" onClick={() => window.open(`http://${connection.host}:${connection.port}`, '_blank')} type="button">Launch Local Daemon <ChevronRight size={14} style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} /></button>
+                          <button className="action-btn" onClick={() => openSettings("connection-network")} type="button">Network Config</button>
+                        </div>
+                      </motion.div>
+                    </div>
+                  ) : (
+                    <div className="v1-branding">
+                      <div
+                        className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
+                      >
+                        {(() => {
+                          const word =
+                            activeStudio === "browser" ? "BROWSER" :
+                              activeStudio === "models" ? "MODELS" :
+                                activeStudio === "projects" ? "PROJECT MANAGER" :
+                                  activeStudio === "atpo" ? "ATPO" :
+                                    activeStudio === "live" ? "LIVE" : "OPTA";
+                          const wordClass = activeStudio ? ` v1-brand-word--${activeStudio}` : "";
+                          return (
+                            <div className={`v1-brand-word${wordClass}`} aria-label={word} style={{ perspective: "1000px" }}>
+                              <AnimatePresence mode="wait">
+                                {word.split("").map((letter, index) => {
+                                  if (letter === " ") {
+                                    return <span key={`${word}-space-${index}`} style={{ width: "0.5em", display: "inline-block" }} aria-hidden="true" />;
+                                  }
+                                  return (
+                                    <motion.span
+                                      key={`${word}-${index}`}
+                                      className={`v1-brand-letter v1-brand-letter-${index + 1}`}
+                                      custom={index}
+                                      variants={{
+                                        initial: { opacity: 0, rotateX: 90, scale: 0.95, filter: "blur(2px)" },
+                                        animate: (i: number) => ({
+                                          opacity: 1,
+                                          rotateX: 0,
+                                          scale: 1,
+                                          filter: "blur(0px)",
+                                          transition: {
+                                            type: "spring",
+                                            stiffness: 150,
+                                            damping: 15,
+                                            delay: i * 0.03
+                                          }
+                                        }),
+                                        exit: (i: number) => ({
+                                          opacity: 0,
+                                          rotateX: -90,
+                                          scale: 0.95,
+                                          filter: "blur(2px)",
+                                          transition: {
+                                            duration: 0.15,
+                                            delay: i * 0.02
+                                          }
+                                        })
+                                      }}
+                                      initial="initial"
+                                      animate="animate"
+                                      exit="exit"
+                                      style={{ display: "inline-block", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
+                                    >
+                                      {letter}
+                                    </motion.span>
+                                  );
+                                })}
+
+                                {/* Recording Circle for LIVE Studio */}
+                                {word === "LIVE" && (
                                   <motion.span
-                                    key={`${word}-${index}`}
-                                    className={`v1-brand-letter v1-brand-letter-${index + 1}`}
-                                    custom={index}
+                                    key="live-recording-circle"
+                                    className="v1-brand-letter ml-4"
+                                    custom={word.length}
                                     variants={{
                                       initial: { opacity: 0, rotateX: 90, scale: 0.95, filter: "blur(2px)" },
                                       animate: (i: number) => ({
@@ -2650,72 +2718,32 @@ function App() {
                                         rotateX: 0,
                                         scale: 1,
                                         filter: "blur(0px)",
-                                        transition: {
-                                          type: "spring",
-                                          stiffness: 150,
-                                          damping: 15,
-                                          delay: i * 0.03
-                                        }
+                                        transition: { type: "spring", stiffness: 150, damping: 15, delay: i * 0.03 }
                                       }),
                                       exit: (i: number) => ({
                                         opacity: 0,
                                         rotateX: -90,
                                         scale: 0.95,
                                         filter: "blur(2px)",
-                                        transition: {
-                                          duration: 0.15,
-                                          delay: i * 0.02
-                                        }
+                                        transition: { duration: 0.15, delay: i * 0.02 }
                                       })
                                     }}
                                     initial="initial"
                                     animate="animate"
                                     exit="exit"
-                                    style={{ display: "inline-block", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
+                                    style={{ display: "inline-flex", alignItems: "center", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
                                   >
-                                    {letter}
+                                    <span className="pulse-dot bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)] !w-5 !h-5 !m-0" style={{ animationDuration: '1s' }} />
                                   </motion.span>
-                                );
-                              })}
-
-                              {/* Recording Circle for LIVE Studio */}
-                              {word === "LIVE" && (
-                                <motion.span
-                                  key="live-recording-circle"
-                                  className="v1-brand-letter ml-4"
-                                  custom={word.length}
-                                  variants={{
-                                    initial: { opacity: 0, rotateX: 90, scale: 0.95, filter: "blur(2px)" },
-                                    animate: (i: number) => ({
-                                      opacity: 1,
-                                      rotateX: 0,
-                                      scale: 1,
-                                      filter: "blur(0px)",
-                                      transition: { type: "spring", stiffness: 150, damping: 15, delay: i * 0.03 }
-                                    }),
-                                    exit: (i: number) => ({
-                                      opacity: 0,
-                                      rotateX: -90,
-                                      scale: 0.95,
-                                      filter: "blur(2px)",
-                                      transition: { duration: 0.15, delay: i * 0.02 }
-                                    })
-                                  }}
-                                  initial="initial"
-                                  animate="animate"
-                                  exit="exit"
-                                  style={{ display: "inline-flex", alignItems: "center", transformOrigin: "center center", willChange: "transform, opacity, filter" }}
-                                >
-                                  <span className="pulse-dot bg-red-500 shadow-[0_0_12px_rgba(239,68,68,0.7)] !w-5 !h-5 !m-0" style={{ animationDuration: '1s' }} />
-                                </motion.span>
-                              )}
-                            </AnimatePresence>
-                          </div>
-                        );
-                      })()}
+                                )}
+                              </AnimatePresence>
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="v1-brand-sub">Code Environment</div>
                     </div>
-                    <div className="v1-brand-sub">Code Environment</div>
-                  </div>
+                  )}
                 </>
               )}
 

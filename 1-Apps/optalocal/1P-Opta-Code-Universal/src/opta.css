@@ -9376,3 +9376,127 @@ button.active,
 .widget-dir-segment:hover {
   background: rgba(251, 191, 36, 0.12);
 }
+
+/* =========================================================================
+   Diagnostic Grid (Offline State)
+   ========================================================================= */
+
+.v1-offline-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+}
+
+.opta-diagnostic-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  width: 600px;
+  max-width: 90%;
+  padding: 2rem;
+  border: 1px solid rgba(82, 82, 91, 0.3);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.opta-diagnostic-grid .grid-header {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(82, 82, 91, 0.3);
+  padding-bottom: 1rem;
+}
+
+.opta-diagnostic-grid .sys-status {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--opta-text-primary);
+}
+
+.opta-diagnostic-grid .status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #f59e0b;
+  /* Opta Amber */
+  font-size: 0.8rem;
+  text-transform: uppercase;
+}
+
+.opta-diagnostic-grid .status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f59e0b;
+  box-shadow: 0 0 8px #f59e0b;
+  animation: pulse-amber 2s infinite;
+}
+
+@keyframes pulse-amber {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.9);
+  }
+}
+
+.opta-diagnostic-grid .grid-content {
+  font-size: 0.85rem;
+  color: var(--opta-text-secondary);
+  line-height: 1.6;
+}
+
+.opta-diagnostic-grid .error-log {
+  color: var(--opta-text-primary);
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1rem;
+  border-radius: 6px;
+  border-left: 2px solid #f59e0b;
+  line-height: 1.5;
+}
+
+.opta-diagnostic-grid .action-row {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.opta-diagnostic-grid .action-btn {
+  flex: 1;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--opta-text-primary);
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+
+.opta-diagnostic-grid .action-btn.primary {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
+  color: #d8b4fe;
+}
+
+.opta-diagnostic-grid .action-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.opta-diagnostic-grid .action-btn.primary:hover {
+  background: rgba(139, 92, 246, 0.25);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
