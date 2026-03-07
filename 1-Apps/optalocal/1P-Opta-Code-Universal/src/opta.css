@@ -9346,3 +9346,16 @@ button.active,
   color: var(--opta-neon-green, #4ade80);
   font-size: 10px;
 }
+.widget-dir-segment {
+  background: transparent;
+  border: none;
+  color: var(--opta-neon-amber, #fbbf24);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  cursor: pointer;
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+.widget-dir-segment:hover {
+  background: rgba(251, 191, 36, 0.12);
+}

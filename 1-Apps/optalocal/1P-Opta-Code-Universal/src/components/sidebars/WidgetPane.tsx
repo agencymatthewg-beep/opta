@@ -13,6 +13,7 @@ import { WidgetModelSwitcher } from "../widgets/WidgetModelSwitcher";
 import { WidgetLatencySparkline } from "../widgets/WidgetLatencySparkline";
 import { WidgetDaemonRing } from "../widgets/WidgetDaemonRing";
 import { WidgetCommandBar } from "../widgets/WidgetCommandBar";
+import { WidgetWorkingDir } from "../widgets/WidgetWorkingDir";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -65,6 +66,8 @@ export function WidgetContent(props: {
             return <WidgetDaemonRing health={connectionHealth ?? null} />;
         case "command-bar":
             return <WidgetCommandBar />;
+        case "working-dir":
+            return <WidgetWorkingDir cwd={projectCwd} />;
         default:
             return (
                 <div className="widget-placeholder">
