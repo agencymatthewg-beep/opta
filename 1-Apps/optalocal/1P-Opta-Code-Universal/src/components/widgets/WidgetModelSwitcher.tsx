@@ -2,6 +2,7 @@ import { Cpu } from "lucide-react";
 import { useState } from "react";
 import { WidgetShell } from "./WidgetShell";
 import { useModels } from "../../hooks/useModels";
+import { daemonClient } from "../../lib/daemonClient";
 import type { DaemonConnectionOptions } from "../../types";
 
 interface Props { connection: DaemonConnectionOptions | null; }
@@ -12,9 +13,13 @@ export function WidgetModelSwitcher({ connection }: Props) {
 
   const switchModel = async (modelId: string) => {
     if (!connection) return;
+    const prev = activeModel;
     setActiveModel(modelId);
-    // TODO: wire to daemonClient.configSet(connection, "model", modelId) when API available
-    console.log("[WidgetModelSwitcher] switch to", modelId);
+    try {
+      await daemonClient.configSet(connection, "model", modelId);
+    } catch {
+      setActiveModel(prev); // revert optimistic update on failure
+    }
   };
 
   return (
