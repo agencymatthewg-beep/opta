@@ -1,4 +1,4 @@
-import type { ActivationState } from "@opta/protocol-shared";
+type ActivationState = "runtime_ready" | "accounts_authenticated" | "bridge_connected" | "code_ready";
 
 export const DASHBOARD_URL = "https://lmx.optalocal.com";
 export const ACCOUNTS_URL = "https://accounts.optalocal.com";
