@@ -3017,6 +3017,7 @@ function App() {
                   onToggleEdit={widgetLayout.toggleEditMode}
                   onRemoveWidget={widgetLayout.removeWidget}
                   onAddWidget={(wid) => widgetLayout.addWidget(wid, "M")}
+                  onMoveWidget={widgetLayout.moveWidget}
                   timelineItems={timelineItems}
                   rawEvents={activeSessionId ? rawEventsBySession[activeSessionId] || [] : []}
                   connection={connection}

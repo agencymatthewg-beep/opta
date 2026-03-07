@@ -7116,6 +7116,24 @@ button.active,
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Drag-and-drop states */
+.wp-tile[draggable="true"] {
+  cursor: grab;
+}
+.wp-tile[draggable="true"]:active {
+  cursor: grabbing;
+}
+.wp-tile.wp-tile-dragging {
+  opacity: 0.35;
+  border-style: dashed;
+  border-color: rgba(139, 92, 246, 0.4);
+}
+.wp-tile.wp-tile-drag-over {
+  border-color: var(--opta-primary);
+  background: rgba(139, 92, 246, 0.08);
+  transform: scale(1.01);
+}
+
 .wp-tile-bento {
   background: transparent;
   border: none;

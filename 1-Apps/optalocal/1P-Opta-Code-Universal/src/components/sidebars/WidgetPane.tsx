@@ -1,3 +1,4 @@
+import { useRef, useState } from "react";
 import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../../types";
 import { WidgetAtpo } from "../widgets/WidgetAtpo";
 import { WidgetCliStream } from "../widgets/WidgetCliStream";
@@ -9,6 +10,7 @@ interface WidgetPaneProps {
     onToggleEdit: () => void;
     onRemoveWidget: (slotId: string) => void;
     onAddWidget: (widgetId: WidgetId) => void;
+    onMoveWidget: (fromIndex: number, toIndex: number) => void;
     timelineItems: TimelineItem[];
     rawEvents: unknown[];
     designMode?: string; // TEMP for prototyping
@@ -51,6 +53,7 @@ export function WidgetPane({
     onToggleEdit,
     onRemoveWidget,
     onAddWidget,
+    onMoveWidget,
     timelineItems,
     rawEvents,
     designMode = "0",
@@ -59,6 +62,37 @@ export function WidgetPane({
     sessionId,
 }: WidgetPaneProps) {
     const hasWidgets = slots.length > 0;
+
+    const dragSourceRef = useRef<number | null>(null);
+    const [draggingIndex, setDraggingIndex] = useState<number | null>(null);
+    const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+    const handleDragStart = (index: number) => {
+        dragSourceRef.current = index;
+        setDraggingIndex(index);
+    };
+    const handleDragEnd = () => {
+        setDraggingIndex(null);
+        setDragOverIndex(null);
+        dragSourceRef.current = null;
+    };
+    const handleDragOver = (e: React.DragEvent) => {
+        e.preventDefault();
+    };
+    const handleDragEnter = (index: number) => {
+        setDragOverIndex(index);
+    };
+    const handleDragLeave = () => {
+        setDragOverIndex(null);
+    };
+    const handleDrop = (toIndex: number) => {
+        if (dragSourceRef.current !== null && dragSourceRef.current !== toIndex) {
+            onMoveWidget(dragSourceRef.current, toIndex);
+        }
+        dragSourceRef.current = null;
+        setDraggingIndex(null);
+        setDragOverIndex(null);
+    };
 
     if (!hasWidgets && !isEditing) {
         return null; // Collapsed — chat takes full width
@@ -91,10 +125,18 @@ export function WidgetPane({
             </div>
 
             <div className={`wp-grid ${isEditing ? "wp-grid-editing" : ""}`}>
-                {slots.map((slot) => (
+                {slots.map((slot, index) => (
                     <div
                         key={slot.id}
-                        className={`wp-tile wp-tile-${slot.size.toLowerCase()} ${designMode === "3" ? "wp-tile-bento" : ""}`}
+                        className={`wp-tile wp-tile-${slot.size.toLowerCase()} ${designMode === "3" ? "wp-tile-bento" : ""} ${draggingIndex === index ? "wp-tile-dragging" : ""} ${dragOverIndex === index && draggingIndex !== index ? "wp-tile-drag-over" : ""}`}
+                        role="listitem"
+                        draggable={isEditing}
+                        onDragStart={() => handleDragStart(index)}
+                        onDragEnd={handleDragEnd}
+                        onDragOver={handleDragOver}
+                        onDragEnter={() => handleDragEnter(index)}
+                        onDragLeave={handleDragLeave}
+                        onDrop={() => handleDrop(index)}
                     >
                         {isEditing && (
                             <button
