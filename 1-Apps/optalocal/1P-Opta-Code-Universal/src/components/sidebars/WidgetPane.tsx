@@ -14,6 +14,7 @@ import { WidgetLatencySparkline } from "../widgets/WidgetLatencySparkline";
 import { WidgetDaemonRing } from "../widgets/WidgetDaemonRing";
 import { WidgetCommandBar } from "../widgets/WidgetCommandBar";
 import { WidgetWorkingDir } from "../widgets/WidgetWorkingDir";
+import { WidgetBrowserSession } from "../widgets/WidgetBrowserSession";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -68,6 +69,8 @@ export function WidgetContent(props: {
             return <WidgetCommandBar />;
         case "working-dir":
             return <WidgetWorkingDir cwd={projectCwd} />;
+        case "browser-session":
+            return <WidgetBrowserSession rawEvents={rawEvents} />;
         default:
             return (
                 <div className="widget-placeholder">
