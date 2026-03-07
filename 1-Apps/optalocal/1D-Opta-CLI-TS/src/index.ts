@@ -1038,6 +1038,35 @@ program
     await init(opts);
   });
 
+const workspaceCmd = program
+  .command('workspace')
+  .description('Manage your Opta Workspace (~/Documents/Opta Workspace)');
+
+workspaceCmd
+  .command('open')
+  .description('Open the Opta Workspace folder in Finder / Explorer')
+  .action(async () => {
+    const { workspaceOpen } = await import('./commands/workspace.js');
+    await workspaceOpen();
+  });
+
+workspaceCmd
+  .command('list')
+  .description('List projects in the Opta Workspace')
+  .action(async () => {
+    const { workspaceList } = await import('./commands/workspace.js');
+    await workspaceList();
+  });
+
+workspaceCmd
+  .command('new <name>')
+  .description('Scaffold a new project in the Opta Workspace (Projects/<name>/)')
+  .option('--open', 'open the project folder after creating it')
+  .action(async (name: string, opts: { open?: boolean }) => {
+    const { workspaceNew } = await import('./commands/workspace.js');
+    await workspaceNew(name, opts);
+  });
+
 program
   .command('memory')
   .description('Manage Opta memory scaffold and synchronization')

@@ -44,3 +44,26 @@ export function getThemesDir(): string {
 export function getLspBinDir(): string {
   return join(getConfigDir(), 'lsp-bin');
 }
+
+/** Init wizard config file: <configDir>/opta-init-config.json */
+export function getInitConfigPath(): string {
+  return join(getConfigDir(), 'opta-init-config.json');
+}
+
+/**
+ * Resolve the Opta Workspace root.
+ * Reads workspacePath from opta-init-config.json, falls back to ~/Documents/Opta Workspace.
+ */
+export async function getWorkspaceRoot(): Promise<string> {
+  const { readFile } = await import('node:fs/promises');
+  try {
+    const raw = await readFile(getInitConfigPath(), 'utf-8');
+    const config = JSON.parse(raw) as { workspacePath?: unknown };
+    if (typeof config.workspacePath === 'string' && config.workspacePath.trim()) {
+      return config.workspacePath.trim();
+    }
+  } catch {
+    // Config not found or unreadable — use default
+  }
+  return join(osHomedir(), 'Documents', 'Opta Workspace');
+}
