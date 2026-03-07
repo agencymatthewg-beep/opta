@@ -51,7 +51,9 @@ jobs:
         run: cargo check
       - name: Cargo test (logic-only modules, no OS keyring deps)
         working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri
-        run: cargo test lmx_mdns config_paths
+        run: |
+          cargo test lmx_mdns -- --nocapture
+          cargo test config_paths -- --nocapture
       - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install --ignore-scripts
