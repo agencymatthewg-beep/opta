@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { TimelineCards } from "./components/TimelineCards";
 import { ProjectPane } from "./components/sidebars/ProjectPane";
 import { WidgetPane } from "./components/sidebars/WidgetPane";
+import { recordCommandUsage } from "./components/widgets/WidgetCommandBar";
 import {
   SETTINGS_TAB_SEQUENCE,
   normalizeSettingsTabId,
@@ -362,6 +363,17 @@ function App() {
   const [showTerminal, setShowTerminal] = useState(false); // Changed initial state from true to false
 
   const [composerDraft, setComposerDraft] = useState("");
+
+  // WidgetCommandBar injects commands via custom event to stay decoupled from Composer
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const cmd = (e as CustomEvent<string>).detail;
+      if (typeof cmd === "string") setComposerDraft(cmd);
+    };
+    window.addEventListener("opta:inject-command", handler);
+    return () => window.removeEventListener("opta:inject-command", handler);
+  }, []);
+
   const [submissionMode, setSubmissionMode] =
     useState<SessionSubmitMode>("chat");
   const [selectedWorkspace, setSelectedWorkspace] = useLocalStorage(
@@ -2367,6 +2379,7 @@ function App() {
         setActivePage("sessions");
       }
       try {
+        if (outbound.startsWith("/")) recordCommandUsage(outbound.split(/\s/)[0]!);
         await submitMessage(outbound, submissionMode, overrides);
         setComposerDraft("");
         setNotice(modeSubmitNotice(submissionMode));
