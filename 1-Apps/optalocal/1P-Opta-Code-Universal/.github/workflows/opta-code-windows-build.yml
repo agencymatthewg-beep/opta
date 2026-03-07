@@ -31,6 +31,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Install Linux system deps (keyring/glib for Rust cargo check)
+        run: sudo apt-get update -y && sudo apt-get install -y libglib2.0-dev libdbus-1-dev pkg-config
       - name: Install CLI workspace dependencies (types only)
         working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
         run: npm install --ignore-scripts
