@@ -45,6 +45,9 @@ jobs:
         run: sudo apt-get update -y && sudo apt-get install -y libglib2.0-dev libdbus-1-dev pkg-config
       - name: Cargo check (fast compile validation)
         working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri
+        env:
+          PKG_CONFIG_PATH: /usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
+          PKG_CONFIG_LIBDIR: /usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig
         run: cargo check
       - name: Cargo test (logic-only modules, no OS keyring deps)
         working-directory: 1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri
