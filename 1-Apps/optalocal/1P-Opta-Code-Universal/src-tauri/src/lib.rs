@@ -10,6 +10,7 @@ mod daemon_ops;
 mod folder_picker;
 mod lmx_mdns;
 mod setup_wizard;
+mod workspace;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -34,6 +35,7 @@ pub fn run() {
             daemon_ops::daemon_action,
             daemon_ops::bootstrap_daemon_connection,
             daemon_ops::read_daemon_logs,
+            workspace::get_workspace_projects,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Opta Code application");

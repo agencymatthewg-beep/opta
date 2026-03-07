@@ -36,6 +36,29 @@ export async function openUrl(url: string): Promise<void> {
 }
 
 /**
+ * openFolder — open a local filesystem path in the OS file manager.
+ *
+ * Uses tauri-plugin-opener's openPath in native builds.
+ * No-ops gracefully in web/dev mode (path can't be opened from browser).
+ */
+export async function openFolder(folderPath: string): Promise<void> {
+    if (!folderPath) return;
+
+    if (typeof window !== "undefined" && "__TAURI__" in window) {
+        try {
+            const { openPath } = await import("@tauri-apps/plugin-opener");
+            await openPath(folderPath);
+            return;
+        } catch (e) {
+            console.warn("[openFolder] tauri-plugin-opener unavailable:", e);
+        }
+    }
+
+    // Web mode: no-op — can't open local paths from a browser tab
+    console.info("[openFolder] Skipped (web mode):", folderPath);
+}
+
+/**
  * handleExternalClick — onClick handler for <a> elements that should open
  * external URLs via openUrl instead of navigating the webview.
  *

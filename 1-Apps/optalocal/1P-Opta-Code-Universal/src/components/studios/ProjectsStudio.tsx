@@ -1,16 +1,28 @@
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, type CSSProperties } from "react";
 import {
     FolderKey,
     FolderGit2,
     FolderLock,
+    FolderOpen,
     Plus,
     RefreshCw,
     Trash2,
     Settings,
     X,
     Play,
+    Target,
+    FileText,
 } from "lucide-react";
-import type { DaemonSessionSummary, DaemonConnectionOptions } from "../../types";
+import type { DaemonSessionSummary } from "../../types";
+import { invokeNative, isNativeDesktop } from "../../lib/runtime";
+import { openFolder } from "../../lib/openUrl";
+
+interface WorkspaceProject {
+    name: string;
+    path: string;
+    has_goal: boolean;
+    has_index: boolean;
+}
 
 const ACCENT = "#f472b6"; // Pink for projects
 
@@ -33,8 +45,29 @@ export function ProjectsStudio({
     onCreateSession,
     connectionState,
 }: ProjectsStudioProps) {
-    const [activeTab, setActiveTab] = useState<"recent" | "workspaces">("workspaces");
+    const [activeTab, setActiveTab] = useState<"projects" | "recent" | "workspaces">("projects");
     const [refreshing, setRefreshing] = useState(false);
+    const [optaProjects, setOptaProjects] = useState<WorkspaceProject[]>([]);
+    const [projectsLoading, setProjectsLoading] = useState(false);
+    const [projectsError, setProjectsError] = useState<string | null>(null);
+
+    const loadOptaProjects = async () => {
+        if (!isNativeDesktop()) return;
+        setProjectsLoading(true);
+        setProjectsError(null);
+        try {
+            const result = await invokeNative<WorkspaceProject[]>("get_workspace_projects");
+            setOptaProjects(result);
+        } catch (e) {
+            setProjectsError(e instanceof Error ? e.message : String(e));
+        } finally {
+            setProjectsLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        void loadOptaProjects();
+    }, []);
 
     // Group sessions by workspace
     const workspaceMap = new Map<string, DaemonSessionSummary[]>();
@@ -65,8 +98,10 @@ export function ProjectsStudio({
 
     const handleRefresh = async () => {
         setRefreshing(true);
-        // Give a small visual delay for the refresh action
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        await Promise.all([
+            loadOptaProjects(),
+            new Promise((resolve) => setTimeout(resolve, 400)),
+        ]);
         setRefreshing(false);
     };
 
@@ -135,7 +170,7 @@ export function ProjectsStudio({
             <div className="feature-studio-content">
                 <div className="feature-studio-section-header">
                     <h3 className="feature-studio-section-title" style={{ color: ACCENT }}>
-                        Opta Workspaces
+                        Projects
                     </h3>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                         <span
@@ -143,7 +178,7 @@ export function ProjectsStudio({
                         />
                         <span style={{ fontSize: 11, color: isConnected ? ACCENT : "#71717a" }}>
                             {isConnected
-                                ? `Daemon Online · ${workspaces.length} workspace${workspaces.length !== 1 ? "s" : ""}`
+                                ? `Daemon Online · ${optaProjects.length} project${optaProjects.length !== 1 ? "s" : ""}`
                                 : "Daemon offline"}
                         </span>
                         <button
@@ -166,13 +201,30 @@ export function ProjectsStudio({
                             style={{ color: ACCENT, borderColor: `${ACCENT}44`, marginLeft: "0.25rem" }}
                         >
                             <Plus size={13} />
-                            New
+                            New Chat
                         </button>
                     </div>
                 </div>
 
-                {/* Tab bar: Workspaces vs Recent */}
+                {/* Tab bar: Opta Projects | Workspaces | Recent Chats */}
                 <div className="feature-studio-tab-bar" style={{ marginTop: "1.25rem" }}>
+                    <button
+                        type="button"
+                        className={`feature-studio-tab ${activeTab === "projects" ? "is-active" : ""}`}
+                        style={
+                            activeTab === "projects"
+                                ? ({
+                                    "--tab-accent": ACCENT,
+                                    color: ACCENT,
+                                    borderColor: `${ACCENT}55`,
+                                } as CSSProperties)
+                                : {}
+                        }
+                        onClick={() => setActiveTab("projects")}
+                    >
+                        <FolderOpen size={13} />
+                        Opta Projects ({optaProjects.length})
+                    </button>
                     <button
                         type="button"
                         className={`feature-studio-tab ${activeTab === "workspaces" ? "is-active" : ""}`}
@@ -188,7 +240,7 @@ export function ProjectsStudio({
                         onClick={() => setActiveTab("workspaces")}
                     >
                         <FolderKey size={13} />
-                        Workspaces ({workspaces.length})
+                        Sessions ({workspaces.length})
                     </button>
                     <button
                         type="button"
@@ -208,6 +260,99 @@ export function ProjectsStudio({
                         Recent Chats ({sessions.length})
                     </button>
                 </div>
+
+                {/* Opta Projects (filesystem) */}
+                {activeTab === "projects" && (
+                    <>
+                        {!isNativeDesktop() ? (
+                            <div className="feature-studio-empty-state">
+                                <FolderOpen size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                                <p>Desktop App Required</p>
+                                <p className="feature-studio-empty-hint">
+                                    Launch the native Opta Code app to browse your Opta Workspace projects.
+                                </p>
+                            </div>
+                        ) : projectsLoading ? (
+                            <div className="feature-studio-empty-state">
+                                <RefreshCw size={22} className="feature-studio-spin" style={{ color: ACCENT, opacity: 0.5 }} />
+                                <p style={{ marginTop: "0.75rem", color: "#71717a", fontSize: 13 }}>Loading projects…</p>
+                            </div>
+                        ) : projectsError ? (
+                            <div className="feature-studio-empty-state">
+                                <FolderOpen size={28} style={{ opacity: 0.25, color: "#f87171" }} />
+                                <p style={{ color: "#f87171" }}>Could not load projects</p>
+                                <p className="feature-studio-empty-hint">{projectsError}</p>
+                            </div>
+                        ) : optaProjects.length > 0 ? (
+                            <div className="feature-studio-model-list">
+                                {optaProjects.map((project) => (
+                                    <div
+                                        key={project.path}
+                                        className="feature-studio-model-row feature-studio-model-row--loaded"
+                                        style={{ borderLeft: `3px solid ${ACCENT}` }}
+                                    >
+                                        <div className="feature-studio-model-info" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+                                            <div style={{ color: ACCENT, background: `${ACCENT}15`, padding: "0.4rem", borderRadius: "8px" }}>
+                                                <FolderOpen size={18} />
+                                            </div>
+                                            <div>
+                                                <span className="feature-studio-model-name" style={{ fontSize: "1rem", fontWeight: 600 }}>
+                                                    {project.name}
+                                                </span>
+                                                <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.25rem", flexWrap: "wrap" }}>
+                                                    {project.has_goal && (
+                                                        <span
+                                                            className="feature-studio-model-badge feature-studio-model-badge--loaded"
+                                                            style={{ background: `${ACCENT}18`, color: ACCENT, borderColor: `${ACCENT}44`, display: "flex", alignItems: "center", gap: 3 }}
+                                                        >
+                                                            <Target size={9} /> Goal
+                                                        </span>
+                                                    )}
+                                                    {project.has_index && (
+                                                        <span
+                                                            className="feature-studio-model-badge"
+                                                            style={{ background: "#ffffff0a", color: "#a1a1aa", borderColor: "#a1a1aa33", display: "flex", alignItems: "center", gap: 3 }}
+                                                        >
+                                                            <FileText size={9} /> Index
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="feature-studio-model-right">
+                                            <button
+                                                type="button"
+                                                className="feature-studio-action-mini"
+                                                onClick={() => void onCreateSession(project.path)}
+                                                style={{ color: ACCENT, borderColor: `${ACCENT}44` }}
+                                                title={`New chat in ${project.name}`}
+                                            >
+                                                <Plus size={11} /> New Chat
+                                            </button>
+                                            <button
+                                                type="button"
+                                                className="feature-studio-action-mini"
+                                                onClick={() => void openFolder(project.path)}
+                                                style={{ color: "#a1a1aa", borderColor: "#a1a1aa44" }}
+                                                title="Open in Finder"
+                                            >
+                                                <FolderOpen size={11} /> Open
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="feature-studio-empty-state">
+                                <FolderOpen size={28} style={{ opacity: 0.25, color: ACCENT }} />
+                                <p>No Projects Yet</p>
+                                <p className="feature-studio-empty-hint">
+                                    Run <code style={{ fontFamily: "JetBrains Mono", fontSize: 11, background: `${ACCENT}15`, padding: "2px 5px", borderRadius: 4 }}>opta workspace new &lt;name&gt;</code> to create your first project.
+                                </p>
+                            </div>
+                        )}
+                    </>
+                )}
 
                 {/* Workspaces List */}
                 {activeTab === "workspaces" && (
@@ -352,8 +497,10 @@ export function ProjectsStudio({
                     className="feature-studio-info-strip"
                     style={{ borderColor: `${ACCENT}22`, color: `${ACCENT}99` }}
                 >
-                    <FolderKey size={12} />
-                    Projects orchestrate isolated session context via the Daemon
+                    <FolderOpen size={12} />
+                    {activeTab === "projects"
+                        ? "Opta Projects live in ~/Documents/Opta Workspace/Projects/"
+                        : "Sessions grouped by workspace — managed by the daemon"}
                 </div>
             </div>
         </div>
