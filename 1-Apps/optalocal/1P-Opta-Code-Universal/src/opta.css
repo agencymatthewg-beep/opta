@@ -9338,6 +9338,10 @@ button.active,
   opacity: 0.4;
   cursor: default;
 }
+.wp-catalog-btn--active {
+  border-color: var(--opta-neon-cyan, #22d3ee);
+  background: rgba(34, 211, 238, 0.08);
+}
 .wp-catalog-btn-check {
   color: var(--opta-neon-green, #4ade80);
   font-size: 10px;

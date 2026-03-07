@@ -8,6 +8,7 @@ import { WidgetLmxStatus } from "../widgets/WidgetLmxStatus";
 import { WidgetContextBar } from "../widgets/WidgetContextBar";
 import { WidgetActiveTool } from "../widgets/WidgetActiveTool";
 import { WidgetSessionMemory } from "../widgets/WidgetSessionMemory";
+import { WidgetModelSwitcher } from "../widgets/WidgetModelSwitcher";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -48,6 +49,8 @@ export function WidgetContent(props: {
             return <WidgetActiveTool rawEvents={rawEvents} />;
         case "session-memory":
             return <WidgetSessionMemory timelineItems={timelineItems} />;
+        case "model-switcher":
+            return <WidgetModelSwitcher connection={connection ?? null} />;
         default:
             return (
                 <div className="widget-placeholder">
