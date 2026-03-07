@@ -30,7 +30,8 @@
     "typecheck": "tsc --noEmit",
     "check": "npm run typecheck && npm run lint && npm run validate:release-contract && npm run validate:docs:live-status",
     "validate:public-contract": "node scripts/validate-public-contract.mjs",
-    "validate:release-contract:local": "npm run validate:release-manifests && npm run validate:manager-update-metadata && npm run validate:manager-update-links"
+    "validate:release-contract:local": "npm run validate:release-manifests && npm run validate:manager-update-metadata && npm run validate:manager-update-links",
+    "release:manager": "node scripts/release-manager.mjs"
   },
   "dependencies": {
     "@tauri-apps/api": "^2.10.1",
