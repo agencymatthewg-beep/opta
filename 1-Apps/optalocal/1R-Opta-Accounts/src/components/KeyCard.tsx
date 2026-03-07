@@ -3,7 +3,7 @@
 import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Bot, Sparkles, Gem, Zap, Search, Cpu, Shield, Globe,
+  Bot, Sparkles, Gem, Zap, Search, Cpu, Shield, Globe, Moon, Mic2,
   Eye, EyeOff, Copy, Trash2, CheckCircle, XCircle, Plus, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -12,7 +12,7 @@ import type { ApiKey } from '@/lib/supabase/key-actions';
 import { getApiKeyValue } from '@/lib/supabase/key-actions';
 
 const ICON_MAP: Record<string, React.ComponentType<{ size?: number; className?: string }>> = {
-  Bot, Sparkles, Gem, Zap, Search, Cpu, Shield, Globe,
+  Bot, Sparkles, Gem, Zap, Search, Cpu, Shield, Globe, Moon, Mic2,
 };
 
 interface KeyCardProps {

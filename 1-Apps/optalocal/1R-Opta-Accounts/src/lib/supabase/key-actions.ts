@@ -272,6 +272,27 @@ async function probeProviderEndpoint(provider: string, key: string): Promise<boo
         });
         return res.ok;
       }
+      case 'minimax': {
+        const res = await fetch('https://api.minimaxi.chat/v1/models', {
+          headers: { authorization: `Bearer ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'kimi': {
+        const res = await fetch('https://api.moonshot.cn/v1/models', {
+          headers: { authorization: `Bearer ${key}` },
+          signal: timeout,
+        });
+        return res.ok;
+      }
+      case 'elevenlabs': {
+        const res = await fetch('https://api.elevenlabs.io/v1/user', {
+          headers: { 'xi-api-key': key },
+          signal: timeout,
+        });
+        return res.ok;
+      }
       case 'codex':
       case 'opencode':
       case 'google':

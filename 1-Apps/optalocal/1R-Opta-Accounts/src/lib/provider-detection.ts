@@ -14,6 +14,9 @@ export type ApiKeyProvider =
   | 'brave'
   | 'groq'
   | 'lmx'
+  | 'minimax'
+  | 'kimi'
+  | 'elevenlabs'
   | 'github'
   | 'vercel'
   | 'cloudflare'
@@ -41,6 +44,9 @@ export const PROVIDERS: ProviderInfo[] = [
   { id: 'gemini', name: 'Gemini', icon: 'Gem', pattern: /^AIza[0-9A-Za-z_-]{20,}$/, envHint: 'GEMINI_API_KEY', category: 'AI Models' },
   { id: 'groq', name: 'Groq', icon: 'Zap', pattern: /^gsk_[A-Za-z0-9_-]{10,}$/i, envHint: 'GROQ_API_KEY', category: 'AI Models' },
   { id: 'lmx', name: 'LMX', icon: 'Cpu', pattern: /^opta_sk_[A-Za-z0-9_-]{16,}$/i, envHint: 'OPTA_LMX_API_KEY', category: 'AI Models' },
+  { id: 'minimax', name: 'MiniMax', icon: 'Bot', pattern: /^sk-api-[A-Za-z0-9_-]{20,}$/i, envHint: 'MINIMAX_API_KEY', category: 'AI Models' },
+  { id: 'kimi', name: 'Kimi', icon: 'Moon', pattern: /^sk-kimi-[A-Za-z0-9_-]{20,}$/i, envHint: 'KIMI_API_KEY', category: 'AI Models' },
+  { id: 'elevenlabs', name: 'ElevenLabs', icon: 'Mic2', pattern: /^sk_[a-f0-9]{40,}$/i, envHint: 'ELEVENLABS_API_KEY', category: 'AI Models' },
   { id: 'opencode', name: 'OpenCode', icon: 'Terminal', envHint: 'OPENCODE_API_KEY', category: 'AI Models' },
   { id: 'codex', name: 'Codex', icon: 'Binary', pattern: /^sk-[A-Za-z0-9_-]{10,}$/i, envHint: 'CODEX_API_KEY', category: 'AI Models' },
   // Research Tools
@@ -82,7 +88,13 @@ export function detectProvider(key: string): ApiKeyProvider | null {
   if (/^tvly-[A-Za-z0-9_-]{8,}$/i.test(trimmed)) return 'tavily';
   // Groq — gsk_ prefix
   if (/^gsk_[A-Za-z0-9_-]{10,}$/i.test(trimmed)) return 'groq';
-  // OpenAI/Codex — sk- or sk-proj- (after excluding Anthropic)
+  // MiniMax — sk-api- prefix (must be before generic sk- check)
+  if (/^sk-api-[A-Za-z0-9_-]{20,}$/i.test(trimmed)) return 'minimax';
+  // Kimi — sk-kimi- prefix (must be before generic sk- check)
+  if (/^sk-kimi-[A-Za-z0-9_-]{20,}$/i.test(trimmed)) return 'kimi';
+  // ElevenLabs — sk_ (underscore) + 40+ lowercase hex chars (distinct from sk- hyphen keys)
+  if (/^sk_[a-f0-9]{40,}$/i.test(trimmed)) return 'elevenlabs';
+  // OpenAI/Codex — sk- or sk-proj- (after excluding Anthropic, MiniMax, Kimi)
   if (/^sk-(proj-)?[A-Za-z0-9_-]{10,}$/i.test(trimmed)) return 'openai';
 
   return null;
