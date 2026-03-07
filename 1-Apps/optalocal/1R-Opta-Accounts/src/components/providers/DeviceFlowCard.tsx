@@ -1,9 +1,10 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Github, ExternalLink, CheckCircle, XCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { resolveDevicePollOutcome } from './deviceFlowPolling';
 
 // ─── State Machine ────────────────────────────────────────────────────────────
 
@@ -19,13 +20,28 @@ type FlowPhase =
 interface DeviceFlowCardProps {
   onConnected?: () => void;
   className?: string;
+  /** URL to POST to start the device flow. Defaults to the GitHub Copilot endpoint. */
+  startUrl?: string;
+  /** URL to POST to poll the device flow status. Defaults to the GitHub Copilot endpoint. */
+  pollUrl?: string;
+  /** Label shown in the card header (e.g. "GitHub Copilot" or "OpenAI Codex"). */
+  providerLabel?: string;
+  /** Description shown below the provider label. */
+  providerDescription?: string;
 }
 
 const SPRING = { type: 'spring', stiffness: 220, damping: 26 } as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) {
+export function DeviceFlowCard({
+  onConnected,
+  className,
+  startUrl = '/api/oauth/copilot/device/start',
+  pollUrl = '/api/oauth/copilot/device/poll',
+  providerLabel = 'GitHub Copilot',
+  providerDescription = 'Device authorization · no redirect',
+}: DeviceFlowCardProps) {
   const [flow, setFlow] = useState<FlowPhase>({ phase: 'idle' });
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortRef = useRef(false);
@@ -36,16 +52,18 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
   };
 
   // Recursive poll — waits for each response before scheduling next
-  const schedulePoll = useCallback((intervalSec: number) => {
+  function schedulePoll(intervalSec: number) {
     clearPoll();
     pollTimerRef.current = setTimeout(async () => {
       if (abortRef.current) return;
       try {
-        const res = await fetch('/api/oauth/copilot/device/poll', { method: 'POST' });
+        const res = await fetch(pollUrl, { method: 'POST' });
         const data = await res.json() as { status?: string; error?: string };
         if (abortRef.current) return;
 
-        switch (data.status) {
+        const outcome = resolveDevicePollOutcome(data.status, data.error);
+
+        switch (outcome.kind) {
           case 'authorized':
             clearPoll();
             setFlow({ phase: 'authorized' });
@@ -64,7 +82,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
             break;
           default:
             clearPoll();
-            setFlow({ phase: 'error', message: data.error ?? 'Unknown error from poll' });
+            setFlow({ phase: 'error', message: outcome.message });
         }
       } catch {
         if (!abortRef.current) {
@@ -72,7 +90,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
         }
       }
     }, intervalSec * 1000);
-  }, [onConnected]);
+  }
 
   useEffect(() => {
     abortRef.current = false;
@@ -86,7 +104,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
     setFlow({ phase: 'loading' });
     abortRef.current = false;
     try {
-      const res = await fetch('/api/oauth/copilot/device/start', { method: 'POST' });
+      const res = await fetch(startUrl, { method: 'POST' });
       if (!res.ok) {
         const data = await res.json() as { error?: string };
         setFlow({ phase: 'error', message: data.error ?? `HTTP ${res.status}` });
@@ -128,8 +146,8 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
           <Github size={18} className="text-opta-text-primary" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-opta-text-primary">GitHub Copilot</p>
-          <p className="text-xs text-opta-text-muted">Device authorization · no redirect</p>
+          <p className="text-sm font-semibold text-opta-text-primary">{providerLabel}</p>
+          <p className="text-xs text-opta-text-muted">{providerDescription}</p>
         </div>
         <div className="ml-auto">
           {flow.phase === 'authorized' && (
@@ -151,7 +169,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
         {flow.phase === 'idle' && (
           <motion.div key="idle" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={SPRING}>
             <p className="text-xs text-opta-text-secondary mb-3">
-              Authorize Opta to use your GitHub Copilot subscription. You&apos;ll enter a code on GitHub — no redirects needed.
+              Authorize Opta to use your {providerLabel} subscription. You&apos;ll enter a code on GitHub — no redirects needed.
             </p>
             <motion.button
               onClick={startFlow}
@@ -160,7 +178,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
               transition={SPRING}
               className="w-full px-4 py-2.5 rounded-lg bg-opta-primary text-white text-sm font-medium hover:bg-opta-primary-glow transition-colors"
             >
-              Connect Copilot
+              Connect {providerLabel}
             </motion.button>
           </motion.div>
         )}
@@ -216,7 +234,7 @@ export function DeviceFlowCard({ onConnected, className }: DeviceFlowCardProps) 
             className="flex items-center gap-3 py-2"
           >
             <CheckCircle size={20} className="text-green-400 flex-shrink-0" />
-            <p className="text-sm text-opta-text-primary">GitHub Copilot connected successfully.</p>
+            <p className="text-sm text-opta-text-primary">{providerLabel} connected successfully.</p>
           </motion.div>
         )}
 

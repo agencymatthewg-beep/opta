@@ -29,6 +29,8 @@ interface ProviderDef {
   color: string;
   initial: string;
   oauthStartUrl?: string;
+  deviceStartUrl?: string;
+  devicePollUrl?: string;
 }
 
 const PROVIDER_DEFS: ProviderDef[] = [
@@ -56,6 +58,16 @@ const PROVIDER_DEFS: ProviderDef[] = [
     connectMethod: 'paste_in',
     color: '#d97706',
     initial: 'A',
+  },
+  {
+    id: 'openai-codex',
+    name: 'OpenAI Codex',
+    description: 'Use your Codex subscription for code generation',
+    connectMethod: 'device_flow',
+    color: '#10a37f',
+    initial: 'OC',
+    deviceStartUrl: '/api/oauth/codex/device/start',
+    devicePollUrl: '/api/oauth/codex/device/poll',
   },
   {
     id: 'openai',
@@ -329,6 +341,9 @@ export function ConnectionsContent() {
                               await refetch();
                               setExpandedProvider(null);
                             }}
+                            startUrl={def.deviceStartUrl}
+                            pollUrl={def.devicePollUrl}
+                            providerLabel={def.name}
                           />
                         )}
                         {def.connectMethod === 'paste_in' && (
