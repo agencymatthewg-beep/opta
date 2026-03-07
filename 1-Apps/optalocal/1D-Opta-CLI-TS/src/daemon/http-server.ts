@@ -1,4 +1,4 @@
-import { timingSafeEqual } from 'node:crypto';
+import { createHash, timingSafeEqual } from 'node:crypto';
 import Fastify, { type FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
 import websocket from '@fastify/websocket';
 import { VERSION } from '../core/version.js';
@@ -160,11 +160,14 @@ function parseBooleanQueryValue(raw: unknown): boolean | undefined {
   return undefined;
 }
 
+const MODELS_CACHE_TTL_MS = 4_500;
+
 function registerHttpRoutes(
   app: FastifyInstance,
   opts: HttpServerOptions,
   bridgeWorker: BridgeOutboundWorker
 ): void {
+  let modelsSnapshot: { etag: string; body: unknown; fetchedAt: number } | null = null;
   app.get('/health', () => ({
     status: 'ok',
     version: VERSION,
@@ -487,6 +490,15 @@ function registerHttpRoutes(
 
   app.get('/v3/lmx/models', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const clientEtag = (req.headers['if-none-match'] as string | undefined)?.replace(/^"(.*)"$/, '$1');
+    const now = Date.now();
+    // Serve from cache if fresh — avoids upstream LMX fetch on every poll
+    if (modelsSnapshot && now - modelsSnapshot.fetchedAt < MODELS_CACHE_TTL_MS) {
+      if (clientEtag === modelsSnapshot.etag) {
+        return reply.status(304).send();
+      }
+      return reply.header('ETag', `"${modelsSnapshot.etag}"`).send(modelsSnapshot.body);
+    }
     try {
       const config = await loadConfig();
       const lmx = new LmxClient({
@@ -494,11 +506,17 @@ function registerHttpRoutes(
         fallbackHosts: config.connection.fallbackHosts,
         port: config.connection.port,
         adminKey: config.connection.adminKey,
-    adminKeysByHost: config.connection.adminKeysByHost,
+        adminKeysByHost: config.connection.adminKeysByHost,
       });
       const models = await lmx.models();
-      return models;
+      const etag = createHash('sha256').update(JSON.stringify(models)).digest('hex').slice(0, 16);
+      modelsSnapshot = { etag, body: models, fetchedAt: Date.now() };
+      if (clientEtag === etag) {
+        return reply.status(304).send();
+      }
+      return reply.header('ETag', `"${etag}"`).send(models);
     } catch (err) {
+      modelsSnapshot = null;
       const mapped = mapLmxRouteError(err);
       return reply.status(mapped.status).send(mapped.body);
     }

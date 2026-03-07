@@ -54,6 +54,7 @@ const LMX_MUTATION_TIMEOUT_MS = 120_000;
 const DAEMON_AUTH_REPAIR_COOLDOWN_MS = 15_000;
 const repairedTokenCache = new Map<string, string>();
 const authRepairAttemptByEndpoint = new Map<string, number>();
+const lmxModelsEtagCache = new Map<string, { etag: string; body: { models: DaemonLmxModelDetail[] } }>();
 
 interface SessionSnapshot {
   sessionId: string;
@@ -840,7 +841,31 @@ export const daemonClient = {
   async lmxModels(
     connection: DaemonConnectionOptions,
   ): Promise<{ models: DaemonLmxModelDetail[] }> {
-    return httpClient(connection).lmxModels();
+    const guarded = sanitizeDaemonConnection(connection).connection;
+    const cacheKey = endpointKey(guarded.host, guarded.port);
+    const cached = lmxModelsEtagCache.get(cacheKey);
+    const token = repairedTokenCache.get(cacheKey) ?? guarded.token;
+    const headers = new Headers({ Authorization: `Bearer ${token}` });
+    if (cached) headers.set("If-None-Match", `"${cached.etag}"`);
+    const controller = new AbortController();
+    const timeoutId = globalThis.setTimeout(() => controller.abort(), LMX_READ_TIMEOUT_MS);
+    try {
+      const resp = await fetch(
+        `${baseUrl(connection)}/v3/lmx/models`,
+        { headers, signal: controller.signal },
+      );
+      if (resp.status === 304 && cached) return cached.body;
+      if (!resp.ok) {
+        const message = await resp.text().catch(() => "");
+        throw new Error(`Daemon request failed (${resp.status}): ${message || resp.statusText}`);
+      }
+      const etag = resp.headers.get("ETag")?.replace(/^"(.*)"$/, "$1") ?? null;
+      const body = (await resp.json()) as { models: DaemonLmxModelDetail[] };
+      if (etag) lmxModelsEtagCache.set(cacheKey, { etag, body });
+      return body;
+    } finally {
+      clearTimeout(timeoutId);
+    }
   },
 
   async lmxMemory(
