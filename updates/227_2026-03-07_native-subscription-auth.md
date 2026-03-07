@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-07
 **Scope:** 1R Opta Accounts · 1D Opta CLI · 1M Opta LMX
-**Status:** Live (accounts.optalocal.com redeployed, schema migrated)
+**Status:** Live (accounts.optalocal.com redeployed, schema migrated, OpenRouter flow fixed)
 
 ---
 
@@ -53,9 +53,9 @@ Full end-to-end OAuth subscription auth pipeline across all three layers.
 |-----|-------|--------|
 | `OAUTH_TOKEN_ENCRYPTION_KEY` | Vercel accounts | ✅ Live |
 | `OPTA_TOKEN_ENCRYPTION_KEY` | Local `~/.zshrc` | ✅ Live |
-| `HUGGINGFACE_OAUTH_CLIENT_ID/SECRET` | Vercel accounts | ⏳ Needs OAuth app |
-| `OPENROUTER_OAUTH_CLIENT_ID` | Vercel accounts | ⏳ Needs OAuth app |
-| `OPENAI_CODEX_GITHUB_CLIENT_ID/SECRET` | Vercel accounts | ⏳ Needs GitHub app |
+| `HUGGINGFACE_OAUTH_CLIENT_ID` | Vercel accounts | ✅ Live (db982f30-7c3e-499a-b35d-ed1955733d74, public app — no secret) |
+| `OPENROUTER_OAUTH_CLIENT_ID` | N/A | ✅ Not needed — OpenRouter is registration-free |
+| `OPENAI_CODEX_GITHUB_CLIENT_ID/SECRET` | Vercel accounts | ✅ Live (set by OpenClaw) |
 
 ---
 
