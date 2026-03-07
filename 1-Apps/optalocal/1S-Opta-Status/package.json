@@ -9,9 +9,10 @@
     "start": "next start --port 3005",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
+    "test:smoke": "npm run build && node --test tests/health-route.test.mjs",
     "release-notes:generate": "node scripts/generate-release-notes.mjs",
     "validate:feature-registry": "node scripts/validate-feature-registry.mjs",
-    "check": "npm run validate:feature-registry && npm run typecheck && npm run lint && npm run build"
+    "check": "npm run validate:feature-registry && npm run typecheck && npm run lint && npm run test:smoke"
   },
   "dependencies": {
     "clsx": "^2.1.1",
