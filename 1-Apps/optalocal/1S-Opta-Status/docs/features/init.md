@@ -39,6 +39,8 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 
 ## Recent Updates
 
+- 2026-03-07 — Opta Daemon v0.
+
 - 2026-03-07 — Opta Code Desktop v0.
 
 - 2026-03-07 — Restored the core "Opta Code" 3D dashboard layout for the Opta Init environment selection screen.
@@ -50,6 +52,7 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 - 2026-02-17 — Documentation content additions
 
 ## Auto-Synced Features
+- [x] Feature: Opta Daemon v0.4.1 is now shipping on the stable channel with full macOS and Win
 - [x] Feature: Opta Code Desktop v0.2.1 is now listed as a downloadable product on init.optaloc
 - [x] Fix: Restored the core "Opta Code" 3D dashboard layout for the Opta Init environment
 - [x] `magicLink.ts` utility to construct `/connect` URLs. LMX app node click handler opens the magic URL. Globe icon button opens the Cloudflare Tunnel wizard.
@@ -61,3 +64,5 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 <!-- opta-sync-applied: 0013-opta-init-manager-v073-release -->
 
 <!-- opta-sync-applied: 0013-opta-init-code-desktop-download -->
+
+<!-- opta-sync-applied: 0015-opta-daemon-v041-stable-windows -->

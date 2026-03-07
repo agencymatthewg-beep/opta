@@ -97,9 +97,14 @@
 
 ## Recent Updates
 
+- 2026-03-07 — Opta Daemon v0.
+
 - 2026-03-04 — This update introduces native localized voice dictation, Text-to-Speech (TTS), and global audio p...
 
 ## Auto-Synced Features
+- [x] Feature: Opta Daemon v0.4.1 is now shipping on the stable channel with full macOS and Win
 - [x] Introduced typed protocols via `protocol/v3` schemas (`V3Event` and `audio.transcribe`/`audio.tts`). Connected logic for proxying directly into LMX and fallback routines natively into the OpenAI APIs (`whisper-1`/`tts-1`) if configured that way via the `keychain` integration.
 
 <!-- opta-sync-applied: 0004-opta-core-voice-integration -->
+
+<!-- opta-sync-applied: 0015-opta-daemon-v041-stable-windows -->
