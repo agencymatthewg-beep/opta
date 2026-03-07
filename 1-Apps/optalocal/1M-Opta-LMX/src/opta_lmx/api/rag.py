@@ -22,6 +22,7 @@ from opta_lmx.api.deps import (
     RagStore,
     RemoteEmbedding,
     RerankerDep,
+    WatcherDep,
     verify_inference_key,
 )
 from opta_lmx.api.errors import internal_error, openai_error
@@ -29,6 +30,7 @@ from opta_lmx.helpers.client import HelperNodeClient, HelperNodeError
 from opta_lmx.inference.embedding_engine import EmbeddingEngine
 from opta_lmx.rag.chunker import chunk_code, chunk_markdown, chunk_text
 from opta_lmx.rag.store import SearchResult, VectorStore
+from opta_lmx.rag.watch_registry import WatchEntry
 
 logger = logging.getLogger(__name__)
 
@@ -575,4 +577,184 @@ async def delete_collection(collection: str, _auth: AdminAuth, rag_store: RagSto
             "collection": collection,
             "documents_deleted": count,
         }
+    )
+
+
+# ── Watch management (admin) ─────────────────────────────────────────────
+
+
+class WatchRegisterRequest(BaseModel):
+    """Register a folder for automatic file watching and indexing."""
+
+    path: str = Field(..., min_length=1, description="Absolute path to the folder to watch")
+    collection: str = Field(..., min_length=1, max_length=64, description="RAG collection name")
+    recursive: bool = Field(True, description="Watch subdirectories recursively")
+    patterns: list[str] | None = Field(
+        None,
+        description="File glob patterns to index (default: *.md, *.txt, *.py, *.ts, ...)",
+    )
+
+
+class WatchFolderInfo(BaseModel):
+    """Status of a single watched folder."""
+
+    path: str
+    collection: str
+    recursive: bool
+    auto_registered: bool
+    exists_on_disk: bool
+    patterns: list[str]
+
+
+class WatchStatusResponse(BaseModel):
+    """Status of the workspace watcher and all registered folders."""
+
+    running: bool
+    watchdog_available: bool
+    watched_folders: int
+    folders: list[WatchFolderInfo]
+
+
+class ReindexResponse(BaseModel):
+    """Result of a manual folder re-index operation."""
+
+    folder: str
+    collection: str
+    files_indexed: int
+    files_skipped: int
+    chunks_created: int
+    duration_sec: float
+    errors: list[str]
+
+
+@router.get("/admin/rag/watch", response_model=WatchStatusResponse)
+async def get_watch_status(_auth: AdminAuth, watcher: WatcherDep) -> WatchStatusResponse:
+    """Get the current status of the workspace file watcher."""
+    if watcher is None:
+        return WatchStatusResponse(
+            running=False,
+            watchdog_available=False,
+            watched_folders=0,
+            folders=[],
+        )
+    status = watcher.get_status()
+    return WatchStatusResponse(
+        running=status["running"],
+        watchdog_available=status["watchdog_available"],
+        watched_folders=status["watched_folders"],
+        folders=[
+            WatchFolderInfo(
+                path=f["path"],
+                collection=f["collection"],
+                recursive=f["recursive"],
+                auto_registered=f["auto_registered"],
+                exists_on_disk=f["exists_on_disk"],
+                patterns=next(
+                    (e.patterns for e in watcher._registry.get_all() if e.path == f["path"]),
+                    [],
+                ),
+            )
+            for f in status["folders"]
+        ],
+    )
+
+
+@router.post("/admin/rag/watch", response_model=None)
+async def register_watch_folder(
+    body: WatchRegisterRequest,
+    _auth: AdminAuth,
+    watcher: WatcherDep,
+) -> Response:
+    """Register a folder for automatic file watching and RAG indexing."""
+    if watcher is None:
+        return openai_error(
+            status_code=503,
+            message="Workspace watcher is not running. Enable rag.watcher_enabled in config.",
+            error_type="server_error",
+            code="watcher_unavailable",
+        )
+
+    from pathlib import Path as _Path
+
+    resolved = str(_Path(body.path).expanduser().resolve())
+    entry = WatchEntry(
+        path=resolved,
+        collection=body.collection,
+        recursive=body.recursive,
+        patterns=body.patterns or [],
+    )
+    if not entry.patterns:
+        from opta_lmx.rag.watch_registry import _DEFAULT_PATTERNS
+        entry.patterns = list(_DEFAULT_PATTERNS)
+
+    await watcher.register(entry)
+    return JSONResponse(
+        content={
+            "success": True,
+            "path": resolved,
+            "collection": body.collection,
+            "recursive": body.recursive,
+        }
+    )
+
+
+@router.delete("/admin/rag/watch", response_model=None)
+async def unregister_watch_folder(
+    path: str,
+    _auth: AdminAuth,
+    watcher: WatcherDep,
+    purge: bool = False,
+) -> Response:
+    """Unregister a folder from file watching. Optionally purge its indexed documents."""
+    if watcher is None:
+        return openai_error(
+            status_code=503,
+            message="Workspace watcher is not running.",
+            error_type="server_error",
+            code="watcher_unavailable",
+        )
+
+    from pathlib import Path as _Path
+
+    resolved = str(_Path(path).expanduser().resolve())
+    existed = await watcher.unregister(resolved, purge_index=purge)
+    if not existed:
+        return openai_error(
+            status_code=404,
+            message=f"Path '{resolved}' is not registered for watching.",
+            error_type="invalid_request_error",
+            code="watch_not_found",
+        )
+    return JSONResponse(content={"success": True, "path": resolved, "purged": purge})
+
+
+@router.post("/admin/rag/index", response_model=None)
+async def trigger_reindex(
+    path: str,
+    _auth: AdminAuth,
+    watcher: WatcherDep,
+) -> Response:
+    """Trigger a full re-index of a registered folder."""
+    if watcher is None:
+        return openai_error(
+            status_code=503,
+            message="Workspace watcher is not running.",
+            error_type="server_error",
+            code="watcher_unavailable",
+        )
+
+    from pathlib import Path as _Path
+
+    resolved = str(_Path(path).expanduser().resolve())
+    result = await watcher.reindex_folder(resolved)
+    return JSONResponse(
+        content=ReindexResponse(
+            folder=result.folder,
+            collection=result.collection,
+            files_indexed=result.files_indexed,
+            files_skipped=result.files_skipped,
+            chunks_created=result.chunks_created,
+            duration_sec=result.duration_sec,
+            errors=result.errors,
+        ).model_dump()
     )

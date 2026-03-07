@@ -403,6 +403,46 @@ class RAGConfig(BaseModel):
         description="Default chunking strategy: fixed, markdown_headers, or code",
     )
 
+    # Recency boost — reward recently modified files in search ranking
+    recency_boost_enabled: bool = Field(
+        False,
+        description="Boost documents from recently modified files in search results",
+    )
+    recency_boost_decay_days: float = Field(
+        30.0,
+        ge=1.0,
+        le=365.0,
+        description="Half-life in days for recency decay (score halves every N days)",
+    )
+    recency_boost_weight: float = Field(
+        0.15,
+        ge=0.0,
+        le=1.0,
+        description="Maximum recency boost multiplier (score *= 1 + weight * decay_factor)",
+    )
+
+    # File watcher
+    watcher_enabled: bool = Field(
+        False,
+        description="Enable automatic file watching and re-indexing for registered folders",
+    )
+    watcher_debounce_sec: float = Field(
+        1.0,
+        ge=0.1,
+        le=10.0,
+        description="Debounce delay in seconds before processing a file change event",
+    )
+    watcher_max_file_size_mb: float = Field(
+        10.0,
+        ge=0.1,
+        le=100.0,
+        description="Skip files larger than this size (MB) during auto-indexing",
+    )
+    watch_registry_path: Path = Field(
+        default_factory=lambda: Path.home() / ".opta-lmx" / "watch-registry.json",
+        description="Path to persist the folder watch registry",
+    )
+
     @model_validator(mode="after")
     def _validate_chunk_overlap(self) -> RAGConfig:
         if self.default_chunk_overlap >= self.default_chunk_size:

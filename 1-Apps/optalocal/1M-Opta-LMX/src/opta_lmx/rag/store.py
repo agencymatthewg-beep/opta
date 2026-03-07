@@ -463,6 +463,38 @@ class VectorStore:
             )
         return count
 
+    def delete_by_source(self, source: str) -> int:
+        """Delete all documents whose metadata['source'] matches the given path.
+
+        Used for incremental file updates: call before re-ingesting a changed file
+        to prevent duplicate chunks accumulating across collections.
+
+        Args:
+            source: Absolute file path string to match against metadata['source'].
+
+        Returns:
+            Total documents deleted across all collections.
+        """
+        total_deleted = 0
+        for collection in list(self._collections.keys()):
+            docs = self._collections[collection]
+            before = len(docs)
+            self._collections[collection] = [
+                d for d in docs if d.metadata.get("source") != source
+                and d.metadata.get("file_path") != source
+            ]
+            deleted = before - len(self._collections[collection])
+            if deleted:
+                self._rebuild_indexes(collection)
+                total_deleted += deleted
+
+        if total_deleted:
+            logger.info(
+                "documents_deleted_by_source",
+                extra={"source": source, "count": total_deleted},
+            )
+        return total_deleted
+
     def delete_documents(self, collection: str, doc_ids: list[str]) -> int:
         """Delete specific documents by ID. Returns count deleted."""
         docs = self._collections.get(collection, [])

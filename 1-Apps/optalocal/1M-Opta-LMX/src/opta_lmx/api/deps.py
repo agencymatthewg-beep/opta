@@ -23,6 +23,7 @@ from opta_lmx.monitoring.metrics import MetricsCollector
 from opta_lmx.presets.manager import PresetManager
 from opta_lmx.rag.reranker import RerankerEngine
 from opta_lmx.rag.store import VectorStore
+from opta_lmx.rag.watcher import WorkspaceWatcher
 from opta_lmx.router.strategy import TaskRouter
 from opta_lmx.security.policy_hooks import (
     enforce_sensitive_endpoint_policy,
@@ -102,6 +103,11 @@ def get_reranker_engine(request: Request) -> RerankerEngine | None:
     """Get the local reranker engine from app state, or None."""
     value = getattr(request.app.state, "reranker_engine", None)
     return cast(RerankerEngine | None, value)
+
+
+def get_workspace_watcher(request: Request) -> WorkspaceWatcher | None:
+    """Get the workspace file watcher from app state, or None if not started."""
+    return getattr(request.app.state, "workspace_watcher", None)
 
 
 def verify_admin_key(
@@ -216,6 +222,7 @@ RemoteReranking = Annotated[HelperNodeClient | None, Depends(get_remote_rerankin
 SessionStoreDep = Annotated[SessionStore, Depends(get_session_store)]
 RagStore = Annotated[VectorStore | None, Depends(get_rag_store)]
 RerankerDep = Annotated[RerankerEngine | None, Depends(get_reranker_engine)]
+WatcherDep = Annotated[WorkspaceWatcher | None, Depends(get_workspace_watcher)]
 AdminAuth = Annotated[None, Depends(verify_admin_key)]
 SkillsPolicyGuard = Annotated[None, Depends(verify_sensitive_skills_policy)]
 AgentsPolicyGuard = Annotated[None, Depends(verify_sensitive_agents_policy)]

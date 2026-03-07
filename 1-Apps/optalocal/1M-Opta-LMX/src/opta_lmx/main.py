@@ -600,6 +600,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
                 logger.error("auto_load_failed")
 
     # Initialize RAG vector store (accessed via app.state by RagStore dependency)
+    workspace_watcher = None
     if config.rag.enabled:
         from opta_lmx.rag.store import VectorStore
 
@@ -608,6 +609,45 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         app.state.rag_store = rag_store
         if loaded_docs > 0:
             logger.info("rag_store_loaded")
+
+        # Initialize workspace file watcher (autonomous RAG indexing)
+        if config.rag.watcher_enabled:
+            from opta_lmx.rag.watch_registry import WatchEntry, WatchRegistry
+            from opta_lmx.rag.watcher import WorkspaceWatcher
+
+            watch_registry = WatchRegistry(config.rag.watch_registry_path)
+
+            # Auto-register default Opta Workspace folders on first run
+            if len(watch_registry) == 0:
+                default_workspace = Path.home() / "Documents" / "Opta Workspace"
+                opta_config_dir = Path.home() / ".opta"
+                for folder, collection in [
+                    (default_workspace, "global"),
+                    (opta_config_dir, "opta-config"),
+                ]:
+                    if folder.exists():
+                        watch_registry.add(
+                            WatchEntry(
+                                path=str(folder),
+                                collection=collection,
+                                recursive=True,
+                                auto_registered=True,
+                            )
+                        )
+                        logger.info(
+                            "rag_default_folder_registered",
+                            extra={"path": str(folder), "collection": collection},
+                        )
+
+            workspace_watcher = WorkspaceWatcher(
+                registry=watch_registry,
+                store=rag_store,
+                embedding_engine=embedding_engine,
+                rag_config=config.rag,
+            )
+            await workspace_watcher.start()
+            app.state.workspace_watcher = workspace_watcher
+            logger.info("workspace_watcher_initialized")
 
     # Initialize reranker engine (lazy-load — only loads model on first rerank request)
     from opta_lmx.rag.reranker import RerankerEngine
@@ -749,6 +789,10 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await remote_embedding.close()
     if remote_reranking:
         await remote_reranking.close()
+
+    # Cleanup: stop workspace watcher
+    if workspace_watcher is not None:
+        await workspace_watcher.stop()
 
     # Cleanup: persist RAG store
     rag_store_ref = getattr(app.state, "rag_store", None)

@@ -7,14 +7,24 @@ chunking pipeline.
 
 from __future__ import annotations
 
+import hashlib
 import html
 import importlib
 import logging
 import re
+import time
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol, cast
+
+try:
+    import yaml as _yaml
+
+    _YAML_AVAILABLE = True
+except ImportError:
+    _yaml = None  # type: ignore[assignment]
+    _YAML_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -101,6 +111,22 @@ def detect_processor(filename: str) -> str:
     return _EXTENSION_MAP.get(ext, "text")
 
 
+def _file_stats(path: Path) -> dict[str, Any]:
+    """Return file system metadata for a path."""
+    try:
+        stat = path.stat()
+        raw = path.read_bytes()
+        return {
+            "file_path": str(path),
+            "filename": path.name,
+            "size_bytes": stat.st_size,
+            "file_modified_at": stat.st_mtime,
+            "file_hash": hashlib.sha256(raw).hexdigest()[:12],
+        }
+    except OSError:
+        return {"file_path": str(path), "filename": path.name}
+
+
 def process_file(path: Path) -> ProcessedDocument:
     """Process a file from disk into plain text.
 
@@ -118,9 +144,12 @@ def process_file(path: Path) -> ProcessedDocument:
         raise FileNotFoundError(f"File not found: {path}")
 
     processor_type = detect_processor(path.name)
+    stats = _file_stats(path)
 
     if processor_type == "pdf":
-        return process_pdf(path)
+        doc = process_pdf(path)
+        doc.metadata.update(stats)
+        return doc
 
     # Read text-based files
     try:
@@ -129,15 +158,21 @@ def process_file(path: Path) -> ProcessedDocument:
         content = path.read_text(encoding="latin-1")
 
     if processor_type == "markdown":
-        return process_markdown(content, source=str(path))
+        doc = process_markdown(content, source=str(path))
+        doc.metadata.update(stats)
+        return doc
     if processor_type == "html":
-        return process_html(content, source=str(path))
+        doc = process_html(content, source=str(path))
+        doc.metadata.update(stats)
+        return doc
     if processor_type == "code":
-        return process_code(content, source=str(path), language=path.suffix.lstrip("."))
+        doc = process_code(content, source=str(path), language=path.suffix.lstrip("."))
+        doc.metadata.update(stats)
+        return doc
 
     return ProcessedDocument(
         text=content,
-        metadata={"filename": path.name, "size_bytes": path.stat().st_size},
+        metadata=stats,
         source=str(path),
         processor="text",
     )
@@ -206,15 +241,50 @@ def process_pdf(path: Path) -> ProcessedDocument:
         )
 
 
+def _parse_frontmatter(content: str) -> dict[str, Any]:
+    """Extract YAML frontmatter fields as a metadata dict.
+
+    Returns an empty dict if frontmatter is absent, malformed, or yaml is not installed.
+    """
+    if not _YAML_AVAILABLE or _yaml is None:
+        return {}
+    match = _MARKDOWN_FRONTMATTER_RE.match(content)
+    if not match:
+        return {}
+    raw_yaml = match.group(0)
+    # Strip the --- delimiters to get the YAML body
+    body = re.sub(r"^---\s*\n|---\s*$", "", raw_yaml, flags=re.MULTILINE).strip()
+    try:
+        parsed = _yaml.safe_load(body)
+        if not isinstance(parsed, dict):
+            return {}
+        # Normalise known fields; preserve others under their original keys
+        return {
+            "fm_type": parsed.get("type", ""),
+            "fm_project": parsed.get("project", ""),
+            "fm_tags": parsed.get("tags", []),
+            "fm_summary": parsed.get("summary", ""),
+            "fm_ai_read_when": parsed.get("ai-read-when", []),
+            "fm_last_updated": parsed.get("last-updated", ""),
+            "fm_status": parsed.get("status", ""),
+        }
+    except Exception:
+        return {}
+
+
 def process_markdown(content: str, source: str = "") -> ProcessedDocument:
     """Process Markdown into clean text for embedding.
 
-    Strips YAML frontmatter, image references, and converts links
-    to their display text. Preserves headings and structure.
+    Strips YAML frontmatter from the indexed text but preserves its fields
+    as document metadata (type, project, tags, summary, ai-read-when, etc.).
+    Also strips image references and converts links to display text.
     """
+    # Extract frontmatter metadata BEFORE stripping it from text
+    fm_meta = _parse_frontmatter(content)
+
     text = content
 
-    # Strip frontmatter
+    # Strip frontmatter from indexed text (keep clean prose)
     text = _MARKDOWN_FRONTMATTER_RE.sub("", text)
 
     # Remove image references (images can't be embedded as text)
@@ -230,9 +300,12 @@ def process_markdown(content: str, source: str = "") -> ProcessedDocument:
     text = _WHITESPACE_COLLAPSE_RE.sub("\n\n", text)
     text = text.strip()
 
+    metadata: dict[str, Any] = {"char_count": len(text), "format": "markdown"}
+    metadata.update(fm_meta)
+
     return ProcessedDocument(
         text=text,
-        metadata={"char_count": len(text), "format": "markdown"},
+        metadata=metadata,
         source=source,
         processor="markdown",
     )
