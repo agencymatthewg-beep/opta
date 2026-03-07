@@ -7,6 +7,7 @@ import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
 import { WidgetLmxStatus } from "../widgets/WidgetLmxStatus";
 import { WidgetContextBar } from "../widgets/WidgetContextBar";
 import { WidgetActiveTool } from "../widgets/WidgetActiveTool";
+import { WidgetSessionMemory } from "../widgets/WidgetSessionMemory";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -45,6 +46,8 @@ export function WidgetContent(props: {
             return <WidgetContextBar timelineItems={timelineItems} />;
         case "active-tool":
             return <WidgetActiveTool rawEvents={rawEvents} />;
+        case "session-memory":
+            return <WidgetSessionMemory timelineItems={timelineItems} />;
         default:
             return (
                 <div className="widget-placeholder">
