@@ -29,7 +29,7 @@ const NO_STORE_HEADERS = {
 const SCHEMA_MISSING_CODES = new Set(['PGRST205', '42P01']);
 
 const CATEGORY_MAP: Record<string, readonly string[]> = {
-    'ai-models': ['anthropic', 'openai', 'gemini', 'groq', 'lmx', 'opencode', 'codex', 'github-copilot', 'gemini-cli', 'openai-codex'],
+    'ai-models': ['anthropic', 'openai', 'gemini', 'groq', 'lmx', 'opencode', 'codex', 'github-copilot', 'gemini-cli', 'openai-codex', 'huggingface', 'openrouter'],
     'research-tools': ['tavily', 'brave', 'exa', 'perplexity'],
     'developer-platforms': ['github', 'vercel', 'cloudflare', 'google', 'twitter'],
 };

@@ -274,6 +274,12 @@ const PROVIDER_ACCOUNT_MAP: Record<string, string> = {
   codex: 'codex-api-key',
   google: 'google-api-key',
   twitter: 'twitter-api-key',
+  // OAuth subscription providers — API key fallback path (OAuth token path uses storeConnectionToken)
+  'github-copilot': 'github-copilot-api-key',
+  'openai-codex': 'openai-codex-api-key',
+  huggingface: 'huggingface-api-key',
+  hf: 'huggingface-api-key',
+  openrouter: 'openrouter-api-key',
 };
 
 /**
