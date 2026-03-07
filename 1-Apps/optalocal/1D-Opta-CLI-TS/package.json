@@ -51,7 +51,7 @@
     "parity:export": "node scripts/parity/export-cli-surface.mjs",
     "plan-state:check": "node scripts/plan-state/sync.mjs",
     "plan-state:sync": "node scripts/plan-state/sync.mjs --write",
-    "check": "npm run quality:gate",
+    "check": "npm run quality:gate && npm run lint && npm run build && npm run check-dist",
     "quality:gate": "npm run plan-state:check && npm run typecheck && npm run guard:learning-kinds && npm run test:contract && npm run test:parity:core-smoke",
     "smoke:features": "node scripts/feature-smoke-live.mjs",
     "deps:check": "pnpm --filter @opta/opta-cli outdated || true && npm audit",

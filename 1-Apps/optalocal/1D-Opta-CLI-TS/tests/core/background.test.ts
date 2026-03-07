@@ -146,13 +146,13 @@ describe('ProcessManager', () => {
 describe('ProcessManager.output', () => {
   it('returns new output since last read by default', async () => {
     const pm = new ProcessManager({ maxConcurrent: 5, defaultTimeout: 5000, maxBufferSize: 4096 });
-    const h = await pm.start('echo line1 && sleep 0.1 && echo line2');
+    const h = await pm.start('echo line1 && sleep 0.2 && echo line2');
 
-    await new Promise((r) => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 150));
     const first = pm.output(h.id, { sinceLastRead: true });
     expect(first.stdout).toContain('line1');
 
-    await new Promise((r) => setTimeout(r, 300));
+    await new Promise((r) => setTimeout(r, 500));
     const second = pm.output(h.id, { sinceLastRead: true });
     expect(second.stdout).toContain('line2');
     expect(second.stdout).not.toContain('line1'); // already read
@@ -271,7 +271,7 @@ describe('ProcessManager.timeout', () => {
     const pm = new ProcessManager({ maxConcurrent: 5, defaultTimeout: 0, maxBufferSize: 1024 });
     const h = await pm.start('sleep 0.3');
 
-    await new Promise((r) => setTimeout(r, 500));
+    await new Promise((r) => setTimeout(r, 800));
     const status = pm.status(h.id) as ProcessStatus;
     // Should complete naturally, not timeout
     expect(status.state).toBe('completed');

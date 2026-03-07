@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-06T02:34:14.567Z",
+  "generatedAt": "2026-03-07T01:53:25.833Z",
   "source": {
     "root": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
     "package": "@opta/opta-cli",
@@ -23,6 +23,7 @@
       "doctor",
       "embed",
       "env",
+      "health",
       "init",
       "key",
       "keychain",
@@ -34,6 +35,7 @@
       "serve",
       "server",
       "sessions",
+      "settings",
       "setup",
       "status",
       "tui",
@@ -56,6 +58,7 @@
       "doctor",
       "embed",
       "env",
+      "health",
       "init",
       "key",
       "keychain",
@@ -67,6 +70,7 @@
       "serve",
       "server",
       "sessions",
+      "settings",
       "setup",
       "status",
       "tui",
@@ -184,7 +188,7 @@
     ]
   },
   "operations": {
-    "count": 88,
+    "count": 89,
     "ids": [
       "account.keys.delete",
       "account.keys.list",
@@ -265,6 +269,7 @@
       "serve.stop",
       "sessions.delete",
       "sessions.export",
+      "sessions.get",
       "sessions.list",
       "sessions.search",
       "update.run",
@@ -362,7 +367,7 @@
       },
       {
         "name": "sessions",
-        "count": 4
+        "count": 5
       },
       {
         "name": "update",
