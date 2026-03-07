@@ -3,10 +3,17 @@ packages:
   # optamize domain
   - "1-Apps/optamize/1F-Opta-Life-Web"
   # optalocal domain
-  - "1-Apps/optalocal/1L-Opta-Local/web"
   - "1-Apps/optalocal/1D-Opta-CLI-TS"
   - "1-Apps/optalocal/1D-Opta-CLI-TS/packages/*"
+  - "1-Apps/optalocal/1L-Opta-Local/web"
+  - "1-Apps/optalocal/1L-Opta-LMX-Dashboard"
   - "1-Apps/optalocal/1O-Opta-Init"
+  - "1-Apps/optalocal/1R-Opta-Accounts"
+  - "1-Apps/optalocal/1S-Opta-Status"
+  - "1-Apps/optalocal/1T-Opta-Home"
+  - "1-Apps/optalocal/1U-Opta-Help"
+  - "1-Apps/optalocal/1V-Opta-Learn"
+  - "1-Apps/optalocal/1X-Opta-Admin"
   # shared
   - "1-Apps/shared/1A-AI-Components/components-web"
   - "1-Apps/shared/1A-AI-Components/aicompare-web"
