@@ -10,9 +10,10 @@
     "guides:inventory": "node ./scripts/guides-inventory.mjs",
     "guides:inventory:check": "node ./scripts/check-guides-inventory.mjs",
     "guides:validate": "node ./scripts/validate-guides.mjs",
+    "test:smoke": "node --test ./tests/guides-manifest.smoke.test.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "npm run guides:validate && npm run guides:inventory:check && eslint .",
-    "check": "npm run typecheck && npm run lint && npm run build"
+    "check": "npm run typecheck && npm run lint && npm run build && npm run test:smoke"
   },
   "dependencies": {
     "clsx": "^2",

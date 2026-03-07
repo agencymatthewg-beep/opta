@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3008",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run build",
+    "test:smoke": "node --import tsx --test tests/health.smoke.test.mjs",
+    "check": "npm run typecheck && npm run lint && npm run test:smoke && npm run build",
     "build": "next build",
-    "start": "next start",
+    "start": "next start --port 3008",
     "lint": "eslint ."
   },
   "dependencies": {

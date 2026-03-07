@@ -19,6 +19,10 @@ Scope: `1-Apps/optalocal/*`
 
 Canonical metadata source: `apps.registry.json`.
 
+## Tracked non-app surfaces
+
+- `1W-CANONICAL-optalocal.com` — generated static export artifact used for canonical website snapshots. It is intentionally documented but excluded from `apps.registry.json` because it is not a runnable workspace app.
+
 ## Domain map (current)
 
 | Domain | App | Vercel Project | Status |
@@ -55,6 +59,7 @@ When architecture/path/policy changes:
 
 - Some dated historical reports in `docs/audit/` and `docs/reports/` reference legacy app names by design.
 - Canonical docs are now maintained separately and should be used for current-state decisions.
+- Registry drift is now checked by `docs/reports/REGISTRY-HEALTH.md` plus `npm run registry:health:check`.
 
 ## Supabase sync gate (accounts.optalocal.com)
 

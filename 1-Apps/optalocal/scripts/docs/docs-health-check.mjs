@@ -10,6 +10,7 @@ const canonicalDocs = [
   'docs/README.md',
   'docs/INDEX.md',
   'docs/ARCHITECTURE.md',
+  'docs/CHECK-CONTRACT.md',
   'docs/ECOSYSTEM.md',
   'docs/GUARDRAILS.md',
   'docs/KNOWLEDGE.md',
@@ -26,6 +27,7 @@ const freshnessRequired = new Set([
   'docs/README.md',
   'docs/INDEX.md',
   'docs/ARCHITECTURE.md',
+  'docs/CHECK-CONTRACT.md',
   'docs/ECOSYSTEM.md',
   'docs/GUARDRAILS.md',
   'docs/KNOWLEDGE.md',
@@ -87,7 +89,7 @@ for (const file of canonicalDocs) {
     }
   }
 
-  const appPathMatches = content.match(/\b\d[A-Z]-[A-Za-z0-9-]+\b/g) ?? [];
+  const appPathMatches = content.match(/\b\d[A-Z]-[A-Za-z0-9.-]+\b/g) ?? [];
   for (const appPath of new Set(appPathMatches)) {
     if (!existsSync(path.join(root, appPath))) {
       recordWarning(file, `references app path that does not exist in workspace: ${appPath}`);

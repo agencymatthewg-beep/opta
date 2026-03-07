@@ -30,6 +30,7 @@ last_updated: 2026-03-04
 ## Documentation Governance
 
 - `docs/README.md` - doc tiering + maintenance workflow
+- `docs/CHECK-CONTRACT.md` - workspace lifecycle contract for `dev` / `build` / `check` / `start`
 - `docs/standards/DOCUMENTATION-SYSTEM.md` - quality gates for canonical docs
 - `docs/standards/LEGAL-CONTENT-GOVERNANCE.md` - copyright/trademark controls + copy publication checklist
 - `docs/content-sync-map/README.md` - ripple-effect mapping for cross-app content changes
@@ -52,5 +53,6 @@ last_updated: 2026-03-04
 
 ## Historical Audits and Reports
 
+- `docs/reports/REGISTRY-HEALTH.md` - generated reconciliation of actual folders vs registries vs canonical docs
 - `docs/audit/` and date-stamped files under `docs/reports/` are historical records.
 - Treat them as snapshots of their date unless explicitly re-baselined.
