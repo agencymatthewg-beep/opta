@@ -12,6 +12,7 @@ import { WidgetSessionMemory } from "../widgets/WidgetSessionMemory";
 import { WidgetModelSwitcher } from "../widgets/WidgetModelSwitcher";
 import { WidgetLatencySparkline } from "../widgets/WidgetLatencySparkline";
 import { WidgetDaemonRing } from "../widgets/WidgetDaemonRing";
+import { WidgetCommandBar } from "../widgets/WidgetCommandBar";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -62,6 +63,8 @@ export function WidgetContent(props: {
             return <WidgetLatencySparkline timelineItems={timelineItems} />;
         case "daemon-ring":
             return <WidgetDaemonRing health={connectionHealth ?? null} />;
+        case "command-bar":
+            return <WidgetCommandBar />;
         default:
             return (
                 <div className="widget-placeholder">
