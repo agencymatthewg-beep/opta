@@ -20,9 +20,9 @@ describe('config', () => {
     expect(DEFAULT_CONFIG.autonomy.mode).toBe('execution');
     expect(DEFAULT_CONFIG.autonomy.enforceProfile).toBe(true);
     expect(DEFAULT_CONFIG.autonomy.objectiveReassessment).toBe(true);
-    expect(DEFAULT_CONFIG.computerControl.foreground.enabled).toBe(false);
-    expect(DEFAULT_CONFIG.computerControl.foreground.requireDangerousMode).toBe(true);
-    expect(DEFAULT_CONFIG.computerControl.foreground.allowScreenActions).toBe(false);
+    expect(DEFAULT_CONFIG.computerControl.foreground.enabled).toBe(true);
+    expect(DEFAULT_CONFIG.computerControl.foreground.requireDangerousMode).toBe(false);
+    expect(DEFAULT_CONFIG.computerControl.foreground.allowScreenActions).toBe(true);
     expect(DEFAULT_CONFIG.computerControl.background.enabled).toBe(true);
     expect(DEFAULT_CONFIG.computerControl.background.allowBrowserSessionHosting).toBe(true);
     expect(DEFAULT_CONFIG.computerControl.background.allowScreenStreaming).toBe(true);
@@ -197,15 +197,15 @@ describe('config', () => {
   });
 
   it('has browser defaults for dual-mode foundation', () => {
-    expect(DEFAULT_CONFIG.browser.enabled).toBe(false);
+    expect(DEFAULT_CONFIG.browser.enabled).toBe(true);
     expect(DEFAULT_CONFIG.browser.mode).toBe('isolated');
-    expect(DEFAULT_CONFIG.browser.autoInvoke).toBe(false);
+    expect(DEFAULT_CONFIG.browser.autoInvoke).toBe(true);
     expect(DEFAULT_CONFIG.browser.attach.enabled).toBe(false);
     expect(DEFAULT_CONFIG.browser.attach.requireApproval).toBe(true);
     expect(DEFAULT_CONFIG.browser.screenshotPolicy).toBe('on-demand');
     expect(DEFAULT_CONFIG.browser.runtime.enabled).toBe(true);
     expect(DEFAULT_CONFIG.browser.runtime.persistSessions).toBe(true);
-    expect(DEFAULT_CONFIG.browser.runtime.persistProfileContinuity).toBe(false);
+    expect(DEFAULT_CONFIG.browser.runtime.persistProfileContinuity).toBe(true);
     expect(DEFAULT_CONFIG.browser.runtime.maxSessions).toBe(3);
     expect(DEFAULT_CONFIG.browser.runtime.profileRetentionDays).toBe(30);
     expect(DEFAULT_CONFIG.browser.runtime.maxPersistedProfiles).toBe(200);
@@ -216,7 +216,7 @@ describe('config', () => {
     expect(DEFAULT_CONFIG.browser.policy.allowedHosts).toEqual(['*']);
     expect(DEFAULT_CONFIG.browser.artifacts.enabled).toBe(true);
     expect(DEFAULT_CONFIG.browser.artifacts.screenshots).toBe('on_step');
-    expect(DEFAULT_CONFIG.browser.artifacts.retention.enabled).toBe(false);
+    expect(DEFAULT_CONFIG.browser.artifacts.retention.enabled).toBe(true);
     expect(DEFAULT_CONFIG.browser.artifacts.retention.retentionDays).toBe(30);
     expect(DEFAULT_CONFIG.browser.artifacts.retention.maxPersistedSessions).toBe(200);
     expect(DEFAULT_CONFIG.browser.artifacts.retention.pruneIntervalHours).toBe(24);

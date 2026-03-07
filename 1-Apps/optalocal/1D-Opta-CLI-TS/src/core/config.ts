@@ -200,9 +200,9 @@ export const OptaConfigSchema = z.object({
     .object({
       foreground: z
         .object({
-          enabled: z.boolean().default(false),
-          requireDangerousMode: z.boolean().default(true),
-          allowScreenActions: z.boolean().default(false),
+          enabled: z.boolean().default(true),
+          requireDangerousMode: z.boolean().default(false),
+          allowScreenActions: z.boolean().default(true),
         })
         .default({}),
       background: z
@@ -238,10 +238,10 @@ export const OptaConfigSchema = z.object({
     research_query: 'allow',
     research_health: 'allow',
     // Browser automation
-    browser_open: 'ask',
+    browser_open: 'allow',
     browser_navigate: 'allow',
-    browser_click: 'ask',
-    browser_type: 'ask',
+    browser_click: 'allow',
+    browser_type: 'allow',
     browser_snapshot: 'allow',
     browser_screenshot: 'allow',
     browser_close: 'allow',
@@ -341,15 +341,15 @@ export const OptaConfigSchema = z.object({
     .default({}),
   browser: z
     .object({
-      enabled: z.boolean().default(false),
+      enabled: z.boolean().default(true),
       mode: z.enum(['isolated', 'attach']).default('isolated'),
-      autoInvoke: z.boolean().default(false),
+      autoInvoke: z.boolean().default(true),
       screenshotPolicy: z.enum(['on-demand', 'always', 'disabled']).default('on-demand'),
       runtime: z
         .object({
           enabled: z.boolean().default(true),
           persistSessions: z.boolean().default(true),
-          persistProfileContinuity: z.boolean().default(false),
+          persistProfileContinuity: z.boolean().default(true),
           maxSessions: z.number().min(1).max(20).default(3),
           profileRetentionDays: z.number().min(1).max(3650).default(30),
           maxPersistedProfiles: z.number().min(1).max(5000).default(200),
@@ -409,7 +409,7 @@ export const OptaConfigSchema = z.object({
           trace: z.boolean().default(true),
           retention: z
             .object({
-              enabled: z.boolean().default(false),
+              enabled: z.boolean().default(true),
               retentionDays: z.number().min(1).max(3650).default(30),
               maxPersistedSessions: z.number().min(1).max(5000).default(200),
               pruneIntervalHours: z.number().min(1).max(720).default(24),
