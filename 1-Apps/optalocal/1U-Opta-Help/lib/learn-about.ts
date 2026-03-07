@@ -1,6 +1,7 @@
-import learnRouteGuideMap from "./learn-route-guide-map.json";
-import syncedGuideManifest from "./generated/learn-guides-manifest.json";
-import fallbackGuideManifest from "./learn-guides-fallback-manifest.json";
+import learnGuideSlugAliases from "./learn-guide-slug-aliases.json" with { type: "json" };
+import learnRouteGuideMap from "./learn-route-guide-map.json" with { type: "json" };
+import syncedGuideManifest from "./generated/learn-guides-manifest.json" with { type: "json" };
+import fallbackGuideManifest from "./learn-guides-fallback-manifest.json" with { type: "json" };
 
 export interface LearnGuideLink {
   slug: string;
@@ -26,12 +27,23 @@ interface LearnManifestData {
 
 const LEARN_GUIDE_BASE_URL = "https://learn.optalocal.com/guides";
 const DEFAULT_REMOTE_SUMMARY = "Guide metadata synced from Opta Learn. Open to view the full walkthrough.";
+const GUIDE_SLUG_ALIASES = learnGuideSlugAliases as Record<string, string>;
 
 const LOCAL_GUIDE_FALLBACK: Record<string, Omit<LearnGuideLink, "slug">> = {
+  "opta-architecture": {
+    title: "Opta Local Architecture",
+    summary: "Opta Local operating model, architecture, and execution surfaces.",
+    app: "general",
+  },
   "opta-local-intro": {
     title: "Introduction to Local",
     summary: "Opta Local operating model, architecture, and execution surfaces.",
     app: "general",
+  },
+  "cli-masterclass": {
+    title: "Opta CLI Masterclass",
+    summary: "Deep command workflows, session control, and production operator patterns.",
+    app: "cli",
   },
   cli: {
     title: "CLI Masterclass",
@@ -48,6 +60,11 @@ const LOCAL_GUIDE_FALLBACK: Record<string, Omit<LearnGuideLink, "slug">> = {
     summary: "Advanced LMX runtime behavior, memory strategy, and performance tuning.",
     app: "lmx",
   },
+  "opta-code-masterclass": {
+    title: "Opta Code Desktop Masterclass",
+    summary: "Deep architecture and operational workflow patterns for the desktop app.",
+    app: "code",
+  },
   "code-desktop": {
     title: "Code Desktop Overview",
     summary: "Desktop control-surface essentials and day-to-day operator usage.",
@@ -57,6 +74,11 @@ const LOCAL_GUIDE_FALLBACK: Record<string, Omit<LearnGuideLink, "slug">> = {
     title: "Code Desktop Masterclass",
     summary: "Deep architecture and operational workflow patterns for the desktop app.",
     app: "code",
+  },
+  "opta-accounts": {
+    title: "Opta Accounts Masterclass",
+    summary: "Account-control strategy, token posture, and multi-surface auth flows.",
+    app: "accounts",
   },
   accounts: {
     title: "Accounts Local Sync",
@@ -68,7 +90,17 @@ const LOCAL_GUIDE_FALLBACK: Record<string, Omit<LearnGuideLink, "slug">> = {
     summary: "Account-control strategy, token posture, and multi-surface auth flows.",
     app: "accounts",
   },
+  "browser-automation": {
+    title: "Browser Automation Deep Dive",
+    summary: "Automation-first patterns for browser control, agents, and workflow execution.",
+    app: "code",
+  },
 };
+
+function resolveCanonicalGuideSlug(slug: string): string {
+  const normalizedSlug = slug.trim();
+  return GUIDE_SLUG_ALIASES[normalizedSlug] ?? normalizedSlug;
+}
 
 function isManifestGuide(candidate: unknown): candidate is LearnManifestGuide {
   return Boolean(
@@ -143,15 +175,28 @@ export function getLearnAboutLinks(pathname: string): LearnGuideLink[] {
   const matchingRule = sortedRules.find((rule) => normalizedPath.startsWith(rule.docsPrefix));
   if (!matchingRule) return [];
 
-  return matchingRule.guides
+  const dedupedLinks = new Map<string, LearnGuideLink>();
+
+  for (const slug of matchingRule.guides) {
+    const canonicalSlug = resolveCanonicalGuideSlug(slug);
+    const meta = GUIDE_CATALOG[canonicalSlug] ?? GUIDE_CATALOG[slug];
+    if (!meta || dedupedLinks.has(canonicalSlug)) {
+      continue;
+    }
+
+    dedupedLinks.set(canonicalSlug, {
+      slug: canonicalSlug,
+      ...meta,
+    });
+  }
+
+  return [...dedupedLinks.values()]
     .map((slug) => {
-      const meta = GUIDE_CATALOG[slug];
-      if (!meta) return null;
-      return { slug, ...meta };
+      return slug;
     })
     .filter((guide): guide is LearnGuideLink => guide !== null);
 }
 
 export function getLearnGuideUrl(slug: string): string {
-  return `${LEARN_GUIDE_BASE_URL}/${slug}`;
+  return `${LEARN_GUIDE_BASE_URL}/${resolveCanonicalGuideSlug(slug)}`;
 }

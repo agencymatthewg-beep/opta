@@ -3,19 +3,14 @@
   "source": "local-fallback",
   "guides": [
     {
-      "slug": "opta-local-intro",
-      "title": "Introduction to Local",
+      "slug": "opta-architecture",
+      "title": "Opta Local Architecture",
       "summary": "Opta Local operating model, architecture, and execution surfaces."
     },
     {
-      "slug": "cli",
-      "title": "CLI Masterclass",
+      "slug": "cli-masterclass",
+      "title": "Opta CLI Masterclass",
       "summary": "Deep command workflows, session control, and production operator patterns."
-    },
-    {
-      "slug": "lmx",
-      "title": "Getting Started with LMX",
-      "summary": "LMX host setup, model lifecycle, and local inference operations."
     },
     {
       "slug": "lmx-masterclass",
@@ -23,24 +18,19 @@
       "summary": "Advanced LMX runtime behavior, memory strategy, and performance tuning."
     },
     {
-      "slug": "code-desktop",
-      "title": "Code Desktop Overview",
-      "summary": "Desktop control-surface essentials and day-to-day operator usage."
-    },
-    {
-      "slug": "code-desktop-masterclass",
-      "title": "Code Desktop Masterclass",
+      "slug": "opta-code-masterclass",
+      "title": "Opta Code Desktop Masterclass",
       "summary": "Deep architecture and operational workflow patterns for the desktop app."
     },
     {
-      "slug": "accounts",
-      "title": "Accounts Local Sync",
-      "summary": "Identity, sync boundaries, and local/cloud account coordination."
+      "slug": "opta-accounts",
+      "title": "Opta Accounts Masterclass",
+      "summary": "Account-control strategy, token posture, and multi-surface auth flows."
     },
     {
-      "slug": "accounts-masterclass",
-      "title": "Accounts Masterclass",
-      "summary": "Account-control strategy, token posture, and multi-surface auth flows."
+      "slug": "browser-automation",
+      "title": "Browser Automation Deep Dive",
+      "summary": "Automation-first patterns for browser control, agents, and workflow execution."
     }
   ]
 }

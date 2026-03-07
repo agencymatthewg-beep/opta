@@ -1,40 +1,32 @@
 {
-  "generatedAt": "2026-03-06T04:58:50.830Z",
+  "generatedAt": "2026-03-07T01:59:39.726Z",
   "source": "https://learn.optalocal.com/api/guides-manifest",
-  "upstreamGeneratedAt": "2026-03-05T23:54:42.321Z",
-  "guideCount": 8,
+  "upstreamGeneratedAt": "2026-03-06T08:30:22.378Z",
+  "guideCount": 6,
   "guides": [
     {
-      "slug": "opta-local-intro",
-      "title": "Introduction to Local"
-    },
-    {
-      "slug": "lmx",
-      "title": "Getting Started with LMX"
-    },
-    {
-      "slug": "cli",
-      "title": "CLI Masterclass"
-    },
-    {
-      "slug": "code-desktop",
-      "title": "Code Desktop Overview"
-    },
-    {
-      "slug": "accounts",
-      "title": "Accounts Local Sync"
+      "slug": "opta-code-masterclass",
+      "title": "Opta Code Desktop Masterclass"
     },
     {
       "slug": "lmx-masterclass",
-      "title": "LMX Masterclass"
+      "title": "Opta LMX Masterclass"
     },
     {
-      "slug": "code-desktop-masterclass",
-      "title": "Code Desktop Masterclass"
+      "slug": "cli-masterclass",
+      "title": "Opta CLI Masterclass"
     },
     {
-      "slug": "accounts-masterclass",
-      "title": "Accounts Masterclass"
+      "slug": "opta-architecture",
+      "title": "Opta Local Architecture"
+    },
+    {
+      "slug": "opta-accounts",
+      "title": "Opta Accounts Masterclass"
+    },
+    {
+      "slug": "browser-automation",
+      "title": "Browser Automation Deep Dive"
     }
   ]
 }

@@ -8,9 +8,10 @@
     "start": "npx serve out -l 3006",
     "sync:learn-guides": "node scripts/sync-learn-guides-manifest.mjs",
     "validate:learn-links": "node scripts/validate-learn-links.mjs",
+    "test": "node --test --experimental-strip-types lib/learn-about.test.mjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint && npm run sync:learn-guides && npm run validate:learn-links && npm run build"
+    "check": "npm run typecheck && npm run test && npm run lint && npm run sync:learn-guides && npm run validate:learn-links && npm run build"
   },
   "dependencies": {
     "clsx": "^2.1.1",

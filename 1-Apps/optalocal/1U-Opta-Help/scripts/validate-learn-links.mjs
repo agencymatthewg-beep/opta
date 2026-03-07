@@ -10,6 +10,7 @@ const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 
 const ROUTE_MAP_PATH = path.join(repoRoot, 'lib', 'learn-route-guide-map.json');
+const GUIDE_ALIAS_PATH = path.join(repoRoot, 'lib', 'learn-guide-slug-aliases.json');
 const SYNCED_MANIFEST_PATH = path.join(repoRoot, 'lib', 'generated', 'learn-guides-manifest.json');
 
 async function readJson(filePath) {
@@ -55,21 +56,40 @@ function normalizeManifestSlugs(manifest) {
   return slugSet;
 }
 
+function normalizeGuideAliases(input) {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) {
+    throw new Error('Guide alias map must be an object');
+  }
+
+  return Object.fromEntries(
+    Object.entries(input)
+      .filter(([legacySlug, canonicalSlug]) =>
+        typeof legacySlug === 'string'
+        && legacySlug.trim().length > 0
+        && typeof canonicalSlug === 'string'
+        && canonicalSlug.trim().length > 0)
+      .map(([legacySlug, canonicalSlug]) => [legacySlug.trim(), canonicalSlug.trim()])
+  );
+}
+
 async function main() {
-  const [routeMapRaw, manifestRaw] = await Promise.all([
+  const [routeMapRaw, guideAliasesRaw, manifestRaw] = await Promise.all([
     readJson(ROUTE_MAP_PATH),
+    readJson(GUIDE_ALIAS_PATH),
     readJson(SYNCED_MANIFEST_PATH),
   ]);
 
   const routeMap = normalizeRouteMap(routeMapRaw);
+  const guideAliases = normalizeGuideAliases(guideAliasesRaw);
   const manifestSlugs = normalizeManifestSlugs(manifestRaw);
   const source = typeof manifestRaw?.source === 'string' ? manifestRaw.source : 'unknown';
 
   const missing = [];
   for (const rule of routeMap) {
     for (const slug of rule.guides) {
-      if (!manifestSlugs.has(slug)) {
-        missing.push({ docsPrefix: rule.docsPrefix, slug });
+      const resolvedSlug = guideAliases[slug] ?? slug;
+      if (!manifestSlugs.has(resolvedSlug)) {
+        missing.push({ docsPrefix: rule.docsPrefix, slug, resolvedSlug });
       }
     }
   }
@@ -78,11 +98,12 @@ async function main() {
   console.log(`- manifest source: ${source}`);
   console.log(`- manifest guide slugs: ${manifestSlugs.size}`);
   console.log(`- mapped rules: ${routeMap.length}`);
+  console.log(`- slug aliases: ${Object.keys(guideAliases).length}`);
 
   if (missing.length > 0) {
     console.error(`FAIL Learn link validation (${missing.length} missing mapping${missing.length === 1 ? '' : 's'})`);
     for (const issue of missing) {
-      console.error(`- ${issue.docsPrefix} -> ${issue.slug}`);
+      console.error(`- ${issue.docsPrefix} -> ${issue.slug} (resolved: ${issue.resolvedSlug})`);
     }
     process.exitCode = 1;
     return;
