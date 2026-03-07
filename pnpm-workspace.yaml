@@ -8,6 +8,7 @@ packages:
   - "1-Apps/optalocal/1L-Opta-Local/web"
   - "1-Apps/optalocal/1L-Opta-LMX-Dashboard"
   - "1-Apps/optalocal/1O-Opta-Init"
+  - "1-Apps/optalocal/1P-Opta-Code-Universal"
   - "1-Apps/optalocal/1R-Opta-Accounts"
   - "1-Apps/optalocal/1S-Opta-Status"
   - "1-Apps/optalocal/1T-Opta-Home"
