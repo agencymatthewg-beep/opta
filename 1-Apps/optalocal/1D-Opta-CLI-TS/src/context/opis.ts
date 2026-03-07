@@ -1,5 +1,6 @@
 import { readFile, access } from 'node:fs/promises';
 import { join } from 'node:path';
+import { homedir } from 'node:os';
 import { loadConfig } from '../core/config.js';
 import { readSharedMemoryContext } from './memory.js';
 
@@ -256,8 +257,36 @@ export async function loadOpisContext(cwd: string): Promise<OpisContext> {
     sections.push(`Available docs: ${availableDocs.join(', ')}`);
   }
 
+  // Start with our global and lessons context (always inject these)
+  const home = homedir();
+  const rulesContent = await safeReadFile(join(home, 'Synced', 'AI26', '1-SOT', '1D-Rules', 'RULES.md'));
+  if (rulesContent) {
+    sections.unshift(rulesContent.trim());
+  }
+
+  const lessonsContent = await safeReadFile(join(home, '.gemini', 'antigravity', 'lessons.md'));
+  if (lessonsContent) {
+    const criticalLessons = lessonsContent
+      .split('---')
+      .filter(block => /\b(T1|T2)\b/.test(block) && !block.includes('Template for New Entries'))
+      .slice(0, 5)
+      .join('\n---\n')
+      .trim();
+    if (criticalLessons) {
+      sections.push(`# Antigravity Lessons\n${criticalLessons}`);
+    }
+  }
+
+  // App Context
+  const geminiContent = await safeReadFile(join(cwd, 'GEMINI.md'));
+  const claudeContent = await safeReadFile(join(cwd, 'CLAUDE.md'));
+  const appContext = geminiContent || claudeContent;
+  if (appContext) {
+    sections.push(`# App Context\n${appContext.trim()}`);
+  }
+
   return {
-    summary: sections.join('\n'),
+    summary: sections.join('\n\n---\n\n'),
     hasOpis: true,
     docsDir,
   };
@@ -269,24 +298,50 @@ export async function loadOpisContext(cwd: string): Promise<OpisContext> {
  */
 async function loadFallbackContext(cwd: string, docsDir: string): Promise<OpisContext> {
   const config = await loadConfigSafe();
-  const memoryContext = await readSharedMemoryContext(cwd, config);
-  const claudeContent = await safeReadFile(join(cwd, 'CLAUDE.md'));
+  const blocks: string[] = [];
 
-  if (memoryContext) {
-    return {
-      summary: '',
-      hasOpis: false,
-      docsDir,
-      fallbackMemory: memoryContext,
-    };
+  // 1. Global Rules (user_global)
+  const home = homedir();
+  const rulesContent = await safeReadFile(join(home, 'Synced', 'AI26', '1-SOT', '1D-Rules', 'RULES.md'));
+  if (rulesContent) {
+    blocks.push(rulesContent.trim());
   }
 
-  if (claudeContent) {
+  // 2. Lessons Injection (Top 3-5 T1/T2)
+  const lessonsContent = await safeReadFile(join(home, '.gemini', 'antigravity', 'lessons.md'));
+  if (lessonsContent) {
+    const criticalLessons = lessonsContent
+      .split('---')
+      .filter(block => /\b(T1|T2)\b/.test(block) && !block.includes('Template for New Entries'))
+      .slice(0, 5)
+      .join('\n---\n')
+      .trim();
+
+    if (criticalLessons) {
+      blocks.push(`# Antigravity Lessons\n${criticalLessons}`);
+    }
+  }
+
+  // 3. Conditional App Context
+  const geminiContent = await safeReadFile(join(cwd, 'GEMINI.md'));
+  const claudeContent = await safeReadFile(join(cwd, 'CLAUDE.md'));
+  const appContext = geminiContent || claudeContent;
+  if (appContext) {
+    blocks.push(`# App Context\n${appContext.trim()}`);
+  }
+
+  // 4. Opta local memory blocks
+  const memoryContext = await readSharedMemoryContext(cwd, config);
+  if (memoryContext && memoryContext.trim()) {
+    blocks.push(memoryContext.trim());
+  }
+
+  if (blocks.length > 0) {
     return {
       summary: '',
       hasOpis: false,
       docsDir,
-      fallbackMemory: claudeContent,
+      fallbackMemory: blocks.join('\n\n---\n\n'),
     };
   }
 
