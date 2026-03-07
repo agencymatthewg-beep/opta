@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState, useRef, type CSSProperties }
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import type { UnlistenFn } from "@tauri-apps/api/event";
-import { Settings } from "lucide-react";
+import { Settings, Activity } from "lucide-react";
 import { buildLmxMagicUrl } from "./lib/magicLink";
 import { DaemonDrawer } from "./components/DaemonDrawer";
 import { SetupWizard } from "./pages/SetupWizard";
@@ -1791,6 +1791,14 @@ export function App() {
               </div>
             )}
             <div className="bottom-icon-stack">
+              <button
+                className="bottom-icon-btn"
+                onClick={() => setShowDaemonDrawer(true)}
+                title="Daemon Activity"
+                disabled={controlsDisabled}
+              >
+                <Activity size={16} />
+              </button>
               <button
                 className="bottom-icon-btn"
                 onClick={() => setShowSettings(true)}

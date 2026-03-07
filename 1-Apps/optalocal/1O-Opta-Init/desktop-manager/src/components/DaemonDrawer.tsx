@@ -59,6 +59,17 @@ export function DaemonDrawer({ isOpen, onClose }: DaemonDrawerProps) {
         }
     };
 
+    const handleRestart = async (id: string) => {
+        setJobs(prev => prev.map(j => j.id === id ? { ...j, status: 'running' } : j));
+        try {
+            await invoke('restart_daemon_job', { jobId: id });
+            const fresh = await invoke<DaemonJob[]>('fetch_daemon_jobs');
+            setJobs(fresh);
+        } catch (e) {
+            console.error("Failed to restart job", e);
+        }
+    };
+
     return (
         <>
             <div
@@ -92,7 +103,7 @@ export function DaemonDrawer({ isOpen, onClose }: DaemonDrawerProps) {
                                     {job.status === 'running' ? (
                                         <button className="a-btn danger" onClick={() => handleKill(job.id)}>Kill <span className="kb">K</span></button>
                                     ) : (
-                                        <span className="job-stopped-note">Stopped</span>
+                                        <button className="a-btn" onClick={() => handleRestart(job.id)}>Restart</button>
                                     )}
                                 </div>
                             </div>
