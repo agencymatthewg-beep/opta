@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../../types";
+import { WIDGET_REGISTRY } from "../widgets/WIDGET_REGISTRY";
 import { WidgetAtpo } from "../widgets/WidgetAtpo";
 import { WidgetCliStream } from "../widgets/WidgetCliStream";
 import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
@@ -161,29 +162,25 @@ export function WidgetPane({
                 ))}
 
                 {isEditing && (
-                    <>
-                        <button
-                            className="wp-add-slot"
-                            onClick={() => onAddWidget("atpo")}
-                            type="button"
-                        >
-                            + ATPO
-                        </button>
-                        <button
-                            className="wp-add-slot"
-                            onClick={() => onAddWidget("git-diff")}
-                            type="button"
-                        >
-                            + DIFF
-                        </button>
-                        <button
-                            className="wp-add-slot wp-add-slot-wide"
-                            onClick={() => onAddWidget("cli-stream")}
-                            type="button"
-                        >
-                            + CLI
-                        </button>
-                    </>
+                    <div className="wp-catalog">
+                        <div className="wp-catalog-label">ADD WIDGET</div>
+                        {WIDGET_REGISTRY.map((meta) => {
+                            const alreadyAdded = slots.some((s) => s.widgetId === meta.id);
+                            return (
+                                <button
+                                    key={meta.id}
+                                    className={`wp-catalog-btn ${alreadyAdded ? "wp-catalog-btn--added" : ""}`}
+                                    onClick={() => !alreadyAdded && onAddWidget(meta.id)}
+                                    type="button"
+                                    title={meta.description}
+                                    disabled={alreadyAdded}
+                                >
+                                    <span className="wp-catalog-btn-name">{meta.label}</span>
+                                    {alreadyAdded && <span className="wp-catalog-btn-check">✓</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
                 )}
             </div>
         </aside>

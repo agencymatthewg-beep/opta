@@ -129,7 +129,18 @@ export type WidgetId =
   | "tool-log"
   | "plan-completion"
   | "cli-stream"
-  | "git-diff";
+  | "git-diff"
+  // Widget System v2 — status & utility tiles
+  | "lmx-status"
+  | "context-bar"
+  | "active-tool"
+  | "session-memory"
+  | "model-switcher"
+  | "latency-sparkline"
+  | "daemon-ring"
+  | "command-bar"
+  | "working-dir"
+  | "browser-session";
 
 export type WidgetSize = "S" | "M" | "T";
 

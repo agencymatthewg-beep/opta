@@ -9294,3 +9294,48 @@ button.active,
     6px 6px 0 #040b18,
     7px 7px 0 #f472b611;
 }
+
+/* ── Widget Catalog ─────────────────────────────────────────────────────── */
+.wp-catalog {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  background: rgba(255,255,255,0.02);
+  border: 1px dashed rgba(255,255,255,0.1);
+  border-radius: 10px;
+}
+.wp-catalog-label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--opta-text-secondary, rgba(255,255,255,0.4));
+  padding: 0 4px 4px;
+}
+.wp-catalog-btn {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 10px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--opta-text-primary, #fafafa);
+  font-size: 11px;
+  font-family: "Sora", sans-serif;
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+}
+.wp-catalog-btn:hover:not(:disabled) {
+  background: rgba(139, 92, 246, 0.1);
+  border-color: rgba(139, 92, 246, 0.3);
+}
+.wp-catalog-btn--added {
+  opacity: 0.4;
+  cursor: default;
+}
+.wp-catalog-btn-check {
+  color: var(--opta-neon-green, #4ade80);
+  font-size: 10px;
+}
