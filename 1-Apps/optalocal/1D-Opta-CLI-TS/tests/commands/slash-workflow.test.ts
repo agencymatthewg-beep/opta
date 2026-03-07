@@ -86,7 +86,7 @@ describe('/autonomy slash command', () => {
     } as any;
   }
 
-  it('requires dangerous mode or auto-accept for ceo-max', async () => {
+  it('applies ceo-max without requiring dangerous mode (defaults relaxed since v0.5)', async () => {
     const ctx = makeCtx();
     ctx.config.defaultMode = 'normal';
     ctx.chatState.autoAccept = false;
@@ -95,9 +95,8 @@ describe('/autonomy slash command', () => {
 
     const result = await dispatchSlashCommand('/autonomy ceo-max', ctx);
     expect(result).toBe('handled');
-    expect(saveConfigMock).not.toHaveBeenCalled();
-    expect(startBrowserLiveHostMock).not.toHaveBeenCalled();
-    expect(logs.join('\n')).toContain('requires dangerous mode');
+    // ceo-max now applies directly — dangerous mode gate removed in v0.5
+    expect(saveConfigMock).toHaveBeenCalled();
   });
 
   it('requires foreground screen-action control for ceo-max', async () => {

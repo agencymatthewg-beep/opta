@@ -136,8 +136,11 @@ describe('browser live host security and screen controls', () => {
   });
 
   it('blocks screen actions when foreground control is disabled', async () => {
+    const disabledConfig = structuredClone(baseConfig);
+    disabledConfig.computerControl.foreground.enabled = false;
+    disabledConfig.computerControl.foreground.allowScreenActions = false;
     const started = await startBrowserLiveHost({
-      config: structuredClone(baseConfig),
+      config: disabledConfig,
       requiredPortCount: 6,
       maxSessionSlots: 5,
       portRangeStart: 56_350,
@@ -219,8 +222,11 @@ describe('browser live host security and screen controls', () => {
   });
 
   it('captures full screen when foreground control is disabled', async () => {
+    const disabledFgConfig = structuredClone(baseConfig);
+    disabledFgConfig.computerControl.foreground.enabled = false;
+    disabledFgConfig.computerControl.foreground.allowScreenActions = false;
     const started = await startBrowserLiveHost({
-      config: structuredClone(baseConfig),
+      config: disabledFgConfig,
       requiredPortCount: 6,
       maxSessionSlots: 5,
       portRangeStart: 56_850,

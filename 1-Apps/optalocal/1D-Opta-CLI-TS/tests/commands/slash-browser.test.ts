@@ -320,7 +320,7 @@ describe('/browser approvals slash path', () => {
     expect(output).toContain('Browser runtime status retrieved.');
     expect(output).toContain('running=');
     expect(output).toContain('sessions=');
-    expect(output).toContain('profile_prune=disabled');
+    expect(output).toContain('profile_prune=enabled');
   });
 
   it('prints recent browser approval events with the requested limit', async () => {
