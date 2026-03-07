@@ -8424,6 +8424,56 @@ button.active,
   transform: translateY(-2px);
 }
 
+/* ── WidgetShell v2 base ────────────────────────────────────────────────── */
+.widget-shell {
+  --widget-accent: var(--opta-primary);
+}
+.widget-shell .bento-card-icon {
+  color: var(--widget-accent);
+}
+.widget-shell .bento-badge {
+  background: color-mix(in srgb, var(--widget-accent) 15%, transparent);
+  color: var(--widget-accent);
+  border-color: color-mix(in srgb, var(--widget-accent) 35%, transparent);
+}
+.widget-shell-body {
+  padding-top: 10px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+/* Stat row: label + value pair */
+.widget-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+}
+.widget-stat-label {
+  color: var(--opta-text-secondary, rgba(255,255,255,0.45));
+  font-family: "Sora", sans-serif;
+}
+.widget-stat-value {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  color: var(--opta-text-primary, #fafafa);
+}
+.widget-stat-value.accent { color: var(--widget-accent); }
+/* Thin progress bar used by multiple widgets */
+.widget-progress-bar {
+  height: 3px;
+  border-radius: 99px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.widget-progress-fill {
+  height: 100%;
+  border-radius: 99px;
+  background: var(--widget-accent);
+  transition: width 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 /* ── Bento Card Header ──────────────────────────────────────────── */
 .bento-card-header {
   display: flex;
