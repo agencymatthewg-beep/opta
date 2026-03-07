@@ -13,8 +13,8 @@
 | Status | `opta status` | ✅ | Shows Mono512 connection, MiniMax M2.5 loaded, 205/512GB memory |
 | Daemon Status | `opta daemon status` | ✅ | Running at 127.0.0.1:9999, PID 43500 |
 | Config List | `opta config list` | ✅ | All connection settings shown, secrets masked |
-| Model List | `opta model list` | ❌ | "too many arguments" error — needs syntax fix |
-| LMX Status | `opta lmx status` | ❌ | "too many arguments" error — needs syntax fix |
+| Models | `opta models` | ✅ | Correct command is `opta models` (plural), not `opta model list` |
+| Models List | `opta models list` | ✅ | Alias: `opta models` without action also lists |
 
 ### Notes
 - `opta model list` and `opta lmx status` fail with argument parsing errors — the commands exist but the CLI parser rejects them. This is likely a Commander.js subcommand registration issue.
@@ -80,12 +80,11 @@ No new Vercel failure emails after fixes.
 
 ## Bugs Found
 
-1. **`opta model list`** — argument parsing error ("too many arguments"). The command exists but Commander.js rejects the syntax. Likely needs the `model` subcommand to register `list` as a proper sub-action.
-2. **`opta lmx status`** — same argument parsing issue.
+None — initial "model list" and "lmx status" failures were user error (correct commands: `opta models`, `opta status`)
 
 ## Recommendations
 
-1. Fix `model list` and `lmx status` CLI argument parsing
+1. Consider adding `model` as an alias for `models` to avoid confusion
 2. Add Peekaboo screen recording permissions to enable visual testing
 3. Consider adding `ANTHROPIC_API_KEY` to CI for integration tests
 4. The 3 remaining test failures should be tracked and either fixed or marked as skip-in-CI
