@@ -878,37 +878,23 @@ button.active,
 
 .timeline-feed {
   margin-top: 1rem;
-  display: grid;
-  gap: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   max-height: calc(100vh - 380px);
   overflow: auto;
   padding-right: 0.5rem;
 }
 
 .timeline-card {
-  border: 1px solid rgba(255, 255, 255, 0.04);
-  border-radius: 16px;
-  padding: 1.25rem 1.5rem;
-  background: rgba(255, 255, 255, 0.015);
+  padding: 0 1rem 0 1.25rem;
+  background: transparent;
   position: relative;
-  overflow: hidden;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
-  -webkit-backdrop-filter: blur(12px);
-  backdrop-filter: blur(12px);
-  transition:
-    transform 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    border-color 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    background 0.3s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .timeline-card:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(139, 92, 246, 0.25);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.3),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  transform: translateY(-2px);
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .timeline-card h3 {
@@ -924,7 +910,7 @@ button.active,
   margin: 0;
   line-height: 1.6;
   font-size: 0.9rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: #d4d4d8;
 }
 
 .timeline-card::before {
@@ -933,20 +919,20 @@ button.active,
   left: 0;
   top: 0;
   bottom: 0;
-  width: 3px;
+  width: 2px;
 }
 
 .kind-user::before {
-  background: var(--info);
+  background: rgba(161, 161, 170, 0.3);
 }
 
 .kind-assistant::before {
-  background: var(--accent);
-  box-shadow: 0 0 10px rgba(168, 85, 247, 0.4);
+  background: var(--opta-primary, #8b5cf6);
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.4);
 }
 
 .kind-tool::before {
-  background: var(--warning);
+  background: var(--warning, #f59e0b);
 }
 
 .runtime-panel dl {
@@ -7120,14 +7106,17 @@ button.active,
 .wp-tile[draggable="true"] {
   cursor: grab;
 }
+
 .wp-tile[draggable="true"]:active {
   cursor: grabbing;
 }
+
 .wp-tile.wp-tile-dragging {
   opacity: 0.35;
   border-style: dashed;
   border-color: rgba(139, 92, 246, 0.4);
 }
+
 .wp-tile.wp-tile-drag-over {
   border-color: var(--opta-primary);
   background: rgba(139, 92, 246, 0.08);
@@ -7438,11 +7427,9 @@ button.active,
 }
 
 .r9-composer-box {
-  background:
-    radial-gradient(420px 180px at 12% 0%, rgba(137, 96, 255, 0.2), transparent 75%),
-    linear-gradient(145deg, rgba(22, 38, 66, 0.66), rgba(11, 23, 40, 0.56));
-  border: 1px solid rgba(171, 208, 255, 0.22);
-  border-radius: 16px;
+  background: rgba(9, 9, 11, 0.85);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  border-radius: 24px;
   -webkit-backdrop-filter: blur(16px) saturate(155%);
   backdrop-filter: blur(16px) saturate(155%);
   display: flex;
@@ -7451,16 +7438,16 @@ button.active,
   transition: all 280ms var(--opta-ease-smooth);
   overflow: hidden;
   box-shadow:
-    0 16px 36px rgba(4, 8, 18, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+    0 16px 36px rgba(0, 0, 0, 0.8),
+    inset 0 1px 0 rgba(139, 92, 246, 0.15);
 }
 
 .r9-composer-box:focus-within {
-  border-color: rgba(189, 221, 255, 0.46);
+  border-color: var(--opta-primary);
   box-shadow:
     0 0 0 1px rgba(160, 117, 255, 0.26),
-    0 22px 45px rgba(4, 9, 20, 0.5),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+    0 22px 45px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
   transform: translateY(-1px);
 }
 
@@ -8428,18 +8415,22 @@ button.active,
 .widget-shell {
   --widget-accent: var(--opta-primary);
 }
+
 .widget-shell .bento-card-icon {
   color: var(--widget-accent);
 }
+
 .widget-shell .bento-badge {
   color: var(--widget-accent);
 }
+
 @supports (color: color-mix(in srgb, red 50%, blue)) {
   .widget-shell .bento-badge {
     background: color-mix(in srgb, var(--widget-accent) 15%, transparent);
     border-color: color-mix(in srgb, var(--widget-accent) 35%, transparent);
   }
 }
+
 .widget-shell-body {
   padding-top: 10px;
   flex: 1;
@@ -8447,6 +8438,7 @@ button.active,
   flex-direction: column;
   gap: 6px;
 }
+
 /* Stat row: label + value pair */
 .widget-stat-row {
   display: flex;
@@ -8454,23 +8446,30 @@ button.active,
   align-items: center;
   font-size: 11px;
 }
+
 .widget-stat-label {
-  color: var(--opta-text-secondary, rgba(255,255,255,0.45));
+  color: var(--opta-text-secondary, rgba(255, 255, 255, 0.45));
   font-family: "Sora", sans-serif;
 }
+
 .widget-stat-value {
   font-family: "JetBrains Mono", monospace;
   font-size: 11px;
   color: var(--opta-text-primary, #fafafa);
 }
-.widget-stat-value.accent { color: var(--widget-accent); }
+
+.widget-stat-value.accent {
+  color: var(--widget-accent);
+}
+
 /* Thin progress bar used by multiple widgets */
 .widget-progress-bar {
   height: 3px;
   border-radius: 99px;
-  background: rgba(255,255,255,0.06);
+  background: rgba(255, 255, 255, 0.06);
   overflow: hidden;
 }
+
 .widget-progress-fill {
   height: 100%;
   border-radius: 99px;
@@ -9301,17 +9300,19 @@ button.active,
   flex-direction: column;
   gap: 4px;
   padding: 8px;
-  background: rgba(255,255,255,0.02);
-  border: 1px dashed rgba(255,255,255,0.1);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
   border-radius: 10px;
 }
+
 .wp-catalog-label {
   font-size: 9px;
   font-weight: 700;
   letter-spacing: 1.5px;
-  color: var(--opta-text-secondary, rgba(255,255,255,0.4));
+  color: var(--opta-text-secondary, rgba(255, 255, 255, 0.4));
   padding: 0 4px 4px;
 }
+
 .wp-catalog-btn {
   display: flex;
   justify-content: space-between;
@@ -9327,25 +9328,31 @@ button.active,
   text-align: left;
   transition: background 0.15s, border-color 0.15s;
 }
+
 .wp-catalog-btn:hover:not(:disabled) {
   background: rgba(139, 92, 246, 0.1);
   border-color: rgba(139, 92, 246, 0.3);
 }
+
 .wp-catalog-btn-name {
   flex: 1;
 }
+
 .wp-catalog-btn--added {
   opacity: 0.4;
   cursor: default;
 }
+
 .wp-catalog-btn--active {
   border-color: var(--opta-neon-cyan, #22d3ee);
   background: rgba(34, 211, 238, 0.08);
 }
+
 .wp-catalog-btn-check {
   color: var(--opta-neon-green, #4ade80);
   font-size: 10px;
 }
+
 .widget-dir-segment {
   background: transparent;
   border: none;
@@ -9356,6 +9363,7 @@ button.active,
   padding: 1px 3px;
   border-radius: 3px;
 }
+
 .widget-dir-segment:hover {
   background: rgba(251, 191, 36, 0.12);
 }
