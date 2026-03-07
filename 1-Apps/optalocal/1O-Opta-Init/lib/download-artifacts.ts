@@ -21,6 +21,11 @@ const INIT_WINDOWS_INSTALLER_ENDPOINT = "/downloads/opta-init/latest/opta-init-w
 const CLI_VERSION = "0.5.0-alpha.15";
 const CLI_INSTALLER_ENDPOINT = "/downloads/opta-cli/latest";
 
+// Latest Opta Code Desktop — v0.2.1 (2026-03-07)
+const CODE_VERSION = "0.2.1";
+const CODE_MACOS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_aarch64.dmg";
+const CODE_WINDOWS_INSTALLER_ENDPOINT = "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_x64-setup.exe";
+
 export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
   init: {
     name: "Opta Init Manager",
@@ -37,6 +42,24 @@ export const DOWNLOAD_TARGETS: Record<string, ProductTarget> = {
         manifestUrl: "/desktop-updates/stable.json",
         platformKeys: ["windows-x86_64"],
         fallbackUrl: INIT_WINDOWS_INSTALLER_ENDPOINT,
+      },
+    },
+  },
+
+  code: {
+    name: "Opta Code Desktop",
+    description:
+      "The premium AI coding assistant desktop app. Chat, plan, and run autonomous workflows with local or cloud models — built on Tauri v2 with glassmorphic UI.",
+    platforms: {
+      macos: {
+        manifestUrl: "/desktop/manifest-stable.json",
+        platformKeys: [],
+        fallbackUrl: CODE_MACOS_INSTALLER_ENDPOINT,
+      },
+      windows: {
+        manifestUrl: "/desktop/manifest-stable.json",
+        platformKeys: [],
+        fallbackUrl: CODE_WINDOWS_INSTALLER_ENDPOINT,
       },
     },
   },
@@ -180,6 +203,7 @@ async function resolvePlatformAvailability(
 export async function resolveDownloadAvailability(): Promise<DownloadAvailabilityMap> {
   const versionMap: Record<string, string> = {
     init: INIT_VERSION,
+    code: CODE_VERSION,
     cli: CLI_VERSION,
   };
 

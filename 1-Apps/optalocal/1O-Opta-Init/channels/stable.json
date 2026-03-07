@@ -63,17 +63,31 @@
     },
     {
       "id": "opta-code-universal",
-      "displayName": "Opta Code Universal",
-      "version": "0.5.4",
+      "displayName": "Opta Code Desktop",
+      "version": "0.2.1",
       "minManagerVersion": "0.6.0",
       "track": "stable",
       "rollout": {
-        "percentage": 0,
+        "percentage": 100,
         "priority": 3
       },
       "artifacts": {
-        "macos": [],
-        "windows": []
+        "macos": [
+          {
+            "platform": "macos",
+            "arch": "arm64",
+            "packageType": "dmg",
+            "url": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_aarch64.dmg"
+          }
+        ],
+        "windows": [
+          {
+            "platform": "windows",
+            "arch": "x64",
+            "packageType": "exe",
+            "url": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_x64-setup.exe"
+          }
+        ]
       }
     },
     {
