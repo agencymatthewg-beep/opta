@@ -35,6 +35,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Enable pnpm (corepack)
+        working-directory: .
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.30.3 --activate
+          pnpm --version
+      - name: Install workspace dependencies (pnpm)
+        working-directory: .
+        run: pnpm install --frozen-lockfile
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
       - name: Rust cache
@@ -54,18 +63,10 @@ jobs:
         run: |
           cargo test lmx_mdns -- --nocapture
           cargo test config_paths -- --nocapture
-      - name: Install CLI workspace dependencies (types only)
-        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install --ignore-scripts
-      - name: Install daemon-client dependencies (types only)
-        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
-        run: npm install --ignore-scripts
-      - name: Install desktop dependencies
-        run: npm install
       - name: Type-check
-        run: npm run typecheck
+        run: pnpm run typecheck
       - name: Run vitest
-        run: npm run test:run
+        run: pnpm run test:run
 
   # Windows MSI/NSIS installer build via Tauri v2
   windows-build:
@@ -77,6 +78,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+      - name: Enable pnpm (corepack)
+        working-directory: .
+        run: |
+          corepack enable
+          corepack prepare pnpm@10.30.3 --activate
+          pnpm --version
+      - name: Install workspace dependencies (pnpm)
+        working-directory: .
+        run: pnpm install --frozen-lockfile
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
         with:
@@ -85,14 +95,6 @@ jobs:
         uses: swatinem/rust-cache@v2
         with:
           workspaces: "1-Apps/optalocal/1P-Opta-Code-Universal/src-tauri -> target"
-      - name: Install CLI workspace dependencies (types only)
-        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS
-        run: npm install --ignore-scripts
-      - name: Install daemon-client dependencies (types only)
-        working-directory: 1-Apps/optalocal/1D-Opta-CLI-TS/packages/daemon-client
-        run: npm install --ignore-scripts
-      - name: Install Node dependencies
-        run: npm install
 
       - name: Require Authenticode secrets on release tags
         if: startsWith(github.ref, 'refs/tags/')
@@ -137,7 +139,7 @@ jobs:
           Write-Host "Code signing configured (thumbprint: $thumbprint)"
 
       - name: Build Vite frontend
-        run: npm run build
+        run: pnpm run build
       - name: Build Tauri app (Windows)
         uses: tauri-apps/tauri-action@v0
         env:
