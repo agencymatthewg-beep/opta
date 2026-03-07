@@ -86,18 +86,20 @@ export async function GET(request: Request) {
   const { verifier, returnTo } = pkce;
 
   const clientId = process.env.HUGGINGFACE_OAUTH_CLIENT_ID ?? '';
-  const clientSecret = process.env.HUGGINGFACE_OAUTH_CLIENT_SECRET ?? '';
+  const clientSecret = process.env.HUGGINGFACE_OAUTH_CLIENT_SECRET?.trim();
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
   const redirectUri = `${siteUrl}/api/oauth/huggingface/callback`;
 
-  const tokenBody = new URLSearchParams({
+  // HF OAuth apps are public (PKCE-only) — client_secret is omitted when absent
+  const tokenParams: Record<string, string> = {
     code,
     client_id: clientId,
-    client_secret: clientSecret,
     redirect_uri: redirectUri,
     grant_type: 'authorization_code',
     code_verifier: verifier,
-  });
+  };
+  if (clientSecret) tokenParams.client_secret = clientSecret;
+  const tokenBody = new URLSearchParams(tokenParams);
 
   let tokenData: HFTokenResponse;
   try {
