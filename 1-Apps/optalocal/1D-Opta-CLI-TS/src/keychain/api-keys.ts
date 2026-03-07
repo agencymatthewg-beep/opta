@@ -8,6 +8,7 @@
  * Accounts    : 'anthropic-api-key', 'lmx-api-key'
  */
 
+import { createDecipheriv } from 'node:crypto';
 import {
   getSecret,
   setSecret,
@@ -313,4 +314,85 @@ export async function deleteKeyByProvider(
   const account = PROVIDER_ACCOUNT_MAP[provider.toLowerCase().trim()];
   if (!account) return;
   await deleteSecret(KEYCHAIN_SERVICE, account);
+}
+
+// ---------------------------------------------------------------------------
+// OAuth connection token storage — used by vault connections pull
+// ---------------------------------------------------------------------------
+
+const ALGORITHM = 'aes-256-gcm' as const;
+
+function resolveTokenEncryptionKey(): Buffer | null {
+  const hex = process.env['OPTA_TOKEN_ENCRYPTION_KEY']?.trim();
+  if (!hex || hex.length !== 64) return null;
+  return Buffer.from(hex, 'hex');
+}
+
+function decryptConnectionToken(ciphertext: string): string | null {
+  const key = resolveTokenEncryptionKey();
+  if (!key) return null;
+  const parts = ciphertext.split('.');
+  if (parts.length !== 3) return null;
+  const [ivB64, authTagB64, encB64] = parts as [string, string, string];
+  try {
+    const decipher = createDecipheriv(ALGORITHM, key, Buffer.from(ivB64, 'base64url'));
+    decipher.setAuthTag(Buffer.from(authTagB64, 'base64url'));
+    return Buffer.concat([
+      decipher.update(Buffer.from(encB64, 'base64url')),
+      decipher.final(),
+    ]).toString('utf8');
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Store an OAuth connection token in the OS keychain.
+ *
+ * Decrypts the server-side AES-256-GCM ciphertext using OPTA_TOKEN_ENCRYPTION_KEY,
+ * stores the raw access_token under service `opta-${provider}`, and persists
+ * expiry metadata under `opta-${provider}-meta` as JSON.
+ *
+ * Returns true if the token was stored successfully, false if keychain is
+ * unavailable or decryption failed (missing/wrong key).
+ */
+export async function storeConnectionToken(
+  provider: string,
+  tokenEncrypted: string,
+  expiresAt: string | null,
+): Promise<boolean> {
+  if (!isKeychainAvailable()) return false;
+  const accessToken = decryptConnectionToken(tokenEncrypted);
+  if (!accessToken) return false;
+  const service = `opta-${provider.toLowerCase().trim()}`;
+  await setSecret(service, 'access-token', accessToken);
+  const verify = await getSecret(service, 'access-token');
+  if (verify !== accessToken) return false;
+  const meta = JSON.stringify({ expiresAt: expiresAt ?? null });
+  await setSecret(`${service}-meta`, 'token-meta', meta);
+  return true;
+}
+
+/**
+ * Retrieve OAuth connection token metadata from the OS keychain.
+ *
+ * Returns `{ expiresAt }` if found, or null if the metadata is not present.
+ */
+export async function getConnectionTokenMeta(
+  provider: string,
+): Promise<{ expiresAt: string | null } | null> {
+  if (!isKeychainAvailable()) return null;
+  const service = `opta-${provider.toLowerCase().trim()}-meta`;
+  const raw = await getSecret(service, 'token-meta');
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed === 'object' && parsed !== null && 'expiresAt' in parsed) {
+      const ea = (parsed as Record<string, unknown>)['expiresAt'];
+      return { expiresAt: typeof ea === 'string' ? ea : null };
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }

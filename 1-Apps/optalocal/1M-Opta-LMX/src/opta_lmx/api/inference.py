@@ -39,6 +39,9 @@ from opta_lmx.inference.streaming import format_sse_stream, format_sse_tool_stre
 from opta_lmx.inference.tool_parser import StreamChunk, wrap_stream_with_tool_parsing
 from opta_lmx.monitoring.metrics import RequestMetric
 from opta_lmx.presets.manager import PRESET_PREFIX
+from opta_lmx.proxy.keychain_reader import get_subscription_token
+from opta_lmx.proxy.subscription_proxy import proxy_chat_completion
+from opta_lmx.proxy.subscription_providers import resolve_subscription_route
 
 logger = logging.getLogger(__name__)
 
@@ -141,6 +144,44 @@ async def chat_completions(
         if preset is None:
             return model_not_found(body.model)
         body = preset_mgr.apply(preset, body)
+
+    # ── Subscription provider intercept ──────────────────────────────────────
+    # Check if model targets an OAuth-backed subscription provider (e.g.
+    # "copilot/gpt-4o", "github-copilot/gpt-4o", "gemini-cli/gemini-2.0-flash").
+    # If so, proxy the request upstream and bypass local MLX inference entirely.
+    _sub_match = resolve_subscription_route(body.model)
+    if _sub_match is not None:
+        _sub_route, _sub_model = _sub_match
+        _sub_token = get_subscription_token(_sub_route.provider_id)
+        if _sub_token is None:
+            return openai_error(
+                status_code=401,
+                message=(
+                    f"No token found for subscription provider '{_sub_route.provider_id}'. "
+                    "Run 'opta vault pull' to sync OAuth tokens from Opta Accounts."
+                ),
+                error_type="authentication_error",
+                code="missing_subscription_token",
+            )
+        # Build a plain dict from the request body for the proxy
+        _proxy_body = body.model_dump(exclude_none=True)
+        _proxy_body["model"] = _sub_model
+
+        _status, _resp_dict, _resp_stream = await proxy_chat_completion(
+            route=_sub_route,
+            token=_sub_token,
+            request_body=_proxy_body,
+            stream=body.stream,
+        )
+        if body.stream and _resp_stream is not None:
+            return StreamingResponse(_resp_stream, media_type="text/event-stream")
+        if _status == 200 and _resp_dict is not None:
+            return JSONResponse(content=_resp_dict)
+        return JSONResponse(
+            status_code=_status,
+            content={"error": {"message": str(_resp_dict), "type": "upstream_error"}},
+        )
+    # ── End subscription provider intercept ──────────────────────────────────
 
     # Resolve alias (e.g. "auto", "code") to a real loaded model ID
     loaded_ids = [m.model_id for m in engine.get_loaded_models()]

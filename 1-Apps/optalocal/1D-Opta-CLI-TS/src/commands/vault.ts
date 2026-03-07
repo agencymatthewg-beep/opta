@@ -18,6 +18,7 @@ import {
     pushVaultRules,
     readCachedRules,
 } from '../accounts/vault.js';
+import { keychainStatus, getConnectionTokenMeta } from '../keychain/api-keys.js';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getConfigDir } from '../platform/paths.js';
@@ -68,7 +69,7 @@ export async function runVaultCommand(
 async function handlePull(state: Awaited<ReturnType<typeof loadAccountState>>): Promise<void> {
     console.log(chalk.dim('Syncing from Opta Vault...'));
 
-    const { keys, rules } = await syncVault(state);
+    const { keys, rules, connections } = await syncVault(state);
 
     if (keys.synced > 0) {
         console.log(chalk.green(`  ✓ ${keys.synced} API keys synced to keychain`));
@@ -82,6 +83,20 @@ async function handlePull(state: Awaited<ReturnType<typeof loadAccountState>>): 
     if (keys.errors.length > 0) {
         console.log(chalk.red(`  ✗ ${keys.errors.length} errors:`));
         for (const e of keys.errors) {
+            console.log(chalk.dim(`    ${e}`));
+        }
+    }
+
+    if (connections.cached) {
+        console.log(chalk.dim('  — OAuth connections unchanged (cached)'));
+    } else if (connections.synced > 0) {
+        console.log(chalk.green(`  ✓ ${connections.synced} OAuth connection tokens synced to keychain`));
+    } else {
+        console.log(chalk.dim('  — No OAuth connections to sync'));
+    }
+    if (connections.errors.length > 0) {
+        console.log(chalk.red(`  ✗ ${connections.errors.length} connection errors:`));
+        for (const e of connections.errors) {
             console.log(chalk.dim(`    ${e}`));
         }
     }
@@ -154,6 +169,19 @@ async function handlePushRules(
     }
 }
 
+function formatExpiry(expiresAt: string | null): string {
+    if (!expiresAt) return chalk.dim('No expiry');
+    const now = Date.now();
+    const expiryMs = new Date(expiresAt).getTime();
+    const diffMs = expiryMs - now;
+    if (diffMs <= 0) return chalk.red('EXPIRED');
+    const diffMin = Math.floor(diffMs / 60_000);
+    if (diffMin < 10) return chalk.yellow(`EXPIRING SOON (< 10min)`);
+    if (diffMin < 60) return chalk.green(`OK (expires in ${diffMin}min)`);
+    const diffHours = Math.floor(diffMin / 60);
+    return chalk.green(`OK (expires in ${diffHours}h)`);
+}
+
 async function handleStatus(
     state: Awaited<ReturnType<typeof loadAccountState>>,
 ): Promise<void> {
@@ -162,6 +190,48 @@ async function handleStatus(
     );
     console.log('');
 
+    // API keys in keychain
+    const kc = await keychainStatus();
+    console.log(chalk.bold('API Keys:'));
+    if (!kc.available) {
+        console.log(chalk.yellow('  ⚠ Keychain unavailable on this platform'));
+    } else {
+        const keyEntries: Array<[string, boolean]> = [
+            ['anthropic', kc.anthropic],
+            ['lmx', kc.lmx],
+            ['gemini', kc.gemini],
+            ['openai', kc.openai],
+            ['opencode-zen', kc.opencodeZen],
+            ['github', kc.github],
+        ];
+        for (const [name, present] of keyEntries) {
+            if (present) {
+                console.log(chalk.green(`  ✓ ${name}`));
+            } else {
+                console.log(chalk.dim(`  — ${name}: not stored`));
+            }
+        }
+    }
+
+    // OAuth connection tokens with expiry
+    console.log('');
+    console.log(chalk.bold('OAuth Connections:'));
+    const oauthProviders = ['google', 'github', 'gemini'];
+    let anyConnection = false;
+    for (const provider of oauthProviders) {
+        const meta = await getConnectionTokenMeta(provider);
+        if (meta !== null) {
+            anyConnection = true;
+            const expiry = formatExpiry(meta.expiresAt);
+            console.log(`  ${chalk.cyan(provider)}: ${expiry}`);
+        }
+    }
+    if (!anyConnection) {
+        console.log(chalk.dim('  — No OAuth connections synced. Run `opta vault pull` to sync.'));
+    }
+
+    // Rules
+    console.log('');
     const rules = await readCachedRules();
     if (rules) {
         const lines = rules.split('\n').length;

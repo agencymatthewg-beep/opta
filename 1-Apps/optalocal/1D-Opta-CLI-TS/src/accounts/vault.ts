@@ -58,8 +58,10 @@ function authHeaders(token: string): Record<string, string> {
 type VaultETagState = {
     rulesEtag?: string;
     keysEtag?: string;
+    connectionsEtag?: string;
     rulesLastSyncedAt?: string;
     keysLastSyncedAt?: string;
+    connectionsLastSyncedAt?: string;
 };
 
 async function readVaultState(): Promise<VaultETagState> {
@@ -116,6 +118,19 @@ type VaultFileResponse = {
     content: string | null;
     configured: boolean;
     syncedAt?: string;
+};
+
+type VaultConnectionEntry = {
+    provider: string;
+    token_encrypted: string | null;
+    token_expires_at: string | null;
+    updated_at: string;
+};
+
+type VaultConnectionsResponse = {
+    connections: VaultConnectionEntry[];
+    count: number;
+    syncedAt: string;
 };
 
 // ---------------------------------------------------------------------------
@@ -196,6 +211,88 @@ export async function pullVaultKeys(
     }
 
     return { synced, skipped, errors, syncedKeys };
+}
+
+// ---------------------------------------------------------------------------
+// Pull OAuth connection tokens from Vault
+// ---------------------------------------------------------------------------
+
+export async function pullVaultConnections(
+    state: AccountState | null,
+): Promise<{ synced: number; skipped: number; errors: string[]; cached?: boolean; syncedConnections: Array<{ provider: string }> }> {
+    const accessToken = state?.session?.access_token.trim();
+    if (!accessToken) return { synced: 0, skipped: 0, errors: ['not_authenticated'], syncedConnections: [] };
+
+    const url = new URL('/api/sync/connections', accountsBaseUrl());
+    const vaultState = await readVaultState();
+
+    const requestHeaders: Record<string, string> = { ...authHeaders(accessToken) };
+    if (vaultState.connectionsEtag && etagIsFresh(vaultState.connectionsLastSyncedAt)) {
+        requestHeaders['if-none-match'] = vaultState.connectionsEtag;
+    }
+
+    let payload: VaultConnectionsResponse;
+
+    try {
+        const res = await fetch(url.toString(), { headers: requestHeaders });
+
+        if (res.status === 304) {
+            await writeVaultState({ ...vaultState, connectionsLastSyncedAt: new Date().toISOString() });
+            return { synced: 0, skipped: 0, errors: [], cached: true, syncedConnections: [] };
+        }
+
+        if (res.status === 503) {
+            return { synced: 0, skipped: 0, errors: ['vault_sync_unavailable:schema_not_migrated'], syncedConnections: [] };
+        }
+
+        if (!res.ok) {
+            return { synced: 0, skipped: 0, errors: [`vault_connections_fetch_failed:${res.status}`], syncedConnections: [] };
+        }
+
+        const freshEtag = extractEtag(res.headers);
+        if (freshEtag) {
+            await writeVaultState({ ...vaultState, connectionsEtag: freshEtag, connectionsLastSyncedAt: new Date().toISOString() });
+        }
+
+        payload = (await res.json()) as VaultConnectionsResponse;
+    } catch (err) {
+        return { synced: 0, skipped: 0, errors: [`network_error:${String(err)}`], syncedConnections: [] };
+    }
+
+    const errors: string[] = [];
+    let synced = 0;
+    let skipped = 0;
+    const syncedConnections: Array<{ provider: string }> = [];
+
+    const { storeConnectionToken } = await import('../keychain/api-keys.js').catch(() => ({
+        storeConnectionToken: null,
+    }));
+
+    for (const entry of payload.connections ?? []) {
+        if (!entry.token_encrypted) {
+            skipped++;
+            continue;
+        }
+        if (storeConnectionToken) {
+            try {
+                const stored = await storeConnectionToken(entry.provider, entry.token_encrypted, entry.token_expires_at ?? null);
+                if (stored) {
+                    syncedConnections.push({ provider: entry.provider });
+                    synced++;
+                } else {
+                    errors.push(`${entry.provider}:decrypt_failed`);
+                    skipped++;
+                }
+            } catch (e) {
+                errors.push(`${entry.provider}:${String(e)}`);
+                skipped++;
+            }
+        } else {
+            skipped++;
+        }
+    }
+
+    return { synced, skipped, errors, syncedConnections };
 }
 
 // ---------------------------------------------------------------------------
@@ -346,10 +443,12 @@ export async function syncVault(
 ): Promise<{
     keys: { synced: number; skipped: number; errors: string[]; cached?: boolean; syncedKeys: Array<{ provider: string; label: string | null }> };
     rules: { content: string | null; configured: boolean; cached?: boolean };
+    connections: { synced: number; skipped: number; errors: string[]; cached?: boolean; syncedConnections: Array<{ provider: string }> };
 }> {
-    const [keys, rules] = await Promise.all([
+    const [keys, rules, connections] = await Promise.all([
         pullVaultKeys(state),
         pullVaultRules(state),
+        pullVaultConnections(state),
     ]);
-    return { keys, rules };
+    return { keys, rules, connections };
 }
