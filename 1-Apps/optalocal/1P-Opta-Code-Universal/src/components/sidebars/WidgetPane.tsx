@@ -170,7 +170,7 @@ export function WidgetPane({
                                 <button
                                     key={meta.id}
                                     className={`wp-catalog-btn ${alreadyAdded ? "wp-catalog-btn--added" : ""}`}
-                                    onClick={() => !alreadyAdded && onAddWidget(meta.id)}
+                                    onClick={() => onAddWidget(meta.id)}
                                     type="button"
                                     title={meta.description}
                                     disabled={alreadyAdded}

@@ -9331,6 +9331,9 @@ button.active,
   background: rgba(139, 92, 246, 0.1);
   border-color: rgba(139, 92, 246, 0.3);
 }
+.wp-catalog-btn-name {
+  flex: 1;
+}
 .wp-catalog-btn--added {
   opacity: 0.4;
   cursor: default;
