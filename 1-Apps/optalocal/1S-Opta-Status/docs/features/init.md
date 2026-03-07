@@ -39,6 +39,8 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 
 ## Recent Updates
 
+- 2026-03-07 — Restored the core "Opta Code" 3D dashboard layout for the Opta Init environment selection screen.
+
 - 2026-03-05 — Shipped the Ecosystem Smart Setup features: LMX Dashboard magic-link `/connect` route for zero-co...
 
 - 2026-02-26 — Production readiness and content improvements
@@ -46,8 +48,11 @@ Opta Init (`1O-Opta-Init`) is the public landing and setup portal at `init.optal
 - 2026-02-17 — Documentation content additions
 
 ## Auto-Synced Features
+- [x] Fix: Restored the core "Opta Code" 3D dashboard layout for the Opta Init environment
 - [x] `magicLink.ts` utility to construct `/connect` URLs. LMX app node click handler opens the magic URL. Globe icon button opens the Cloudflare Tunnel wizard.
 - [x] 5 new Tauri commands — `install_cloudflared` (brew + progress streaming), `start_cloudflared_login` (polls cert.pem), `provision_cloudflared_tunnel` (create + config), `write_tunnel_to_address_book` (shared ~/.config/opta/lmx-connections.json), `get_lmx_connection` (reads stored config).
 - [x] `download-artifacts.ts` updated to point to v0.7.0 GitHub Release.
 
 <!-- opta-sync-applied: 0010-ecosystem-smart-setup -->
+
+<!-- opta-sync-applied: 0013-opta-init-manager-v073-release -->
