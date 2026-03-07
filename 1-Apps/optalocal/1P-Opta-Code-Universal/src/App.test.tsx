@@ -143,6 +143,11 @@ vi.mock("./pages/DaemonLogsPage", () => ({
   DaemonLogsPage: () => <div>DaemonLogsPageMock</div>,
 }));
 
+// DeferredMount gates on window event from Framer onAnimationComplete — never fires in tests.
+vi.mock("./components/DeferredMount", () => ({
+  DeferredMount: ({ children }: { children: import("react").ReactNode }) => <>{children}</>,
+}));
+
 describe("App settings studio routing", () => {
   const makeDaemonState = (
     overrides: Partial<ReturnType<typeof useDaemonSessions>>,

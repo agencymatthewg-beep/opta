@@ -1,7 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFile, writeFile, mkdir, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
+
+// Prevent loadFallbackContext from reading real files from ~/Synced/AI26/... on the host
+// machine — those would add fallbackMemory and suppress the "opta init" tip in tests.
+vi.mock('node:os', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:os')>();
+  return {
+    ...actual,
+    homedir: () => join(tmpdir(), 'opta-agent-fake-home'),
+  };
+});
 import {
   buildSystemPrompt,
   shouldForceFinalReassessmentPass,
