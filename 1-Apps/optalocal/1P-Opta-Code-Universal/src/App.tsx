@@ -2619,33 +2619,7 @@ function App() {
                       <b>Ctrl+S</b> Settings · <b>Ctrl+B</b> Browser · <b>Ctrl+L</b> Live · <b>Ctrl+M</b> Models · <b>Ctrl+A</b> Atpo
                     </div>
                   )}
-                  {connectionState !== "connected" ? (
-                    <div className="v1-offline-state">
-                      <motion.div
-                        className="opta-diagnostic-grid"
-                        initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
-                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                        transition={{ type: "spring", stiffness: 300, damping: 25 }}
-                      >
-                        <div className="grid-header">
-                          <span className="sys-status">SYS_STATUS</span>
-                          <div className="status-badge"><div className="status-dot"></div> AWAITING_CONNECTION</div>
-                        </div>
-                        <div className="grid-content">
-                          Unable to establish WebSocket IPC with local Opta Daemon. All cognitive functions and tool delegates are suspended.
-                        </div>
-                        <div className="error-log">
-                          &gt; Attempting {connection.host}:{connection.port}... [ERR_CONNECTION_REFUSED]<br />
-                          &gt; Polling network interfaces... [NO_RESPONSE]<br />
-                          &gt; Local environment isolated.
-                        </div>
-                        <div className="action-row">
-                          <button className="action-btn primary" onClick={() => window.open(`http://${connection.host}:${connection.port}`, '_blank')} type="button">Launch Local Daemon <ChevronRight size={14} style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} /></button>
-                          <button className="action-btn" onClick={() => openSettings("connection-network")} type="button">Network Config</button>
-                        </div>
-                      </motion.div>
-                    </div>
-                  ) : (
+                  {connectionState === "connected" && !activeSessionId && (
                     <div className="v1-branding">
                       <div
                         className={`v1-brand-logo ${isSettingsNavigationActive ? "is-settings-open" : ""}`}
@@ -3060,43 +3034,71 @@ function App() {
                 <div className={`v1-chat-pane ${isAnyOverlayActive ? `v1-chat-hidden dm-chat-anim dm-chat-${designMode}` : ""}`}>
                   {/* Session chat */}
                   {activePage === "sessions" ? (
-                    <>
-                      {!activeSessionId ? (
-                        <div className="v1-messages">
-                          <div className="v1-empty-msg">No messages yet. Select a project and start a task.</div>
-                        </div>
-                      ) : (
-                        <div className="v1-timeline-area">
-                          {timelineItems.length > 0 && (
-                            <div className="session-export-bar">
-                              <button
-                                type="button"
-                                className="session-export-btn"
-                                onClick={() => {
-                                  const md = exportToMarkdown(activeSessionId, timelineItems);
-                                  downloadAsFile(`opta-session-${activeSessionId}.md`, md);
-                                  setNotice("Session exported as Markdown");
-                                }}
-                                title="Export session as Markdown"
-                              >
-                                <Download size={12} aria-hidden="true" />
-                                Export
-                              </button>
-                            </div>
-                          )}
-                          <TimelineCards
-                            sessionId={activeSessionId}
-                            sessionTitle={activeSession?.title}
-                            items={timelineItems}
-                            isStreaming={isStreaming}
-                            pendingPermissions={pendingPermissions}
-                            onResolvePermission={resolvePermission}
-                            connectionState={connectionState}
-                            browserVisualState={activeBrowserVisual}
-                          />
-                        </div>
-                      )}
-                    </>
+                    connectionState !== "connected" ? (
+                      <div className="v1-offline-state">
+                        <motion.div
+                          className="opta-diagnostic-grid"
+                          initial={{ opacity: 0, y: 10, filter: "blur(4px)" }}
+                          animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                          transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        >
+                          <div className="grid-header">
+                            <span className="sys-status">SYS_STATUS</span>
+                            <div className="status-badge"><div className="status-dot"></div> AWAITING_CONNECTION</div>
+                          </div>
+                          <div className="grid-content">
+                            Unable to establish WebSocket IPC with local Opta Daemon. All cognitive functions and tool delegates are suspended.
+                          </div>
+                          <div className="error-log">
+                            &gt; Attempting {connection.host}:{connection.port}... [ERR_CONNECTION_REFUSED]<br />
+                            &gt; Polling network interfaces... [NO_RESPONSE]<br />
+                            &gt; Local environment isolated.
+                          </div>
+                          <div className="action-row">
+                            <button className="action-btn primary" onClick={() => window.open(`http://${connection.host}:${connection.port}`, '_blank')} type="button">Launch Local Daemon <ChevronRight size={14} style={{ display: 'inline', marginLeft: '4px', verticalAlign: 'middle' }} /></button>
+                            <button className="action-btn" onClick={() => openSettings("connection-network")} type="button">Network Config</button>
+                          </div>
+                        </motion.div>
+                      </div>
+                    ) : (
+                      <>
+                        {!activeSessionId ? (
+                          <div className="v1-messages">
+                            <div className="v1-empty-msg">No messages yet. Select a project and start a task.</div>
+                          </div>
+                        ) : (
+                          <div className="v1-timeline-area">
+                            {timelineItems.length > 0 && (
+                              <div className="session-export-bar">
+                                <button
+                                  type="button"
+                                  className="session-export-btn"
+                                  onClick={() => {
+                                    const md = exportToMarkdown(activeSessionId, timelineItems);
+                                    downloadAsFile(`opta-session-${activeSessionId}.md`, md);
+                                    setNotice("Session exported as Markdown");
+                                  }}
+                                  title="Export session as Markdown"
+                                >
+                                  <Download size={12} aria-hidden="true" />
+                                  Export
+                                </button>
+                              </div>
+                            )}
+                            <TimelineCards
+                              sessionId={activeSessionId}
+                              sessionTitle={activeSession?.title}
+                              items={timelineItems}
+                              isStreaming={isStreaming}
+                              pendingPermissions={pendingPermissions}
+                              onResolvePermission={resolvePermission}
+                              connectionState={connectionState}
+                              browserVisualState={activeBrowserVisual}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )
                   ) : null}
                 </div>
               </div>
