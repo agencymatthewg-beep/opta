@@ -85,6 +85,24 @@ const PROVIDER_DEFS: ProviderDef[] = [
     color: '#4285F4',
     initial: 'G',
   },
+  {
+    id: 'huggingface',
+    name: 'Hugging Face',
+    description: 'Use your HF account for serverless inference on 100k+ models',
+    connectMethod: 'oauth_redirect',
+    oauthStartUrl: '/api/oauth/huggingface/start?return_to=/connections',
+    color: '#FF9D00',
+    initial: 'HF',
+  },
+  {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    description: 'Route to 60+ models using your OpenRouter credit balance',
+    connectMethod: 'oauth_redirect',
+    oauthStartUrl: '/api/oauth/openrouter/start?return_to=/connections',
+    color: '#6467F2',
+    initial: 'OR',
+  },
 ];
 
 const SPRING = { type: 'spring', stiffness: 220, damping: 26 } as const;
