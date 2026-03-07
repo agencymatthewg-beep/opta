@@ -181,6 +181,12 @@ describe('daemon http-server telemetry and routes', () => {
       runtime: sessionManager.getRuntimeStats(),
     });
 
+    const unauthorizedStream = await running.app.inject({
+      method: 'GET',
+      url: '/v3/health/stream',
+    });
+    expect(unauthorizedStream.statusCode).toBe(401);
+
     const unauthorizedMetrics = await running.app.inject({
       method: 'GET',
       url: '/v3/metrics',

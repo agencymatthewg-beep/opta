@@ -266,6 +266,37 @@ function registerHttpRoutes(
     };
   });
 
+  app.get('/v3/health/stream', (req, reply) => {
+    if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
+    const raw = reply.raw;
+    raw.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    });
+    const buildPayload = () =>
+      JSON.stringify({
+        status: 'ok',
+        version: VERSION,
+        daemonId: opts.daemonId,
+        contract: expectedDaemonContract(),
+        runtime: opts.sessionManager.getRuntimeStats(),
+        ts: Date.now(),
+      });
+    const send = () => {
+      if (raw.destroyed) return;
+      raw.write(`data: ${buildPayload()}\n\n`);
+    };
+    send();
+    const heartbeat = setInterval(send, 25_000);
+    req.raw.on('close', () => {
+      clearInterval(heartbeat);
+      if (!raw.destroyed) raw.end();
+    });
+    return reply;
+  });
+
   app.get('/v3/metrics', async (req, reply) => {
     if (!isAuthorized(req, opts.token)) return rejectUnauthorized(reply);
     const runtime = opts.sessionManager.getRuntimeStats();

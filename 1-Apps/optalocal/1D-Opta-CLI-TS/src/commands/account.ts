@@ -437,9 +437,9 @@ function normalizeCallbackReturnTo(raw: string | null): string | null {
   }
 }
 
-function isValidCallbackExchangeCode(raw: string | null | undefined): raw is string {
+export function isValidCallbackExchangeCode(raw: string | null | undefined): raw is string {
   if (!raw) return false;
-  return /^[A-Za-z0-9_-]{24,256}$/.test(raw);
+  return /^[A-Za-z0-9._-]{24,8192}$/.test(raw);
 }
 
 function parseOAuthTimeoutMs(raw: string): number {

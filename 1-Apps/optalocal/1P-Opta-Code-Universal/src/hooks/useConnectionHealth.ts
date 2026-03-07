@@ -116,6 +116,33 @@ export function useConnectionHealth(
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [connKey, connection.token, connection.protocol]);
 
+    // SSE push subscription — instant state updates without waiting for poll interval
+    useEffect(() => {
+        if (typeof EventSource === "undefined") return;
+        if (!connection.token) return;
+        const proto = connection.protocol ?? "http";
+        const url = `${proto}://${connection.host}:${connection.port}/v3/health/stream?token=${encodeURIComponent(connection.token)}`;
+        let isClosed = false;
+        const es = new EventSource(url);
+        es.onopen = () => {
+            if (isClosed) return;
+            setProbeState("connected");
+        };
+        es.onmessage = () => {
+            if (isClosed) return;
+            setProbeState("connected");
+        };
+        es.onerror = () => {
+            if (isClosed) return;
+            setProbeState("disconnected");
+        };
+        return () => {
+            isClosed = true;
+            es.close();
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [connKey, connection.token, connection.protocol]);
+
     const effectiveStatus = isOffline
         ? "offline"
         : probeState;

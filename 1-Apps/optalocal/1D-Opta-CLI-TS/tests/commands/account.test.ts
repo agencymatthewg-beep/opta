@@ -559,6 +559,48 @@ describe('account command', () => {
     ).rejects.toThrow(/Strict callback mode rejected legacy token callback/);
   });
 
+  describe('isValidCallbackExchangeCode', () => {
+    let isValidCallbackExchangeCode: (raw: string | null | undefined) => raw is string;
+
+    beforeEach(async () => {
+      const mod = await import('../../src/commands/account.js');
+      isValidCallbackExchangeCode = mod.isValidCallbackExchangeCode;
+    });
+
+    it('accepts a signed relay code with dots and long segments', () => {
+      const signed = 'v1.AAAAAAAAAAAAAAAA.BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB.CCCCCCCCCCCCCCCCCCCCCCCC';
+      expect(isValidCallbackExchangeCode(signed)).toBe(true);
+    });
+
+    it('accepts a plain 32-char alphanumeric code (backward compat)', () => {
+      expect(isValidCallbackExchangeCode('abcdefghijklmnopqrstuvwxyz012345')).toBe(true);
+    });
+
+    it('rejects null', () => {
+      expect(isValidCallbackExchangeCode(null)).toBe(false);
+    });
+
+    it('rejects undefined', () => {
+      expect(isValidCallbackExchangeCode(undefined)).toBe(false);
+    });
+
+    it('rejects empty string', () => {
+      expect(isValidCallbackExchangeCode('')).toBe(false);
+    });
+
+    it('rejects codes with disallowed characters (spaces)', () => {
+      expect(isValidCallbackExchangeCode('abcdefghijklmnopqrstuvwx yz0123')).toBe(false);
+    });
+
+    it('rejects codes with disallowed characters (! and @)', () => {
+      expect(isValidCallbackExchangeCode('abcdefghijklmnopqrstuvwx!@01234')).toBe(false);
+    });
+
+    it('rejects codes shorter than 24 chars', () => {
+      expect(isValidCallbackExchangeCode('short-code-only-23char')).toBe(false);
+    });
+  });
+
   it('runOAuthLoginFlow emits browser-launch warning and still succeeds in system-browser mode', async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse(200, { ok: true }))

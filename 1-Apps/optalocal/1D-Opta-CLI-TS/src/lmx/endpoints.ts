@@ -32,7 +32,7 @@ interface ResolveEndpointOptions {
 
 const DEFAULT_PROBE_TIMEOUT_MS = 1_500;
 const ENDPOINT_CACHE_TTL_MS = 30_000;
-const DEFAULT_PRIMARY_GRACE_MS = 125;
+const DEFAULT_PRIMARY_GRACE_MS = 75;
 
 interface CachedEndpoint {
   host: string;
