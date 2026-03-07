@@ -26,14 +26,14 @@ export function WidgetModelSwitcher({ connection }: Props) {
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {loadedModels.map((m) => (
           <button
-            key={m.id}
-            className={`wp-catalog-btn ${activeModel === m.id ? "wp-catalog-btn--active" : ""}`}
-            onClick={() => switchModel(m.id)}
+            key={m.model_id}
+            className={`wp-catalog-btn ${activeModel === m.model_id ? "wp-catalog-btn--active" : ""}`}
+            onClick={() => switchModel(m.model_id)}
             type="button"
             style={{ fontSize: 11 }}
           >
-            {m.name ?? m.id}
-            {activeModel === m.id && <span className="wp-catalog-btn-check">✓</span>}
+            {m.model_id}
+            {activeModel === m.model_id && <span className="wp-catalog-btn-check">✓</span>}
           </button>
         ))}
       </div>

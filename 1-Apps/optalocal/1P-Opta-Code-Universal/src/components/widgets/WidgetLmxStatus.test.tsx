@@ -6,7 +6,7 @@ import * as useModelsModule from "../../hooks/useModels";
 beforeEach(() => {
   vi.spyOn(useModelsModule, "useModels").mockReturnValue({
     lmxReachable: true,
-    loadedModels: [{ id: "kimi-k2-3bit", name: "Kimi K2.5", loaded: true } as any],
+    loadedModels: [{ model_id: "kimi-k2-3bit", status: "loaded" } as any],
     lmxStatus: { state: "connected", latencyMs: 22 } as any,
     lmxDiscovery: null,
     lmxEndpointCandidates: [],
@@ -21,7 +21,7 @@ beforeEach(() => {
 it("shows connected state", () => {
   render(<WidgetLmxStatus connection={{ host: "192.168.188.11", port: 1234 } as any} />);
   expect(screen.getByText("CONNECTED")).toBeInTheDocument();
-  expect(screen.getByText("Kimi K2.5")).toBeInTheDocument();
+  expect(screen.getByText("kimi-k2-3bit")).toBeInTheDocument();
   expect(screen.getByText(/22.*ms/)).toBeInTheDocument();
 });
 

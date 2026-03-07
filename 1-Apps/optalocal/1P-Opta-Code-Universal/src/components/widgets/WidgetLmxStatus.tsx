@@ -19,7 +19,7 @@ export function WidgetLmxStatus({ connection }: Props) {
   const badge = state === "connected" ? "CONNECTED" : state === "degraded" ? "NO MODEL" : "OFFLINE";
   const accentVar = state === "connected" ? "--opta-neon-cyan" : state === "degraded" ? "--opta-neon-amber" : "--opta-error";
   const latency = (lmxStatus as any)?.latencyMs ?? null;
-  const activeModel = loadedModels[0]?.name ?? loadedModels[0]?.id ?? "—";
+  const activeModel = loadedModels[0]?.model_id ?? "—";
   const source = (lmxDiscovery as any)?.source ?? "config";
 
   return (
