@@ -5,6 +5,7 @@ import { WidgetAtpo } from "../widgets/WidgetAtpo";
 import { WidgetCliStream } from "../widgets/WidgetCliStream";
 import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
 import { WidgetLmxStatus } from "../widgets/WidgetLmxStatus";
+import { WidgetContextBar } from "../widgets/WidgetContextBar";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -39,6 +40,8 @@ export function WidgetContent(props: {
             return <WidgetGitDiff connection={connection} sessionId={sessionId} />;
         case "lmx-status":
             return <WidgetLmxStatus connection={connection ?? null} />;
+        case "context-bar":
+            return <WidgetContextBar timelineItems={timelineItems} />;
         default:
             return (
                 <div className="widget-placeholder">
