@@ -6,6 +6,7 @@ import { WidgetCliStream } from "../widgets/WidgetCliStream";
 import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
 import { WidgetLmxStatus } from "../widgets/WidgetLmxStatus";
 import { WidgetContextBar } from "../widgets/WidgetContextBar";
+import { WidgetActiveTool } from "../widgets/WidgetActiveTool";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -42,6 +43,8 @@ export function WidgetContent(props: {
             return <WidgetLmxStatus connection={connection ?? null} />;
         case "context-bar":
             return <WidgetContextBar timelineItems={timelineItems} />;
+        case "active-tool":
+            return <WidgetActiveTool rawEvents={rawEvents} />;
         default:
             return (
                 <div className="widget-placeholder">
