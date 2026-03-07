@@ -3022,6 +3022,8 @@ function App() {
                   rawEvents={activeSessionId ? rawEventsBySession[activeSessionId] || [] : []}
                   connection={connection}
                   sessionId={activeSessionId}
+                  connectionHealth={useConnectionHealthResult}
+                  projectCwd={(activeSession as any)?.workspace ?? null}
                 />
                 {showTerminal && (
                   <div className="v1-right-panel" style={{ width: '400px', borderLeft: '1px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>

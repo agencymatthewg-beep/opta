@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../../types";
+import type { ConnectionHealthState } from "../../hooks/useConnectionHealth";
 import { WIDGET_REGISTRY } from "../widgets/WIDGET_REGISTRY";
 import { WidgetAtpo } from "../widgets/WidgetAtpo";
 import { WidgetCliStream } from "../widgets/WidgetCliStream";
@@ -10,6 +11,7 @@ import { WidgetActiveTool } from "../widgets/WidgetActiveTool";
 import { WidgetSessionMemory } from "../widgets/WidgetSessionMemory";
 import { WidgetModelSwitcher } from "../widgets/WidgetModelSwitcher";
 import { WidgetLatencySparkline } from "../widgets/WidgetLatencySparkline";
+import { WidgetDaemonRing } from "../widgets/WidgetDaemonRing";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];
@@ -24,6 +26,8 @@ interface WidgetPaneProps {
     openSettings?: (tab: string) => void; // TEMP for prototyping
     connection?: DaemonConnectionOptions;
     sessionId?: string | null;
+    connectionHealth?: ConnectionHealthState | null;
+    projectCwd?: string | null;
 }
 
 export function WidgetContent(props: {
@@ -33,8 +37,10 @@ export function WidgetContent(props: {
     designMode?: string;
     connection?: DaemonConnectionOptions;
     sessionId?: string | null;
+    connectionHealth?: ConnectionHealthState | null;
+    projectCwd?: string | null;
 }) {
-    const { widgetId, timelineItems, rawEvents, designMode, connection, sessionId } = props;
+    const { widgetId, timelineItems, rawEvents, designMode, connection, sessionId, connectionHealth, projectCwd } = props;
     switch (widgetId) {
         case "atpo":
             return <WidgetAtpo timelineItems={timelineItems} designMode={designMode} />;
@@ -54,6 +60,8 @@ export function WidgetContent(props: {
             return <WidgetModelSwitcher connection={connection ?? null} />;
         case "latency-sparkline":
             return <WidgetLatencySparkline timelineItems={timelineItems} />;
+        case "daemon-ring":
+            return <WidgetDaemonRing health={connectionHealth ?? null} />;
         default:
             return (
                 <div className="widget-placeholder">
@@ -79,6 +87,8 @@ export function WidgetPane({
     openSettings,
     connection,
     sessionId,
+    connectionHealth,
+    projectCwd,
 }: WidgetPaneProps) {
     const hasWidgets = slots.length > 0;
 
@@ -174,6 +184,8 @@ export function WidgetPane({
                                 designMode={designMode}
                                 connection={connection}
                                 sessionId={sessionId}
+                                connectionHealth={connectionHealth}
+                                projectCwd={projectCwd}
                             />
                         )}
                     </div>
