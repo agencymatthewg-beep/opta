@@ -2,10 +2,11 @@
  * GET /api/oauth/openrouter/start?return_to=<path>
  *
  * Initiates the OpenRouter OAuth PKCE flow.
- * OpenRouter uses standard OAuth 2.0 PKCE — the resulting token provides
- * access to 60+ models using the user's credit balance.
+ * OpenRouter is registration-free — no client_id or app credentials required.
+ * The callback_url is embedded directly in the auth request. State is embedded
+ * in the callback_url so OpenRouter returns it when redirecting back.
  *
- * Docs: https://openrouter.ai/docs/api-keys (OAuth section)
+ * Docs: https://openrouter.ai/docs/use-cases/oauth
  *
  * Auth: Supabase session required.
  */
@@ -22,11 +23,6 @@ const PKCE_COOKIE_MAX_AGE = 600; // 10 minutes
 const PKCE_COOKIE_PATH = '/api/oauth/openrouter';
 
 export async function GET(request: Request) {
-  const clientId = process.env.OPENROUTER_OAUTH_CLIENT_ID;
-  if (!clientId) {
-    return NextResponse.json({ error: 'openrouter_not_configured' }, { status: 503 });
-  }
-
   const supabase = await createClient();
   if (!supabase) {
     return NextResponse.json({ error: 'supabase_unconfigured' }, { status: 500 });
@@ -50,13 +46,12 @@ export async function GET(request: Request) {
   const cookieValue = JSON.stringify({ verifier, returnTo, state });
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
-  const redirectUri = `${siteUrl}/api/oauth/openrouter/callback`;
+  // Embed state in callback_url — OpenRouter appends ?code=X to whatever URL we provide,
+  // so ?state=Y becomes ?state=Y&code=X, enabling normal CSRF validation in the callback.
+  const callbackUrl = `${siteUrl}/api/oauth/openrouter/callback?state=${encodeURIComponent(state)}`;
 
   const orParams = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    response_type: 'code',
-    state,
+    callback_url: callbackUrl,
     code_challenge: challenge,
     code_challenge_method: 'S256',
   });

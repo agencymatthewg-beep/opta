@@ -84,11 +84,8 @@ export async function GET(request: Request) {
 
   const { verifier, returnTo } = pkce;
 
-  const clientId = process.env.OPENROUTER_OAUTH_CLIENT_ID ?? '';
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? '';
-  const redirectUri = `${siteUrl}/api/oauth/openrouter/callback`;
-
-  // OpenRouter PKCE token exchange — returns { key: "sk-or-..." }
+  // OpenRouter PKCE token exchange — registration-free, no client_id needed.
+  // Returns { key: "sk-or-..." } which is a provisioned API key.
   let tokenData: OpenRouterKeyResponse;
   try {
     const tokenRes = await fetch('https://openrouter.ai/api/v1/auth/keys', {
@@ -97,8 +94,6 @@ export async function GET(request: Request) {
       body: JSON.stringify({
         code,
         code_verifier: verifier,
-        redirect_uri: redirectUri,
-        client_id: clientId,
       }),
     });
 
