@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-06T02:34:14.571Z",
+  "generatedAt": "2026-03-07T01:53:25.838Z",
   "source": {
     "desktopRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1P-Opta-Code-Universal",
     "cliRoot": "/Users/matthewbyrden/Synced/Opta/1-Apps/optalocal/1D-Opta-CLI-TS",
@@ -138,6 +138,12 @@
         "rationale": "Dedicated Environment Profiles page (env.*)."
       },
       {
+        "command": "health",
+        "status": "covered",
+        "required": true,
+        "rationale": "Desktop exposes runtime health through the daemon panel, workspace health indicators, and model/daemon health actions."
+      },
+      {
         "command": "init",
         "status": "covered",
         "required": true,
@@ -204,6 +210,12 @@
         "rationale": "Session rail + sessions.* operations."
       },
       {
+        "command": "settings",
+        "status": "covered",
+        "required": true,
+        "rationale": "Settings Studio is a first-class desktop surface for runtime, provider, browser, fleet, policy, and workspace configuration."
+      },
+      {
         "command": "setup",
         "status": "covered",
         "required": true,
@@ -241,12 +253,12 @@
       }
     ],
     "commandStatusCounts": {
-      "covered": 30,
+      "covered": 32,
       "adapted": 1
     },
     "operationScopeCoverage": {
-      "totalCliOperations": 88,
-      "scopedMatches": 86,
+      "totalCliOperations": 89,
+      "scopedMatches": 87,
       "unmatched": [
         "audio.transcribe",
         "audio.tts"

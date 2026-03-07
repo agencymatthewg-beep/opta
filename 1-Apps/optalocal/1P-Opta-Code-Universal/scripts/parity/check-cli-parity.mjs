@@ -86,6 +86,12 @@ const COMMAND_STATUS_MAP = {
   },
   models: { status: "covered", required: true, rationale: "Dedicated Models page + models.* operations." },
   env: { status: "covered", required: true, rationale: "Dedicated Environment Profiles page (env.*)." },
+  health: {
+    status: "covered",
+    required: true,
+    rationale:
+      "Desktop exposes runtime health through the daemon panel, workspace health indicators, and model/daemon health actions.",
+  },
   config: { status: "covered", required: true, rationale: "Dedicated Config Studio page." },
   account: { status: "covered", required: true, rationale: "Dedicated account controls page." },
   key: { status: "covered", required: true, rationale: "Exposed in account/local key controls." },
@@ -96,6 +102,12 @@ const COMMAND_STATUS_MAP = {
     required: true,
     rationale:
       "Dedicated Session Memory page maps memory workflows to sessions.* daemon operations, with CLI bridge fallback.",
+  },
+  settings: {
+    status: "covered",
+    required: true,
+    rationale:
+      "Settings Studio is a first-class desktop surface for runtime, provider, browser, fleet, policy, and workspace configuration.",
   },
   onboard: {
     status: "covered",
