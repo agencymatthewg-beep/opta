@@ -193,6 +193,12 @@ export interface DaemonLmxDiscoveryResponse {
     websocket_url?: string;
     [key: string]: unknown;
   };
+  target?: {
+    host: string;
+    port: number;
+    fallbackHosts: string[];
+    autoDiscover: boolean;
+  };
   client_probe_order?: string[];
   [key: string]: unknown;
 }

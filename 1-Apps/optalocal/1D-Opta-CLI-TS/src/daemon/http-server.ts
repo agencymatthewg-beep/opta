@@ -481,7 +481,15 @@ function registerHttpRoutes(
     adminKeysByHost: config.connection.adminKeysByHost,
       });
       const discovery = await lmx.discovery();
-      return discovery;
+      return {
+        ...discovery,
+        target: {
+          host: config.connection.host,
+          port: config.connection.port,
+          fallbackHosts: config.connection.fallbackHosts,
+          autoDiscover: config.connection.autoDiscover,
+        },
+      };
     } catch (err) {
       const mapped = mapLmxRouteError(err);
       return reply.status(mapped.status).send(mapped.body);

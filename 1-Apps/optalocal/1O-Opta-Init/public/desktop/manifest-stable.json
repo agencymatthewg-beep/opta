@@ -64,7 +64,7 @@
     {
       "id": "opta-code-universal",
       "displayName": "Opta Code Desktop",
-      "version": "0.2.1",
+      "version": "0.2.2",
       "minManagerVersion": "0.6.0",
       "track": "stable",
       "rollout": {

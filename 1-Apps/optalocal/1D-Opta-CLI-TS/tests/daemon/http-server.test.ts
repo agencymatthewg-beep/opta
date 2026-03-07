@@ -10,6 +10,7 @@ const { loadConfigMock, lmxClientCtor, lmxClientInstance } = vi.hoisted(() => {
       port: 1234,
       adminKey: 'test-admin-key',
       fallbackHosts: [],
+      autoDiscover: true,
     },
   }));
 
@@ -369,6 +370,12 @@ describe('daemon http-server telemetry and routes', () => {
     expect(discoveryRes.json()).toMatchObject({
       service: 'opta-lmx',
       endpoints: { preferred_base_url: 'http://127.0.0.1:1234' },
+      target: {
+        host: '127.0.0.1',
+        port: 1234,
+        fallbackHosts: [],
+        autoDiscover: true,
+      },
     });
     expect(lmxClientInstance.discovery).toHaveBeenCalled();
 
