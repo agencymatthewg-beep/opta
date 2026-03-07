@@ -182,13 +182,22 @@ async function resolvePlatformAvailability(
     };
   }
 
+  // When the manifest was reachable and returned a version (even if the asset
+  // URL is not a user-facing installer, e.g. .app.tar.gz updater bundles),
+  // prefer the manifest version over the hardcoded fallback constant so the
+  // download button always reflects the latest published release.
+  const bestVersion =
+    release.status === "found" && release.version
+      ? release.version
+      : fallbackVersion;
+
   if (target.fallbackUrl) {
     return {
       url: target.fallbackUrl,
       available: true,
       label: labelFor(target.fallbackUrl, true),
       source: "fallback",
-      version: fallbackVersion,
+      version: bestVersion,
     };
   }
 
