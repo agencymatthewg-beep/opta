@@ -22,3 +22,13 @@ it("renders without badge", () => {
   );
   expect(screen.queryByRole("status")).not.toBeInTheDocument();
 });
+
+it("threads accentVar as --widget-accent inline style", () => {
+  const { container } = render(
+    <WidgetShell icon={<Activity size={14} />} title="T" accentVar="--opta-neon-cyan">
+      <span>c</span>
+    </WidgetShell>
+  );
+  const card = container.firstChild as HTMLElement;
+  expect(card.style.getPropertyValue("--widget-accent")).toBe("var(--opta-neon-cyan)");
+});
