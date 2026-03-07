@@ -9,6 +9,16 @@
       "permanent": false
     },
     {
+      "source": "/downloads/opta-code-universal/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_aarch64.dmg",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_aarch64.dmg",
+      "permanent": false
+    },
+    {
+      "source": "/downloads/opta-code-universal/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_x64-setup.exe",
+      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/v0.2.1/Opta.Code.Desktop.Universal_0.2.1_x64-setup.exe",
+      "permanent": false
+    },
+    {
       "source": "/downloads/opta-daemon/v0.0.0-beta.test.5/opta-daemon-macos-universal.tar.gz",
       "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-daemon-v0.0.0-beta.test.5/opta-daemon-macos-universal.tar.gz",
       "permanent": false
@@ -40,17 +50,17 @@
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-mac.dmg",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/Opta-Init-Manager_aarch64.dmg",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.3/Opta-Init-Manager_aarch64.dmg",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/opta-init-windows-x64.exe",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/opta-init-windows-x64.exe",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.3/opta-init-windows-x64.exe",
       "permanent": false
     },
     {
       "source": "/downloads/opta-init/latest/Opta-Init-Manager_x64-setup.nsis.zip",
-      "destination": "https://github.com/agencymatthewg-beep/opta/releases/download/opta-init-manager-stable-v0.7.2/Opta-Init-Manager_x64-setup.nsis.zip",
+      "destination": "https://init.optalocal.com/desktop-updates/manager/stable/0.7.3/Opta-Init-Manager_x64-setup.nsis.zip",
       "permanent": false
     },
     {
