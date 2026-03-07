@@ -32,7 +32,7 @@ function NavBar() {
       <div className="max-w-4xl mx-auto px-6 py-3 flex items-center justify-between">
         {/* Wordmark */}
         <Link href="/" className="flex items-center gap-2.5 group">
-          <span className="h-8 w-8 rounded-md overflow-hidden border border-border/60 bg-surface/70 flex items-center justify-center">
+          <span className="h-8 w-8 rounded-md overflow-hidden flex items-center justify-center">
             <Image
               src="/opta-status-mark.svg"
               alt="Opta Status mark"
