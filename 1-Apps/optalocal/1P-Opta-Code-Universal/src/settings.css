@@ -389,31 +389,7 @@
   pointer-events: none;
 }
 
-.opta-studio-top-chrome {
-  position: relative;
-  z-index: 2;
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) auto minmax(52px, 1fr);
-  align-items: start;
-  gap: 0.7rem;
-  padding: 0.45rem 1.3rem 0.2rem;
-  text-align: left;
-}
 
-.opta-studio-top-chrome-left {
-  justify-self: start;
-  min-width: 0;
-}
-
-.opta-studio-top-chrome-center {
-  justify-self: center;
-}
-
-.opta-studio-top-chrome-right {
-  justify-self: end;
-  display: inline-flex;
-  align-items: flex-start;
-}
 
 .opta-studio-shortcut-panel {
   max-width: min(44ch, 100%);
@@ -443,43 +419,7 @@
   line-height: 1.45;
 }
 
-.opta-studio-command-row {
-  width: auto;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.62rem;
-  flex-wrap: wrap;
-}
 
-.opta-studio-command-row h2 {
-  margin: 0;
-  font-family: "Sora", sans-serif;
-  font-size: 1.04rem;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  color: var(--studio-text);
-  display: flex;
-  align-items: center;
-  gap: 0.68rem;
-  min-width: 0;
-}
-
-.opta-studio-panel-title {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.45rem;
-}
-
-.opta-studio-panel-eyebrow {
-  font-family: "JetBrains Mono", monospace;
-  font-size: 0.8rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #d6e6ff;
-}
 
 .opta-studio-current-category-inline {
   display: inline-flex;

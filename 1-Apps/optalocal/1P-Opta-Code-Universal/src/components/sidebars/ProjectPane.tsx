@@ -1,7 +1,9 @@
+import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import type { DaemonSessionSummary, AgentBarItem } from "../../types";
 import type { ConnectionHealthState } from "../../hooks/useConnectionHealth";
 import { handleExternalClick } from "../../lib/openUrl";
-import { Plus } from "lucide-react";
+import { Plus, ChevronRight } from "lucide-react";
 
 interface ProjectPaneProps {
     sessions: DaemonSessionSummary[];
@@ -71,6 +73,18 @@ export function ProjectPane({
 
     const isConnected = connectionState === "connected";
 
+    // Track expanded state for workspaces
+    const [expandedWorkspaces, setExpandedWorkspaces] = useState<Record<string, boolean>>({
+        default: true
+    });
+
+    const toggleWorkspace = (workspace: string) => {
+        setExpandedWorkspaces(prev => ({
+            ...prev,
+            [workspace]: !(prev[workspace] ?? true)
+        }));
+    };
+
     // Group sessions by workspace
     const workspaceMap = new Map<string, DaemonSessionSummary[]>();
     for (const session of sessions) {
@@ -82,7 +96,7 @@ export function ProjectPane({
     return (
         <aside
             className={`project-pane glass-subtle${collapsed ? " collapsed" : ""}`}
-            aria-hidden={collapsed ? "true" : undefined}
+            aria-hidden={collapsed || undefined}
         >
             {/* Projects Section */}
             <div className="pp-header">
@@ -98,28 +112,60 @@ export function ProjectPane({
             </div>
 
             <div className="pp-tree">
-                {[...workspaceMap.entries()].map(([workspace, wsSessions]) => (
-                    <div key={workspace} className="pp-workspace-group">
-                        <div className="pp-workspace-label">▾ {workspace}</div>
-                        {wsSessions.map((session) => {
-                            const isActive = session.sessionId === activeSessionId;
-                            const isSessionStreaming = streamingBySession[session.sessionId] ?? false;
-                            return (
-                                <button
-                                    key={session.sessionId}
-                                    className={`pp-session ${isActive ? "pp-session-active" : ""}`}
-                                    onClick={() => onSelectSession(session.sessionId)}
-                                    type="button"
+                {[...workspaceMap.entries()].map(([workspace, wsSessions]) => {
+                    const isExpanded = expandedWorkspaces[workspace] ?? true;
+                    return (
+                        <div key={workspace} className="pp-workspace-group">
+                            <motion.button
+                                type="button"
+                                className="pp-workspace-label-btn"
+                                onClick={() => toggleWorkspace(workspace)}
+                                whileHover={{ backgroundColor: "rgba(255, 255, 255, 0.04)" }}
+                                whileTap={{ scale: 0.98 }}
+                            >
+                                <motion.div
+                                    animate={{ rotate: isExpanded ? 90 : 0 }}
+                                    transition={{ type: "spring", stiffness: 300, damping: 20 }}
                                 >
-                                    <span className="pp-session-name">
-                                        {session.title || session.sessionId.slice(0, 8)}
-                                    </span>
-                                    {isSessionStreaming && <span className="pp-session-dot pp-dot-live" />}
-                                </button>
-                            );
-                        })}
-                    </div>
-                ))}
+                                    <ChevronRight size={14} strokeWidth={2.5} style={{ color: "var(--opta-primary)", opacity: 0.8 }} />
+                                </motion.div>
+                                <span className="pp-workspace-label-text">{workspace}</span>
+                            </motion.button>
+
+                            <AnimatePresence initial={false}>
+                                {isExpanded && (
+                                    <motion.div
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: "auto", opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ type: "spring", stiffness: 300, damping: 25, mass: 0.8 }}
+                                        style={{ overflow: "hidden" }}
+                                    >
+                                        <div className="pp-workspace-sessions-list">
+                                            {wsSessions.map((session) => {
+                                                const isActive = session.sessionId === activeSessionId;
+                                                const isSessionStreaming = streamingBySession[session.sessionId] ?? false;
+                                                return (
+                                                    <button
+                                                        key={session.sessionId}
+                                                        className={`pp-session ${isActive ? "pp-session-active" : ""}`}
+                                                        onClick={() => onSelectSession(session.sessionId)}
+                                                        type="button"
+                                                    >
+                                                        <span className="pp-session-name">
+                                                            {session.title || session.sessionId.slice(0, 8)}
+                                                        </span>
+                                                        {isSessionStreaming && <span className="pp-session-dot pp-dot-live" />}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    );
+                })}
                 {sessions.length === 0 && (
                     <div className="pp-empty">No sessions yet</div>
                 )}
