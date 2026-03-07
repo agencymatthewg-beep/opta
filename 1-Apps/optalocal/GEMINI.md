@@ -6,7 +6,7 @@ This file is the workspace-level context router for Antigravity. Front-loaded cr
 
 1. **Long-term only** — no fragile fixes, no shortcuts with negative downstream implications
 2. **Read the app's GEMINI.md first** — 6 of 11 apps have their own; always read before working in one
-3. **Session start** → check `todo-optalocal/` for pending tasks, check `optalocal-updates/` for latest log number
+3. **Session start** → check `todo-optalocal/` for pending tasks, check `lessons-optalocal/` for past gotchas/fixes, check `optalocal-updates/` for latest log number
 4. **Design changes** → always activate `frontend-design` skill + provide 3 prototypes for review
 5. **Proactive commit** → commit autonomously with a conventional commit after every verified task
 
@@ -127,6 +127,15 @@ When identifying changes needed in another app, drop a handoff doc:
 ```
 
 See `todo-optalocal/README.md` for the full template.
+
+---
+
+## Lessons & Knowledge (`lessons-optalocal/`)
+
+When discovering any workspace-specific fix, gotcha, or repeated pattern:
+
+1. Write a new entry in `lessons-optalocal/YYYY-MM-DD-slug.md`.
+2. All AI agents **must** read `lessons-optalocal/` at the start of a session or before attempting complex fixes to ensure they autonomously adopt past learnings and avoid repeating documented mistakes (such as the Vercel sandboxing and Next.js static export bugs).
 
 ---
 
