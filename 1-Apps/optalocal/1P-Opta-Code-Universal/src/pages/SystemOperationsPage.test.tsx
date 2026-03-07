@@ -12,7 +12,7 @@ vi.mock("./OperationsPage", () => ({
   },
 }));
 
-vi.mock("../components/DaemonPanel", () => ({
+vi.mock("../components/sidebars/DaemonPanel", () => ({
   DaemonPanel: (props: unknown) => {
     daemonPanelSpy(props);
     return <div>mock-daemon-panel</div>;
