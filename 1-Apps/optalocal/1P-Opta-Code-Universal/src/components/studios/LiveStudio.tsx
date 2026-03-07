@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Maximize2, Minimize2, X, Play, Pause, Square } from "lucide-react";
-import type { DaemonConnectionOptions } from "../types";
-import type { BrowserLiveHostSlot } from "../lib/browserLiveHostClient";
+import type { DaemonConnectionOptions } from "../../types";
+import type { BrowserLiveHostSlot } from "../../lib/browserLiveHostClient";
 import { LiveBrowserView } from "./LiveBrowserView";
-import { isNativeDesktop } from "../lib/runtime";
-import { useOperations } from "../hooks/useOperations";
+import { isNativeDesktop } from "../../lib/runtime";
+import { useOperations } from "../../hooks/useOperations";
 
 interface LiveStudioProps {
     connection: DaemonConnectionOptions;

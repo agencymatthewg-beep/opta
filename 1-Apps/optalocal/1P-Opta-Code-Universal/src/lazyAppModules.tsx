@@ -57,27 +57,27 @@ const loadPermissionModal = async () => ({
 });
 
 const loadLiveBrowserView = async () => ({
-  default: (await import("./components/LiveBrowserView")).LiveBrowserView,
+  default: (await import("./components/studios/LiveBrowserView")).LiveBrowserView,
 });
 
 const loadLiveStudio = async () => ({
-  default: (await import("./components/LiveStudio")).LiveStudio,
+  default: (await import("./components/studios/LiveStudio")).LiveStudio,
 });
 
 const loadBrowserStudio = async () => ({
-  default: (await import("./components/BrowserStudio")).BrowserStudio,
+  default: (await import("./components/studios/BrowserStudio")).BrowserStudio,
 });
 
 const loadModelsStudio = async () => ({
-  default: (await import("./components/ModelsStudio")).ModelsStudio,
+  default: (await import("./components/studios/ModelsStudio")).ModelsStudio,
 });
 
 const loadAtpoStudio = async () => ({
-  default: (await import("./components/AtpoStudio")).AtpoStudio,
+  default: (await import("./components/studios/AtpoStudio")).AtpoStudio,
 });
 
 const loadProjectsStudio = async () => ({
-  default: (await import("./components/ProjectsStudio")).ProjectsStudio,
+  default: (await import("./components/studios/ProjectsStudio")).ProjectsStudio,
 });
 
 export const preloadSettingsModal = async () => {

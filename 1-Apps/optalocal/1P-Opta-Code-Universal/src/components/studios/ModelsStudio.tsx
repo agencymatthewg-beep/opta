@@ -9,8 +9,8 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { useModels } from "../hooks/useModels";
-import type { DaemonConnectionOptions } from "../types";
+import { useModels } from "../../hooks/useModels";
+import type { DaemonConnectionOptions } from "../../types";
 
 const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
 

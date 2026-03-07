@@ -1,4 +1,4 @@
-import { DaemonPanel } from "../components/DaemonPanel";
+import { DaemonPanel } from "../components/sidebars/DaemonPanel";
 import type { DaemonConnectionOptions } from "../types";
 import { OperationsPage } from "./OperationsPage";
 

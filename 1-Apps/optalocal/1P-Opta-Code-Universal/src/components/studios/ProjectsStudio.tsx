@@ -10,7 +10,7 @@ import {
     X,
     Play,
 } from "lucide-react";
-import type { DaemonSessionSummary, DaemonConnectionOptions } from "../types";
+import type { DaemonSessionSummary, DaemonConnectionOptions } from "../../types";
 
 const ACCENT = "#f472b6"; // Pink for projects
 

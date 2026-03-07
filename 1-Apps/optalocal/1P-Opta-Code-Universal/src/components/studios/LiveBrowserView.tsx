@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import type { BrowserLiveHostSlot } from "../lib/browserLiveHostClient";
-import { isNativeDesktop } from "../lib/runtime";
-import { useOperations } from "../hooks/useOperations";
-import type { DaemonConnectionOptions } from "../types";
+import type { BrowserLiveHostSlot } from "../../lib/browserLiveHostClient";
+import { isNativeDesktop } from "../../lib/runtime";
+import { useOperations } from "../../hooks/useOperations";
+import type { DaemonConnectionOptions } from "../../types";
 import { Play, Pause, Square } from "lucide-react";
 
 interface LiveBrowserViewProps {

@@ -1,7 +1,7 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { AppWindow, Package, RefreshCw, Server, Trash2, X } from "lucide-react";
-import { daemonClient } from "../lib/daemonClient";
-import type { DaemonConnectionOptions } from "../types";
+import { daemonClient } from "../../lib/daemonClient";
+import type { DaemonConnectionOptions } from "../../types";
 
 const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
 

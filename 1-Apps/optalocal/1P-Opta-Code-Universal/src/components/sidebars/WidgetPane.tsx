@@ -1,7 +1,7 @@
-import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../types";
-import { WidgetAtpo } from "./widgets/WidgetAtpo";
-import { WidgetCliStream } from "./widgets/WidgetCliStream";
-import { WidgetGitDiff } from "./widgets/WidgetGitDiff";
+import type { WidgetSlot, WidgetId, TimelineItem, DaemonConnectionOptions } from "../../types";
+import { WidgetAtpo } from "../widgets/WidgetAtpo";
+import { WidgetCliStream } from "../widgets/WidgetCliStream";
+import { WidgetGitDiff } from "../widgets/WidgetGitDiff";
 
 interface WidgetPaneProps {
     slots: WidgetSlot[];

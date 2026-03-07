@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Activity, RefreshCw, Square } from "lucide-react";
-import type { DaemonConnectionOptions } from "../types";
-import { probeDaemonConnection } from "../lib/connectionProbe";
-import { getTauriInvoke, isNativeDesktop } from "../lib/runtime";
+import type { DaemonConnectionOptions } from "../../types";
+import { probeDaemonConnection } from "../../lib/connectionProbe";
+import { getTauriInvoke, isNativeDesktop } from "../../lib/runtime";
 
 interface DaemonState {
   pid?: number;

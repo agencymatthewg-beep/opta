@@ -1,6 +1,6 @@
-import type { DaemonSessionSummary, AgentBarItem } from "../types";
-import type { ConnectionHealthState } from "../hooks/useConnectionHealth";
-import { handleExternalClick } from "../lib/openUrl";
+import type { DaemonSessionSummary, AgentBarItem } from "../../types";
+import type { ConnectionHealthState } from "../../hooks/useConnectionHealth";
+import { handleExternalClick } from "../../lib/openUrl";
 import { Plus } from "lucide-react";
 
 interface ProjectPaneProps {

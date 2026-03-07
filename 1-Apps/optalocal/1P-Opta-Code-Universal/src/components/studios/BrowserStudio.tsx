@@ -1,6 +1,6 @@
 import { useState, useEffect, type CSSProperties } from "react";
 import { ExternalLink, Globe, Monitor, RefreshCw, X } from "lucide-react";
-import type { BrowserLiveHostStatus, BrowserLiveHostSlot } from "../lib/browserLiveHostClient";
+import type { BrowserLiveHostStatus, BrowserLiveHostSlot } from "../../lib/browserLiveHostClient";
 
 const OPTA_LOGO_LETTERS = ["O", "P", "T", "A"] as const;
 

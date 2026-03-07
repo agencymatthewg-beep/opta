@@ -14,8 +14,8 @@ import { Composer } from "./components/Composer";
 import { Download } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { TimelineCards } from "./components/TimelineCards";
-import { ProjectPane } from "./components/ProjectPane";
-import { WidgetPane } from "./components/WidgetPane";
+import { ProjectPane } from "./components/sidebars/ProjectPane";
+import { WidgetPane } from "./components/sidebars/WidgetPane";
 import {
   SETTINGS_TAB_SEQUENCE,
   normalizeSettingsTabId,
