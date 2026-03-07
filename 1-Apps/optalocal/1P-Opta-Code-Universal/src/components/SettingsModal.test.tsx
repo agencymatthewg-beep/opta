@@ -183,24 +183,17 @@ describe("SettingsModal", () => {
         activeTab: "daemon-runtime",
       });
 
-      expect(screen.getByText("Keyboard Layout")).toBeInTheDocument();
-      // "OPTA SETTINGS" static label was removed in the logo redesign; logo
-      // now renders the active tab name dynamically (e.g. "DAEMON").
+      // Logo renders the active tab name dynamically (e.g. "DAEMON").
       expect(screen.getByLabelText("DAEMON")).toBeInTheDocument();
       expect(
         screen.getByRole("button", { name: /close settings/i }),
       ).toBeInTheDocument();
+      // Keyboard shortcut hint is rendered as ghost copy (no "Keyboard Layout" label
+      // since the header was refactored to absolute-positioned controls in Mar 2026).
+      expect(
+        container.querySelectorAll(".opta-studio-shortcut-copy"),
+      ).toHaveLength(1);
 
-      expect(
-        container.querySelectorAll(".opta-studio-top-chrome-left"),
-      ).toHaveLength(1);
-      expect(
-        container.querySelectorAll(".opta-studio-top-chrome-center"),
-      ).toHaveLength(1);
-      expect(
-        container.querySelectorAll(".opta-studio-top-chrome-right"),
-      ).toHaveLength(1);
-      expect(container.querySelectorAll(".opta-studio-panel-title")).toHaveLength(1);
       expect(
         container.querySelectorAll(".opta-studio-category-wheel-shell"),
       ).toHaveLength(1);

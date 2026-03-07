@@ -2163,44 +2163,35 @@ export function SettingsModal({
         </div>
       )}
 
-      <div className="opta-studio-top-chrome">
-        <div className="opta-studio-top-chrome-left">
-          <div className="opta-studio-shortcut-panel">
-            <span className="opta-studio-shortcut-title">Keyboard Layout</span>
-            <span className="opta-studio-shortcut-copy">{keyboardHint}</span>
-          </div>
+      {/* Absolute Header Controls (replacing old top-chrome) */}
+      <div style={{ position: "absolute", top: "2rem", left: "2rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <div className="opta-studio-shortcut-panel" style={{ padding: "0", background: "transparent", border: "none" }}>
+          <span className="opta-studio-shortcut-copy" style={{ color: "rgba(161, 161, 170, 0.6)", fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", maxWidth: "240px", lineHeight: "1.4" }}>{keyboardHint}</span>
         </div>
-        <div className="opta-studio-top-chrome-center">
-          <div className="opta-studio-command-row">
-            {onBackLayer ? (
-              <button
-                type="button"
-                className="opta-studio-btn-secondary opta-studio-header-btn"
-                onClick={onBackLayer}
-              >
-                <ArrowUp size={14} /> Back Layer
-              </button>
-            ) : null}
-            <h2 className="opta-studio-panel-title">
-              <span className="opta-studio-panel-eyebrow">Category Configuration</span>
-              <span className="opta-studio-layer-badge">
-                {isDeepLayer ? "Layer 3 · Category Configuration" : "Layer 2 · Category Selection"}
-              </span>
-            </h2>
-          </div>
-        </div>
-        <div className="opta-studio-top-chrome-right">
-          {onClose ? (
-            <button
-              type="button"
-              onClick={onClose}
-              className="opta-studio-close-btn"
-              aria-label="Close settings"
-            >
-              <X size={20} />
-            </button>
-          ) : null}
-        </div>
+      </div>
+
+      <div style={{ position: "absolute", top: "2rem", right: "2rem", zIndex: 50, display: "flex", gap: "1rem", alignItems: "center" }}>
+        {onBackLayer && (
+          <button
+            type="button"
+            className="opta-studio-btn-secondary opta-studio-header-btn"
+            onClick={onBackLayer}
+            style={{ padding: "0.4rem 0.8rem", height: "32px" }}
+          >
+            <ArrowUp size={14} /> Back Layer
+          </button>
+        )}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="opta-studio-close-btn"
+            aria-label="Close settings"
+            style={{ position: "relative", top: 0, right: 0 }}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {isDeepLayer && activeCategory ? (
