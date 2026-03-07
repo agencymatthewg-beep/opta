@@ -131,6 +131,14 @@ export interface OptaEnvironmentConfig {
   profile: 'workstation' | 'host';
   installPath: string;
   docsPath: string;
+  workspacePath?: string;
+}
+
+export interface WorkspaceCreationResult {
+  workspacePath: string;
+  dirsCreated: number;
+  filesCreated: number;
+  alreadyExisted: boolean;
 }
 
 export interface LmxMdnsCandidate {
@@ -153,6 +161,7 @@ export interface OptaConfig {
   profile?: string;
   installPath?: string;
   docsPath?: string;
+  workspacePath?: string;
   setupComplete?: boolean;
   completed?: boolean;
   [key: string]: unknown;
@@ -163,6 +172,7 @@ export interface GetOptaConfigResult {
   profile?: string;
   installPath?: string;
   docsPath?: string;
+  workspacePath?: string;
   setupComplete?: boolean;
   completed?: boolean;
   [key: string]: unknown;

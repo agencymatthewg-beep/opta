@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import type { GetOptaConfigResult, OptaConfig } from '../types';
+import type { GetOptaConfigResult, OptaConfig, WorkspaceCreationResult } from '../types';
 import './SetupWizard.css';
 
 export interface SetupWizardProps {
@@ -151,10 +151,23 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
     const prevStep = () => setStep(s => Math.max(s - 1, 1));
 
     const handleComplete = async () => {
+        // Create the Opta Workspace filesystem structure first
+        let workspacePath: string | undefined;
+        try {
+            const result = await invoke<WorkspaceCreationResult>("create_opta_workspace", {
+                customPath: null,
+            });
+            workspacePath = result.workspacePath;
+        } catch (e) {
+            // Non-fatal — workspace creation failure should not block setup completion
+            console.warn("Workspace creation failed (non-fatal):", e);
+        }
+
         const configPayload = {
             profile,
             installPath,
             docsPath,
+            ...(workspacePath ? { workspacePath } : {}),
             setupComplete: true,
             completed: true,
         };
@@ -167,7 +180,7 @@ export function SetupWizard({ onComplete }: SetupWizardProps) {
 
         try {
             await invoke("save_opta_config", {
-                config: { profile, installPath, docsPath }
+                config: { profile, installPath, docsPath, workspacePath }
             });
             persistLocalCompletion();
             onComplete();

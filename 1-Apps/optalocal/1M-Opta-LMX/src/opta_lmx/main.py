@@ -620,7 +620,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             # Auto-register default Opta Workspace folders on first run
             if len(watch_registry) == 0:
                 default_workspace = Path.home() / "Documents" / "Opta Workspace"
-                opta_config_dir = Path.home() / ".opta"
+                opta_config_dir = Path.home() / ".config" / "opta"
                 for folder, collection in [
                     (default_workspace, "global"),
                     (opta_config_dir, "opta-config"),

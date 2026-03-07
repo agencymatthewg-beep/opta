@@ -2454,7 +2454,38 @@ struct OptaEnvironmentConfig {
     profile: String,
     install_path: String,
     docs_path: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    workspace_path: Option<String>,
 }
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct WorkspaceCreationResult {
+    workspace_path: String,
+    dirs_created: usize,
+    files_created: usize,
+    already_existed: bool,
+}
+
+// ── Workspace file content constants ────────────────────────────────────────
+
+const WORKSPACE_ROOT_INDEX: &str = "---\ntype: workspace-index\nai-read-when:\n  - starting any task\n  - exploring workspace\n  - need project context\nlast-updated: 2026-03-07\n---\n# Opta Workspace\n\nYour personal AI workspace. Opta monitors this folder and uses it as context for all AI operations.\n\n## Sections\n\n| Folder | Purpose |\n|--------|---------|\n| About Me | Who I am, my setup, and preferences |\n| Projects | Active development projects |\n| Knowledge | Personal knowledge base for AI context |\n| Skills | Custom AI skill definitions |\n| Screenshots | Captured during AI sessions |\n| Exports | Conversation exports and AI-generated reports |\n\n## Getting Started\n\n1. Open `About Me/ABOUT.md` and fill in your background\n2. Create project folders inside `Projects/` when you start new work\n3. Add reference documents to `Knowledge/` for richer AI context\n";
+
+const ABOUT_ME_INDEX: &str = "---\ntype: section-index\nai-read-when:\n  - starting any task\n  - need user context\n---\n# About Me\n\nPersonal context that helps AI understand who I am and what I need.\n\n- [ABOUT.md](ABOUT.md) — My background, role, and expertise\n- [MY-SETUP.md](MY-SETUP.md) — My hardware, software, and tools\n";
+
+const ABOUT_ME_ABOUT: &str = "---\ntype: user-profile\nai-read-when:\n  - always\nlast-updated: 2026-03-07\n---\n# About Me\n\n<!-- Fill in this template to help AI understand your background -->\n\n## Role & Expertise\n\n**Who I am:** [Your role, e.g. \"Indie developer building AI-powered productivity tools\"]\n\n**Primary languages:** [e.g. TypeScript, Python, Swift]\n\n**Years of experience:** [e.g. 8 years]\n\n## How I Work\n\n**Preferred approach:** [e.g. \"Pragmatic — ship fast, refactor later\"]\n\n**Communication style:** [e.g. \"Be direct, skip preambles\"]\n\n**What I care about:** [e.g. \"Performance, clean architecture, user experience\"]\n\n## Current Focus\n\n[What are you primarily working on right now?]\n";
+
+const ABOUT_ME_SETUP: &str = "---\ntype: hardware-setup\nai-read-when:\n  - hardware questions\n  - performance decisions\n  - infrastructure choices\nlast-updated: 2026-03-07\n---\n# My Setup\n\n## Hardware\n\n**Primary machine:** [e.g. MacBook Pro M3 14\"]\n\n**AI inference server:** [e.g. Mac Studio M3 Ultra — 192.168.188.11]\n\n## Software\n\n**Editor/IDE:** [e.g. VS Code + Claude Code]\n\n**Terminal:** [e.g. Ghostty]\n\n**Package managers:** [e.g. npm, pip, Homebrew]\n\n## Opta Stack\n\n**Opta CLI:** installed\n\n**Opta LMX endpoint:** [e.g. 192.168.188.11:1234]\n\n**Opta Code Desktop:** installed\n";
+
+const PROJECTS_INDEX: &str = "---\ntype: projects-index\nai-read-when:\n  - starting development work\n  - need project list\nlast-updated: 2026-03-07\n---\n# Projects\n\nYour active development projects. Create a subfolder here for each project.\n\n## Project Template\n\nEach project folder should contain:\n- `GOAL.md` — What you're building and why\n- `CLAUDE.md` — AI coding instructions (optional)\n- `Plans/` — Design docs and specs\n\n## Active Projects\n\n<!-- Projects will appear here as you create them -->\n";
+
+const KNOWLEDGE_INDEX: &str = "---\ntype: knowledge-index\nai-read-when:\n  - domain questions\n  - research tasks\n---\n# Knowledge\n\nPersonal knowledge base. Add documents, notes, and references here for AI context.\n\nSupported formats: Markdown (.md), text (.txt), code files (.py, .ts, .rs, etc.)\n";
+
+const SKILLS_INDEX: &str = "---\ntype: skills-index\nai-read-when:\n  - skill questions\n---\n# Skills\n\nCustom AI skill definitions. Skills defined here are available across all Opta apps.\n\nSkills are YAML files that define AI task templates and workflows.\n";
+
+const SCREENSHOTS_INDEX: &str = "---\ntype: screenshots-index\n---\n# Screenshots\n\nScreenshots captured during AI sessions are saved here automatically.\n";
+
+const EXPORTS_INDEX: &str = "---\ntype: exports-index\n---\n# Exports\n\nConversation exports and AI-generated reports are saved here.\n";
 
 fn opta_config_dir() -> Result<PathBuf, String> {
     let home_dir = dirs::home_dir().ok_or_else(|| "Failed to resolve home directory".to_string())?;
@@ -2509,6 +2540,88 @@ async fn get_opta_config() -> Result<Option<OptaEnvironmentConfig>, String> {
     let parsed: OptaEnvironmentConfig = serde_json::from_str(&content)
         .map_err(|e| format!("Failed to parse {}: {}", file_path.display(), e))?;
     Ok(Some(parsed))
+}
+
+#[tauri::command]
+async fn create_opta_workspace(custom_path: Option<String>) -> Result<WorkspaceCreationResult, String> {
+    let home = dirs::home_dir().ok_or_else(|| "Cannot resolve home directory".to_string())?;
+
+    // Tier 1: ensure ~/.config/opta/ subdirs exist (idempotent)
+    if let Ok(config_dir) = opta_config_dir() {
+        for subdir in &["logs", "cache", "tools", "themes", "lsp-bin", "daemon", "sessions"] {
+            let _ = fs::create_dir_all(config_dir.join(subdir));
+        }
+    }
+
+    // Tier 2: resolve visible workspace root
+    let workspace: PathBuf = match custom_path {
+        Some(ref p) if p.starts_with("~/") => home.join(&p[2..]),
+        Some(ref p) if p == "~" => home.clone(),
+        Some(ref p) => PathBuf::from(p),
+        None => dirs::document_dir()
+            .unwrap_or_else(|| home.join("Documents"))
+            .join("Opta Workspace"),
+    };
+
+    let already_existed = workspace.exists();
+    let mut dirs_created: usize = 0;
+    let mut files_created: usize = 0;
+
+    // Idempotent create-dir helper (macro so it can mutate dirs_created)
+    macro_rules! mkdir {
+        ($path:expr) => {{
+            let p: PathBuf = $path;
+            if !p.exists() {
+                fs::create_dir_all(&p)
+                    .map_err(|e| format!("Failed to create {}: {}", p.display(), e))?;
+                dirs_created += 1;
+            }
+        }};
+    }
+
+    // Idempotent write-file helper (never overwrites existing user edits)
+    macro_rules! mkfile {
+        ($path:expr, $content:expr) => {{
+            let p: PathBuf = $path;
+            if !p.exists() {
+                fs::write(&p, $content)
+                    .map_err(|e| format!("Failed to write {}: {}", p.display(), e))?;
+                files_created += 1;
+            }
+        }};
+    }
+
+    // Create root workspace
+    mkdir!(workspace.clone());
+    mkfile!(workspace.join("INDEX.md"), WORKSPACE_ROOT_INDEX);
+
+    // About Me section
+    let about = workspace.join("About Me");
+    mkdir!(about.clone());
+    mkfile!(about.join("INDEX.md"), ABOUT_ME_INDEX);
+    mkfile!(about.join("ABOUT.md"), ABOUT_ME_ABOUT);
+    mkfile!(about.join("MY-SETUP.md"), ABOUT_ME_SETUP);
+
+    // Standard sections (INDEX.md only)
+    let sections: &[(&str, &str)] = &[
+        ("Projects", PROJECTS_INDEX),
+        ("Knowledge", KNOWLEDGE_INDEX),
+        ("Skills", SKILLS_INDEX),
+        ("Screenshots", SCREENSHOTS_INDEX),
+        ("Exports", EXPORTS_INDEX),
+    ];
+    for (name, index_content) in sections {
+        let dir = workspace.join(name);
+        mkdir!(dir.clone());
+        mkfile!(dir.join("INDEX.md"), *index_content);
+    }
+
+    Ok(WorkspaceCreationResult {
+        workspace_path: workspace.to_string_lossy().into_owned(),
+        dirs_created,
+        files_created,
+        already_existed,
+    })
 }
 
 #[tauri::command]
@@ -5118,6 +5231,7 @@ fn main() {
             install_dependency,
             save_opta_config,
             get_opta_config,
+            create_opta_workspace,
             get_account_status,
             trigger_login,
             trigger_logout,
