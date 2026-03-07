@@ -2160,15 +2160,40 @@ export function SettingsModal({
             </div>
             <div className="opta-studio-logo-sub">Code Environment</div>
           </div>
+
+          {/* Horizontal Keybinds Row */}
+          {isDeepLayer && (
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: "0.5rem",
+              marginTop: "1.5rem",
+              flexWrap: "wrap",
+              maxWidth: "800px",
+              opacity: 0.8
+            }}>
+              {keyboardHint.split(" · ").map((hint, idx) => (
+                <span key={idx} style={{
+                  fontFamily: '"JetBrains Mono", monospace',
+                  fontSize: "0.6rem",
+                  color: "rgba(161, 161, 170, 0.8)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                  background: "rgba(255, 255, 255, 0.03)",
+                  border: "1px solid rgba(255, 255, 255, 0.05)",
+                  padding: "0.2rem 0.5rem",
+                  borderRadius: "4px"
+                }}>
+                  {hint}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* Absolute Header Controls (replacing old top-chrome) */}
-      <div style={{ position: "absolute", top: "2rem", left: "2rem", zIndex: 50, display: "flex", flexDirection: "column", gap: "1rem" }}>
-        <div className="opta-studio-shortcut-panel" style={{ padding: "0", background: "transparent", border: "none" }}>
-          <span className="opta-studio-shortcut-copy" style={{ color: "rgba(161, 161, 170, 0.6)", fontSize: "0.65rem", textTransform: "uppercase", letterSpacing: "0.05em", maxWidth: "240px", lineHeight: "1.4" }}>{keyboardHint}</span>
-        </div>
-      </div>
+      {/* Absolute Header Controls */}
 
       <div style={{ position: "absolute", top: "2rem", right: "2rem", zIndex: 50, display: "flex", gap: "1rem", alignItems: "center" }}>
         {onBackLayer && (
